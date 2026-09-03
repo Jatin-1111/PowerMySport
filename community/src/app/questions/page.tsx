@@ -24,7 +24,7 @@ export default async function CommunityQnAPage() {
   // Same reasoning as /blog: the feed is client-rendered, so the crawler needs
   // the list restated in schema to see this page has anything on it.
   const recent = await fetchPublicData<{ items?: QuestionRow[] }>(
-    "/community/posts?page=1&limit=20",
+    "/community/posts?page=1&limit=20"
   );
 
   const questions = (recent?.items ?? [])
@@ -56,12 +56,10 @@ export default async function CommunityQnAPage() {
       <Suspense
         fallback={
           <div className="community-page-shell">
-            <div className="community-content-wrap rounded-3xl border border-border bg-white p-5 shadow-sm sm:p-6">
+            <div className="community-content-wrap border-border rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
               <div className="h-5 w-40 animate-pulse rounded-full bg-slate-200" />
               <div className="mt-4 h-24 animate-pulse rounded-2xl bg-slate-100" />
-              <p className="mt-4 text-sm text-slate-500">
-                Loading questions...
-              </p>
+              <p className="mt-4 text-sm text-slate-500">Loading questions...</p>
             </div>
           </div>
         }

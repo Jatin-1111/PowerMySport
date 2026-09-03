@@ -52,9 +52,7 @@ import { isPhonePeGatewayError } from "../../shared/services/PhonePeService";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("admin");
 
-const auditContext = (
-  req: Request,
-): { adminId: string; adminEmail: string } | null => {
+const auditContext = (req: Request): { adminId: string; adminEmail: string } | null => {
   if (!req.user?.id || !req.user.email) return null;
   return { adminId: req.user.id, adminEmail: req.user.email };
 };
@@ -74,9 +72,7 @@ const normalizeAdminResponse = (admin: unknown) => {
   const id =
     typeof plain.id === "string"
       ? plain.id
-      : idSource &&
-          typeof (idSource as { toString?: () => string }).toString ===
-            "function"
+      : idSource && typeof (idSource as { toString?: () => string }).toString === "function"
         ? (idSource as { toString: () => string }).toString()
         : "";
 
@@ -130,18 +126,14 @@ const normalizeCoachResponse = (coach: unknown) => {
         ? plain.id
         : plain._id &&
             typeof plain._id === "object" &&
-            typeof (plain._id as { toString?: () => string }).toString ===
-              "function"
+            typeof (plain._id as { toString?: () => string }).toString === "function"
           ? (plain._id as { toString: () => string }).toString()
           : "",
   };
 };
 
 // Admin login
-export const adminLogin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const adminLogin = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -179,10 +171,7 @@ export const adminLogin = async (
 };
 
 // Create admin (super admin only)
-export const createAdminAccount = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createAdminAccount = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, role, permissions } = req.body;
 
@@ -223,16 +212,12 @@ export const createAdminAccount = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create admin",
+      message: error instanceof Error ? error.message : "Failed to create admin",
     });
   }
 };
 
-export const changeAdminPasswordHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const changeAdminPasswordHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -274,17 +259,13 @@ export const changeAdminPasswordHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to change password",
+      message: error instanceof Error ? error.message : "Failed to change password",
     });
   }
 };
 
 // Get admin profile
-export const getAdminProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAdminProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -318,10 +299,7 @@ export const getAdminProfile = async (
 };
 
 // Get all admins (super admin only)
-export const listAdmins = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listAdmins = async (req: Request, res: Response): Promise<void> => {
   try {
     const admins = await getAllAdmins();
 
@@ -342,19 +320,12 @@ export const listAdmins = async (
  * Admin: List audit log entries (Super Admin only)
  * GET /api/admin/audit-logs?page=1&limit=25
  */
-export const listAuditLogsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listAuditLogsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-    const adminId =
-      typeof req.query.adminId === "string" ? req.query.adminId : undefined;
-    const targetType =
-      typeof req.query.targetType === "string"
-        ? req.query.targetType
-        : undefined;
+    const adminId = typeof req.query.adminId === "string" ? req.query.adminId : undefined;
+    const targetType = typeof req.query.targetType === "string" ? req.query.targetType : undefined;
 
     const result = await listAuditLogs(page, limit, {
       ...(adminId ? { adminId } : {}),
@@ -374,8 +345,7 @@ export const listAuditLogsHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get audit logs",
+      message: error instanceof Error ? error.message : "Failed to get audit logs",
     });
   }
 };
@@ -384,10 +354,7 @@ export const listAuditLogsHandler = async (
  * Admin: List coaches
  * GET /api/admin/coaches
  */
-export const listCoaches = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listCoaches = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -400,8 +367,7 @@ export const listCoaches = async (
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 12));
     const skip = (page - 1) * limit;
-    const statusFilter =
-      typeof req.query.status === "string" ? req.query.status.trim() : "";
+    const statusFilter = typeof req.query.status === "string" ? req.query.status.trim() : "";
 
     const filter: Record<string, unknown> = {};
     if (statusFilter && statusFilter !== "ALL") {
@@ -434,17 +400,13 @@ export const listCoaches = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch coaches",
+      message: error instanceof Error ? error.message : "Failed to fetch coaches",
     });
   }
 };
 
 // Get role templates
-export const getRoleTemplates = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getRoleTemplates = async (req: Request, res: Response): Promise<void> => {
   try {
     const templates = getRoleTemplatesData();
 
@@ -456,17 +418,13 @@ export const getRoleTemplates = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get role templates",
+      message: error instanceof Error ? error.message : "Failed to get role templates",
     });
   }
 };
 
 // Update admin permissions
-export const updateAdminPermissionsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateAdminPermissionsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { adminId } = req.params;
     const { permissions } = req.body;
@@ -479,10 +437,7 @@ export const updateAdminPermissionsHandler = async (
       return;
     }
 
-    const updatedAdmin = await updateAdminPermissions(
-      adminId as string,
-      permissions as string[],
-    );
+    const updatedAdmin = await updateAdminPermissions(adminId as string, permissions as string[]);
 
     const audit = auditContext(req);
     if (audit) {
@@ -503,17 +458,13 @@ export const updateAdminPermissionsHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update permissions",
+      message: error instanceof Error ? error.message : "Failed to update permissions",
     });
   }
 };
 
 // Update admin role
-export const updateAdminRoleHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateAdminRoleHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { adminId } = req.params;
     const { role } = req.body;
@@ -526,10 +477,7 @@ export const updateAdminRoleHandler = async (
       return;
     }
 
-    const updatedAdmin = await updateAdminRole(
-      adminId as string,
-      role as string,
-    );
+    const updatedAdmin = await updateAdminRole(adminId as string, role as string);
 
     const audit = auditContext(req);
     if (audit) {
@@ -556,10 +504,7 @@ export const updateAdminRoleHandler = async (
 };
 
 // Update admin name
-export const updateAdminProfileHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateAdminProfileHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { adminId } = req.params;
     const { name } = req.body;
@@ -603,17 +548,13 @@ export const updateAdminProfileHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update profile",
+      message: error instanceof Error ? error.message : "Failed to update profile",
     });
   }
 };
 
 // Activate or deactivate an admin account
-export const updateAdminStatusHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateAdminStatusHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { adminId } = req.params;
     const { isActive } = req.body;
@@ -634,10 +575,7 @@ export const updateAdminStatusHandler = async (
       return;
     }
 
-    const updatedAdmin = await setAdminActiveStatus(
-      adminId as string,
-      isActive,
-    );
+    const updatedAdmin = await setAdminActiveStatus(adminId as string, isActive);
 
     const audit = auditContext(req);
     if (audit) {
@@ -657,8 +595,7 @@ export const updateAdminStatusHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update status",
+      message: error instanceof Error ? error.message : "Failed to update status",
     });
   }
 };
@@ -669,7 +606,7 @@ export const updateAdminStatusHandler = async (
  */
 export const getAdminCoachVerificationUploadUrlHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -711,13 +648,13 @@ export const getAdminCoachVerificationUploadUrlHandler = async (
         ? await s3Service.generateCoachVenueImageUploadUrl(
             fileName,
             contentType,
-            coach._id.toString(),
+            coach._id.toString()
           )
         : await s3Service.generateCoachVerificationUploadUrl(
             fileName,
             contentType,
             coach._id.toString(),
-            (documentType as any) || "OTHER",
+            (documentType as any) || "OTHER"
           );
 
     res.status(200).json({
@@ -731,10 +668,7 @@ export const getAdminCoachVerificationUploadUrlHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate upload URL",
+      message: error instanceof Error ? error.message : "Failed to generate upload URL",
     });
   }
 };
@@ -743,10 +677,7 @@ export const getAdminCoachVerificationUploadUrlHandler = async (
  * Admin: Update coach profile (partial) by coachId
  * PUT /api/admin/coaches/:coachId
  */
-export const updateCoachAdminHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateCoachAdminHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -788,8 +719,7 @@ export const updateCoachAdminHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update coach",
+      message: error instanceof Error ? error.message : "Failed to update coach",
     });
   }
 };
@@ -810,10 +740,7 @@ export const listWebhookErrors = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch webhook errors",
+      message: error instanceof Error ? error.message : "Failed to fetch webhook errors",
     });
   }
 };
@@ -837,8 +764,7 @@ export const retryWebhookError = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to retry webhook",
+      message: error instanceof Error ? error.message : "Failed to retry webhook",
     });
   }
 };
@@ -863,9 +789,7 @@ export const reconcileOrderAdmin = async (req: Request, res: Response) => {
       consistent = await recoveryService.reconcileOrderRefund(orderId);
       details = { status: "CHECKED_REFUND" };
     } else {
-      res
-        .status(400)
-        .json({ success: false, message: "Invalid reconciliation type" });
+      res.status(400).json({ success: false, message: "Invalid reconciliation type" });
       return;
     }
 
@@ -879,8 +803,7 @@ export const reconcileOrderAdmin = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reconcile order",
+      message: error instanceof Error ? error.message : "Failed to reconcile order",
     });
   }
 };
@@ -891,7 +814,7 @@ export const reconcileOrderAdmin = async (req: Request, res: Response) => {
  */
 export const submitCoachVerificationAdminHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -913,12 +836,9 @@ export const submitCoachVerificationAdminHandler = async (
 
     const payload = req.body as { documents?: any[] };
 
-    const submitted = await submitCoachVerification(
-      (coach.userId as any).toString(),
-      {
-        documents: payload.documents || [],
-      },
-    );
+    const submitted = await submitCoachVerification((coach.userId as any).toString(), {
+      documents: payload.documents || [],
+    });
 
     res.status(200).json({
       success: true,
@@ -928,19 +848,13 @@ export const submitCoachVerificationAdminHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to submit verification",
+      message: error instanceof Error ? error.message : "Failed to submit verification",
     });
   }
 };
 
 // Admin logout
-export const adminLogout = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const adminLogout = async (req: Request, res: Response): Promise<void> => {
   res.cookie("token", "", {
     httpOnly: true,
     expires: new Date(0),
@@ -956,15 +870,10 @@ export const adminLogout = async (
  * List users for safety operations
  * GET /api/admin/users/safety?role=PLAYER&status=ACTIVE
  */
-export const listUsersForSafety = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listUsersForSafety = async (req: Request, res: Response): Promise<void> => {
   try {
-    const role =
-      typeof req.query.role === "string" ? req.query.role : undefined;
-    const status =
-      typeof req.query.status === "string" ? req.query.status : undefined;
+    const role = typeof req.query.role === "string" ? req.query.role : undefined;
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
     const skip = (page - 1) * limit;
@@ -988,7 +897,7 @@ export const listUsersForSafety = async (
     const [users, total] = await Promise.all([
       User.find(query)
         .select(
-          "name email phone role isActive suspensionReason suspendedAt deactivatedAt createdAt lastActiveAt",
+          "name email phone role isActive suspensionReason suspendedAt deactivatedAt createdAt lastActiveAt"
         )
         .sort({ updatedAt: -1 })
         .skip(skip)
@@ -1014,8 +923,7 @@ export const listUsersForSafety = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to retrieve users",
+      message: error instanceof Error ? error.message : "Failed to retrieve users",
     });
   }
 };
@@ -1024,10 +932,7 @@ export const listUsersForSafety = async (
  * Update user safety status
  * PATCH /api/admin/users/:userId/safety
  */
-export const updateUserSafetyStatus = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateUserSafetyStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = (req.params as Record<string, unknown>).userId as string;
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
@@ -1063,9 +968,7 @@ export const updateUserSafetyStatus = async (
       update.suspensionReason = reason.trim();
       update.suspendedAt = new Date();
       update.deactivatedAt = null;
-      update.suspendedBy = req.user?.id
-        ? new mongoose.Types.ObjectId(req.user.id)
-        : null;
+      update.suspendedBy = req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : null;
     }
 
     if (action === "REACTIVATE") {
@@ -1078,22 +981,15 @@ export const updateUserSafetyStatus = async (
 
     if (action === "DEACTIVATE") {
       update.isActive = false;
-      update.suspensionReason =
-        reason?.trim() || "Account deactivated by admin";
+      update.suspensionReason = reason?.trim() || "Account deactivated by admin";
       update.deactivatedAt = new Date();
       update.suspendedAt = new Date();
-      update.suspendedBy = req.user?.id
-        ? new mongoose.Types.ObjectId(req.user.id)
-        : null;
+      update.suspendedBy = req.user?.id ? new mongoose.Types.ObjectId(req.user.id) : null;
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: update },
-      { new: true },
-    )
+    const user = await User.findByIdAndUpdate(userId, { $set: update }, { new: true })
       .select(
-        "name email phone role isActive suspensionReason suspendedAt deactivatedAt createdAt lastActiveAt",
+        "name email phone role isActive suspensionReason suspendedAt deactivatedAt createdAt lastActiveAt"
       )
       .lean();
 
@@ -1109,9 +1005,7 @@ export const updateUserSafetyStatus = async (
         email: user.email,
         action,
         reason: reason?.trim() || undefined,
-      }).catch((error) =>
-        log.error("Failed to send account status email:", error),
-      );
+      }).catch((error) => log.error("Failed to send account status email:", error));
     }
 
     const auditSafety = auditContext(req);
@@ -1136,10 +1030,7 @@ export const updateUserSafetyStatus = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to update user safety status",
+      message: error instanceof Error ? error.message : "Failed to update user safety status",
     });
   }
 };
@@ -1152,12 +1043,9 @@ const truncatePreview = (value: string): string =>
     : value;
 
 const resolveCommunityReportTargets = async (
-  reports: Array<{ targetType: string; targetId: mongoose.Types.ObjectId }>,
+  reports: Array<{ targetType: string; targetId: mongoose.Types.ObjectId }>
 ): Promise<Map<string, { preview: string; deleted: boolean } | null>> => {
-  const idsByType: Record<
-    "MESSAGE" | "GROUP" | "POST" | "ANSWER",
-    mongoose.Types.ObjectId[]
-  > = {
+  const idsByType: Record<"MESSAGE" | "GROUP" | "POST" | "ANSWER", mongoose.Types.ObjectId[]> = {
     MESSAGE: [],
     GROUP: [],
     POST: [],
@@ -1166,16 +1054,11 @@ const resolveCommunityReportTargets = async (
 
   for (const report of reports) {
     if (report.targetType in idsByType) {
-      idsByType[report.targetType as keyof typeof idsByType].push(
-        report.targetId,
-      );
+      idsByType[report.targetType as keyof typeof idsByType].push(report.targetId);
     }
   }
 
-  const result = new Map<
-    string,
-    { preview: string; deleted: boolean } | null
-  >();
+  const result = new Map<string, { preview: string; deleted: boolean } | null>();
 
   const [messages, groups, posts, answers] = await Promise.all([
     idsByType.MESSAGE.length
@@ -1202,9 +1085,7 @@ const resolveCommunityReportTargets = async (
 
   for (const message of messages) {
     result.set(String(message._id), {
-      preview: message.isDeleted
-        ? "[message deleted]"
-        : truncatePreview(message.content),
+      preview: message.isDeleted ? "[message deleted]" : truncatePreview(message.content),
       deleted: Boolean(message.isDeleted),
     });
   }
@@ -1222,9 +1103,7 @@ const resolveCommunityReportTargets = async (
   }
   for (const answer of answers) {
     result.set(String(answer._id), {
-      preview: answer.isDeleted
-        ? "[answer deleted]"
-        : truncatePreview(answer.content),
+      preview: answer.isDeleted ? "[answer deleted]" : truncatePreview(answer.content),
       deleted: Boolean(answer.isDeleted),
     });
   }
@@ -1232,13 +1111,9 @@ const resolveCommunityReportTargets = async (
   return result;
 };
 
-export const listCommunityReports = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listCommunityReports = async (req: Request, res: Response): Promise<void> => {
   try {
-    const status =
-      typeof req.query.status === "string" ? req.query.status : undefined;
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
     const skip = (page - 1) * limit;
@@ -1265,12 +1140,9 @@ export const listCommunityReports = async (
       message: "Community reports fetched",
       data: reports.map((report) => {
         const reporter = report.reporterUserId as unknown as
-          | { _id: mongoose.Types.ObjectId; name?: string; email?: string }
-          | mongoose.Types.ObjectId;
+          { _id: mongoose.Types.ObjectId; name?: string; email?: string } | mongoose.Types.ObjectId;
         const reviewer = report.reviewedBy as unknown as
-          | { _id: mongoose.Types.ObjectId; name?: string }
-          | mongoose.Types.ObjectId
-          | undefined;
+          { _id: mongoose.Types.ObjectId; name?: string } | mongoose.Types.ObjectId | undefined;
         const target = targetPreviews.get(String(report.targetId)) || null;
 
         return {
@@ -1285,9 +1157,7 @@ export const listCommunityReports = async (
               : { id: String(reporter), name: "Unknown user", email: "" },
           targetType: report.targetType,
           targetId: String(report.targetId),
-          targetPreview: target
-            ? target.preview
-            : "[content not found — may have been removed]",
+          targetPreview: target ? target.preview : "[content not found — may have been removed]",
           targetDeleted: target ? target.deleted : true,
           reason: report.reason,
           details: report.details || "",
@@ -1313,18 +1183,12 @@ export const listCommunityReports = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch community reports",
+      message: error instanceof Error ? error.message : "Failed to fetch community reports",
     });
   }
 };
 
-export const reviewCommunityReport = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const reviewCommunityReport = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -1352,7 +1216,7 @@ export const reviewCommunityReport = async (
           reviewedAt: new Date(),
         },
       },
-      { new: true },
+      { new: true }
     ).lean();
 
     if (!updated) {
@@ -1381,10 +1245,7 @@ export const reviewCommunityReport = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to update community report",
+      message: error instanceof Error ? error.message : "Failed to update community report",
     });
   }
 };
@@ -1393,10 +1254,7 @@ export const reviewCommunityReport = async (
  * Bulk-review community reports (resolve/reject several at once)
  * PATCH /api/admin/community/reports/bulk-review
  */
-export const bulkReviewCommunityReports = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const bulkReviewCommunityReports = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -1410,18 +1268,14 @@ export const bulkReviewCommunityReports = async (
     };
 
     if (!Array.isArray(reportIds) || reportIds.length === 0) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "reportIds must be a non-empty array",
-        });
+      res.status(400).json({
+        success: false,
+        message: "reportIds must be a non-empty array",
+      });
       return;
     }
 
-    const validIds = reportIds.filter((id) =>
-      mongoose.Types.ObjectId.isValid(id),
-    );
+    const validIds = reportIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
     if (validIds.length === 0) {
       res.status(400).json({ success: false, message: "No valid report ids" });
       return;
@@ -1441,7 +1295,7 @@ export const bulkReviewCommunityReports = async (
           reviewedBy: req.user.id,
           reviewedAt: new Date(),
         },
-      },
+      }
     );
 
     void recordAuditLog({
@@ -1464,10 +1318,7 @@ export const bulkReviewCommunityReports = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to bulk-update community reports",
+      message: error instanceof Error ? error.message : "Failed to bulk-update community reports",
     });
   }
 };
@@ -1476,19 +1327,18 @@ export const bulkReviewCommunityReports = async (
  * Process refund for a booking
  * POST /api/admin/refunds/:bookingId
  */
-export const processRefund = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const processRefund = async (req: Request, res: Response): Promise<void> => {
   try {
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
-    const { refundType, reason, refundPercentage: customPercentage } =
-      req.body as {
-        refundType: "FULL" | "PARTIAL";
-        reason: string;
-        refundPercentage?: number;
-      };
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
+    const {
+      refundType,
+      reason,
+      refundPercentage: customPercentage,
+    } = req.body as {
+      refundType: "FULL" | "PARTIAL";
+      reason: string;
+      refundPercentage?: number;
+    };
 
     if (!refundType || !reason?.trim()) {
       res.status(400).json({
@@ -1510,11 +1360,7 @@ export const processRefund = async (
     } else {
       refundPercentage = 50;
     }
-    const result = await processBookingRefund(
-      bookingId,
-      refundPercentage,
-      reason.trim(),
-    );
+    const result = await processBookingRefund(bookingId, refundPercentage, reason.trim());
 
     const auditRefund = auditContext(req);
     if (auditRefund) {
@@ -1542,8 +1388,7 @@ export const processRefund = async (
 
     res.status(statusCode).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to process refund",
+      message: error instanceof Error ? error.message : "Failed to process refund",
       ...(isPhonePeGatewayError(error)
         ? { data: { code: error.code, retryable: error.retryable } }
         : {}),
@@ -1555,10 +1400,7 @@ export const processRefund = async (
  * List bookings with refunds
  * GET /api/admin/refunds?refundStatus=PENDING&page=1&limit=20
  */
-export const listRefunds = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listRefunds = async (req: Request, res: Response): Promise<void> => {
   try {
     const { Booking } = await import("../../client/models/Booking");
     const refundStatus = req.query.refundStatus as string;
@@ -1642,10 +1484,7 @@ export const listRefunds = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch refund bookings",
+      message: error instanceof Error ? error.message : "Failed to fetch refund bookings",
     });
   }
 };
@@ -1654,13 +1493,9 @@ export const listRefunds = async (
  * Get PhonePe refund status for a booking
  * GET /api/admin/refunds/:bookingId/status
  */
-export const getRefundStatus = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getRefundStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
 
     if (!bookingId) {
       res.status(400).json({
@@ -1682,10 +1517,7 @@ export const getRefundStatus = async (
 
     res.status(statusCode).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch refund status",
+      message: error instanceof Error ? error.message : "Failed to fetch refund status",
       ...(isPhonePeGatewayError(error)
         ? { data: { code: error.code, retryable: error.retryable } }
         : {}),
@@ -1697,10 +1529,7 @@ export const getRefundStatus = async (
  * List all disputes
  * GET /api/admin/disputes
  */
-export const listDisputes = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listDisputes = async (req: Request, res: Response): Promise<void> => {
   try {
     const disputes = await Dispute.find()
       .populate({
@@ -1720,8 +1549,7 @@ export const listDisputes = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch disputes",
+      message: error instanceof Error ? error.message : "Failed to fetch disputes",
     });
   }
 };
@@ -1735,22 +1563,16 @@ export const listDisputes = async (
  * to know which of the two systems it belongs to. `subjectType` is returned on
  * each event so the caller can still tell them apart.
  */
-export const getBookingTimeline = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getBookingTimeline = async (req: Request, res: Response): Promise<void> => {
   try {
-    const subjectId = String(
-      (req.params as Record<string, unknown>).subjectId ?? "",
-    );
+    const subjectId = String((req.params as Record<string, unknown>).subjectId ?? "");
 
     if (!subjectId) {
       res.status(400).json({ success: false, message: "subjectId is required" });
       return;
     }
 
-    const events =
-      await BookingEventService.getTimelineByIdAcrossSubjects(subjectId);
+    const events = await BookingEventService.getTimelineByIdAcrossSubjects(subjectId);
 
     res.status(200).json({
       success: true,
@@ -1760,10 +1582,7 @@ export const getBookingTimeline = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch booking timeline",
+      message: error instanceof Error ? error.message : "Failed to fetch booking timeline",
     });
   }
 };
@@ -1780,13 +1599,9 @@ export const getBookingTimeline = async (
  * - Update booking status
  * - Notify all parties
  */
-export const handleDispute = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const handleDispute = async (req: Request, res: Response): Promise<void> => {
   try {
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
     const { disputeType, resolution, evidence, reason } = req.body as {
       disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER";
       resolution: "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND";
@@ -1810,12 +1625,7 @@ export const handleDispute = async (
       return;
     }
 
-    const validDisputeTypes = [
-      "NO_SHOW",
-      "POOR_QUALITY",
-      "PAYMENT_ISSUE",
-      "OTHER",
-    ];
+    const validDisputeTypes = ["NO_SHOW", "POOR_QUALITY", "PAYMENT_ISSUE", "OTHER"];
     const validResolutions = ["FULL_REFUND", "PARTIAL_REFUND", "NO_REFUND"];
 
     if (!validDisputeTypes.includes(disputeType)) {
@@ -1858,9 +1668,7 @@ export const handleDispute = async (
       const { User } = await import("../../client/models/User");
       const booking = await Booking.findById(bookingId);
       if (booking?.userId) {
-        const disputeUser = await User.findById(booking.userId)
-          .select("name email")
-          .lean();
+        const disputeUser = await User.findById(booking.userId).select("name email").lean();
         if (disputeUser?.email) {
           sendDisputeStatusEmail({
             name: disputeUser.name,
@@ -1870,9 +1678,7 @@ export const handleDispute = async (
             bookingId,
             resolution,
             refundAmount: refundResult?.refundAmount,
-          }).catch((error) =>
-            log.error("Failed to send dispute email:", error),
-          );
+          }).catch((error) => log.error("Failed to send dispute email:", error));
         }
 
         const notifMessages: Record<string, string> = {
@@ -1898,10 +1704,7 @@ export const handleDispute = async (
         });
       }
     } catch (notifError) {
-      log.error(
-        "[handleDispute] Failed to send dispute notification:",
-        notifError,
-      );
+      log.error("[handleDispute] Failed to send dispute notification:", notifError);
     }
 
     const auditDispute = auditContext(req);
@@ -1934,8 +1737,7 @@ export const handleDispute = async (
     const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 500;
     res.status(statusCode).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to handle dispute",
+      message: error instanceof Error ? error.message : "Failed to handle dispute",
       ...(isPhonePeGatewayError(error)
         ? { data: { code: error.code, retryable: error.retryable } }
         : {}),
@@ -1947,10 +1749,7 @@ export const handleDispute = async (
  * List coach verification requests
  * GET /api/admin/coaches/verification?status=PENDING&page=1&limit=20
  */
-export const listCoachVerifications = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listCoachVerifications = async (req: Request, res: Response): Promise<void> => {
   try {
     const status = req.query.status as
       "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED" | undefined;
@@ -1972,10 +1771,7 @@ export const listCoachVerifications = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch coach verifications",
+      message: error instanceof Error ? error.message : "Failed to fetch coach verifications",
     });
   }
 };
@@ -1984,10 +1780,7 @@ export const listCoachVerifications = async (
  * Get single coach details for admin verification review
  * GET /api/admin/coaches/:coachId
  */
-export const getCoachVerificationDetails = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCoachVerificationDetails = async (req: Request, res: Response): Promise<void> => {
   try {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     const coach = await getCoachById(coachId);
@@ -2008,10 +1801,7 @@ export const getCoachVerificationDetails = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch coach details",
+      message: error instanceof Error ? error.message : "Failed to fetch coach details",
     });
   }
 };
@@ -2020,10 +1810,7 @@ export const getCoachVerificationDetails = async (
  * Approve coach verification
  * POST /api/admin/coaches/:coachId/verify
  */
-export const approveCoachVerification = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const approveCoachVerification = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -2034,11 +1821,7 @@ export const approveCoachVerification = async (
     }
 
     const coachId = (req.params as Record<string, unknown>).coachId as string;
-    const coach = await updateCoachVerificationStatus(
-      coachId,
-      "VERIFIED",
-      req.user.id,
-    );
+    const coach = await updateCoachVerificationStatus(coachId, "VERIFIED", req.user.id);
 
     try {
       const user = await User.findById(coach.userId).select("_id name email").lean();
@@ -2061,9 +1844,7 @@ export const approveCoachVerification = async (
             coachId: coachId,
             verifiedAt: new Date().toISOString(),
           },
-        }).catch((err: Error) =>
-          log.error("Failed to send verification notification:", err),
-        );
+        }).catch((err: Error) => log.error("Failed to send verification notification:", err));
       }
     } catch (emailError) {
       log.error("Failed to send coach verification email:", emailError);
@@ -2085,8 +1866,7 @@ export const approveCoachVerification = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to verify coach",
+      message: error instanceof Error ? error.message : "Failed to verify coach",
     });
   }
 };
@@ -2095,10 +1875,7 @@ export const approveCoachVerification = async (
  * Reject coach verification
  * POST /api/admin/coaches/:coachId/reject
  */
-export const rejectCoachVerification = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const rejectCoachVerification = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -2118,12 +1895,7 @@ export const rejectCoachVerification = async (
       return;
     }
 
-    const coach = await updateCoachVerificationStatus(
-      coachId,
-      "REJECTED",
-      req.user.id,
-      reason,
-    );
+    const coach = await updateCoachVerificationStatus(coachId, "REJECTED", req.user.id, reason);
 
     try {
       const user = await User.findById(coach.userId).select("_id name email").lean();
@@ -2148,9 +1920,7 @@ export const rejectCoachVerification = async (
             reason: reason,
             rejectedAt: new Date().toISOString(),
           },
-        }).catch((err: Error) =>
-          log.error("Failed to send rejection notification:", err),
-        );
+        }).catch((err: Error) => log.error("Failed to send rejection notification:", err));
       }
     } catch (emailError) {
       log.error("Failed to send coach verification email:", emailError);
@@ -2173,8 +1943,7 @@ export const rejectCoachVerification = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reject coach",
+      message: error instanceof Error ? error.message : "Failed to reject coach",
     });
   }
 };
@@ -2185,7 +1954,7 @@ export const rejectCoachVerification = async (
  */
 export const markCoachVerificationForReview = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -2199,12 +1968,7 @@ export const markCoachVerificationForReview = async (
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     const { notes } = req.body as { notes?: string };
 
-    const coach = await updateCoachVerificationStatus(
-      coachId,
-      "REVIEW",
-      req.user.id,
-      notes,
-    );
+    const coach = await updateCoachVerificationStatus(coachId, "REVIEW", req.user.id, notes);
 
     try {
       const user = await User.findById(coach.userId).select("_id name email").lean();
@@ -2229,9 +1993,7 @@ export const markCoachVerificationForReview = async (
             notes: notes || "",
             reviewStartedAt: new Date().toISOString(),
           },
-        }).catch((err: Error) =>
-          log.error("Failed to send review notification:", err),
-        );
+        }).catch((err: Error) => log.error("Failed to send review notification:", err));
       }
     } catch (emailError) {
       log.error("Failed to send coach verification email:", emailError);
@@ -2245,10 +2007,7 @@ export const markCoachVerificationForReview = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to mark coach for review",
+      message: error instanceof Error ? error.message : "Failed to mark coach for review",
     });
   }
 };
@@ -2259,7 +2018,7 @@ export const markCoachVerificationForReview = async (
  */
 export const notifyCoachVerificationPending = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const REMINDER_COOLDOWN_MS = 24 * 60 * 60 * 1000;
@@ -2292,8 +2051,7 @@ export const notifyCoachVerificationPending = async (
     }
 
     if (coach.lastVerificationReminderAt) {
-      const elapsedMs =
-        Date.now() - new Date(coach.lastVerificationReminderAt).getTime();
+      const elapsedMs = Date.now() - new Date(coach.lastVerificationReminderAt).getTime();
       if (elapsedMs < REMINDER_COOLDOWN_MS) {
         const remainingMs = REMINDER_COOLDOWN_MS - elapsedMs;
         const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
@@ -2341,9 +2099,7 @@ export const notifyCoachVerificationPending = async (
         currentStatus: coach.verificationStatus || "UNVERIFIED",
         remindedAt: new Date().toISOString(),
       },
-    }).catch((err: Error) =>
-      log.error("Failed to send in-app verification reminder:", err),
-    );
+    }).catch((err: Error) => log.error("Failed to send in-app verification reminder:", err));
 
     res.status(200).json({
       success: true,
@@ -2352,10 +2108,7 @@ export const notifyCoachVerificationPending = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to send verification reminder",
+      message: error instanceof Error ? error.message : "Failed to send verification reminder",
     });
   }
 };
@@ -2364,10 +2117,7 @@ export const notifyCoachVerificationPending = async (
  * Create venue directly from admin
  * POST /api/admin/venues/create
  */
-export const createVenueAdminHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createVenueAdminHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -2398,11 +2148,7 @@ export const createVenueAdminHandler = async (
 
     const newVenue = new Venue({
       ownerName: ownerName || adminAccount?.name || "Admin Venue",
-      ownerEmail:
-        ownerEmail ||
-        adminAccount?.email ||
-        req.user.email ||
-        "admin@powersport.local",
+      ownerEmail: ownerEmail || adminAccount?.email || req.user.email || "admin@powersport.local",
       ownerPhone: ownerPhone || req.user.id,
       name,
       address,
@@ -2436,8 +2182,7 @@ export const createVenueAdminHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create venue",
+      message: error instanceof Error ? error.message : "Failed to create venue",
     });
   }
 };
@@ -2446,10 +2191,7 @@ export const createVenueAdminHandler = async (
  * Update venue directly from admin
  * PUT /api/admin/venues/:venueId
  */
-export const updateVenueAdminHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateVenueAdminHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -2490,10 +2232,8 @@ export const updateVenueAdminHandler = async (
     let createdUser = false;
 
     if (nextApprovalStatus === "APPROVED" && !venue.ownerId) {
-      const ownerEmailRaw =
-        (updatePayload.ownerEmail as string | undefined) || venue.ownerEmail;
-      const ownerPhoneRaw =
-        (updatePayload.ownerPhone as string | undefined) || venue.ownerPhone;
+      const ownerEmailRaw = (updatePayload.ownerEmail as string | undefined) || venue.ownerEmail;
+      const ownerPhoneRaw = (updatePayload.ownerPhone as string | undefined) || venue.ownerPhone;
 
       const ownerEmail = ownerEmailRaw?.trim().toLowerCase() || "";
       const ownerPhone = ownerPhoneRaw?.trim() || "";
@@ -2505,10 +2245,7 @@ export const updateVenueAdminHandler = async (
       if (existingUser) {
         if (existingUser.role === "VenueLister") {
           ownerUser = existingUser._id;
-        } else if (
-          existingUser.role === "Player" ||
-          existingUser.role === "Parent"
-        ) {
+        } else if (existingUser.role === "Player" || existingUser.role === "Parent") {
           if (!convertExistingUser) {
             res.status(409).json({
               success: false,
@@ -2540,8 +2277,7 @@ export const updateVenueAdminHandler = async (
       } else {
         tempPassword = generateTempPassword(12);
 
-        const ownerNameRaw =
-          (updatePayload.ownerName as string | undefined) || venue.ownerName;
+        const ownerNameRaw = (updatePayload.ownerName as string | undefined) || venue.ownerName;
         const ownerName = ownerNameRaw?.trim() || "Venue Owner";
 
         const newUser = new User({
@@ -2606,8 +2342,7 @@ export const updateVenueAdminHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update venue",
+      message: error instanceof Error ? error.message : "Failed to update venue",
     });
   }
 };
@@ -2616,10 +2351,7 @@ export const updateVenueAdminHandler = async (
  * Create coach directly from admin
  * POST /api/admin/coaches/create
  */
-export const createCoachAdminHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createCoachAdminHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -2654,10 +2386,7 @@ export const createCoachAdminHandler = async (
     const normalizedPhone = typeof phone === "string" ? phone.trim() : "";
 
     let user = await User.findOne({
-      $or: [
-        { email: normalizedEmail.toLowerCase() },
-        { phone: normalizedPhone },
-      ],
+      $or: [{ email: normalizedEmail.toLowerCase() }, { phone: normalizedPhone }],
     });
     let tempPassword: string | undefined;
     let createdUser = false;
@@ -2679,8 +2408,7 @@ export const createCoachAdminHandler = async (
         if (!convertExistingUser) {
           res.status(409).json({
             success: false,
-            message:
-              "User already exists as PLAYER. Convert this account to COACH to continue.",
+            message: "User already exists as PLAYER. Convert this account to COACH to continue.",
             requiresConversion: true,
             existingRole: user.role,
             targetRole: "Coach",
@@ -2738,8 +2466,7 @@ export const createCoachAdminHandler = async (
                 ? {
                     type: "Point",
                     coordinates:
-                      ownVenueDetails.location?.coordinates ||
-                      ownVenueDetails.coordinates,
+                      ownVenueDetails.location?.coordinates || ownVenueDetails.coordinates,
                   }
                 : undefined,
             sports,
@@ -2759,9 +2486,7 @@ export const createCoachAdminHandler = async (
       baseLocation,
       serviceRadiusKm,
       travelBufferTime,
-      ...(normalizedOwnVenueDetails
-        ? { ownVenueDetails: normalizedOwnVenueDetails }
-        : {}),
+      ...(normalizedOwnVenueDetails ? { ownVenueDetails: normalizedOwnVenueDetails } : {}),
       venueId: venueId || undefined,
       verificationStatus: verificationStatus || "VERIFIED",
       isVerified: (verificationStatus || "VERIFIED") === "VERIFIED",
@@ -2789,15 +2514,12 @@ export const createCoachAdminHandler = async (
         userId: user._id.toString(),
         type: "COACH_VERIFICATION_VERIFIED",
         title: "Welcome to PowerMySport",
-        message:
-          "Your coach account has been created and verified successfully.",
+        message: "Your coach account has been created and verified successfully.",
         data: {
           coachId: coach._id.toString(),
           createdAt: new Date().toISOString(),
         },
-      }).catch((err: Error) =>
-        log.error("Failed to send coach creation notification:", err),
-      );
+      }).catch((err: Error) => log.error("Failed to send coach creation notification:", err));
     } catch (notificationError) {
       log.error("Failed to send in-app notification:", notificationError);
     }
@@ -2810,8 +2532,7 @@ export const createCoachAdminHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create coach",
+      message: error instanceof Error ? error.message : "Failed to create coach",
     });
   }
 };

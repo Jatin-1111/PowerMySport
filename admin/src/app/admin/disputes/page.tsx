@@ -50,10 +50,7 @@ const DISPUTE_TYPE_LABELS: Record<DisputeType, string> = {
   OTHER: "Other",
 };
 
-const DISPUTE_TYPE_ICONS: Record<
-  DisputeType,
-  React.ComponentType<{ className?: string }>
-> = {
+const DISPUTE_TYPE_ICONS: Record<DisputeType, React.ComponentType<{ className?: string }>> = {
   NO_SHOW: Ban,
   POOR_QUALITY: ShieldOff,
   PAYMENT_ISSUE: CircleDollarSign,
@@ -79,9 +76,7 @@ export default function AdminDisputesPage() {
   const [resolving, setResolving] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<DisputeStatus | "ALL">(
-    "ALL",
-  );
+  const [statusFilter, setStatusFilter] = useState<DisputeStatus | "ALL">("ALL");
   const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
   const [resolutionForm, setResolutionForm] = useState({
     resolution: "FULL_REFUND" as Resolution,
@@ -154,7 +149,7 @@ export default function AdminDisputesPage() {
       });
 
       toast.success(
-        `Dispute resolved — ${resolutionForm.resolution.replace(/_/g, " ").toLowerCase()} applied`,
+        `Dispute resolved — ${resolutionForm.resolution.replace(/_/g, " ").toLowerCase()} applied`
       );
       setSelectedDispute(null);
       setResolutionForm({
@@ -179,13 +174,11 @@ export default function AdminDisputesPage() {
                       ? Math.round(d.amount * 0.5)
                       : 0,
               }
-            : d,
-        ),
+            : d
+        )
       );
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to resolve dispute",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to resolve dispute");
     } finally {
       setResolving(null);
     }
@@ -220,20 +213,18 @@ export default function AdminDisputesPage() {
             disputeType: d.disputeType,
             resolution: bulkForm.resolution,
             evidence: bulkForm.evidence || undefined,
-          }),
-        ),
+          })
+        )
       );
       const failed = results.filter((r) => r.status === "rejected").length;
       const succeeded = targets.length - failed;
       const resolvedIds = new Set(
-        targets
-          .filter((_, index) => results[index].status === "fulfilled")
-          .map((d) => d.id),
+        targets.filter((_, index) => results[index].status === "fulfilled").map((d) => d.id)
       );
 
       if (succeeded > 0) {
         toast.success(
-          `Resolved ${succeeded} dispute${succeeded === 1 ? "" : "s"} — ${bulkForm.resolution.replace(/_/g, " ").toLowerCase()} applied`,
+          `Resolved ${succeeded} dispute${succeeded === 1 ? "" : "s"} — ${bulkForm.resolution.replace(/_/g, " ").toLowerCase()} applied`
         );
         setDisputes((prev) =>
           prev.map((d) =>
@@ -250,14 +241,12 @@ export default function AdminDisputesPage() {
                         ? Math.round(d.amount * 0.5)
                         : 0,
                 }
-              : d,
-          ),
+              : d
+          )
         );
       }
       if (failed > 0) {
-        toast.error(
-          `Failed to resolve ${failed} dispute${failed === 1 ? "" : "s"}`,
-        );
+        toast.error(`Failed to resolve ${failed} dispute${failed === 1 ? "" : "s"}`);
       }
 
       setSelectedIds((prev) => {
@@ -288,7 +277,7 @@ export default function AdminDisputesPage() {
     setSelectedIds((prev) =>
       prev.size === actionableFiltered.length
         ? new Set()
-        : new Set(actionableFiltered.map((d) => d.id)),
+        : new Set(actionableFiltered.map((d) => d.id))
     );
   };
 
@@ -350,14 +339,14 @@ export default function AdminDisputesPage() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search by player, booking ID, venue…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-4 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-4 pl-9 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
           />
         </div>
         <div className="flex gap-2">
@@ -394,10 +383,7 @@ export default function AdminDisputesPage() {
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input
               type="checkbox"
-              checked={
-                selectedIds.size > 0 &&
-                selectedIds.size === actionableFiltered.length
-              }
+              checked={selectedIds.size > 0 && selectedIds.size === actionableFiltered.length}
               onChange={toggleSelectAll}
               className="h-4 w-4 rounded border-slate-300"
             />
@@ -433,9 +419,7 @@ export default function AdminDisputesPage() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white py-20 text-center">
           <Gavel className="mb-4 h-14 w-14 text-slate-300" />
-          <p className="text-lg font-semibold text-slate-600">
-            No disputes found
-          </p>
+          <p className="text-lg font-semibold text-slate-600">No disputes found</p>
           <p className="mt-1 text-sm text-slate-400">
             {statusFilter !== "ALL"
               ? "Try changing the filter"
@@ -465,8 +449,8 @@ export default function AdminDisputesPage() {
                   <div className="shrink-0 rounded-xl bg-slate-100 p-2.5">
                     <TypeIcon className="h-5 w-5 text-slate-600" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
                       <span
                         className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${DISPUTE_TYPE_COLORS[dispute.disputeType]}`}
                       >
@@ -477,8 +461,7 @@ export default function AdminDisputesPage() {
                       >
                         {dispute.status === "UNDER_REVIEW"
                           ? "Under Review"
-                          : dispute.status.charAt(0) +
-                            dispute.status.slice(1).toLowerCase()}
+                          : dispute.status.charAt(0) + dispute.status.slice(1).toLowerCase()}
                       </span>
                     </div>
                     <h3 className="text-sm font-semibold text-slate-900">
@@ -491,10 +474,11 @@ export default function AdminDisputesPage() {
                       </span>
                       <span>₹{dispute.amount.toLocaleString("en-IN")}</span>
                       <span>
-                        {new Date(dispute.createdAt).toLocaleDateString(
-                          "en-IN",
-                          { day: "2-digit", month: "short", year: "numeric" },
-                        )}
+                        {new Date(dispute.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </span>
                     </div>
                   </div>
@@ -508,9 +492,7 @@ export default function AdminDisputesPage() {
                       </button>
                     )}
                     <button
-                      onClick={() =>
-                        setExpandedId(isExpanded ? null : dispute.id)
-                      }
+                      onClick={() => setExpandedId(isExpanded ? null : dispute.id)}
                       className="rounded-lg border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50"
                     >
                       {isExpanded ? (
@@ -524,30 +506,24 @@ export default function AdminDisputesPage() {
 
                 {/* Expanded body */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50 px-5 py-4 space-y-3">
+                  <div className="space-y-3 border-t border-slate-100 bg-slate-50 px-5 py-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                      <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                         Player's Description
                       </p>
-                      <p className="text-sm text-slate-700">
-                        {dispute.description}
-                      </p>
+                      <p className="text-sm text-slate-700">{dispute.description}</p>
                     </div>
                     {dispute.evidence && (
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+                        <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                           Evidence
                         </p>
-                        <p className="text-sm text-slate-700">
-                          {dispute.evidence}
-                        </p>
+                        <p className="text-sm text-slate-700">{dispute.evidence}</p>
                       </div>
                     )}
                     {dispute.status === "RESOLVED" && (
                       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                        <p className="text-xs font-semibold text-emerald-700 mb-1">
-                          Resolution
-                        </p>
+                        <p className="mb-1 text-xs font-semibold text-emerald-700">Resolution</p>
                         <p className="text-sm font-semibold text-emerald-800">
                           {dispute.resolution?.replace(/_/g, " ")}
                           {dispute.refundAmount
@@ -555,16 +531,13 @@ export default function AdminDisputesPage() {
                             : ""}
                         </p>
                         {dispute.resolvedAt && (
-                          <p className="text-xs text-emerald-600 mt-1">
+                          <p className="mt-1 text-xs text-emerald-600">
                             Resolved{" "}
-                            {new Date(dispute.resolvedAt).toLocaleDateString(
-                              "en-IN",
-                              {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              },
-                            )}
+                            {new Date(dispute.resolvedAt).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
                           </p>
                         )}
                       </div>
@@ -579,7 +552,7 @@ export default function AdminDisputesPage() {
 
       {/* Resolution Modal */}
       {selectedDispute && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
             {/* Modal header */}
             <div className="border-b border-slate-100 px-6 py-5">
@@ -588,12 +561,9 @@ export default function AdminDisputesPage() {
                   <Gavel className="h-5 w-5 text-indigo-700" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    Resolve Dispute
-                  </h2>
+                  <h2 className="text-lg font-bold text-slate-900">Resolve Dispute</h2>
                   <p className="text-sm text-slate-500">
-                    {selectedDispute.bookingId} · ₹
-                    {selectedDispute.amount.toLocaleString("en-IN")}
+                    {selectedDispute.bookingId} · ₹{selectedDispute.amount.toLocaleString("en-IN")}
                   </p>
                 </div>
               </div>
@@ -601,12 +571,10 @@ export default function AdminDisputesPage() {
 
             {/* Dispute summary */}
             <div className="mx-6 mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">
+              <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Dispute
               </p>
-              <p className="text-sm text-slate-700">
-                {selectedDispute.description}
-              </p>
+              <p className="text-sm text-slate-700">{selectedDispute.description}</p>
               <div className="mt-2 flex items-center gap-2">
                 <span
                   className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${DISPUTE_TYPE_COLORS[selectedDispute.disputeType]}`}
@@ -634,8 +602,7 @@ export default function AdminDisputesPage() {
                         label: "Full Refund",
                         sublabel: `₹${selectedDispute.amount.toLocaleString("en-IN")}`,
                         icon: BadgeCheck,
-                        color:
-                          "border-emerald-300 bg-emerald-50 text-emerald-800",
+                        color: "border-emerald-300 bg-emerald-50 text-emerald-800",
                       },
                       {
                         value: "PARTIAL_REFUND",
@@ -655,13 +622,10 @@ export default function AdminDisputesPage() {
                   ).map(({ value, label, sublabel, icon: Icon, color }) => (
                     <button
                       key={value}
-                      onClick={() =>
-                        setResolutionForm((f) => ({ ...f, resolution: value }))
-                      }
+                      onClick={() => setResolutionForm((f) => ({ ...f, resolution: value }))}
                       className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all ${
                         resolutionForm.resolution === value
-                          ? color +
-                            " ring-2 ring-offset-1 ring-current/30 shadow-sm"
+                          ? color + " shadow-sm ring-2 ring-current/30 ring-offset-1"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                       }`}
                     >
@@ -682,10 +646,8 @@ export default function AdminDisputesPage() {
                   rows={3}
                   placeholder="Explain why this resolution was chosen…"
                   value={resolutionForm.reason}
-                  onChange={(e) =>
-                    setResolutionForm((f) => ({ ...f, reason: e.target.value }))
-                  }
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  onChange={(e) => setResolutionForm((f) => ({ ...f, reason: e.target.value }))}
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
 
@@ -704,7 +666,7 @@ export default function AdminDisputesPage() {
                       evidence: e.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
             </div>
@@ -743,7 +705,7 @@ export default function AdminDisputesPage() {
 
       {/* Bulk Resolution Modal */}
       {bulkModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
             <div className="border-b border-slate-100 px-6 py-5">
               <div className="flex items-center gap-3">
@@ -756,8 +718,7 @@ export default function AdminDisputesPage() {
                     {selectedIds.size === 1 ? "" : "s"}
                   </h2>
                   <p className="text-sm text-slate-500">
-                    The same resolution will be applied to every selected
-                    dispute.
+                    The same resolution will be applied to every selected dispute.
                   </p>
                 </div>
               </div>
@@ -775,8 +736,7 @@ export default function AdminDisputesPage() {
                         value: "FULL_REFUND",
                         label: "Full Refund",
                         icon: BadgeCheck,
-                        color:
-                          "border-emerald-300 bg-emerald-50 text-emerald-800",
+                        color: "border-emerald-300 bg-emerald-50 text-emerald-800",
                       },
                       {
                         value: "PARTIAL_REFUND",
@@ -794,13 +754,10 @@ export default function AdminDisputesPage() {
                   ).map(({ value, label, icon: Icon, color }) => (
                     <button
                       key={value}
-                      onClick={() =>
-                        setBulkForm((f) => ({ ...f, resolution: value }))
-                      }
+                      onClick={() => setBulkForm((f) => ({ ...f, resolution: value }))}
                       className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all ${
                         bulkForm.resolution === value
-                          ? color +
-                            " ring-2 ring-offset-1 ring-current/30 shadow-sm"
+                          ? color + " shadow-sm ring-2 ring-current/30 ring-offset-1"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                       }`}
                     >
@@ -819,10 +776,8 @@ export default function AdminDisputesPage() {
                   rows={3}
                   placeholder="Explain why this resolution was chosen…"
                   value={bulkForm.reason}
-                  onChange={(e) =>
-                    setBulkForm((f) => ({ ...f, reason: e.target.value }))
-                  }
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  onChange={(e) => setBulkForm((f) => ({ ...f, reason: e.target.value }))}
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
 
@@ -834,10 +789,8 @@ export default function AdminDisputesPage() {
                   type="text"
                   placeholder="Reference to attached evidence…"
                   value={bulkForm.evidence}
-                  onChange={(e) =>
-                    setBulkForm((f) => ({ ...f, evidence: e.target.value }))
-                  }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  onChange={(e) => setBulkForm((f) => ({ ...f, evidence: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
             </div>

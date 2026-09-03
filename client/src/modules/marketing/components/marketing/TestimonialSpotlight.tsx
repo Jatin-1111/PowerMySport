@@ -26,8 +26,7 @@ export function TestimonialSpotlight({
   const [active, setActive] = useState(0);
 
   const next = () => setActive((prev) => (prev + 1) % testimonials.length);
-  const prev = () =>
-    setActive((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  const prev = () => setActive((prev) => (prev - 1 + testimonials.length) % testimonials.length);
 
   useEffect(() => {
     if (!autoplay) return;
@@ -41,7 +40,7 @@ export function TestimonialSpotlight({
 
   return (
     <div className={cn("relative mx-auto max-w-3xl text-center", className)}>
-      <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-power-orange">
+      <div className="text-power-orange mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
         <Quote className="h-6 w-6" />
       </div>
 
@@ -63,23 +62,21 @@ export function TestimonialSpotlight({
                       "h-4 w-4",
                       i < current.rating!
                         ? "fill-amber-400 text-amber-400"
-                        : "fill-slate-200 text-slate-200",
+                        : "fill-slate-200 text-slate-200"
                     )}
                   />
                 ))}
               </div>
             )}
-            <p className="text-xl font-medium leading-relaxed text-slate-800 sm:text-2xl">
+            <p className="text-xl leading-relaxed font-medium text-slate-800 sm:text-2xl">
               &ldquo;{current.quote}&rdquo;
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-power-orange to-amber-500 text-sm font-bold text-white">
+              <span className="from-power-orange flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br to-amber-500 text-sm font-bold text-white">
                 {current.author.charAt(0)}
               </span>
               <div className="text-left">
-                <p className="text-sm font-bold text-slate-900">
-                  {current.author}
-                </p>
+                <p className="text-sm font-bold text-slate-900">{current.author}</p>
                 <p className="text-xs text-slate-500">{current.role}</p>
               </div>
             </div>
@@ -93,7 +90,7 @@ export function TestimonialSpotlight({
           type="button"
           onClick={prev}
           aria-label="Previous testimonial"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-power-orange hover:text-power-orange"
+          className="hover:border-power-orange hover:text-power-orange flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -106,7 +103,7 @@ export function TestimonialSpotlight({
               onClick={() => setActive(i)}
               className={cn(
                 "h-1.5 rounded-full transition-all",
-                i === active ? "w-6 bg-power-orange" : "w-1.5 bg-slate-200",
+                i === active ? "bg-power-orange w-6" : "w-1.5 bg-slate-200"
               )}
             />
           ))}
@@ -115,7 +112,7 @@ export function TestimonialSpotlight({
           type="button"
           onClick={next}
           aria-label="Next testimonial"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-power-orange hover:text-power-orange"
+          className="hover:border-power-orange hover:text-power-orange flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

@@ -55,8 +55,7 @@ export async function resolveEditionSlug(key: EditionKey): Promise<string> {
 const editionKeyId = (key: EditionKey): string =>
   `${key.sportSlug}|${key.name}|${key.startDate.toISOString()}`;
 
-const escapeRegex = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Batched sibling of resolveEditionSlug — same stability guarantee and same
@@ -64,9 +63,7 @@ const escapeRegex = (value: string): string =>
  * (up to ~150 for a full tennis calendar) in a constant, small number of
  * round trips instead of 1-51 sequential queries per edition.
  */
-export async function resolveEditionSlugsBatch(
-  keys: EditionKey[],
-): Promise<Map<string, string>> {
+export async function resolveEditionSlugsBatch(keys: EditionKey[]): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   if (keys.length === 0) return result;
 
@@ -88,7 +85,7 @@ export async function resolveEditionSlugsBatch(
         startDate: d.startDate,
       }),
       d.slug as string | undefined,
-    ]),
+    ])
   );
 
   const needsNewSlug: Array<{ id: string; base: string }> = [];
@@ -101,7 +98,10 @@ export async function resolveEditionSlugsBatch(
       continue;
     }
     const base =
-      `${slugifyEditionName(key.name)}-${key.startDate.toISOString().slice(0, 10)}`.replace(/^-/, "");
+      `${slugifyEditionName(key.name)}-${key.startDate.toISOString().slice(0, 10)}`.replace(
+        /^-/,
+        ""
+      );
     needsNewSlug.push({ id, base });
   }
 

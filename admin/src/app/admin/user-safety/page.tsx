@@ -4,10 +4,7 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { UserSafetyRecord, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
 import { toast } from "@/lib/toast";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState, Suspense } from "react";
 
@@ -22,7 +19,7 @@ const formatDate = (value?: string | null): string =>
 
 export default function AdminUserSafetyPage() {
   return (
-    <Suspense fallback={<div className="text-center py-12">Loading...</div>}>
+    <Suspense fallback={<div className="py-12 text-center">Loading...</div>}>
       <AdminUserSafetyPageContent />
     </Suspense>
   );
@@ -33,9 +30,7 @@ function AdminUserSafetyPageContent() {
   const pathname = usePathname();
 
   // Local React State for status filter and page selection
-  const [statusFilter, setStatusFilter] = useState<
-    "ALL" | "ACTIVE" | "SUSPENDED"
-  >("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "SUSPENDED">("ALL");
   const [page, setPage] = useState(1);
 
   const [users, setUsers] = useState<UserSafetyRecord[]>([]);
@@ -49,20 +44,16 @@ function AdminUserSafetyPageContent() {
   // Modal safety states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalUserId, setModalUserId] = useState<string | null>(null);
-  const [modalAction, setModalAction] = useState<
-    "SUSPEND" | "REACTIVATE" | "DEACTIVATE" | null
-  >(null);
+  const [modalAction, setModalAction] = useState<"SUSPEND" | "REACTIVATE" | "DEACTIVATE" | null>(
+    null
+  );
   const [modalReason, setModalReason] = useState("");
 
   // Restore states from URL query params on initial mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const statusParam = params.get("status") as "ALL" | "ACTIVE" | "SUSPENDED";
-    if (
-      statusParam === "ALL" ||
-      statusParam === "ACTIVE" ||
-      statusParam === "SUSPENDED"
-    ) {
+    if (statusParam === "ALL" || statusParam === "ACTIVE" || statusParam === "SUSPENDED") {
       setStatusFilter(statusParam);
     }
     const pageParam = Number(params.get("page"));
@@ -117,16 +108,13 @@ function AdminUserSafetyPageContent() {
   const visibleUsers = users.filter((user) => {
     const query = search.trim().toLowerCase();
     if (!query) return true;
-    return (
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
-    );
+    return user.name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
   });
 
   const updateSafety = async (
     userId: string,
     action: "SUSPEND" | "REACTIVATE" | "DEACTIVATE",
-    reason?: string,
+    reason?: string
   ) => {
     setBusyUserId(userId);
     try {
@@ -138,24 +126,17 @@ function AdminUserSafetyPageContent() {
         toast.success(`User ${action.toLowerCase()}d successfully.`);
         await loadUsers();
       } else {
-        toast.error(
-          response.message || `Failed to ${action.toLowerCase()} user.`,
-        );
+        toast.error(response.message || `Failed to ${action.toLowerCase()} user.`);
       }
     } catch (e) {
       console.error(e);
-      toast.error(
-        `An error occurred while trying to ${action.toLowerCase()} user.`,
-      );
+      toast.error(`An error occurred while trying to ${action.toLowerCase()} user.`);
     } finally {
       setBusyUserId(null);
     }
   };
 
-  const handleActionClick = (
-    userId: string,
-    action: "SUSPEND" | "REACTIVATE" | "DEACTIVATE",
-  ) => {
+  const handleActionClick = (userId: string, action: "SUSPEND" | "REACTIVATE" | "DEACTIVATE") => {
     if (action === "REACTIVATE") {
       updateSafety(userId, "REACTIVATE");
     } else {
@@ -168,10 +149,7 @@ function AdminUserSafetyPageContent() {
 
   const handleModalConfirm = () => {
     if (!modalUserId || !modalAction) return;
-    if (
-      (modalAction === "SUSPEND" || modalAction === "DEACTIVATE") &&
-      !modalReason.trim()
-    ) {
+    if ((modalAction === "SUSPEND" || modalAction === "DEACTIVATE") && !modalReason.trim()) {
       toast.error("Reason is required.");
       return;
     }
@@ -237,7 +215,7 @@ function AdminUserSafetyPageContent() {
                   e.stopPropagation();
                   handleActionClick(user.id, "SUSPEND");
                 }}
-                className="rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-200 cursor-pointer disabled:opacity-50"
+                className="cursor-pointer rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-200 disabled:opacity-50"
               >
                 Suspend
               </button>
@@ -247,7 +225,7 @@ function AdminUserSafetyPageContent() {
                   e.stopPropagation();
                   handleActionClick(user.id, "DEACTIVATE");
                 }}
-                className="rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-800 hover:bg-red-200 cursor-pointer disabled:opacity-50"
+                className="cursor-pointer rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-800 hover:bg-red-200 disabled:opacity-50"
               >
                 Deactivate
               </button>
@@ -259,7 +237,7 @@ function AdminUserSafetyPageContent() {
                 e.stopPropagation();
                 handleActionClick(user.id, "REACTIVATE");
               }}
-              className="rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 hover:bg-green-200 cursor-pointer disabled:opacity-50"
+              className="cursor-pointer rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 hover:bg-green-200 disabled:opacity-50"
             >
               Reactivate
             </button>
@@ -297,15 +275,11 @@ function AdminUserSafetyPageContent() {
           }}
           toolbarExtra={
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-slate-700">
-                Filter:
-              </label>
+              <label className="text-sm font-medium text-slate-700">Filter:</label>
               <select
                 value={statusFilter}
-                onChange={(event) =>
-                  handleStatusChange(event.target.value as typeof statusFilter)
-                }
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                onChange={(event) => handleStatusChange(event.target.value as typeof statusFilter)}
+                className="focus:ring-power-orange/40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:ring-2 focus:outline-none"
               >
                 <option value="ALL">All</option>
                 <option value="ACTIVE">Active</option>
@@ -319,27 +293,24 @@ function AdminUserSafetyPageContent() {
       {/* Suspension / Deactivation Reason Modal */}
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-fade-in"
+          className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xl animate-scale-up"
+            className="animate-scale-up w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-slate-900 mb-2">
-              {modalAction === "SUSPEND"
-                ? "Suspend Account"
-                : "Deactivate Account"}
+            <h3 className="mb-2 text-lg font-bold text-slate-900">
+              {modalAction === "SUSPEND" ? "Suspend Account" : "Deactivate Account"}
             </h3>
-            <p className="text-sm text-slate-500 mb-4">
+            <p className="mb-4 text-sm text-slate-500">
               Please enter the reason for{" "}
-              {modalAction === "SUSPEND" ? "suspending" : "deactivating"} this
-              user account. This reason is required and will be saved in the
-              database.
+              {modalAction === "SUSPEND" ? "suspending" : "deactivating"} this user account. This
+              reason is required and will be saved in the database.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Reason <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -347,23 +318,22 @@ function AdminUserSafetyPageContent() {
                   value={modalReason}
                   onChange={(e) => setModalReason(e.target.value)}
                   placeholder="Enter detailed reason here..."
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                  className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors"
+                  className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleModalConfirm}
                   disabled={!modalReason.trim()}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Confirm{" "}
-                  {modalAction === "SUSPEND" ? "Suspension" : "Deactivation"}
+                  Confirm {modalAction === "SUSPEND" ? "Suspension" : "Deactivation"}
                 </button>
               </div>
             </div>

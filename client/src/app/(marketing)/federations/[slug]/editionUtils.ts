@@ -81,7 +81,7 @@ export function ageGroupRank(label: string): number {
 /** Age groups offered by the data, ordered youngest-first with adult categories last. */
 export function sortedAgeGroups(editions: TournamentEdition[]): string[] {
   return Array.from(new Set(editions.flatMap((e) => e.ageGroups ?? []))).sort(
-    (a, b) => ageGroupRank(a) - ageGroupRank(b) || a.localeCompare(b),
+    (a, b) => ageGroupRank(a) - ageGroupRank(b) || a.localeCompare(b)
   );
 }
 

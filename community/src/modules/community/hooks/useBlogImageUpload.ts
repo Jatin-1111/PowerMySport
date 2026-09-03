@@ -46,9 +46,7 @@ const putToS3 = async (uploadUrl: string, file: File) => {
  * S3 object key and a local blob preview URL (caller revokes it once the
  * real URL is available).
  */
-export async function uploadBlogImage(
-  file: File,
-): Promise<BlogImageUploadResult> {
+export async function uploadBlogImage(file: File): Promise<BlogImageUploadResult> {
   validateFile(file);
   const { uploadUrl, key } = await blogService.getImageUploadUrl(file.type);
   await putToS3(uploadUrl, file);
@@ -66,13 +64,9 @@ export interface InlineBlogImageUploadResult {
  * image keeps rendering across reloads/edit sessions until the server
  * re-signs it fresh from the persisted `data-key` on next read.
  */
-export async function uploadInlineBlogImage(
-  file: File,
-): Promise<InlineBlogImageUploadResult> {
+export async function uploadInlineBlogImage(file: File): Promise<InlineBlogImageUploadResult> {
   validateFile(file);
-  const { uploadUrl, downloadUrl, key } = await blogService.getImageUploadUrl(
-    file.type,
-  );
+  const { uploadUrl, downloadUrl, key } = await blogService.getImageUploadUrl(file.type);
   await putToS3(uploadUrl, file);
   return { key, url: downloadUrl };
 }

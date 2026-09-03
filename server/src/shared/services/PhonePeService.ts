@@ -93,11 +93,13 @@ const PHONEPE_ERROR_MAP: Record<string, PhonePeErrorMapping> = {
     statusCode: 409,
   },
   BF_034: {
-    userMessage: "PhonePe does not have sufficient balance to process this refund. Please contact support.",
+    userMessage:
+      "PhonePe does not have sufficient balance to process this refund. Please contact support.",
     statusCode: 502,
   },
   REFUND_FOR_TXN_OLDER_THAN_LIMIT: {
-    userMessage: "Refund cannot be initiated — the transaction is older than PhonePe's 90-day refund window.",
+    userMessage:
+      "Refund cannot be initiated — the transaction is older than PhonePe's 90-day refund window.",
     statusCode: 400,
   },
 
@@ -139,8 +141,14 @@ const PHONEPE_ERROR_MAP: Record<string, PhonePeErrorMapping> = {
   Z6: { userMessage: "Payment failed — daily transaction limit exceeded.", statusCode: 402 },
   Z7: { userMessage: "Payment failed — per-transaction limit exceeded.", statusCode: 402 },
   Z8: { userMessage: "Payment failed — transaction limit exceeded.", statusCode: 402 },
-  TXN_LIMIT_BREACHED: { userMessage: "Payment failed — transaction limit exceeded.", statusCode: 402 },
-  WITHDRAWAL_LIMIT_EXCEEDED: { userMessage: "Payment failed — bank withdrawal limit exceeded.", statusCode: 402 },
+  TXN_LIMIT_BREACHED: {
+    userMessage: "Payment failed — transaction limit exceeded.",
+    statusCode: 402,
+  },
+  WITHDRAWAL_LIMIT_EXCEEDED: {
+    userMessage: "Payment failed — bank withdrawal limit exceeded.",
+    statusCode: 402,
+  },
 
   // --- Merchant security blocks ---
   INTERNAL_SECURITY_BLOCK_1: {
@@ -157,11 +165,31 @@ const PHONEPE_ERROR_MAP: Record<string, PhonePeErrorMapping> = {
   },
 
   // --- Transient bank / gateway errors (retryable) ---
-  UT: { userMessage: "Payment failed — bank is temporarily unavailable.", statusCode: 503, retryable: true },
-  U28: { userMessage: "Payment failed — bank is temporarily unavailable.", statusCode: 503, retryable: true },
-  U03: { userMessage: "Payment failed — bank is temporarily unavailable.", statusCode: 503, retryable: true },
-  XB: { userMessage: "Payment failed — bank is temporarily unavailable.", statusCode: 503, retryable: true },
-  YE: { userMessage: "Payment failed — bank is temporarily unavailable.", statusCode: 503, retryable: true },
+  UT: {
+    userMessage: "Payment failed — bank is temporarily unavailable.",
+    statusCode: 503,
+    retryable: true,
+  },
+  U28: {
+    userMessage: "Payment failed — bank is temporarily unavailable.",
+    statusCode: 503,
+    retryable: true,
+  },
+  U03: {
+    userMessage: "Payment failed — bank is temporarily unavailable.",
+    statusCode: 503,
+    retryable: true,
+  },
+  XB: {
+    userMessage: "Payment failed — bank is temporarily unavailable.",
+    statusCode: 503,
+    retryable: true,
+  },
+  YE: {
+    userMessage: "Payment failed — bank is temporarily unavailable.",
+    statusCode: 503,
+    retryable: true,
+  },
   REQUEST_TIME_OUT: {
     userMessage: "PhonePe request timed out. Please try again.",
     statusCode: 504,
@@ -214,14 +242,10 @@ export class PhonePeGatewayError extends Error {
   }
 }
 
-export const isPhonePeGatewayError = (
-  error: unknown,
-): error is PhonePeGatewayError => error instanceof PhonePeGatewayError;
+export const isPhonePeGatewayError = (error: unknown): error is PhonePeGatewayError =>
+  error instanceof PhonePeGatewayError;
 
-const toPhonePeGatewayError = (
-  operation: string,
-  error: unknown,
-): PhonePeGatewayError => {
+const toPhonePeGatewayError = (operation: string, error: unknown): PhonePeGatewayError => {
   const typedError = error as {
     code?: unknown;
     message?: unknown;
@@ -242,8 +266,7 @@ const toPhonePeGatewayError = (
   };
 
   const providerMessage =
-    (typeof typedError.response?.data?.message === "string" &&
-      typedError.response.data.message) ||
+    (typeof typedError.response?.data?.message === "string" && typedError.response.data.message) ||
     (typeof typedError.message === "string" && typedError.message) ||
     "Unknown PhonePe error";
 
@@ -276,7 +299,9 @@ const resetPhonePeSDKClient = (): void => {
   // cause the auth retry to fail with the same bad token).
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { TokenService } = require("@phonepe-pg/pg-sdk-node/dist/common/tokenhandler/TokenService");
+    const {
+      TokenService,
+    } = require("@phonepe-pg/pg-sdk-node/dist/common/tokenhandler/TokenService");
     TokenService.oAuthResponse = null;
   } catch {
     // Internal module path changed in an SDK update — non-fatal; token will refresh naturally
@@ -289,7 +314,7 @@ const resetPhonePeSDKClient = (): void => {
 
 const executePhonePeRequest = async <T>(
   operation: string,
-  executor: () => Promise<T>,
+  executor: () => Promise<T>
 ): Promise<T> => {
   try {
     return await executor();
@@ -319,7 +344,7 @@ const getPhonePeConfig = () => {
 
   if (!clientId || !clientSecret || !clientVersion) {
     throw new Error(
-      "PhonePe credentials are not configured (PHONEPE_CLIENT_ID, PHONEPE_CLIENT_SECRET, PHONEPE_CLIENT_VERSION)",
+      "PhonePe credentials are not configured (PHONEPE_CLIENT_ID, PHONEPE_CLIENT_SECRET, PHONEPE_CLIENT_VERSION)"
     );
   }
 
@@ -337,21 +362,13 @@ const getPhonePeClient = (): StandardCheckoutClient => {
   const configKey = `${clientId}:${clientVersion}:${env}`;
   const now = Date.now();
 
-  if (
-    cachedClient &&
-    (cachedConfigKey !== configKey || now - clientCreatedAt > CLIENT_TTL_MS)
-  ) {
+  if (cachedClient && (cachedConfigKey !== configKey || now - clientCreatedAt > CLIENT_TTL_MS)) {
     cachedClient = null;
     cachedConfigKey = null;
   }
 
   if (!cachedClient) {
-    cachedClient = StandardCheckoutClient.getInstance(
-      clientId,
-      clientSecret,
-      clientVersion,
-      env,
-    );
+    cachedClient = StandardCheckoutClient.getInstance(clientId, clientSecret, clientVersion, env);
     cachedConfigKey = configKey;
     clientCreatedAt = now;
   }
@@ -413,7 +430,7 @@ export const initiatePhonePePayment = async (payload: {
   const request = buildPayRequest(payload);
 
   const response = await executePhonePeRequest("initiate payment", () =>
-    getPhonePeClient().pay(request),
+    getPhonePeClient().pay(request)
   );
   const redirectUrl = response.redirectUrl;
 
@@ -430,10 +447,10 @@ export const initiatePhonePePayment = async (payload: {
 };
 
 export const getPhonePeOrderStatus = async (
-  merchantOrderId: string,
+  merchantOrderId: string
 ): Promise<PhonePeOrderStatusResult> => {
   const response = await executePhonePeRequest("fetch order status", () =>
-    getPhonePeClient().getOrderStatus(merchantOrderId),
+    getPhonePeClient().getOrderStatus(merchantOrderId)
   );
 
   return {
@@ -446,7 +463,7 @@ export const getPhonePeOrderStatus = async (
 
 export const validatePhonePeCallback = (
   authorizationHeader: string,
-  bodyString: string,
+  bodyString: string
 ): PhonePeCallbackResult => {
   const client = getPhonePeClient();
   const username = process.env.PHONEPE_CALLBACK_USERNAME || "";
@@ -454,18 +471,16 @@ export const validatePhonePeCallback = (
 
   if (!username || !password) {
     throw new Error(
-      "PhonePe callback credentials not configured (PHONEPE_CALLBACK_USERNAME, PHONEPE_CALLBACK_PASSWORD)",
+      "PhonePe callback credentials not configured (PHONEPE_CALLBACK_USERNAME, PHONEPE_CALLBACK_PASSWORD)"
     );
   }
 
   let response: { type?: unknown; payload?: unknown };
   try {
-    response = client.validateCallback(
-      username,
-      password,
-      authorizationHeader,
-      bodyString,
-    ) as { type?: unknown; payload?: unknown };
+    response = client.validateCallback(username, password, authorizationHeader, bodyString) as {
+      type?: unknown;
+      payload?: unknown;
+    };
   } catch (error) {
     throw toPhonePeGatewayError("validate callback", error);
   }
@@ -481,9 +496,7 @@ const buildRefundRequest = (payload: {
   originalMerchantOrderId: string;
   amount: number;
 }): any => {
-  const builder =
-    (RefundRequest as any).builder?.() ||
-    (RefundRequest as any).build_request?.();
+  const builder = (RefundRequest as any).builder?.() || (RefundRequest as any).build_request?.();
 
   if (!builder) {
     throw new Error("PhonePe SDK refund builder not available");
@@ -505,25 +518,22 @@ export const initiatePhonePeRefund = async (payload: {
   const env = (process.env.PHONEPE_ENV || "SANDBOX").toUpperCase();
   const clientId = process.env.PHONEPE_CLIENT_ID || "(not set)";
   log.info(
-    `[PhonePe] initiateRefund env=${env} clientId=${clientId} merchantRefundId=${payload.merchantRefundId} originalMerchantOrderId=${payload.originalMerchantOrderId} amountRupees=${payload.amount} amountPaise=${Math.round(payload.amount * 100)}`,
+    `[PhonePe] initiateRefund env=${env} clientId=${clientId} merchantRefundId=${payload.merchantRefundId} originalMerchantOrderId=${payload.originalMerchantOrderId} amountRupees=${payload.amount} amountPaise=${Math.round(payload.amount * 100)}`
   );
 
   const request = buildRefundRequest(payload);
   let response: any;
   try {
     response = await executePhonePeRequest("initiate refund", () =>
-      getPhonePeClient().refund(request),
+      getPhonePeClient().refund(request)
     );
   } catch (err) {
-    log.error(
-      `[PhonePe] initiateRefund FAILED merchantRefundId=${payload.merchantRefundId}`,
-      err,
-    );
+    log.error(`[PhonePe] initiateRefund FAILED merchantRefundId=${payload.merchantRefundId}`, err);
     throw err;
   }
 
   log.info(
-    `[PhonePe] initiateRefund SUCCESS merchantRefundId=${payload.merchantRefundId} refundId=${response.refundId} state=${response.state} amount=${response.amount}`,
+    `[PhonePe] initiateRefund SUCCESS merchantRefundId=${payload.merchantRefundId} refundId=${response.refundId} state=${response.state} amount=${response.amount}`
   );
 
   return {
@@ -535,10 +545,10 @@ export const initiatePhonePeRefund = async (payload: {
 };
 
 export const getPhonePeRefundStatus = async (
-  merchantRefundId: string,
+  merchantRefundId: string
 ): Promise<PhonePeRefundStatusResult> => {
   const response = (await executePhonePeRequest("fetch refund status", () =>
-    (getPhonePeClient() as any).getRefundStatus(merchantRefundId),
+    (getPhonePeClient() as any).getRefundStatus(merchantRefundId)
   )) as {
     refundId?: string;
     merchantRefundId?: string;

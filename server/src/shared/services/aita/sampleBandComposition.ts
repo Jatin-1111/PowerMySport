@@ -77,7 +77,7 @@ export interface SampleCandidate {
  */
 export function pickCompositionSample(
   candidates: SampleCandidate[],
-  perBand: number = MAX_SAMPLE_PER_BAND,
+  perBand: number = MAX_SAMPLE_PER_BAND
 ): SampleCandidate[] {
   if (perBand < 1) return [];
 
@@ -129,7 +129,7 @@ export async function sampleBandComposition(
   snapshotId: unknown,
   list: AitaList,
   wid: number,
-  options: { perBand?: number; source?: AitaRankingSource } = {},
+  options: { perBand?: number; source?: AitaRankingSource } = {}
 ): Promise<SampleReport> {
   const source = options.source ?? aitaRankingSource;
   const perBand = options.perBand ?? MAX_SAMPLE_PER_BAND;
@@ -165,7 +165,7 @@ export async function sampleBandComposition(
         list,
         wid,
         candidate.playerKey,
-        candidate.rank,
+        candidate.rank
       );
       breakdown = parsePointBreakdown(fragment);
     } catch (error) {
@@ -175,7 +175,7 @@ export async function sampleBandComposition(
       report.failed += 1;
       logger.warn(
         `[aita-band-sample] ${list.code} rank ${candidate.rank} failed:`,
-        error instanceof Error ? error.message : error,
+        error instanceof Error ? error.message : error
       );
       continue;
     }
@@ -265,7 +265,7 @@ export async function sampleBandComposition(
   logger.info(
     `[aita-band-sample] ${list.code}: sampled ${report.fetched}/${report.requested}` +
       `${report.failed > 0 ? `, ${report.failed} failed` : ""}` +
-      `${report.unreconciled > 0 ? `, ${report.unreconciled} did not reconcile` : ""}`,
+      `${report.unreconciled > 0 ? `, ${report.unreconciled} did not reconcile` : ""}`
   );
   return report;
 }

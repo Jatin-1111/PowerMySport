@@ -44,10 +44,7 @@ before(async () => {
   memoryServer = await MongoMemoryServer.create();
   await mongoose.connect(memoryServer.getUri());
   // Text indexes are declared on the schemas; build them before searching.
-  await Promise.all([
-    CommunityPost.syncIndexes(),
-    BlogPost.syncIndexes(),
-  ]);
+  await Promise.all([CommunityPost.syncIndexes(), BlogPost.syncIndexes()]);
 });
 
 after(async () => {
@@ -56,23 +53,17 @@ after(async () => {
 });
 
 beforeEach(async () => {
-  await Promise.all([
-    CommunityPost.deleteMany({}),
-    BlogPost.deleteMany({}),
-  ]);
+  await Promise.all([CommunityPost.deleteMany({}), BlogPost.deleteMany({})]);
 });
 
 describe("community search", () => {
   it("finds a question by a word in its body", async () => {
     await seedPost(
       "Racket advice for a beginner",
-      "We are looking at a graphite frame for a nine year old.",
+      "We are looking at a graphite frame for a nine year old."
     );
 
-    const { items } = await CommunityService.searchCommunity(
-      undefined,
-      "graphite",
-    );
+    const { items } = await CommunityService.searchCommunity(undefined, "graphite");
     assert.equal(items.length, 1);
     assert.equal(items[0].kind, "POST");
   });
@@ -81,13 +72,10 @@ describe("community search", () => {
     await seedBlog(
       "A season of small wins",
       "Notes from a year on court",
-      "<p>The turning point was a drill we called the ladder shuffle.</p>",
+      "<p>The turning point was a drill we called the ladder shuffle.</p>"
     );
 
-    const { items } = await CommunityService.searchCommunity(
-      undefined,
-      "ladder shuffle",
-    );
+    const { items } = await CommunityService.searchCommunity(undefined, "ladder shuffle");
     // The old index covered title/excerpt/tags only, so this found nothing.
     assert.equal(items.length, 1);
     assert.equal(items[0].kind, "BLOG");
@@ -98,13 +86,10 @@ describe("community search", () => {
     await seedBlog(
       "Badminton beginnings",
       "How we started with badminton",
-      "<p>Badminton was the sport that stuck.</p>",
+      "<p>Badminton was the sport that stuck.</p>"
     );
 
-    const { items } = await CommunityService.searchCommunity(
-      undefined,
-      "badminton",
-    );
+    const { items } = await CommunityService.searchCommunity(undefined, "badminton");
     const kinds = new Set(items.map((item: { kind: string }) => item.kind));
     assert.ok(kinds.has("POST"));
     assert.ok(kinds.has("BLOG"));
@@ -115,7 +100,7 @@ describe("community search", () => {
     await seedBlog(
       "Badminton beginnings",
       "How we started with badminton",
-      "<p>Badminton was the sport that stuck.</p>",
+      "<p>Badminton was the sport that stuck.</p>"
     );
 
     const posts = await CommunityService.searchCommunity(undefined, "badminton", {
@@ -159,25 +144,19 @@ describe("community search", () => {
     await seedBlog(
       "Formatting heavy story",
       "",
-      "<p>The <strong>ladder shuffle</strong> drill&nbsp;worked.</p>",
+      "<p>The <strong>ladder shuffle</strong> drill&nbsp;worked.</p>"
     );
 
-    const { items } = await CommunityService.searchCommunity(
-      undefined,
-      "ladder shuffle",
-    );
+    const { items } = await CommunityService.searchCommunity(undefined, "ladder shuffle");
     assert.ok(!items[0].snippet.includes("<"), "snippet must not carry markup");
     assert.ok(items[0].snippet.includes("ladder shuffle"));
   });
 
   it("marks a solved question in the results", async () => {
-    const post = await seedPost(
-      "Solved racket question",
-      "A racket question that got answered.",
-    );
+    const post = await seedPost("Solved racket question", "A racket question that got answered.");
     await CommunityPost.updateOne(
       { _id: post._id },
-      { $set: { acceptedAnswerId: new mongoose.Types.ObjectId() } },
+      { $set: { acceptedAnswerId: new mongoose.Types.ObjectId() } }
     );
 
     const { items } = await CommunityService.searchCommunity(undefined, "racket");
@@ -199,7 +178,7 @@ describe("community search", () => {
     assert.ok(items.length > 0, "questions should still come back");
     assert.ok(
       items.every((item: { kind: string }) => item.kind === "POST"),
-      "only questions can answer while the blog index is gone",
+      "only questions can answer while the blog index is gone"
     );
 
     await BlogPost.syncIndexes();
@@ -222,7 +201,7 @@ describe("migration 27: widen the blog text index", () => {
     const indexes = await BlogPost.collection.indexes();
     return indexes
       .filter((index: { key: Record<string, unknown> }) =>
-        Object.values(index.key || {}).includes("text"),
+        Object.values(index.key || {}).includes("text")
       )
       .map((index: { name: string }) => index.name);
   };

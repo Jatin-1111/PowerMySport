@@ -9,13 +9,9 @@ const { after, before, beforeEach, describe, it } = require("node:test");
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
-const {
-  CommunityConversation,
-} = require("../community/models/CommunityConversation");
+const { CommunityConversation } = require("../community/models/CommunityConversation");
 const { CommunityMessage } = require("../community/models/CommunityMessage");
-const {
-  CommunityMessageReaction,
-} = require("../community/models/CommunityMessageReaction");
+const { CommunityMessageReaction } = require("../community/models/CommunityMessageReaction");
 const { CommunityProfile } = require("../community/models/CommunityProfile");
 const { CommunityService } = require("../community/services/CommunityService");
 const { User } = require("../client/models/User");
@@ -75,7 +71,7 @@ const setup = async () => {
   const message = await CommunityService.sendMessage(
     a,
     conversationId,
-    "Courts are booked for six.",
+    "Courts are booked for six."
   );
   return { a, b, conversationId, message };
 };
@@ -110,10 +106,7 @@ describe("reacting to a message", () => {
     // One reaction per person: the old one must not linger alongside the new.
     assert.equal(result.reactions.length, 1);
     assert.equal(result.reactions[0].emoji, "🎉");
-    assert.equal(
-      await CommunityMessageReaction.countDocuments({ messageId: message.id }),
-      1,
-    );
+    assert.equal(await CommunityMessageReaction.countDocuments({ messageId: message.id }), 1);
   });
 
   it("groups the same emoji from different people", async () => {
@@ -148,7 +141,7 @@ describe("reacting to a message", () => {
     // Reacting is participation, so it needs the same gate as reading.
     await assert.rejects(
       () => CommunityService.reactToMessage(outsider, message.id, "👍"),
-      /denied|not found|access/i,
+      /denied|not found|access/i
     );
   });
 
@@ -157,7 +150,7 @@ describe("reacting to a message", () => {
 
     await assert.rejects(
       () => CommunityService.reactToMessage(b, message.id, "   "),
-      /emoji is required/i,
+      /emoji is required/i
     );
   });
 
@@ -167,7 +160,7 @@ describe("reacting to a message", () => {
 
     await assert.rejects(
       () => CommunityService.reactToMessage(b, message.id, "👍"),
-      /Message not found/,
+      /Message not found/
     );
   });
 
@@ -178,10 +171,7 @@ describe("reacting to a message", () => {
     await CommunityService.deleteMessage(a, message.id);
 
     // Otherwise a row of emoji sits under "This message was deleted".
-    assert.equal(
-      await CommunityMessageReaction.countDocuments({ messageId: message.id }),
-      0,
-    );
+    assert.equal(await CommunityMessageReaction.countDocuments({ messageId: message.id }), 0);
   });
 
   it("keeps one row per person even under a double tap", async () => {

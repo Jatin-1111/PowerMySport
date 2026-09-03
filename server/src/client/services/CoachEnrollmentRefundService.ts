@@ -46,7 +46,7 @@ export interface EnrollmentRefundResult {
  */
 const refundableAmountPaise = async (
   enrollmentId: mongoose.Types.ObjectId,
-  owedPaise: number,
+  owedPaise: number
 ): Promise<{ transaction: any; amountPaise: number } | null> => {
   const transaction = await CoachSubscriptionPaymentTransaction.findOne({
     enrollmentId,
@@ -82,10 +82,7 @@ export const refundUnusedCreditsForEnrollment = async (params: {
     return { status: "NOTHING_OWED", amountPaise: 0, creditCount: 0 };
   }
 
-  const refundable = await refundableAmountPaise(
-    enrollmentId,
-    frozen.amountPaise,
-  );
+  const refundable = await refundableAmountPaise(enrollmentId, frozen.amountPaise);
 
   if (!refundable) {
     // No settled payment to refund against — a comped or manually-created
@@ -93,7 +90,7 @@ export const refundUnusedCreditsForEnrollment = async (params: {
     // being frozen forever with nothing chasing it.
     await unfreezeCreditsForRefund({ enrollmentId });
     log.warn(
-      `refundUnusedCreditsForEnrollment: no completed payment for enrolment ${enrollmentId.toString()}`,
+      `refundUnusedCreditsForEnrollment: no completed payment for enrolment ${enrollmentId.toString()}`
     );
     return {
       status: "NO_PAYMENT_FOUND",
@@ -128,7 +125,7 @@ export const refundUnusedCreditsForEnrollment = async (params: {
 
     log.info(
       `refundUnusedCreditsForEnrollment: refunded ${refundable.amountPaise} paise ` +
-        `across ${frozen.count} credit(s) for enrolment ${enrollmentId.toString()}`,
+        `across ${frozen.count} credit(s) for enrolment ${enrollmentId.toString()}`
     );
 
     return {
@@ -140,10 +137,7 @@ export const refundUnusedCreditsForEnrollment = async (params: {
   } catch (error) {
     // Credits stay REFUND_PENDING on purpose: the claim survives, the expiry
     // sweep cannot touch it, and `retryPendingEnrollmentRefunds` will try again.
-    log.error(
-      `refundUnusedCreditsForEnrollment failed for ${enrollmentId.toString()}:`,
-      error,
-    );
+    log.error(`refundUnusedCreditsForEnrollment failed for ${enrollmentId.toString()}:`, error);
     return {
       status: "FAILED",
       amountPaise: refundable.amountPaise,
@@ -160,16 +154,16 @@ export const refundUnusedCreditsForEnrollment = async (params: {
  * Without this a gateway outage at the moment someone cancelled would leave
  * their money permanently unclaimed.
  */
-export const retryPendingEnrollmentRefunds = async (params: {
-  limit?: number;
-} = {}): Promise<{ attempted: number; refunded: number }> => {
-  const stuck = await CoachSessionCredit.aggregate<{ _id: mongoose.Types.ObjectId }>(
-    [
-      { $match: { status: "REFUND_PENDING" } },
-      { $group: { _id: "$enrollmentId" } },
-      { $limit: params.limit ?? 25 },
-    ],
-  );
+export const retryPendingEnrollmentRefunds = async (
+  params: {
+    limit?: number;
+  } = {}
+): Promise<{ attempted: number; refunded: number }> => {
+  const stuck = await CoachSessionCredit.aggregate<{ _id: mongoose.Types.ObjectId }>([
+    { $match: { status: "REFUND_PENDING" } },
+    { $group: { _id: "$enrollmentId" } },
+    { $limit: params.limit ?? 25 },
+  ]);
 
   let refunded = 0;
   for (const row of stuck) {
@@ -184,9 +178,7 @@ export const retryPendingEnrollmentRefunds = async (params: {
   }
 
   if (stuck.length > 0) {
-    log.info(
-      `retryPendingEnrollmentRefunds: retried ${stuck.length}, refunded ${refunded}`,
-    );
+    log.info(`retryPendingEnrollmentRefunds: retried ${stuck.length}, refunded ${refunded}`);
   }
 
   return { attempted: stuck.length, refunded };
@@ -194,7 +186,7 @@ export const retryPendingEnrollmentRefunds = async (params: {
 
 /** What a student would get back if they left right now. */
 export const previewEnrollmentRefund = async (
-  enrollmentId: mongoose.Types.ObjectId,
+  enrollmentId: mongoose.Types.ObjectId
 ): Promise<{ amountPaise: number; creditCount: number }> => {
   const rows = await CoachSessionCredit.aggregate<{
     count: number;
@@ -224,6 +216,5 @@ export const previewEnrollmentRefund = async (
 
 export const enrollmentOwnedBy = async (
   enrollmentId: mongoose.Types.ObjectId,
-  userId: mongoose.Types.ObjectId,
-): Promise<boolean> =>
-  Boolean(await CoachEnrollment.exists({ _id: enrollmentId, userId }));
+  userId: mongoose.Types.ObjectId
+): Promise<boolean> => Boolean(await CoachEnrollment.exists({ _id: enrollmentId, userId }));

@@ -26,17 +26,15 @@ const debugVenueImages = async () => {
 
     for (const venue of venues) {
       console.log(`📍 ${venue.name}`);
+      console.log(`  images: ${Array.isArray(venue.images) ? venue.images.length : "N/A"} items`);
       console.log(
-        `  images: ${Array.isArray(venue.images) ? venue.images.length : "N/A"} items`,
+        `  imageKeys: ${Array.isArray(venue.imageKeys) ? venue.imageKeys.length : "N/A"} items`
       );
       console.log(
-        `  imageKeys: ${Array.isArray(venue.imageKeys) ? venue.imageKeys.length : "N/A"} items`,
+        `  generalImages: ${Array.isArray(venue.generalImages) ? venue.generalImages.length : "N/A"} items`
       );
       console.log(
-        `  generalImages: ${Array.isArray(venue.generalImages) ? venue.generalImages.length : "N/A"} items`,
-      );
-      console.log(
-        `  generalImageKeys: ${Array.isArray(venue.generalImageKeys) ? venue.generalImageKeys.length : "N/A"} items`,
+        `  generalImageKeys: ${Array.isArray(venue.generalImageKeys) ? venue.generalImageKeys.length : "N/A"} items`
       );
 
       if (venue.sportImages) {

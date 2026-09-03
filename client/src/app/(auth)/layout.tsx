@@ -15,17 +15,13 @@ const features = [
   { Icon: Sparkles, text: "AI guidance at every decision point" },
 ];
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-white dark:bg-slate-950 lg:grid-cols-2">
+    <div className="grid min-h-screen grid-cols-1 bg-white lg:grid-cols-2 dark:bg-slate-950">
       {/* ── LEFT: Image panel (desktop only) ──────────────────── */}
       <div className="hidden lg:block">
         <div className="sticky top-0 h-screen p-4">
-          <div className="relative flex h-full flex-col overflow-hidden rounded-[1.75rem] bg-deep-slate">
+          <div className="bg-deep-slate relative flex h-full flex-col overflow-hidden rounded-[1.75rem]">
             <Image
               src={stadiumNight}
               alt="Floodlit stadium under a night sky"
@@ -39,11 +35,11 @@ export default function AuthLayout({
             {/* Scrims for text legibility */}
             <div
               aria-hidden="true"
-              className="absolute inset-0 bg-gradient-to-t from-deep-slate via-deep-slate/30 to-transparent"
+              className="from-deep-slate via-deep-slate/30 absolute inset-0 bg-gradient-to-t to-transparent"
             />
             <div
               aria-hidden="true"
-              className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-deep-slate/70 to-transparent"
+              className="from-deep-slate/70 absolute inset-x-0 top-0 h-40 bg-gradient-to-b to-transparent"
             />
 
             {/* Logo */}
@@ -54,12 +50,12 @@ export default function AuthLayout({
               transition={{ duration: 0.55, ease: "easeOut" }}
             >
               <Link href="/" className="group inline-flex flex-col gap-1">
-                <span className="font-title text-2xl font-black leading-none tracking-tight">
+                <span className="font-title text-2xl leading-none font-black tracking-tight">
                   <span className="text-white">Power</span>
                   <span className="text-power-orange">My</span>
                   <span className="text-white">Sport</span>
                 </span>
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-300/80">
+                <span className="text-[11px] font-medium tracking-[0.18em] text-slate-300/80 uppercase">
                   Guiding Every Sporting Journey
                 </span>
               </Link>
@@ -73,16 +69,15 @@ export default function AuthLayout({
               transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
             >
               <h2
-                className="max-w-md font-title text-[2.5rem] font-black leading-[1.08] text-white"
+                className="font-title max-w-md text-[2.5rem] leading-[1.08] font-black text-white"
                 style={{ textWrap: "balance" } as React.CSSProperties}
               >
                 The trusted guide for{" "}
                 <span className="text-power-orange">every sports parent.</span>
               </h2>
               <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-slate-200/85">
-                Personalised pathways, expert guidance, and a trusted community
-                — everything you need to navigate your child&apos;s sporting
-                journey with confidence.
+                Personalised pathways, expert guidance, and a trusted community — everything you
+                need to navigate your child&apos;s sporting journey with confidence.
               </p>
 
               <ul className="mt-8 space-y-3">
@@ -97,9 +92,7 @@ export default function AuthLayout({
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 backdrop-blur-md">
                       <f.Icon className="h-4 w-4 text-white" />
                     </span>
-                    <span className="text-sm font-medium text-slate-100/90">
-                      {f.text}
-                    </span>
+                    <span className="text-sm font-medium text-slate-100/90">{f.text}</span>
                   </motion.li>
                 ))}
               </ul>
@@ -114,7 +107,7 @@ export default function AuthLayout({
         <div className="flex items-center justify-between px-6 pt-6 sm:px-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 py-1.5 pl-3 pr-4 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-white"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 py-1.5 pr-4 pl-3 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
             Back

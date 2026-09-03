@@ -9,9 +9,7 @@ type DropdownContextType = {
   toggle: () => void;
 };
 
-const DropdownContext = React.createContext<DropdownContextType | undefined>(
-  undefined,
-);
+const DropdownContext = React.createContext<DropdownContextType | undefined>(undefined);
 
 const useDropdownContext = () => {
   const context = React.useContext(DropdownContext);
@@ -33,18 +31,17 @@ const DropdownMenu = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-const DropdownMenuTrigger = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ children, ...props }, ref) => {
-  const { toggle } = useDropdownContext();
+const DropdownMenuTrigger = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ children, ...props }, ref) => {
+    const { toggle } = useDropdownContext();
 
-  return (
-    <div ref={ref} onClick={toggle} {...props}>
-      {children}
-    </div>
-  );
-});
+    return (
+      <div ref={ref} onClick={toggle} {...props}>
+        {children}
+      </div>
+    );
+  }
+);
 DropdownMenuTrigger.displayName = "DropdownMenuTrigger";
 
 const DropdownMenuContent = ({
@@ -61,10 +58,7 @@ const DropdownMenuContent = ({
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        contentRef.current &&
-        !contentRef.current.contains(event.target as Node)
-      ) {
+      if (contentRef.current && !contentRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -86,7 +80,7 @@ const DropdownMenuContent = ({
       className={cn(
         "absolute z-50 mt-2 min-w-32 overflow-hidden rounded-md border border-slate-200 bg-white p-1 shadow-md",
         align === "end" ? "right-0" : "left-0",
-        className,
+        className
       )}
     >
       {children}
@@ -114,8 +108,8 @@ const DropdownMenuItem = ({
     <div
       onClick={handleClick}
       className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-slate-100 focus:bg-slate-100",
-        className,
+        "relative flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm transition-colors outline-none select-none hover:bg-slate-100 focus:bg-slate-100",
+        className
       )}
     >
       {children}
@@ -123,7 +117,4 @@ const DropdownMenuItem = ({
   );
 };
 
-export {
-    DropdownMenu, DropdownMenuContent,
-    DropdownMenuItem, DropdownMenuTrigger
-};
+export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger };

@@ -16,23 +16,17 @@ const toObjectId = (value: string) => new mongoose.Types.ObjectId(value);
 
 export const getMemberRole = async (
   groupId: string,
-  userId: string,
+  userId: string
 ): Promise<CommunityGroupMemberRole | null> => {
-  const row = await CommunityGroupMember.findOne({ groupId, userId })
-    .select("role")
-    .lean();
+  const row = await CommunityGroupMember.findOne({ groupId, userId }).select("role").lean();
   return (row?.role as CommunityGroupMemberRole) || null;
 };
 
-export const isGroupMember = async (
-  groupId: string,
-  userId: string,
-): Promise<boolean> => Boolean(await getMemberRole(groupId, userId));
+export const isGroupMember = async (groupId: string, userId: string): Promise<boolean> =>
+  Boolean(await getMemberRole(groupId, userId));
 
-export const isGroupAdmin = async (
-  groupId: string,
-  userId: string,
-): Promise<boolean> => (await getMemberRole(groupId, userId)) === "ADMIN";
+export const isGroupAdmin = async (groupId: string, userId: string): Promise<boolean> =>
+  (await getMemberRole(groupId, userId)) === "ADMIN";
 
 export const listMemberIds = async (groupId: string): Promise<string[]> => {
   const rows = await CommunityGroupMember.find({ groupId })
@@ -43,9 +37,7 @@ export const listMemberIds = async (groupId: string): Promise<string[]> => {
 };
 
 export const listAdminIds = async (groupId: string): Promise<string[]> => {
-  const rows = await CommunityGroupMember.find({ groupId, role: "ADMIN" })
-    .select("userId")
-    .lean();
+  const rows = await CommunityGroupMember.find({ groupId, role: "ADMIN" }).select("userId").lean();
   return rows.map((row) => String(row.userId));
 };
 
@@ -59,7 +51,7 @@ export const countMembers = async (groupId: string): Promise<number> =>
  */
 export const membershipMapFor = async (
   userId: string | undefined,
-  groupIds: string[],
+  groupIds: string[]
 ): Promise<Map<string, CommunityGroupMemberRole>> => {
   if (!userId || groupIds.length === 0) {
     return new Map();
@@ -72,18 +64,11 @@ export const membershipMapFor = async (
     .select("groupId role")
     .lean();
 
-  return new Map(
-    rows.map((row) => [
-      String(row.groupId),
-      row.role as CommunityGroupMemberRole,
-    ]),
-  );
+  return new Map(rows.map((row) => [String(row.groupId), row.role as CommunityGroupMemberRole]));
 };
 
 /** Group ids the user belongs to, newest membership first. */
-export const listGroupIdsForUser = async (
-  userId: string,
-): Promise<string[]> => {
+export const listGroupIdsForUser = async (userId: string): Promise<string[]> => {
   const rows = await CommunityGroupMember.find({ userId })
     .select("groupId")
     .sort({ createdAt: -1 })
@@ -102,7 +87,7 @@ export const listGroupIdsForUser = async (
 export const addMember = async (
   groupId: string,
   userId: string,
-  role: CommunityGroupMemberRole = "MEMBER",
+  role: CommunityGroupMemberRole = "MEMBER"
 ): Promise<boolean> => {
   const result = await CommunityGroupMember.updateOne(
     { groupId, userId },
@@ -113,25 +98,19 @@ export const addMember = async (
         role,
       },
     },
-    { upsert: true },
+    { upsert: true }
   );
 
   const inserted = Boolean(result.upsertedCount);
   if (inserted) {
-    await CommunityGroup.updateOne(
-      { _id: groupId },
-      { $inc: { memberCount: 1 } },
-    );
+    await CommunityGroup.updateOne({ _id: groupId }, { $inc: { memberCount: 1 } });
   }
 
   return inserted;
 };
 
 /** Removes a membership. Returns false when there was nothing to remove. */
-export const removeMember = async (
-  groupId: string,
-  userId: string,
-): Promise<boolean> => {
+export const removeMember = async (groupId: string, userId: string): Promise<boolean> => {
   const removed = await CommunityGroupMember.findOneAndDelete({
     groupId,
     userId,
@@ -141,10 +120,7 @@ export const removeMember = async (
     return false;
   }
 
-  await CommunityGroup.updateOne(
-    { _id: groupId },
-    { $inc: { memberCount: -1 } },
-  );
+  await CommunityGroup.updateOne({ _id: groupId }, { $inc: { memberCount: -1 } });
 
   return true;
 };
@@ -152,7 +128,7 @@ export const removeMember = async (
 export const setMemberRole = async (
   groupId: string,
   userId: string,
-  role: CommunityGroupMemberRole,
+  role: CommunityGroupMemberRole
 ): Promise<void> => {
   await CommunityGroupMember.updateOne({ groupId, userId }, { $set: { role } });
 };
@@ -176,10 +152,7 @@ export const ensureGroupHasAdmin = async (groupId: string): Promise<void> => {
     .select("_id");
 
   if (fallback) {
-    await CommunityGroupMember.updateOne(
-      { _id: fallback._id },
-      { $set: { role: "ADMIN" } },
-    );
+    await CommunityGroupMember.updateOne({ _id: fallback._id }, { $set: { role: "ADMIN" } });
   }
 };
 

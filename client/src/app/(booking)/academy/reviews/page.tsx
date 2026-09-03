@@ -8,10 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { reviewApi } from "@/modules/review/services/review";
-import {
-    ReviewCard,
-    ReviewSummaryCard,
-} from "@/modules/shared/components/dashboard/reviews";
+import { ReviewCard, ReviewSummaryCard } from "@/modules/shared/components/dashboard/reviews";
 import type { ReviewItem, ReviewSummary, Venue } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -65,30 +62,26 @@ export default function AcademyReviewsPage() {
   }, []);
 
   // ── 2. Fetch reviews for selected venue ───────────────────────────────────
-  const fetchReviews = useCallback(
-    async (venueId: string, pageNum: number, append: boolean) => {
-      try {
-        append ? setLoadingMore(true) : setLoadingReviews(true);
-        const res = await reviewApi.getVenueReviews(venueId, pageNum, LIMIT);
-        if (res.success && res.data) {
-          const { reviews, summary: sum } = res.data;
-          setAllReviews((prev) => (append ? [...prev, ...reviews] : reviews));
-          setSummary(sum);
-          const pagination = (res as { pagination?: { totalPages?: number } })
-            .pagination;
-          setTotalPages(pagination?.totalPages ?? 1);
-        } else {
-          toast.error("Could not load reviews for this venue.");
-        }
-      } catch {
+  const fetchReviews = useCallback(async (venueId: string, pageNum: number, append: boolean) => {
+    try {
+      append ? setLoadingMore(true) : setLoadingReviews(true);
+      const res = await reviewApi.getVenueReviews(venueId, pageNum, LIMIT);
+      if (res.success && res.data) {
+        const { reviews, summary: sum } = res.data;
+        setAllReviews((prev) => (append ? [...prev, ...reviews] : reviews));
+        setSummary(sum);
+        const pagination = (res as { pagination?: { totalPages?: number } }).pagination;
+        setTotalPages(pagination?.totalPages ?? 1);
+      } else {
         toast.error("Could not load reviews for this venue.");
-      } finally {
-        setLoadingMore(false);
-        setLoadingReviews(false);
       }
-    },
-    [],
-  );
+    } catch {
+      toast.error("Could not load reviews for this venue.");
+    } finally {
+      setLoadingMore(false);
+      setLoadingReviews(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!selectedVenueId) return;
@@ -126,7 +119,7 @@ export default function AcademyReviewsPage() {
   if (loadingVenues) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-power-orange" />
+        <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -146,17 +139,15 @@ export default function AcademyReviewsPage() {
               <Building2 className="h-8 w-8 text-orange-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-800">
-                No venues linked yet
-              </h2>
+              <h2 className="text-xl font-bold text-slate-800">No venues linked yet</h2>
               <p className="mt-2 text-sm text-slate-500">
-                Academy reviews are shown per venue. Link venues to your academy
-                to see their reviews here.
+                Academy reviews are shown per venue. Link venues to your academy to see their
+                reviews here.
               </p>
             </div>
             <Link
               href="/academy/venues"
-              className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
             >
               <Building2 size={16} />
               Manage venues
@@ -180,9 +171,7 @@ export default function AcademyReviewsPage() {
           transition={{ duration: 0.45 }}
           className="mb-8"
         >
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            Venue Reviews
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Venue Reviews</h1>
           <p className="mt-1 text-sm text-slate-500">
             See what players are saying about your academy&rsquo;s venues.
           </p>
@@ -198,20 +187,20 @@ export default function AcademyReviewsPage() {
           >
             <label
               htmlFor="venue-select"
-              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500"
+              className="mb-1.5 block text-xs font-semibold tracking-wider text-slate-500 uppercase"
             >
               Select venue
             </label>
             <div className="relative inline-block w-full max-w-sm">
               <Building2
                 size={16}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
               />
               <select
                 id="venue-select"
                 value={selectedVenueId ?? ""}
                 onChange={(e) => setSelectedVenueId(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-10 text-sm font-medium text-slate-700 shadow-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pr-10 pl-9 text-sm font-medium text-slate-700 shadow-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-300 focus:outline-none"
               >
                 {venues.map((v) => (
                   <option key={v.id ?? v._id} value={v.id ?? v._id}>
@@ -221,17 +210,13 @@ export default function AcademyReviewsPage() {
               </select>
               {/* Chevron */}
               <svg
-                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-slate-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 9l-7 7-7-7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </motion.div>
@@ -262,9 +247,7 @@ export default function AcademyReviewsPage() {
             className="mb-4 flex items-center gap-2 text-sm text-slate-500"
           >
             <Building2 size={15} className="text-orange-400" />
-            <span className="font-medium text-slate-700">
-              {selectedVenue.name}
-            </span>
+            <span className="font-medium text-slate-700">{selectedVenue.name}</span>
           </motion.div>
         )}
 
@@ -296,7 +279,7 @@ export default function AcademyReviewsPage() {
         {/* ── Review List ──────────────────────────────────────── */}
         {loadingReviews ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-power-orange" />
+            <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
           </div>
         ) : filteredReviews.length === 0 ? (
           <EmptyState activeFilter={activeFilter} />
@@ -332,9 +315,7 @@ export default function AcademyReviewsPage() {
               disabled={loadingMore}
               className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loadingMore && (
-                <Loader2 size={15} className="animate-spin text-power-orange" />
-              )}
+              {loadingMore && <Loader2 size={15} className="text-power-orange animate-spin" />}
               {loadingMore ? "Loading..." : "Load more reviews"}
             </button>
           </div>
@@ -361,9 +342,7 @@ function EmptyState({ activeFilter }: { activeFilter: FilterTab }) {
       </div>
       <div>
         <p className="font-semibold text-slate-700">
-          {activeFilter === "all"
-            ? "No reviews yet"
-            : `No ${activeFilter}-star reviews`}
+          {activeFilter === "all" ? "No reviews yet" : `No ${activeFilter}-star reviews`}
         </p>
         <p className="mt-1 text-sm text-slate-400">
           {activeFilter === "all"

@@ -70,27 +70,20 @@ export const MyClassesClient = () => {
           Coming up
         </h2>
         {sessions.length === 0 ? (
-          <Card className="p-4 text-sm text-muted-foreground">
-            No classes scheduled right now.
-          </Card>
+          <Card className="text-muted-foreground p-4 text-sm">No classes scheduled right now.</Card>
         ) : (
           <ul className="space-y-2">
             {sessions.slice(0, 8).map((session) => (
               <li key={session.id}>
                 <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
                   <div>
-                    <p className="font-medium">
-                      {formatSessionTime(session.scheduledAt)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="font-medium">{formatSessionTime(session.scheduledAt)}</p>
+                    <p className="text-muted-foreground text-sm">
                       {session.sport}
                       {session.isMakeup ? " · makeup class" : ""}
                     </p>
                   </div>
-                  <ConnectionDetail
-                    delivery={session.delivery}
-                    status={session.status}
-                  />
+                  <ConnectionDetail delivery={session.delivery} status={session.status} />
                 </Card>
               </li>
             ))}
@@ -144,7 +137,7 @@ const EnrollmentCard = ({
     const confirmed = window.confirm(
       unusedClasses > 0
         ? `Leave this programme? ${unusedClasses} unused class${unusedClasses === 1 ? "" : "es"} — ${formatPaise(refundablePaise)} — will be refunded.`
-        : "Leave this programme? You have no unused classes, so there is nothing to refund.",
+        : "Leave this programme? You have no unused classes, so there is nothing to refund."
     );
     if (!confirmed) return;
 
@@ -154,13 +147,11 @@ const EnrollmentCard = ({
       const refund = response.data?.refund;
 
       if (refund?.status === "REFUNDED") {
-        toast.success(
-          `You have left. ${formatPaise(refund.amountPaise)} is on its way back.`,
-        );
+        toast.success(`You have left. ${formatPaise(refund.amountPaise)} is on its way back.`);
       } else if (refund?.status === "FAILED") {
         // Honest: the claim is safe, it just has not settled yet.
         toast.success(
-          "You have left. Your refund could not be sent just now — we will keep trying.",
+          "You have left. Your refund could not be sent just now — we will keep trying."
         );
       } else {
         toast.success("You have left this programme.");
@@ -168,8 +159,8 @@ const EnrollmentCard = ({
       onChanged();
     } catch (error) {
       const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Could not leave this programme";
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not leave this programme";
       toast.error(message);
     } finally {
       setLeaving(false);
@@ -188,8 +179,8 @@ const EnrollmentCard = ({
       window.location.href = redirectUrl;
     } catch (error) {
       const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Could not renew this programme";
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not renew this programme";
       toast.error(message);
     } finally {
       setRenewing(false);
@@ -204,20 +195,16 @@ const EnrollmentCard = ({
           {offering ? (
             <DeliveryBadge
               kind={offering.deliveryKind}
-              {...(offering.onlinePlatform
-                ? { platform: offering.onlinePlatform }
-                : {})}
+              {...(offering.onlinePlatform ? { platform: offering.onlinePlatform } : {})}
             />
           ) : null}
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {enrollment.studentName}
-          {offering
-            ? ` · ${formatSchedule(offering.schedule, offering.timezone)}`
-            : ""}
+          {offering ? ` · ${formatSchedule(offering.schedule, offering.timezone)}` : ""}
         </p>
         {needsRenewal ? (
-          <p className="mt-1 text-sm font-medium text-power-orange">
+          <p className="text-power-orange mt-1 text-sm font-medium">
             Out of classes — renew to keep {enrollment.studentName}&apos;s place
           </p>
         ) : null}
@@ -226,9 +213,7 @@ const EnrollmentCard = ({
       <div className="flex flex-col items-end gap-2">
         <div className="text-right">
           <p className="text-lg font-semibold">{classesLeft}</p>
-          <p className="text-xs text-muted-foreground">
-            class{classesLeft === 1 ? "" : "es"} left
-          </p>
+          <p className="text-muted-foreground text-xs">class{classesLeft === 1 ? "" : "es"} left</p>
         </div>
         <div className="flex gap-2">
           {needsRenewal ? (
@@ -236,12 +221,7 @@ const EnrollmentCard = ({
               Renew
             </Button>
           ) : null}
-          <Button
-            size="sm"
-            variant="ghost"
-            loading={leaving}
-            onClick={leave}
-          >
+          <Button size="sm" variant="ghost" loading={leaving} onClick={leave}>
             Leave
           </Button>
         </div>

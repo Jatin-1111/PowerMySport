@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Heart, Layers } from "lucide-react";
-import {
-  communityFollowStore,
-  CommunityFollowRecord,
-} from "@/modules/community/lib/followStore";
+import { communityFollowStore, CommunityFollowRecord } from "@/modules/community/lib/followStore";
 import { hasAuthToken } from "@/lib/auth/token";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { toast } from "@/lib/toast";
@@ -47,14 +44,8 @@ export default function FollowingPage() {
   // Keeps this list in step if a follow is toggled elsewhere in the tab.
   useEffect(() => communityFollowStore.subscribe(setItems), []);
 
-  const followedGroups = useMemo(
-    () => items.filter((item) => item.kind === "GROUP"),
-    [items],
-  );
-  const followedTopics = useMemo(
-    () => items.filter((item) => item.kind === "TOPIC"),
-    [items],
-  );
+  const followedGroups = useMemo(() => items.filter((item) => item.kind === "GROUP"), [items]);
+  const followedTopics = useMemo(() => items.filter((item) => item.kind === "TOPIC"), [items]);
 
   const remove = async (item: CommunityFollowRecord) => {
     try {
@@ -65,9 +56,7 @@ export default function FollowingPage() {
       setItems(await communityFollowStore.getAll());
       toast.success(`Unfollowed ${item.label}`);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to unfollow",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to unfollow");
     }
   };
 
@@ -86,12 +75,12 @@ export default function FollowingPage() {
           {!isSignedIn ? (
             <div className="mt-4 space-y-3">
               <p className="text-sm text-slate-500">
-                Sign in to see the groups and topics you follow. They are saved
-                to your account, so they follow you across devices.
+                Sign in to see the groups and topics you follow. They are saved to your account, so
+                they follow you across devices.
               </p>
               <button
                 onClick={() => redirectToMainLogin()}
-                className="rounded-lg bg-power-orange px-3 py-2 text-sm font-semibold text-white"
+                className="bg-power-orange rounded-lg px-3 py-2 text-sm font-semibold text-white"
               >
                 Sign in
               </button>
@@ -99,9 +88,7 @@ export default function FollowingPage() {
           ) : isLoading ? (
             <p className="mt-4 text-sm text-slate-500">Loading your follows...</p>
           ) : items.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">
-              No followed items yet.
-            </p>
+            <p className="mt-4 text-sm text-slate-500">No followed items yet.</p>
           ) : (
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -111,18 +98,14 @@ export default function FollowingPage() {
                 </div>
                 <div className="space-y-2">
                   {followedGroups.length === 0 ? (
-                    <p className="text-xs text-slate-500">
-                      No followed groups.
-                    </p>
+                    <p className="text-xs text-slate-500">No followed groups.</p>
                   ) : (
                     followedGroups.map((item) => (
                       <div
                         key={`${item.kind}-${item.targetId}`}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
                       >
-                        <p className="text-sm font-medium text-slate-800">
-                          {item.label}
-                        </p>
+                        <p className="text-sm font-medium text-slate-800">{item.label}</p>
                         <button
                           onClick={() => void remove(item)}
                           className="text-xs font-semibold text-slate-500 hover:text-slate-700"
@@ -136,27 +119,21 @@ export default function FollowingPage() {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="mb-2 text-sm font-semibold text-slate-900">
-                  Topics
-                </p>
+                <p className="mb-2 text-sm font-semibold text-slate-900">Topics</p>
                 <div className="space-y-2">
                   {followedTopics.length === 0 ? (
-                    <p className="text-xs text-slate-500">
-                      No followed topics.
-                    </p>
+                    <p className="text-xs text-slate-500">No followed topics.</p>
                   ) : (
                     followedTopics.map((item) => (
                       <div
                         key={`${item.kind}-${item.targetId}`}
                         className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
                       >
-                        <p className="text-sm font-medium text-slate-800">
-                          {item.label}
-                        </p>
+                        <p className="text-sm font-medium text-slate-800">{item.label}</p>
                         <div className="flex items-center gap-2">
                           <Link
                             href={item.href}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-power-orange hover:underline"
+                            className="text-power-orange inline-flex items-center gap-1 text-xs font-semibold hover:underline"
                           >
                             Open
                             <ExternalLink size={12} />

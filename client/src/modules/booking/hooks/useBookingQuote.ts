@@ -23,10 +23,7 @@ export type BookingFeeBreakdown = {
 };
 
 /** Shown while the quote is in flight, so no wrong number is ever displayed. */
-const pendingBreakdown = (
-  subtotal: number,
-  discount: number,
-): BookingFeeBreakdown => ({
+const pendingBreakdown = (subtotal: number, discount: number): BookingFeeBreakdown => ({
   subtotal,
   serviceFee: 0,
   tax: 0,
@@ -35,7 +32,7 @@ const pendingBreakdown = (
 
 export const useBookingQuote = (
   subtotal: number,
-  discount: number = 0,
+  discount: number = 0
 ): { quote: BookingFeeBreakdown; isQuoteLoading: boolean } => {
   const token = useAuthStore((state) => state.token);
   const hydrated = useAuthStore((state) => state.hydrated);

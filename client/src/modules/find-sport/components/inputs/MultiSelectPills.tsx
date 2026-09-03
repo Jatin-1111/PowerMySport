@@ -33,11 +33,11 @@ export function MultiSelectPills({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2 max-h-[calc(100vh-340px)] overflow-y-auto pr-1">
+      <div className="flex max-h-[calc(100vh-340px)] flex-wrap gap-2 overflow-y-auto pr-1">
         <button
           type="button"
           onClick={() => toggle("__none__")}
-          className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-150 ${
+          className={`rounded-full border-2 px-4 py-2 text-sm font-medium transition-all duration-150 ${
             noneSelected
               ? "border-power-orange bg-power-orange/5 text-power-orange"
               : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
@@ -56,11 +56,11 @@ export function MultiSelectPills({
               type="button"
               onClick={() => toggle(opt)}
               disabled={locked}
-              className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-150 ${
+              className={`rounded-full border-2 px-4 py-2 text-sm font-medium transition-all duration-150 ${
                 isSelected
                   ? "border-power-orange bg-power-orange/5 text-power-orange"
                   : locked
-                    ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
+                    ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
               }`}
             >

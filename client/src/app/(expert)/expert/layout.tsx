@@ -10,13 +10,9 @@ import ExpertLayoutShell from "./LayoutShell";
  */
 export const metadata: Metadata = noindexMetadata(
   "Expert Console",
-  "Manage your sessions, pathways, availability and payouts.",
+  "Manage your sessions, pathways, availability and payouts."
 );
 
-export default function ExpertLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ExpertLayout({ children }: { children: React.ReactNode }) {
   return <ExpertLayoutShell>{children}</ExpertLayoutShell>;
 }

@@ -79,7 +79,7 @@ const baseLevelSchema = new Schema<BaseLevel>(
     academicIntegration: { type: String },
     proactiveDocuments: [{ type: String }],
   },
-  { _id: false },
+  { _id: false }
 );
 
 const sportBasePathSchema = new Schema<SportBasePathDocument>(
@@ -93,7 +93,7 @@ const sportBasePathSchema = new Schema<SportBasePathDocument>(
     careers: { type: Schema.Types.Mixed, default: [] },
     generatedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 export const SportBasePath =

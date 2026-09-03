@@ -33,7 +33,7 @@ assistantChatRouter.post(
   "/sessions/:sessionId",
   authMiddleware,
   chatBurstLimiter,
-  sendAssistantChatSessionMessage,
+  sendAssistantChatSessionMessage
 );
 
 export default assistantChatRouter;

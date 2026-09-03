@@ -121,7 +121,7 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
       default: null,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 communityMessageSchema.index({ conversationId: 1, createdAt: -1 });
@@ -134,5 +134,5 @@ communityMessageSchema.index({ conversationId: 1, readBy: 1, createdAt: -1 });
 
 export const CommunityMessage = mongoose.model<CommunityMessageDocument>(
   "CommunityMessage",
-  communityMessageSchema,
+  communityMessageSchema
 );

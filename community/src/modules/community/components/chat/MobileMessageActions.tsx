@@ -30,7 +30,7 @@ export function MobileMessageActions({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[60] flex items-end bg-slate-900/40 backdrop-blur-sm p-0 sm:hidden"
+      className="fixed inset-0 z-[60] flex items-end bg-slate-900/40 p-0 backdrop-blur-sm sm:hidden"
       onClick={onClose}
     >
       <motion.div
@@ -38,13 +38,13 @@ export function MobileMessageActions({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-full rounded-t-[32px] border-t border-white/60 bg-white/80 backdrop-blur-2xl px-5 pb-8 pt-4 shadow-[0_-8px_40px_rgba(0,0,0,0.12)] supports-[backdrop-filter]:bg-white/70"
+        className="w-full rounded-t-[32px] border-t border-white/60 bg-white/80 px-5 pt-4 pb-8 shadow-[0_-8px_40px_rgba(0,0,0,0.12)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/70"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Drag handle */}
         <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-slate-300/80 shadow-inner" />
 
-        <p className="text-[13px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+        <p className="mb-1 text-[13px] font-bold tracking-widest text-slate-400 uppercase">
           Message Options
         </p>
 
@@ -53,7 +53,7 @@ export function MobileMessageActions({
           {!message.isDeleted && (
             <button
               onClick={onClose}
-              className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+              className="font-600 flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
                 <Smile size={18} strokeWidth={2.5} />
@@ -69,7 +69,7 @@ export function MobileMessageActions({
                 onCopy(message);
                 onClose();
               }}
-              className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+              className="font-600 flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
                 <Copy size={18} strokeWidth={2.5} />
@@ -82,7 +82,7 @@ export function MobileMessageActions({
           {!message.isDeleted && (
             <button
               onClick={onClose}
-              className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+              className="font-600 flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                 <Pin size={18} strokeWidth={2.5} />
@@ -98,7 +98,7 @@ export function MobileMessageActions({
                 onMarkUnread?.(message);
                 onClose();
               }}
-              className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+              className="font-600 flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-600">
                 <BookmarkCheck size={18} strokeWidth={2.5} />
@@ -108,39 +108,38 @@ export function MobileMessageActions({
           )}
 
           {/* Retry */}
-          {message.senderId === profileUserId &&
-            message.messageStatus === "FAILED" && (
-              <button
-                onClick={() => {
-                  onRetry(message);
-                  onClose();
-                }}
-                className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-power-orange">
-                  <RotateCcw size={18} strokeWidth={2.5} />
-                </div>
-                Retry sending
-              </button>
-            )}
+          {message.senderId === profileUserId && message.messageStatus === "FAILED" && (
+            <button
+              onClick={() => {
+                onRetry(message);
+                onClose();
+              }}
+              className="font-600 flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+            >
+              <div className="text-power-orange flex h-9 w-9 items-center justify-center rounded-full bg-orange-100">
+                <RotateCcw size={18} strokeWidth={2.5} />
+              </div>
+              Retry sending
+            </button>
+          )}
 
           {/* Edit & Delete */}
           {message.senderId === profileUserId &&
             !message.isDeleted &&
             message.messageStatus !== "FAILED" && (
-                <button
-                  onClick={() => {
-                    onEdit(message);
-                    onClose();
-                  }}
-                  disabled={!isWithinMessageEditWindow(message.createdAt)}
-                  className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                    <Pencil size={18} strokeWidth={2.5} />
-                  </div>
-                  Edit message
-                </button>
+              <button
+                onClick={() => {
+                  onEdit(message);
+                  onClose();
+                }}
+                disabled={!isWithinMessageEditWindow(message.createdAt)}
+                className="font-600 flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <Pencil size={18} strokeWidth={2.5} />
+                </div>
+                Edit message
+              </button>
             )}
 
           {/* Delete */}
@@ -150,7 +149,7 @@ export function MobileMessageActions({
                 onDelete(message);
                 onClose();
               }}
-              className="flex w-full items-center gap-3.5 rounded-2xl bg-red-50/80 px-5 py-3.5 text-[15px] font-600 text-red-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+              className="font-600 flex w-full items-center gap-3.5 rounded-2xl bg-red-50/80 px-5 py-3.5 text-[15px] text-red-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100/80 text-red-600">
                 <Trash2 size={18} strokeWidth={2.5} />

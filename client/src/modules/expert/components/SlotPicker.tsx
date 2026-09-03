@@ -41,13 +41,7 @@ const dateKey = (iso: string, tz: string) =>
  * day; selecting a time emits its ISO string. Used for booking and rescheduling.
  * All times render in the expert's timezone so client + expert see the same time.
  */
-export function SlotPicker({
-  expertId,
-  value,
-  onChange,
-  className,
-  timezone,
-}: SlotPickerProps) {
+export function SlotPicker({ expertId, value, onChange, className, timezone }: SlotPickerProps) {
   const tz = timezone || TZ_FALLBACK;
   const [slots, setSlots] = useState<OpenSlot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,13 +86,8 @@ export function SlotPicker({
 
   if (loading) {
     return (
-      <div
-        className={cn(
-          "flex items-center gap-2 text-sm text-slate-500",
-          className,
-        )}
-      >
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-power-orange" />
+      <div className={cn("flex items-center gap-2 text-sm text-slate-500", className)}>
+        <div className="border-t-power-orange h-4 w-4 animate-spin rounded-full border-2 border-slate-200" />
         Loading available times…
       </div>
     );
@@ -113,7 +102,7 @@ export function SlotPicker({
       <div
         className={cn(
           "flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-500",
-          className,
+          className
         )}
       >
         <CalendarClock className="mt-0.5 h-4 w-4 shrink-0" />
@@ -136,8 +125,8 @@ export function SlotPicker({
             className={cn(
               "shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors",
               activeDay === d.key
-                ? "border-power-orange bg-orange-50 text-power-orange"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                ? "border-power-orange text-power-orange bg-orange-50"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
             )}
           >
             {dayLabel(d.list[0].start, tz)}
@@ -154,7 +143,7 @@ export function SlotPicker({
               "rounded-lg border py-2 text-sm font-medium transition-colors",
               value === s.start
                 ? "border-power-orange bg-power-orange text-white"
-                : "border-slate-200 bg-white text-slate-700 hover:border-power-orange hover:bg-orange-50",
+                : "hover:border-power-orange border-slate-200 bg-white text-slate-700 hover:bg-orange-50"
             )}
           >
             {timeLabel(s.start, tz)}

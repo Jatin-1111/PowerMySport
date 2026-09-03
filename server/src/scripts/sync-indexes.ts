@@ -17,14 +17,11 @@ async function syncIndexes() {
   console.log(process.env.MONGO_URI);
   console.log("╔═══════════════════════════════════════════════════════════╗");
   console.log("║              DATABASE INDEX SYNCHRONIZATION              ║");
-  console.log(
-    "╚═══════════════════════════════════════════════════════════╝\n",
-  );
+  console.log("╚═══════════════════════════════════════════════════════════╝\n");
 
   try {
     // Connect to database
-    const dbUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
+    const dbUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
     console.log("🔌 Connecting to database...");
     await mongoose.connect(dbUri);
     console.log("✅ Connected to MongoDB\n");
@@ -66,7 +63,7 @@ async function syncIndexes() {
     const indexes = await ScheduledNotification.collection.getIndexes();
 
     const hasStatusScheduledForIndex = Object.keys(indexes).some(
-      (key) => key.includes("status") && key.includes("scheduledFor"),
+      (key) => key.includes("status") && key.includes("scheduledFor")
     );
 
     if (hasStatusScheduledForIndex) {

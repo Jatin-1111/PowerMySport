@@ -18,19 +18,17 @@ export function ProfileEditPanel({
   return (
     <div
       className={cn(
-        "rounded-xl border border-power-orange/20 bg-gradient-to-br from-orange-50/80 to-white p-4 ring-1 ring-power-orange/10 sm:p-5",
-        className,
+        "border-power-orange/20 ring-power-orange/10 rounded-xl border bg-gradient-to-br from-orange-50/80 to-white p-4 ring-1 sm:p-5",
+        className
       )}
     >
       <div className="mb-4 flex items-start gap-2">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-power-orange/10 text-power-orange">
+        <div className="bg-power-orange/10 text-power-orange flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
           <PencilLine className="h-4 w-4" />
         </div>
         <div>
           <p className="text-sm font-semibold text-slate-900">{title}</p>
-          {description && (
-            <p className="mt-0.5 text-xs text-slate-600">{description}</p>
-          )}
+          {description && <p className="mt-0.5 text-xs text-slate-600">{description}</p>}
         </div>
       </div>
       {children}

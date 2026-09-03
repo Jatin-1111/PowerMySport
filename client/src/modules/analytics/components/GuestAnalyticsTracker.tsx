@@ -1,21 +1,10 @@
 "use client";
 
-import {
-    flushGuestEvents,
-    getGuestId,
-    isGuest,
-    trackGuest,
-} from "../services/guestTracking";
+import { flushGuestEvents, getGuestId, isGuest, trackGuest } from "../services/guestTracking";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 
-const UTM_KEYS = [
-  "utm_source",
-  "utm_medium",
-  "utm_campaign",
-  "utm_term",
-  "utm_content",
-] as const;
+const UTM_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
 
 function readUtm(search: string): Record<string, string> {
   const params = new URLSearchParams(search);
@@ -75,9 +64,7 @@ export function GuestAnalyticsTracker() {
       entityType: "PAGE",
       entityId: pathname,
       metadata: {
-        ...(document.referrer
-          ? { referrer: document.referrer.slice(0, 200) }
-          : {}),
+        ...(document.referrer ? { referrer: document.referrer.slice(0, 200) } : {}),
         ...(Object.keys(utm).length ? { utm } : {}),
         ...(document.title ? { title: document.title.slice(0, 120) } : {}),
       },
@@ -90,12 +77,9 @@ export function GuestAnalyticsTracker() {
     getGuestId();
 
     const onScroll = () => {
-      const scrollable =
-        document.documentElement.scrollHeight - window.innerHeight;
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
       const pct =
-        scrollable > 0
-          ? Math.min(100, Math.round((window.scrollY / scrollable) * 100))
-          : 100;
+        scrollable > 0 ? Math.min(100, Math.round((window.scrollY / scrollable) * 100)) : 100;
       if (pct > maxScroll.current) maxScroll.current = pct;
     };
 

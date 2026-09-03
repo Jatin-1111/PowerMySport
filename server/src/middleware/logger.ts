@@ -40,8 +40,7 @@ const skipPrefixes = (() => {
     .filter(Boolean);
 })();
 
-const isSkipped = (path: string): boolean =>
-  skipPrefixes.some((prefix) => path.startsWith(prefix));
+const isSkipped = (path: string): boolean => skipPrefixes.some((prefix) => path.startsWith(prefix));
 
 const clockWithMs = (date = new Date()): string =>
   `${formatClock(date)}.${String(date.getMilliseconds()).padStart(3, "0")}`;
@@ -56,8 +55,7 @@ const colourStatus = (status: number): string => {
 };
 
 const formatDuration = (ms: number): { text: string; flag: string } => {
-  const rendered =
-    ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${Math.round(ms)}ms`;
+  const rendered = ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${Math.round(ms)}ms`;
 
   if (ms >= VERY_SLOW_MS) {
     return {
@@ -153,11 +151,7 @@ const queryKeysOf = (req: Request): string[] => Object.keys(req.query || {});
  */
 const verboseAllowed = !IS_PROD;
 
-export const requestLogger = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
+export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   if (!REQUESTS_ENABLED) {
     return next();
   }
@@ -194,9 +188,7 @@ export const requestLogger = (
     const method = req.method.toUpperCase();
     const spans = context?.spans;
     // Handler time is the residue — never measured, only inferred.
-    const handlerMs = spans
-      ? Math.max(0, durationMs - spans.dbMs - spans.extMs)
-      : durationMs;
+    const handlerMs = spans ? Math.max(0, durationMs - spans.dbMs - spans.extMs) : durationMs;
     const user = describeUser(req);
 
     if (isJsonFormat()) {
@@ -210,9 +202,7 @@ export const requestLogger = (
           // Production logs the pathname and the query *keys* only — query
           // values carry emails, tokens and invite codes.
           path: IS_PROD ? req.path : req.originalUrl || req.url,
-          ...(IS_PROD && queryKeysOf(req).length
-            ? { queryKeys: queryKeysOf(req) }
-            : {}),
+          ...(IS_PROD && queryKeysOf(req).length ? { queryKeys: queryKeysOf(req) } : {}),
           route: req.route?.path ? `${req.baseUrl || ""}${req.route.path}` : null,
           status,
           durationMs: round(durationMs),
@@ -225,7 +215,7 @@ export const requestLogger = (
           ...(user ? (IS_PROD ? { uid: user } : { user }) : {}),
           ...(SAMPLE_RATE < 1 && !noteworthy ? { sampled: SAMPLE_RATE } : {}),
           ...(context ? { req: context.requestId } : {}),
-        }),
+        })
       );
       return;
     }
@@ -237,14 +227,10 @@ export const requestLogger = (
     // neither Mongo nor a third party should not carry two empty columns.
     const attribution: string[] = [];
     if (spans && spans.dbCount > 0) {
-      attribution.push(
-        colours.grey(`db ${Math.round(spans.dbMs)}ms/${spans.dbCount}`),
-      );
+      attribution.push(colours.grey(`db ${Math.round(spans.dbMs)}ms/${spans.dbCount}`));
     }
     if (spans && spans.extCount > 0) {
-      attribution.push(
-        colours.magenta(`ext ${Math.round(spans.extMs)}ms/${spans.extCount}`),
-      );
+      attribution.push(colours.magenta(`ext ${Math.round(spans.extMs)}ms/${spans.extCount}`));
     }
 
     const line = [
@@ -267,10 +253,8 @@ export const requestLogger = (
 
     if (verbose) {
       const detail: string[] = [];
-      if (Object.keys(req.query || {}).length)
-        detail.push(`query ${JSON.stringify(req.query)}`);
-      if (Object.keys(req.params || {}).length)
-        detail.push(`params ${JSON.stringify(req.params)}`);
+      if (Object.keys(req.query || {}).length) detail.push(`query ${JSON.stringify(req.query)}`);
+      if (Object.keys(req.params || {}).length) detail.push(`params ${JSON.stringify(req.params)}`);
       if (req.body && Object.keys(req.body).length)
         detail.push(`body ${JSON.stringify(redactBody(req.body))}`);
       for (const entry of detail) {
@@ -286,12 +270,7 @@ export const requestLogger = (
  * Errors print as one line plus an indented stack, carrying the request id so
  * they tie back to the request line above them.
  */
-export const errorLogger = (
-  err: any,
-  req: Request,
-  _res: Response,
-  next: NextFunction,
-): void => {
+export const errorLogger = (err: any, req: Request, _res: Response, next: NextFunction): void => {
   // Errors are never sampled and never silenced — an unhandled failure is the
   // single most useful line the server can emit.
   if (!REQUESTS_ENABLED) {
@@ -314,7 +293,7 @@ export const errorLogger = (
         errMsg: err?.message || String(err),
         stack: err?.stack ? String(err.stack) : undefined,
         ...(context ? { req: context.requestId } : {}),
-      }),
+      })
     );
     return next(err);
   }
@@ -328,7 +307,7 @@ export const errorLogger = (
       requestId ? colours.grey(`req=${requestId}`) : "",
     ]
       .filter(Boolean)
-      .join("  "),
+      .join("  ")
   );
 
   if (err?.stack) {

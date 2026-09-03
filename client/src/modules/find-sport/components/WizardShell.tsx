@@ -8,7 +8,19 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, CheckCircle, Clock, Zap, Users, Brain, Heart, Target, User, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle,
+  Clock,
+  Zap,
+  Users,
+  Brain,
+  Heart,
+  Target,
+  User,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PRIOR_SPORTS_OPTIONS } from "../data/sportProfiles";
 import type { WizardAnswers } from "../types";
@@ -42,13 +54,7 @@ const DOB_BOUNDS = (() => {
 
 // ─── Step sequence definition ─────────────────────────────────────────────────
 
-type StepKind =
-  | "welcome"
-  | "name"
-  | "question"
-  | "transition"
-  | "processing"
-  | "results";
+type StepKind = "welcome" | "name" | "question" | "transition" | "processing" | "results";
 
 type Step =
   | { kind: "welcome" }
@@ -66,7 +72,11 @@ const STEPS: Step[] = [
   { kind: "question", questionKey: "state" },
   { kind: "question", questionKey: "priorSports" },
   { kind: "question", questionKey: "consideringSports" },
-  { kind: "transition", text: "Good. Let's understand {name} physically.", sub: "7 quick questions." },
+  {
+    kind: "transition",
+    text: "Good. Let's understand {name} physically.",
+    sub: "7 quick questions.",
+  },
   { kind: "question", questionKey: "height" },
   { kind: "question", questionKey: "weight" },
   { kind: "question", questionKey: "energyType" },
@@ -120,27 +130,27 @@ const ASSESSMENT_FLOW = defineFlow<string, AssessmentFlowContext>({
 
 const SECTION_META: Record<string, { icon: React.ReactNode; title: string; desc: string }> = {
   Child: {
-    icon: <User className="w-5 h-5" />,
+    icon: <User className="h-5 w-5" />,
     title: "About your child",
     desc: "Basic details that help us calibrate recommendations to their age, location, and background.",
   },
   Physical: {
-    icon: <Zap className="w-5 h-5" />,
+    icon: <Zap className="h-5 w-5" />,
     title: "Physical profile",
     desc: "How they move, their energy pattern, and physical traits that align with different sports.",
   },
   Personality: {
-    icon: <Brain className="w-5 h-5" />,
+    icon: <Brain className="h-5 w-5" />,
     title: "Mindset & competition",
     desc: "Decision-making style, focus pattern, and how they respond to pressure.",
   },
   Comfort: {
-    icon: <Heart className="w-5 h-5" />,
+    icon: <Heart className="h-5 w-5" />,
     title: "Preferences & comfort",
     desc: "The environments they thrive in and activities they'd rather avoid.",
   },
   Practical: {
-    icon: <Target className="w-5 h-5" />,
+    icon: <Target className="h-5 w-5" />,
     title: "Goals & commitment",
     desc: "Your honest goals for this journey and realistic time and budget you can invest.",
   },
@@ -155,23 +165,62 @@ function getProfileChips(answers: WizardAnswers): { label: string; value: string
     chips.push({ label: "Gender", value: answers.gender === "boy" ? "Boy" : "Girl" });
   if (answers.state) chips.push({ label: "State", value: answers.state });
   if (answers.energyType)
-    chips.push({ label: "Energy", value: answers.energyType === "explosive" ? "Explosive" : "Endurance" });
+    chips.push({
+      label: "Energy",
+      value: answers.energyType === "explosive" ? "Explosive" : "Endurance",
+    });
   if (answers.eyesight)
-    chips.push({ label: "Vision", value: { sharp: "Sharp", corrected: "Corrected", limited: "Limited" }[answers.eyesight]! });
+    chips.push({
+      label: "Vision",
+      value: { sharp: "Sharp", corrected: "Corrected", limited: "Limited" }[answers.eyesight]!,
+    });
   if (answers.agility)
-    chips.push({ label: "Agility", value: { high: "High", moderate: "Moderate", low: "Low" }[answers.agility]! });
+    chips.push({
+      label: "Agility",
+      value: { high: "High", moderate: "Moderate", low: "Low" }[answers.agility]!,
+    });
   if (answers.teamIndividual !== null && answers.teamIndividual !== undefined) {
     const v = answers.teamIndividual;
-    chips.push({ label: "Style", value: v <= 2 ? "Solo player" : v >= 4 ? "Team player" : "Balanced" });
+    chips.push({
+      label: "Style",
+      value: v <= 2 ? "Solo player" : v >= 4 ? "Team player" : "Balanced",
+    });
   }
   if (answers.pressureResponse)
-    chips.push({ label: "Pressure", value: { thrives: "Thrives", manages: "Manages", avoids: "Avoids" }[answers.pressureResponse]! });
+    chips.push({
+      label: "Pressure",
+      value: { thrives: "Thrives", manages: "Manages", avoids: "Avoids" }[
+        answers.pressureResponse
+      ]!,
+    });
   if (answers.environment)
-    chips.push({ label: "Environment", value: { outdoor: "Outdoors", indoor: "Indoors", "no-preference": "Either" }[answers.environment]! });
+    chips.push({
+      label: "Environment",
+      value: { outdoor: "Outdoors", indoor: "Indoors", "no-preference": "Either" }[
+        answers.environment
+      ]!,
+    });
   if (answers.ambition)
-    chips.push({ label: "Goal", value: { fun: "Health & fun", competitive: "Competitive", national: "National", career: "Career in sport", professional: "Pro career" }[answers.ambition]! });
+    chips.push({
+      label: "Goal",
+      value: {
+        fun: "Health & fun",
+        competitive: "Competitive",
+        national: "National",
+        career: "Career in sport",
+        professional: "Pro career",
+      }[answers.ambition]!,
+    });
   if (answers.budget)
-    chips.push({ label: "Budget", value: { "under-3k": "< ₹3k/mo", "3k-7k": "₹3–7k/mo", "7k-15k": "₹7–15k/mo", "15k-plus": "₹15k+/mo" }[answers.budget]! });
+    chips.push({
+      label: "Budget",
+      value: {
+        "under-3k": "< ₹3k/mo",
+        "3k-7k": "₹3–7k/mo",
+        "7k-15k": "₹7–15k/mo",
+        "15k-plus": "₹15k+/mo",
+      }[answers.budget]!,
+    });
   if (answers.weeklyHours)
     chips.push({ label: "Training", value: `${answers.weeklyHours} hrs/wk` });
   if (answers.consideringSports.length > 0)
@@ -186,7 +235,7 @@ function getProfileChips(answers: WizardAnswers): { label: string; value: string
 // best-scoring one, matching the sport the results page names in its CTA.
 function primarySport(
   scored: SportResult[],
-  chosen: SportFitResult[],
+  chosen: SportFitResult[]
 ): { name: string; firstNote?: string } | null {
   const chosenTop: SportFitResult | undefined = [...chosen].sort((a, b) => b.score - a.score)[0];
   if (chosenTop) return { name: chosenTop.sport.name, firstNote: chosenTop.strengths[0] };
@@ -214,7 +263,7 @@ function scheduleTrialCheckIn(
   dependentId: string | null,
   scored: SportResult[],
   chosen: SportFitResult[],
-  childName: string,
+  childName: string
 ): void {
   const top = primarySport(scored, chosen);
   if (!top) return;
@@ -232,7 +281,7 @@ function scheduleTrialCheckIn(
 function firstNoteFor(
   sportName: string,
   scored: SportResult[],
-  chosen: SportFitResult[],
+  chosen: SportFitResult[]
 ): string | undefined {
   const fit = chosen.find((c) => c.sport.name === sportName);
   if (fit) return fit.strengths[0];
@@ -243,7 +292,7 @@ function firstNoteFor(
 
 function questionProgress(stepIndex: number): number {
   const questionsAnsweredSoFar = STEPS.slice(0, stepIndex).filter(
-    (s) => s.kind === "question",
+    (s) => s.kind === "question"
   ).length;
   return Math.round((questionsAnsweredSoFar / TOTAL_QUESTIONS) * 100);
 }
@@ -273,7 +322,7 @@ function QuestionScreen({
   const cap1 = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   // 3rd-person singular conjugation for "he"/"she"; base form for "they". Pass
   // an explicit singular form for irregulars (catch -> catches, miss -> misses).
-  const v = (base: string, singular?: string) => (isPlural ? base : singular ?? `${base}s`);
+  const v = (base: string, singular?: string) => (isPlural ? base : (singular ?? `${base}s`));
 
   // Auto-advance helper for binary questions
   const autoAdvance = (key: keyof WizardAnswers, val: WizardAnswers[keyof WizardAnswers]) => {
@@ -282,16 +331,31 @@ function QuestionScreen({
   };
 
   const section: Record<string, string> = {
-    dob: "Child", gender: "Child", state: "Child", priorSports: "Child",
+    dob: "Child",
+    gender: "Child",
+    state: "Child",
+    priorSports: "Child",
     consideringSports: "Child",
-    height: "Physical", weight: "Physical", energyType: "Physical",
-    motorType: "Physical", visualTracking: "Physical",
-    eyesight: "Physical", agility: "Physical",
-    teamIndividual: "Personality", competitiveResponse: "Personality",
-    focusStyle: "Personality", decisionStyle: "Personality",
-    pressureResponse: "Personality", repetitionTolerance: "Personality",
-    contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort", medicalConditions: "Comfort",
-    budget: "Practical", ambition: "Practical", weeklyHours: "Practical",
+    height: "Physical",
+    weight: "Physical",
+    energyType: "Physical",
+    motorType: "Physical",
+    visualTracking: "Physical",
+    eyesight: "Physical",
+    agility: "Physical",
+    teamIndividual: "Personality",
+    competitiveResponse: "Personality",
+    focusStyle: "Personality",
+    decisionStyle: "Personality",
+    pressureResponse: "Personality",
+    repetitionTolerance: "Personality",
+    contactComfort: "Comfort",
+    environment: "Comfort",
+    waterComfort: "Comfort",
+    medicalConditions: "Comfort",
+    budget: "Practical",
+    ambition: "Practical",
+    weeklyHours: "Practical",
   };
 
   const renderInput = () => {
@@ -309,7 +373,7 @@ function QuestionScreen({
                 onAnswer("dob", val);
                 onAnswer("age", getDependentAge(val));
               }}
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-base focus:outline-none focus:border-power-orange focus:ring-2 focus:ring-power-orange/15"
+              className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 focus:ring-2 focus:outline-none"
             />
             {answers.dob && answers.age !== null && (
               <p className="text-sm text-slate-400">
@@ -328,17 +392,15 @@ function QuestionScreen({
               { value: "prefer-not", label: "Prefer not to say" },
             ]}
             value={answers.gender}
-            onChange={(v) => { onAnswer("gender", v as WizardAnswers["gender"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("gender", v as WizardAnswers["gender"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
       case "state":
-        return (
-          <StateSelector
-            value={answers.state}
-            onChange={(s) => onAnswer("state", s)}
-          />
-        );
+        return <StateSelector value={answers.state} onChange={(s) => onAnswer("state", s)} />;
 
       case "priorSports":
         return (
@@ -359,29 +421,33 @@ function QuestionScreen({
               <button
                 type="button"
                 onClick={() => onAnswer("height", Math.max(80, hVal - 1))}
-                className="w-12 h-12 rounded-full border-2 border-slate-200 text-slate-600 text-2xl font-light hover:border-power-orange hover:text-power-orange transition-colors flex items-center justify-center select-none"
+                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors select-none"
               >
                 −
               </button>
-              <div className="text-center min-w-[120px]">
+              <div className="min-w-[120px] text-center">
                 <span className="text-6xl font-bold text-slate-900 tabular-nums">{hVal}</span>
-                <span className="text-xl text-slate-400 ml-2">cm</span>
-                <p className="text-sm text-slate-400 mt-1 tabular-nums">{cmToFeetInches(hVal)}</p>
+                <span className="ml-2 text-xl text-slate-400">cm</span>
+                <p className="mt-1 text-sm text-slate-400 tabular-nums">{cmToFeetInches(hVal)}</p>
               </div>
               <button
                 type="button"
                 onClick={() => onAnswer("height", Math.min(220, hVal + 1))}
-                className="w-12 h-12 rounded-full border-2 border-slate-200 text-slate-600 text-2xl font-light hover:border-power-orange hover:text-power-orange transition-colors flex items-center justify-center select-none"
+                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors select-none"
               >
                 +
               </button>
             </div>
             <input
-              type="range" min={80} max={220} step={1} value={hVal}
+              type="range"
+              min={80}
+              max={220}
+              step={1}
+              value={hVal}
               onChange={(e) => onAnswer("height", parseInt(e.target.value))}
-              className="w-full accent-power-orange"
+              className="accent-power-orange w-full"
             />
-            <div className="flex justify-between text-xs text-slate-400 -mt-2">
+            <div className="-mt-2 flex justify-between text-xs text-slate-400">
               <span>80 cm · 2′ 7″</span>
               <span>220 cm · 7′ 3″</span>
             </div>
@@ -398,28 +464,32 @@ function QuestionScreen({
               <button
                 type="button"
                 onClick={() => onAnswer("weight", Math.max(15, wVal - 1))}
-                className="w-12 h-12 rounded-full border-2 border-slate-200 text-slate-600 text-2xl font-light hover:border-power-orange hover:text-power-orange transition-colors flex items-center justify-center select-none"
+                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors select-none"
               >
                 −
               </button>
-              <div className="text-center min-w-[120px]">
+              <div className="min-w-[120px] text-center">
                 <span className="text-6xl font-bold text-slate-900 tabular-nums">{wVal}</span>
-                <span className="text-xl text-slate-400 ml-2">kg</span>
+                <span className="ml-2 text-xl text-slate-400">kg</span>
               </div>
               <button
                 type="button"
                 onClick={() => onAnswer("weight", Math.min(120, wVal + 1))}
-                className="w-12 h-12 rounded-full border-2 border-slate-200 text-slate-600 text-2xl font-light hover:border-power-orange hover:text-power-orange transition-colors flex items-center justify-center select-none"
+                className="hover:border-power-orange hover:text-power-orange flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-200 text-2xl font-light text-slate-600 transition-colors select-none"
               >
                 +
               </button>
             </div>
             <input
-              type="range" min={15} max={120} step={1} value={wVal}
+              type="range"
+              min={15}
+              max={120}
+              step={1}
+              value={wVal}
               onChange={(e) => onAnswer("weight", parseInt(e.target.value))}
-              className="w-full accent-power-orange"
+              className="accent-power-orange w-full"
             />
-            <div className="flex justify-between text-xs text-slate-400 -mt-2">
+            <div className="-mt-2 flex justify-between text-xs text-slate-400">
               <span>15 kg</span>
               <span>120 kg</span>
             </div>
@@ -472,11 +542,20 @@ function QuestionScreen({
           <ThreeOptionCards
             options={[
               { value: "strong", label: `${cap1(v("track"))} and ${v("react")} naturally` },
-              { value: "moderate", label: `Sometimes ${v("catch", "catches")} it, sometimes ${v("miss", "misses")} — depends on the day` },
-              { value: "weak", label: `Usually ${v("miss", "misses")} or ${v("react")} late to fast-moving objects` },
+              {
+                value: "moderate",
+                label: `Sometimes ${v("catch", "catches")} it, sometimes ${v("miss", "misses")} — depends on the day`,
+              },
+              {
+                value: "weak",
+                label: `Usually ${v("miss", "misses")} or ${v("react")} late to fast-moving objects`,
+              },
             ]}
             value={answers.visualTracking}
-            onChange={(v) => { onAnswer("visualTracking", v as WizardAnswers["visualTracking"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("visualTracking", v as WizardAnswers["visualTracking"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -496,12 +575,24 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "fired-up", label: `${cap1(v("get"))} fired up and ${v("want")} to play again immediately` },
-              { value: "calm", label: `${cap1(v("accept"))} it calmly and ${v("move")} on without much fuss` },
-              { value: "discouraged", label: `${cap1(v("get"))} quite upset and ${v("need")} time before wanting to try again` },
+              {
+                value: "fired-up",
+                label: `${cap1(v("get"))} fired up and ${v("want")} to play again immediately`,
+              },
+              {
+                value: "calm",
+                label: `${cap1(v("accept"))} it calmly and ${v("move")} on without much fuss`,
+              },
+              {
+                value: "discouraged",
+                label: `${cap1(v("get"))} quite upset and ${v("need")} time before wanting to try again`,
+              },
             ]}
             value={answers.competitiveResponse}
-            onChange={(v) => { onAnswer("competitiveResponse", v as WizardAnswers["competitiveResponse"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("competitiveResponse", v as WizardAnswers["competitiveResponse"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -549,12 +640,25 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "thrives", label: `${cap} performs even better when all eyes are on ${pnObj} — thrives under the spotlight` },
-              { value: "manages", label: "Gets nervous but manages through it — performs reasonably well under pressure" },
-              { value: "avoids", label: `${cap} strongly prefers not to be the centre of attention` },
+              {
+                value: "thrives",
+                label: `${cap} performs even better when all eyes are on ${pnObj} — thrives under the spotlight`,
+              },
+              {
+                value: "manages",
+                label:
+                  "Gets nervous but manages through it — performs reasonably well under pressure",
+              },
+              {
+                value: "avoids",
+                label: `${cap} strongly prefers not to be the centre of attention`,
+              },
             ]}
             value={answers.pressureResponse}
-            onChange={(v) => { onAnswer("pressureResponse", v as WizardAnswers["pressureResponse"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("pressureResponse", v as WizardAnswers["pressureResponse"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -574,7 +678,9 @@ function QuestionScreen({
               },
             ]}
             value={answers.repetitionTolerance}
-            onChange={(v) => autoAdvance("repetitionTolerance", v as WizardAnswers["repetitionTolerance"])}
+            onChange={(v) =>
+              autoAdvance("repetitionTolerance", v as WizardAnswers["repetitionTolerance"])
+            }
           />
         );
 
@@ -582,12 +688,18 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "sharp", label: `${cap} has clear, sharp vision — no glasses or contacts needed` },
+              {
+                value: "sharp",
+                label: `${cap} has clear, sharp vision — no glasses or contacts needed`,
+              },
               { value: "corrected", label: `${cap} wears glasses or contact lenses` },
               { value: "limited", label: `${cap} has difficulty seeing clearly even with glasses` },
             ]}
             value={answers.eyesight}
-            onChange={(v) => { onAnswer("eyesight", v as WizardAnswers["eyesight"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("eyesight", v as WizardAnswers["eyesight"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -595,12 +707,24 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "high", label: `Very agile — ${name} moves quickly, changes direction easily, and is naturally flexible` },
-              { value: "moderate", label: "Average agility — moves well enough but not exceptional" },
-              { value: "low", label: `${cap} is less agile — prefers steadier, less dynamic physical movement` },
+              {
+                value: "high",
+                label: `Very agile — ${name} moves quickly, changes direction easily, and is naturally flexible`,
+              },
+              {
+                value: "moderate",
+                label: "Average agility — moves well enough but not exceptional",
+              },
+              {
+                value: "low",
+                label: `${cap} is less agile — prefers steadier, less dynamic physical movement`,
+              },
             ]}
             value={answers.agility}
-            onChange={(v) => { onAnswer("agility", v as WizardAnswers["agility"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("agility", v as WizardAnswers["agility"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -608,12 +732,18 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "loves", label: `${cap} loves physical contact — wrestling, jostling, bumping into others` },
+              {
+                value: "loves",
+                label: `${cap} loves physical contact — wrestling, jostling, bumping into others`,
+              },
               { value: "neutral", label: "Neutral — doesn't mind physical contact either way" },
               { value: "avoids", label: `${cap} prefers to avoid physical contact` },
             ]}
             value={answers.contactComfort}
-            onChange={(v) => { onAnswer("contactComfort", v as WizardAnswers["contactComfort"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("contactComfort", v as WizardAnswers["contactComfort"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -626,7 +756,10 @@ function QuestionScreen({
               { value: "no-preference", label: "No strong preference either way" },
             ]}
             value={answers.environment}
-            onChange={(v) => { onAnswer("environment", v as WizardAnswers["environment"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("environment", v as WizardAnswers["environment"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -634,12 +767,18 @@ function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "comfortable", label: `${cap} is very comfortable in water — loves swimming or being in a pool` },
+              {
+                value: "comfortable",
+                label: `${cap} is very comfortable in water — loves swimming or being in a pool`,
+              },
               { value: "neutral", label: "Okay with water — no strong feeling" },
               { value: "uncomfortable", label: `${cap} is uncomfortable or afraid of water` },
             ]}
             value={answers.waterComfort}
-            onChange={(v) => { onAnswer("waterComfort", v as WizardAnswers["waterComfort"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("waterComfort", v as WizardAnswers["waterComfort"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -659,7 +798,7 @@ function QuestionScreen({
                   }
                 }
               }}
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-base placeholder:text-slate-300 focus:outline-none focus:border-power-orange focus:ring-2 focus:ring-power-orange/15"
+              className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:outline-none"
             />
             {answers.medicalConditions.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
@@ -672,7 +811,10 @@ function QuestionScreen({
                     <button
                       type="button"
                       onClick={() =>
-                        onAnswer("medicalConditions", answers.medicalConditions.filter((c) => c !== cond))
+                        onAnswer(
+                          "medicalConditions",
+                          answers.medicalConditions.filter((c) => c !== cond)
+                        )
                       }
                       className="ml-0.5 text-orange-400 hover:text-orange-600"
                     >
@@ -689,13 +831,32 @@ function QuestionScreen({
         return (
           <FourContextCards
             options={[
-              { value: "under-3k", label: "Under ₹3,000/month", context: "Covers: cricket, football, chess, hockey" },
-              { value: "3k-7k", label: "₹3,000 – ₹7,000/month", context: "Covers: badminton, swimming, plus everything above" },
-              { value: "7k-15k", label: "₹7,000 – ₹15,000/month", context: "Covers: tennis — every sport in our list" },
-              { value: "15k-plus", label: "₹15,000+/month", context: "Every sport covered — room for premium academies and coaching" },
+              {
+                value: "under-3k",
+                label: "Under ₹3,000/month",
+                context: "Covers: cricket, football, chess, hockey",
+              },
+              {
+                value: "3k-7k",
+                label: "₹3,000 – ₹7,000/month",
+                context: "Covers: badminton, swimming, plus everything above",
+              },
+              {
+                value: "7k-15k",
+                label: "₹7,000 – ₹15,000/month",
+                context: "Covers: tennis — every sport in our list",
+              },
+              {
+                value: "15k-plus",
+                label: "₹15,000+/month",
+                context: "Every sport covered — room for premium academies and coaching",
+              },
             ]}
             value={answers.budget}
-            onChange={(v) => { onAnswer("budget", v as WizardAnswers["budget"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("budget", v as WizardAnswers["budget"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -703,13 +864,32 @@ function QuestionScreen({
         return (
           <FourContextCards
             options={[
-              { value: "fun", label: "Health, confidence, and fun", context: "No pressure on results — sport as a positive life habit" },
-              { value: "competitive", label: "District and state-level competition", context: "Serious about sport, but not chasing it as a livelihood" },
-              { value: "national", label: "National representation", context: "We are committed to the long journey this requires" },
-              { value: "career", label: "Building a career in sport", context: "A sports-quota job, a college place, or turning pro" },
+              {
+                value: "fun",
+                label: "Health, confidence, and fun",
+                context: "No pressure on results — sport as a positive life habit",
+              },
+              {
+                value: "competitive",
+                label: "District and state-level competition",
+                context: "Serious about sport, but not chasing it as a livelihood",
+              },
+              {
+                value: "national",
+                label: "National representation",
+                context: "We are committed to the long journey this requires",
+              },
+              {
+                value: "career",
+                label: "Building a career in sport",
+                context: "A sports-quota job, a college place, or turning pro",
+              },
             ]}
             value={answers.ambition}
-            onChange={(v) => { onAnswer("ambition", v as WizardAnswers["ambition"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("ambition", v as WizardAnswers["ambition"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -717,13 +897,32 @@ function QuestionScreen({
         return (
           <FourContextCards
             options={[
-              { value: "1-3", label: "1–3 hours/week", context: "A couple of casual sessions — sport fits around everything else" },
-              { value: "4-7", label: "4–7 hours/week", context: "Regular training — about 1 hour on most days" },
-              { value: "8-12", label: "8–12 hours/week", context: "Serious commitment — two sessions on many days" },
-              { value: "13-plus", label: "13+ hours/week", context: "Full dedication — sport is the main priority" },
+              {
+                value: "1-3",
+                label: "1–3 hours/week",
+                context: "A couple of casual sessions — sport fits around everything else",
+              },
+              {
+                value: "4-7",
+                label: "4–7 hours/week",
+                context: "Regular training — about 1 hour on most days",
+              },
+              {
+                value: "8-12",
+                label: "8–12 hours/week",
+                context: "Serious commitment — two sessions on many days",
+              },
+              {
+                value: "13-plus",
+                label: "13+ hours/week",
+                context: "Full dedication — sport is the main priority",
+              },
             ]}
             value={answers.weeklyHours}
-            onChange={(v) => { onAnswer("weeklyHours", v as WizardAnswers["weeklyHours"]); setTimeout(onNext, 200); }}
+            onChange={(v) => {
+              onAnswer("weeklyHours", v as WizardAnswers["weeklyHours"]);
+              setTimeout(onNext, 200);
+            }}
           />
         );
 
@@ -800,16 +999,14 @@ function QuestionScreen({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
+        <p className="mb-2 text-xs font-semibold tracking-widest text-slate-400 uppercase">
           {section[questionKey] ?? ""}
         </p>
-        <h2 className="font-title text-xl font-bold text-slate-900 leading-snug">
+        <h2 className="font-title text-xl leading-snug font-bold text-slate-900">
           {questions[questionKey] ?? ""}
         </h2>
         {questionSubs[questionKey] && (
-          <p className="text-sm text-slate-500 leading-relaxed mt-2">
-            {questionSubs[questionKey]}
-          </p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">{questionSubs[questionKey]}</p>
         )}
       </div>
 
@@ -820,7 +1017,7 @@ function QuestionScreen({
           type="button"
           onClick={onNext}
           disabled={!canAdvance()}
-          className="w-full bg-power-orange text-white rounded-xl py-3 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-power-orange/90 transition-colors"
+          className="bg-power-orange hover:bg-power-orange/90 w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           Continue
         </button>
@@ -836,13 +1033,13 @@ function ProcessingScreen({ name }: { name: string }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col items-center justify-center py-20 text-center space-y-4"
+      className="flex flex-col items-center justify-center space-y-4 py-20 text-center"
     >
-      <div className="w-12 h-12 rounded-full border-2 border-power-orange border-t-transparent animate-spin" />
+      <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-2 border-t-transparent" />
       <p className="font-title text-xl font-bold text-slate-900">
         Building {name || "your child"}&apos;s sport profile...
       </p>
-      <p className="text-sm text-slate-400 max-w-xs">
+      <p className="max-w-xs text-sm text-slate-400">
         Matching what you&apos;ve shared with sport requirements, training pathways, and what&apos;s
         available in your city.
       </p>
@@ -968,7 +1165,9 @@ export function WizardShell() {
               if (r.data?._id) setSelectedDependentId(r.data._id);
               setSavedForName(childName);
               setSavedStatus("saved");
-              try { localStorage.removeItem("pms_wizard_results"); } catch {}
+              try {
+                localStorage.removeItem("pms_wizard_results");
+              } catch {}
               void refreshProfile();
             })
             .catch(() => setSavedStatus("error"));
@@ -1016,22 +1215,42 @@ export function WizardShell() {
   const currentStep = STEPS[stepIndex];
   const progress = questionProgress(stepIndex);
   const showProgress = currentStep.kind !== "welcome" && currentStep.kind !== "results";
-  const showBack = stepIndex > 0 && currentStep.kind !== "processing" && currentStep.kind !== "results";
-  const isFullScreen = currentStep.kind === "welcome" || currentStep.kind === "results" || currentStep.kind === "processing";
+  const showBack =
+    stepIndex > 0 && currentStep.kind !== "processing" && currentStep.kind !== "results";
+  const isFullScreen =
+    currentStep.kind === "welcome" ||
+    currentStep.kind === "results" ||
+    currentStep.kind === "processing";
 
   // Derive current section for the left panel
   const currentSection: string = (() => {
     if (currentStep.kind === "question") {
       const sectionMap: Record<string, string> = {
-        dob: "Child", gender: "Child", state: "Child", priorSports: "Child",
+        dob: "Child",
+        gender: "Child",
+        state: "Child",
+        priorSports: "Child",
         consideringSports: "Child",
-        height: "Physical", weight: "Physical", energyType: "Physical",
-        motorType: "Physical", visualTracking: "Physical", eyesight: "Physical", agility: "Physical",
-        teamIndividual: "Personality", competitiveResponse: "Personality",
-        focusStyle: "Personality", decisionStyle: "Personality",
-        pressureResponse: "Personality", repetitionTolerance: "Personality",
-        contactComfort: "Comfort", environment: "Comfort", waterComfort: "Comfort", medicalConditions: "Comfort",
-        budget: "Practical", ambition: "Practical", weeklyHours: "Practical",
+        height: "Physical",
+        weight: "Physical",
+        energyType: "Physical",
+        motorType: "Physical",
+        visualTracking: "Physical",
+        eyesight: "Physical",
+        agility: "Physical",
+        teamIndividual: "Personality",
+        competitiveResponse: "Personality",
+        focusStyle: "Personality",
+        decisionStyle: "Personality",
+        pressureResponse: "Personality",
+        repetitionTolerance: "Personality",
+        contactComfort: "Comfort",
+        environment: "Comfort",
+        waterComfort: "Comfort",
+        medicalConditions: "Comfort",
+        budget: "Practical",
+        ambition: "Practical",
+        weeklyHours: "Practical",
       };
       return sectionMap[currentStep.questionKey] ?? "";
     }
@@ -1078,7 +1297,7 @@ export function WizardShell() {
         const saved = raw ? JSON.parse(raw) : { answers, savedAt: new Date().toISOString() };
         localStorage.setItem(
           "pms_wizard_results",
-          JSON.stringify({ ...saved, chosenSport: sport }),
+          JSON.stringify({ ...saved, chosenSport: sport })
         );
       } catch {}
       return;
@@ -1089,10 +1308,7 @@ export function WizardShell() {
       .post("/plan-checkins/find-sport-trial/choice", {
         dependentId: selectedDependentId || undefined,
         sport,
-        signals: trialSignals(
-          firstNoteFor(sport, results, chosenFits),
-          answers.childName,
-        ),
+        signals: trialSignals(firstNoteFor(sport, results, chosenFits), answers.childName),
       })
       .then(() => {
         // The auth store's `user.dependents` otherwise keeps the pre-choice
@@ -1114,15 +1330,22 @@ export function WizardShell() {
         // Save to profile if logged in with a selected dependent (update)
         if (token && selectedDependentId) {
           setSavedStatus("saving");
-          const displayName = players.find((p) => p._id === selectedDependentId)?.name.split(" ")[0] ?? answers.childName;
+          const displayName =
+            players.find((p) => p._id === selectedDependentId)?.name.split(" ")[0] ??
+            answers.childName;
           try {
             await authApi.updateDependent(
               selectedDependentId,
-              buildDependentPayload(answers, scored, undefined, chosen),
+              buildDependentPayload(answers, scored, undefined, chosen)
             );
             setSavedForName(displayName || undefined);
             setSavedStatus("saved");
-            scheduleTrialCheckIn(selectedDependentId, scored, chosen, displayName || answers.childName);
+            scheduleTrialCheckIn(
+              selectedDependentId,
+              scored,
+              chosen,
+              displayName || answers.childName
+            );
             void refreshProfile();
           } catch {
             setSavedStatus("error");
@@ -1152,11 +1375,19 @@ export function WizardShell() {
               JSON.stringify({
                 answers,
                 results: [
-                  ...chosen.map((r) => ({ sport: r.sport.name, fitLabel: r.fitLabel, score: r.score })),
-                  ...scored.map((r) => ({ sport: r.sport.name, fitLabel: r.fitLabel, score: r.score })),
+                  ...chosen.map((r) => ({
+                    sport: r.sport.name,
+                    fitLabel: r.fitLabel,
+                    score: r.score,
+                  })),
+                  ...scored.map((r) => ({
+                    sport: r.sport.name,
+                    fitLabel: r.fitLabel,
+                    score: r.score,
+                  })),
                 ].slice(0, 3),
                 savedAt: new Date().toISOString(),
-              }),
+              })
             );
           } catch {}
         }
@@ -1178,103 +1409,102 @@ export function WizardShell() {
   const selectedPlayer = players.find((p) => p._id === selectedDependentId);
 
   return (
-    <div className="min-h-screen bg-white flex">
-
+    <div className="flex min-h-screen bg-white">
       {/* ── Left sidebar (desktop only, hidden on full-screen steps) ── */}
       {/* Outer wrapper carries the dark background and stretches to match the
           right panel's height (which can exceed one viewport, e.g. long
           multi-select lists); the inner aside stays pinned via sticky. */}
       {!isFullScreen && (
-        <div className="hidden lg:block w-[320px] xl:w-[360px] bg-slate-900 shrink-0">
-        <aside className="flex flex-col sticky top-16 h-[calc(100vh-4rem)] overflow-hidden">
-          {/* Brand */}
-          <div className="px-8 pt-8 pb-6 border-b border-slate-800">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-power-orange mb-0.5">
-              PowerMySport
-            </p>
-            <p className="text-sm text-slate-400">Sport Assessment</p>
-          </div>
-
-          {/* Section context */}
-          <div className="flex-1 px-8 py-7 overflow-y-auto">
-            {sectionMeta && (
-              <div key={currentSection} className="animate-in fade-in duration-300">
-                {/* Section progress dots */}
-                <div className="flex gap-1.5 mb-6">
-                  {SECTION_ORDER.map((s) => (
-                    <div
-                      key={s}
-                      className={`h-1 rounded-full transition-all duration-300 ${
-                        s === currentSection
-                          ? "bg-power-orange w-6"
-                          : SECTION_ORDER.indexOf(s) < SECTION_ORDER.indexOf(currentSection)
-                          ? "bg-slate-600 w-3"
-                          : "bg-slate-800 w-3"
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                {/* Icon */}
-                <div className="w-11 h-11 rounded-2xl bg-power-orange/15 text-power-orange flex items-center justify-center mb-5">
-                  {sectionMeta.icon}
-                </div>
-
-                <h2 className="font-title text-xl font-bold text-white mb-2 leading-snug">
-                  {sectionMeta.title}
-                </h2>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  {sectionMeta.desc}
-                </p>
-              </div>
-            )}
-
-            {/* Profile chips — grow as answers fill in */}
-            {profileChips.length > 0 && (
-              <div className="mt-8">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-3">
-                  Profile so far
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {profileChips.map((chip) => (
-                    <div
-                      key={chip.label}
-                      className="flex items-center gap-1.5 bg-slate-800 rounded-full px-3 py-1"
-                    >
-                      <span className="text-[10px] text-slate-500">{chip.label}</span>
-                      <span className="text-[11px] font-semibold text-slate-200">{chip.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Progress at bottom */}
-          <div className="px-8 py-6 border-t border-slate-800">
-            <div className="flex justify-between text-xs text-slate-500 mb-2">
-              <span>Progress</span>
-              <span className="text-slate-300 font-medium">{progress}%</span>
+        <div className="hidden w-[320px] shrink-0 bg-slate-900 lg:block xl:w-[360px]">
+          <aside className="sticky top-16 flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
+            {/* Brand */}
+            <div className="border-b border-slate-800 px-8 pt-8 pb-6">
+              <p className="text-power-orange mb-0.5 text-[11px] font-bold tracking-widest uppercase">
+                PowerMySport
+              </p>
+              <p className="text-sm text-slate-400">Sport Assessment</p>
             </div>
-            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-power-orange rounded-full"
-                animate={{ width: `${progress}%` }}
-                transition={{ ease: "easeOut", duration: 0.5 }}
-              />
+
+            {/* Section context */}
+            <div className="flex-1 overflow-y-auto px-8 py-7">
+              {sectionMeta && (
+                <div key={currentSection} className="animate-in fade-in duration-300">
+                  {/* Section progress dots */}
+                  <div className="mb-6 flex gap-1.5">
+                    {SECTION_ORDER.map((s) => (
+                      <div
+                        key={s}
+                        className={`h-1 rounded-full transition-all duration-300 ${
+                          s === currentSection
+                            ? "bg-power-orange w-6"
+                            : SECTION_ORDER.indexOf(s) < SECTION_ORDER.indexOf(currentSection)
+                              ? "w-3 bg-slate-600"
+                              : "w-3 bg-slate-800"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Icon */}
+                  <div className="bg-power-orange/15 text-power-orange mb-5 flex h-11 w-11 items-center justify-center rounded-2xl">
+                    {sectionMeta.icon}
+                  </div>
+
+                  <h2 className="font-title mb-2 text-xl leading-snug font-bold text-white">
+                    {sectionMeta.title}
+                  </h2>
+                  <p className="text-sm leading-relaxed text-slate-400">{sectionMeta.desc}</p>
+                </div>
+              )}
+
+              {/* Profile chips — grow as answers fill in */}
+              {profileChips.length > 0 && (
+                <div className="mt-8">
+                  <p className="mb-3 text-[10px] font-semibold tracking-widest text-slate-500 uppercase">
+                    Profile so far
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {profileChips.map((chip) => (
+                      <div
+                        key={chip.label}
+                        className="flex items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1"
+                      >
+                        <span className="text-[10px] text-slate-500">{chip.label}</span>
+                        <span className="text-[11px] font-semibold text-slate-200">
+                          {chip.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </aside>
+
+            {/* Progress at bottom */}
+            <div className="border-t border-slate-800 px-8 py-6">
+              <div className="mb-2 flex justify-between text-xs text-slate-500">
+                <span>Progress</span>
+                <span className="font-medium text-slate-300">{progress}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
+                <motion.div
+                  className="bg-power-orange h-full rounded-full"
+                  animate={{ width: `${progress}%` }}
+                  transition={{ ease: "easeOut", duration: 0.5 }}
+                />
+              </div>
+            </div>
+          </aside>
         </div>
       )}
 
       {/* ── Right panel ── */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-1 flex-col">
         {/* Mobile progress bar */}
         {showProgress && (
-          <div className="lg:hidden h-1 bg-slate-100 w-full shrink-0">
+          <div className="h-1 w-full shrink-0 bg-slate-100 lg:hidden">
             <motion.div
-              className="h-full bg-power-orange"
+              className="bg-power-orange h-full"
               animate={{ width: `${progress}%` }}
               transition={{ ease: "easeOut", duration: 0.4 }}
             />
@@ -1283,9 +1513,9 @@ export function WizardShell() {
 
         {/* Desktop progress bar — only when no sidebar (full-screen steps) */}
         {showProgress && isFullScreen && (
-          <div className="hidden lg:block h-1 bg-slate-100 w-full shrink-0">
+          <div className="hidden h-1 w-full shrink-0 bg-slate-100 lg:block">
             <motion.div
-              className="h-full bg-power-orange"
+              className="bg-power-orange h-full"
               animate={{ width: `${progress}%` }}
               transition={{ ease: "easeOut", duration: 0.4 }}
             />
@@ -1294,13 +1524,13 @@ export function WizardShell() {
 
         {/* Back button */}
         {showBack && (
-          <div className="flex items-center px-5 pt-4 lg:px-10 shrink-0">
+          <div className="flex shrink-0 items-center px-5 pt-4 lg:px-10">
             <button
               type="button"
               onClick={goBack}
-              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-slate-400 transition-colors hover:text-slate-700"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="h-4 w-4" />
               Back
             </button>
           </div>
@@ -1311,12 +1541,12 @@ export function WizardShell() {
             extra track width for side-by-side fit/gap columns and a 3-up card
             row. Welcome and processing stay narrower. */}
         <div
-          className={`flex-1 px-5 py-8 lg:py-10 w-full mx-auto ${
+          className={`mx-auto w-full flex-1 px-5 py-8 lg:py-10 ${
             currentStep.kind === "results"
               ? "max-w-6xl lg:px-10 xl:px-12"
               : isFullScreen
                 ? "max-w-5xl lg:px-10 xl:px-14"
-                : "max-w-2xl lg:px-10 xl:px-16 lg:mx-0"
+                : "max-w-2xl lg:mx-0 lg:px-10 xl:px-16"
           }`}
         >
           <div
@@ -1332,22 +1562,25 @@ export function WizardShell() {
               >
                 <div className="relative flex flex-col overflow-hidden rounded-[28px] border border-slate-200/70 bg-white shadow-[0_28px_70px_-28px_rgba(15,23,42,0.22)] lg:flex-row">
                   {/* ── Left panel — branded showcase ── */}
-                  <div className="flex flex-col gap-7 bg-slate-900 p-7 xl:p-9 lg:w-[52%] lg:shrink-0 xl:w-[55%]">
+                  <div className="flex flex-col gap-7 bg-slate-900 p-7 lg:w-[52%] lg:shrink-0 xl:w-[55%] xl:p-9">
                     {/* Brand eyebrow */}
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-power-orange/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-power-orange">
-                        <span className="h-1.5 w-1.5 rounded-full bg-power-orange animate-pulse" />
+                      <span className="bg-power-orange/15 text-power-orange inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase">
+                        <span className="bg-power-orange h-1.5 w-1.5 animate-pulse rounded-full" />
                         Sport Assessment
                       </span>
                     </div>
 
                     {/* Headline */}
                     <div>
-                      <h1 className="font-title text-2xl xl:text-3xl font-bold text-white leading-tight mb-3">
-                        Find the right sport<br />for your child.
+                      <h1 className="font-title mb-3 text-2xl leading-tight font-bold text-white xl:text-3xl">
+                        Find the right sport
+                        <br />
+                        for your child.
                       </h1>
-                      <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-                        We analyse {TOTAL_QUESTIONS} data points — the same things a top sports consultant would want to know.
+                      <p className="max-w-sm text-sm leading-relaxed text-slate-400">
+                        We analyse {TOTAL_QUESTIONS} data points — the same things a top sports
+                        consultant would want to know.
                       </p>
                     </div>
 
@@ -1358,16 +1591,21 @@ export function WizardShell() {
                         { value: "5", label: "Categories" },
                         { value: "~10", label: "Minutes" },
                       ].map((stat) => (
-                        <div key={stat.label} className="rounded-2xl border border-white/5 bg-white/[0.04] p-4 text-center">
-                          <p className="font-title text-2xl font-bold text-white mb-0.5">{stat.value}</p>
-                          <p className="text-[11px] text-slate-500 font-medium">{stat.label}</p>
+                        <div
+                          key={stat.label}
+                          className="rounded-2xl border border-white/5 bg-white/[0.04] p-4 text-center"
+                        >
+                          <p className="font-title mb-0.5 text-2xl font-bold text-white">
+                            {stat.value}
+                          </p>
+                          <p className="text-[11px] font-medium text-slate-500">{stat.label}</p>
                         </div>
                       ))}
                     </div>
 
                     {/* Category list */}
                     <div className="flex flex-col gap-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-600 mb-1">
+                      <p className="mb-1 text-[10px] font-bold tracking-widest text-slate-600 uppercase">
                         What we evaluate
                       </p>
                       <motion.div
@@ -1375,7 +1613,10 @@ export function WizardShell() {
                         animate="show"
                         variants={{
                           hidden: { opacity: 0 },
-                          show: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+                          show: {
+                            opacity: 1,
+                            transition: { staggerChildren: 0.07, delayChildren: 0.1 },
+                          },
                         }}
                         className="grid grid-cols-2 gap-2"
                       >
@@ -1396,12 +1637,19 @@ export function WizardShell() {
                                 hidden: { opacity: 0, y: 10 },
                                 show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
                               }}
-                              className={`flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.07] cursor-default${isLast ? " col-span-2" : ""}`}
+                              className={`flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.04] p-3 transition-colors duration-200 hover:bg-white/[0.07] cursor-default${isLast ? "col-span-2" : ""}`}
                             >
-                              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradients[idx]} flex items-center justify-center text-white shrink-0 shadow-sm`}>
-                                {React.cloneElement(sec.icon as React.ReactElement<{ className?: string }>, { className: "w-4 h-4" })}
+                              <div
+                                className={`h-8 w-8 rounded-lg bg-gradient-to-br ${gradients[idx]} flex shrink-0 items-center justify-center text-white shadow-sm`}
+                              >
+                                {React.cloneElement(
+                                  sec.icon as React.ReactElement<{ className?: string }>,
+                                  { className: "w-4 h-4" }
+                                )}
                               </div>
-                              <p className="text-[12px] font-semibold text-white leading-tight truncate">{sec.title}</p>
+                              <p className="truncate text-[12px] leading-tight font-semibold text-white">
+                                {sec.title}
+                              </p>
                             </motion.div>
                           );
                         })}
@@ -1412,18 +1660,19 @@ export function WizardShell() {
                   {/* ── Right panel — CTA ── */}
                   <div className="relative flex flex-1 flex-col justify-center gap-7 overflow-hidden p-7 xl:p-9">
                     {/* Ambient glow — echoes the left panel's dark treatment without repeating it */}
-                    <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-power-orange/[0.06] blur-3xl" />
+                    <div className="bg-power-orange/[0.06] pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full blur-3xl" />
                     <div className="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-sky-400/[0.06] blur-3xl" />
 
                     <div className="relative">
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                      <p className="mb-3 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
                         Personalised recommendation
                       </p>
-                      <h2 className="font-title text-2xl font-bold text-slate-900 leading-snug mb-3">
+                      <h2 className="font-title mb-3 text-2xl leading-snug font-bold text-slate-900">
                         Ready to find the perfect match?
                       </h2>
-                      <p className="text-sm text-slate-500 leading-relaxed">
-                        Answer honestly — there are no right or wrong answers. The more accurate you are, the better the match.
+                      <p className="text-sm leading-relaxed text-slate-500">
+                        Answer honestly — there are no right or wrong answers. The more accurate you
+                        are, the better the match.
                       </p>
                     </div>
 
@@ -1435,10 +1684,10 @@ export function WizardShell() {
                         { step: "3", text: "Get your personalised sport report" },
                       ].map((item) => (
                         <div key={item.step} className="flex items-center gap-3">
-                          <span className="w-7 h-7 rounded-full bg-power-orange/10 text-power-orange text-[12px] font-bold flex items-center justify-center shrink-0">
+                          <span className="bg-power-orange/10 text-power-orange flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold">
                             {item.step}
                           </span>
-                          <p className="text-[13px] text-slate-600 font-medium">{item.text}</p>
+                          <p className="text-[13px] font-medium text-slate-600">{item.text}</p>
                         </div>
                       ))}
                     </div>
@@ -1446,7 +1695,7 @@ export function WizardShell() {
                     {/* Child picker */}
                     {players.length > 0 && (
                       <div className="relative">
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2.5">
+                        <p className="mb-2.5 text-[11px] font-bold tracking-widest text-slate-400 uppercase">
                           Who is this for?
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -1455,10 +1704,10 @@ export function WizardShell() {
                               key={p._id}
                               type="button"
                               onClick={() => selectDependent(p)}
-                              className={`px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all duration-200 ${
+                              className={`rounded-full border-2 px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                                 selectedDependentId === p._id
                                   ? "border-power-orange bg-power-orange text-white shadow-sm"
-                                  : "border-slate-200 text-slate-600 hover:border-slate-300 bg-white"
+                                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                               }`}
                             >
                               {p.name.split(" ")[0]}
@@ -1475,15 +1724,16 @@ export function WizardShell() {
                                 setAnswers({ ...EMPTY_ANSWERS });
                                 setNameInput("");
                               }}
-                              className="px-4 py-2 rounded-full border-2 border-slate-200 text-sm font-medium text-slate-500 hover:border-slate-300 bg-white transition-all duration-200"
+                              className="rounded-full border-2 border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 transition-all duration-200 hover:border-slate-300"
                             >
                               Someone new
                             </button>
                           )}
                         </div>
                         {selectedDependentId && selectedPlayer?.wizardCompletedAt && (
-                          <p className="text-xs text-slate-400 mt-2">
-                            Answers pre-filled from previous assessment — update anything that&apos;s changed.
+                          <p className="mt-2 text-xs text-slate-400">
+                            Answers pre-filled from previous assessment — update anything
+                            that&apos;s changed.
                           </p>
                         )}
                       </div>
@@ -1494,19 +1744,25 @@ export function WizardShell() {
                       <button
                         type="button"
                         onClick={goNext}
-                        className="group relative w-full overflow-hidden rounded-2xl bg-power-orange px-8 py-4 text-[15px] font-bold text-white shadow-[0_4px_24px_-4px_rgba(234,88,12,0.5)] hover:shadow-[0_8px_32px_-4px_rgba(234,88,12,0.6)] hover:bg-orange-600 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2"
+                        className="group bg-power-orange relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl px-8 py-4 text-[15px] font-bold text-white shadow-[0_4px_24px_-4px_rgba(234,88,12,0.5)] transition-all duration-200 hover:bg-orange-600 hover:shadow-[0_8px_32px_-4px_rgba(234,88,12,0.6)] active:scale-[0.99]"
                       >
                         <span>
                           {selectedDependentId
                             ? `Start for ${selectedPlayer?.name.split(" ")[0]}`
                             : "Start the assessment"}
                         </span>
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+                        <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                       </button>
                       <div className="flex items-center justify-center gap-4 text-[11px] text-slate-400">
-                        <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500" /> Free</span>
-                        <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-emerald-500" /> No account needed</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> ~10 min</span>
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3 text-emerald-500" /> Free
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3 text-emerald-500" /> No account needed
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> ~10 min
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1517,7 +1773,7 @@ export function WizardShell() {
             {currentStep.kind === "name" && (
               <div className="space-y-6 py-4">
                 <div>
-                  <h2 className="font-title text-2xl font-bold text-slate-900 mb-2">
+                  <h2 className="font-title mb-2 text-2xl font-bold text-slate-900">
                     Let&apos;s start. What&apos;s your child&apos;s name?
                   </h2>
                   <p className="text-sm text-slate-400">
@@ -1536,7 +1792,7 @@ export function WizardShell() {
                       goNext();
                     }
                   }}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 text-base placeholder:text-slate-300 focus:outline-none focus:border-power-orange focus:ring-2 focus:ring-power-orange/15"
+                  className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:outline-none"
                 />
                 <button
                   type="button"
@@ -1545,9 +1801,11 @@ export function WizardShell() {
                     goNext();
                   }}
                   disabled={!nameInput.trim()}
-                  className="w-full bg-power-orange text-white rounded-xl py-3 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-power-orange/90 transition-colors"
+                  className="bg-power-orange hover:bg-power-orange/90 w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {nameInput.trim() ? `Continue with ${nameInput.trim()}` : "Enter a name to continue"}
+                  {nameInput.trim()
+                    ? `Continue with ${nameInput.trim()}`
+                    : "Enter a name to continue"}
                 </button>
               </div>
             )}
@@ -1569,9 +1827,7 @@ export function WizardShell() {
               />
             )}
 
-            {currentStep.kind === "processing" && (
-              <ProcessingScreen name={answers.childName} />
-            )}
+            {currentStep.kind === "processing" && <ProcessingScreen name={answers.childName} />}
 
             {currentStep.kind === "results" && (
               <ResultsView

@@ -65,16 +65,12 @@ interface Options {
 const findTextIndexes = async () => {
   const collection = BlogPost.collection;
   const indexes = await collection.indexes();
-  return indexes.filter((index) =>
-    Object.values(index.key || {}).includes("text"),
-  );
+  return indexes.filter((index) => Object.values(index.key || {}).includes("text"));
 };
 
 export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
-  console.log(
-    `Starting migration 27: widen blog text index (${apply ? "APPLY" : "DRY RUN"})...`,
-  );
+  console.log(`Starting migration 27: widen blog text index (${apply ? "APPLY" : "DRY RUN"})...`);
 
   const collection = BlogPost.collection;
   const total = await collection.countDocuments();
@@ -82,9 +78,7 @@ export const up = async (options: Options = {}) => {
 
   console.log(`  blog documents to index: ${total}`);
   console.log(
-    `  existing text indexes:   ${
-      textIndexes.map((index) => index.name).join(", ") || "none"
-    }`,
+    `  existing text indexes:   ${textIndexes.map((index) => index.name).join(", ") || "none"}`
   );
 
   if (textIndexes.some((index) => index.name === NEW_INDEX_NAME)) {
@@ -93,9 +87,7 @@ export const up = async (options: Options = {}) => {
   }
 
   if (!apply) {
-    console.log(
-      `  would drop ${textIndexes.length} text index(es) and build ${NEW_INDEX_NAME}`,
-    );
+    console.log(`  would drop ${textIndexes.length} text index(es) and build ${NEW_INDEX_NAME}`);
     console.log("Dry run complete — re-run with --apply.");
     return;
   }
@@ -122,7 +114,7 @@ export const up = async (options: Options = {}) => {
 export const down = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Reverting migration 27 (${apply ? "APPLY" : "DRY RUN"}) — narrowing the blog text index...`,
+    `Reverting migration 27 (${apply ? "APPLY" : "DRY RUN"}) — narrowing the blog text index...`
   );
 
   const collection = BlogPost.collection;
@@ -130,7 +122,7 @@ export const down = async (options: Options = {}) => {
 
   if (!apply) {
     console.log(
-      `  would drop ${textIndexes.length} text index(es) and restore the title/excerpt/tags index`,
+      `  would drop ${textIndexes.length} text index(es) and restore the title/excerpt/tags index`
     );
     return;
   }

@@ -3,10 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Input } from "../../shared/ui/Input";
 import { toast } from "@/lib/toast";
-import {
-  normalizeStoredState,
-  stateSelectOptions,
-} from "@/lib/indianStates";
+import { normalizeStoredState, stateSelectOptions } from "@/lib/indianStates";
 import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
 import { FourContextCards } from "@/modules/find-sport/components/inputs/FourContextCards";
 import { SpectrumSlider } from "@/modules/find-sport/components/inputs/SpectrumSlider";
@@ -86,12 +83,37 @@ const EMPTY_FORM: DependentFormData = {
 };
 
 export const STEPS = [
-  { id: "about",       title: "About the child",       sub: "Name, age, and key details",                      required: true  },
-  { id: "sport",       title: "Sport & setup",          sub: "What they play, their background, and where they're based", required: false },
-  { id: "goals",       title: "Goals & commitment",     sub: "Ambition, time, budget, and long-term flexibility", required: false },
-  { id: "physical",    title: "Physical traits",        sub: "Body type, energy, and motor skills — optional",  required: false },
-  { id: "personality", title: "Mind & play style",      sub: "How they think and compete — optional",           required: false },
-  { id: "environment", title: "Environment & senses",   sub: "Preferences and sensory profile — optional",      required: false },
+  { id: "about", title: "About the child", sub: "Name, age, and key details", required: true },
+  {
+    id: "sport",
+    title: "Sport & setup",
+    sub: "What they play, their background, and where they're based",
+    required: false,
+  },
+  {
+    id: "goals",
+    title: "Goals & commitment",
+    sub: "Ambition, time, budget, and long-term flexibility",
+    required: false,
+  },
+  {
+    id: "physical",
+    title: "Physical traits",
+    sub: "Body type, energy, and motor skills — optional",
+    required: false,
+  },
+  {
+    id: "personality",
+    title: "Mind & play style",
+    sub: "How they think and compete — optional",
+    required: false,
+  },
+  {
+    id: "environment",
+    title: "Environment & senses",
+    sub: "Preferences and sensory profile — optional",
+    required: false,
+  },
 ] as const;
 
 export type DependentModalStepId = (typeof STEPS)[number]["id"];
@@ -133,9 +155,7 @@ export default function DependentManagementModal({
         ...EMPTY_FORM,
         ...flat,
         name: initialDependent.name,
-        dob: initialDependent.dob
-          ? new Date(initialDependent.dob).toISOString().split("T")[0]
-          : "",
+        dob: initialDependent.dob ? new Date(initialDependent.dob).toISOString().split("T")[0] : "",
         relation: normalizeDependentRelation(flat.relation),
         // Same reason as the relation above: a dependent saved with the old
         // "Jammu & Kashmir" spelling matches no option in the canonical list, so
@@ -156,11 +176,23 @@ export default function DependentManagementModal({
 
   const handleNext = () => {
     if (stepIndex === 0) {
-      if (!formData.name.trim()) { toast.error("Name is required"); return; }
-      if (!formData.dob)         { toast.error("Date of birth is required"); return; }
+      if (!formData.name.trim()) {
+        toast.error("Name is required");
+        return;
+      }
+      if (!formData.dob) {
+        toast.error("Date of birth is required");
+        return;
+      }
       const age = getDependentAge(formData.dob);
-      if (age === null)  { toast.error("Enter a valid date of birth"); return; }
-      if (age >= 18)     { toast.error("Must be under 18 years old"); return; }
+      if (age === null) {
+        toast.error("Enter a valid date of birth");
+        return;
+      }
+      if (age >= 18) {
+        toast.error("Must be under 18 years old");
+        return;
+      }
     }
     setDir(1);
     setStepIndex((i) => i + 1);
@@ -174,24 +206,43 @@ export default function DependentManagementModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) { toast.error("Name is required"); setStepIndex(0); return; }
-    if (!formData.dob)         { toast.error("Date of birth is required"); setStepIndex(0); return; }
+    if (!formData.name.trim()) {
+      toast.error("Name is required");
+      setStepIndex(0);
+      return;
+    }
+    if (!formData.dob) {
+      toast.error("Date of birth is required");
+      setStepIndex(0);
+      return;
+    }
     const age = getDependentAge(formData.dob);
-    if (age === null)  { toast.error("Enter a valid date of birth"); setStepIndex(0); return; }
-    if (age >= 18)     { toast.error("Must be under 18 years old"); setStepIndex(0); return; }
+    if (age === null) {
+      toast.error("Enter a valid date of birth");
+      setStepIndex(0);
+      return;
+    }
+    if (age >= 18) {
+      toast.error("Must be under 18 years old");
+      setStepIndex(0);
+      return;
+    }
 
     let submitData: DependentFormData = formData;
     const sportIsKnown = (formData.sportsFocus?.length ?? 0) > 0;
     if (!sportIsKnown && hasWizardSignal(formData, age)) {
       const answers = dependentToWizardAnswers(formData, formData.name, age);
-      const scored  = scoreSports(answers);
+      const scored = scoreSports(answers);
       // buildDependentPayload returns the grouped shape now — flatten it
       // back to this form's own flat currency before merging.
       const derived = denormalizeDependent(buildDependentPayload(answers, scored, formData.name));
       submitData = {
-        ...formData, ...derived,
-        dob: formData.dob, relation: formData.relation,
-        medicalConditions: formData.medicalConditions, _id: formData._id,
+        ...formData,
+        ...derived,
+        dob: formData.dob,
+        relation: formData.relation,
+        medicalConditions: formData.medicalConditions,
+        _id: formData._id,
       };
     }
 
@@ -220,7 +271,12 @@ export default function DependentManagementModal({
             {stepIndex === 0 ? "Cancel" : "Back"}
           </Button>
           {isLastStep ? (
-            <Button type="submit" form="dependent-form" loading={isLoading} className="min-w-[140px]">
+            <Button
+              type="submit"
+              form="dependent-form"
+              loading={isLoading}
+              className="min-w-[140px]"
+            >
               {mode === "add" ? "Save profile" : "Save changes"}
             </Button>
           ) : (
@@ -240,8 +296,8 @@ export default function DependentManagementModal({
       <form id="dependent-form" onSubmit={handleSubmit}>
         {/* Progress */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[11px] font-bold tracking-widest text-slate-400 uppercase">
               Step {stepIndex + 1} of {STEPS.length}
             </span>
             {!currentStep.required && (
@@ -250,7 +306,7 @@ export default function DependentManagementModal({
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
             <div
-              className="h-full rounded-full bg-power-orange transition-all duration-500"
+              className="bg-power-orange h-full rounded-full transition-all duration-500"
               style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
             />
           </div>
@@ -270,7 +326,6 @@ export default function DependentManagementModal({
             transition={{ duration: 0.22, ease: "easeOut" }}
             className="space-y-5"
           >
-
             {/* ── Step 0: About ─────────────────────────────────────────────────── */}
             {stepIndex === 0 && (
               <>
@@ -321,7 +376,7 @@ export default function DependentManagementModal({
                     onClick={() =>
                       handleChange("gender", formData.gender === "OTHER" ? "MALE" : "OTHER")
                     }
-                    className="mt-2 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                    className="mt-2 text-xs text-slate-400 transition-colors hover:text-slate-600"
                   >
                     {formData.gender === "OTHER"
                       ? "✓ Marked as Other / prefer not to say"
@@ -350,7 +405,11 @@ export default function DependentManagementModal({
                   />
                 </ProfileEditField>
 
-                <ProfileEditField label="State / UT" htmlFor="dep-location" hint="For local resource recommendations">
+                <ProfileEditField
+                  label="State / UT"
+                  htmlFor="dep-location"
+                  hint="For local resource recommendations"
+                >
                   <ProfileFormSelect
                     id="dep-location"
                     value={formData.location || ""}
@@ -365,9 +424,15 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Current level">
                   <ThreeOptionCards
                     options={[
-                      { value: "beginner",     label: "Beginner — city / neighbourhood, just getting started" },
-                      { value: "intermediate", label: "Intermediate — school, club or district level" },
-                      { value: "competitive",  label: "Competitive — state or national level" },
+                      {
+                        value: "beginner",
+                        label: "Beginner — city / neighbourhood, just getting started",
+                      },
+                      {
+                        value: "intermediate",
+                        label: "Intermediate — school, club or district level",
+                      },
+                      { value: "competitive", label: "Competitive — state or national level" },
                     ]}
                     value={formData.experienceLevel ?? null}
                     onChange={(v) => handleChange("experienceLevel", v)}
@@ -377,17 +442,36 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Training setup">
                   <FourContextCards
                     options={[
-                      { value: "self",    label: "Self-practice",    context: "Home or local grounds, no formal coaching" },
-                      { value: "club",    label: "School / Club",    context: "Group coaching at school or local club" },
-                      { value: "academy", label: "Academy",          context: "Enrolled in a structured programme" },
-                      { value: "private", label: "Private coaching", context: "One-on-one with a dedicated coach" },
+                      {
+                        value: "self",
+                        label: "Self-practice",
+                        context: "Home or local grounds, no formal coaching",
+                      },
+                      {
+                        value: "club",
+                        label: "School / Club",
+                        context: "Group coaching at school or local club",
+                      },
+                      {
+                        value: "academy",
+                        label: "Academy",
+                        context: "Enrolled in a structured programme",
+                      },
+                      {
+                        value: "private",
+                        label: "Private coaching",
+                        context: "One-on-one with a dedicated coach",
+                      },
                     ]}
                     value={formData.trainingType ?? null}
                     onChange={(v) => handleChange("trainingType", v)}
                   />
                 </ProfileEditField>
 
-                <ProfileEditField label="Medical conditions / limitations" hint="Optional — helps avoid unsuitable sports">
+                <ProfileEditField
+                  label="Medical conditions / limitations"
+                  hint="Optional — helps avoid unsuitable sports"
+                >
                   <div className="space-y-2">
                     <Input
                       type="text"
@@ -397,7 +481,10 @@ export default function DependentManagementModal({
                           e.preventDefault();
                           const val = (e.target as HTMLInputElement).value.trim();
                           if (val && !formData.medicalConditions?.includes(val)) {
-                            handleChange("medicalConditions", [...(formData.medicalConditions || []), val]);
+                            handleChange("medicalConditions", [
+                              ...(formData.medicalConditions || []),
+                              val,
+                            ]);
                             (e.target as HTMLInputElement).value = "";
                           }
                         }
@@ -414,7 +501,10 @@ export default function DependentManagementModal({
                             <button
                               type="button"
                               onClick={() =>
-                                handleChange("medicalConditions", formData.medicalConditions?.filter((c) => c !== cond))
+                                handleChange(
+                                  "medicalConditions",
+                                  formData.medicalConditions?.filter((c) => c !== cond)
+                                )
                               }
                               className="ml-0.5 text-orange-400 hover:text-orange-600"
                             >
@@ -435,10 +525,22 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Ambition">
                   <FourContextCards
                     options={[
-                      { value: "fun",          label: "Just for fun",       context: "Recreational, no pressure" },
-                      { value: "competitive",  label: "Competitive",        context: "District / state-level tournaments" },
-                      { value: "national",     label: "National-level goal", context: "Serious training commitment" },
-                      { value: "career",       label: "Career in sport",    context: "A sports-quota job, a college place, or turning pro" },
+                      { value: "fun", label: "Just for fun", context: "Recreational, no pressure" },
+                      {
+                        value: "competitive",
+                        label: "Competitive",
+                        context: "District / state-level tournaments",
+                      },
+                      {
+                        value: "national",
+                        label: "National-level goal",
+                        context: "Serious training commitment",
+                      },
+                      {
+                        value: "career",
+                        label: "Career in sport",
+                        context: "A sports-quota job, a college place, or turning pro",
+                      },
                     ]}
                     value={formData.ambition ?? null}
                     onChange={(v) => handleChange("ambition", v)}
@@ -448,10 +550,18 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Weekly time commitment">
                   <FourContextCards
                     options={[
-                      { value: "1-3",      label: "1–3 hrs/week",  context: "Light, casual commitment" },
-                      { value: "4-7",      label: "4–7 hrs/week",  context: "Regular weekly practice" },
-                      { value: "8-12",     label: "8–12 hrs/week", context: "Serious, structured training" },
-                      { value: "13-plus",  label: "13+ hrs/week",  context: "High-performance schedule" },
+                      { value: "1-3", label: "1–3 hrs/week", context: "Light, casual commitment" },
+                      { value: "4-7", label: "4–7 hrs/week", context: "Regular weekly practice" },
+                      {
+                        value: "8-12",
+                        label: "8–12 hrs/week",
+                        context: "Serious, structured training",
+                      },
+                      {
+                        value: "13-plus",
+                        label: "13+ hrs/week",
+                        context: "High-performance schedule",
+                      },
                     ]}
                     value={formData.weeklyHoursCategory ?? null}
                     onChange={(v) => handleChange("weeklyHoursCategory", v)}
@@ -461,16 +571,31 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Monthly training budget">
                   <FourContextCards
                     options={[
-                      { value: "under-3k", label: "Under ₹3,000",     context: "Community programs, school teams" },
-                      { value: "3k-7k",    label: "₹3,000 – 7,000",   context: "Local academies, group coaching" },
-                      { value: "7k-15k",   label: "₹7,000 – 15,000",  context: "Structured academy training" },
-                      { value: "15k-plus", label: "₹15,000+",          context: "Elite academies, personal coaching" },
+                      {
+                        value: "under-3k",
+                        label: "Under ₹3,000",
+                        context: "Community programs, school teams",
+                      },
+                      {
+                        value: "3k-7k",
+                        label: "₹3,000 – 7,000",
+                        context: "Local academies, group coaching",
+                      },
+                      {
+                        value: "7k-15k",
+                        label: "₹7,000 – 15,000",
+                        context: "Structured academy training",
+                      },
+                      {
+                        value: "15k-plus",
+                        label: "₹15,000+",
+                        context: "Elite academies, personal coaching",
+                      },
                     ]}
                     value={formData.budgetRange ?? null}
                     onChange={(v) => handleChange("budgetRange", v)}
                   />
                 </ProfileEditField>
-
               </>
             )}
 
@@ -487,7 +612,10 @@ export default function DependentManagementModal({
                       placeholder="e.g., 135"
                       value={formData.heightCm ?? ""}
                       onChange={(e) =>
-                        handleChange("heightCm", e.target.value === "" ? undefined : parseFloat(e.target.value))
+                        handleChange(
+                          "heightCm",
+                          e.target.value === "" ? undefined : parseFloat(e.target.value)
+                        )
                       }
                     />
                   </ProfileEditField>
@@ -501,7 +629,10 @@ export default function DependentManagementModal({
                       placeholder="e.g., 32"
                       value={formData.weightKg ?? ""}
                       onChange={(e) =>
-                        handleChange("weightKg", e.target.value === "" ? undefined : parseFloat(e.target.value))
+                        handleChange(
+                          "weightKg",
+                          e.target.value === "" ? undefined : parseFloat(e.target.value)
+                        )
                       }
                     />
                   </ProfileEditField>
@@ -519,8 +650,16 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Energy type">
                   <BinaryCards
                     options={[
-                      { value: "explosive", title: "Explosive", sub: "Short bursts of intense power" },
-                      { value: "endurance", title: "Endurance", sub: "Sustains effort over long periods" },
+                      {
+                        value: "explosive",
+                        title: "Explosive",
+                        sub: "Short bursts of intense power",
+                      },
+                      {
+                        value: "endurance",
+                        title: "Endurance",
+                        sub: "Sustains effort over long periods",
+                      },
                     ]}
                     value={formData.energyType ?? null}
                     onChange={(v) => handleChange("energyType", v)}
@@ -530,8 +669,12 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Motor skill type">
                   <BinaryCards
                     options={[
-                      { value: "gross", title: "Gross motor", sub: "Big, powerful whole-body movements" },
-                      { value: "fine",  title: "Fine motor",  sub: "Precise, small-muscle control" },
+                      {
+                        value: "gross",
+                        title: "Gross motor",
+                        sub: "Big, powerful whole-body movements",
+                      },
+                      { value: "fine", title: "Fine motor", sub: "Precise, small-muscle control" },
                     ]}
                     value={formData.motorType ?? null}
                     onChange={(v) => handleChange("motorType", v)}
@@ -557,8 +700,8 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Response to competition">
                   <ThreeOptionCards
                     options={[
-                      { value: "fired-up",   label: COMPETITIVE_RESPONSE_LABELS["fired-up"] },
-                      { value: "calm",        label: COMPETITIVE_RESPONSE_LABELS.calm },
+                      { value: "fired-up", label: COMPETITIVE_RESPONSE_LABELS["fired-up"] },
+                      { value: "calm", label: COMPETITIVE_RESPONSE_LABELS.calm },
                       { value: "discouraged", label: COMPETITIVE_RESPONSE_LABELS.discouraged },
                     ]}
                     value={formData.competitiveResponse ?? null}
@@ -569,8 +712,12 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Focus style">
                   <BinaryCards
                     options={[
-                      { value: "bursts",    title: "Bursts",    sub: "Sharp focus in short stretches" },
-                      { value: "sustained", title: "Sustained", sub: "Stays locked in for long periods" },
+                      { value: "bursts", title: "Bursts", sub: "Sharp focus in short stretches" },
+                      {
+                        value: "sustained",
+                        title: "Sustained",
+                        sub: "Stays locked in for long periods",
+                      },
                     ]}
                     value={formData.focusStyle ?? null}
                     onChange={(v) => handleChange("focusStyle", v)}
@@ -580,8 +727,12 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Decision style">
                   <BinaryCards
                     options={[
-                      { value: "react",     title: "Instinctive", sub: "Reacts fast, trusts the first read" },
-                      { value: "strategic", title: "Strategic",   sub: "Plans ahead before acting" },
+                      {
+                        value: "react",
+                        title: "Instinctive",
+                        sub: "Reacts fast, trusts the first read",
+                      },
+                      { value: "strategic", title: "Strategic", sub: "Plans ahead before acting" },
                     ]}
                     value={formData.decisionStyle ?? null}
                     onChange={(v) => handleChange("decisionStyle", v)}
@@ -593,7 +744,7 @@ export default function DependentManagementModal({
                     options={[
                       { value: "thrives", label: PRESSURE_LABELS.thrives },
                       { value: "manages", label: PRESSURE_LABELS.manages },
-                      { value: "avoids",  label: PRESSURE_LABELS.avoids  },
+                      { value: "avoids", label: PRESSURE_LABELS.avoids },
                     ]}
                     value={formData.pressureResponse ?? null}
                     onChange={(v) => handleChange("pressureResponse", v)}
@@ -603,8 +754,16 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Repetition tolerance">
                   <BinaryCards
                     options={[
-                      { value: "high", title: "High tolerance",  sub: "Enjoys repeated drilling of the same skill" },
-                      { value: "low",  title: "Prefers variety", sub: "Gets bored with repetitive practice" },
+                      {
+                        value: "high",
+                        title: "High tolerance",
+                        sub: "Enjoys repeated drilling of the same skill",
+                      },
+                      {
+                        value: "low",
+                        title: "Prefers variety",
+                        sub: "Gets bored with repetitive practice",
+                      },
                     ]}
                     value={formData.repetitionTolerance ?? null}
                     onChange={(v) => handleChange("repetitionTolerance", v)}
@@ -619,9 +778,9 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Contact comfort">
                   <ThreeOptionCards
                     options={[
-                      { value: "loves",   label: CONTACT_LABELS.loves   },
-                      { value: "neutral", label: CONTACT_LABELS.neutral  },
-                      { value: "avoids",  label: CONTACT_LABELS.avoids   },
+                      { value: "loves", label: CONTACT_LABELS.loves },
+                      { value: "neutral", label: CONTACT_LABELS.neutral },
+                      { value: "avoids", label: CONTACT_LABELS.avoids },
                     ]}
                     value={formData.contactComfort ?? null}
                     onChange={(v) => handleChange("contactComfort", v)}
@@ -631,9 +790,9 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Environment preference">
                   <ThreeOptionCards
                     options={[
-                      { value: "outdoor",        label: ENV_LABELS.outdoor         },
-                      { value: "indoor",         label: ENV_LABELS.indoor          },
-                      { value: "no-preference",  label: ENV_LABELS["no-preference"] },
+                      { value: "outdoor", label: ENV_LABELS.outdoor },
+                      { value: "indoor", label: ENV_LABELS.indoor },
+                      { value: "no-preference", label: ENV_LABELS["no-preference"] },
                     ]}
                     value={formData.environment ?? null}
                     onChange={(v) => handleChange("environment", v)}
@@ -643,9 +802,9 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Water comfort">
                   <ThreeOptionCards
                     options={[
-                      { value: "comfortable",   label: WATER_COMFORT_LABELS.comfortable   },
-                      { value: "neutral",        label: WATER_COMFORT_LABELS.neutral        },
-                      { value: "uncomfortable",  label: WATER_COMFORT_LABELS.uncomfortable  },
+                      { value: "comfortable", label: WATER_COMFORT_LABELS.comfortable },
+                      { value: "neutral", label: WATER_COMFORT_LABELS.neutral },
+                      { value: "uncomfortable", label: WATER_COMFORT_LABELS.uncomfortable },
                     ]}
                     value={formData.waterComfort ?? null}
                     onChange={(v) => handleChange("waterComfort", v)}
@@ -655,9 +814,9 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Visual tracking">
                   <ThreeOptionCards
                     options={[
-                      { value: "strong",   label: VISUAL_TRACKING_LABELS.strong   },
-                      { value: "moderate", label: VISUAL_TRACKING_LABELS.moderate  },
-                      { value: "weak",     label: VISUAL_TRACKING_LABELS.weak      },
+                      { value: "strong", label: VISUAL_TRACKING_LABELS.strong },
+                      { value: "moderate", label: VISUAL_TRACKING_LABELS.moderate },
+                      { value: "weak", label: VISUAL_TRACKING_LABELS.weak },
                     ]}
                     value={formData.visualTracking ?? null}
                     onChange={(v) => handleChange("visualTracking", v)}
@@ -667,9 +826,9 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Eyesight">
                   <ThreeOptionCards
                     options={[
-                      { value: "sharp",     label: EYESIGHT_LABELS.sharp     },
-                      { value: "corrected", label: EYESIGHT_LABELS.corrected  },
-                      { value: "limited",   label: EYESIGHT_LABELS.limited    },
+                      { value: "sharp", label: EYESIGHT_LABELS.sharp },
+                      { value: "corrected", label: EYESIGHT_LABELS.corrected },
+                      { value: "limited", label: EYESIGHT_LABELS.limited },
                     ]}
                     value={formData.eyesight ?? null}
                     onChange={(v) => handleChange("eyesight", v)}
@@ -679,9 +838,9 @@ export default function DependentManagementModal({
                 <ProfileEditField label="Agility & flexibility">
                   <ThreeOptionCards
                     options={[
-                      { value: "high",     label: AGILITY_LABELS.high     },
-                      { value: "moderate", label: AGILITY_LABELS.moderate  },
-                      { value: "low",      label: AGILITY_LABELS.low       },
+                      { value: "high", label: AGILITY_LABELS.high },
+                      { value: "moderate", label: AGILITY_LABELS.moderate },
+                      { value: "low", label: AGILITY_LABELS.low },
                     ]}
                     value={formData.agility ?? null}
                     onChange={(v) => handleChange("agility", v)}
@@ -691,7 +850,7 @@ export default function DependentManagementModal({
                 {/* Show current sport matches if any */}
                 {(formData.sportMatches?.length ?? 0) > 0 && (
                   <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <p className="mb-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                       Current sport matches
                     </p>
                     <div className="space-y-2">
@@ -704,22 +863,27 @@ export default function DependentManagementModal({
                             className={`flex items-center justify-between rounded-lg border ${meta.ring} bg-white px-3 py-2`}
                           >
                             <div className="flex items-center gap-2">
-                              <span className={`flex h-7 w-7 items-center justify-center rounded-full ${meta.badge}`}>
+                              <span
+                                className={`flex h-7 w-7 items-center justify-center rounded-full ${meta.badge}`}
+                              >
                                 <RankIcon className="h-3.5 w-3.5" />
                               </span>
-                              <span className="text-sm font-semibold text-slate-800">{m.sport}</span>
+                              <span className="text-sm font-semibold text-slate-800">
+                                {m.sport}
+                              </span>
                             </div>
                             <span className="text-xs font-medium text-slate-500">{m.fitLabel}</span>
                           </div>
                         );
                       })}
                     </div>
-                    <p className="mt-2 text-xs text-slate-400">Recalculated automatically on save.</p>
+                    <p className="mt-2 text-xs text-slate-400">
+                      Recalculated automatically on save.
+                    </p>
                   </div>
                 )}
               </>
             )}
-
           </motion.div>
         </AnimatePresence>
       </form>

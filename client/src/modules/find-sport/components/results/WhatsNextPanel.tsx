@@ -46,7 +46,7 @@ function loadBooked(dependentId?: string): BookedState {
 
 function AddOnTag() {
   return (
-    <span className="inline-flex items-center rounded-full bg-white/[0.07] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/50 ring-1 ring-white/10">
+    <span className="inline-flex items-center rounded-full bg-white/[0.07] px-2 py-0.5 text-[9px] font-bold tracking-wider text-white/50 uppercase ring-1 ring-white/10">
       Optional add-on
     </span>
   );
@@ -55,7 +55,7 @@ function AddOnTag() {
 function BookedTag({ label }: { label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-      <CheckCircle2 className="w-3.5 h-3.5" />
+      <CheckCircle2 className="h-3.5 w-3.5" />
       {label}
     </span>
   );
@@ -114,7 +114,7 @@ export function WhatsNextPanel({
       .then((res) => {
         if (cancelled || !res.success || !res.data) return;
         const hasReal = res.data.some(
-          (s) => s.player?._id === dependentId && REAL_EXPERT_SESSION_STATUSES.includes(s.status),
+          (s) => s.player?._id === dependentId && REAL_EXPERT_SESSION_STATUSES.includes(s.status)
         );
         if (hasReal) setBooked((prev) => (prev.expertDone ? prev : { ...prev, expertDone: true }));
       })
@@ -126,16 +126,16 @@ export function WhatsNextPanel({
   }, [dependentId]);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 mb-8">
+    <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
       {/* Ambient glow accents */}
-      <div className="pointer-events-none absolute -top-28 -right-20 w-72 h-72 rounded-full bg-power-orange/[0.07] blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 -left-16 w-72 h-72 rounded-full bg-violet-500/[0.07] blur-3xl" />
+      <div className="bg-power-orange/[0.07] pointer-events-none absolute -top-28 -right-20 h-72 w-72 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-violet-500/[0.07] blur-3xl" />
 
       {/* Panel header — title and qualifier share the row on desktop instead of
           stacking into a third full-width line of centred-looking text. */}
-      <div className="relative flex flex-col gap-2 border-b border-white/[0.06] px-6 pb-5 pt-6 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
+      <div className="relative flex flex-col gap-2 border-b border-white/[0.06] px-6 pt-6 pb-5 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
         <div className="min-w-0">
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
+          <p className="mb-1.5 text-[10px] font-bold tracking-[0.22em] text-white/40 uppercase">
             Add-ons &amp; extras
           </p>
           <h3 className="font-title text-xl font-bold text-white">
@@ -148,17 +148,17 @@ export function WhatsNextPanel({
       </div>
 
       {/* ── Add-ons ── */}
-      <div className="relative grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/[0.06] border-b border-white/[0.06]">
+      <div className="relative grid grid-cols-1 divide-y divide-white/[0.06] border-b border-white/[0.06] md:grid-cols-2 md:divide-x md:divide-y-0">
         {/* Physical screening */}
-        <div className="group flex flex-col p-6 sm:p-7 transition-colors duration-300 hover:bg-white/[0.03]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-xl bg-power-orange/15 ring-1 ring-power-orange/20 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <Activity className="w-[18px] h-[18px] text-power-orange" />
+        <div className="group flex flex-col p-6 transition-colors duration-300 hover:bg-white/[0.03] sm:p-7">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="bg-power-orange/15 ring-power-orange/20 flex h-10 w-10 items-center justify-center rounded-xl ring-1 transition-transform duration-300 group-hover:scale-105">
+              <Activity className="text-power-orange h-[18px] w-[18px]" />
             </div>
             {booked.screeningDone ? <BookedTag label="Booked" /> : <AddOnTag />}
           </div>
-          <p className="font-semibold text-[15px] text-white mb-1.5">Physical screening</p>
-          <p className="text-sm text-slate-400 leading-relaxed mb-6 flex-1">
+          <p className="mb-1.5 text-[15px] font-semibold text-white">Physical screening</p>
+          <p className="mb-6 flex-1 text-sm leading-relaxed text-slate-400">
             A six-test fitness battery at a partner venue — speed, power, endurance, agility — with
             a printed report. Turns the trait answers you gave us into measured numbers.
           </p>
@@ -171,34 +171,34 @@ export function WhatsNextPanel({
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="flex items-center justify-center gap-2 w-full rounded-xl border border-white/15 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white hover:border-white hover:text-slate-900"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 py-3 text-sm font-semibold text-white transition-all duration-200 hover:border-white hover:bg-white hover:text-slate-900"
             >
-              <Send className="w-4 h-4" />
+              <Send className="h-4 w-4" />
               Request a slot
             </button>
           )}
         </div>
 
         {/* Expert session */}
-        <div className="group flex flex-col p-6 sm:p-7 transition-colors duration-300 hover:bg-white/[0.03]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/15 ring-1 ring-sky-400/20 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <UserCheck className="w-[18px] h-[18px] text-sky-400" />
+        <div className="group flex flex-col p-6 transition-colors duration-300 hover:bg-white/[0.03] sm:p-7">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 ring-1 ring-sky-400/20 transition-transform duration-300 group-hover:scale-105">
+              <UserCheck className="h-[18px] w-[18px] text-sky-400" />
             </div>
             {booked.expertDone ? <BookedTag label="Booked" /> : <AddOnTag />}
           </div>
-          <p className="font-semibold text-[15px] text-white mb-1.5">Expert session</p>
-          <p className="text-sm text-slate-400 leading-relaxed mb-6 flex-1">
+          <p className="mb-1.5 text-[15px] font-semibold text-white">Expert session</p>
+          <p className="mb-6 flex-1 text-sm leading-relaxed text-slate-400">
             A paid one-on-one with a coach or sports professional who knows the pathway — useful
             when the scores above are close, or when a gap needs a second opinion.
           </p>
 
           <a
             href={booked.expertDone ? "/experts/sessions" : "/booking?tab=experts"}
-            className="group/cta flex items-center justify-center gap-2 w-full rounded-xl border border-white/15 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white hover:border-white hover:text-slate-900"
+            className="group/cta flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 py-3 text-sm font-semibold text-white transition-all duration-200 hover:border-white hover:bg-white hover:text-slate-900"
           >
             {booked.expertDone ? "View your session" : "Talk to an Expert"}
-            <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
           </a>
         </div>
       </div>
@@ -218,7 +218,8 @@ export function WhatsNextPanel({
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-semibold text-white">
-              Join the community <span className="text-[11px] font-medium text-white/30">· Free</span>
+              Join the community{" "}
+              <span className="text-[11px] font-medium text-white/30">· Free</span>
             </p>
             <p className="mt-0.5 text-[13px] leading-relaxed text-slate-400">
               Academy reviews, training tips, and real experiences from parents across India.

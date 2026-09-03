@@ -3,20 +3,10 @@
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
-import {
-  OnboardingVenue,
-  PendingVenueListItem,
-} from "@/modules/onboarding/types/onboarding";
+import { OnboardingVenue, PendingVenueListItem } from "@/modules/onboarding/types/onboarding";
 import { formatOpeningHours } from "@/modules/onboarding/utils/formatOpeningHours";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  ArrowLeft,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  TriangleAlert,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, TriangleAlert, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
@@ -31,9 +21,7 @@ export default function AdminVenueApprovalPanel({
 }: AdminVenueApprovalPanelProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [venues, setVenues] = useState<PendingVenueListItem[]>(initialVenues);
-  const [selectedVenue, setSelectedVenue] = useState<OnboardingVenue | null>(
-    null,
-  );
+  const [selectedVenue, setSelectedVenue] = useState<OnboardingVenue | null>(null);
   const [loading, setLoading] = useState(!initialVenues.length);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -53,10 +41,7 @@ export default function AdminVenueApprovalPanel({
     setLoading(true);
     setError(null);
     try {
-      const response = await onboardingApi.getPendingVenues(
-        currentPage,
-        PAGE_SIZE,
-      );
+      const response = await onboardingApi.getPendingVenues(currentPage, PAGE_SIZE);
       if (!response.success || !response.data) {
         const message = response.message || "Failed to fetch pending venues";
         setError(message);
@@ -71,8 +56,7 @@ export default function AdminVenueApprovalPanel({
         totalPages: response.data.totalPages || 1,
       });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load venues";
+      const message = err instanceof Error ? err.message : "Failed to load venues";
       setError(message);
       toast.error(message);
     } finally {
@@ -99,8 +83,7 @@ export default function AdminVenueApprovalPanel({
       setSelectedVenue(response.data);
       setViewMode("details");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load venue details";
+      const message = err instanceof Error ? err.message : "Failed to load venue details";
       setError(message);
       toast.error(message);
     } finally {
@@ -112,15 +95,14 @@ export default function AdminVenueApprovalPanel({
   const handleApprove = async () => {
     if (!selectedVenue) return;
 
-    const venueId =
-      selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
+    const venueId = selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
     if (!venueId) {
       toast.error("Venue ID not found");
       return;
     }
 
     const confirmed = confirm(
-      `Approve venue "${selectedVenue.name}"? This will activate the venue immediately.`,
+      `Approve venue "${selectedVenue.name}"? This will activate the venue immediately.`
     );
     if (!confirmed) return;
 
@@ -136,9 +118,7 @@ export default function AdminVenueApprovalPanel({
       setViewMode("list");
       setSelectedVenue(null);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to approve venue",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to approve venue");
     } finally {
       setActionLoading(false);
     }
@@ -151,8 +131,7 @@ export default function AdminVenueApprovalPanel({
       return;
     }
 
-    const venueId =
-      selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
+    const venueId = selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
     if (!venueId) {
       toast.error("Venue ID not found");
       return;
@@ -160,26 +139,19 @@ export default function AdminVenueApprovalPanel({
 
     setActionLoading(true);
     try {
-      const response = await onboardingApi.rejectVenue(
-        venueId,
-        rejectionReason,
-      );
+      const response = await onboardingApi.rejectVenue(venueId, rejectionReason);
 
       if (!response.success) {
         throw new Error(response.message || "Failed to reject venue");
       }
 
-      toast.success(
-        `Venue "${selectedVenue.name}" has been rejected. Notification sent to owner.`,
-      );
+      toast.success(`Venue "${selectedVenue.name}" has been rejected. Notification sent to owner.`);
       setVenues(venues.filter((v) => v.id !== venueId));
       setViewMode("list");
       setSelectedVenue(null);
       setRejectionReason("");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to reject venue",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to reject venue");
     } finally {
       setActionLoading(false);
     }
@@ -192,8 +164,7 @@ export default function AdminVenueApprovalPanel({
       return;
     }
 
-    const venueId =
-      selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
+    const venueId = selectedVenue.id || selectedVenue._id || selectedVenue.venueId;
     if (!venueId) {
       toast.error("Venue ID not found");
       return;
@@ -201,26 +172,19 @@ export default function AdminVenueApprovalPanel({
 
     setActionLoading(true);
     try {
-      const response = await onboardingApi.markVenueForReview(
-        venueId,
-        reviewNotes,
-      );
+      const response = await onboardingApi.markVenueForReview(venueId, reviewNotes);
 
       if (!response.success) {
         throw new Error(response.message || "Failed to mark venue for review");
       }
 
-      toast.success(
-        `Venue "${selectedVenue.name}" marked for review. Owner will be notified.`,
-      );
+      toast.success(`Venue "${selectedVenue.name}" marked for review. Owner will be notified.`);
       setVenues(venues.filter((v) => v.id !== venueId));
       setViewMode("list");
       setSelectedVenue(null);
       setReviewNotes("");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to mark venue for review",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to mark venue for review");
     } finally {
       setActionLoading(false);
     }
@@ -238,15 +202,15 @@ export default function AdminVenueApprovalPanel({
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-power-orange"></div>
+            <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2"></div>
           </div>
         ) : error ? (
           <Card className="bg-white">
-            <div className="py-10 text-center space-y-3">
-              <p className="text-red-600 font-semibold">{error}</p>
+            <div className="space-y-3 py-10 text-center">
+              <p className="font-semibold text-red-600">{error}</p>
               <button
                 onClick={loadPendingVenues}
-                className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
               >
                 Retry
               </button>
@@ -255,45 +219,37 @@ export default function AdminVenueApprovalPanel({
         ) : venues.length === 0 ? (
           <Card className="bg-white">
             <div className="flex flex-col items-center gap-4 py-12 text-center">
-              <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
+              <div className="bg-power-orange/10 text-power-orange rounded-full px-4 py-2 text-sm font-semibold">
                 No pending venues
               </div>
-              <p className="max-w-md text-slate-600">
-                All venue submissions are up to date!
-              </p>
+              <p className="max-w-md text-slate-600">All venue submissions are up to date!</p>
             </div>
           </Card>
         ) : (
           <div className="space-y-4">
             {venues.map((venue) => (
-              <Card
-                key={venue.id}
-                className="bg-white hover:shadow-lg transition-shadow"
-              >
+              <Card key={venue.id} className="bg-white transition-shadow hover:shadow-lg">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-slate-900">
-                      {venue.name}
-                    </h3>
-                    <p className="text-slate-600 mt-1 text-sm">
+                    <h3 className="text-xl font-semibold text-slate-900">{venue.name}</h3>
+                    <p className="mt-1 text-sm text-slate-600">
                       Owner: {venue.ownerEmail} | {venue.ownerPhone}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <span className="inline-block px-3 py-1 bg-power-orange/10 text-power-orange text-xs rounded-full font-semibold">
+                      <span className="bg-power-orange/10 text-power-orange inline-block rounded-full px-3 py-1 text-xs font-semibold">
                         {venue.sports.join(", ")}
                       </span>
-                      <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">
+                      <span className="inline-block rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
                         Status: {venue.approvalStatus}
                       </span>
-                      <span className="inline-block px-3 py-1 bg-slate-100 text-slate-700 text-xs rounded-full font-semibold">
-                        Submitted:{" "}
-                        {new Date(venue.submittedAt).toLocaleDateString()}
+                      <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                        Submitted: {new Date(venue.submittedAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => handleViewDetails(venue.id)}
-                    className="ml-4 px-6 py-2.5 bg-power-orange text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold"
+                    className="bg-power-orange ml-4 rounded-lg px-6 py-2.5 font-semibold text-white transition-colors hover:bg-orange-600"
                   >
                     Review
                   </button>
@@ -305,7 +261,7 @@ export default function AdminVenueApprovalPanel({
 
             {/* Pagination Controls */}
             {paginationData.totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200 mt-4">
+              <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4">
                 <p className="text-sm text-slate-600">
                   Showing {(currentPage - 1) * PAGE_SIZE + 1}-
                   {Math.min(currentPage * PAGE_SIZE, paginationData.total)} of{" "}
@@ -315,24 +271,21 @@ export default function AdminVenueApprovalPanel({
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ChevronLeft size={18} />
                   </button>
 
-                  {Array.from(
-                    { length: paginationData.totalPages },
-                    (_, i) => i + 1,
-                  )
+                  {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1)
                     .slice(
                       Math.max(0, currentPage - 2),
-                      Math.min(paginationData.totalPages, currentPage + 1),
+                      Math.min(paginationData.totalPages, currentPage + 1)
                     )
                     .map((page) => (
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-2 rounded-lg font-semibold transition-colors ${
+                        className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
                           currentPage === page
                             ? "bg-power-orange text-white"
                             : "border border-slate-300 text-slate-700 hover:bg-slate-50"
@@ -344,12 +297,10 @@ export default function AdminVenueApprovalPanel({
 
                   <button
                     onClick={() =>
-                      setCurrentPage(
-                        Math.min(paginationData.totalPages, currentPage + 1),
-                      )
+                      setCurrentPage(Math.min(paginationData.totalPages, currentPage + 1))
                     }
                     disabled={currentPage === paginationData.totalPages}
-                    className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ChevronRight size={18} />
                   </button>
@@ -369,21 +320,19 @@ export default function AdminVenueApprovalPanel({
         {/* Back Button */}
         <button
           onClick={() => setViewMode("list")}
-          className="flex items-center gap-2 text-power-orange hover:text-orange-600 transition-colors font-semibold"
+          className="text-power-orange flex items-center gap-2 font-semibold transition-colors hover:text-orange-600"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" />
           Back to List
         </button>
 
-        <Card className="bg-white overflow-hidden">
+        <Card className="overflow-hidden bg-white">
           {/* Header */}
           <div className="border-b border-slate-200 p-5 sm:p-8">
-            <h1 className="text-3xl font-bold text-slate-900">
-              {selectedVenue.name}
-            </h1>
-            <p className="text-slate-600 mt-2">{selectedVenue.address}</p>
+            <h1 className="text-3xl font-bold text-slate-900">{selectedVenue.name}</h1>
+            <p className="mt-2 text-slate-600">{selectedVenue.address}</p>
             <div className="mt-4 flex flex-wrap gap-3">
-              <span className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full font-semibold text-sm">
+              <span className="rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-800">
                 Status: {selectedVenue.approvalStatus}
               </span>
             </div>
@@ -392,19 +341,15 @@ export default function AdminVenueApprovalPanel({
           {/* Venue Info */}
           <div className="grid grid-cols-1 gap-6 border-b border-slate-200 p-5 sm:p-8 md:grid-cols-2">
             <div>
-              <h3 className="font-semibold text-slate-900 mb-2">
-                Basic Details
-              </h3>
+              <h3 className="mb-2 font-semibold text-slate-900">Basic Details</h3>
               <dl className="space-y-2 text-sm">
                 <div>
                   <dt className="text-slate-600">Price per Hour:</dt>
-                  <dd className="font-semibold text-slate-900">
-                    ₹{selectedVenue.pricePerHour}
-                  </dd>
+                  <dd className="font-semibold text-slate-900">₹{selectedVenue.pricePerHour}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-600">Opening Hours:</dt>
-                  <dd className="font-semibold text-slate-900 text-xs">
+                  <dd className="text-xs font-semibold text-slate-900">
                     {formatOpeningHours(selectedVenue.openingHours)}
                   </dd>
                 </div>
@@ -419,9 +364,7 @@ export default function AdminVenueApprovalPanel({
             </div>
 
             <div>
-              <h3 className="font-semibold text-slate-900 mb-2">
-                Additional Info
-              </h3>
+              <h3 className="mb-2 font-semibold text-slate-900">Additional Info</h3>
               <dl className="space-y-2 text-sm">
                 <div>
                   <dt className="text-slate-600">Sports:</dt>
@@ -438,9 +381,7 @@ export default function AdminVenueApprovalPanel({
                 <div>
                   <dt className="text-slate-600">External Coaches:</dt>
                   <dd className="font-semibold text-slate-900">
-                    {selectedVenue.allowExternalCoaches
-                      ? "Allowed"
-                      : "Not Allowed"}
+                    {selectedVenue.allowExternalCoaches ? "Allowed" : "Not Allowed"}
                   </dd>
                 </div>
               </dl>
@@ -449,24 +390,17 @@ export default function AdminVenueApprovalPanel({
 
           {/* Description */}
           <div className="border-b border-slate-200 p-5 sm:p-8">
-            <h3 className="font-semibold text-slate-900 mb-3">Description</h3>
-            <p className="text-slate-700 leading-relaxed">
-              {selectedVenue.description}
-            </p>
+            <h3 className="mb-3 font-semibold text-slate-900">Description</h3>
+            <p className="leading-relaxed text-slate-700">{selectedVenue.description}</p>
           </div>
 
           {/* Photos */}
           {selectedVenue.images && selectedVenue.images.length > 0 && (
             <div className="border-b border-slate-200 p-5 sm:p-8">
-              <h3 className="font-semibold text-slate-900 mb-4">
-                Uploaded Photos
-              </h3>
+              <h3 className="mb-4 font-semibold text-slate-900">Uploaded Photos</h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {selectedVenue.images.map((photo, idx) => (
-                  <div
-                    key={idx}
-                    className="relative aspect-square rounded-lg overflow-hidden"
-                  >
+                  <div key={idx} className="relative aspect-square overflow-hidden rounded-lg">
                     <Image
                       src={photo}
                       alt={`Venue photo ${idx + 1}`}
@@ -474,7 +408,7 @@ export default function AdminVenueApprovalPanel({
                       className="object-cover"
                     />
                     {photo === selectedVenue.coverPhotoUrl && (
-                      <div className="absolute top-2 right-2 px-2 py-1 bg-power-orange text-white text-xs rounded font-semibold">
+                      <div className="bg-power-orange absolute top-2 right-2 rounded px-2 py-1 text-xs font-semibold text-white">
                         Cover Photo
                       </div>
                     )}
@@ -487,9 +421,7 @@ export default function AdminVenueApprovalPanel({
           {/* Documents */}
           {selectedVenue.documents && selectedVenue.documents.length > 0 && (
             <div className="border-b border-slate-200 p-5 sm:p-8">
-              <h3 className="font-semibold text-slate-900 mb-4">
-                Uploaded Documents
-              </h3>
+              <h3 className="mb-4 font-semibold text-slate-900">Uploaded Documents</h3>
               <div className="space-y-3">
                 {selectedVenue.documents.map((doc, idx) => (
                   <div
@@ -498,16 +430,14 @@ export default function AdminVenueApprovalPanel({
                   >
                     <div className="flex items-center space-x-3">
                       <svg
-                        className="w-5 h-5 text-slate-400"
+                        className="h-5 w-5 text-slate-400"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
                         <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4z" />
                       </svg>
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-900">
-                          {doc.type}
-                        </p>
+                        <p className="font-semibold text-slate-900">{doc.type}</p>
                         <p className="text-sm text-slate-600">{doc.fileName}</p>
                       </div>
                     </div>
@@ -515,7 +445,7 @@ export default function AdminVenueApprovalPanel({
                       href={doc.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-power-orange hover:text-orange-600 font-semibold text-sm"
+                      className="text-power-orange text-sm font-semibold hover:text-orange-600"
                     >
                       View
                     </a>
@@ -527,32 +457,32 @@ export default function AdminVenueApprovalPanel({
 
           {/* Action Buttons */}
           <div className="border-t border-slate-200 bg-slate-50 p-5 sm:p-8">
-            <h3 className="font-semibold text-slate-900 mb-4">Admin Actions</h3>
+            <h3 className="mb-4 font-semibold text-slate-900">Admin Actions</h3>
 
             {/* Rejection Reason Field */}
             <div className="mb-4">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Rejection Reason (if rejecting)
               </label>
               <textarea
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Explain why the venue is being rejected..."
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-red-500 focus:ring-2 focus:ring-red-500/50 focus:outline-none"
                 rows={3}
               />
             </div>
 
             {/* Review Notes Field */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Review Notes (if marking for review)
               </label>
               <textarea
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 placeholder="What needs to be updated or reviewed..."
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500"
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/50 focus:outline-none"
                 rows={3}
               />
             </div>
@@ -561,7 +491,7 @@ export default function AdminVenueApprovalPanel({
               <button
                 onClick={handleApprove}
                 disabled={actionLoading}
-                className="flex items-center justify-center gap-2 flex-1 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Check size={16} />
                 Approve
@@ -569,7 +499,7 @@ export default function AdminVenueApprovalPanel({
               <button
                 onClick={handleMarkForReview}
                 disabled={actionLoading || !reviewNotes.trim()}
-                className="flex items-center justify-center gap-2 flex-1 py-3 bg-yellow-600 text-white font-semibold rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-yellow-600 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <TriangleAlert size={16} />
                 Mark for Review
@@ -577,7 +507,7 @@ export default function AdminVenueApprovalPanel({
               <button
                 onClick={handleReject}
                 disabled={actionLoading || !rejectionReason.trim()}
-                className="flex items-center justify-center gap-2 flex-1 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X size={16} />
                 Reject

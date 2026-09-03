@@ -33,10 +33,7 @@ export default function SportsSelect({
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -99,7 +96,7 @@ export default function SportsSelect({
         setFilteredSports(results.map((result) => result.item));
       }
     },
-    [fuse, allSports],
+    [fuse, allSports]
   );
 
   // Handle sport selection
@@ -110,22 +107,20 @@ export default function SportsSelect({
   };
 
   return (
-    <div className="w-full relative" ref={containerRef}>
+    <div className="relative w-full" ref={containerRef}>
       {/* Trigger Button / Input */}
       <div
-        className={`flex items-center justify-between w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm font-medium text-slate-900 shadow-sm backdrop-blur transition-all focus-within:border-power-orange/50 focus-within:bg-white focus-within:ring-4 focus-within:ring-power-orange/10 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        className={`focus-within:border-power-orange/50 focus-within:ring-power-orange/10 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm font-medium text-slate-900 shadow-sm backdrop-blur transition-all focus-within:bg-white focus-within:ring-4 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
         onClick={() => !disabled && setIsOpen(true)}
       >
-        <span className={value ? "text-slate-900" : "text-slate-400"}>
-          {value || placeholder}
-        </span>
+        <span className={value ? "text-slate-900" : "text-slate-400"}>{value || placeholder}</span>
         <ChevronDown size={18} className="text-slate-400" />
       </div>
 
       {/* Dropdown */}
       {isOpen && !disabled && (
         <div
-          className={`absolute left-0 z-[100] w-full min-w-[300px] max-h-80 overflow-y-auto overflow-x-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${
+          className={`absolute left-0 z-[100] max-h-80 w-full min-w-[300px] overflow-x-hidden overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${
             placement === "top" ? "bottom-full mb-2" : "top-full mt-2"
           }`}
         >
@@ -136,14 +131,14 @@ export default function SportsSelect({
               placeholder="Search sports..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-power-orange/50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10"
+              className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-4 focus:outline-none"
               autoFocus
             />
           </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader size={20} className="animate-spin text-power-orange" />
+              <Loader size={20} className="text-power-orange animate-spin" />
             </div>
           ) : (
             <>
@@ -163,7 +158,7 @@ export default function SportsSelect({
                         className={`w-full rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
                           isSelected
                             ? "bg-power-orange/10 text-power-orange font-semibold"
-                            : "hover:bg-slate-50 text-slate-700"
+                            : "text-slate-700 hover:bg-slate-50"
                         }`}
                       >
                         {sport.name}
@@ -184,9 +179,7 @@ export default function SportsSelect({
       )}
 
       {required && !value && (
-        <p className="mt-1.5 px-1 text-xs text-red-500 font-medium">
-          Please select a sport
-        </p>
+        <p className="mt-1.5 px-1 text-xs font-medium text-red-500">Please select a sport</p>
       )}
     </div>
   );

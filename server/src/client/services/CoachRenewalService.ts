@@ -42,14 +42,12 @@ const notify = (
   title: string,
   message: string,
   data: Record<string, unknown> = {},
-  email = false,
+  email = false
 ) => {
   NotificationService.send(
     { userId: userId.toString(), type, title, message, data },
-    { sendEmail: email },
-  ).catch((err: unknown) =>
-    log.error("[coachRenewal] notification failed:", err),
-  );
+    { sendEmail: email }
+  ).catch((err: unknown) => log.error("[coachRenewal] notification failed:", err));
 };
 
 const formatDate = (at: Date): string =>
@@ -66,14 +64,14 @@ const formatDate = (at: Date): string =>
  * each period nudges at most once. The claim is a conditional update rather
  * than a read-then-write so two overlapping sweeps cannot both send it.
  */
-export const sendRenewalReminders = async (params: {
-  now?: Date;
-  daysAhead?: number;
-} = {}): Promise<number> => {
+export const sendRenewalReminders = async (
+  params: {
+    now?: Date;
+    daysAhead?: number;
+  } = {}
+): Promise<number> => {
   const now = params.now ?? new Date();
-  const horizon = new Date(
-    now.getTime() + (params.daysAhead ?? RENEWAL_REMINDER_DAYS) * DAY_MS,
-  );
+  const horizon = new Date(now.getTime() + (params.daysAhead ?? RENEWAL_REMINDER_DAYS) * DAY_MS);
 
   const due = await CoachSubscription.find({
     status: { $in: ["ACTIVE", "PAST_DUE"] },
@@ -96,7 +94,7 @@ export const sendRenewalReminders = async (params: {
 
     const claimed = await CoachSubscription.findOneAndUpdate(
       { _id: subscription._id, renewalReminderSentAt: null },
-      { $set: { renewalReminderSentAt: now } },
+      { $set: { renewalReminderSentAt: now } }
     );
     if (!claimed) continue;
     sent += 1;
@@ -118,7 +116,7 @@ export const sendRenewalReminders = async (params: {
         enrollmentId: enrollment._id.toString(),
         offeringId: enrollment.offeringId.toString(),
       },
-      true,
+      true
     );
   }
 
@@ -134,9 +132,11 @@ export const sendRenewalReminders = async (params: {
  * payment should not cost them their place in a full batch. Only once grace has
  * run out does the seat go back.
  */
-export const releaseEnrollmentsForExpiredSubscriptions = async (params: {
-  now?: Date;
-} = {}): Promise<number> => {
+export const releaseEnrollmentsForExpiredSubscriptions = async (
+  params: {
+    now?: Date;
+  } = {}
+): Promise<number> => {
   const now = params.now ?? new Date();
 
   const expired = await CoachSubscription.find({
@@ -167,7 +167,7 @@ export const releaseEnrollmentsForExpiredSubscriptions = async (params: {
           leftAt: now,
           cancellationReason: "Subscription ended",
         },
-      },
+      }
     );
     if (!claimed) continue;
 
@@ -193,9 +193,7 @@ export const releaseEnrollmentsForExpiredSubscriptions = async (params: {
   }
 
   if (released > 0) {
-    log.info(
-      `releaseEnrollmentsForExpiredSubscriptions: released ${released} seat(s)`,
-    );
+    log.info(`releaseEnrollmentsForExpiredSubscriptions: released ${released} seat(s)`);
   }
   return released;
 };
@@ -221,7 +219,7 @@ export const renewalTargetForEnrollment = async (params: {
   if (!enrollment) return null;
 
   const offering = await CoachOffering.findById(enrollment.offeringId).select(
-    "_id coachId packageId status",
+    "_id coachId packageId status"
   );
   if (!offering || offering.status === "ARCHIVED") return null;
 

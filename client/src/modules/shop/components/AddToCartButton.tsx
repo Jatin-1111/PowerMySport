@@ -24,8 +24,7 @@ export function AddToCartButton({
     setState("adding");
     addShopCartItem(item);
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (token) {
       addBackendCartItem(item.variantId, item.quantity).catch(() => undefined);
     }
@@ -43,14 +42,10 @@ export function AddToCartButton({
       className={cn(
         "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400",
         compact && "h-10 px-3",
-        className,
+        className
       )}
     >
-      {state === "added" ? (
-        <Check className="h-4 w-4" />
-      ) : (
-        <ShoppingCart className="h-4 w-4" />
-      )}
+      {state === "added" ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
       {state === "added" ? "Added" : item.stock === 0 ? "Sold Out" : "Add"}
     </motion.button>
   );

@@ -2,16 +2,7 @@ import type { Metadata } from "next";
 
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-    Briefcase,
-    Globe,
-    Heart,
-    Mail,
-    MapPin,
-    TrendingUp,
-    Users,
-    Zap,
-} from "lucide-react";
+import { Briefcase, Globe, Heart, Mail, MapPin, TrendingUp, Users, Zap } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -147,53 +138,48 @@ export default function CareersPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header Section */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
             <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="mb-2 flex items-center gap-3">
                 <Briefcase size={32} className="text-power-orange" />
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/80 uppercase">
                   Join Us
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+              <h1 className="mb-3 text-3xl font-bold sm:text-4xl">
                 Build the Future of Sports with Us
               </h1>
-              <p className="text-slate-200 text-base sm:text-lg max-w-2xl">
-                Join our passionate team and help revolutionize how people
-                discover, book, and experience sports. We're looking for
-                talented individuals who share our vision.
+              <p className="max-w-2xl text-base text-slate-200 sm:text-lg">
+                Join our passionate team and help revolutionize how people discover, book, and
+                experience sports. We're looking for talented individuals who share our vision.
               </p>
             </div>
-            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-turf-green/20 blur-3xl" />
+            <div className="bg-power-orange/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-turf-green/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Why Join Us Section */}
         <section className="mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-6 text-center">
+          <h2 className="mb-6 text-center text-2xl font-bold text-slate-900 sm:text-3xl">
             Why Work at PowerMySport?
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon;
               return (
                 <Card
                   key={index}
-                  className="bg-white border-2 border-slate-100 hover:border-power-orange/30 transition-colors p-6"
+                  className="hover:border-power-orange/30 border-2 border-slate-100 bg-white p-6 transition-colors"
                 >
                   <Icon size={32} className="text-power-orange mb-3" />
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-slate-600 text-sm">
-                    {benefit.description}
-                  </p>
+                  <h3 className="mb-2 text-lg font-semibold text-slate-900">{benefit.title}</h3>
+                  <p className="text-sm text-slate-600">{benefit.description}</p>
                 </Card>
               );
             })}
@@ -202,20 +188,16 @@ export default function CareersPage() {
 
         {/* Open Positions Section */}
         <section className="mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">
-            Open Positions
-          </h2>
+          <h2 className="mb-6 text-2xl font-bold text-slate-900 sm:text-3xl">Open Positions</h2>
           <div className="space-y-4">
             {jobOpenings.map((job, index) => (
               <Card
                 key={index}
-                className="bg-white border-2 border-slate-100 hover:border-power-orange/30 transition-colors p-6"
+                className="hover:border-power-orange/30 border-2 border-slate-100 bg-white p-6 transition-colors"
               >
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">
-                      {job.title}
-                    </h3>
+                    <h3 className="mb-2 text-xl font-bold text-slate-900">{job.title}</h3>
                     <div className="flex flex-wrap gap-2 text-sm text-slate-600">
                       <span className="inline-flex items-center gap-1">
                         <Briefcase size={14} className="text-power-orange" />
@@ -227,9 +209,7 @@ export default function CareersPage() {
                         {job.location}
                       </span>
                       <span className="text-slate-300">•</span>
-                      <span className="font-medium text-turf-green">
-                        {job.type}
-                      </span>
+                      <span className="text-turf-green font-medium">{job.type}</span>
                     </div>
                   </div>
                   <Button variant="primary" className="shrink-0">
@@ -237,18 +217,13 @@ export default function CareersPage() {
                   </Button>
                 </div>
 
-                <p className="text-slate-600 mb-4">{job.description}</p>
+                <p className="mb-4 text-slate-600">{job.description}</p>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900 mb-2">
-                    Requirements:
-                  </h4>
+                  <h4 className="mb-2 text-sm font-semibold text-slate-900">Requirements:</h4>
                   <ul className="space-y-1">
                     {job.requirements.map((req, reqIndex) => (
-                      <li
-                        key={reqIndex}
-                        className="text-sm text-slate-600 flex items-start gap-2"
-                      >
+                      <li key={reqIndex} className="flex items-start gap-2 text-sm text-slate-600">
                         <span className="text-power-orange mt-1">•</span>
                         <span>{req}</span>
                       </li>
@@ -262,62 +237,54 @@ export default function CareersPage() {
 
         {/* Application Process Section */}
         <section className="mb-12">
-          <Card className="bg-white border-2 border-slate-100 p-8">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">
+          <Card className="border-2 border-slate-100 bg-white p-8">
+            <h2 className="mb-6 text-center text-2xl font-bold text-slate-900">
               Our Hiring Process
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
               <div className="text-center">
-                <div className="w-12 h-12 bg-power-orange/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl font-bold text-power-orange">1</span>
+                <div className="bg-power-orange/10 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+                  <span className="text-power-orange text-xl font-bold">1</span>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2">Apply</h3>
+                <h3 className="mb-2 font-semibold text-slate-900">Apply</h3>
                 <p className="text-sm text-slate-600">
                   Submit your application with resume and portfolio
                 </p>
               </div>
               <div className="text-center">
-                <div className="w-12 h-12 bg-power-orange/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl font-bold text-power-orange">2</span>
+                <div className="bg-power-orange/10 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+                  <span className="text-power-orange text-xl font-bold">2</span>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2">Screen</h3>
-                <p className="text-sm text-slate-600">
-                  Initial review and phone screening with HR
-                </p>
+                <h3 className="mb-2 font-semibold text-slate-900">Screen</h3>
+                <p className="text-sm text-slate-600">Initial review and phone screening with HR</p>
               </div>
               <div className="text-center">
-                <div className="w-12 h-12 bg-power-orange/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl font-bold text-power-orange">3</span>
+                <div className="bg-power-orange/10 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+                  <span className="text-power-orange text-xl font-bold">3</span>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2">Interview</h3>
-                <p className="text-sm text-slate-600">
-                  Technical and cultural fit interviews
-                </p>
+                <h3 className="mb-2 font-semibold text-slate-900">Interview</h3>
+                <p className="text-sm text-slate-600">Technical and cultural fit interviews</p>
               </div>
               <div className="text-center">
-                <div className="w-12 h-12 bg-power-orange/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl font-bold text-power-orange">4</span>
+                <div className="bg-power-orange/10 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+                  <span className="text-power-orange text-xl font-bold">4</span>
                 </div>
-                <h3 className="font-semibold text-slate-900 mb-2">Offer</h3>
-                <p className="text-sm text-slate-600">
-                  Receive offer and join the team
-                </p>
+                <h3 className="mb-2 font-semibold text-slate-900">Offer</h3>
+                <p className="text-sm text-slate-600">Receive offer and join the team</p>
               </div>
             </div>
           </Card>
         </section>
 
         {/* CTA Section */}
-        <Card className="bg-linear-to-br from-power-orange/5 to-turf-green/5 border-2 border-power-orange/20 p-8 text-center">
-          <Users size={48} className="mx-auto mb-4 text-power-orange" />
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Don't See a Perfect Fit?
-          </h2>
-          <p className="text-slate-600 mb-6 max-w-xl mx-auto">
-            We're always looking for talented individuals. Send us your resume
-            and tell us why you'd be a great addition to our team.
+        <Card className="from-power-orange/5 to-turf-green/5 border-power-orange/20 border-2 bg-linear-to-br p-8 text-center">
+          <Users size={48} className="text-power-orange mx-auto mb-4" />
+          <h2 className="mb-2 text-2xl font-bold text-slate-900">Don't See a Perfect Fit?</h2>
+          <p className="mx-auto mb-6 max-w-xl text-slate-600">
+            We're always looking for talented individuals. Send us your resume and tell us why you'd
+            be a great addition to our team.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col justify-center gap-3 sm:flex-row">
             <a href="mailto:teams@powermysport.com">
               <Button variant="primary" size="lg">
                 <Mail size={18} className="mr-2" />

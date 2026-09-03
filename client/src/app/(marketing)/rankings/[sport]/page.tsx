@@ -54,7 +54,7 @@ export default async function SportRankingsPage({
 
   const meta = await fetchRankingMeta(sport.slug);
   const availability = new Map(
-    (meta?.combos ?? []).map((c) => [`${c.category}/${c.subcategory}`, c]),
+    (meta?.combos ?? []).map((c) => [`${c.category}/${c.subcategory}`, c])
   );
 
   return (
@@ -67,7 +67,7 @@ export default async function SportRankingsPage({
             breadcrumbJsonLd([
               { name: "Rankings", path: "/rankings" },
               { name: sport.name, path: `/rankings/${sport.slug}` },
-            ]),
+            ])
           ),
         }}
       />
@@ -80,11 +80,10 @@ export default async function SportRankingsPage({
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           {sport.federation.acronym} {sport.name} Rankings
         </h1>
-        <p className="mt-3 text-base text-muted-foreground sm:text-lg">
-          The official {sport.federation.name} lists, made searchable. Filter by
-          state, look up a player by name or registration number, and see how a
-          ranking has moved week by week — something the source PDFs cannot show
-          you.
+        <p className="text-muted-foreground mt-3 text-base sm:text-lg">
+          The official {sport.federation.name} lists, made searchable. Filter by state, look up a
+          player by name or registration number, and see how a ranking has moved week by week —
+          something the source PDFs cannot show you.
         </p>
       </header>
 
@@ -93,26 +92,24 @@ export default async function SportRankingsPage({
           <section key={group.title}>
             <div className="flex items-baseline justify-between gap-4">
               <h2 className="text-xl font-semibold tracking-tight">{group.title}</h2>
-              <p className="text-sm text-muted-foreground">{group.blurb}</p>
+              <p className="text-muted-foreground text-sm">{group.blurb}</p>
             </div>
 
             <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {group.combos.map((combo) => {
-                const info = availability.get(
-                  `${combo.category}/${combo.subcategory}`,
-                );
+                const info = availability.get(`${combo.category}/${combo.subcategory}`);
                 const available = info?.available ?? false;
                 return (
                   <li key={comboHref(sport.slug, combo)}>
                     <Link
                       href={comboHref(sport.slug, combo)}
-                      className="group flex h-full flex-col justify-between rounded-lg border bg-card p-4 shadow-sm transition-colors hover:border-power-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+                      className="group bg-card hover:border-power-orange focus-visible:ring-power-orange flex h-full flex-col justify-between rounded-lg border p-4 shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                       <span className="flex items-center justify-between gap-2">
                         <span className="font-medium">{comboLabel(combo)}</span>
-                        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-power-orange" />
+                        <ArrowRight className="text-muted-foreground group-hover:text-power-orange h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
                       </span>
-                      <span className="mt-3 block text-sm text-muted-foreground">
+                      <span className="text-muted-foreground mt-3 block text-sm">
                         {available ? (
                           <>
                             {info?.rowCount?.toLocaleString("en-IN")} players
@@ -139,21 +136,20 @@ export default async function SportRankingsPage({
         and a parent checking a rank they disagree with should be one click from
         the official source rather than stuck arguing with us.
       */}
-      <footer className="mt-12 rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
+      <footer className="bg-muted/40 text-muted-foreground mt-12 rounded-lg border p-4 text-sm">
         <p>
           Rankings are published by the{" "}
-          <span className="font-medium text-foreground">
+          <span className="text-foreground font-medium">
             {meta?.source.federation ?? sport.federation.name}
           </span>{" "}
-          and mirrored here for search and history. PowerMySport is not affiliated
-          with {sport.federation.acronym}. Always treat the official list as
-          authoritative.
+          and mirrored here for search and history. PowerMySport is not affiliated with{" "}
+          {sport.federation.acronym}. Always treat the official list as authoritative.
         </p>
         <a
           href={meta?.source.url ?? sport.federation.officialUrl}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="mt-2 inline-flex items-center gap-1.5 font-medium text-power-orange hover:underline"
+          className="text-power-orange mt-2 inline-flex items-center gap-1.5 font-medium hover:underline"
         >
           View the official {sport.federation.acronym} rankings page
           <ExternalLink className="h-3.5 w-3.5" aria-hidden />

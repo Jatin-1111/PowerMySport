@@ -30,13 +30,11 @@ export default function ExpertProfilePage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full bg-power-orange/20 blur-3xl" />
-        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+        <div className="bg-power-orange/20 pointer-events-none absolute -top-12 -right-16 h-40 w-40 rounded-full blur-3xl" />
+        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/80 uppercase">
           Expert
         </span>
-        <h1 className="relative mt-3 text-2xl font-bold sm:text-3xl">
-          Profile &amp; availability
-        </h1>
+        <h1 className="relative mt-3 text-2xl font-bold sm:text-3xl">Profile &amp; availability</h1>
         <p className="relative mt-1 text-sm text-slate-200">
           Manage your public profile, session settings, and weekly availability.
         </p>
@@ -45,17 +43,15 @@ export default function ExpertProfilePage() {
       <div className="mt-6">
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16">
-            <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
+            <div className="border-t-power-orange h-9 w-9 animate-spin rounded-full border-2 border-slate-100" />
             <p className="text-sm text-slate-500">Loading...</p>
           </div>
         ) : error || !profile ? (
           <div className="py-12 text-center">
-            <p className="font-semibold text-red-600">
-              {error || "Expert profile not found."}
-            </p>
+            <p className="font-semibold text-red-600">{error || "Expert profile not found."}</p>
             <button
               onClick={load}
-              className="mt-4 rounded-lg bg-power-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+              className="bg-power-orange mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
             >
               Retry
             </button>

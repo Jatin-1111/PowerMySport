@@ -86,8 +86,8 @@ export function sportGroup(slug: string): SportGroup {
 /** Lowercased name, slug and aliases — everything the picker's search matches. */
 export function sportSearchTerms(slug: string, name: string): string[] {
   const registered = BY_SLUG.get(slug);
-  return [name, slug.replace(/-/g, " "), ...(registered?.aliases ?? [])].map(
-    (term) => term.toLowerCase(),
+  return [name, slug.replace(/-/g, " "), ...(registered?.aliases ?? [])].map((term) =>
+    term.toLowerCase()
   );
 }
 
@@ -108,7 +108,5 @@ export function sportFromSlug(slug: string): PathwaySport | undefined {
  */
 export function roadmapHref(sportName: string | undefined | null): string {
   const slug = sportName?.trim().toLowerCase().replace(/\s+/g, "-");
-  return slug && PATHWAY_SPORTS.some((s) => s.slug === slug)
-    ? `/roadmap/${slug}`
-    : "/roadmap";
+  return slug && PATHWAY_SPORTS.some((s) => s.slug === slug) ? `/roadmap/${slug}` : "/roadmap";
 }

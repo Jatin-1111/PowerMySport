@@ -4,8 +4,7 @@ export type ReminderType = "BOOKING_REMINDER" | "PATHWAY_DOCUMENT_REMINDER" | "P
 // "CUSTOM" is for reminders whose timing isn't "X before an event" (e.g. a
 // plan check-in due N weeks out) — scheduledFor is the only date that matters.
 export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS" | "CUSTOM";
-export type ScheduledNotificationStatus =
-  "PENDING" | "SENT" | "FAILED" | "CANCELLED";
+export type ScheduledNotificationStatus = "PENDING" | "SENT" | "FAILED" | "CANCELLED";
 
 export interface ScheduledNotificationDocument extends Document {
   userId: mongoose.Types.ObjectId;
@@ -106,7 +105,7 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
       min: 0,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Compound index for efficient queries
@@ -124,11 +123,10 @@ scheduledNotificationSchema.index(
   {
     expireAfterSeconds: 30 * 24 * 60 * 60, // 30 days
     partialFilterExpression: { status: "SENT" },
-  },
+  }
 );
 
-export const ScheduledNotification =
-  mongoose.model<ScheduledNotificationDocument>(
-    "ScheduledNotification",
-    scheduledNotificationSchema,
-  );
+export const ScheduledNotification = mongoose.model<ScheduledNotificationDocument>(
+  "ScheduledNotification",
+  scheduledNotificationSchema
+);

@@ -101,14 +101,11 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
     },
     lastCheckedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // One row per dated edition; re-extraction of the same edition updates in place.
-tournamentEditionSchema.index(
-  { sportSlug: 1, name: 1, startDate: 1 },
-  { unique: true },
-);
+tournamentEditionSchema.index({ sportSlug: 1, name: 1, startDate: 1 }, { unique: true });
 // The "what's coming up for this sport?" query.
 tournamentEditionSchema.index({ sportSlug: 1, startDate: 1 });
 // Backs the public /tournaments/[slug] page. Sparse on purpose: editions
@@ -120,7 +117,4 @@ tournamentEditionSchema.index({ sportSlug: 1, lastCheckedAt: -1 });
 
 export const TournamentEdition =
   mongoose.models.TournamentEdition ||
-  mongoose.model<TournamentEditionDocument>(
-    "TournamentEdition",
-    tournamentEditionSchema,
-  );
+  mongoose.model<TournamentEditionDocument>("TournamentEdition", tournamentEditionSchema);

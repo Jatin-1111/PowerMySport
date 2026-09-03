@@ -66,9 +66,7 @@ const CoachImageWithFallback = ({
   iconClassName: string;
 }) => {
   const cleanedSources = Array.from(
-    new Set(
-      sources.map((s) => normalizeImageUrl(s)).filter((s) => s.length > 0),
-    ),
+    new Set(sources.map((s) => normalizeImageUrl(s)).filter((s) => s.length > 0))
   );
   const [sourceIndex, setSourceIndex] = useState(0);
   useEffect(() => {
@@ -99,9 +97,7 @@ export function CoachDetailClient() {
 
   const [coach, setCoach] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0],
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{
@@ -119,15 +115,11 @@ export function CoachDetailClient() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
-  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(
-    null,
-  );
+  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(null);
   const [reviewEligibilityReason, setReviewEligibilityReason] = useState("");
   const [subscriptionPackages, setSubscriptionPackages] = useState<any[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(true);
-  const [subscribingPackageId, setSubscribingPackageId] = useState<
-    string | null
-  >(null);
+  const [subscribingPackageId, setSubscribingPackageId] = useState<string | null>(null);
 
   const slotsToDisplay =
     availability?.allSlots && availability.allSlots.length > 0
@@ -137,8 +129,7 @@ export function CoachDetailClient() {
   const isSelectedSlotAvailable =
     (selectedSlot &&
       availability?.availableSlots?.some(
-        (availSlot) =>
-          (availSlot.split("-")[0] || availSlot) === selectedSlot.startTime,
+        (availSlot) => (availSlot.split("-")[0] || availSlot) === selectedSlot.startTime
       )) ??
     false;
 
@@ -188,14 +179,12 @@ export function CoachDetailClient() {
 
   const getVerificationBadge = (coachData: Coach) => {
     const status =
-      coachData.verificationStatus ||
-      (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
+      coachData.verificationStatus || (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
     switch (status) {
       case "VERIFIED":
         return {
           label: "Verified",
-          className:
-            "bg-emerald-100 text-emerald-700 border border-emerald-200",
+          className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
         };
       case "PENDING":
         return {
@@ -222,7 +211,7 @@ export function CoachDetailClient() {
 
   const getCertificationCount = (coachData: Coach) => {
     return (coachData.certifications || []).filter(
-      (v) => typeof v === "string" && v.trim().length > 0,
+      (v) => typeof v === "string" && v.trim().length > 0
     ).length;
   };
 
@@ -248,7 +237,7 @@ export function CoachDetailClient() {
       const response = await bookingApi.getCoachAvailability(
         coachId,
         selectedDate,
-        selectedSport || undefined,
+        selectedSport || undefined
       );
       if (response.success && response.data) setAvailability(response.data);
       else setAvailability({ availableSlots: [], bookedSlots: [] });
@@ -263,8 +252,7 @@ export function CoachDetailClient() {
     setPackagesLoading(true);
     try {
       const response = await coachApi.getCoachPackages(coachId);
-      if (response.success && response.data)
-        setSubscriptionPackages(response.data.packages || []);
+      if (response.success && response.data) setSubscriptionPackages(response.data.packages || []);
       else setSubscriptionPackages([]);
     } catch {
       setSubscriptionPackages([]);
@@ -302,9 +290,7 @@ export function CoachDetailClient() {
       const response = await reviewApi.getCoachReviews(coachId, 1, 20);
       if (response.success && response.data) {
         setReviews(response.data.reviews || []);
-        setReviewSummary(
-          response.data.summary || { averageRating: 0, reviewCount: 0 },
-        );
+        setReviewSummary(response.data.summary || { averageRating: 0, reviewCount: 0 });
       }
     } catch {
       /* silent */
@@ -320,16 +306,12 @@ export function CoachDetailClient() {
         targetId: coachId,
       });
       if (response.success && response.data) {
-        setEligibleBookingId(
-          response.data.eligible ? response.data.bookingId : null,
-        );
+        setEligibleBookingId(response.data.eligible ? response.data.bookingId : null);
         setReviewEligibilityReason(response.data.reason || "");
       }
     } catch {
       setEligibleBookingId(null);
-      setReviewEligibilityReason(
-        "Unable to verify review eligibility right now",
-      );
+      setReviewEligibilityReason("Unable to verify review eligibility right now");
     }
   };
 
@@ -363,11 +345,7 @@ export function CoachDetailClient() {
         await Promise.all([loadReviews(), loadCoachDetails()]);
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to submit review",
-      );
+      toast.error(error?.response?.data?.message || error?.message || "Failed to submit review");
     } finally {
       setReviewSubmitting(false);
     }
@@ -433,15 +411,13 @@ export function CoachDetailClient() {
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
       });
-      toast.success(
-        "Added to the waitlist. You'll be notified if a spot opens.",
-      );
+      toast.success("Added to the waitlist. You'll be notified if a spot opens.");
       setSelectedSlot(null);
     } catch (error: any) {
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to join waitlist. Please try again.",
+          "Failed to join waitlist. Please try again."
       );
     } finally {
       setBookingLoading(false);
@@ -450,16 +426,16 @@ export function CoachDetailClient() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-power-orange"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2"></div>
       </div>
     );
   }
 
   if (!coach) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <h1 className="text-2xl font-bold mb-4">Coach not found</h1>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <h1 className="mb-4 text-2xl font-bold">Coach not found</h1>
         <Link href="/booking?tab=coaches">
           <Button variant="outline">Back to Coaches</Button>
         </Link>
@@ -471,26 +447,22 @@ export function CoachDetailClient() {
   const coachImageCandidates = getCoachImageCandidates(coach);
   const venueImages = getVenueImages(coach);
   const coachUserName =
-    typeof coach.userId === "object" && coach.userId?.name
-      ? coach.userId.name
-      : "";
-  const coachDisplayName =
-    coachUserName || `${coach.sports?.[0] || "Professional"} Coach`;
+    typeof coach.userId === "object" && coach.userId?.name ? coach.userId.name : "";
+  const coachDisplayName = coachUserName || `${coach.sports?.[0] || "Professional"} Coach`;
   const highlightedSports = coach.sports.slice(0, 6);
   const additionalSportsCount = Math.max(coach.sports.length - 6, 0);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff7ea_100%)]">
       <div className="border-b border-white/60 bg-white/72 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="mb-3">
-          </div>
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mb-3"></div>
 
           <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
             <div className="relative z-10">
               <Link
                 href="/booking?tab=coaches"
-                className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
+                className="mb-4 inline-flex items-center gap-2 text-slate-600 transition-colors hover:text-slate-900"
               >
                 <ArrowLeft size={20} />
                 <span className="text-sm font-medium">Back to All Coaches</span>
@@ -502,7 +474,7 @@ export function CoachDetailClient() {
                     <span className="inline-flex items-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-wide text-slate-600">
                       Coach Profile
                     </span>
-                    <span className="inline-flex items-center rounded-full border border-turf-green/30 bg-turf-green/15 px-3 py-1 text-[11px] font-semibold tracking-wide text-turf-green">
+                    <span className="border-turf-green/30 bg-turf-green/15 text-turf-green inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold tracking-wide">
                       {coach.serviceMode}
                     </span>
                     {(() => {
@@ -522,7 +494,7 @@ export function CoachDetailClient() {
                     )}
                   </div>
 
-                  <h1 className="font-title mb-2 max-w-5xl wrap-break-word text-2xl font-bold leading-tight sm:text-4xl">
+                  <h1 className="font-title mb-2 max-w-5xl text-2xl leading-tight font-bold wrap-break-word sm:text-4xl">
                     {coachDisplayName}
                   </h1>
 
@@ -533,33 +505,22 @@ export function CoachDetailClient() {
                         className="inline-flex max-w-full items-center rounded-md border border-white/70 bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
                         title={sport}
                       >
-                        <span className="line-clamp-1 wrap-break-word">
-                          {sport}
-                        </span>
+                        <span className="line-clamp-1 wrap-break-word">{sport}</span>
                       </span>
                     ))}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                     <div className="flex items-center gap-2">
-                      <Star
-                        size={20}
-                        className="text-yellow-400 fill-yellow-400"
-                      />
-                      <span className="font-bold text-lg">
-                        {coach.rating.toFixed(1)}
-                      </span>
-                      <span className="text-slate-600 text-sm">
-                        ({coach.reviewCount} reviews)
-                      </span>
+                      <Star size={20} className="fill-yellow-400 text-yellow-400" />
+                      <span className="text-lg font-bold">{coach.rating.toFixed(1)}</span>
+                      <span className="text-sm text-slate-600">({coach.reviewCount} reviews)</span>
                     </div>
                     <div className="hidden h-4 w-px bg-slate-600 sm:block"></div>
                     <div className="flex items-center gap-1">
                       <IndianRupee size={20} className="text-turf-green" />
-                      <span className="font-bold text-xl text-turf-green">
-                        {selectedSportRate}
-                      </span>
-                      <span className="text-slate-600 text-sm">/hour</span>
+                      <span className="text-turf-green text-xl font-bold">{selectedSportRate}</span>
+                      <span className="text-sm text-slate-600">/hour</span>
                     </div>
                   </div>
                 </div>
@@ -576,25 +537,25 @@ export function CoachDetailClient() {
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-turf-green/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-power-orange/20 blur-3xl" />
+            <div className="bg-turf-green/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-power-orange/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
             {/* About */}
             <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
-              <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <div className="from-turf-green/5 border-b border-slate-100 bg-linear-to-br to-slate-50 p-6">
+                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                   <Info size={24} className="text-turf-green" />
                   About the Coach
                 </h2>
               </div>
               <div className="p-6">
-                <p className="text-slate-700 leading-relaxed text-base">
+                <p className="text-base leading-relaxed text-slate-700">
                   {coach.bio ||
                     "Expert coach offering professional training sessions to help you improve your skills."}
                 </p>
@@ -616,20 +577,15 @@ export function CoachDetailClient() {
                   page: "coach_detail",
                 },
               }}
-              enabled={Boolean(
-                user && (user.role === "Player" || user.role === "Coach"),
-              )}
+              enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
             />
 
             {/* Subscription Packages */}
             <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
-              <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
-                <h2 className="text-xl font-bold text-slate-900">
-                  Subscription Packages
-                </h2>
+              <div className="from-turf-green/5 border-b border-slate-100 bg-linear-to-br to-slate-50 p-6">
+                <h2 className="text-xl font-bold text-slate-900">Subscription Packages</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Monthly, quarterly, and yearly packages published by this
-                  coach.
+                  Monthly, quarterly, and yearly packages published by this coach.
                 </p>
               </div>
               <div className="p-6">
@@ -662,7 +618,7 @@ export function CoachDetailClient() {
                               <p className="text-base font-semibold text-slate-900">
                                 {pkg?.name || "Subscription package"}
                               </p>
-                              <p className="mt-1 text-sm font-semibold text-turf-green">
+                              <p className="text-turf-green mt-1 text-sm font-semibold">
                                 {formatInr(pkg?.price)}
                                 <span className="text-slate-500">
                                   / {frequencyLabel.toLowerCase()}
@@ -681,20 +637,12 @@ export function CoachDetailClient() {
                           <div className="mt-4 space-y-2">
                             {(pkg?.features || []).length > 0 ? (
                               <ul className="space-y-1 text-sm text-slate-700">
-                                {pkg.features.map(
-                                  (feature: string, index: number) => (
-                                    <li
-                                      key={`${feature}-${index}`}
-                                      className="flex gap-2"
-                                    >
-                                      <Check
-                                        size={16}
-                                        className="mt-0.5 text-turf-green shrink-0"
-                                      />
-                                      <span>{feature}</span>
-                                    </li>
-                                  ),
-                                )}
+                                {pkg.features.map((feature: string, index: number) => (
+                                  <li key={`${feature}-${index}`} className="flex gap-2">
+                                    <Check size={16} className="text-turf-green mt-0.5 shrink-0" />
+                                    <span>{feature}</span>
+                                  </li>
+                                ))}
                               </ul>
                             ) : (
                               <p className="text-sm text-slate-500">
@@ -727,24 +675,19 @@ export function CoachDetailClient() {
                               user.role === "Player" ? (
                                 <Button
                                   variant="primary"
-                                  className="w-full bg-turf-green hover:bg-emerald-700"
-                                  onClick={() =>
-                                    handleSubscribeToPackage(packageId)
-                                  }
+                                  className="bg-turf-green w-full hover:bg-emerald-700"
+                                  onClick={() => handleSubscribeToPackage(packageId)}
                                   disabled={!packageId || isBusy}
                                 >
                                   {isBusy ? "Activating..." : "Subscribe now"}
                                 </Button>
                               ) : (
                                 <p className="text-sm text-slate-500">
-                                  Subscription packages are available for player
-                                  accounts.
+                                  Subscription packages are available for player accounts.
                                 </p>
                               )
                             ) : (
-                              <Link
-                                href={`/login?redirect=/coaches/${coachId}`}
-                              >
+                              <Link href={`/login?redirect=/coaches/${coachId}`}>
                                 <Button variant="secondary" className="w-full">
                                   Sign in to subscribe
                                 </Button>
@@ -762,14 +705,14 @@ export function CoachDetailClient() {
             {/* Venue Images */}
             {venueImages.length > 0 && (
               <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
-                <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <div className="from-turf-green/5 border-b border-slate-100 bg-linear-to-br to-slate-50 p-6">
+                  <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                     <ImageIcon size={24} className="text-turf-green" />
                     Venue Images
                   </h2>
                 </div>
                 <div className="p-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {venueImages.map((imageUrl, index) => (
                       <div
                         key={`${imageUrl}-${index}`}
@@ -789,24 +732,20 @@ export function CoachDetailClient() {
 
             {coach.serviceMode === "OWN_VENUE" && coach.ownVenueDetails && (
               <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
-                <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <div className="from-turf-green/5 border-b border-slate-100 bg-linear-to-br to-slate-50 p-6">
+                  <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                     <MapPin size={24} className="text-turf-green" />
                     Venue Location
                   </h2>
                 </div>
                 <div className="p-6">
                   {(() => {
-                    const venueLocation = getOwnVenueLocationDisplay(
-                      coach.ownVenueDetails,
-                    );
+                    const venueLocation = getOwnVenueLocationDisplay(coach.ownVenueDetails);
                     if (!venueLocation) return null;
                     return (
                       <div className="space-y-3 text-sm text-slate-700">
                         <div className="space-y-1">
-                          <p className="font-semibold text-slate-900">
-                            {venueLocation.title}
-                          </p>
+                          <p className="font-semibold text-slate-900">{venueLocation.title}</p>
                           <p>{venueLocation.description}</p>
                         </div>
                         {venueLocation.mapsUrl && (
@@ -814,15 +753,13 @@ export function CoachDetailClient() {
                             href={venueLocation.mapsUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex text-xs font-semibold text-power-orange hover:underline"
+                            className="text-power-orange inline-flex text-xs font-semibold hover:underline"
                           >
                             Open in Maps
                           </a>
                         )}
                         {coach.ownVenueDetails.description && (
-                          <p className="pt-2 text-slate-600">
-                            {coach.ownVenueDetails.description}
-                          </p>
+                          <p className="pt-2 text-slate-600">{coach.ownVenueDetails.description}</p>
                         )}
                       </div>
                     );
@@ -833,8 +770,8 @@ export function CoachDetailClient() {
 
             {/* Certifications */}
             <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
-              <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
-                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <div className="from-turf-green/5 border-b border-slate-100 bg-linear-to-br to-slate-50 p-6">
+                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                   <Award size={24} className="text-turf-green" />
                   Certification & Verification
                 </h2>
@@ -859,20 +796,16 @@ export function CoachDetailClient() {
                       </div>
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                         <p className="text-sm text-slate-700">
-                          For privacy and security, individual certificate files
-                          are not displayed on public profiles.
+                          For privacy and security, individual certificate files are not displayed
+                          on public profiles.
                         </p>
                         <p className="mt-2 text-sm text-slate-600">
                           This section shows verification trust signals only.
                         </p>
                       </div>
                       <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
-                        <li>
-                          Verification status reflects platform review state.
-                        </li>
-                        <li>
-                          Credential documents are retained for internal checks.
-                        </li>
+                        <li>Verification status reflects platform review state.</li>
+                        <li>Credential documents are retained for internal checks.</li>
                         <li>Sensitive documents are never exposed publicly.</li>
                       </ul>
                     </div>
@@ -883,23 +816,21 @@ export function CoachDetailClient() {
 
             {/* Reviews */}
             <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
-              <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
-                <h2 className="text-xl font-bold text-slate-900">
-                  Coach Reviews
-                </h2>
-                <p className="text-sm text-slate-600 mt-1 inline-flex items-center gap-1">
-                  <Star size={14} className="text-yellow-500 fill-yellow-500" />
-                  {reviewSummary.averageRating.toFixed(1)} average ·{" "}
-                  {reviewSummary.reviewCount} reviews
+              <div className="from-turf-green/5 border-b border-slate-100 bg-linear-to-br to-slate-50 p-6">
+                <h2 className="text-xl font-bold text-slate-900">Coach Reviews</h2>
+                <p className="mt-1 inline-flex items-center gap-1 text-sm text-slate-600">
+                  <Star size={14} className="fill-yellow-500 text-yellow-500" />
+                  {reviewSummary.averageRating.toFixed(1)} average · {reviewSummary.reviewCount}{" "}
+                  reviews
                 </p>
               </div>
               <div className="p-6">
                 {user && eligibleBookingId && (
                   <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50/90 p-4">
-                    <p className="text-sm font-semibold text-slate-800 mb-3">
+                    <p className="mb-3 text-sm font-semibold text-slate-800">
                       Share your experience
                     </p>
-                    <div className="flex items-center gap-1 mb-3">
+                    <div className="mb-3 flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
@@ -911,7 +842,7 @@ export function CoachDetailClient() {
                             size={20}
                             className={
                               star <= reviewRating
-                                ? "text-yellow-500 fill-yellow-500"
+                                ? "fill-yellow-500 text-yellow-500"
                                 : "text-slate-300"
                             }
                           />
@@ -924,7 +855,7 @@ export function CoachDetailClient() {
                       rows={3}
                       maxLength={1000}
                       placeholder="Write your review (optional)"
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-turf-green/40"
+                      className="focus:ring-turf-green/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                     />
                     <div className="mt-3 flex justify-end">
                       <Button
@@ -945,9 +876,7 @@ export function CoachDetailClient() {
                   </p>
                 )}
                 {reviewLoading ? (
-                  <div className="text-sm text-slate-500">
-                    Loading reviews...
-                  </div>
+                  <div className="text-sm text-slate-500">Loading reviews...</div>
                 ) : reviews.length === 0 ? (
                   <p className="text-sm text-slate-500">
                     No reviews yet. Be the first to review this coach.
@@ -956,8 +885,7 @@ export function CoachDetailClient() {
                   <div className="space-y-4">
                     {reviews.map((review) => {
                       const reviewer =
-                        typeof review.userId === "object" &&
-                        review.userId !== null
+                        typeof review.userId === "object" && review.userId !== null
                           ? review.userId
                           : null;
                       return (
@@ -965,8 +893,8 @@ export function CoachDetailClient() {
                           key={String(review._id || review.id)}
                           className="rounded-xl border border-slate-200 bg-white p-4"
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="font-semibold text-slate-900 text-sm">
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-sm font-semibold text-slate-900">
                               {reviewer?.name || "User"}
                             </p>
                             <div className="flex items-center gap-1">
@@ -976,7 +904,7 @@ export function CoachDetailClient() {
                                   size={14}
                                   className={
                                     index < review.rating
-                                      ? "text-yellow-500 fill-yellow-500"
+                                      ? "fill-yellow-500 text-yellow-500"
                                       : "text-slate-300"
                                   }
                                 />
@@ -984,9 +912,7 @@ export function CoachDetailClient() {
                             </div>
                           </div>
                           {review.review && (
-                            <p className="text-sm text-slate-700">
-                              {review.review}
-                            </p>
+                            <p className="text-sm text-slate-700">{review.review}</p>
                           )}
                         </div>
                       );
@@ -1000,40 +926,36 @@ export function CoachDetailClient() {
           {/* Booking Sidebar */}
           <div className="lg:col-span-1">
             <Card className="premium-shadow sticky top-24 overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-0 backdrop-blur-sm">
-              <div className="bg-linear-to-br from-turf-green/5 to-slate-50 p-6 border-b border-slate-100">
-                <h2 className="text-xl font-bold text-slate-900">
-                  Book a Session
-                </h2>
+              <div className="from-turf-green/5 border-b border-slate-100 bg-linear-to-br to-slate-50 p-6">
+                <h2 className="text-xl font-bold text-slate-900">Book a Session</h2>
               </div>
               <div className="p-6">
                 <div className="space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
+                    <label className="mb-3 block text-sm font-semibold text-slate-700">
                       Select Sport
                     </label>
-                    <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto pr-1">
+                    <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto pr-1">
                       {coach.sports?.map((sport, index) => (
                         <button
                           key={`${sport}-${index}`}
                           onClick={() => setSelectedSport(sport)}
                           title={sport}
-                          className={`rounded-lg border-2 px-3 py-2.5 text-left text-sm font-medium transition-all ${selectedSport === sport ? "bg-turf-green text-white border-turf-green shadow-md" : "bg-white text-slate-700 border-slate-200 hover:border-turf-green"}`}
+                          className={`rounded-lg border-2 px-3 py-2.5 text-left text-sm font-medium transition-all ${selectedSport === sport ? "bg-turf-green border-turf-green text-white shadow-md" : "hover:border-turf-green border-slate-200 bg-white text-slate-700"}`}
                         >
-                          <span className="block line-clamp-2 wrap-break-word">
-                            {sport}
-                          </span>
+                          <span className="line-clamp-2 block wrap-break-word">{sport}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
+                    <label className="mb-3 block text-sm font-semibold text-slate-700">
                       Select Date
                     </label>
                     <div className="relative">
                       <Calendar
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                        className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
                         size={18}
                       />
                       <input
@@ -1041,45 +963,36 @@ export function CoachDetailClient() {
                         value={selectedDate}
                         min={new Date().toISOString().split("T")[0]}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-turf-green/50 focus:border-turf-green"
+                        className="focus:ring-turf-green/50 focus:border-turf-green w-full rounded-lg border-2 border-slate-200 py-2.5 pr-4 pl-10 focus:ring-2 focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-3">
+                    <label className="mb-3 block text-sm font-semibold text-slate-700">
                       Select Time Slot
                     </label>
                     {availabilityLoading ? (
                       <div className="flex justify-center py-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-turf-green"></div>
+                        <div className="border-turf-green h-6 w-6 animate-spin rounded-full border-b-2"></div>
                       </div>
                     ) : availability && slotsToDisplay.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                      <div className="custom-scrollbar grid max-h-60 grid-cols-2 gap-2 overflow-y-auto">
                         {slotsToDisplay.map((slot: string) => {
                           const startTime = slot.split("-")[0] || slot;
-                          const startHour = parseInt(
-                            startTime.split(":")[0] || "0",
-                            10,
-                          );
+                          const startHour = parseInt(startTime.split(":")[0] || "0", 10);
                           const endTime =
-                            slot.split("-")[1] ||
-                            `${String(startHour + 1).padStart(2, "0")}:00`;
+                            slot.split("-")[1] || `${String(startHour + 1).padStart(2, "0")}:00`;
                           const isSlotAvailable =
                             availability?.availableSlots?.some(
-                              (availSlot) =>
-                                (availSlot.split("-")[0] || availSlot) ===
-                                startTime,
+                              (availSlot) => (availSlot.split("-")[0] || availSlot) === startTime
                             ) ?? false;
-                          const isSelected =
-                            selectedSlot?.startTime === startTime;
+                          const isSelected = selectedSlot?.startTime === startTime;
                           return (
                             <button
                               key={slot}
-                              onClick={() =>
-                                setSelectedSlot({ startTime, endTime })
-                              }
-                              className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all ${isSlotAvailable ? (isSelected ? "bg-turf-green text-white border-turf-green shadow-md" : "bg-white text-slate-700 border-slate-200 hover:border-turf-green") : isSelected ? "bg-power-orange text-white border-power-orange shadow-md" : "bg-amber-50/50 text-amber-700 border-amber-200 border-dashed hover:border-amber-400 hover:bg-amber-50"}`}
+                              onClick={() => setSelectedSlot({ startTime, endTime })}
+                              className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all ${isSlotAvailable ? (isSelected ? "bg-turf-green border-turf-green text-white shadow-md" : "hover:border-turf-green border-slate-200 bg-white text-slate-700") : isSelected ? "bg-power-orange border-power-orange text-white shadow-md" : "border-dashed border-amber-200 bg-amber-50/50 text-amber-700 hover:border-amber-400 hover:bg-amber-50"}`}
                             >
                               <div className="flex flex-col items-center justify-center">
                                 <span
@@ -1104,38 +1017,34 @@ export function CoachDetailClient() {
                         })}
                       </div>
                     ) : availability ? (
-                      <p className="text-sm text-slate-500 text-center py-4">
+                      <p className="py-4 text-center text-sm text-slate-500">
                         No slots available for this date.
                       </p>
                     ) : (
-                      <p className="text-sm text-slate-400 text-center py-4">
+                      <p className="py-4 text-center text-sm text-slate-400">
                         Select a date to view slots
                       </p>
                     )}
                   </div>
 
-                  <div className="pt-5 border-t-2 border-slate-100">
-                    <div className="bg-turf-green/5 rounded-lg p-4 mb-4 space-y-2">
-                      <div className="flex justify-between items-center">
+                  <div className="border-t-2 border-slate-100 pt-5">
+                    <div className="bg-turf-green/5 mb-4 space-y-2 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-slate-600">
                           {selectedSport || "Selected Sport"} Rate
                         </span>
-                        <span className="text-2xl font-bold text-turf-green flex items-center">
+                        <span className="text-turf-green flex items-center text-2xl font-bold">
                           <IndianRupee size={20} />
                           {selectedSportRate}
                         </span>
                       </div>
                       {selectedSlot && (
-                        <div className="flex justify-between items-center pt-2 border-t border-turf-green/10">
-                          <span className="text-sm font-medium text-slate-600">
-                            Status
-                          </span>
+                        <div className="border-turf-green/10 flex items-center justify-between border-t pt-2">
+                          <span className="text-sm font-medium text-slate-600">Status</span>
                           <span
                             className={`text-sm font-semibold ${isSelectedSlotAvailable ? "text-turf-green" : "text-power-orange"}`}
                           >
-                            {isSelectedSlotAvailable
-                              ? "Available"
-                              : "Booked (Waitlist)"}
+                            {isSelectedSlotAvailable ? "Available" : "Booked (Waitlist)"}
                           </span>
                         </div>
                       )}
@@ -1145,12 +1054,12 @@ export function CoachDetailClient() {
                       isSelectedSlotAvailable ? (
                         <Button
                           variant="primary"
-                          className="w-full h-12 text-base font-semibold bg-turf-green hover:bg-emerald-700 shadow-md"
+                          className="bg-turf-green h-12 w-full text-base font-semibold shadow-md hover:bg-emerald-700"
                           onClick={handleBooking}
                           disabled={bookingLoading || !selectedSlot}
                         >
                           {bookingLoading ? (
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
                           ) : (
                             <Check size={20} className="mr-2" />
                           )}
@@ -1159,12 +1068,12 @@ export function CoachDetailClient() {
                       ) : (
                         <Button
                           variant="primary"
-                          className="w-full h-12 text-base font-semibold shadow-lg bg-power-orange hover:bg-power-orange/90 text-white border-power-orange"
+                          className="bg-power-orange hover:bg-power-orange/90 border-power-orange h-12 w-full text-base font-semibold text-white shadow-lg"
                           onClick={handleJoinWaitlist}
                           disabled={bookingLoading || !selectedSlot}
                         >
                           {bookingLoading ? (
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
                           ) : (
                             <Check size={20} className="mr-2" />
                           )}
@@ -1173,10 +1082,7 @@ export function CoachDetailClient() {
                       )
                     ) : (
                       <Link href={`/login?redirect=/coaches/${coachId}`}>
-                        <Button
-                          variant="secondary"
-                          className="w-full h-12 font-semibold"
-                        >
+                        <Button variant="secondary" className="h-12 w-full font-semibold">
                           <User size={20} className="mr-2" />
                           Sign In to Book
                         </Button>

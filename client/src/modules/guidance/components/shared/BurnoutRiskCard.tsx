@@ -27,19 +27,17 @@ export function BurnoutRiskCard({ risk }: { risk: BurnoutRisk }) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-3xl border ${cfg.border} bg-gradient-to-br ${cfg.bg} p-5 sm:p-6 shadow-sm`}
+      className={`rounded-3xl border ${cfg.border} bg-gradient-to-br ${cfg.bg} p-5 shadow-sm sm:p-6`}
     >
-      <div className="flex items-center gap-3 mb-5">
+      <div className="mb-5 flex items-center gap-3">
         <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/80 border ${cfg.border}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-white/80 ${cfg.border}`}
         >
           <AlertTriangle className={`h-5 w-5 ${cfg.icon}`} />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3
-              className={`font-title text-lg font-bold leading-tight ${cfg.title}`}
-            >
+            <h3 className={`font-title text-lg leading-tight font-bold ${cfg.title}`}>
               Burnout Risk Alert
             </h3>
             <span
@@ -48,24 +46,17 @@ export function BurnoutRiskCard({ risk }: { risk: BurnoutRisk }) {
               {risk.level === "high" ? "High Risk" : "Monitor"}
             </span>
           </div>
-          <p className={`text-xs mt-0.5 ${cfg.title} opacity-80`}>
-            {risk.message}
-          </p>
+          <p className={`mt-0.5 text-xs ${cfg.title} opacity-80`}>{risk.message}</p>
         </div>
       </div>
       {risk.recommendations.length > 0 && (
         <ul className="space-y-1.5">
           {risk.recommendations.map((r, i) => (
-            <li
-              key={i}
-              className="flex items-start gap-2 text-xs text-slate-700"
-            >
+            <li key={i} className="flex items-start gap-2 text-xs text-slate-700">
               <div
-                className={`mt-0.5 h-4 w-4 shrink-0 flex items-center justify-center rounded-full bg-white/70 border ${cfg.border}`}
+                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border bg-white/70 ${cfg.border}`}
               >
-                <span className={`text-[9px] font-black ${cfg.icon}`}>
-                  {i + 1}
-                </span>
+                <span className={`text-[9px] font-black ${cfg.icon}`}>{i + 1}</span>
               </div>
               {r}
             </li>

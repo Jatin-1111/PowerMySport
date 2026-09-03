@@ -27,9 +27,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
-        {label}
-      </span>
+      <span className="text-xs font-bold tracking-wide text-slate-500 uppercase">{label}</span>
       {hint && <span className="mt-0.5 block text-xs text-slate-400">{hint}</span>}
       <div className="mt-1.5">{children}</div>
     </label>
@@ -139,7 +137,7 @@ export function RepeatableList<T>({
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-3 text-xs italic text-slate-400">{emptyText}</p>
+        <p className="mt-3 text-xs text-slate-400 italic">{emptyText}</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {items.map((item, index) => (
@@ -149,9 +147,7 @@ export function RepeatableList<T>({
             >
               <div className="flex flex-col items-center gap-0.5 pt-1 text-slate-300">
                 <GripVertical className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-bold text-slate-400">
-                  {index + 1}
-                </span>
+                <span className="text-[10px] font-bold text-slate-400">{index + 1}</span>
               </div>
 
               <div className="min-w-0 flex-1 space-y-2">
@@ -159,11 +155,7 @@ export function RepeatableList<T>({
               </div>
 
               <div className="flex shrink-0 flex-col gap-1">
-                <IconButton
-                  label="Move up"
-                  disabled={index === 0}
-                  onClick={() => move(index, -1)}
-                >
+                <IconButton label="Move up" disabled={index === 0} onClick={() => move(index, -1)}>
                   <ChevronUp className="h-3.5 w-3.5" />
                 </IconButton>
                 <IconButton

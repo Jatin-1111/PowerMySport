@@ -26,7 +26,7 @@ const mount = () =>
   render(
     <QueryProvider>
       <div>app</div>
-    </QueryProvider>,
+    </QueryProvider>
   );
 
 beforeEach(() => {

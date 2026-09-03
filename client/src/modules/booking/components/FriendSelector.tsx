@@ -67,12 +67,7 @@ export function FriendSelector({
 
   if (loading) {
     return (
-      <div
-        className={cn(
-          "rounded-lg border border-slate-200 bg-white p-6",
-          className,
-        )}
-      >
+      <div className={cn("rounded-lg border border-slate-200 bg-white p-6", className)}>
         <div className="flex items-center justify-center gap-2 text-slate-500">
           <Loader2 size={16} className="animate-spin" />
           <span className="text-sm">Loading friends...</span>
@@ -83,12 +78,7 @@ export function FriendSelector({
 
   if (error) {
     return (
-      <div
-        className={cn(
-          "rounded-lg border border-red-200 bg-red-50 p-6",
-          className,
-        )}
-      >
+      <div className={cn("rounded-lg border border-red-200 bg-red-50 p-6", className)}>
         <p className="text-sm text-red-600">{error}</p>
       </div>
     );
@@ -96,19 +86,14 @@ export function FriendSelector({
 
   if (friends.length === 0) {
     return (
-      <div
-        className={cn(
-          "rounded-lg border border-slate-200 bg-slate-50 p-6",
-          className,
-        )}
-      >
+      <div className={cn("rounded-lg border border-slate-200 bg-slate-50 p-6", className)}>
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="rounded-full bg-slate-200 p-3">
             <UserPlus size={24} className="text-slate-500" />
           </div>
           <div>
             <p className="font-semibold text-slate-700">No friends yet</p>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="mt-1 text-sm text-slate-500">
               Add friends to invite them to group bookings
             </p>
           </div>
@@ -118,16 +103,14 @@ export function FriendSelector({
   }
 
   return (
-    <div
-      className={cn("rounded-lg border border-slate-200 bg-white", className)}
-    >
+    <div className={cn("rounded-lg border border-slate-200 bg-white", className)}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <div className="flex items-center gap-2">
           <Users size={18} className="text-slate-500" />
           <span className="font-semibold text-slate-700">Select Friends</span>
           {selectedFriendIds.length > 0 && (
-            <span className="rounded-full bg-power-orange px-2 py-0.5 text-xs font-semibold text-white">
+            <span className="bg-power-orange rounded-full px-2 py-0.5 text-xs font-semibold text-white">
               {selectedFriendIds.length}
             </span>
           )}
@@ -136,7 +119,7 @@ export function FriendSelector({
           <button
             type="button"
             onClick={selectAll}
-            className="text-xs font-medium text-power-orange hover:underline"
+            className="text-power-orange text-xs font-medium hover:underline"
           >
             Select All
           </button>
@@ -163,7 +146,7 @@ export function FriendSelector({
               onClick={() => toggleFriend(friend.id)}
               className={cn(
                 "flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left transition-colors hover:bg-slate-50",
-                isSelected && "bg-power-orange/5",
+                isSelected && "bg-power-orange/5"
               )}
             >
               <Checkbox
@@ -179,18 +162,13 @@ export function FriendSelector({
                 return (
                   <>
                     <Avatar className="h-10 w-10">
-                      <AvatarImage
-                        src={isPublic ? friend.photoUrl : undefined}
-                        alt={displayName}
-                      />
-                      <AvatarFallback className="bg-slate-200 text-slate-700 font-semibold">
+                      <AvatarImage src={isPublic ? friend.photoUrl : undefined} alt={displayName} />
+                      <AvatarFallback className="bg-slate-200 font-semibold text-slate-700">
                         {displayName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900 truncate">
-                        {displayName}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-slate-900">{displayName}</p>
                     </div>
                   </>
                 );

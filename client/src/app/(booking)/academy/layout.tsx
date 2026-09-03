@@ -10,13 +10,9 @@ import AcademyLayoutShell from "./LayoutShell";
  */
 export const metadata: Metadata = noindexMetadata(
   "Academy Console",
-  "Manage your academy profile, programmes, reviews and earnings.",
+  "Manage your academy profile, programmes, reviews and earnings."
 );
 
-export default function AcademyLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AcademyLayout({ children }: { children: React.ReactNode }) {
   return <AcademyLayoutShell>{children}</AcademyLayoutShell>;
 }

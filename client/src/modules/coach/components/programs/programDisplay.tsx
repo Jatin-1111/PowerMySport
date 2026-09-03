@@ -27,8 +27,7 @@ export const DeliveryBadge = ({
   kind: CoachOffering["deliveryKind"];
   platform?: string;
 }) => {
-  const Icon =
-    kind === "ONLINE" ? Globe : kind === "STUDENT_LOCATION" ? Home : MapPin;
+  const Icon = kind === "ONLINE" ? Globe : kind === "STUDENT_LOCATION" ? Home : MapPin;
 
   return (
     <Badge variant="secondary" className="inline-flex items-center gap-1">
@@ -39,15 +38,10 @@ export const DeliveryBadge = ({
 };
 
 /** "Tue & Thu, 6:00 PM · 60 min" — the pattern, not a list of dates. */
-export const formatSchedule = (
-  schedule: CoachOfferingSlot[],
-  timezone?: string,
-): string => {
+export const formatSchedule = (schedule: CoachOfferingSlot[], timezone?: string): string => {
   if (!schedule.length) return "No sessions scheduled";
 
-  const days = schedule
-    .map((slot) => DAY_LABELS[slot.dayOfWeek] ?? "?")
-    .join(" & ");
+  const days = schedule.map((slot) => DAY_LABELS[slot.dayOfWeek] ?? "?").join(" & ");
 
   const first = schedule[0];
   if (!first) return "No sessions scheduled";
@@ -75,19 +69,18 @@ const to12Hour = (hhmm: string): string => {
  */
 export const SeatsLabel = ({ offering }: { offering: CoachOffering }) => {
   const seatsLeft =
-    offering.seatsLeft ??
-    Math.max(0, offering.capacity - (offering.enrolledCount ?? 0));
+    offering.seatsLeft ?? Math.max(0, offering.capacity - (offering.enrolledCount ?? 0));
 
   if (offering.capacity === 1) {
     return (
-      <span className="text-sm text-muted-foreground">
+      <span className="text-muted-foreground text-sm">
         {seatsLeft > 0 ? "One-to-one · available" : "One-to-one · taken"}
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+    <span className="text-muted-foreground inline-flex items-center gap-1 text-sm">
       <Users className="h-3.5 w-3.5" aria-hidden="true" />
       {seatsLeft > 0
         ? `${seatsLeft} of ${offering.capacity} seats left`
@@ -129,30 +122,26 @@ export const ConnectionDetail = ({
         href={delivery.meetingLink}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm font-medium text-power-orange underline underline-offset-2"
+        className="text-power-orange text-sm font-medium underline underline-offset-2"
       >
         Join class
       </a>
     ) : (
-      <span className="text-sm text-muted-foreground">
+      <span className="text-muted-foreground text-sm">
         Your coach hasn&apos;t shared the link yet
       </span>
     );
   }
 
   return delivery.addressSnapshot ? (
-    <span className="inline-flex items-start gap-1 text-sm text-muted-foreground">
+    <span className="text-muted-foreground inline-flex items-start gap-1 text-sm">
       <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       {delivery.addressSnapshot}
     </span>
   ) : null;
 };
 
-export const StatusBadge = ({
-  status,
-}: {
-  status: CoachSessionOccurrence["status"];
-}) => {
+export const StatusBadge = ({ status }: { status: CoachSessionOccurrence["status"] }) => {
   if (status === "COMPLETED") return <Badge variant="secondary">Done</Badge>;
   if (status.startsWith("CANCELLED")) {
     return <Badge variant="destructive">Cancelled</Badge>;

@@ -17,8 +17,7 @@ export async function computeWaveform(blob: Blob): Promise<number[]> {
   try {
     const AudioContextCtor =
       window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextCtor) {
       return [];
     }
@@ -46,7 +45,7 @@ export async function computeWaveform(blob: Blob): Promise<number[]> {
       return peaks.map((peak) =>
         // Floor at 6 so silence still reads as a bar rather than a gap in the
         // track, which looks like a rendering fault.
-        Math.max(6, Math.min(100, Math.round((peak / loudest) * 100))),
+        Math.max(6, Math.min(100, Math.round((peak / loudest) * 100)))
       );
     } finally {
       void context.close();

@@ -25,7 +25,7 @@ export function RouteLoading({ label = "Loading…" }: { label?: string }) {
       aria-live="polite"
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-3 border-power-orange border-t-transparent" />
+        <div className="border-power-orange h-8 w-8 animate-spin rounded-full border-3 border-t-transparent" />
         <p className="text-sm text-slate-500">{label}</p>
       </div>
     </div>
@@ -53,7 +53,7 @@ export function RouteError({
           <button
             type="button"
             onClick={reset}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+            className="bg-power-orange inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
           >
             <RotateCcw className="h-4 w-4" />
             Try again

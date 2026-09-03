@@ -41,10 +41,7 @@ const isAdminRole = (role: string): boolean => {
  * POST /api/venues/onboarding/step1
  * Body: { ownerName, ownerEmail, ownerPhone }
  */
-export const createVenueStep1 = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createVenueStep1 = async (req: Request, res: Response): Promise<void> => {
   try {
     // No authentication required - public endpoint
     const venue = await startVenueOnboarding(req.body);
@@ -82,8 +79,7 @@ export const createVenueStep1 = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create venue",
+      message: error instanceof Error ? error.message : "Failed to create venue",
     });
   }
 };
@@ -93,10 +89,7 @@ export const createVenueStep1 = async (
  * POST /api/venues/onboarding/step2
  * Body: { venueId, name, address, location, sports, pricePerHour, amenities, etc. }
  */
-export const updateVenueDetailsStep2 = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateVenueDetailsStep2 = async (req: Request, res: Response): Promise<void> => {
   try {
     // No authentication required - public endpoint
     const { venueId } = req.body;
@@ -125,10 +118,7 @@ export const updateVenueDetailsStep2 = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to update venue details",
+      message: error instanceof Error ? error.message : "Failed to update venue details",
     });
   }
 };
@@ -143,10 +133,7 @@ export const updateVenueDetailsStep2 = async (
  *   sports: string[] (selected sports from Step 2)
  * }
  */
-export const getImageUploadUrls = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getImageUploadUrls = async (req: Request, res: Response): Promise<void> => {
   try {
     const { venueId, sports } = req.body;
 
@@ -187,10 +174,7 @@ export const getImageUploadUrls = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate upload URLs",
+      message: error instanceof Error ? error.message : "Failed to generate upload URLs",
     });
   }
 };
@@ -200,10 +184,7 @@ export const getImageUploadUrls = async (
  * POST /api/venues/onboarding/coach-photo-upload-url
  * Body: { venueId, fileName, contentType }
  */
-export const getCoachPhotoUploadUrl = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCoachPhotoUploadUrl = async (req: Request, res: Response): Promise<void> => {
   try {
     const { venueId, fileName, contentType } = req.body;
 
@@ -236,11 +217,7 @@ export const getCoachPhotoUploadUrl = async (
 
     // Generate presigned URL using S3Service
     const s3Service = new S3Service();
-    const uploadData = await s3Service.generateCoachPhotoUploadUrl(
-      fileName,
-      contentType,
-      venueId,
-    );
+    const uploadData = await s3Service.generateCoachPhotoUploadUrl(fileName, contentType, venueId);
 
     res.status(200).json({
       success: true,
@@ -250,10 +227,7 @@ export const getCoachPhotoUploadUrl = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate coach photo upload URL",
+      message: error instanceof Error ? error.message : "Failed to generate coach photo upload URL",
     });
   }
 };
@@ -269,10 +243,7 @@ export const getCoachPhotoUploadUrl = async (
  *   coverPhotoUrl: string
  * }
  */
-export const confirmImagesStep2 = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const confirmImagesStep2 = async (req: Request, res: Response): Promise<void> => {
   try {
     const { venueId } = req.body;
 
@@ -301,8 +272,7 @@ export const confirmImagesStep2 = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to confirm images",
+      message: error instanceof Error ? error.message : "Failed to confirm images",
     });
   }
 };
@@ -320,10 +290,7 @@ export const confirmImagesStep2 = async (
  *   ]
  * }
  */
-export const getDocumentUploadUrls = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getDocumentUploadUrls = async (req: Request, res: Response): Promise<void> => {
   try {
     const { venueId, documents } = req.body;
 
@@ -352,10 +319,7 @@ export const getDocumentUploadUrls = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate document upload URLs",
+      message: error instanceof Error ? error.message : "Failed to generate document upload URLs",
     });
   }
 };
@@ -373,10 +337,7 @@ export const getDocumentUploadUrls = async (
  *   ]
  * }
  */
-export const finalizeOnboardingStep3 = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const finalizeOnboardingStep3 = async (req: Request, res: Response): Promise<void> => {
   try {
     const { venueId } = req.body;
 
@@ -407,10 +368,7 @@ export const finalizeOnboardingStep3 = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to finalize onboarding",
+      message: error instanceof Error ? error.message : "Failed to finalize onboarding",
     });
   }
 };
@@ -419,10 +377,7 @@ export const finalizeOnboardingStep3 = async (
  * Cancel/Delete venue onboarding (for incomplete venues)
  * DELETE /api/venues/onboarding/:venueId
  */
-export const deleteVenueOnboardingHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteVenueOnboardingHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
@@ -455,8 +410,7 @@ export const deleteVenueOnboardingHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to delete venue",
+      message: error instanceof Error ? error.message : "Failed to delete venue",
     });
   }
 };
@@ -465,10 +419,7 @@ export const deleteVenueOnboardingHandler = async (
  * ADMIN: List pending venues
  * GET /api/admin/venues/pending?page=1&limit=20&status=PENDING
  */
-export const listPendingVenues = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listPendingVenues = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -478,12 +429,7 @@ export const listPendingVenues = async (
       return;
     }
 
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
     const status = (req.query.status as string) || undefined;
 
     const result = await getPendingVenues(page, limit, status as any);
@@ -496,10 +442,7 @@ export const listPendingVenues = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch pending venues",
+      message: error instanceof Error ? error.message : "Failed to fetch pending venues",
     });
   }
 };
@@ -510,7 +453,7 @@ export const listPendingVenues = async (
  */
 export const getVenueOnboardingDetailsForAdmin = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
@@ -540,10 +483,7 @@ export const getVenueOnboardingDetailsForAdmin = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch venue details",
+      message: error instanceof Error ? error.message : "Failed to fetch venue details",
     });
   }
 };
@@ -552,10 +492,7 @@ export const getVenueOnboardingDetailsForAdmin = async (
  * ADMIN: Approve venue
  * POST /api/admin/venues/onboarding/:venueId/approve
  */
-export const approveVenueHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const approveVenueHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -580,8 +517,7 @@ export const approveVenueHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to approve venue",
+      message: error instanceof Error ? error.message : "Failed to approve venue",
     });
   }
 };
@@ -593,10 +529,7 @@ export const approveVenueHandler = async (
  * Request body:
  * { reason: string }
  */
-export const rejectVenueHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const rejectVenueHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -632,8 +565,7 @@ export const rejectVenueHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reject venue",
+      message: error instanceof Error ? error.message : "Failed to reject venue",
     });
   }
 };
@@ -645,10 +577,7 @@ export const rejectVenueHandler = async (
  * Request body:
  * { notes?: string }
  */
-export const markVenueForReviewHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const markVenueForReviewHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -676,10 +605,7 @@ export const markVenueForReviewHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to mark venue for review",
+      message: error instanceof Error ? error.message : "Failed to mark venue for review",
     });
   }
 };
@@ -689,10 +615,7 @@ export const markVenueForReviewHandler = async (
  * POST /api/venues/onboarding/step5/coaches
  * Body: { venueId, coaches }
  */
-export const addVenueCoaches = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const addVenueCoaches = async (req: Request, res: Response): Promise<void> => {
   try {
     const { venueId, coaches } = req.body;
 
@@ -713,7 +636,7 @@ export const addVenueCoaches = async (
         hasCoaches: coaches && coaches.length > 0,
         venueCoaches: coaches || [],
       },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     );
 
     if (!venue) {
@@ -738,8 +661,7 @@ export const addVenueCoaches = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to save coaches",
+      message: error instanceof Error ? error.message : "Failed to save coaches",
     });
   }
 };

@@ -61,7 +61,7 @@ export function CalendarMonthGrid({
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div
             key={d}
-            className="text-center text-[10px] font-bold uppercase tracking-wide text-slate-400"
+            className="text-center text-[10px] font-bold tracking-wide text-slate-400 uppercase"
           >
             {d.charAt(0)}
           </div>
@@ -80,7 +80,7 @@ export function CalendarMonthGrid({
               <div
                 key={cell.key}
                 className={`flex h-11 flex-col items-center justify-center rounded-lg text-xs ${
-                  isToday ? "ring-1 ring-inset ring-slate-300" : ""
+                  isToday ? "ring-1 ring-slate-300 ring-inset" : ""
                 } text-slate-300`}
               >
                 {cell.day}
@@ -94,18 +94,18 @@ export function CalendarMonthGrid({
               onClick={() => onSelectDate(cell.key)}
               aria-label={`${cell.count} event${cell.count === 1 ? "" : "s"} on ${cell.day} ${first.toLocaleDateString(
                 "en-IN",
-                { month: "long", timeZone: CAL_TZ },
+                { month: "long", timeZone: CAL_TZ }
               )}`}
               aria-pressed={isSelected}
               className={`flex h-11 flex-col items-center justify-center rounded-lg border transition ${
                 isSelected
                   ? "border-power-orange bg-power-orange text-white"
-                  : "border-orange-200 bg-orange-50 text-power-orange hover:border-power-orange"
-              } ${isToday && !isSelected ? "ring-1 ring-inset ring-power-orange/40" : ""}`}
+                  : "text-power-orange hover:border-power-orange border-orange-200 bg-orange-50"
+              } ${isToday && !isSelected ? "ring-power-orange/40 ring-1 ring-inset" : ""}`}
             >
-              <span className="text-sm font-bold leading-none">{cell.day}</span>
+              <span className="text-sm leading-none font-bold">{cell.day}</span>
               <span
-                className={`mt-0.5 text-[10px] font-semibold leading-none ${
+                className={`mt-0.5 text-[10px] leading-none font-semibold ${
                   isSelected ? "text-white/80" : "text-power-orange/70"
                 }`}
               >

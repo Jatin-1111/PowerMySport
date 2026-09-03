@@ -18,11 +18,7 @@ export async function generateMetadata({
   });
 }
 
-export default async function EditBlogPage({
-  params,
-}: {
-  params: Promise<{ blogId: string }>;
-}) {
+export default async function EditBlogPage({ params }: { params: Promise<{ blogId: string }> }) {
   const { blogId } = await params;
   return <WriteBlogClient mode="edit" blogId={blogId} />;
 }

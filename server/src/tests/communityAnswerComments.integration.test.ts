@@ -11,12 +11,8 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const { CommunityPost } = require("../community/models/CommunityPost");
 const { CommunityAnswer } = require("../community/models/CommunityAnswer");
-const {
-  CommunityAnswerComment,
-} = require("../community/models/CommunityAnswerComment");
-const {
-  CommunityReputation,
-} = require("../community/models/CommunityReputation");
+const { CommunityAnswerComment } = require("../community/models/CommunityAnswerComment");
+const { CommunityReputation } = require("../community/models/CommunityReputation");
 const { CommunityService } = require("../community/services/CommunityService");
 const { User } = require("../client/models/User");
 
@@ -45,7 +41,7 @@ const setup = async () => {
   const ans = await CommunityService.createAnswer(
     answerer,
     post.id,
-    "A 25-inch aluminium racket is the usual starting point.",
+    "A 25-inch aluminium racket is the usual starting point."
   );
   return { asker, answerer, post, ans };
 };
@@ -98,7 +94,7 @@ describe("commenting on an answer", () => {
 
     await assert.rejects(
       () => CommunityService.createAnswerComment(asker, ans.id, "   "),
-      /Comment cannot be empty/,
+      /Comment cannot be empty/
     );
   });
 
@@ -108,7 +104,7 @@ describe("commenting on an answer", () => {
 
     await assert.rejects(
       () => CommunityService.createAnswerComment(asker, missing, "Hello?"),
-      /answer not found/,
+      /answer not found/
     );
   });
 
@@ -127,11 +123,7 @@ describe("commenting on an answer", () => {
 describe("deleting a comment", () => {
   it("lets the author remove their own", async () => {
     const { asker, ans, post } = await setup();
-    const comment = await CommunityService.createAnswerComment(
-      asker,
-      ans.id,
-      "Which model?",
-    );
+    const comment = await CommunityService.createAnswerComment(asker, ans.id, "Which model?");
 
     await CommunityService.deleteAnswerComment(asker, comment.id);
 
@@ -144,7 +136,7 @@ describe("deleting a comment", () => {
     const comment = await CommunityService.createAnswerComment(
       answerer,
       ans.id,
-      "Off-topic remark.",
+      "Off-topic remark."
     );
 
     await CommunityService.deleteAnswerComment(asker, comment.id);
@@ -156,15 +148,11 @@ describe("deleting a comment", () => {
   it("refuses everyone else", async () => {
     const { answerer, ans } = await setup();
     const stranger = await createUser("Stranger");
-    const comment = await CommunityService.createAnswerComment(
-      answerer,
-      ans.id,
-      "A useful note.",
-    );
+    const comment = await CommunityService.createAnswerComment(answerer, ans.id, "A useful note.");
 
     await assert.rejects(
       () => CommunityService.deleteAnswerComment(stranger, comment.id),
-      /cannot delete this comment/,
+      /cannot delete this comment/
     );
   });
 
@@ -204,7 +192,7 @@ describe("comments and their answer", () => {
       answerer,
       ans.id,
       "Prefer not to say who I am.",
-      true,
+      true
     );
 
     const asOther = await CommunityService.getPostDetails(asker, post.id);

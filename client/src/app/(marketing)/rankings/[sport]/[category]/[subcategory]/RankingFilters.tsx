@@ -86,7 +86,7 @@ export function RankingFilters({
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2"
               aria-hidden
             />
             <input
@@ -95,14 +95,14 @@ export function RankingFilters({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Name or AITA registration number"
-              className="h-11 w-full rounded-lg border bg-background pl-10 pr-3 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+              className="bg-background focus-visible:ring-power-orange h-11 w-full rounded-lg border pr-3 pl-10 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             />
           </div>
           {/* A visible button, not an sr-only one: on a phone keyboard the
               go-key is not obvious, and this is the page's primary action. */}
           <button
             type="submit"
-            className="inline-flex h-11 shrink-0 items-center rounded-lg bg-power-orange px-4 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+            className="bg-power-orange focus-visible:ring-power-orange inline-flex h-11 shrink-0 items-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
           >
             Search
           </button>
@@ -111,7 +111,10 @@ export function RankingFilters({
 
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="ranking-state" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+          <label
+            htmlFor="ranking-state"
+            className="text-muted-foreground mb-1.5 block text-xs font-medium"
+          >
             State
           </label>
           <select
@@ -131,7 +134,10 @@ export function RankingFilters({
 
         {dates.length > 1 && (
           <div>
-            <label htmlFor="ranking-date" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            <label
+              htmlFor="ranking-date"
+              className="text-muted-foreground mb-1.5 block text-xs font-medium"
+            >
               Week
             </label>
             <select
@@ -157,7 +163,7 @@ export function RankingFilters({
           <button
             type="button"
             onClick={() => apply({ state: null, date: null, search: null })}
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange inline-flex h-10 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
           >
             <X className="h-4 w-4" aria-hidden />
             Clear

@@ -1,18 +1,13 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import Admin from "../admin/models/Admin";
-import {
-  ADMIN_ROLES,
-  SYSTEM_ADMIN_PERMISSIONS,
-} from "../constants/adminPermissions";
+import { ADMIN_ROLES, SYSTEM_ADMIN_PERMISSIONS } from "../constants/adminPermissions";
 
 const createSuperAdmin = async () => {
   try {
     // Connect to database
     const MONGODB_URI =
-      process.env.MONGO_URI ||
-      process.env.MONGODB_URI ||
-      "mongodb://localhost:27017/powermysport";
+      process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
     if (!process.env.MONGO_URI && !process.env.MONGODB_URI) {
       console.log("⚠️  Warning: Using default local MongoDB connection");
@@ -36,9 +31,7 @@ const createSuperAdmin = async () => {
     const superAdminName = process.env.SUPER_ADMIN_NAME || "System Admin";
 
     if (!superAdminEmail || !superAdminPassword) {
-      console.error(
-        "❌ Missing SUPER_ADMIN_EMAIL or SUPER_ADMIN_PASSWORD in environment",
-      );
+      console.error("❌ Missing SUPER_ADMIN_EMAIL or SUPER_ADMIN_PASSWORD in environment");
       process.exit(1);
     }
 
@@ -59,9 +52,7 @@ const createSuperAdmin = async () => {
     console.log(`📧 Email:    ${superAdminEmail}`);
     console.log("🔑 Password: [from SUPER_ADMIN_PASSWORD]");
     console.log(`👤 Role:     ${ADMIN_ROLES.SYSTEM_ADMIN}`);
-    console.log(
-      `🔐 Permissions: All (${SYSTEM_ADMIN_PERMISSIONS.length} total)`,
-    );
+    console.log(`🔐 Permissions: All (${SYSTEM_ADMIN_PERMISSIONS.length} total)`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("\n⚠️  IMPORTANT: Change this password after first login!");
     console.log("\n🔗 Login at: http://localhost:3000/admin/login\n");

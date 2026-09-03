@@ -157,7 +157,7 @@ function HomeHero({
       {/* ── Aurora glows (toned down on mobile) ── */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-power-orange/30 blur-[100px] sm:-bottom-24 sm:-left-24 sm:h-[28rem] sm:w-[28rem] sm:blur-[130px]"
+        className="bg-power-orange/30 pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full blur-[100px] sm:-bottom-24 sm:-left-24 sm:h-[28rem] sm:w-[28rem] sm:blur-[130px]"
         animate={{ x: [0, 50, 0], y: [0, -30, 0], opacity: [0.45, 0.75, 0.45] }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -182,7 +182,7 @@ function HomeHero({
           {subtitle && (
             <motion.div
               variants={itemVariants}
-              className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-orange-200 backdrop-blur-md sm:mb-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
+              className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold tracking-[0.18em] text-orange-200 uppercase backdrop-blur-md sm:mb-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
             >
               <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               {subtitle}
@@ -192,31 +192,24 @@ function HomeHero({
           {/* ── Headline ── */}
           <motion.h1
             variants={headlineVariants}
-            className="font-title mb-4 text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-white sm:mb-6 sm:text-5xl lg:text-[4.5rem]"
+            className="font-title mb-4 text-[2.1rem] leading-[1.08] font-extrabold tracking-tight text-white sm:mb-6 sm:text-5xl lg:text-[4.5rem]"
           >
             {words.map((w, i) => {
               if (!w.hl) {
                 return (
-                  <motion.span
-                    key={i}
-                    variants={wordVariants}
-                    className="mr-[0.22em] inline-block"
-                  >
+                  <motion.span key={i} variants={wordVariants} className="mr-[0.22em] inline-block">
                     {w.text}
                   </motion.span>
                 );
               }
               if (i !== hlStart) return null;
               return (
-                <span
-                  key="hl"
-                  className="relative mr-[0.22em] inline-block whitespace-nowrap"
-                >
+                <span key="hl" className="relative mr-[0.22em] inline-block whitespace-nowrap">
                   {hlWords.map((hw, j) => (
                     <motion.span
                       key={j}
                       variants={wordVariants}
-                      className={`inline-block bg-gradient-to-r from-orange-300 via-power-orange to-amber-400 bg-clip-text text-transparent ${
+                      className={`via-power-orange inline-block bg-gradient-to-r from-orange-300 to-amber-400 bg-clip-text text-transparent ${
                         j < hlWords.length - 1 ? "mr-[0.22em]" : ""
                       }`}
                     >
@@ -323,23 +316,21 @@ function HomeHero({
           {stats && stats.length > 0 && (
             <motion.div
               variants={itemVariants}
-              className="mt-8 grid w-full gap-2.5 grid-cols-2 sm:mt-10 sm:gap-3 sm:grid-cols-3"
+              className="mt-8 grid w-full grid-cols-2 gap-2.5 sm:mt-10 sm:grid-cols-3 sm:gap-3"
             >
               {stats.map((stat) => (
                 <div
                   key={stat.label}
                   className="rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-300 sm:text-xs">
+                  <p className="text-[10px] font-semibold tracking-widest text-slate-300 uppercase sm:text-xs">
                     {stat.label}
                   </p>
                   <p className="mt-0.5 text-xl font-bold text-white sm:mt-1 sm:text-2xl">
                     {stat.value}
                   </p>
                   {stat.helper && (
-                    <p className="mt-0.5 text-[10px] text-slate-300 sm:text-xs">
-                      {stat.helper}
-                    </p>
+                    <p className="mt-0.5 text-[10px] text-slate-300 sm:text-xs">{stat.helper}</p>
                   )}
                 </div>
               ))}
@@ -406,14 +397,14 @@ function PageHero({
           {/* ── Aurora glow ── */}
           <motion.div
             aria-hidden
-            className="pointer-events-none absolute -bottom-24 left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full bg-power-orange/20 blur-[120px]"
+            className="bg-power-orange/20 pointer-events-none absolute -bottom-24 left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full blur-[120px]"
             animate={{ opacity: [0.35, 0.6, 0.35] }}
             transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
           />
         </>
       ) : (
         <>
-          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
+          <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 left-8 h-64 w-64 rounded-full bg-amber-200/20 blur-3xl" />
         </>
       )}
@@ -428,27 +419,18 @@ function PageHero({
         >
           {subtitle &&
             (hasImage ? (
-              <motion.div
-                variants={itemVariants}
-                className="mb-6 flex justify-center"
-              >
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur-md">
+              <motion.div variants={itemVariants} className="mb-6 flex justify-center">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold tracking-[0.2em] text-orange-200 uppercase backdrop-blur-md">
                   <Sparkles className="h-3.5 w-3.5" />
                   {subtitle}
                 </span>
               </motion.div>
             ) : (
-              <motion.div
-                variants={itemVariants}
-                className="mb-5 flex justify-center"
-              >
+              <motion.div variants={itemVariants} className="mb-5 flex justify-center">
                 <SectionLabel label={subtitle} color="slate" />
               </motion.div>
             ))}
-          <motion.h1
-            variants={itemVariants}
-            className={cnTitle(hasImage)}
-          >
+          <motion.h1 variants={itemVariants} className={cnTitle(hasImage)}>
             {title}
           </motion.h1>
           {description && (
@@ -516,8 +498,8 @@ function SplitHero({
   imageAlt,
 }: HeroProps) {
   return (
-    <section className="relative overflow-hidden bg-ghost-white py-20 sm:py-24 lg:py-28">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-sky-200/20 blur-[100px]" />
+    <section className="bg-ghost-white relative overflow-hidden py-20 sm:py-24 lg:py-28">
+      <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-sky-200/20 blur-[100px]" />
       <div className="pointer-events-none absolute -bottom-24 left-0 h-80 w-80 rounded-full bg-amber-200/20 blur-[100px]" />
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
         <motion.div
@@ -533,7 +515,7 @@ function SplitHero({
           )}
           <motion.h1
             variants={itemVariants}
-            className="font-title mb-6 text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl"
+            className="font-title mb-6 text-3xl leading-tight font-extrabold text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl"
           >
             {title}
           </motion.h1>
@@ -545,10 +527,7 @@ function SplitHero({
               {description}
             </motion.p>
           )}
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col gap-3 sm:flex-row sm:gap-4"
-          >
+          <motion.div variants={itemVariants} className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             {primaryCTA && (
               <Link href={primaryCTA.href}>
                 <Button variant="primary" size="lg" className="rounded-xl">
@@ -558,11 +537,7 @@ function SplitHero({
             )}
             {secondaryCTA && (
               <Link href={secondaryCTA.href}>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="rounded-xl bg-white"
-                >
+                <Button variant="outline" size="lg" className="rounded-xl bg-white">
                   {secondaryCTA.label}
                 </Button>
               </Link>
@@ -579,12 +554,11 @@ function SplitHero({
             className="relative h-[280px] w-full sm:h-[380px] lg:h-[460px]"
           >
             {/* Decorative glow */}
-            <div className="absolute inset-4 rounded-3xl bg-gradient-to-br from-orange-400/15 via-transparent to-turf-green/10 blur-2xl" />
+            <div className="to-turf-green/10 absolute inset-4 rounded-3xl bg-gradient-to-br from-orange-400/15 via-transparent blur-2xl" />
             <div
               className="relative h-full w-full overflow-hidden rounded-3xl"
               style={{
-                clipPath:
-                  "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
+                clipPath: "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
               }}
             >
               <Image
@@ -594,7 +568,7 @@ function SplitHero({
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover transition-transform duration-700 hover:scale-105"
               />
-              <div className="absolute inset-0 ring-1 ring-inset ring-black/8 rounded-3xl" />
+              <div className="absolute inset-0 rounded-3xl ring-1 ring-black/8 ring-inset" />
             </div>
           </motion.div>
         )}

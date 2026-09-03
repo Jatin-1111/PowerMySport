@@ -20,11 +20,7 @@ import React from "react";
  * Each page now owns its title/description/canonical, and anything that does
  * not falls back cleanly to the root layout's defaults.
  */
-export default function MarketingLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     // `overflow-x-clip`, not `overflow-x-hidden`. Both stop sideways scroll, but
     // `hidden` computes the other axis to `auto`, which turns this div into a
@@ -38,7 +34,7 @@ export default function MarketingLayout({
       <div className="h-16" aria-hidden />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
 
       {/* Footer */}
       <Footer />

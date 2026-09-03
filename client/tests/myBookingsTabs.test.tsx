@@ -12,13 +12,9 @@ import type { Booking } from "../src/types";
  */
 
 vi.mock("next/link", () => ({
-  default: ({
-    children,
-    href,
-  }: {
-    children: React.ReactNode;
-    href: string;
-  }) => <a href={href}>{children}</a>,
+  default: ({ children, href }: { children: React.ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 const MODULE = "../src/modules/booking/components/myBookingsTabs";
@@ -61,13 +57,7 @@ const booking = (over: Partial<Booking>): Booking =>
 
 describe("BookingTabBar", () => {
   it("renders a tab for every booking kind, including experts", () => {
-    render(
-      <tabs.BookingTabBar
-        activeTab="venues"
-        counts={counts}
-        onTabChange={() => {}}
-      />,
-    );
+    render(<tabs.BookingTabBar activeTab="venues" counts={counts} onTabChange={() => {}} />);
 
     const labels = screen.getAllByRole("tab").map((t) => t.textContent);
     expect(labels).toHaveLength(4);
@@ -75,31 +65,15 @@ describe("BookingTabBar", () => {
   });
 
   it("shows each tab's count, including a zero", () => {
-    render(
-      <tabs.BookingTabBar
-        activeTab="venues"
-        counts={counts}
-        onTabChange={() => {}}
-      />,
-    );
+    render(<tabs.BookingTabBar activeTab="venues" counts={counts} onTabChange={() => {}} />);
 
     // A missing bucket would render an empty badge rather than a zero.
-    expect(
-      screen.getByRole("tab", { name: /Academy Bookings\s*0/ }),
-    ).toBeTruthy();
-    expect(
-      screen.getByRole("tab", { name: /Expert Sessions\s*3/ }),
-    ).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Academy Bookings\s*0/ })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Expert Sessions\s*3/ })).toBeTruthy();
   });
 
   it("marks only the active tab as selected", () => {
-    render(
-      <tabs.BookingTabBar
-        activeTab="experts"
-        counts={counts}
-        onTabChange={() => {}}
-      />,
-    );
+    render(<tabs.BookingTabBar activeTab="experts" counts={counts} onTabChange={() => {}} />);
 
     const selected = screen
       .getAllByRole("tab")
@@ -115,7 +89,7 @@ describe("BookingTabBar", () => {
         activeTab="venues"
         counts={{ ...counts, experts: 0 }}
         onTabChange={() => {}}
-      />,
+      />
     );
 
     const labels = screen.getAllByRole("tab").map((t) => t.textContent);
@@ -132,14 +106,12 @@ describe("BookingTabBar", () => {
         activeTab="venues"
         counts={{ ...counts, experts: 2 }}
         onTabChange={() => {}}
-      />,
+      />
     );
 
     const labels = screen.getAllByRole("tab").map((t) => t.textContent);
     expect(labels).toHaveLength(4);
-    expect(
-      screen.getByRole("tab", { name: /Expert Sessions\s*2/ }),
-    ).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /Expert Sessions\s*2/ })).toBeTruthy();
   });
 });
 
@@ -153,7 +125,7 @@ describe("BookingProviderHeading", () => {
           expertId: { id: "x1", name: "Jatin", city: "Chandigarh" },
           expert: { mode: "ONLINE" },
         })}
-      />,
+      />
     );
 
     expect(screen.getByText("Jatin")).toBeTruthy();
@@ -171,7 +143,7 @@ describe("BookingProviderHeading", () => {
           expertId: { id: "x1", name: "Jatin" },
           expert: { mode: "IN_PERSON" },
         })}
-      />,
+      />
     );
 
     expect(screen.getByText(/In-person session/)).toBeTruthy();
@@ -182,7 +154,7 @@ describe("BookingProviderHeading", () => {
       <tabs.BookingProviderHeading
         tab="experts"
         booking={booking({ providerType: "EXPERT", expertId: "x1" })}
-      />,
+      />
     );
 
     expect(screen.getByText(/Expert details pending/)).toBeTruthy();
@@ -193,7 +165,7 @@ describe("BookingProviderHeading", () => {
       <tabs.BookingProviderHeading
         tab="venues"
         booking={booking({ venueId: { id: "v1", name: "Turf Park" } as never })}
-      />,
+      />
     );
     expect(screen.getByText("Turf Park")).toBeTruthy();
     unmount();
@@ -202,7 +174,7 @@ describe("BookingProviderHeading", () => {
       <tabs.BookingProviderHeading
         tab="academies"
         booking={booking({ academyId: { id: "a1", name: "Elite Academy" } })}
-      />,
+      />
     );
     expect(screen.getByText("Elite Academy")).toBeTruthy();
   });

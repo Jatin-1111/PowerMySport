@@ -36,19 +36,87 @@ interface SeriesRule {
  * CS = Championship Series, NS = National Series, SS = Super Series.
  */
 const SERIES_RULES: SeriesRule[] = [
-  { key: "ITF", label: "ITF circuit", code: "ITF", note: "International", order: 70, test: /\bITF\b/ },
-  { key: "ATP", label: "ATP circuit", code: "ATP", note: "Professional", order: 71, test: /\bATP\b/ },
-  { key: "WTA", label: "WTA circuit", code: "WTA", note: "Professional", order: 72, test: /\bWTA\b/ },
-  { key: "BWF", label: "BWF circuit", code: "BWF", note: "International", order: 73, test: /\bBWF\b/ },
-  { key: "ASIAN", label: "Asian circuit", code: "Asian", note: "International", order: 74, test: /\basian\b/i },
-  { key: "WORLD", label: "World events", code: "World", note: "International", order: 75, test: /\bworld\b/i },
+  {
+    key: "ITF",
+    label: "ITF circuit",
+    code: "ITF",
+    note: "International",
+    order: 70,
+    test: /\bITF\b/,
+  },
+  {
+    key: "ATP",
+    label: "ATP circuit",
+    code: "ATP",
+    note: "Professional",
+    order: 71,
+    test: /\bATP\b/,
+  },
+  {
+    key: "WTA",
+    label: "WTA circuit",
+    code: "WTA",
+    note: "Professional",
+    order: 72,
+    test: /\bWTA\b/,
+  },
+  {
+    key: "BWF",
+    label: "BWF circuit",
+    code: "BWF",
+    note: "International",
+    order: 73,
+    test: /\bBWF\b/,
+  },
+  {
+    key: "ASIAN",
+    label: "Asian circuit",
+    code: "Asian",
+    note: "International",
+    order: 74,
+    test: /\basian\b/i,
+  },
+  {
+    key: "WORLD",
+    label: "World events",
+    code: "World",
+    note: "International",
+    order: 75,
+    test: /\bworld\b/i,
+  },
 
-  { key: "TS", label: "Talent Series", code: "TS", note: "Entry level", order: 10, test: /\bTS\d*\b/ },
-  { key: "CS", label: "Championship Series", code: "CS", note: "Ranking tier", order: 20, test: /\bCS\d*\b/ },
+  {
+    key: "TS",
+    label: "Talent Series",
+    code: "TS",
+    note: "Entry level",
+    order: 10,
+    test: /\bTS\d*\b/,
+  },
+  {
+    key: "CS",
+    label: "Championship Series",
+    code: "CS",
+    note: "Ranking tier",
+    order: 20,
+    test: /\bCS\d*\b/,
+  },
   { key: "NS", label: "National Series", code: "NS", order: 30, test: /\bNS\b/ },
   { key: "SS", label: "Super Series", code: "SS", order: 40, test: /\bSS\b/ },
-  { key: "NATIONALS", label: "National Championship", code: "Nationals", order: 50, test: /\bnationals?\b/i },
-  { key: "PRIZE", label: "Prize money", code: "Prize", order: 60, test: /\bRs\.?\s*[\d.]+\s*lakh\b/i },
+  {
+    key: "NATIONALS",
+    label: "National Championship",
+    code: "Nationals",
+    order: 50,
+    test: /\bnationals?\b/i,
+  },
+  {
+    key: "PRIZE",
+    label: "Prize money",
+    code: "Prize",
+    order: 60,
+    test: /\bRs\.?\s*[\d.]+\s*lakh\b/i,
+  },
 ];
 
 const FALLBACK: Omit<SeriesRule, "test"> = {
@@ -128,14 +196,19 @@ export function groupEditionsBySeries(editions: TournamentEdition[]): SeriesGrou
 
   for (const group of map.values()) {
     group.editions.sort((a, b) => a.startDate.localeCompare(b.startDate));
-    group.cities = [...new Set(group.editions.map((e) => e.city?.trim()).filter((c): c is string => !!c))];
+    group.cities = [
+      ...new Set(group.editions.map((e) => e.city?.trim()).filter((c): c is string => !!c)),
+    ];
     group.ageGroups = [...new Set(group.editions.flatMap((e) => e.ageGroups ?? []))].sort(
-      (a, b) => (parseInt(a.match(/\d+/)?.[0] ?? "999", 10) - parseInt(b.match(/\d+/)?.[0] ?? "999", 10)) || a.localeCompare(b),
+      (a, b) =>
+        parseInt(a.match(/\d+/)?.[0] ?? "999", 10) - parseInt(b.match(/\d+/)?.[0] ?? "999", 10) ||
+        a.localeCompare(b)
     );
     group.dateCount = new Set(group.editions.map((e) => e.startDate.slice(0, 10))).size;
   }
 
   return [...map.values()].sort(
-    (a, b) => a.order - b.order || b.editions.length - a.editions.length || a.label.localeCompare(b.label),
+    (a, b) =>
+      a.order - b.order || b.editions.length - a.editions.length || a.label.localeCompare(b.label)
   );
 }

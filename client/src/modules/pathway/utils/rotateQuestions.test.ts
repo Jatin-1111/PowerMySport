@@ -28,11 +28,7 @@ const texts = (items: PathwayIndexQuestion[]) => items.map((q) => q.question);
 // sport whose answers were written — but the ordering would have kept it that
 // way even after the others were.
 
-const sport = (
-  slug: string,
-  name: string,
-  count: number,
-): QuestionsBySport => ({
+const sport = (slug: string, name: string, count: number): QuestionsBySport => ({
   sportSlug: slug,
   sportName: name,
   questions: Array.from({ length: count }, (_, i) => ({
@@ -49,24 +45,14 @@ describe("interleave", () => {
       sport("cricket", "Cricket", 3),
       sport("chess", "Chess", 3),
     ]);
-    expect(texts(pooled).slice(0, 3)).toEqual([
-      "Tennis Q0",
-      "Cricket Q0",
-      "Chess Q0",
-    ]);
-    expect(texts(pooled).slice(3, 6)).toEqual([
-      "Tennis Q1",
-      "Cricket Q1",
-      "Chess Q1",
-    ]);
+    expect(texts(pooled).slice(0, 3)).toEqual(["Tennis Q0", "Cricket Q0", "Chess Q0"]);
+    expect(texts(pooled).slice(3, 6)).toEqual(["Tennis Q1", "Cricket Q1", "Chess Q1"]);
   });
 
   it("fills the first nine from as many sports as exist", () => {
     // Ten sports with two answers each: the band should show ten different
     // sports' questions, not the first sport's two followed by the second's.
-    const many = Array.from({ length: 10 }, (_, i) =>
-      sport(`sport-${i}`, `Sport ${i}`, 2),
-    );
+    const many = Array.from({ length: 10 }, (_, i) => sport(`sport-${i}`, `Sport ${i}`, 2));
     const band = rotateQuestions(interleave(many), 9, 0);
     expect(new Set(band.map((q) => q.sportSlug)).size).toBe(9);
   });
@@ -83,10 +69,7 @@ describe("interleave", () => {
 
   it("keeps going when a sport runs out of answers", () => {
     // Today's shape: one sport deep, the rest empty or shallow.
-    const pooled = interleave([
-      sport("tennis", "Tennis", 4),
-      sport("cricket", "Cricket", 1),
-    ]);
+    const pooled = interleave([sport("tennis", "Tennis", 4), sport("cricket", "Cricket", 1)]);
     expect(texts(pooled)).toEqual([
       "Tennis Q0",
       "Cricket Q0",
@@ -97,10 +80,7 @@ describe("interleave", () => {
   });
 
   it("survives a sport with nothing written yet", () => {
-    const pooled = interleave([
-      sport("tennis", "Tennis", 2),
-      sport("cricket", "Cricket", 0),
-    ]);
+    const pooled = interleave([sport("tennis", "Tennis", 2), sport("cricket", "Cricket", 0)]);
     expect(texts(pooled)).toEqual(["Tennis Q0", "Tennis Q1"]);
   });
 });
@@ -109,9 +89,7 @@ describe("rotateQuestions", () => {
   it("returns the whole pool untouched when there is nothing to rotate", () => {
     // Today's case: one sport with eight answers written, nine slots to fill.
     expect(texts(rotateQuestions(pool(8), 9, 0))).toEqual(texts(pool(8)));
-    expect(texts(rotateQuestions(pool(9), 9, 5 * TEN_MINUTES))).toEqual(
-      texts(pool(9)),
-    );
+    expect(texts(rotateQuestions(pool(9), 9, 5 * TEN_MINUTES))).toEqual(texts(pool(9)));
     expect(rotateQuestions([], 9, 0)).toEqual([]);
   });
 
@@ -145,9 +123,7 @@ describe("rotateQuestions", () => {
     const big = pool(40);
     const seen = new Set<string>();
     for (let window = 0; window < 40; window += 1) {
-      texts(rotateQuestions(big, 9, window * TEN_MINUTES)).forEach((q) =>
-        seen.add(q),
-      );
+      texts(rotateQuestions(big, 9, window * TEN_MINUTES)).forEach((q) => seen.add(q));
     }
     expect(seen.size).toBe(40);
   });

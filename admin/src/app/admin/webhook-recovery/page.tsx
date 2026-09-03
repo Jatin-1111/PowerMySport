@@ -95,9 +95,7 @@ export default function AdminWebhookRecoveryPage() {
     } catch {
       toast.error("Retry failed — event may need manual processing");
       setErrors((prev) =>
-        prev.map((e) =>
-          e.key === errorKey ? { ...e, retryCount: e.retryCount + 1 } : e,
-        ),
+        prev.map((e) => (e.key === errorKey ? { ...e, retryCount: e.retryCount + 1 } : e))
       );
     } finally {
       setRetrying(null);
@@ -112,10 +110,7 @@ export default function AdminWebhookRecoveryPage() {
 
     setReconcile((r) => ({ ...r, loading: true, result: null }));
     try {
-      const response = await adminApi.reconcileOrder(
-        reconcile.type,
-        reconcile.orderId,
-      );
+      const response = await adminApi.reconcileOrder(reconcile.type, reconcile.orderId);
       if (response.success) {
         const isConsistent = response.data?.isConsistent ?? true;
         const msg = isConsistent
@@ -127,10 +122,7 @@ export default function AdminWebhookRecoveryPage() {
         throw new Error(response.message || "Failed");
       }
     } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to reconcile order";
+      const errorMsg = err.response?.data?.message || err.message || "Failed to reconcile order";
       toast.error(errorMsg);
       setReconcile((r) => ({ ...r, result: `❌ ${errorMsg}` }));
     } finally {
@@ -144,8 +136,7 @@ export default function AdminWebhookRecoveryPage() {
 
   const stats = {
     total: errors.length,
-    paymentEvents: errors.filter((e) => e.eventType.startsWith("payment"))
-      .length,
+    paymentEvents: errors.filter((e) => e.eventType.startsWith("payment")).length,
     refundEvents: errors.filter((e) => e.eventType.startsWith("refund")).length,
     maxRetries: Math.max(0, ...errors.map((e) => e.retryCount)),
   };
@@ -206,9 +197,7 @@ export default function AdminWebhookRecoveryPage() {
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                <h2 className="text-base font-bold text-slate-900">
-                  Failed Webhook Events
-                </h2>
+                <h2 className="text-base font-bold text-slate-900">Failed Webhook Events</h2>
                 {errors.length > 0 && (
                   <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700">
                     {errors.length}
@@ -220,9 +209,7 @@ export default function AdminWebhookRecoveryPage() {
                 disabled={loading}
                 className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
               >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
                 Refresh
               </button>
             </div>
@@ -234,23 +221,17 @@ export default function AdminWebhookRecoveryPage() {
             ) : errors.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <ShieldCheck className="mb-3 h-14 w-14 text-emerald-300" />
-                <p className="text-base font-semibold text-slate-600">
-                  No failed webhook events
-                </p>
-                <p className="mt-1 text-sm text-slate-400">
-                  All events processed successfully
-                </p>
+                <p className="text-base font-semibold text-slate-600">No failed webhook events</p>
+                <p className="mt-1 text-sm text-slate-400">All events processed successfully</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
                 {errors.map((error) => {
                   const isExpanded = expandedKey === error.key;
                   const colorClass =
-                    EVENT_COLORS[error.eventType] ||
-                    "bg-slate-100 text-slate-700 border-slate-200";
+                    EVENT_COLORS[error.eventType] || "bg-slate-100 text-slate-700 border-slate-200";
                   const age = Math.round(
-                    (Date.now() - new Date(error.timestamp).getTime()) /
-                      3600000,
+                    (Date.now() - new Date(error.timestamp).getTime()) / 3600000
                   );
                   return (
                     <div key={error.key} className="px-5 py-4">
@@ -262,8 +243,8 @@ export default function AdminWebhookRecoveryPage() {
                             <AlertTriangle className="h-4 w-4 text-amber-500" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1.5 flex flex-wrap items-center gap-2">
                             <span
                               className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${colorClass}`}
                             >
@@ -271,8 +252,7 @@ export default function AdminWebhookRecoveryPage() {
                             </span>
                             {error.retryCount > 0 && (
                               <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                                {error.retryCount}{" "}
-                                {error.retryCount === 1 ? "retry" : "retries"}
+                                {error.retryCount} {error.retryCount === 1 ? "retry" : "retries"}
                               </span>
                             )}
                             <span className="flex items-center gap-1 text-xs text-slate-400">
@@ -280,10 +260,10 @@ export default function AdminWebhookRecoveryPage() {
                               {age < 1 ? "< 1h ago" : `${age}h ago`}
                             </span>
                           </div>
-                          <p className="text-sm font-semibold text-slate-800 truncate">
+                          <p className="truncate text-sm font-semibold text-slate-800">
                             {error.errorMessage}
                           </p>
-                          <p className="text-xs text-slate-500 mt-0.5 font-mono truncate">
+                          <p className="mt-0.5 truncate font-mono text-xs text-slate-500">
                             {error.reference}
                           </p>
                         </div>
@@ -301,9 +281,7 @@ export default function AdminWebhookRecoveryPage() {
                             Retry
                           </button>
                           <button
-                            onClick={() =>
-                              setExpandedKey(isExpanded ? null : error.key)
-                            }
+                            onClick={() => setExpandedKey(isExpanded ? null : error.key)}
                             className="rounded-lg border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-50"
                           >
                             {isExpanded ? (
@@ -316,32 +294,25 @@ export default function AdminWebhookRecoveryPage() {
                       </div>
 
                       {isExpanded && (
-                        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                             Payload Summary
                           </p>
-                          <div className="font-mono text-xs text-slate-700 space-y-1">
-                            {Object.entries(error.payloadSummary).map(
-                              ([k, v]) => (
-                                <div
-                                  key={k}
-                                  className="flex items-center gap-2"
-                                >
-                                  <span className="text-slate-400">{k}:</span>
-                                  <span className="text-slate-800">
-                                    {String(v)}
-                                  </span>
-                                </div>
-                              ),
-                            )}
+                          <div className="space-y-1 font-mono text-xs text-slate-700">
+                            {Object.entries(error.payloadSummary).map(([k, v]) => (
+                              <div key={k} className="flex items-center gap-2">
+                                <span className="text-slate-400">{k}:</span>
+                                <span className="text-slate-800">{String(v)}</span>
+                              </div>
+                            ))}
                           </div>
-                          <div className="flex items-center gap-2 pt-1 border-t border-slate-200">
-                            <span className="font-mono text-[10px] text-slate-400 truncate flex-1">
+                          <div className="flex items-center gap-2 border-t border-slate-200 pt-1">
+                            <span className="flex-1 truncate font-mono text-[10px] text-slate-400">
                               {error.key}
                             </span>
                             <button
                               onClick={() => copyToClipboard(error.key)}
-                              className="rounded p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition"
+                              className="rounded p-1 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
                             >
                               <Copy className="h-3.5 w-3.5" />
                             </button>
@@ -357,18 +328,16 @@ export default function AdminWebhookRecoveryPage() {
         </div>
 
         {/* Reconciliation tool — takes 2 cols */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-4 lg:col-span-2">
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              <h2 className="text-base font-bold text-slate-900">
-                Reconciliation
-              </h2>
+              <h2 className="text-base font-bold text-slate-900">Reconciliation</h2>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="space-y-4 p-5">
               <p className="text-sm text-slate-500">
-                Verify that the payment or refund state in the database matches
-                what PhonePe reports. Any discrepancies will be auto-corrected.
+                Verify that the payment or refund state in the database matches what PhonePe
+                reports. Any discrepancies will be auto-corrected.
               </p>
 
               {/* Type selector */}
@@ -380,9 +349,7 @@ export default function AdminWebhookRecoveryPage() {
                   {(["payment", "refund"] as const).map((t) => (
                     <button
                       key={t}
-                      onClick={() =>
-                        setReconcile((r) => ({ ...r, type: t, result: null }))
-                      }
+                      onClick={() => setReconcile((r) => ({ ...r, type: t, result: null }))}
                       className={`rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
                         reconcile.type === t
                           ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
@@ -411,7 +378,7 @@ export default function AdminWebhookRecoveryPage() {
                       result: null,
                     }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm text-slate-700 transition outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
 
@@ -446,7 +413,7 @@ export default function AdminWebhookRecoveryPage() {
 
           {/* Guide */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-3">
+            <p className="mb-3 text-xs font-bold tracking-wide text-slate-500 uppercase">
               Recovery Guide
             </p>
             <ul className="space-y-2.5 text-xs text-slate-600">

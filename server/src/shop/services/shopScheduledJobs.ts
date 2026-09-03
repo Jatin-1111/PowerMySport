@@ -9,9 +9,7 @@ const log = __rootLog.child("shopScheduledJobs");
  */
 export const processWaitlistNotifications = async (): Promise<void> => {
   try {
-    const pendingEntries = await ShopWaitlist.find({ status: "PENDING" }).limit(
-      50,
-    );
+    const pendingEntries = await ShopWaitlist.find({ status: "PENDING" }).limit(50);
 
     if (pendingEntries.length === 0) {
       return;
@@ -29,10 +27,7 @@ export const processWaitlistNotifications = async (): Promise<void> => {
         await entry.save();
         notifiedCount++;
       } catch (emailError) {
-        log.error(
-          `Failed to send launch email to ${entry.email}:`,
-          emailError,
-        );
+        log.error(`Failed to send launch email to ${entry.email}:`, emailError);
       }
     }
 

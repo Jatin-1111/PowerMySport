@@ -2,21 +2,11 @@
 // USER & AUTH TYPES
 // ============================================
 export type UserRole =
-  | "Player"
-  | "Parent"
-  | "VenueLister"
-  | "Coach"
-  | "Academy"
-  | "EXPERT"
-  | "Admin";
+  "Player" | "Parent" | "VenueLister" | "Coach" | "Academy" | "EXPERT" | "Admin";
 
 // Admin role types
 export type AdminRole =
-  | "SUPPORT_ADMIN"
-  | "OPERATIONS_ADMIN"
-  | "FINANCE_ADMIN"
-  | "ANALYTICS_ADMIN"
-  | "SYSTEM_ADMIN";
+  "SUPPORT_ADMIN" | "OPERATIONS_ADMIN" | "FINANCE_ADMIN" | "ANALYTICS_ADMIN" | "SYSTEM_ADMIN";
 
 export type Permission = string; // e.g., "users:view", "venues:manage"
 
@@ -127,17 +117,10 @@ export interface IOwnVenueDetails {
   openingHours?: string;
 }
 
-export type CoachVerificationStatus =
-  "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
+export type CoachVerificationStatus = "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
 export interface CoachVerificationDocument {
-  type:
-    | "CERTIFICATION"
-    | "ID_PROOF"
-    | "ADDRESS_PROOF"
-    | "BACKGROUND_CHECK"
-    | "INSURANCE"
-    | "OTHER";
+  type: "CERTIFICATION" | "ID_PROOF" | "ADDRESS_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
   url: string;
   s3Key?: string;
   fileName: string;

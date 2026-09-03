@@ -5,10 +5,7 @@ import { motion } from "framer-motion";
 import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { BlogListItem } from "@/modules/community/types";
 import { getBlogTopic } from "@/modules/community/constants/blogTopics";
-import {
-  formatBlogDate,
-  formatCount,
-} from "@/modules/community/utils/blogFormat";
+import { formatBlogDate, formatCount } from "@/modules/community/utils/blogFormat";
 import BlogCoverFallback from "./BlogCoverFallback";
 
 interface MyBlogListItemProps {
@@ -17,11 +14,7 @@ interface MyBlogListItemProps {
   onDelete?: (blog: BlogListItem) => void;
 }
 
-export default function MyBlogListItem({
-  blog,
-  owner,
-  onDelete,
-}: MyBlogListItemProps) {
+export default function MyBlogListItem({ blog, owner, onDelete }: MyBlogListItemProps) {
   const topic = getBlogTopic(blog.topic);
   const coverUrl = blog.coverImageUrl || "";
 
@@ -31,7 +24,7 @@ export default function MyBlogListItem({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className="group flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-power-orange/30 hover:shadow-md sm:gap-4 sm:p-4"
+      className="group hover:border-power-orange/30 flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:shadow-md sm:gap-4 sm:p-4"
     >
       {/* Banner */}
       <Link
@@ -39,11 +32,7 @@ export default function MyBlogListItem({
         className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-40"
       >
         {coverUrl ? (
-          <img
-            src={coverUrl}
-            alt={blog.title}
-            className="h-full w-full object-cover"
-          />
+          <img src={coverUrl} alt={blog.title} className="h-full w-full object-cover" />
         ) : (
           <BlogCoverFallback topic={blog.topic} />
         )}
@@ -52,19 +41,17 @@ export default function MyBlogListItem({
       {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col">
         <Link href={`/blog/${blog.id}`} className="min-w-0">
-          <h3 className="font-title truncate text-base font-bold text-slate-900 transition group-hover:text-power-orange sm:text-lg">
+          <h3 className="font-title group-hover:text-power-orange truncate text-base font-bold text-slate-900 transition sm:text-lg">
             {blog.title}
           </h3>
         </Link>
         {blog.excerpt ? (
-          <p className="mt-1 line-clamp-2 text-sm text-slate-500">
-            {blog.excerpt}
-          </p>
+          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{blog.excerpt}</p>
         ) : null}
 
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
           {blog.status === "DRAFT" ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-amber-700 uppercase">
               Draft
             </span>
           ) : null}

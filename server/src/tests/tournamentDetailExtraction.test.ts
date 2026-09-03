@@ -39,7 +39,7 @@ test("harvestDocuments picks up fact sheets and acceptance lists, ignoring chrom
   assert.equal(documents.length, 3);
   assert.deepEqual(
     documents.map((d) => d.kind),
-    ["factSheet", "acceptanceList", "acceptanceList"],
+    ["factSheet", "acceptanceList", "acceptanceList"]
   );
   // A news headline is not a document, and a social link never is.
   assert.ok(!documents.some((d) => /twitter\.com/.test(d.url)));
@@ -52,7 +52,7 @@ test("harvestDocuments resolves relative hrefs against the page", () => {
   const relative = documents.find((d) => d.label === "Boys Under 18");
   assert.equal(
     relative?.url,
-    "https://aitatennis.com/tournament-content/acceptancelist?eventuid=8774&acceptid=30066",
+    "https://aitatennis.com/tournament-content/acceptancelist?eventuid=8774&acceptid=30066"
   );
 });
 
@@ -66,14 +66,14 @@ test("harvestDocuments decodes &amp; in hrefs so query strings stay valid", () =
   const factSheet = documents.find((d) => d.kind === "factSheet");
   assert.equal(
     factSheet?.url,
-    "https://bwtaitaprod.blob.core.windows.net/aitaors-files/data/factsheet/factsheet_1783944109.pdf?sv=2026-02-06&se=2027-07-19T23:41:44Z",
+    "https://bwtaitaprod.blob.core.windows.net/aitaors-files/data/factsheet/factsheet_1783944109.pdf?sv=2026-02-06&se=2027-07-19T23:41:44Z"
   );
 });
 
 test("harvestDocuments treats any downloadable file as a document whatever the label", () => {
   const documents = harvestDocuments(
     `<a href="/files/hotel-list.pdf">Click here</a>`,
-    AITA_DETAIL_URL,
+    AITA_DETAIL_URL
   );
   assert.equal(documents.length, 1);
   assert.equal(documents[0]?.kind, "other");
@@ -82,7 +82,7 @@ test("harvestDocuments treats any downloadable file as a document whatever the l
 test("harvestDocuments accepts an HTML fact sheet — ITF events do not link a PDF", () => {
   const documents = harvestDocuments(
     `<a href="https://www.itftennis.com/en/tournament/m15-ahmedabad/ind/2026/">Fact Sheet</a>`,
-    AITA_DETAIL_URL,
+    AITA_DETAIL_URL
   );
   assert.equal(documents.length, 1);
   assert.equal(documents[0]?.kind, "factSheet");

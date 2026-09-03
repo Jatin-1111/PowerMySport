@@ -55,7 +55,6 @@ export interface CompleteOccurrenceResult {
   commissionGstPaise: number;
 }
 
-
 /**
  * The last date on which every student on this session still has a live credit.
  *
@@ -63,7 +62,7 @@ export interface CompleteOccurrenceResult {
  * because there is nothing left to strand.
  */
 const earliestCreditDeadline = async (
-  occurrence: CoachSessionOccurrenceDocument,
+  occurrence: CoachSessionOccurrenceDocument
 ): Promise<Date | null> => {
   const enrollmentIds = occurrence.roster.map((seat) => seat.enrollmentId);
   if (enrollmentIds.length === 0) return null;
@@ -98,7 +97,7 @@ export const markAttendance = async (params: {
   }
 
   const seat = occurrence.roster.find(
-    (entry) => entry.enrollmentId.toString() === params.enrollmentId.toString(),
+    (entry) => entry.enrollmentId.toString() === params.enrollmentId.toString()
   );
   if (!seat) throw new Error("That student is not on this session's roster");
 
@@ -141,10 +140,7 @@ export const completeOccurrence = async (params: {
     consumedByOccurrenceId: occurrence._id,
   }).exec();
   const alreadyConsumedByEnrollmentId = new Map(
-    alreadyConsumedCredits.map((credit) => [
-      credit.enrollmentId.toString(),
-      credit,
-    ]),
+    alreadyConsumedCredits.map((credit) => [credit.enrollmentId.toString(), credit])
   );
 
   for (const seat of occurrence.roster) {
@@ -152,9 +148,7 @@ export const completeOccurrence = async (params: {
       enrollmentId: seat.enrollmentId,
       occurrenceId: occurrence._id as mongoose.Types.ObjectId,
       at,
-      alreadyConsumed:
-        alreadyConsumedByEnrollmentId.get(seat.enrollmentId.toString()) ??
-        null,
+      alreadyConsumed: alreadyConsumedByEnrollmentId.get(seat.enrollmentId.toString()) ?? null,
     });
 
     if (credit) {
@@ -190,16 +184,14 @@ export const completeOccurrence = async (params: {
   occurrence.payout.commissionGstPaise = commission.gstOnCommissionPaise;
   occurrence.payout.amountPaise = commission.netPayablePaise;
   occurrence.payout.status = "PENDING";
-  occurrence.payout.releaseAt = new Date(
-    at.getTime() + PAYOUT_RELEASE_HOURS * hoursMs,
-  );
+  occurrence.payout.releaseAt = new Date(at.getTime() + PAYOUT_RELEASE_HOURS * hoursMs);
 
   await occurrence.save();
 
   if (seatsUnfunded > 0) {
     log.warn(
       `completeOccurrence: session ${occurrence._id.toString()} had ` +
-        `${seatsUnfunded} unfunded seat(s) — a student's credits have run out`,
+        `${seatsUnfunded} unfunded seat(s) — a student's credits have run out`
     );
   }
 
@@ -230,7 +222,7 @@ export const reopenOccurrence = async (params: {
   if (occurrence.payout.status === "PAID") {
     throw new Error(
       "This session has already been paid out and cannot be reopened. " +
-        "Reverse the payout first.",
+        "Reverse the payout first."
     );
   }
 
@@ -280,13 +272,11 @@ export const cancelOccurrenceByCoach = async (params: {
   if (occurrence.status === "COMPLETED") {
     throw new Error(
       "A completed session cannot be cancelled. Reopen it first if it was " +
-        "marked complete in error.",
+        "marked complete in error."
     );
   }
 
-  occurrence.status = params.byPlatform
-    ? "CANCELLED_BY_PLATFORM"
-    : "CANCELLED_BY_COACH";
+  occurrence.status = params.byPlatform ? "CANCELLED_BY_PLATFORM" : "CANCELLED_BY_COACH";
   occurrence.cancelledAt = at;
   if (params.reason) occurrence.cancelReason = params.reason;
   occurrence.payout = {
@@ -317,15 +307,13 @@ export const scheduleMakeup = async (params: {
   scheduledAt: Date;
   durationMinutes?: number;
 }): Promise<CoachSessionOccurrenceDocument> => {
-  const cancelled = await CoachSessionOccurrence.findById(
-    params.cancelledOccurrenceId,
-  );
+  const cancelled = await CoachSessionOccurrence.findById(params.cancelledOccurrenceId);
   if (!cancelled) throw new Error("Session not found");
 
   if (cancelled.status !== "CANCELLED_BY_COACH" && cancelled.status !== "CANCELLED_BY_PLATFORM") {
     throw new Error(
       "A makeup can only replace a session the coach or platform cancelled. " +
-        "A student who missed a session is not owed one.",
+        "A student who missed a session is not owed one."
     );
   }
 
@@ -349,7 +337,7 @@ export const scheduleMakeup = async (params: {
         timeZone: "Asia/Kolkata",
         day: "numeric",
         month: "short",
-      })}, while the classes it replaces are still paid for.`,
+      })}, while the classes it replaces are still paid for.`
     );
   }
 
@@ -419,7 +407,7 @@ export const releaseDuePayouts = async (params: { asOf?: Date } = {}): Promise<n
       "payout.status": "PENDING",
       "payout.releaseAt": { $lte: asOf },
     },
-    { $set: { "payout.status": "RELEASED" } },
+    { $set: { "payout.status": "RELEASED" } }
   ).exec();
 
   const count = result.modifiedCount ?? 0;
@@ -437,7 +425,7 @@ export const markPayoutPaid = async (params: {
 
   if (occurrence.payout.status !== "RELEASED") {
     throw new Error(
-      `Only a released payout can be marked paid (this one is ${occurrence.payout.status})`,
+      `Only a released payout can be marked paid (this one is ${occurrence.payout.status})`
     );
   }
 
@@ -449,7 +437,7 @@ export const markPayoutPaid = async (params: {
 
 /** What a coach is owed, bucketed by payout state. */
 export const coachEarningsSummary = async (
-  coachId: mongoose.Types.ObjectId,
+  coachId: mongoose.Types.ObjectId
 ): Promise<
   Record<
     string,
@@ -495,7 +483,7 @@ export const coachEarningsSummary = async (
         commissionPaise: row.commissionPaise ?? 0,
         commissionGstPaise: row.commissionGstPaise ?? 0,
       },
-    ]),
+    ])
   );
 };
 

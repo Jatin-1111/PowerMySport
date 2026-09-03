@@ -31,10 +31,7 @@ const toObjectIdString = (value: unknown): string | null => {
   return null;
 };
 
-const isBookingReviewable = (
-  bookingStatus: string,
-  bookingDate: Date,
-): boolean => {
+const isBookingReviewable = (bookingStatus: string, bookingDate: Date): boolean => {
   if (bookingStatus === "COMPLETED") return true;
 
   if (bookingStatus === "CANCELLED" || bookingStatus === "NO_SHOW") {
@@ -93,10 +90,7 @@ const recomputeCoachRating = async (coachId: string): Promise<void> => {
   });
 };
 
-export const createReview = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createReview = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -111,9 +105,7 @@ export const createReview = async (
       review?: string;
     };
 
-    const booking = await Booking.findById(bookingId).select(
-      "userId venueId coachId status date",
-    );
+    const booking = await Booking.findById(bookingId).select("userId venueId coachId status date");
 
     if (!booking) {
       res.status(404).json({ success: false, message: "Booking not found" });
@@ -202,9 +194,7 @@ export const createReview = async (
             rating,
             reviewText: review || "",
           },
-        }).catch((err: Error) =>
-          log.error("Failed to send review notification:", err),
-        );
+        }).catch((err: Error) => log.error("Failed to send review notification:", err));
       }
     } else {
       const [, coach, reviewer] = await Promise.all([
@@ -223,9 +213,7 @@ export const createReview = async (
             reviewId: created._id.toString(),
             coachId: targetId,
           },
-        }).catch((err: Error) =>
-          log.error("Failed to send review notification:", err),
-        );
+        }).catch((err: Error) => log.error("Failed to send review notification:", err));
       }
     }
 
@@ -249,8 +237,7 @@ export const createReview = async (
 
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to submit review",
+      message: error instanceof Error ? error.message : "Failed to submit review",
     });
   }
 };
@@ -258,13 +245,11 @@ export const createReview = async (
 const listReviewsByTarget = async (
   req: Request,
   res: Response,
-  targetType: ReviewTargetType,
+  targetType: ReviewTargetType
 ): Promise<void> => {
   try {
     const targetParam = targetType === "VENUE" ? "venueId" : "coachId";
-    const targetId = (req.params as Record<string, unknown>)[
-      targetParam
-    ] as string;
+    const targetId = (req.params as Record<string, unknown>)[targetParam] as string;
 
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 10));
@@ -329,26 +314,18 @@ const listReviewsByTarget = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch reviews",
+      message: error instanceof Error ? error.message : "Failed to fetch reviews",
     });
   }
 };
 
-export const getVenueReviews = async (
-  req: Request,
-  res: Response,
-): Promise<void> => listReviewsByTarget(req, res, "VENUE");
+export const getVenueReviews = async (req: Request, res: Response): Promise<void> =>
+  listReviewsByTarget(req, res, "VENUE");
 
-export const getCoachReviews = async (
-  req: Request,
-  res: Response,
-): Promise<void> => listReviewsByTarget(req, res, "Coach");
+export const getCoachReviews = async (req: Request, res: Response): Promise<void> =>
+  listReviewsByTarget(req, res, "Coach");
 
-export const getReviewEligibility = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getReviewEligibility = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -447,16 +424,12 @@ export const getReviewEligibility = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to check eligibility",
+      message: error instanceof Error ? error.message : "Failed to check eligibility",
     });
   }
 };
 
-export const getModerationQueue = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getModerationQueue = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
@@ -476,18 +449,12 @@ export const getModerationQueue = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve moderation queue",
+      message: error instanceof Error ? error.message : "Failed to retrieve moderation queue",
     });
   }
 };
 
-export const moderateReview = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const moderateReview = async (req: Request, res: Response): Promise<void> => {
   try {
     const reviewId = (req.params as Record<string, unknown>).reviewId as string;
     const { action, moderationNotes } = req.body as {
@@ -508,11 +475,7 @@ export const moderateReview = async (
       return;
     }
 
-    const review = await moderateReviewByAction(
-      reviewId,
-      action,
-      moderationNotes,
-    );
+    const review = await moderateReviewByAction(reviewId, action, moderationNotes);
 
     if (!review) {
       res.status(404).json({ success: false, message: "Review not found" });
@@ -527,8 +490,7 @@ export const moderateReview = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to moderate review",
+      message: error instanceof Error ? error.message : "Failed to moderate review",
     });
   }
 };

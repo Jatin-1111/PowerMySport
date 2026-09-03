@@ -25,9 +25,7 @@ const log = __rootLog.child("pathwayGuideAdmin");
 // public reader use, and errors come back pathed so the form can point at the
 // field that is wrong.
 
-const auditContext = (
-  req: Request,
-): { adminId: string; adminEmail: string } | null => {
+const auditContext = (req: Request): { adminId: string; adminEmail: string } | null => {
   if (!req.user?.id || !req.user.email) return null;
   return { adminId: req.user.id, adminEmail: req.user.email };
 };
@@ -36,7 +34,7 @@ const audit = (
   req: Request,
   action: string,
   targetId: string,
-  metadata: Record<string, unknown>,
+  metadata: Record<string, unknown>
 ): void => {
   const context = auditContext(req);
   if (!context) return;
@@ -61,17 +59,11 @@ const resequence = (stages: PathwayStageDocument[]): PathwayStageDocument[] =>
  * back the former for every absent optional field.
  */
 const compact = <T extends Record<string, unknown>>(value: T): Partial<T> =>
-  Object.fromEntries(
-    Object.entries(value).filter(([, v]) => v !== undefined),
-  ) as Partial<T>;
+  Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as Partial<T>;
 
 /** The stage list as plain objects, whatever Mongoose is storing internally. */
-const plainStages = (doc: {
-  stages?: PathwayStageDocument[];
-}): PathwayStageDocument[] =>
-  (doc.stages ?? []).map((stage) =>
-    JSON.parse(JSON.stringify(stage)),
-  ) as PathwayStageDocument[];
+const plainStages = (doc: { stages?: PathwayStageDocument[] }): PathwayStageDocument[] =>
+  (doc.stages ?? []).map((stage) => JSON.parse(JSON.stringify(stage))) as PathwayStageDocument[];
 
 const badRequest = (res: Response, message: string, errors?: string[]): void => {
   res.status(400).json({ success: false, message, ...(errors ? { errors } : {}) });
@@ -88,10 +80,7 @@ const failed = (res: Response, scope: string, error: unknown): void => {
 
 // ─── GET /api/admin/pathway-guides ───────────────────────────────────────────
 // The index the CMS opens on: one row per sport, no stage bodies.
-export const listPathwayGuides = async (
-  _req: Request,
-  res: Response,
-): Promise<void> => {
+export const listPathwayGuides = async (_req: Request, res: Response): Promise<void> => {
   try {
     const docs = await PathwayGuide.find({})
       .select("sportSlug sportName status reviewedOn updatedAt publishedAt stages.key")
@@ -131,10 +120,7 @@ export const getPathwayGuide = async (req: Request, res: Response): Promise<void
 // Create the shell for a sport. Stages are added afterwards, one at a time —
 // asking for a full six-stage guide before anything can be saved is exactly the
 // friction the old JSON-upload CMS had.
-export const createPathwayGuide = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createPathwayGuide = async (req: Request, res: Response): Promise<void> => {
   try {
     const body = req.body ?? {};
     const meta = PathwayGuideSchema.pick({
@@ -155,7 +141,7 @@ export const createPathwayGuide = async (
     if (exists) {
       return badRequest(
         res,
-        `A pathway guide already exists for ${meta.data.sport.name}. Edit that one instead.`,
+        `A pathway guide already exists for ${meta.data.sport.name}. Edit that one instead.`
       );
     }
 
@@ -188,10 +174,7 @@ export const createPathwayGuide = async (
 // ─── PUT /api/admin/pathway-guides/:id ───────────────────────────────────────
 // Guide-level fields only. Stages have their own endpoints, so a save here can
 // never silently drop them.
-export const updatePathwayGuide = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updatePathwayGuide = async (req: Request, res: Response): Promise<void> => {
   try {
     const body = req.body ?? {};
     const meta = PathwayGuideSchema.pick({ intro: true, sportIntro: true })
@@ -216,7 +199,7 @@ export const updatePathwayGuide = async (
           ...(req.user?.id ? { updatedBy: req.user.id } : {}),
         },
       },
-      { new: true },
+      { new: true }
     ).lean();
 
     if (!updated) return notFound(res);
@@ -231,10 +214,7 @@ export const updatePathwayGuide = async (
 };
 
 // ─── DELETE /api/admin/pathway-guides/:id ────────────────────────────────────
-export const deletePathwayGuide = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deletePathwayGuide = async (req: Request, res: Response): Promise<void> => {
   try {
     const deleted = await PathwayGuide.findByIdAndDelete(req.params.id).lean();
     if (!deleted) return notFound(res);
@@ -253,10 +233,7 @@ export const deletePathwayGuide = async (
 // Publishing is a separate action from saving, and it re-validates the whole
 // guide: a draft is allowed to be half-written, a published one is not. This is
 // the only gate between an author's working copy and a parent reading it.
-export const setPathwayGuideStatus = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const setPathwayGuideStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const publish = req.body?.status !== "draft";
     const doc = await PathwayGuide.findById(req.params.id);
@@ -272,11 +249,7 @@ export const setPathwayGuideStatus = async (
         ...(doc.reviewedOn ? { reviewedOn: doc.reviewedOn } : {}),
       });
       if (!check.ok) {
-        return badRequest(
-          res,
-          "This guide isn't ready to publish yet.",
-          check.errors,
-        );
+        return badRequest(res, "This guide isn't ready to publish yet.", check.errors);
       }
     }
 
@@ -312,16 +285,16 @@ export const addPathwayStage = async (req: Request, res: Response): Promise<void
     if (!doc) return notFound(res);
 
     if (doc.stages.some((stage) => stage.key === parsed.stage.key)) {
-      return badRequest(
-        res,
-        `This pathway already has a stage keyed "${parsed.stage.key}".`,
-      );
+      return badRequest(res, `This pathway already has a stage keyed "${parsed.stage.key}".`);
     }
 
-    doc.set("stages", resequence([
-      ...plainStages(doc),
-      { ...parsed.stage, order: doc.stages.length + 1 } as PathwayStageDocument,
-    ]));
+    doc.set(
+      "stages",
+      resequence([
+        ...plainStages(doc),
+        { ...parsed.stage, order: doc.stages.length + 1 } as PathwayStageDocument,
+      ])
+    );
     if (req.user?.id) doc.set("updatedBy", req.user.id);
     await doc.save();
 
@@ -342,10 +315,7 @@ export const addPathwayStage = async (req: Request, res: Response): Promise<void
 // ─── PUT /api/admin/pathway-guides/:id/stages/:stageKey ──────────────────────
 // Replace one stage in place. The stage's position is preserved even if the key
 // itself is renamed, so re-keying a stage doesn't send it to the end of the list.
-export const updatePathwayStage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updatePathwayStage = async (req: Request, res: Response): Promise<void> => {
   try {
     const parsed = parsePathwayStage(req.body ?? {});
     if (!parsed.ok) return badRequest(res, "Check the stage.", parsed.errors);
@@ -357,14 +327,9 @@ export const updatePathwayStage = async (
     const index = doc.stages.findIndex((stage) => stage.key === stageKey);
     if (index === -1) return notFound(res, "No stage with that key.");
 
-    const clash = doc.stages.findIndex(
-      (stage, i) => i !== index && stage.key === parsed.stage.key,
-    );
+    const clash = doc.stages.findIndex((stage, i) => i !== index && stage.key === parsed.stage.key);
     if (clash !== -1) {
-      return badRequest(
-        res,
-        `Another stage already uses the key "${parsed.stage.key}".`,
-      );
+      return badRequest(res, `Another stage already uses the key "${parsed.stage.key}".`);
     }
 
     const next = plainStages(doc);
@@ -384,10 +349,7 @@ export const updatePathwayStage = async (
 };
 
 // ─── DELETE /api/admin/pathway-guides/:id/stages/:stageKey ───────────────────
-export const deletePathwayStage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deletePathwayStage = async (req: Request, res: Response): Promise<void> => {
   try {
     const doc = await PathwayGuide.findById(req.params.id);
     if (!doc) return notFound(res);
@@ -415,10 +377,7 @@ export const deletePathwayStage = async (
 // ─── PUT /api/admin/pathway-guides/:id/stages/order ──────────────────────────
 // Body: { keys: string[] } — the full ordering, so a reorder is one idempotent
 // write rather than a sequence of swaps that can half-apply.
-export const reorderPathwayStages = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const reorderPathwayStages = async (req: Request, res: Response): Promise<void> => {
   try {
     const keys: unknown = req.body?.keys;
     if (!Array.isArray(keys) || keys.some((key) => typeof key !== "string")) {
@@ -436,17 +395,11 @@ export const reorderPathwayStages = async (
       current.every((key) => wanted.includes(key));
 
     if (!sameSet) {
-      return badRequest(
-        res,
-        "The new order must list every existing stage exactly once.",
-      );
+      return badRequest(res, "The new order must list every existing stage exactly once.");
     }
 
     const byKey = new Map(plainStages(doc).map((stage) => [stage.key, stage]));
-    doc.set(
-      "stages",
-      resequence(wanted.map((key) => byKey.get(key) as PathwayStageDocument)),
-    );
+    doc.set("stages", resequence(wanted.map((key) => byKey.get(key) as PathwayStageDocument)));
     if (req.user?.id) doc.set("updatedBy", req.user.id);
     await doc.save();
 

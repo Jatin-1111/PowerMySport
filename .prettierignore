@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Lock files (never format these)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated / auto-formatted by tools
+next-env.d.ts
+
+# Migration reports
+server/migration-reports/
+
+# Environment files
+.env
+.env.*
+
+# Turbo cache
+.turbo/
+
+# Coverage
+coverage/

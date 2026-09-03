@@ -38,7 +38,7 @@ const AdminAuditLogSchema = new Schema<AdminAuditLogDocument>(
   },
   {
     timestamps: { createdAt: true, updatedAt: false },
-  },
+  }
 );
 
 AdminAuditLogSchema.index({ createdAt: -1 });
@@ -47,5 +47,5 @@ AdminAuditLogSchema.index({ targetType: 1, targetId: 1 });
 
 export const AdminAuditLog = mongoose.model<AdminAuditLogDocument>(
   "AdminAuditLog",
-  AdminAuditLogSchema,
+  AdminAuditLogSchema
 );

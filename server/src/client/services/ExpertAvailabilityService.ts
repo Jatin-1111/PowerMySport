@@ -44,7 +44,7 @@ const getBusyIntervals = async (
   from: Date,
   to: Date,
   excludeSessionId?: string,
-  dbSession?: mongoose.ClientSession,
+  dbSession?: mongoose.ClientSession
 ): Promise<Interval[]> => {
   const now = new Date();
   const query: Record<string, unknown> = {
@@ -62,9 +62,7 @@ const getBusyIntervals = async (
   if (excludeSessionId && mongoose.isValidObjectId(excludeSessionId)) {
     query._id = { $ne: new mongoose.Types.ObjectId(excludeSessionId) };
   }
-  const findQuery = ExpertSession.find(query).select(
-    "scheduledAt durationMinutes",
-  );
+  const findQuery = ExpertSession.find(query).select("scheduledAt durationMinutes");
   if (dbSession) findQuery.session(dbSession);
   const sessions = await findQuery.lean();
   return sessions
@@ -90,7 +88,7 @@ export interface OpenSlot {
 export const computeOpenSlots = async (
   expert: ExpertDocument,
   fromISO?: string,
-  toISO?: string,
+  toISO?: string
 ): Promise<OpenSlot[]> => {
   const tz = expert.timezone || "Asia/Kolkata";
   const duration = expert.sessionDurationMinutes || 60;
@@ -99,19 +97,11 @@ export const computeOpenSlots = async (
 
   const now = new Date();
   const from = fromISO ? new Date(fromISO) : now;
-  let to = toISO
-    ? new Date(toISO)
-    : new Date(now.getTime() + 14 * 24 * 60 * MS_PER_MIN);
-  const maxTo = new Date(
-    from.getTime() + MAX_RANGE_DAYS * 24 * 60 * MS_PER_MIN,
-  );
+  let to = toISO ? new Date(toISO) : new Date(now.getTime() + 14 * 24 * 60 * MS_PER_MIN);
+  const maxTo = new Date(from.getTime() + MAX_RANGE_DAYS * 24 * 60 * MS_PER_MIN);
   if (to > maxTo) to = maxTo;
 
-  const busy = await getBusyIntervals(
-    expert._id as mongoose.Types.ObjectId,
-    from,
-    to,
-  );
+  const busy = await getBusyIntervals(expert._id as mongoose.Types.ObjectId, from, to);
   const blackout = new Set(expert.blackoutDates || []);
 
   const slots: OpenSlot[] = [];
@@ -128,11 +118,7 @@ export const computeOpenSlots = async (
       for (const w of dayWindows) {
         const startMin = parseHHmm(w.start);
         const endMin = parseHHmm(w.end);
-        for (
-          let cursor = startMin;
-          cursor + duration <= endMin;
-          cursor += duration
-        ) {
+        for (let cursor = startMin; cursor + duration <= endMin; cursor += duration) {
           const slotStart = zonedToUtc(dateKey, cursor, tz);
           const slotEnd = new Date(slotStart.getTime() + duration * MS_PER_MIN);
           if (slotStart < from || slotStart <= now) continue;
@@ -165,7 +151,7 @@ export const assertSlotBookable = async (
   expert: ExpertDocument,
   scheduledAt: Date,
   excludeSessionId?: string,
-  dbSession?: mongoose.ClientSession,
+  dbSession?: mongoose.ClientSession
 ): Promise<void> => {
   if (isNaN(scheduledAt.getTime())) throw new Error("Invalid date/time");
   const now = new Date();
@@ -202,11 +188,7 @@ export const assertSlotBookable = async (
   const aligned = dayWindows.some((w) => {
     const startMin = parseHHmm(w.start);
     const endMin = parseHHmm(w.end);
-    for (
-      let cursor = startMin;
-      cursor + duration <= endMin;
-      cursor += duration
-    ) {
+    for (let cursor = startMin; cursor + duration <= endMin; cursor += duration) {
       const slotStart = zonedToUtc(dateKey, cursor, tz);
       if (Math.abs(slotStart.getTime() - scheduledAt.getTime()) < MS_PER_MIN) {
         return true;
@@ -224,7 +206,7 @@ export const assertSlotBookable = async (
     scheduledAt,
     slotEnd,
     excludeSessionId,
-    dbSession,
+    dbSession
   );
   if (overlaps(scheduledAt.getTime(), slotEnd.getTime(), busy)) {
     throw new Error("That slot has just been taken — please pick another time");

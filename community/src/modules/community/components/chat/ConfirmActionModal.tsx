@@ -35,18 +35,16 @@ export default function ConfirmActionModal({
             className="fixed inset-0 z-[60] bg-slate-900/50 backdrop-blur-sm"
             onClick={onCancel}
           />
-          <div className="fixed inset-0 z-[61] flex items-center justify-center p-4 pointer-events-none">
+          <div className="pointer-events-none fixed inset-0 z-[61] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl pointer-events-auto"
+              className="pointer-events-auto w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
             >
               <h3 className="text-[15px] font-bold text-slate-900">{title}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
-                {description}
-              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">{description}</p>
               <div className="mt-5 flex gap-2.5">
                 <button
                   onClick={onCancel}

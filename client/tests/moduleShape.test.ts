@@ -78,8 +78,6 @@ describe.each(modules)("src/modules/%s", (name) => {
 it("keeps ui/ primitives in one place", () => {
   // Two primitives directories is how a second, near-duplicate Button and Card
   // got written: there was no single answer to "where does Button live".
-  const withUi = modules.filter((m) =>
-    fs.existsSync(path.join(MODULES_DIR, m, "ui")),
-  );
+  const withUi = modules.filter((m) => fs.existsSync(path.join(MODULES_DIR, m, "ui")));
   expect(withUi).toEqual(["shared"]);
 });

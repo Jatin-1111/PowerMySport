@@ -1,11 +1,4 @@
-import {
-  Facebook,
-  Github,
-  Globe,
-  Instagram,
-  Twitter,
-  Youtube,
-} from "lucide-react";
+import { Facebook, Github, Globe, Instagram, Twitter, Youtube } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { SocialLinks } from "@/modules/community/types";
 
@@ -58,16 +51,12 @@ export const SOCIAL_META: Array<{
     label: "Website",
     Icon: Globe,
     placeholder: "https://...",
-    hover:
-      "hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50",
+    hover: "hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50",
   },
 ];
 
 /** Build a full URL from a stored handle/URL for a given platform. */
-export const buildSocialUrl = (
-  platform: SocialPlatform,
-  value: string,
-): string => {
+export const buildSocialUrl = (platform: SocialPlatform, value: string): string => {
   const trimmed = value.trim();
   if (!trimmed) return "";
   if (/^https?:\/\//i.test(trimmed)) return trimmed;

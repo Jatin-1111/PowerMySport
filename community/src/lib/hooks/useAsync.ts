@@ -21,7 +21,7 @@ export interface UseAsyncOptions {
 export function useAsync<T>(
   asyncFn: (signal: AbortSignal) => Promise<T>,
   deps: any[] = [],
-  options: UseAsyncOptions = {},
+  options: UseAsyncOptions = {}
 ) {
   const { manual = false, onSuccess, onError } = options;
 
@@ -83,7 +83,7 @@ export function useAsync<T>(
  */
 export function useAsyncMutation<T>(
   asyncFn: (payload: any, signal: AbortSignal) => Promise<T>,
-  options: UseAsyncOptions = {},
+  options: UseAsyncOptions = {}
 ) {
   const { onSuccess, onError } = options;
 
@@ -120,7 +120,7 @@ export function useAsyncMutation<T>(
         }
       }
     },
-    [asyncFn, onSuccess, onError],
+    [asyncFn, onSuccess, onError]
   );
 
   useEffect(() => {
@@ -144,7 +144,7 @@ export function useAsyncMutation<T>(
  */
 export function useAsyncMap<T extends string | number>(
   asyncFn: (id: T, signal: AbortSignal) => Promise<any>,
-  onSuccess?: (id: T, data: any) => void,
+  onSuccess?: (id: T, data: any) => void
 ) {
   const [loading, setLoading] = useState<Set<T>>(new Set());
   const [errors, setErrors] = useState<Map<T, Error>>(new Map());
@@ -187,7 +187,7 @@ export function useAsyncMap<T extends string | number>(
         }
       }
     },
-    [asyncFn, onSuccess],
+    [asyncFn, onSuccess]
   );
 
   useEffect(() => {

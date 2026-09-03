@@ -32,8 +32,7 @@ const LIMIT = 400;
 const SRC = path.resolve(__dirname, "../src");
 const recorded = budget as Record<string, number>;
 
-const lineCount = (rel: string) =>
-  fs.readFileSync(path.join(SRC, rel), "utf8").split("\n").length;
+const lineCount = (rel: string) => fs.readFileSync(path.join(SRC, rel), "utf8").split("\n").length;
 
 const actual = (() => {
   const found: Record<string, number> = {};
@@ -63,7 +62,7 @@ it("has no new oversized file in src/app", () => {
     .map((f) => `${f} (${actual[f]} lines)`);
   expect(
     added,
-    `New file(s) over ${LIMIT} lines in src/app. src/app is for routing and composition: move the logic into src/modules/<feature>/ and keep the route as a shell.`,
+    `New file(s) over ${LIMIT} lines in src/app. src/app is for routing and composition: move the logic into src/modules/<feature>/ and keep the route as a shell.`
   ).toEqual([]);
 });
 
@@ -72,7 +71,7 @@ describe("existing oversized files do not grow", () => {
     if (!fs.existsSync(path.join(SRC, file))) return; // handled below
     expect(
       lineCount(file),
-      `${file} is over the ${LIMIT}-line limit already; it must not get longer. Extract the part you are adding to into src/modules/ instead, and lower the number in tests/oversizedFiles.json.`,
+      `${file} is over the ${LIMIT}-line limit already; it must not get longer. Extract the part you are adding to into src/modules/ instead, and lower the number in tests/oversizedFiles.json.`
     ).toBeLessThanOrEqual(max);
   });
 });
@@ -85,7 +84,7 @@ it("has no stale budget entries", () => {
     .map((f) =>
       fs.existsSync(path.join(SRC, f))
         ? `${f} is now ${lineCount(f)} lines — under the limit, so delete its entry`
-        : `${f} no longer exists — delete its entry`,
+        : `${f} no longer exists — delete its entry`
     );
   expect(stale).toEqual([]);
 });

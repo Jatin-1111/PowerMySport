@@ -40,15 +40,12 @@ export function PointsLadder({
   if (peak <= 0) return null;
 
   return (
-    <section className="rounded-xl border bg-card p-5 sm:p-6">
-      <h3 className="text-base font-semibold tracking-tight">
-        How many points each level takes
-      </h3>
-      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-        Each row is a level of the {listLabel} list, and the number beside it is
-        the points a player needed this week to be inside it. Find{" "}
-        {parentAudience ? "your child’s" : "a player’s"} points total — the
-        next row up is the next target.
+    <section className="bg-card rounded-xl border p-5 sm:p-6">
+      <h3 className="text-base font-semibold tracking-tight">How many points each level takes</h3>
+      <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+        Each row is a level of the {listLabel} list, and the number beside it is the points a player
+        needed this week to be inside it. Find {parentAudience ? "your child’s" : "a player’s"}{" "}
+        points total — the next row up is the next target.
       </p>
 
       <ol className="mt-5 space-y-2.5">
@@ -56,18 +53,15 @@ export function PointsLadder({
           const share = (benchmark.points / peak) * 100;
           return (
             <li key={benchmark.rank} className="flex items-center gap-3">
-              <span className="w-20 shrink-0 text-xs font-medium text-muted-foreground sm:w-24 sm:text-sm">
+              <span className="text-muted-foreground w-20 shrink-0 text-xs font-medium sm:w-24 sm:text-sm">
                 {tierLabel(benchmark.rank)}
               </span>
               {/* Track and fill are decorative — the numbers either side say the
                   same thing, which is what keeps this readable in forced-colours
                   mode and for anyone who cannot see the fill at all. */}
-              <span
-                className="h-2.5 flex-1 overflow-hidden rounded-full bg-rank-track"
-                aria-hidden
-              >
+              <span className="bg-rank-track h-2.5 flex-1 overflow-hidden rounded-full" aria-hidden>
                 <span
-                  className="block h-full rounded-full bg-rank-accent"
+                  className="bg-rank-accent block h-full rounded-full"
                   style={{ width: `${Math.max(share, 1.5)}%` }}
                 />
               </span>

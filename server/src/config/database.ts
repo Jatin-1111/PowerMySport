@@ -17,8 +17,7 @@ export const connectDB = async (): Promise<void> => {
       return;
     }
 
-    const mongoUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
+    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
 
     // Mongoose connection options for pooling and reliability.
     // A pool of 10 becomes a real bottleneck under concurrent load well
@@ -70,10 +69,7 @@ export const connectDB = async (): Promise<void> => {
     connectionPromise = null;
 
     // Log connection pool stats on startup
-    bootFact(
-      "mongo",
-      `pool ${options.minPoolSize}–${options.maxPoolSize}`,
-    );
+    bootFact("mongo", `pool ${options.minPoolSize}–${options.maxPoolSize}`);
 
     // Drop the old unique index on RoadmapChatSession so multiple sessions per
     // user+sport are allowed. Safe to call repeatedly — errors are ignored.

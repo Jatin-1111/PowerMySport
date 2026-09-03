@@ -39,10 +39,7 @@ export function ProfileCompletionRing({
 
   return (
     <div
-      className={cn(
-        "relative inline-flex shrink-0 items-center justify-center",
-        className,
-      )}
+      className={cn("relative inline-flex shrink-0 items-center justify-center", className)}
       style={{ width: size, height: size }}
       title={title ?? `Profile ${clamped}% complete`}
     >

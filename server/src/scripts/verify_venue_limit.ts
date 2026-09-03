@@ -50,12 +50,8 @@ const verifyVenueLimit = async () => {
     const userFetched = await User.findById(user._id);
     if (userFetched?.role === "VenueLister") {
       if (true) {
-        console.log(
-          "❌ BLOCKED: Backend correctly prevented creating a second venue.",
-        );
-        console.log(
-          'Reason: "You are only allowed to manage your approved venue."',
-        );
+        console.log("❌ BLOCKED: Backend correctly prevented creating a second venue.");
+        console.log('Reason: "You are only allowed to manage your approved venue."');
       } else {
         console.log("⚠️ FAILED: Backend allowed creating a second venue!");
       }

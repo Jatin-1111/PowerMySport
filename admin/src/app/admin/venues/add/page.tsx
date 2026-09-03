@@ -9,10 +9,7 @@ export const metadata = {
 export default function AdminAddVenuePage() {
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="Add Venue"
-        subtitle="Create a new venue directly in the system"
-      />
+      <AdminPageHeader title="Add Venue" subtitle="Create a new venue directly in the system" />
       <AddVenueForm />
     </div>
   );

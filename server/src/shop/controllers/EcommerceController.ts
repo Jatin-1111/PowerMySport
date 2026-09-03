@@ -3,10 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Review as ReviewModel } from "../../client/models/Review";
 import { NotificationService } from "../../client/services/NotificationService";
 import { validatePromoCode } from "../../client/services/PromoCodeService";
-import {
-  PaymentService,
-  RefundService,
-} from "../../shared/services/PaymentService";
+import { PaymentService, RefundService } from "../../shared/services/PaymentService";
 import { s3Service } from "../../shared/services/S3Service";
 import {
   ApiResponse,
@@ -79,7 +76,7 @@ export class EcommerceController {
         minPrice ? Number(minPrice) : undefined,
         maxPrice ? Number(maxPrice) : undefined,
         condition as string,
-        sellerType as string,
+        sellerType as string
       );
 
       res.json({
@@ -246,11 +243,7 @@ export class EcommerceController {
         return;
       }
 
-      const cart = await this.cartService.addItemToCart(
-        userId,
-        productVariantId,
-        quantity,
-      );
+      const cart = await this.cartService.addItemToCart(userId, productVariantId, quantity);
 
       res.json({
         ok: true,
@@ -308,10 +301,7 @@ export class EcommerceController {
         return;
       }
 
-      const cart = await this.cartService.removeItemFromCart(
-        userId,
-        cartItemId,
-      );
+      const cart = await this.cartService.removeItemFromCart(userId, cartItemId);
 
       res.json({
         ok: true,
@@ -408,12 +398,9 @@ export class EcommerceController {
         return;
       }
 
-      const promoValidation = await validatePromoCode(
-        promoCode,
-        userId,
-        cart.subtotal,
-        { context: "MERCHANDISE" },
-      );
+      const promoValidation = await validatePromoCode(promoCode, userId, cart.subtotal, {
+        context: "MERCHANDISE",
+      });
 
       if (!promoValidation.isValid) {
         res.status(400).json({
@@ -429,7 +416,7 @@ export class EcommerceController {
       const updatedCart = await this.cartService.applyPromoCode(
         userId,
         promoCode.toUpperCase(),
-        promoValidation.discountAmount,
+        promoValidation.discountAmount
       );
 
       res.json({
@@ -483,7 +470,7 @@ export class EcommerceController {
         userId,
         shippingAddress,
         paymentMethod,
-        PaymentGateway.PHONEPE,
+        PaymentGateway.PHONEPE
       );
 
       // Initiate payment
@@ -498,7 +485,7 @@ export class EcommerceController {
           name: shippingAddress.fullName,
           email: shippingAddress.email,
           phone: shippingAddress.phone,
-        },
+        }
       );
 
       // Update order with payment gateway order ID
@@ -538,8 +525,7 @@ export class EcommerceController {
   async verifyPayment(req: Request, res: Response): Promise<void> {
     try {
       const orderId = getParam((req.params as Record<string, unknown>).orderId);
-      const { phonepe_payment_id, phonepe_order_id, phonepe_signature } =
-        req.body;
+      const { phonepe_payment_id, phonepe_order_id, phonepe_signature } = req.body;
 
       if (!orderId) {
         res.status(400).json({
@@ -577,8 +563,7 @@ export class EcommerceController {
       const existingOrder = await this.orderService.getOrderById(orderId);
       if (
         !existingOrder ||
-        (existingOrder.userId.toString() !== userId &&
-          (req as any).user?.role !== "Admin")
+        (existingOrder.userId.toString() !== userId && (req as any).user?.role !== "Admin")
       ) {
         res.status(404).json({
           ok: false,
@@ -592,14 +577,14 @@ export class EcommerceController {
         orderId,
         phonepe_payment_id,
         phonepe_order_id,
-        phonepe_signature,
+        phonepe_signature
       );
 
       // Confirm order payment
       const order = await this.orderService.confirmPayment(
         orderId,
         phonepe_payment_id,
-        phonepe_order_id,
+        phonepe_order_id
       );
 
       // Emit payment confirmed notification to the user
@@ -615,10 +600,7 @@ export class EcommerceController {
           confirmedAt: new Date().toISOString(),
         },
       }).catch((err: Error) =>
-        log.error(
-          "[EcommerceController] Failed to send payment notification:",
-          err,
-        ),
+        log.error("[EcommerceController] Failed to send payment notification:", err)
       );
 
       res.json({
@@ -673,10 +655,7 @@ export class EcommerceController {
       }
 
       // Verify ownership (admins may reconcile any order)
-      if (
-        order.userId.toString() !== userId &&
-        (req as any).user?.role !== "Admin"
-      ) {
+      if (order.userId.toString() !== userId && (req as any).user?.role !== "Admin") {
         res.status(403).json({
           ok: false,
           error: { code: "FORBIDDEN", message: "Access denied" },
@@ -718,7 +697,7 @@ export class EcommerceController {
         const updatedOrder = await this.orderService.confirmPayment(
           orderId,
           paymentTx.gatewayPaymentId || paymentTx.gatewayOrderId,
-          paymentTx.gatewayOrderId,
+          paymentTx.gatewayOrderId
         );
 
         NotificationService.send({
@@ -733,10 +712,7 @@ export class EcommerceController {
             confirmedAt: new Date().toISOString(),
           },
         }).catch((err: Error) =>
-          log.error(
-            "[EcommerceController] Failed to send payment notification:",
-            err,
-          ),
+          log.error("[EcommerceController] Failed to send payment notification:", err)
         );
 
         res.json({ ok: true, data: updatedOrder } as ApiResponse<any>);
@@ -790,10 +766,7 @@ export class EcommerceController {
       }
 
       // Verify user owns this order
-      if (
-        order.userId.toString() !== userId &&
-        (req as any).user?.role !== "Admin"
-      ) {
+      if (order.userId.toString() !== userId && (req as any).user?.role !== "Admin") {
         res.status(403).json({
           ok: false,
           error: {
@@ -843,7 +816,7 @@ export class EcommerceController {
         userId,
         Number(page),
         Number(limit),
-        status as OrderStatus,
+        status as OrderStatus
       );
 
       res.json({
@@ -897,7 +870,7 @@ export class EcommerceController {
 
       const cancelledOrder = await this.orderService.cancelOrder(
         orderId,
-        reason || "User cancelled",
+        reason || "User cancelled"
       );
 
       res.json({
@@ -948,10 +921,7 @@ export class EcommerceController {
       }
 
       // Verify user owns this order or is admin
-      if (
-        order.userId.toString() !== userId &&
-        (req as any).user?.role !== "Admin"
-      ) {
+      if (order.userId.toString() !== userId && (req as any).user?.role !== "Admin") {
         res.status(403).json({
           ok: false,
           error: {
@@ -987,25 +957,19 @@ export class EcommerceController {
 
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${invoiceNumber}.pdf"`,
-      );
+      res.setHeader("Content-Disposition", `attachment; filename="${invoiceNumber}.pdf"`);
 
       doc.pipe(res);
 
       // Header
-      doc
-        .fontSize(20)
-        .font("Helvetica-Bold")
-        .text("INVOICE", { align: "center" });
+      doc.fontSize(20).font("Helvetica-Bold").text("INVOICE", { align: "center" });
       doc.moveDown(0.5);
 
       // Invoice details
       doc.fontSize(10).font("Helvetica");
       doc.text(`Invoice Number: ${invoiceNumber}`);
       doc.text(
-        `Order Date: ${invoiceDate.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`,
+        `Order Date: ${invoiceDate.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`
       );
       doc.text(`Order Number: ${order.orderNumber}`);
       doc.moveDown();
@@ -1019,7 +983,7 @@ export class EcommerceController {
         doc.text(order.shippingAddress.addressLine2);
       }
       doc.text(
-        `${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}`,
+        `${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}`
       );
       doc.text(order.shippingAddress.country || "IN");
       doc.moveDown();
@@ -1071,11 +1035,9 @@ export class EcommerceController {
       doc.fontSize(10).font("Helvetica");
       doc.text("Subtotal:", col3X, currentY);
       doc.text(
-        money(
-          order.totalAmount - order.taxAmount - (order.shippingAmount || 0),
-        ),
+        money(order.totalAmount - order.taxAmount - (order.shippingAmount || 0)),
         col4X,
-        currentY,
+        currentY
       );
 
       currentY += 15;
@@ -1095,10 +1057,7 @@ export class EcommerceController {
 
       // Footer
       doc.moveDown(2);
-      doc
-        .fontSize(9)
-        .font("Helvetica")
-        .text("Thank you for your purchase!", { align: "center" });
+      doc.fontSize(9).font("Helvetica").text("Thank you for your purchase!", { align: "center" });
       doc.text("For support, contact: support@powermysport.com", {
         align: "center",
       });
@@ -1127,9 +1086,7 @@ export class EcommerceController {
         });
         return;
       }
-      const wishlist = await WishlistModel.findOne({ userId }).populate(
-        "products.productId",
-      );
+      const wishlist = await WishlistModel.findOne({ userId }).populate("products.productId");
       res.json({ ok: true, data: wishlist?.products || [] });
     } catch (error: any) {
       res.status(500).json({
@@ -1157,9 +1114,7 @@ export class EcommerceController {
       if (!wishlist) {
         wishlist = new WishlistModel({ userId, products: [] });
       }
-      const idx = wishlist.products.findIndex(
-        (p) => p.productId.toString() === productId,
-      );
+      const idx = wishlist.products.findIndex((p) => p.productId.toString() === productId);
       if (idx > -1) wishlist.products.splice(idx, 1);
       else wishlist.products.push({ productId, addedAt: new Date() } as any);
 
@@ -1206,8 +1161,7 @@ export class EcommerceController {
       // Verify the user actually purchased THIS product (a DELIVERED order
       // containing one of this product's variants) before marking the review a
       // verified purchase — previously any delivered order of anything counted.
-      const product =
-        await ProductModel.findById(productId).select("variants._id");
+      const product = await ProductModel.findById(productId).select("variants._id");
       if (!product) {
         res.status(404).json({
           ok: false,
@@ -1255,8 +1209,7 @@ export class EcommerceController {
         targetType: "PRODUCT",
         targetId: productId,
       });
-      const avg =
-        allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length;
+      const avg = allReviews.reduce((acc, r) => acc + r.rating, 0) / allReviews.length;
       await ProductModel.findByIdAndUpdate(productId, {
         averageRating: avg,
         totalReviews: allReviews.length,
@@ -1286,8 +1239,7 @@ export class EcommerceController {
 
       // Calculate stats
       const stats = {
-        averageRating:
-          reviews.reduce((sum, r) => sum + r.rating, 0) / (reviews.length || 1),
+        averageRating: reviews.reduce((sum, r) => sum + r.rating, 0) / (reviews.length || 1),
         totalReviews: reviews.length,
         ratingDistribution: {
           1: reviews.filter((r) => r.rating === 1).length,
@@ -1354,9 +1306,7 @@ export class AdminEcommerceController {
    */
   async updateProduct(req: Request, res: Response): Promise<void> {
     try {
-      const productId = getParam(
-        (req.params as Record<string, unknown>).productId,
-      );
+      const productId = getParam((req.params as Record<string, unknown>).productId);
       const updateData = req.body;
 
       if (!productId) {
@@ -1370,10 +1320,7 @@ export class AdminEcommerceController {
         return;
       }
 
-      const product = await this.productService.updateProduct(
-        productId,
-        updateData,
-      );
+      const product = await this.productService.updateProduct(productId, updateData);
 
       if (!product) {
         res.status(404).json({
@@ -1407,14 +1354,7 @@ export class AdminEcommerceController {
    */
   async listAllProducts(req: Request, res: Response): Promise<void> {
     try {
-      const {
-        page = 1,
-        limit = 20,
-        search,
-        isActive,
-        sortBy,
-        sortOrder,
-      } = req.query;
+      const { page = 1, limit = 20, search, isActive, sortBy, sortOrder } = req.query;
 
       const options: {
         search?: string;
@@ -1446,7 +1386,7 @@ export class AdminEcommerceController {
       const result = await this.productService.listProductsForAdmin(
         Number(page),
         Number(limit),
-        options,
+        options
       );
 
       res.json({
@@ -1483,10 +1423,7 @@ export class AdminEcommerceController {
         return;
       }
 
-      const result = await s3Service.generateProductImageUploadUrl(
-        fileName,
-        contentType,
-      );
+      const result = await s3Service.generateProductImageUploadUrl(fileName, contentType);
 
       res.json({
         ok: true,
@@ -1509,9 +1446,7 @@ export class AdminEcommerceController {
    */
   async deleteProduct(req: Request, res: Response): Promise<void> {
     try {
-      const productId = getParam(
-        (req.params as Record<string, unknown>).productId,
-      );
+      const productId = getParam((req.params as Record<string, unknown>).productId);
 
       if (!productId) {
         res.status(400).json({
@@ -1579,22 +1514,14 @@ export class AdminEcommerceController {
       if (typeof search === "string") {
         filters.search = search;
       }
-      if (
-        sortBy === "createdAt" ||
-        sortBy === "totalAmount" ||
-        sortBy === "orderNumber"
-      ) {
+      if (sortBy === "createdAt" || sortBy === "totalAmount" || sortBy === "orderNumber") {
         filters.sortBy = sortBy;
       }
       if (sortOrder === "asc" || sortOrder === "desc") {
         filters.sortOrder = sortOrder;
       }
 
-      const result = await this.orderService.listAllOrders(
-        Number(page),
-        Number(limit),
-        filters,
-      );
+      const result = await this.orderService.listAllOrders(Number(page), Number(limit), filters);
 
       res.json({
         ok: true,
@@ -1672,7 +1599,7 @@ export class AdminEcommerceController {
       const order = await this.orderService.updateFulfillmentStatus(
         orderId,
         fulfillmentStatus as FulfillmentStatus,
-        trackingNumber,
+        trackingNumber
       );
 
       res.json({
@@ -1733,7 +1660,7 @@ export class AdminEcommerceController {
         orderId,
         merchantOrderId,
         refundAmount,
-        reason,
+        reason
       );
 
       res.json({

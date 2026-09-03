@@ -20,18 +20,17 @@ import {
  * building — it comes free once the step stops living in `useState`.
  */
 
-export type FlowController<TStep extends FlowStepName> =
-  ResolvedStep<TStep> & {
-    /** +1 when the last move was forward, -1 backward. For transitions. */
-    direction: number;
-    goToStep: (step: TStep | number) => void;
-    next: () => void;
-    back: () => void;
-  };
+export type FlowController<TStep extends FlowStepName> = ResolvedStep<TStep> & {
+  /** +1 when the last move was forward, -1 backward. For transitions. */
+  direction: number;
+  goToStep: (step: TStep | number) => void;
+  next: () => void;
+  back: () => void;
+};
 
 export const useFlow = <TStep extends FlowStepName, TContext>(
   flow: FlowDefinition<TStep, TContext>,
-  context: TContext,
+  context: TContext
 ): FlowController<TStep> => {
   const router = useRouter();
   const pathname = usePathname();
@@ -84,7 +83,7 @@ export const useFlow = <TStep extends FlowStepName, TContext>(
       if (mode === "push") router.push(url, { scroll: false });
       else router.replace(url, { scroll: false });
     },
-    [param, router],
+    [param, router]
   );
 
   // A URL asking for a step the context does not allow gets corrected, with
@@ -97,13 +96,12 @@ export const useFlow = <TStep extends FlowStepName, TContext>(
   const goToStep = useCallback(
     (target: TStep | number) => {
       const { flow } = latest.current;
-      const index =
-        typeof target === "number" ? target - 1 : flow.steps.indexOf(target);
+      const index = typeof target === "number" ? target - 1 : flow.steps.indexOf(target);
       if (index < 0 || index >= flow.steps.length) return;
       // User-initiated moves push, so Back walks the flow rather than leaving it.
       writeStep(index, "push");
     },
-    [writeStep],
+    [writeStep]
   );
 
   const next = useCallback(() => {

@@ -5,10 +5,7 @@ import { readSession } from "./session";
 const SECRET = "test-secret-at-least-32-characters-long!!";
 const key = new TextEncoder().encode(SECRET);
 
-const signToken = async (
-  payload: Record<string, unknown>,
-  expiresIn = "1h",
-): Promise<string> =>
+const signToken = async (payload: Record<string, unknown>, expiresIn = "1h"): Promise<string> =>
   new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -17,7 +14,7 @@ const signToken = async (
 
 const read = (
   token: string | null,
-  overrides: { secret?: string; blockAnonymous?: boolean } = {},
+  overrides: { secret?: string; blockAnonymous?: boolean } = {}
 ) =>
   readSession({
     token,
@@ -39,10 +36,7 @@ describe("readSession", () => {
   it("treats an expired token as signed out", async () => {
     // Conclusive: the copy in localStorage has the same expiry, so there is
     // nothing for the login page to bounce back to.
-    const token = await signToken(
-      { id: "u1", email: "a@b.c", role: "Parent" },
-      "-1s",
-    );
+    const token = await signToken({ id: "u1", email: "a@b.c", role: "Parent" }, "-1s");
     await expect(read(token)).resolves.toEqual({ status: "anonymous" });
   });
 
@@ -52,7 +46,7 @@ describe("readSession", () => {
     // them straight back: an infinite loop and a site-wide outage.
     const token = await signToken({ id: "u1", email: "a@b.c", role: "Coach" });
     await expect(
-      read(token, { secret: "a-completely-different-secret-value-32ch!" }),
+      read(token, { secret: "a-completely-different-secret-value-32ch!" })
     ).resolves.toEqual({ status: "unknown" });
   });
 
@@ -72,11 +66,9 @@ describe("readSession", () => {
 
   it("rejects a token whose algorithm is not the pinned one", async () => {
     // An unsigned "alg": "none" token must never be accepted as a session.
-    const unsigned = `${Buffer.from(
-      JSON.stringify({ alg: "none", typ: "JWT" }),
-    ).toString("base64url")}.${Buffer.from(
-      JSON.stringify({ id: "u1", role: "Admin" }),
-    ).toString("base64url")}.`;
+    const unsigned = `${Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString(
+      "base64url"
+    )}.${Buffer.from(JSON.stringify({ id: "u1", role: "Admin" })).toString("base64url")}.`;
 
     await expect(read(unsigned)).resolves.toEqual({ status: "unknown" });
   });

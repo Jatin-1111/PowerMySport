@@ -93,7 +93,9 @@ async function main(): Promise<void> {
   console.log(`Connected. Mode: ${APPLY ? "APPLY (will delete)" : "REPORT ONLY (no writes)"}\n`);
 
   const rows = (await TournamentEdition.find({})
-    .select("sportSlug name startDate endDate registrationDeadlineDate venue city level ageGroups updatedAt")
+    .select(
+      "sportSlug name startDate endDate registrationDeadlineDate venue city level ageGroups updatedAt"
+    )
     .lean()) as unknown as Row[];
 
   console.log(`Scanning ${rows.length} editions across all sports…\n`);
@@ -171,7 +173,9 @@ async function main(): Promise<void> {
     console.log("No duplicates found.");
   } else {
     for (const [sport, stat] of perSport) {
-      console.log(`  ${sport}: ${stat.removed} rows removed across ${stat.groups} duplicate groups`);
+      console.log(
+        `  ${sport}: ${stat.removed} rows removed across ${stat.groups} duplicate groups`
+      );
     }
     console.log(`  TOTAL: ${toDelete.length} of ${rows.length} editions are duplicates`);
     console.log(`  Survivors renamed to a cleaner variant: ${toRename.length}`);
@@ -196,7 +200,9 @@ async function main(): Promise<void> {
   }
 
   if (!APPLY) {
-    console.log("\nReport only — nothing was changed. Re-run with --apply to apply everything above.");
+    console.log(
+      "\nReport only — nothing was changed. Re-run with --apply to apply everything above."
+    );
     await mongoose.disconnect();
     return;
   }
@@ -219,7 +225,9 @@ async function main(): Promise<void> {
     } catch (err) {
       // Unique index on {sportSlug, name, startDate} — a clash means an equivalent
       // row already holds the clean name, so leave this one alone rather than fail.
-      console.warn(`  Skipped rename "${r.from}" -> "${r.to}": ${(err as Error).message.slice(0, 120)}`);
+      console.warn(
+        `  Skipped rename "${r.from}" -> "${r.to}": ${(err as Error).message.slice(0, 120)}`
+      );
     }
   }
   if (renamed > 0) console.log(`Renamed ${renamed} editions to their cleanest form.`);

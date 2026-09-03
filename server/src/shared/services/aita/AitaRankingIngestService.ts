@@ -8,13 +8,7 @@ import { parseRankingList } from "./rankingListParser";
 import { recomputeSnapshotInsights } from "./recomputeSnapshotInsights";
 import { sampleBandComposition } from "./sampleBandComposition";
 import { resolveStateCode, resolveZoneId } from "./stateCodes";
-import {
-  AitaCategory,
-  AITA_LISTS,
-  AitaList,
-  listForCombo,
-  ParseResult,
-} from "./types";
+import { AitaCategory, AITA_LISTS, AitaList, listForCombo, ParseResult } from "./types";
 import { log as __rootLog } from "../../../utils/logger";
 const logger = __rootLog.child("aitaRankingIngest");
 
@@ -109,12 +103,7 @@ export const STALENESS_ALERT_DAYS = 35;
  */
 const EARLIEST_BACKFILL_YEAR = 2024;
 
-export type IngestStatus =
-  | "published"
-  | "quarantined"
-  | "unchanged"
-  | "no-document"
-  | "failed";
+export type IngestStatus = "published" | "quarantined" | "unchanged" | "no-document" | "failed";
 
 export interface IngestOutcome {
   category: string;
@@ -145,8 +134,7 @@ export class AitaRankingIngestService {
    * off switch, because it is the only part whose absence degrades a panel
    * rather than breaking the data.
    */
-  private readonly skipComposition =
-    process.env.AITA_SKIP_COMPOSITION_SAMPLE === "true";
+  private readonly skipComposition = process.env.AITA_SKIP_COMPOSITION_SAMPLE === "true";
 
   constructor(private source: AitaRankingSource = aitaRankingSource) {}
 
@@ -207,7 +195,7 @@ export class AitaRankingIngestService {
     if (!week) {
       throw new Error(
         "AITA published no ranking weeks for this year or last — the source is " +
-          "unreachable or the week list has moved.",
+          "unreachable or the week list has moved."
       );
     }
 
@@ -236,18 +224,18 @@ export class AitaRankingIngestService {
     };
 
     const landed = outcomes.filter(
-      (o) => o.status === "published" || o.status === "unchanged",
+      (o) => o.status === "published" || o.status === "unchanged"
     ).length;
     if (landed === 0) {
       throw new Error(
         `AITA sweep for ${week.asOnDate} landed nothing across all ` +
           `${outcomes.length} lists — treating as a source break rather than a ` +
-          `quiet week. First reason: ${outcomes[0]?.reason ?? "none given"}`,
+          `quiet week. First reason: ${outcomes[0]?.reason ?? "none given"}`
       );
     }
     log.info(
       `[aita-rankings] sweep done: ${report.published} published, ` +
-        `${report.quarantined} quarantined, ${report.failed} failed`,
+        `${report.quarantined} quarantined, ${report.failed} failed`
     );
     return report;
   }
@@ -256,7 +244,7 @@ export class AitaRankingIngestService {
   async ingestOne(
     category: AitaCategory,
     subcategory: string,
-    asOnDate: string,
+    asOnDate: string
   ): Promise<IngestOutcome> {
     const base = { category, subcategory, asOnDate };
 
@@ -318,7 +306,7 @@ export class AitaRankingIngestService {
         },
         $setOnInsert: { version: existing ? existing.version : priorVersions + 1 },
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
     // Archive before parsing, so a parser bug never costs us the source bytes.
@@ -335,13 +323,13 @@ export class AitaRankingIngestService {
       await s3Service.putDocumentBuffer(
         s3Key,
         gzipSync(Buffer.from(fetched.html, "utf8")),
-        "application/gzip",
+        "application/gzip"
       );
       await applyToSnapshot(snapshot, { s3Key });
     } catch (error) {
       log.warn(
         `[aita-rankings] archive failed for ${s3Key} — continuing without it:`,
-        error instanceof Error ? error.message : error,
+        error instanceof Error ? error.message : error
       );
     }
 
@@ -370,9 +358,7 @@ export class AitaRankingIngestService {
         status: "quarantined",
         failureReason: objection,
       });
-      log.warn(
-        `[aita-rankings] quarantined ${category}/${subcategory} ${asOnDate}: ${objection}`,
-      );
+      log.warn(`[aita-rankings] quarantined ${category}/${subcategory} ${asOnDate}: ${objection}`);
       return {
         ...base,
         status: "quarantined",
@@ -403,7 +389,7 @@ export class AitaRankingIngestService {
         log.warn(
           `[aita-rankings] composition sampling failed for ${list.code} ${asOnDate} — ` +
             `list is published without it:`,
-          error instanceof Error ? error.message : error,
+          error instanceof Error ? error.message : error
         );
       }
     }
@@ -430,7 +416,7 @@ export class AitaRankingIngestService {
       /** Skip dates already published, with no request at all. */
       skipExisting?: boolean;
       onProgress?: (done: number, total: number, outcome: IngestOutcome) => void;
-    } = {},
+    } = {}
   ): Promise<IngestOutcome[]> {
     // Weeks are global on the new platform rather than per combination, so the
     // year range is what has to be walked. The filter offers 2024 onward; asking
@@ -466,7 +452,7 @@ export class AitaRankingIngestService {
       chosen = chosen.filter((d) => !heldDates.has(d));
       if (before !== chosen.length) {
         log.info(
-          `[aita-rankings] ${category}/${subcategory}: skipping ${before - chosen.length} already held`,
+          `[aita-rankings] ${category}/${subcategory}: skipping ${before - chosen.length} already held`
         );
       }
     }
@@ -599,9 +585,7 @@ export class AitaRankingIngestService {
    * Skips lists that already have sampled rows unless `force` is set, so it is
    * safe to run repeatedly and cheap when there is nothing to do.
    */
-  async sampleLatestComposition(
-    options: { force?: boolean; perBand?: number } = {},
-  ): Promise<
+  async sampleLatestComposition(options: { force?: boolean; perBand?: number } = {}): Promise<
     Array<{
       category: string;
       subcategory: string;
@@ -649,7 +633,7 @@ export class AitaRankingIngestService {
           isoDateToWid(asOnDate),
           options.perBand === undefined
             ? { source: this.source }
-            : { source: this.source, perBand: options.perBand },
+            : { source: this.source, perBand: options.perBand }
         );
         await recomputeSnapshotInsights(snapshot._id);
         results.push({
@@ -677,7 +661,7 @@ export class AitaRankingIngestService {
     parsed: ParseResult,
     list: AitaList,
     wid: number,
-    asOnDate: string,
+    asOnDate: string
   ): Promise<string | null> {
     const { category, subcategory } = list;
     if (parsed.rows.length === 0) return "Parsed zero rows";
@@ -714,10 +698,7 @@ export class AitaRankingIngestService {
         `requested — the source substituted a different week`
       );
     }
-    if (
-      parsed.sourceCategory !== null &&
-      parsed.sourceCategory.toUpperCase() !== list.code
-    ) {
+    if (parsed.sourceCategory !== null && parsed.sourceCategory.toUpperCase() !== list.code) {
       return (
         `Page served list "${parsed.sourceCategory}" but "${list.code}" was ` +
         `requested — the source substituted a different list`
@@ -740,8 +721,7 @@ export class AitaRankingIngestService {
       .lean();
 
     if (previous?.rowCount) {
-      const deviation =
-        Math.abs(parsed.rows.length - previous.rowCount) / previous.rowCount;
+      const deviation = Math.abs(parsed.rows.length - previous.rowCount) / previous.rowCount;
       if (deviation > ROW_COUNT_DEVIATION_LIMIT) {
         // Age-group lists empty out every January as players age up — the
         // Boys U-12 list went 1,126 -> 668 between 31 Dec 2025 and 12 Jan 2026,
@@ -751,7 +731,7 @@ export class AitaRankingIngestService {
         if (isAgeGroupRollover(subcategory, previous.asOnDate, asOnDate)) {
           parsed.diagnostics.warnings.push(
             `Row count moved ${(deviation * 100).toFixed(0)}% across the new year ` +
-              `(${previous.rowCount} -> ${parsed.rows.length}) — expected age-group rollover`,
+              `(${previous.rowCount} -> ${parsed.rows.length}) — expected age-group rollover`
           );
           return null;
         }
@@ -765,10 +745,7 @@ export class AitaRankingIngestService {
   }
 
   /** Writes the rows and promotes the snapshot, demoting whatever it replaces. */
-  private async publish(
-    snapshot: RankingSnapshotDocument,
-    parsed: ParseResult,
-  ): Promise<void> {
+  private async publish(snapshot: RankingSnapshotDocument, parsed: ParseResult): Promise<void> {
     const newestPublished = await RankingSnapshot.findOne({
       category: snapshot.category,
       subcategory: snapshot.subcategory,
@@ -843,7 +820,7 @@ export class AitaRankingIngestService {
           isLatest: true,
           snapshot: { $ne: snapshot._id },
         },
-        { $set: { isLatest: false } },
+        { $set: { isLatest: false } }
       );
       await RankingSnapshot.updateMany(
         {
@@ -852,7 +829,7 @@ export class AitaRankingIngestService {
           isLatestForCombo: true,
           _id: { $ne: snapshot._id },
         },
-        { $set: { isLatestForCombo: false } },
+        { $set: { isLatestForCombo: false } }
       );
     }
 
@@ -874,7 +851,7 @@ export class AitaRankingIngestService {
       log.warn(
         `[aita-rankings] insight computation failed for ${snapshot.category}/` +
           `${snapshot.subcategory} ${toIsoDate(snapshot.asOnDate)}:`,
-        error instanceof Error ? error.message : error,
+        error instanceof Error ? error.message : error
       );
     }
 
@@ -885,13 +862,10 @@ export class AitaRankingIngestService {
     });
   }
 
-  private async markFailed(
-    snapshot: RankingSnapshotDocument,
-    reason: string,
-  ): Promise<void> {
+  private async markFailed(snapshot: RankingSnapshotDocument, reason: string): Promise<void> {
     await applyToSnapshot(snapshot, { status: "failed", failureReason: reason });
     log.error(
-      `[aita-rankings] parse failed for ${snapshot.category}/${snapshot.subcategory}: ${reason}`,
+      `[aita-rankings] parse failed for ${snapshot.category}/${snapshot.subcategory}: ${reason}`
     );
   }
 }
@@ -908,7 +882,7 @@ export class AitaRankingIngestService {
 export function isAgeGroupRollover(
   subcategory: string,
   previousDate: Date | string,
-  asOnDate: string,
+  asOnDate: string
 ): boolean {
   if (!/^U-\d+$/i.test(subcategory.trim())) return false;
   const previousYear = new Date(previousDate).getUTCFullYear();
@@ -929,7 +903,7 @@ export function isAgeGroupRollover(
  */
 async function applyToSnapshot(
   snapshot: RankingSnapshotDocument,
-  changes: Record<string, unknown>,
+  changes: Record<string, unknown>
 ): Promise<void> {
   await RankingSnapshot.updateOne({ _id: snapshot._id }, { $set: changes });
   Object.assign(snapshot, changes);
@@ -940,7 +914,7 @@ function buildS3Key(
   category: string,
   subcategory: string,
   asOnDate: string,
-  contentHash: string,
+  contentHash: string
 ): string {
   const safe = (value: string) =>
     value
@@ -965,7 +939,7 @@ function toIsoDate(value: Date | string): string {
 export function assessStaleness(
   latestAsOnDate: string,
   sourceLatestAsOnDate: string | null,
-  today: Date = new Date(),
+  today: Date = new Date()
 ): {
   daysSincePublish: number;
   behindSource: boolean | null;
@@ -973,8 +947,7 @@ export function assessStaleness(
   staleReason: string | null;
 } {
   const daysSincePublish = daysBetween(latestAsOnDate, today);
-  const behindSource =
-    sourceLatestAsOnDate === null ? null : sourceLatestAsOnDate > latestAsOnDate;
+  const behindSource = sourceLatestAsOnDate === null ? null : sourceLatestAsOnDate > latestAsOnDate;
 
   // Behind the source is the fault worth naming: it is the one state that is
   // ours rather than AITA's. How loudly to say so is the scheduler's call, since

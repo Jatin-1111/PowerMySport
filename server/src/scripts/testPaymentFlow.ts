@@ -1,8 +1,5 @@
 import mongoose from "mongoose";
-import {
-  initiateBooking,
-  InitiateBookingPayload,
-} from "../client/services/BookingService";
+import { initiateBooking, InitiateBookingPayload } from "../client/services/BookingService";
 import { Venue } from "../client/models/Venue";
 import { Coach } from "../client/models/Coach";
 import { User } from "../client/models/User";
@@ -11,8 +8,7 @@ import { releaseCompletedBookingPayments } from "../utils/scheduledJobs";
 
 const connectDB = async () => {
   try {
-    const mongoUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/powermysport_test";
+    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport_test";
     await mongoose.connect(mongoUri);
     console.log("✅ Connected to test database\n");
   } catch (error) {
@@ -129,26 +125,20 @@ const runPaymentFlowTest = async () => {
 
     if (!booking.payments || booking.payments.length === 0) {
       console.log(
-        "❌ Failed: Booking payments array is empty. Expected splits for Venue and Coach.",
+        "❌ Failed: Booking payments array is empty. Expected splits for Venue and Coach."
       );
       testFailed = true;
     } else {
       console.log("✅ Passed: Booking payments array is populated.");
-      const venuePayment = booking.payments.find(
-        (p) => p.userType === "VenueLister",
-      );
+      const venuePayment = booking.payments.find((p) => p.userType === "VenueLister");
       const coachPayment = booking.payments.find((p) => p.userType === "Coach");
 
       if (!venuePayment || venuePayment.status !== "PENDING") {
-        console.log(
-          "❌ Failed: Venue payment split is missing or not PENDING.",
-        );
+        console.log("❌ Failed: Venue payment split is missing or not PENDING.");
         testFailed = true;
       }
       if (!coachPayment || coachPayment.status !== "PENDING") {
-        console.log(
-          "❌ Failed: Coach payment split is missing or not PENDING.",
-        );
+        console.log("❌ Failed: Coach payment split is missing or not PENDING.");
         testFailed = true;
       }
     }
@@ -170,21 +160,17 @@ const runPaymentFlowTest = async () => {
             updatedAt: pastDate,
           },
         },
-        { timestamps: false },
+        { timestamps: false }
       );
 
       // Run the scheduled job
       await releaseCompletedBookingPayments();
 
       const updatedBooking = await Booking.findById(booking._id);
-      const allPaid = updatedBooking?.payments.every(
-        (p) => p.status === "PAID",
-      );
+      const allPaid = updatedBooking?.payments.every((p) => p.status === "PAID");
 
       if (allPaid) {
-        console.log(
-          "✅ Passed: All payments were marked as PAID by the auto-release job.",
-        );
+        console.log("✅ Passed: All payments were marked as PAID by the auto-release job.");
       } else {
         console.log("❌ Failed: Payments were not marked as PAID.");
         testFailed = true;

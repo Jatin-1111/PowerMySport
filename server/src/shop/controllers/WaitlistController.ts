@@ -3,10 +3,7 @@ import { ShopWaitlist } from "../models/ShopWaitlist";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("waitlist");
 
-export const joinWaitlist = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const joinWaitlist = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
 

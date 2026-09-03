@@ -120,7 +120,7 @@ export function AddToCalendarButton({
               : "cursor-default border-emerald-200 bg-emerald-50 text-emerald-700"
             : onDark
               ? "border-white/[0.15] bg-white/[0.07] text-white hover:bg-white/[0.14]"
-              : "border-slate-200 text-slate-700 hover:border-power-orange hover:text-power-orange"
+              : "hover:border-power-orange hover:text-power-orange border-slate-200 text-slate-700"
         }`}
       >
         {saving ? (
@@ -145,7 +145,7 @@ export function AddToCalendarButton({
       className={`relative z-10 mt-0.5 shrink-0 rounded-lg p-1 transition ${
         isSaved
           ? "cursor-default text-emerald-600"
-          : "text-slate-300 hover:bg-white hover:text-power-orange"
+          : "hover:text-power-orange text-slate-300 hover:bg-white"
       }`}
     >
       {saving ? (

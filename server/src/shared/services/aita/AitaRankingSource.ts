@@ -1,10 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-import {
-  AitaList,
-  AitaState,
-  AitaWeek,
-  DiscoveredSnapshot,
-} from "./types";
+import { AitaList, AitaState, AitaWeek, DiscoveredSnapshot } from "./types";
 
 /**
  * HTTP client for AITA's ranking pages on the hitcourt.com platform.
@@ -56,8 +51,7 @@ const BASE_URL = "https://www.aita.hitcourt.com";
  * that also makes us easy to allowlist if we end up with a data-sharing
  * arrangement — do not replace it with a browser string.
  */
-const USER_AGENT =
-  "PowerMySportBot/1.0 (+https://powermysport.com; teams@powermysport.com)";
+const USER_AGENT = "PowerMySportBot/1.0 (+https://powermysport.com; teams@powermysport.com)";
 
 /** One request every 1.5s, serialised. Their robots.txt allows us; be polite anyway. */
 const MIN_REQUEST_INTERVAL_MS = 1500;
@@ -123,7 +117,7 @@ export class AitaRankingSource {
   private request<T = string>(
     url: string,
     responseType: "text" | "arraybuffer" = "text",
-    extraHeaders: Record<string, string> = {},
+    extraHeaders: Record<string, string> = {}
   ): Promise<AxiosResponse<T>> {
     const run = async (): Promise<AxiosResponse<T>> => {
       let lastError: unknown;
@@ -179,21 +173,20 @@ export class AitaRankingSource {
     if (body.includes(DIRECT_ACCESS_REFUSAL)) {
       throw new Error(
         `AITA refused ${path} with "${DIRECT_ACCESS_REFUSAL}" — the AJAX header ` +
-          `is missing or the platform has started requiring a session token.`,
+          `is missing or the platform has started requiring a session token.`
       );
     }
 
     let envelope: AitaEnvelope<T>;
     try {
-      envelope = typeof res.data === "string" ? JSON.parse(res.data) : (res.data as AitaEnvelope<T>);
+      envelope =
+        typeof res.data === "string" ? JSON.parse(res.data) : (res.data as AitaEnvelope<T>);
     } catch {
-      throw new Error(
-        `GET ${path} returned non-JSON (first 200 chars: ${body.slice(0, 200)})`,
-      );
+      throw new Error(`GET ${path} returned non-JSON (first 200 chars: ${body.slice(0, 200)})`);
     }
     if (envelope.status !== true || envelope.data === undefined) {
       throw new Error(
-        `GET ${path} answered status=${envelope.status} (${envelope.message ?? "no message"})`,
+        `GET ${path} answered status=${envelope.status} (${envelope.message ?? "no message"})`
       );
     }
     return envelope.data;
@@ -208,7 +201,7 @@ export class AitaRankingSource {
    */
   async listWeeks(year: number): Promise<AitaWeek[]> {
     const raw = await this.requestJson<Array<{ key: number | string; value: string }>>(
-      `/ranking-weekof-by-year?year=${encodeURIComponent(String(year))}`,
+      `/ranking-weekof-by-year?year=${encodeURIComponent(String(year))}`
     );
     return raw
       .map((row) => {
@@ -266,7 +259,7 @@ export class AitaRankingSource {
     const sourceUrl = listUrl(list, wid);
     const res = await this.request<string>(
       `/ranking-view?wid=${wid}&category=${encodeURIComponent(list.code)}` +
-        `&page=1&record=${LIST_PAGE_SIZE}`,
+        `&page=1&record=${LIST_PAGE_SIZE}`
     );
     if (res.status !== 200 || typeof res.data !== "string") {
       throw new Error(`Ranking list fetch failed (${res.status}): ${sourceUrl}`);
@@ -277,7 +270,7 @@ export class AitaRankingSource {
     if (!html.includes("rankingCard")) {
       throw new Error(
         `Ranking list at ${sourceUrl} contains no ranking rows — the page layout ` +
-          `or route has changed.`,
+          `or route has changed.`
       );
     }
     return { html, byteSize: Buffer.byteLength(html, "utf8"), sourceUrl };
@@ -297,12 +290,15 @@ export class AitaRankingSource {
    * publishes the codes removes the drift entirely.
    */
   async listStates(): Promise<AitaState[]> {
-    const raw = await this.requestJson<
-      Array<{ name?: string; short_code?: string; region_id?: string | number }>
-    >("/ranking-state");
+    const raw =
+      await this.requestJson<
+        Array<{ name?: string; short_code?: string; region_id?: string | number }>
+      >("/ranking-state");
     return raw
       .map((row) => {
-        const code = String(row.short_code ?? "").trim().toUpperCase();
+        const code = String(row.short_code ?? "")
+          .trim()
+          .toUpperCase();
         const name = String(row.name ?? "").trim();
         if (!code || !name) return null;
         return { code, name, zoneId: Number(row.region_id) || 0 };
@@ -324,12 +320,12 @@ export class AitaRankingSource {
     list: AitaList,
     wid: number,
     playerKey: string,
-    rank: number,
+    rank: number
   ): Promise<string> {
     const data = await this.requestJson<string>(
       `/ranking-player-point-view?rank=${encodeURIComponent(String(rank))}` +
         `&player_id=${encodeURIComponent(playerKey)}` +
-        `&category=${list.categoryId}&weekof=${wid}`,
+        `&category=${list.categoryId}&weekof=${wid}`
     );
     if (typeof data !== "string") {
       throw new Error(`Point breakdown for ${playerKey} was not an HTML fragment`);
@@ -361,10 +357,7 @@ export class AitaRankingSource {
 
 /** Public URL of a ranking list, as a person would open it. */
 export function listUrl(list: AitaList, wid: number): string {
-  return (
-    `${BASE_URL}/ranking-view?wid=${wid}&category=${list.code}` +
-    `&page=1&record=25`
-  );
+  return `${BASE_URL}/ranking-view?wid=${wid}&category=${list.code}` + `&page=1&record=25`;
 }
 
 /** Public URL of a player's profile on AITA's site. */

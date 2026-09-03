@@ -4,10 +4,7 @@ import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loginUrlFor } from "@/flow/policy";
-import axiosInstance, {
-  returnPathForUnauthorized,
-  setUnauthorizedHandler,
-} from "./axios";
+import axiosInstance, { returnPathForUnauthorized, setUnauthorizedHandler } from "./axios";
 
 /**
  * Covers RC-7's second half: a 401 used to hard-navigate to a bare `/login`,
@@ -18,14 +15,12 @@ import axiosInstance, {
 
 describe("returnPathForUnauthorized", () => {
   it("preserves the page the user was on", () => {
-    expect(returnPathForUnauthorized("/dashboard/my-bookings")).toBe(
-      "/dashboard/my-bookings",
-    );
+    expect(returnPathForUnauthorized("/dashboard/my-bookings")).toBe("/dashboard/my-bookings");
   });
 
   it("keeps the query string, so a filtered view comes back filtered", () => {
     expect(returnPathForUnauthorized("/coach/clients", "?status=active")).toBe(
-      "/coach/clients?status=active",
+      "/coach/clients?status=active"
     );
   });
 
@@ -34,7 +29,7 @@ describe("returnPathForUnauthorized", () => {
     (pathname) => {
       // `/login?redirect=/login` sends the user back to where they already are.
       expect(returnPathForUnauthorized(pathname)).toBeNull();
-    },
+    }
   );
 
   it("returns null for a nested auth route too", () => {
@@ -49,9 +44,7 @@ describe("returnPathForUnauthorized", () => {
 
   it("produces a login URL that round-trips through loginUrlFor", () => {
     const returnTo = returnPathForUnauthorized("/coach/clients", "?status=active");
-    expect(loginUrlFor(returnTo)).toBe(
-      "/login?redirect=%2Fcoach%2Fclients%3Fstatus%3Dactive",
-    );
+    expect(loginUrlFor(returnTo)).toBe("/login?redirect=%2Fcoach%2Fclients%3Fstatus%3Dactive");
   });
 
   it("falls back to a bare login URL when there is nowhere to return to", () => {
@@ -77,8 +70,8 @@ describe("the response interceptor, driven for real", () => {
             data: { message },
             headers: {},
             config: { ...config, url } as InternalAxiosRequestConfig,
-          },
-        ),
+          }
+        )
       );
   };
 
@@ -137,9 +130,7 @@ describe("the response interceptor, driven for real", () => {
     register(handler);
     failWith(401, "/auth/login", "Invalid credentials");
 
-    await expect(axiosInstance.post("/auth/login")).rejects.toThrow(
-      "Invalid credentials",
-    );
+    await expect(axiosInstance.post("/auth/login")).rejects.toThrow("Invalid credentials");
 
     expect(handler).not.toHaveBeenCalled();
   });

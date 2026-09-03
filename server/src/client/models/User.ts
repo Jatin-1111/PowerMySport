@@ -105,15 +105,7 @@ const userSchema = new Schema<UserDocument>(
     },
     role: {
       type: String,
-      enum: [
-        "Player",
-        "Parent",
-        "VenueLister",
-        "Coach",
-        "Academy",
-        "EXPERT",
-        "Admin",
-      ],
+      enum: ["Player", "Parent", "VenueLister", "Coach", "Academy", "EXPERT", "Admin"],
       default: "Player",
     },
     password: {
@@ -258,7 +250,7 @@ const userSchema = new Schema<UserDocument>(
       country: { type: String, trim: true, default: "IN" },
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 userSchema.pre<UserDocument>("save", async function () {
@@ -271,23 +263,15 @@ userSchema.pre<UserDocument>("save", async function () {
   }
 });
 
-userSchema.methods.comparePassword = async function (
-  password: string,
-): Promise<boolean> {
+userSchema.methods.comparePassword = async function (password: string): Promise<boolean> {
   return bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.refreshPhotoUrl = async function (
-  this: UserDocument,
-): Promise<void> {
+userSchema.methods.refreshPhotoUrl = async function (this: UserDocument): Promise<void> {
   if (!this.photoS3Key) return;
   try {
     const s3Service = new S3Service();
-    this.photoUrl = await s3Service.generateDownloadUrl(
-      this.photoS3Key,
-      "images",
-      604800,
-    );
+    this.photoUrl = await s3Service.generateDownloadUrl(this.photoS3Key, "images", 604800);
   } catch (error) {
     log.error("Failed to refresh profile photo URL:", error);
   }

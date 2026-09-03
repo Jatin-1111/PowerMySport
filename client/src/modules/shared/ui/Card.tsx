@@ -52,7 +52,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         {children}
       </div>
     );
-  },
+  }
 );
 
 Card.displayName = "Card";
@@ -81,10 +81,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   ...props
 }) => {
   return (
-    <h3
-      className={cn("text-xl font-bold text-slate-900", className)}
-      {...props}
-    >
+    <h3 className={cn("text-xl font-bold text-slate-900", className)} {...props}>
       {children}
     </h3>
   );
@@ -93,9 +90,11 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
 /**
  * Card Description component
  */
-export const CardDescription: React.FC<
-  React.HTMLAttributes<HTMLParagraphElement>
-> = ({ className, children, ...props }) => {
+export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = ({
+  className,
+  children,
+  ...props
+}) => {
   return (
     <p className={cn("text-sm text-slate-600", className)} {...props}>
       {children}
@@ -127,10 +126,7 @@ export const CardFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   ...props
 }) => {
   return (
-    <div
-      className={cn("mt-4 pt-4 border-t border-border", className)}
-      {...props}
-    >
+    <div className={cn("border-border mt-4 border-t pt-4", className)} {...props}>
       {children}
     </div>
   );

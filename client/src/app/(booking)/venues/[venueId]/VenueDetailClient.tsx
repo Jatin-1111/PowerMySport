@@ -65,8 +65,7 @@ export function VenueDetailClient() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const [selectedDate, setSelectedDate] =
-    useState<string>(getLocalDateString());
+  const [selectedDate, setSelectedDate] = useState<string>(getLocalDateString());
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     startTime: string;
@@ -76,9 +75,7 @@ export function VenueDetailClient() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const venueImages = venue ? getVenueImageUrls(venue) : [];
-  const selectedSportImages = venue
-    ? getVenueSportImageUrls(venue, selectedSport)
-    : [];
+  const selectedSportImages = venue ? getVenueSportImageUrls(venue, selectedSport) : [];
   const venuePhotoCount = venueImages.length;
   const sportPhotoCount = selectedSportImages.length;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -93,9 +90,7 @@ export function VenueDetailClient() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
-  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(
-    null,
-  );
+  const [eligibleBookingId, setEligibleBookingId] = useState<string | null>(null);
   const [reviewEligibilityReason, setReviewEligibilityReason] = useState("");
 
   const slotsToDisplay = (() => {
@@ -122,25 +117,19 @@ export function VenueDetailClient() {
   const isSelectedSlotAvailable =
     (selectedSlot &&
       availability?.availableSlots?.some(
-        (availSlot) =>
-          (availSlot.split("-")[0] || availSlot) === selectedSlot.startTime,
+        (availSlot) => (availSlot.split("-")[0] || availSlot) === selectedSlot.startTime
       )) ??
     false;
 
   const communityUrl = getCommunityAppUrl({
     path: "q",
     searchParams: {
-      q:
-        `${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`.trim() ||
-        undefined,
+      q: `${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`.trim() || undefined,
       sport: selectedSport || venue?.sports?.[0] || undefined,
     },
   });
 
-  const selectedSportPhotoCountLabel = (
-    sport: string,
-    count: number,
-  ): string => {
+  const selectedSportPhotoCountLabel = (sport: string, count: number): string => {
     if (!sport || count <= 0) return "";
     return `${sport}: ${count} photos`;
   };
@@ -189,16 +178,12 @@ export function VenueDetailClient() {
 
   const showPreviousImage = () => {
     if (venueImages.length <= 1) return;
-    setSelectedImageIndex((prev) =>
-      prev === 0 ? venueImages.length - 1 : prev - 1,
-    );
+    setSelectedImageIndex((prev) => (prev === 0 ? venueImages.length - 1 : prev - 1));
   };
 
   const showNextImage = () => {
     if (venueImages.length <= 1) return;
-    setSelectedImageIndex((prev) =>
-      prev === venueImages.length - 1 ? 0 : prev + 1,
-    );
+    setSelectedImageIndex((prev) => (prev === venueImages.length - 1 ? 0 : prev + 1));
   };
 
   const handleLightboxTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -234,10 +219,7 @@ export function VenueDetailClient() {
 
   const loadAvailability = async () => {
     try {
-      const response = await bookingApi.getVenueAvailability(
-        venueId,
-        selectedDate,
-      );
+      const response = await bookingApi.getVenueAvailability(venueId, selectedDate);
       if (response.success && response.data) setAvailability(response.data);
     } catch (error) {
       console.error("Failed to load availability:", error);
@@ -250,9 +232,7 @@ export function VenueDetailClient() {
       const response = await reviewApi.getVenueReviews(venueId, 1, 20);
       if (response.success && response.data) {
         setReviews(response.data.reviews || []);
-        setReviewSummary(
-          response.data.summary || { averageRating: 0, reviewCount: 0 },
-        );
+        setReviewSummary(response.data.summary || { averageRating: 0, reviewCount: 0 });
       }
     } catch (error) {
       console.error("Failed to load venue reviews:", error);
@@ -268,16 +248,12 @@ export function VenueDetailClient() {
         targetId: venueId,
       });
       if (response.success && response.data) {
-        setEligibleBookingId(
-          response.data.eligible ? response.data.bookingId : null,
-        );
+        setEligibleBookingId(response.data.eligible ? response.data.bookingId : null);
         setReviewEligibilityReason(response.data.reason || "");
       }
     } catch {
       setEligibleBookingId(null);
-      setReviewEligibilityReason(
-        "Unable to verify review eligibility right now",
-      );
+      setReviewEligibilityReason("Unable to verify review eligibility right now");
     }
   };
 
@@ -316,11 +292,7 @@ export function VenueDetailClient() {
         ]);
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to submit review",
-      );
+      toast.error(error?.response?.data?.message || error?.message || "Failed to submit review");
     } finally {
       setReviewSubmitting(false);
     }
@@ -347,9 +319,7 @@ export function VenueDetailClient() {
         endTime: selectedSlot.endTime,
         sport: selectedSport,
       });
-      router.push(
-        `/checkout?type=venue&venueId=${venueId}&${checkoutParams.toString()}`,
-      );
+      router.push(`/checkout?type=venue&venueId=${venueId}&${checkoutParams.toString()}`);
     } finally {
       setBookingLoading(false);
     }
@@ -377,15 +347,13 @@ export function VenueDetailClient() {
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
       });
-      toast.success(
-        "Added to the waitlist. We'll notify you when a slot opens.",
-      );
+      toast.success("Added to the waitlist. We'll notify you when a slot opens.");
       setSelectedSlot(null);
     } catch (error: any) {
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to join waitlist. Please try again.",
+          "Failed to join waitlist. Please try again."
       );
     } finally {
       setBookingLoading(false);
@@ -395,7 +363,7 @@ export function VenueDetailClient() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-power-orange"></div>
+        <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2"></div>
       </div>
     );
   }
@@ -403,11 +371,10 @@ export function VenueDetailClient() {
   if (!venue) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
-        <div className="max-w-md text-center space-y-4">
+        <div className="max-w-md space-y-4 text-center">
           <h1 className="text-2xl font-bold text-slate-900">Venue not found</h1>
           <p className="text-slate-600">
-            The venue you&apos;re looking for doesn&apos;t exist or has been
-            removed.
+            The venue you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
           <Link href="/booking?tab=venues">
             <Button variant="primary">Browse All Venues</Button>
@@ -420,42 +387,35 @@ export function VenueDetailClient() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
       {/* Header */}
-      <div className="bg-white/70 border-b border-white/60 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6">
+      <div className="border-b border-white/60 bg-white/70 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-4 pt-4 pb-6 sm:px-6 lg:px-8">
           <BackButton label="Back to Venues" />
-          <div className="mt-4 relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
+          <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
             <div className="relative z-10">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex-1">
-                  <h1 className="font-title text-3xl sm:text-4xl font-bold mb-2">
-                    {venue.name}
-                  </h1>
+                  <h1 className="font-title mb-2 text-3xl font-bold sm:text-4xl">{venue.name}</h1>
                   {venue.address && (
-                    <p className="text-slate-700 flex items-center gap-2 text-sm sm:text-base">
+                    <p className="flex items-center gap-2 text-sm text-slate-700 sm:text-base">
                       <MapPin size={18} />
                       {venue.address}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 mt-4">
+                  <div className="mt-4 flex items-center gap-4">
                     <div className="flex items-center gap-1">
-                      <Star
-                        size={18}
-                        className="text-yellow-400 fill-yellow-400"
-                      />
-                      <span className="font-semibold">
-                        {venue.rating?.toFixed(1) || "5.0"}
-                      </span>
-                      <span className="text-slate-600 text-sm">
+                      <Star size={18} className="fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold">{venue.rating?.toFixed(1) || "5.0"}</span>
+                      <span className="text-sm text-slate-600">
                         ({venue.reviewCount || 0} reviews)
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-xs uppercase tracking-wide text-slate-600 mb-1">
+                  <p className="mb-1 text-xs tracking-wide text-slate-600 uppercase">
                     Starting from
                   </p>
-                  <div className="flex items-center justify-end gap-1 text-3xl font-bold text-power-orange">
+                  <div className="text-power-orange flex items-center justify-end gap-1 text-3xl font-bold">
                     <IndianRupee size={24} />
                     {venue.pricePerHour}
                     <span className="text-sm text-slate-600">/hr</span>
@@ -463,24 +423,24 @@ export function VenueDetailClient() {
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-turf-green/20 blur-3xl" />
+            <div className="bg-power-orange/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-turf-green/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             {/* Images */}
             {venueImages.length > 0 && (
               <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
                 <div className="border-b border-slate-200/70 bg-white/80 px-4 py-3 sm:px-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                      <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
                         Venue Gallery
                       </p>
                       <h2 className="text-lg font-bold text-slate-900">
@@ -492,11 +452,8 @@ export function VenueDetailClient() {
                         {venuePhotoCount} venue photos
                       </span>
                       {sportPhotoCount > 0 && (
-                        <span className="rounded-full bg-power-orange/10 px-3 py-1 text-power-orange">
-                          {selectedSportPhotoCountLabel(
-                            selectedSport,
-                            sportPhotoCount,
-                          )}
+                        <span className="bg-power-orange/10 text-power-orange rounded-full px-3 py-1">
+                          {selectedSportPhotoCountLabel(selectedSport, sportPhotoCount)}
                         </span>
                       )}
                     </div>
@@ -505,7 +462,7 @@ export function VenueDetailClient() {
 
                 <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_180px]">
                   <div
-                    className="group relative h-80 sm:h-112 w-full overflow-hidden bg-slate-100 cursor-zoom-in"
+                    className="group relative h-80 w-full cursor-zoom-in overflow-hidden bg-slate-100 sm:h-112"
                     onClick={() => openLightbox(selectedImageIndex)}
                   >
                     <img
@@ -514,9 +471,9 @@ export function VenueDetailClient() {
                       className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                     />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-linear-to-t from-black/70 via-black/35 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white">
+                    <div className="absolute right-4 bottom-4 left-4 flex items-end justify-between gap-3 text-white">
                       <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-white/75">
+                        <p className="text-xs tracking-wide text-white/75 uppercase">
                           Tap to expand
                         </p>
                         <p className="text-sm font-semibold sm:text-base">
@@ -535,7 +492,7 @@ export function VenueDetailClient() {
                             e.stopPropagation();
                             showPreviousImage();
                           }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
+                          className="absolute top-1/2 left-4 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
                           aria-label="Previous image"
                         >
                           <ChevronLeft size={18} />
@@ -546,7 +503,7 @@ export function VenueDetailClient() {
                             e.stopPropagation();
                             showNextImage();
                           }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
+                          className="absolute top-1/2 right-4 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
                           aria-label="Next image"
                         >
                           <ChevronRight size={18} />
@@ -557,12 +514,10 @@ export function VenueDetailClient() {
 
                   <div className="border-t border-slate-200/70 bg-white lg:border-t-0 lg:border-l">
                     <div className="flex items-center justify-between px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Photos
-                      </p>
+                      <p className="text-sm font-semibold text-slate-900">Photos</p>
                       <p className="text-xs text-slate-500">Scroll to browse</p>
                     </div>
-                    <div className="overflow-y-auto overflow-x-hidden lg:h-112">
+                    <div className="overflow-x-hidden overflow-y-auto lg:h-112">
                       <div className="grid grid-cols-3 gap-2 px-4 pb-4 sm:grid-cols-4 lg:grid-cols-2">
                         {venueImages.map((image, index) => (
                           <button
@@ -571,7 +526,7 @@ export function VenueDetailClient() {
                             onClick={() => setSelectedImageIndex(index)}
                             className={`group relative aspect-4/3 overflow-hidden rounded-2xl border transition ${
                               selectedImageIndex === index
-                                ? "border-power-orange ring-2 ring-power-orange/40"
+                                ? "border-power-orange ring-power-orange/40 ring-2"
                                 : "border-slate-200 hover:border-slate-300"
                             }`}
                             aria-label={`Show venue image ${index + 1}`}
@@ -599,7 +554,7 @@ export function VenueDetailClient() {
                 <button
                   type="button"
                   onClick={() => setLightboxOpen(false)}
-                  className="absolute right-5 top-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
+                  className="absolute top-5 right-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
                   aria-label="Close gallery"
                 >
                   <X size={20} />
@@ -648,10 +603,8 @@ export function VenueDetailClient() {
 
             {/* Description */}
             <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
-              <h2 className="text-xl font-bold mb-4 text-slate-900">
-                About this Venue
-              </h2>
-              <p className="text-slate-600 leading-relaxed">
+              <h2 className="mb-4 text-xl font-bold text-slate-900">About this Venue</h2>
+              <p className="leading-relaxed text-slate-600">
                 {venue.description ||
                   "Experience world-class sports facilities at this premium venue. Perfect for athletes of all levels looking for quality training and play spaces."}
               </p>
@@ -663,26 +616,22 @@ export function VenueDetailClient() {
               q={`${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`}
               sport={selectedSport || venue?.sports?.[0] || ""}
               ctaUrl={communityUrl}
-              enabled={Boolean(
-                user && (user.role === "Player" || user.role === "Coach"),
-              )}
+              enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
             />
 
             {/* Sports Available */}
             <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
-              <h2 className="text-lg font-semibold mb-4 text-slate-900">
-                Sports Available
-              </h2>
+              <h2 className="mb-4 text-lg font-semibold text-slate-900">Sports Available</h2>
               <div className="flex flex-wrap gap-2">
                 {venue.sports?.map((sport, index) => (
                   <button
                     type="button"
                     key={index}
                     onClick={() => setSelectedSport(sport)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${
+                    className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                       selectedSport === sport
-                        ? "bg-power-orange text-white border-power-orange shadow-sm"
-                        : "bg-linear-to-br from-power-orange/10 to-power-orange/5 border-power-orange/20 text-power-orange hover:border-power-orange/40"
+                        ? "bg-power-orange border-power-orange text-white shadow-sm"
+                        : "from-power-orange/10 to-power-orange/5 border-power-orange/20 text-power-orange hover:border-power-orange/40 bg-linear-to-br"
                     }`}
                   >
                     {sport}
@@ -695,14 +644,12 @@ export function VenueDetailClient() {
               <Card className="premium-shadow overflow-hidden rounded-3xl border border-slate-200/70 bg-white/92 p-0 backdrop-blur-sm">
                 <div className="flex items-center justify-between gap-3 border-b border-slate-200/70 bg-slate-50/80 px-5 py-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                    <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
                       Sport spotlight
                     </p>
-                    <h2 className="text-lg font-bold text-slate-900">
-                      {selectedSport} Photos
-                    </h2>
+                    <h2 className="text-lg font-bold text-slate-900">{selectedSport} Photos</h2>
                   </div>
-                  <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange">
+                  <span className="bg-power-orange/10 text-power-orange rounded-full px-3 py-1 text-xs font-semibold">
                     {selectedSportImages.length} images
                   </span>
                 </div>
@@ -710,15 +657,13 @@ export function VenueDetailClient() {
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                     {selectedSportImages.map((image, index) => {
                       const globalIndex = venueImages.findIndex(
-                        (venueImage) => venueImage === image,
+                        (venueImage) => venueImage === image
                       );
                       return (
                         <button
                           type="button"
                           key={`${selectedSport}-${index}-${image}`}
-                          onClick={() =>
-                            openLightbox(globalIndex >= 0 ? globalIndex : 0)
-                          }
+                          onClick={() => openLightbox(globalIndex >= 0 ? globalIndex : 0)}
                           className="group relative aspect-4/3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                           aria-label={`Open ${selectedSport} image ${index + 1}`}
                         >
@@ -742,14 +687,14 @@ export function VenueDetailClient() {
             {/* Amenities */}
             {venue.amenities && venue.amenities.length > 0 && (
               <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
-                <h2 className="text-lg font-semibold mb-4 text-slate-900">
+                <h2 className="mb-4 text-lg font-semibold text-slate-900">
                   Amenities & Facilities
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {venue.amenities.map((amenity, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 px-3 py-2 bg-slate-50 text-slate-700 rounded-lg text-sm"
+                      className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700"
                     >
                       <Check size={16} className="text-turf-green shrink-0" />
                       <span>{amenity}</span>
@@ -761,28 +706,21 @@ export function VenueDetailClient() {
 
             {/* Reviews */}
             <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-6 backdrop-blur-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">
-                    Venue Reviews
-                  </h2>
-                  <p className="text-sm text-slate-600 mt-1 inline-flex items-center gap-1">
-                    <Star
-                      size={14}
-                      className="text-yellow-500 fill-yellow-500"
-                    />
-                    {reviewSummary.averageRating.toFixed(1)} average ·{" "}
-                    {reviewSummary.reviewCount} reviews
+                  <h2 className="text-xl font-bold text-slate-900">Venue Reviews</h2>
+                  <p className="mt-1 inline-flex items-center gap-1 text-sm text-slate-600">
+                    <Star size={14} className="fill-yellow-500 text-yellow-500" />
+                    {reviewSummary.averageRating.toFixed(1)} average · {reviewSummary.reviewCount}{" "}
+                    reviews
                   </p>
                 </div>
               </div>
 
               {user && eligibleBookingId && (
                 <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-800 mb-3">
-                    Share your experience
-                  </p>
-                  <div className="flex items-center gap-1 mb-3">
+                  <p className="mb-3 text-sm font-semibold text-slate-800">Share your experience</p>
+                  <div className="mb-3 flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
@@ -794,7 +732,7 @@ export function VenueDetailClient() {
                           size={20}
                           className={
                             star <= reviewRating
-                              ? "text-yellow-500 fill-yellow-500"
+                              ? "fill-yellow-500 text-yellow-500"
                               : "text-slate-300"
                           }
                         />
@@ -807,7 +745,7 @@ export function VenueDetailClient() {
                     rows={3}
                     maxLength={1000}
                     placeholder="Write your review (optional)"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                    className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                   />
                   <div className="mt-3 flex justify-end">
                     <Button
@@ -823,8 +761,7 @@ export function VenueDetailClient() {
 
               {user && !eligibleBookingId && (
                 <p className="mb-4 text-sm text-slate-500">
-                  {reviewEligibilityReason ||
-                    "Complete a session for this venue to add a review."}
+                  {reviewEligibilityReason || "Complete a session for this venue to add a review."}
                 </p>
               )}
 
@@ -838,8 +775,7 @@ export function VenueDetailClient() {
                 <div className="space-y-4">
                   {reviews.map((review) => {
                     const reviewer =
-                      typeof review.userId === "object" &&
-                      review.userId !== null
+                      typeof review.userId === "object" && review.userId !== null
                         ? review.userId
                         : null;
                     return (
@@ -847,8 +783,8 @@ export function VenueDetailClient() {
                         key={String(review._id || review.id)}
                         className="rounded-lg border border-slate-200 p-4"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-slate-900 text-sm">
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-sm font-semibold text-slate-900">
                             {reviewer?.name || "User"}
                           </p>
                           <div className="flex items-center gap-1">
@@ -858,18 +794,14 @@ export function VenueDetailClient() {
                                 size={14}
                                 className={
                                   index < review.rating
-                                    ? "text-yellow-500 fill-yellow-500"
+                                    ? "fill-yellow-500 text-yellow-500"
                                     : "text-slate-300"
                                 }
                               />
                             ))}
                           </div>
                         </div>
-                        {review.review && (
-                          <p className="text-sm text-slate-700">
-                            {review.review}
-                          </p>
-                        )}
+                        {review.review && <p className="text-sm text-slate-700">{review.review}</p>}
                       </div>
                     );
                   })}
@@ -881,13 +813,11 @@ export function VenueDetailClient() {
           {/* Right Column - Booking Widget */}
           <div className="lg:col-span-1">
             <Card className="premium-shadow sticky top-24 rounded-3xl border border-slate-200/70 bg-white/95 p-6 backdrop-blur-sm">
-              <h2 className="text-xl font-bold mb-6 text-slate-900">
-                Book Your Slot
-              </h2>
+              <h2 className="mb-6 text-xl font-bold text-slate-900">Book Your Slot</h2>
               <div className="space-y-5">
                 {/* Sport Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  <label className="mb-3 block text-sm font-semibold text-slate-700">
                     Select Sport
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -895,10 +825,10 @@ export function VenueDetailClient() {
                       <button
                         key={sport}
                         onClick={() => setSelectedSport(sport)}
-                        className={`px-4 py-3 text-sm font-semibold rounded-lg border-2 transition-all ${
+                        className={`rounded-lg border-2 px-4 py-3 text-sm font-semibold transition-all ${
                           selectedSport === sport
-                            ? "bg-power-orange text-white border-power-orange shadow-md"
-                            : "bg-white text-slate-700 border-slate-200 hover:border-power-orange hover:bg-power-orange/5"
+                            ? "bg-power-orange border-power-orange text-white shadow-md"
+                            : "hover:border-power-orange hover:bg-power-orange/5 border-slate-200 bg-white text-slate-700"
                         }`}
                       >
                         {sport}
@@ -909,12 +839,12 @@ export function VenueDetailClient() {
 
                 {/* Date Selection */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  <label className="mb-3 block text-sm font-semibold text-slate-700">
                     Select Date
                   </label>
                   <div className="relative">
                     <Calendar
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                      className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
                       size={18}
                     />
                     <input
@@ -922,53 +852,44 @@ export function VenueDetailClient() {
                       value={selectedDate}
                       min={getLocalDateString()}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 font-medium"
+                      className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border-2 border-slate-200 bg-white py-3 pr-4 pl-10 font-medium text-slate-900 focus:ring-2 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Time Slots */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  <label className="mb-3 block text-sm font-semibold text-slate-700">
                     Select Time Slot
                   </label>
                   {!availability ? (
                     <div className="flex justify-center py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-power-orange"></div>
+                      <div className="border-power-orange h-6 w-6 animate-spin rounded-full border-b-2"></div>
                     </div>
                   ) : slotsToDisplay.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                    <div className="custom-scrollbar grid max-h-60 grid-cols-2 gap-2 overflow-y-auto">
                       {slotsToDisplay.map((slot: any) => {
                         const startTime = slot.split("-")[0] || slot;
-                        const startHour = parseInt(
-                          startTime.split(":")[0] || "0",
-                          10,
-                        );
+                        const startHour = parseInt(startTime.split(":")[0] || "0", 10);
                         const endTime =
-                          slot.split("-")[1] ||
-                          `${String(startHour + 1).padStart(2, "0")}:00`;
+                          slot.split("-")[1] || `${String(startHour + 1).padStart(2, "0")}:00`;
                         const isSlotAvailable =
                           availability?.availableSlots?.some(
-                            (availSlot) =>
-                              (availSlot.split("-")[0] || availSlot) ===
-                              startTime,
+                            (availSlot) => (availSlot.split("-")[0] || availSlot) === startTime
                           ) ?? false;
-                        const isSelected =
-                          selectedSlot?.startTime === startTime;
+                        const isSelected = selectedSlot?.startTime === startTime;
                         return (
                           <button
                             key={slot}
-                            onClick={() =>
-                              setSelectedSlot({ startTime, endTime })
-                            }
-                            className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
+                            onClick={() => setSelectedSlot({ startTime, endTime })}
+                            className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all ${
                               isSlotAvailable
                                 ? isSelected
-                                  ? "bg-turf-green text-white border-turf-green shadow-md"
-                                  : "bg-white text-slate-700 border-slate-200 hover:border-turf-green"
+                                  ? "bg-turf-green border-turf-green text-white shadow-md"
+                                  : "hover:border-turf-green border-slate-200 bg-white text-slate-700"
                                 : isSelected
-                                  ? "bg-power-orange text-white border-power-orange shadow-md"
-                                  : "bg-amber-50/50 text-amber-700 border-amber-200 border-dashed hover:border-amber-400 hover:bg-amber-50"
+                                  ? "bg-power-orange border-power-orange text-white shadow-md"
+                                  : "border-dashed border-amber-200 bg-amber-50/50 text-amber-700 hover:border-amber-400 hover:bg-amber-50"
                             }`}
                           >
                             <div className="flex flex-col items-center justify-center">
@@ -984,9 +905,7 @@ export function VenueDetailClient() {
                               {!isSlotAvailable && (
                                 <span
                                   className={`text-[10px] font-semibold ${
-                                    isSelected
-                                      ? "text-white/90"
-                                      : "text-amber-600"
+                                    isSelected ? "text-white/90" : "text-amber-600"
                                   }`}
                                 >
                                   Join Waitlist
@@ -998,21 +917,19 @@ export function VenueDetailClient() {
                       })}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-500 text-center py-4">
+                    <p className="py-4 text-center text-sm text-slate-500">
                       No slots available for this date.
                     </p>
                   )}
                 </div>
 
                 {/* Summary & CTA */}
-                <div className="pt-5 border-t-2 border-slate-100">
+                <div className="border-t-2 border-slate-100 pt-5">
                   {selectedSport && selectedSlot && (
-                    <div className="mb-4 p-4 bg-slate-50 rounded-lg space-y-2">
+                    <div className="mb-4 space-y-2 rounded-lg bg-slate-50 p-4">
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Sport:</span>
-                        <span className="font-semibold text-slate-900">
-                          {selectedSport}
-                        </span>
+                        <span className="font-semibold text-slate-900">{selectedSport}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Time:</span>
@@ -1024,26 +941,19 @@ export function VenueDetailClient() {
                         <span className="text-slate-600">Status:</span>
                         <span
                           className={`font-semibold ${
-                            isSelectedSlotAvailable
-                              ? "text-turf-green"
-                              : "text-power-orange"
+                            isSelectedSlotAvailable ? "text-turf-green" : "text-power-orange"
                           }`}
                         >
-                          {isSelectedSlotAvailable
-                            ? "Available"
-                            : "Booked (Waitlist)"}
+                          {isSelectedSlotAvailable ? "Available" : "Booked (Waitlist)"}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                        <span className="text-slate-600 font-medium">
-                          Total:
-                        </span>
-                        <span className="text-xl font-bold text-slate-900 flex items-center">
+                      <div className="flex items-center justify-between border-t border-slate-200 pt-2">
+                        <span className="font-medium text-slate-600">Total:</span>
+                        <span className="flex items-center text-xl font-bold text-slate-900">
                           {isSelectedSlotAvailable ? (
                             <>
                               <IndianRupee size={18} />
-                              {venue.sportPricing?.[selectedSport] ||
-                                venue.pricePerHour}
+                              {venue.sportPricing?.[selectedSport] || venue.pricePerHour}
                             </>
                           ) : (
                             "Free (Join Waitlist)"
@@ -1057,15 +967,13 @@ export function VenueDetailClient() {
                     isSelectedSlotAvailable ? (
                       <Button
                         variant="primary"
-                        className="w-full h-12 text-base font-semibold shadow-lg"
+                        className="h-12 w-full text-base font-semibold shadow-lg"
                         onClick={handleBooking}
-                        disabled={
-                          bookingLoading || !selectedSlot || !selectedSport
-                        }
+                        disabled={bookingLoading || !selectedSlot || !selectedSport}
                       >
                         {bookingLoading ? (
                           <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
                             Processing...
                           </>
                         ) : (
@@ -1078,15 +986,13 @@ export function VenueDetailClient() {
                     ) : (
                       <Button
                         variant="primary"
-                        className="w-full h-12 text-base font-semibold shadow-lg bg-power-orange hover:bg-power-orange/90 text-white border-power-orange"
+                        className="bg-power-orange hover:bg-power-orange/90 border-power-orange h-12 w-full text-base font-semibold text-white shadow-lg"
                         onClick={handleJoinWaitlist}
-                        disabled={
-                          bookingLoading || !selectedSlot || !selectedSport
-                        }
+                        disabled={bookingLoading || !selectedSlot || !selectedSport}
                       >
                         {bookingLoading ? (
                           <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
                             Joining Waitlist...
                           </>
                         ) : (
@@ -1099,10 +1005,7 @@ export function VenueDetailClient() {
                     )
                   ) : (
                     <Link href={`/login?redirect=/venues/${venueId}`}>
-                      <Button
-                        variant="secondary"
-                        className="w-full h-12 text-base font-semibold"
-                      >
+                      <Button variant="secondary" className="h-12 w-full text-base font-semibold">
                         Sign In to Book
                       </Button>
                     </Link>

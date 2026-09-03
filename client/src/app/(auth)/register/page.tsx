@@ -71,8 +71,7 @@ function RegisterContent() {
   // a Coach" → /register?role=Coach) when it matches an available option.
   const roleParam = searchParams.get("role");
   const preselectedUserType =
-    ROLE_OPTIONS.find((r) => r.value.toLowerCase() === roleParam?.toLowerCase())
-      ?.value ?? "Parent";
+    ROLE_OPTIONS.find((r) => r.value.toLowerCase() === roleParam?.toLowerCase())?.value ?? "Parent";
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -93,9 +92,7 @@ function RegisterContent() {
     }
   }, [user, router]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const inputElement = e.target as HTMLInputElement;
     const nextValue = type === "checkbox" ? inputElement.checked : value;
@@ -108,7 +105,9 @@ function RegisterContent() {
       });
     }
     if (type === "checkbox" && nextValue === true) {
-      setTimeout(() => { toast.dismiss(); }, 50);
+      setTimeout(() => {
+        toast.dismiss();
+      }, 50);
     }
   };
 
@@ -117,12 +116,9 @@ function RegisterContent() {
     if (!formData.name) newErrors.name = "Name is required";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.phone) newErrors.phone = "Phone is required";
-    if (formData.password.length < 8)
-      newErrors.password = "Password must be at least 8 characters";
-    if (!formData.acceptedTerms)
-      newErrors.acceptedTerms = "You must accept Terms of Service";
-    if (!formData.acceptedPrivacy)
-      newErrors.acceptedPrivacy = "You must accept Privacy Policy";
+    if (formData.password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    if (!formData.acceptedTerms) newErrors.acceptedTerms = "You must accept Terms of Service";
+    if (!formData.acceptedPrivacy) newErrors.acceptedPrivacy = "You must accept Privacy Policy";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -133,7 +129,12 @@ function RegisterContent() {
     setIsSubmitting(true);
     setLoading(true);
     try {
-      const roleMap = { Parent: "Parent", Player: "Player", Coach: "Coach", Expert: "EXPERT" } as const;
+      const roleMap = {
+        Parent: "Parent",
+        Player: "Player",
+        Coach: "Coach",
+        Expert: "EXPERT",
+      } as const;
       const { userType, ...rest } = formData;
       const payload = { ...rest, role: roleMap[userType] };
       const response = await authApi.register(payload);
@@ -157,9 +158,7 @@ function RegisterContent() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: {
-    credential?: string;
-  }) => {
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     try {
       if (!formData.acceptedTerms || !formData.acceptedPrivacy) {
         setErrors((prev) => ({
@@ -175,7 +174,12 @@ function RegisterContent() {
         toast.error("No credential received from Google");
         return;
       }
-      const googleRoleMap = { Parent: "Parent", Player: "Player", Coach: "Coach", Expert: "EXPERT" } as const;
+      const googleRoleMap = {
+        Parent: "Parent",
+        Player: "Player",
+        Coach: "Coach",
+        Expert: "EXPERT",
+      } as const;
       const response = await authApi.googleLogin({
         credential: credentialResponse.credential,
         role: googleRoleMap[formData.userType],
@@ -208,16 +212,14 @@ function RegisterContent() {
       "focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4",
       errors[field]
         ? "border-red-400 dark:border-red-500 focus:border-red-400 focus:ring-red-400/10"
-        : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:border-power-orange dark:focus:border-power-orange focus:ring-power-orange/10",
+        : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:border-power-orange dark:focus:border-power-orange focus:ring-power-orange/10"
     );
 
   const iconClass =
     "pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 dark:text-slate-500";
 
   return (
-    <GoogleOAuthProvider
-      clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}
-    >
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
       <div className="space-y-7">
         {/* Heading */}
         <motion.div
@@ -225,7 +227,7 @@ function RegisterContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
         >
-          <h1 className="font-title text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">
+          <h1 className="font-title text-3xl leading-tight font-black tracking-tight text-slate-900 dark:text-white">
             Create your account
           </h1>
           <p className="mt-2 text-[15px] text-slate-500 dark:text-slate-400">
@@ -259,9 +261,7 @@ function RegisterContent() {
                   className={inputClass("name")}
                 />
               </div>
-              {errors.name && (
-                <p className="text-xs text-red-500">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
             </div>
 
             {/* Email — full width */}
@@ -281,9 +281,7 @@ function RegisterContent() {
                   className={inputClass("email")}
                 />
               </div>
-              {errors.email && (
-                <p className="text-xs text-red-500">{errors.email}</p>
-              )}
+              {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
             </div>
 
             {/* Phone — left col */}
@@ -303,9 +301,7 @@ function RegisterContent() {
                   className={inputClass("phone")}
                 />
               </div>
-              {errors.phone && (
-                <p className="text-xs text-red-500">{errors.phone}</p>
-              )}
+              {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
             </div>
 
             {/* Password — right col */}
@@ -328,14 +324,12 @@ function RegisterContent() {
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label="Toggle password visibility"
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
+                  className="absolute top-1/2 right-3.5 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:hover:text-slate-300"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-xs text-red-500">{errors.password}</p>
-              )}
+              {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
             </div>
           </div>
 
@@ -360,8 +354,8 @@ function RegisterContent() {
                     className={cn(
                       "relative flex flex-col items-start gap-2 rounded-xl border p-3.5 text-left transition-all duration-200",
                       selected
-                        ? "border-power-orange bg-orange-50/70 ring-1 ring-power-orange dark:bg-orange-950/20"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700",
+                        ? "border-power-orange ring-power-orange bg-orange-50/70 ring-1 dark:bg-orange-950/20"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
                     )}
                   >
                     <span
@@ -369,7 +363,7 @@ function RegisterContent() {
                         "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                         selected
                           ? "bg-power-orange/10 text-power-orange"
-                          : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500",
+                          : "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
                       )}
                     >
                       <role.Icon size={16} />
@@ -378,9 +372,7 @@ function RegisterContent() {
                       <p
                         className={cn(
                           "text-sm font-semibold",
-                          selected
-                            ? "text-power-orange"
-                            : "text-slate-800 dark:text-slate-200",
+                          selected ? "text-power-orange" : "text-slate-800 dark:text-slate-200"
                         )}
                       >
                         {role.label}
@@ -395,7 +387,7 @@ function RegisterContent() {
                       )}
                     </div>
                     {selected && (
-                      <span className="absolute right-2.5 top-2.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-power-orange">
+                      <span className="bg-power-orange absolute top-2.5 right-2.5 flex h-4.5 w-4.5 items-center justify-center rounded-full">
                         <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
                       </span>
                     )}
@@ -407,7 +399,7 @@ function RegisterContent() {
               Want to list your venue?{" "}
               <Link
                 href="/onboarding"
-                className="font-semibold text-power-orange transition-colors hover:text-orange-600"
+                className="text-power-orange font-semibold transition-colors hover:text-orange-600"
               >
                 Start venue onboarding
               </Link>
@@ -429,23 +421,17 @@ function RegisterContent() {
                 name="serviceMode"
                 value={formData.serviceMode}
                 onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm text-slate-900 transition-all duration-200 focus:border-power-orange focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                className="focus:border-power-orange focus:ring-power-orange/10 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm text-slate-900 transition-all duration-200 focus:bg-white focus:ring-4 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               >
-                <option value="OWN_VENUE">
-                  Own Venue — coach at your location
-                </option>
-                <option value="FREELANCE">
-                  Freelance — travel to players
-                </option>
+                <option value="OWN_VENUE">Own Venue — coach at your location</option>
+                <option value="FREELANCE">Freelance — travel to players</option>
                 <option value="HYBRID">Hybrid — own venue or travel</option>
               </select>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {formData.serviceMode === "OWN_VENUE" &&
                   "Your venue details will be stored for booking context."}
-                {formData.serviceMode === "FREELANCE" &&
-                  "Travel to players for coaching sessions."}
-                {formData.serviceMode === "HYBRID" &&
-                  "Coach at your venue or travel to players."}
+                {formData.serviceMode === "FREELANCE" && "Travel to players for coaching sessions."}
+                {formData.serviceMode === "HYBRID" && "Coach at your venue or travel to players."}
               </p>
             </motion.div>
           )}
@@ -459,22 +445,20 @@ function RegisterContent() {
                 checked={formData.acceptedTerms}
                 onChange={handleChange}
                 value="true"
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-power-orange focus:ring-power-orange/50"
+                className="text-power-orange focus:ring-power-orange/50 mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300"
               />
               <span>
                 I agree to the{" "}
                 <Link
                   href="/terms"
                   target="_blank"
-                  className="font-semibold text-power-orange transition-colors hover:text-orange-600"
+                  className="text-power-orange font-semibold transition-colors hover:text-orange-600"
                 >
                   Terms of Service
                 </Link>
               </span>
             </label>
-            {errors.acceptedTerms && (
-              <p className="text-xs text-red-500">{errors.acceptedTerms}</p>
-            )}
+            {errors.acceptedTerms && <p className="text-xs text-red-500">{errors.acceptedTerms}</p>}
 
             <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
               <input
@@ -483,14 +467,14 @@ function RegisterContent() {
                 checked={formData.acceptedPrivacy}
                 onChange={handleChange}
                 value="true"
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-power-orange focus:ring-power-orange/50"
+                className="text-power-orange focus:ring-power-orange/50 mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300"
               />
               <span>
                 I agree to the{" "}
                 <Link
                   href="/privacy"
                   target="_blank"
-                  className="font-semibold text-power-orange transition-colors hover:text-orange-600"
+                  className="text-power-orange font-semibold transition-colors hover:text-orange-600"
                 >
                   Privacy Policy
                 </Link>
@@ -504,7 +488,7 @@ function RegisterContent() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-power-orange text-[15px] font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-600 hover:shadow-orange-500/30 focus:outline-none focus:ring-4 focus:ring-power-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="group bg-power-orange focus:ring-power-orange/20 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-600 hover:shadow-orange-500/30 focus:ring-4 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? (
               <>
@@ -526,7 +510,7 @@ function RegisterContent() {
             <div className="w-full border-t border-slate-100 dark:border-slate-800" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-3 text-xs font-medium uppercase tracking-wider text-slate-400 dark:bg-slate-950 dark:text-slate-500">
+            <span className="bg-white px-3 text-xs font-medium tracking-wider text-slate-400 uppercase dark:bg-slate-950 dark:text-slate-500">
               or
             </span>
           </div>
@@ -546,7 +530,7 @@ function RegisterContent() {
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-semibold text-power-orange transition-colors hover:text-orange-600"
+            className="text-power-orange font-semibold transition-colors hover:text-orange-600"
           >
             Sign in
           </Link>

@@ -26,9 +26,7 @@ const { generateToken } = require("../utils/jwt");
 const { User } = require("../client/models/User");
 const { Coach } = require("../client/models/Coach");
 const { CoachOffering } = require("../client/models/CoachOffering");
-const {
-  CoachSubscriptionPackage,
-} = require("../client/models/CoachSubscriptionPackage");
+const { CoachSubscriptionPackage } = require("../client/models/CoachSubscriptionPackage");
 const redis = require("../config/redis").default;
 
 const oid = () => new mongoose.Types.ObjectId();

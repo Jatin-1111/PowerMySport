@@ -30,10 +30,7 @@ export class InventoryService {
    * Reserve inventory for a cart item
    * Called when item is added to cart
    */
-  async reserveInventory(
-    productVariantId: string,
-    quantity: number,
-  ): Promise<boolean> {
+  async reserveInventory(productVariantId: string, quantity: number): Promise<boolean> {
     const inventoryDoc = await InventoryModel.findOne({
       productVariantId: new mongoose.Types.ObjectId(productVariantId),
     });
@@ -55,10 +52,7 @@ export class InventoryService {
    * Release reserved inventory
    * Called when cart item is removed or checkout cancelled
    */
-  async releaseReservedInventory(
-    productVariantId: string,
-    quantity: number,
-  ): Promise<boolean> {
+  async releaseReservedInventory(productVariantId: string, quantity: number): Promise<boolean> {
     const inventoryDoc = await InventoryModel.findOne({
       productVariantId: new mongoose.Types.ObjectId(productVariantId),
     });
@@ -67,10 +61,7 @@ export class InventoryService {
       throw new Error("Inventory record not found");
     }
 
-    inventoryDoc.quantityReserved = Math.max(
-      0,
-      inventoryDoc.quantityReserved - quantity,
-    );
+    inventoryDoc.quantityReserved = Math.max(0, inventoryDoc.quantityReserved - quantity);
     await inventoryDoc.save();
     return true;
   }
@@ -79,10 +70,7 @@ export class InventoryService {
    * Confirm inventory deduction (move from reserved to sold)
    * Called after successful payment
    */
-  async confirmInventoryDeduction(
-    productVariantId: string,
-    quantity: number,
-  ): Promise<boolean> {
+  async confirmInventoryDeduction(productVariantId: string, quantity: number): Promise<boolean> {
     const inventoryDoc = await InventoryModel.findOne({
       productVariantId: new mongoose.Types.ObjectId(productVariantId),
     });
@@ -105,9 +93,7 @@ export class InventoryService {
     });
 
     if (product) {
-      const variant = product.variants.find(
-        (v) => v._id.toString() === productVariantId,
-      );
+      const variant = product.variants.find((v) => v._id.toString() === productVariantId);
       if (variant) {
         variant.stock = inventoryDoc.quantityOnHand;
         await product.save();
@@ -187,7 +173,7 @@ export class CartService {
   async addItemToCart(
     userId: string,
     productVariantId: string,
-    quantity: number,
+    quantity: number
   ): Promise<CartDocument> {
     // Validate variant exists and has stock
     const variant = await this.getProductVariant(productVariantId);
@@ -196,8 +182,7 @@ export class CartService {
     }
 
     // Check inventory availability
-    const availableQty =
-      await this.inventoryService.getAvailableQuantity(productVariantId);
+    const availableQty = await this.inventoryService.getAvailableQuantity(productVariantId);
     if (availableQty < quantity) {
       throw new Error(`Only ${availableQty} units available for this product`);
     }
@@ -207,8 +192,7 @@ export class CartService {
 
     // Check if item already in cart
     const existingItem = cart.items.find(
-      (item) =>
-        item.productVariantId.toString() === productVariantId.toString(),
+      (item) => item.productVariantId.toString() === productVariantId.toString()
     );
 
     if (existingItem) {
@@ -217,9 +201,7 @@ export class CartService {
 
       // Verify we have enough for new total
       if (availableQty < newQuantity) {
-        throw new Error(
-          `Only ${availableQty} units available for this product`,
-        );
+        throw new Error(`Only ${availableQty} units available for this product`);
       }
 
       existingItem.quantity = newQuantity;
@@ -249,10 +231,7 @@ export class CartService {
   /**
    * Remove item from cart
    */
-  async removeItemFromCart(
-    userId: string,
-    cartItemId: string,
-  ): Promise<CartDocument> {
+  async removeItemFromCart(userId: string, cartItemId: string): Promise<CartDocument> {
     const cart = await CartModel.findOne({
       userId: new mongoose.Types.ObjectId(userId),
     });
@@ -261,9 +240,7 @@ export class CartService {
       throw new Error("Cart not found");
     }
 
-    const itemIndex = cart.items.findIndex(
-      (item) => item._id.toString() === cartItemId,
-    );
+    const itemIndex = cart.items.findIndex((item) => item._id.toString() === cartItemId);
 
     if (itemIndex === -1) {
       throw new Error("Item not found in cart");
@@ -277,7 +254,7 @@ export class CartService {
     // Release reserved inventory
     await this.inventoryService.releaseReservedInventory(
       item.productVariantId.toString(),
-      item.quantity,
+      item.quantity
     );
 
     // Remove item
@@ -296,7 +273,7 @@ export class CartService {
   async updateItemQuantity(
     userId: string,
     cartItemId: string,
-    newQuantity: number,
+    newQuantity: number
   ): Promise<CartDocument> {
     if (newQuantity < 1) {
       throw new Error("Quantity must be at least 1");
@@ -315,9 +292,7 @@ export class CartService {
       throw new Error("Item not found in cart");
     }
 
-    const variant = await this.getProductVariant(
-      item.productVariantId.toString(),
-    );
+    const variant = await this.getProductVariant(item.productVariantId.toString());
     if (!variant) {
       throw new Error("Product variant not found");
     }
@@ -328,20 +303,20 @@ export class CartService {
     if (quantityDifference > 0) {
       // Increasing quantity - need to reserve more
       const availableQty = await this.inventoryService.getAvailableQuantity(
-        item.productVariantId.toString(),
+        item.productVariantId.toString()
       );
       if (availableQty < quantityDifference) {
         throw new Error(`Only ${availableQty} additional units available`);
       }
       await this.inventoryService.reserveInventory(
         item.productVariantId.toString(),
-        quantityDifference,
+        quantityDifference
       );
     } else {
       // Decreasing quantity - release reserved
       await this.inventoryService.releaseReservedInventory(
         item.productVariantId.toString(),
-        Math.abs(quantityDifference),
+        Math.abs(quantityDifference)
       );
     }
 
@@ -370,7 +345,7 @@ export class CartService {
     for (const item of cart.items) {
       await this.inventoryService.releaseReservedInventory(
         item.productVariantId.toString(),
-        item.quantity,
+        item.quantity
       );
     }
 
@@ -392,7 +367,7 @@ export class CartService {
   async applyPromoCode(
     userId: string,
     promoCode: string,
-    discountAmount: number,
+    discountAmount: number
   ): Promise<CartDocument> {
     const cart = await CartModel.findOne({
       userId: new mongoose.Types.ObjectId(userId),
@@ -447,9 +422,7 @@ export class CartService {
 
       // Get product to calculate tax rate snapshot for current cart line.
       const product = await ProductModel.findOne({
-        "variants._id": new mongoose.Types.ObjectId(
-          item.productVariantId.toString(),
-        ),
+        "variants._id": new mongoose.Types.ObjectId(item.productVariantId.toString()),
       });
       if (product && product.taxable) {
         taxAmount += item.lineTotal * product.taxRate;
@@ -458,8 +431,7 @@ export class CartService {
 
     cart.subtotal = subtotal;
     cart.taxAmount = Math.round(taxAmount); // Round to nearest paise
-    cart.totalAmount =
-      cart.subtotal + cart.taxAmount - (cart.discountAmount || 0);
+    cart.totalAmount = cart.subtotal + cart.taxAmount - (cart.discountAmount || 0);
   }
 
   /**
@@ -506,7 +478,7 @@ export class OrderService {
     userId: string,
     shippingAddress: any,
     paymentMethod: string,
-    paymentGateway: PaymentGateway,
+    paymentGateway: PaymentGateway
   ): Promise<OrderDocument> {
     // Get cart
     const cart = await this.cartService.getOrCreateCart(userId);
@@ -527,7 +499,7 @@ export class OrderService {
       }
 
       const variantDoc = variant.variants.find(
-        (v) => v._id.toString() === cartItem.productVariantId.toString(),
+        (v) => v._id.toString() === cartItem.productVariantId.toString()
       );
 
       orderItems.push({
@@ -575,7 +547,7 @@ export class OrderService {
   async confirmPayment(
     orderId: string,
     paymentGatewayPaymentId: string,
-    paymentGatewayOrderId: string,
+    paymentGatewayOrderId: string
   ): Promise<OrderDocument> {
     const order = await OrderModel.findById(orderId);
 
@@ -613,10 +585,7 @@ export class OrderService {
     if (gatewayStatus.state !== "COMPLETED") {
       throw new Error("Payment not completed at gateway");
     }
-    if (
-      typeof gatewayStatus.amount !== "number" ||
-      gatewayStatus.amount !== order.totalAmount
-    ) {
+    if (typeof gatewayStatus.amount !== "number" || gatewayStatus.amount !== order.totalAmount) {
       throw new Error("Payment amount mismatch");
     }
 
@@ -636,7 +605,7 @@ export class OrderService {
       try {
         await this.inventoryService.confirmInventoryDeduction(
           item.productVariantId.toString(),
-          item.quantity,
+          item.quantity
         );
       } catch (err) {
         log.error("[order] inventory deduction failed (non-fatal)", {
@@ -674,9 +643,7 @@ export class OrderService {
    * Build and enqueue the order confirmation email for the outbox worker.
    * Kept separate so checkout flows never fail on email-side errors.
    */
-  private async queueOrderConfirmationEmail(
-    order: OrderDocument,
-  ): Promise<void> {
+  private async queueOrderConfirmationEmail(order: OrderDocument): Promise<void> {
     const user = await UserModel.findById(order.userId);
     if (user && user.email) {
       const emailHtml = `
@@ -706,7 +673,7 @@ export class OrderService {
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.quantity}</td>
                     <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">₹${(item.lineTotal / 100).toFixed(2)}</td>
                   </tr>
-                `,
+                `
                   )
                   .join("")}
               </tbody>
@@ -752,10 +719,7 @@ export class OrderService {
   /**
    * Handle payment failure
    */
-  async handlePaymentFailure(
-    orderId: string,
-    failureReason?: string,
-  ): Promise<OrderDocument> {
+  async handlePaymentFailure(orderId: string, failureReason?: string): Promise<OrderDocument> {
     const order = await OrderModel.findById(orderId);
 
     if (!order) {
@@ -769,7 +733,7 @@ export class OrderService {
     for (const item of order.items) {
       await this.inventoryService.releaseReservedInventory(
         item.productVariantId.toString(),
-        item.quantity,
+        item.quantity
       );
     }
 
@@ -790,7 +754,7 @@ export class OrderService {
     // Can only cancel PENDING_PAYMENT orders
     if (order.status !== OrderStatus.PENDING_PAYMENT) {
       throw new Error(
-        `Cannot cancel order in ${order.status} state. Only PENDING_PAYMENT orders can be cancelled.`,
+        `Cannot cancel order in ${order.status} state. Only PENDING_PAYMENT orders can be cancelled.`
       );
     }
 
@@ -798,7 +762,7 @@ export class OrderService {
     for (const item of order.items) {
       await this.inventoryService.releaseReservedInventory(
         item.productVariantId.toString(),
-        item.quantity,
+        item.quantity
       );
     }
 
@@ -817,7 +781,7 @@ export class OrderService {
   async updateFulfillmentStatus(
     orderId: string,
     fulfillmentStatus: FulfillmentStatus,
-    trackingNumber?: string,
+    trackingNumber?: string
   ): Promise<OrderDocument> {
     const order = await OrderModel.findById(orderId);
 
@@ -827,25 +791,15 @@ export class OrderService {
 
     // Validate state transition
     const validTransitions: Record<FulfillmentStatus, FulfillmentStatus[]> = {
-      [FulfillmentStatus.PENDING]: [
-        FulfillmentStatus.PROCESSING,
-        FulfillmentStatus.CANCELLED,
-      ],
-      [FulfillmentStatus.PROCESSING]: [
-        FulfillmentStatus.SHIPPED,
-        FulfillmentStatus.CANCELLED,
-      ],
+      [FulfillmentStatus.PENDING]: [FulfillmentStatus.PROCESSING, FulfillmentStatus.CANCELLED],
+      [FulfillmentStatus.PROCESSING]: [FulfillmentStatus.SHIPPED, FulfillmentStatus.CANCELLED],
       [FulfillmentStatus.SHIPPED]: [FulfillmentStatus.DELIVERED],
       [FulfillmentStatus.DELIVERED]: [],
       [FulfillmentStatus.CANCELLED]: [],
     };
 
-    if (
-      !validTransitions[order.fulfillmentStatus].includes(fulfillmentStatus)
-    ) {
-      throw new Error(
-        `Cannot transition from ${order.fulfillmentStatus} to ${fulfillmentStatus}`,
-      );
+    if (!validTransitions[order.fulfillmentStatus].includes(fulfillmentStatus)) {
+      throw new Error(`Cannot transition from ${order.fulfillmentStatus} to ${fulfillmentStatus}`);
     }
 
     order.fulfillmentStatus = fulfillmentStatus;
@@ -877,12 +831,7 @@ export class OrderService {
   /**
    * List user's orders
    */
-  async listUserOrders(
-    userId: string,
-    page: number = 1,
-    limit: number = 10,
-    status?: OrderStatus,
-  ) {
+  async listUserOrders(userId: string, page: number = 1, limit: number = 10, status?: OrderStatus) {
     const query: any = {
       userId: new mongoose.Types.ObjectId(userId),
     };
@@ -893,10 +842,7 @@ export class OrderService {
 
     const skip = (page - 1) * limit;
 
-    const orders = await OrderModel.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const orders = await OrderModel.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit);
 
     const total = await OrderModel.countDocuments(query);
 
@@ -921,7 +867,7 @@ export class OrderService {
       search?: string;
       sortBy?: "createdAt" | "totalAmount" | "orderNumber";
       sortOrder?: "asc" | "desc";
-    },
+    }
   ) {
     const query: any = {};
 
@@ -1001,7 +947,7 @@ export class ProductService {
     minPrice?: number,
     maxPrice?: number,
     condition?: string,
-    sellerType?: string,
+    sellerType?: string
   ) {
     const query: any = {
       isActive: true,
@@ -1052,10 +998,7 @@ export class ProductService {
 
     const skip = (page - 1) * limit;
 
-    const products = await ProductModel.find(query)
-      .sort(sortField)
-      .skip(skip)
-      .limit(limit);
+    const products = await ProductModel.find(query).sort(sortField).skip(skip).limit(limit);
 
     const total = await ProductModel.countDocuments(query);
 
@@ -1122,7 +1065,7 @@ export class ProductService {
       isActive?: boolean;
       sortBy?: "name" | "basePrice" | "totalStock" | "createdAt";
       sortOrder?: "asc" | "desc";
-    },
+    }
   ) {
     const query: any = {};
 
@@ -1161,10 +1104,7 @@ export class ProductService {
   /**
    * Get related products based on category and tags
    */
-  async getRelatedProducts(
-    productId: string,
-    limit: number = 4,
-  ): Promise<ProductDocument[]> {
+  async getRelatedProducts(productId: string, limit: number = 4): Promise<ProductDocument[]> {
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return [];
     }
@@ -1208,10 +1148,7 @@ export class ProductService {
   /**
    * Update product (admin)
    */
-  async updateProduct(
-    productId: string,
-    updateData: any,
-  ): Promise<ProductDocument | null> {
+  async updateProduct(productId: string, updateData: any): Promise<ProductDocument | null> {
     const product = await ProductModel.findById(productId);
     if (!product) return null;
 
@@ -1248,11 +1185,7 @@ export class ProductService {
    * Soft delete product
    */
   async deleteProduct(productId: string): Promise<ProductDocument | null> {
-    return ProductModel.findByIdAndUpdate(
-      productId,
-      { isActive: false },
-      { new: true },
-    );
+    return ProductModel.findByIdAndUpdate(productId, { isActive: false }, { new: true });
   }
 }
 
@@ -1276,7 +1209,7 @@ const asObj = (v: unknown): Record<string, unknown> =>
  * Returns true if the order was updated, false/null if not applicable.
  */
 export async function reconcileEcommerceOrderFromWebhookPayload(
-  rawPayload: unknown,
+  rawPayload: unknown
 ): Promise<boolean | null> {
   const payload = asObj(rawPayload);
   const inner = asObj(payload.payload);
@@ -1290,7 +1223,7 @@ export async function reconcileEcommerceOrderFromWebhookPayload(
     data.originalMerchantOrderId,
     data.merchantOrderId,
     asObj(inner.paymentDetails).merchantOrderId,
-    asObj(data.paymentDetails).merchantOrderId,
+    asObj(data.paymentDetails).merchantOrderId
   );
 
   if (!merchantOrderId || !merchantOrderId.startsWith("O_")) {
@@ -1322,7 +1255,7 @@ export async function reconcileEcommerceOrderFromWebhookPayload(
   await orderService.confirmPayment(
     paymentTx.orderId.toString(),
     paymentTx.gatewayPaymentId || merchantOrderId,
-    merchantOrderId,
+    merchantOrderId
   );
 
   log.info("[ecommerce-reconcile] order confirmed from webhook", {

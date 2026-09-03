@@ -7,10 +7,7 @@ import { CommunityPageHeader } from "@/modules/community/components/CommunityPag
 import { FeaturedCommunitiesStrip } from "@/modules/community/components/FeaturedCommunitiesStrip";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { toast } from "@/lib/toast";
-import {
-  shellVariants,
-  panelVariants,
-} from "@/modules/community/constants/communityPage";
+import { shellVariants, panelVariants } from "@/modules/community/constants/communityPage";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
 
 type Props = { page: CommunityPageViewModel };
@@ -89,20 +86,12 @@ export default function CommunityOverviewPanel({ page }: Props) {
                   kind: "GROUP",
                   targetId: group.id,
                 });
-                setFollowedGroupIds(
-                  await communityFollowStore.getIdsByKind("GROUP"),
-                );
+                setFollowedGroupIds(await communityFollowStore.getIdsByKind("GROUP"));
                 toast.success(
-                  result.following
-                    ? `Following ${group.name}`
-                    : `Unfollowed ${group.name}`,
+                  result.following ? `Following ${group.name}` : `Unfollowed ${group.name}`
                 );
               } catch (error) {
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to update follow",
-                );
+                toast.error(error instanceof Error ? error.message : "Failed to update follow");
               }
             })();
           }}
@@ -121,45 +110,37 @@ export default function CommunityOverviewPanel({ page }: Props) {
         >
           <motion.div
             variants={panelVariants}
-            className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+            className="border-border/80 rounded-2xl border bg-white p-4 shadow-xs"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Conversations
             </p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">
-              {safeConversations.length}
-            </p>
+            <p className="mt-2 text-2xl font-bold text-slate-900">{safeConversations.length}</p>
             <p className="mt-1 text-sm text-slate-500">Active threads</p>
           </motion.div>
           <motion.div
             variants={panelVariants}
-            className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+            className="border-border/80 rounded-2xl border bg-white p-4 shadow-xs"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Unread
-            </p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">
-              {totalUnread}
-            </p>
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Unread</p>
+            <p className="mt-2 text-2xl font-bold text-slate-900">{totalUnread}</p>
             <p className="mt-1 text-sm text-slate-500">Messages waiting</p>
           </motion.div>
           <motion.div
             variants={panelVariants}
-            className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+            className="border-border/80 rounded-2xl border bg-white p-4 shadow-xs"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Groups joined
             </p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">
-              {groupsJoinedCount}
-            </p>
+            <p className="mt-2 text-2xl font-bold text-slate-900">{groupsJoinedCount}</p>
             <p className="mt-1 text-sm text-slate-500">Community circles</p>
           </motion.div>
           <motion.div
             variants={panelVariants}
-            className="rounded-2xl border border-border/80 bg-white p-4 shadow-xs"
+            className="border-border/80 rounded-2xl border bg-white p-4 shadow-xs"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Connection
             </p>
             <p className="mt-2 text-lg font-semibold text-slate-900">

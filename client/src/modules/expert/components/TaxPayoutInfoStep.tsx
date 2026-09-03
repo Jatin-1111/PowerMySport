@@ -66,7 +66,7 @@ export function validateTaxPayoutInfo(v: TaxPayoutInfoValue): string | null {
 /** Projects only the fields relevant to the active payout type — never sends
  *  stale data left over from the other tab. */
 export function buildPayoutMethodPayload(
-  v: TaxPayoutInfoValue,
+  v: TaxPayoutInfoValue
 ): Omit<IPayoutMethod, "addedAt" | "updatedAt"> {
   return v.payoutType === "BANK_TRANSFER"
     ? {
@@ -102,20 +102,12 @@ function SectionHeading({
 }) {
   return (
     <div className="mb-5 flex items-center gap-3">
-      <span
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tint}`}
-      >
+      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tint}`}>
         <Icon className="h-4.5 w-4.5" />
       </span>
       <div>
-        <h2 className="text-base font-bold text-slate-900 dark:text-white">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {subtitle}
-          </p>
-        )}
+        <h2 className="text-base font-bold text-slate-900 dark:text-white">{title}</h2>
+        {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
     </div>
   );
@@ -154,13 +146,13 @@ export function TaxPayoutInfoStep({
               placeholder="e.g. ABCDE1234F"
               value={value.panNumber}
               maxLength={10}
-              onChange={(e) =>
-                onChange({ panNumber: e.target.value.toUpperCase() })
-              }
+              onChange={(e) => onChange({ panNumber: e.target.value.toUpperCase() })}
             />
           </div>
           <div>
-            <label htmlFor="tax-gst" className={label}>GST Number (optional)</label>
+            <label htmlFor="tax-gst" className={label}>
+              GST Number (optional)
+            </label>
             <input
               id="tax-gst"
               autoCapitalize="characters"
@@ -169,13 +161,10 @@ export function TaxPayoutInfoStep({
               placeholder="e.g. 22AAAAA0000A1Z5"
               value={value.gstNumber}
               maxLength={15}
-              onChange={(e) =>
-                onChange({ gstNumber: e.target.value.toUpperCase() })
-              }
+              onChange={(e) => onChange({ gstNumber: e.target.value.toUpperCase() })}
             />
             <p className="mt-1 text-xs text-slate-500">
-              Only if you&apos;re GST-registered — most individual experts
-              can leave this blank.
+              Only if you&apos;re GST-registered — most individual experts can leave this blank.
             </p>
           </div>
         </div>
@@ -213,10 +202,10 @@ export function TaxPayoutInfoStep({
                   payoutTypeRefs.current[next]?.focus();
                 }
               }}
-              className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
+              className={`focus-visible:ring-power-orange flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
                 value.payoutType === type
                   ? "border-power-orange bg-power-orange/10 text-power-orange"
-                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-power-orange/50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  : "hover:border-power-orange/50 border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               }`}
             >
               {type === "BANK_TRANSFER" ? (
@@ -268,9 +257,7 @@ export function TaxPayoutInfoStep({
                   autoComplete="off"
                   className={field}
                   value={value.confirmAccountNumber}
-                  onChange={(e) =>
-                    onChange({ confirmAccountNumber: e.target.value })
-                  }
+                  onChange={(e) => onChange({ confirmAccountNumber: e.target.value })}
                 />
               </div>
             </div>
@@ -286,9 +273,7 @@ export function TaxPayoutInfoStep({
                   className={field}
                   placeholder="e.g. SBIN0001234"
                   value={value.ifscCode}
-                  onChange={(e) =>
-                    onChange({ ifscCode: e.target.value.toUpperCase() })
-                  }
+                  onChange={(e) => onChange({ ifscCode: e.target.value.toUpperCase() })}
                 />
               </div>
               <div>

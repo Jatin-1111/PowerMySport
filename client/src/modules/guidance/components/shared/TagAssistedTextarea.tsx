@@ -48,7 +48,7 @@ export function TagAssistedTextarea({
               onClick={() => toggleChip(chip)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                 selected
-                  ? "border-power-orange bg-orange-50 text-power-orange"
+                  ? "border-power-orange text-power-orange bg-orange-50"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
               }`}
             >
@@ -61,9 +61,12 @@ export function TagAssistedTextarea({
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder ?? "Tap a common issue above, or describe it in your own words — one point per line."}
+        placeholder={
+          placeholder ??
+          "Tap a common issue above, or describe it in your own words — one point per line."
+        }
         rows={5}
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 resize-none leading-relaxed"
+        className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
       />
     </div>
   );

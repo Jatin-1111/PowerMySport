@@ -28,7 +28,7 @@ export const doTimesOverlap = (
   start1: string,
   end1: string,
   start2: string,
-  end2: string,
+  end2: string
 ): boolean => {
   const timeToMinutes = (time: string): number => {
     const [hours, minutes] = time.split(":").map(Number);

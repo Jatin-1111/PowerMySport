@@ -8,17 +8,13 @@ import {
 } from "../services/VenueInquiryService";
 
 // Submit venue inquiry (public endpoint)
-export const submitInquiry = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const submitInquiry = async (req: Request, res: Response): Promise<void> => {
   try {
     const inquiry = await createVenueInquiry(req.body);
 
     res.status(201).json({
       success: true,
-      message:
-        "Inquiry submitted successfully. Our team will contact you soon.",
+      message: "Inquiry submitted successfully. Our team will contact you soon.",
       data: {
         id: inquiry._id,
         venueName: inquiry.venueName,
@@ -28,17 +24,13 @@ export const submitInquiry = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to submit inquiry",
+      message: error instanceof Error ? error.message : "Failed to submit inquiry",
     });
   }
 };
 
 // Get all inquiries (admin only)
-export const getInquiries = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getInquiries = async (req: Request, res: Response): Promise<void> => {
   try {
     const { status } = req.query;
     const inquiries = await getAllInquiries(status as string);
@@ -57,17 +49,13 @@ export const getInquiries = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch inquiries",
+      message: error instanceof Error ? error.message : "Failed to fetch inquiries",
     });
   }
 };
 
 // Get single inquiry (admin only)
-export const getInquiry = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getInquiry = async (req: Request, res: Response): Promise<void> => {
   try {
     const inquiry = await getInquiryById(req.params.id as string);
 
@@ -92,17 +80,13 @@ export const getInquiry = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch inquiry",
+      message: error instanceof Error ? error.message : "Failed to fetch inquiry",
     });
   }
 };
 
 // Review inquiry - approve or reject (admin only)
-export const reviewInquiryRequest = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const reviewInquiryRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -137,17 +121,13 @@ export const reviewInquiryRequest = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to review inquiry",
+      message: error instanceof Error ? error.message : "Failed to review inquiry",
     });
   }
 };
 
 // Delete inquiry (admin only)
-export const removeInquiry = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const removeInquiry = async (req: Request, res: Response): Promise<void> => {
   try {
     await deleteInquiry(req.params.id as string);
 
@@ -158,8 +138,7 @@ export const removeInquiry = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to delete inquiry",
+      message: error instanceof Error ? error.message : "Failed to delete inquiry",
     });
   }
 };

@@ -17,13 +17,10 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
   if (items.length === 0) return null;
 
   return (
-    <nav
-      aria-label="Breadcrumb"
-      className={cn("flex items-center space-x-1 text-sm", className)}
-    >
+    <nav aria-label="Breadcrumb" className={cn("flex items-center space-x-1 text-sm", className)}>
       <Link
         href="/"
-        className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 rounded"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         aria-label="Home"
       >
         <Home className="h-4 w-4" />
@@ -34,10 +31,10 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
 
         return (
           <React.Fragment key={index}>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="text-muted-foreground h-4 w-4" />
             {isLast || !item.href ? (
               <span
-                className="font-medium text-foreground"
+                className="text-foreground font-medium"
                 aria-current={isLast ? "page" : undefined}
               >
                 {item.label}
@@ -45,7 +42,7 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
             ) : (
               <Link
                 href={item.href}
-                className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 rounded px-1"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded px-1 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 {item.label}
               </Link>
@@ -62,19 +59,12 @@ interface MobileBreadcrumbsProps extends BreadcrumbsProps {
   maxItems?: number;
 }
 
-export function MobileBreadcrumbs({
-  items,
-  maxItems = 2,
-  className,
-}: MobileBreadcrumbsProps) {
+export function MobileBreadcrumbs({ items, maxItems = 2, className }: MobileBreadcrumbsProps) {
   if (items.length === 0) return null;
 
   const displayItems =
     items.length > maxItems
-      ? [
-          { label: "...", href: undefined },
-          ...items.slice(items.length - maxItems),
-        ]
+      ? [{ label: "...", href: undefined }, ...items.slice(items.length - maxItems)]
       : items;
 
   return (
@@ -84,7 +74,7 @@ export function MobileBreadcrumbs({
     >
       <Link
         href="/"
-        className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 rounded"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         aria-label="Home"
       >
         <Home className="h-4 w-4" />
@@ -95,10 +85,10 @@ export function MobileBreadcrumbs({
 
         return (
           <React.Fragment key={index}>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="text-muted-foreground h-4 w-4" />
             {isLast || !item.href ? (
               <span
-                className="font-medium text-foreground truncate max-w-37.5"
+                className="text-foreground max-w-37.5 truncate font-medium"
                 aria-current={isLast ? "page" : undefined}
               >
                 {item.label}
@@ -106,7 +96,7 @@ export function MobileBreadcrumbs({
             ) : (
               <Link
                 href={item.href}
-                className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 rounded px-1 truncate max-w-25"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange max-w-25 truncate rounded px-1 transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 {item.label}
               </Link>

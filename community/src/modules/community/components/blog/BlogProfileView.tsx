@@ -12,14 +12,8 @@ import {
   PenLine,
 } from "lucide-react";
 import { BlogAuthorProfile, BlogListItem } from "@/modules/community/types";
-import {
-  formatBlogDate,
-  formatCount,
-} from "@/modules/community/utils/blogFormat";
-import {
-  SOCIAL_META,
-  buildSocialUrl,
-} from "@/modules/community/utils/socialLinks";
+import { formatBlogDate, formatCount } from "@/modules/community/utils/blogFormat";
+import { SOCIAL_META, buildSocialUrl } from "@/modules/community/utils/socialLinks";
 import AuthorAvatar from "./AuthorAvatar";
 import MyBlogListItem from "./MyBlogListItem";
 
@@ -86,9 +80,7 @@ export default function BlogProfileView({
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                   <Newspaper size={22} />
                 </span>
-                <p className="mt-3 font-semibold text-slate-700">
-                  No stories yet
-                </p>
+                <p className="mt-3 font-semibold text-slate-700">No stories yet</p>
                 <p className="mt-1 text-sm text-slate-500">
                   {isOwner
                     ? "Publish your first story to see it here."
@@ -97,7 +89,7 @@ export default function BlogProfileView({
                 {isOwner ? (
                   <Link
                     href="/blog/write"
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-power-orange px-4 py-2 text-sm font-semibold text-white"
+                    className="bg-power-orange mt-4 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white"
                   >
                     <PenLine size={15} />
                     Write your first story
@@ -121,7 +113,7 @@ export default function BlogProfileView({
           </section>
 
           {/* Section 2 — Account details */}
-          <aside className="order-1 lg:order-2 lg:sticky lg:top-24 lg:h-fit">
+          <aside className="order-1 lg:sticky lg:top-24 lg:order-2 lg:h-fit">
             <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm">
               <div className="h-20 bg-[linear-gradient(120deg,#0f172a,#1e293b)]" />
               <div className="-mt-10 flex flex-col items-center px-6 pb-6 text-center">
@@ -131,13 +123,11 @@ export default function BlogProfileView({
                   size={80}
                   className="ring-4 ring-white"
                 />
-                <h1 className="mt-3 font-title text-xl font-bold tracking-tight text-slate-900">
+                <h1 className="font-title mt-3 text-xl font-bold tracking-tight text-slate-900">
                   {profile.name}
                 </h1>
                 {profile.username ? (
-                  <p className="text-sm font-medium text-power-orange">
-                    @{profile.username}
-                  </p>
+                  <p className="text-power-orange text-sm font-medium">@{profile.username}</p>
                 ) : null}
 
                 <div className="mt-4 flex w-full items-center justify-center gap-3">
@@ -145,28 +135,23 @@ export default function BlogProfileView({
                     <p className="text-lg font-bold text-slate-900">
                       {formatCount(profile.blogCount)}
                     </p>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                       {profile.blogCount === 1 ? "Blog" : "Blogs"}
                     </p>
                   </div>
                   <div className="flex-1 rounded-2xl bg-slate-50 py-2.5">
                     <p className="inline-flex items-center gap-1 text-lg font-bold text-slate-900">
-                      <Heart
-                        size={15}
-                        className="fill-rose-500 text-rose-500"
-                      />
+                      <Heart size={15} className="fill-rose-500 text-rose-500" />
                       {formatCount(profile.totalLikes)}
                     </p>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                       Likes
                     </p>
                   </div>
                 </div>
 
                 {profile.bio ? (
-                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                    {profile.bio}
-                  </p>
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">{profile.bio}</p>
                 ) : null}
 
                 {activeSocials.length > 0 ? (

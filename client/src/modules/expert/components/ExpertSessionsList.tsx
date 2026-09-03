@@ -2,17 +2,14 @@
 
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
 import {
-    expertApi,
-    type ExpertSession,
-    type ExpertSessionPlayer,
+  expertApi,
+  type ExpertSession,
+  type ExpertSessionPlayer,
 } from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { Modal } from "@/modules/shared/ui/Modal";
-import {
-    StaggerContainer,
-    StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { Check, FileText, Star, Target, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -31,10 +28,27 @@ const GENDER_LABEL: Record<string, string> = {
 /** A few of the most useful wizard signals for a quick pre-session read — not the full profile. */
 const playerTraitChips = (player: ExpertSessionPlayer): string[] =>
   [
-    player.ambition && { fun: "Health & fun", competitive: "Competitive", national: "National", professional: "Pro career" }[player.ambition],
-    player.competitiveResponse && { "fired-up": "Fires up on a loss", calm: "Calm on a loss", discouraged: "Needs time after a loss" }[player.competitiveResponse],
-    player.pressureResponse && { thrives: "Thrives under pressure", manages: "Manages pressure", avoids: "Avoids the spotlight" }[player.pressureResponse],
-    player.energyType && { explosive: "Explosive energy", endurance: "Endurance-built" }[player.energyType],
+    player.ambition &&
+      {
+        fun: "Health & fun",
+        competitive: "Competitive",
+        national: "National",
+        professional: "Pro career",
+      }[player.ambition],
+    player.competitiveResponse &&
+      {
+        "fired-up": "Fires up on a loss",
+        calm: "Calm on a loss",
+        discouraged: "Needs time after a loss",
+      }[player.competitiveResponse],
+    player.pressureResponse &&
+      {
+        thrives: "Thrives under pressure",
+        manages: "Manages pressure",
+        avoids: "Avoids the spotlight",
+      }[player.pressureResponse],
+    player.energyType &&
+      { explosive: "Explosive energy", endurance: "Endurance-built" }[player.energyType],
   ].filter((v): v is string => Boolean(v));
 
 export const STATUS_STYLES: Record<string, string> = {
@@ -65,7 +79,7 @@ export function ExpertSessionsList({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16">
-        <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
+        <div className="border-t-power-orange h-9 w-9 animate-spin rounded-full border-2 border-slate-100" />
         <p className="text-sm text-slate-500">Loading...</p>
       </div>
     );
@@ -76,7 +90,7 @@ export function ExpertSessionsList({
         <p className="font-semibold text-red-600">{error}</p>
         <button
           onClick={onRetry}
-          className="mt-4 rounded-lg bg-power-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          className="bg-power-orange mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
         >
           Retry
         </button>
@@ -123,14 +137,12 @@ export function SessionRow({
   const needsResponse = canManage && session.expertAcceptance !== "ACCEPTED";
   // Mirrors completeExpertSession's server-side gate: can't complete before the session starts.
   const sessionStarted = Boolean(
-    session.scheduledAt && new Date(session.scheduledAt) <= new Date(),
+    session.scheduledAt && new Date(session.scheduledAt) <= new Date()
   );
   // Mirrors cancelExpertSession's server-side gate: can't cancel once it's over.
   const sessionEnded = Boolean(
     session.scheduledAt &&
-      new Date(session.scheduledAt).getTime() +
-        (session.durationMinutes || 60) * 60_000 <
-        Date.now(),
+    new Date(session.scheduledAt).getTime() + (session.durationMinutes || 60) * 60_000 < Date.now()
   );
 
   const run = async (
@@ -138,7 +150,7 @@ export function SessionRow({
       success: boolean;
       message: string;
       data?: ExpertSession;
-    }>,
+    }>
   ) => {
     setBusy(true);
     try {
@@ -151,8 +163,8 @@ export function SessionRow({
       }
     } catch (err: unknown) {
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Action failed.",
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          "Action failed."
       );
     } finally {
       setBusy(false);
@@ -183,7 +195,7 @@ export function SessionRow({
     await run(() =>
       momMode === "complete"
         ? expertApi.completeSession(id, trimmed)
-        : expertApi.updateSessionMom(id, trimmed),
+        : expertApi.updateSessionMom(id, trimmed)
     );
     setMomOpen(false);
   };
@@ -197,7 +209,7 @@ export function SessionRow({
       expertApi.respondSession(id, {
         action: "RESCHEDULE",
         scheduledAt: newSlot,
-      }),
+      })
     );
     setRescheduleOpen(false);
     setNewSlot(null);
@@ -207,24 +219,17 @@ export function SessionRow({
     <div className="rounded-2xl border-0 bg-white p-5 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-semibold text-slate-900">
-            {session.clientName || "Client"}
-          </p>
+          <p className="font-semibold text-slate-900">{session.clientName || "Client"}</p>
           <p className="text-sm text-slate-500">
             {session.scheduledAt
-              ? formatSessionTimeWithZone(
-                  session.scheduledAt,
-                  session.expertTimezone,
-                )
+              ? formatSessionTimeWithZone(session.scheduledAt, session.expertTimezone)
               : "Not scheduled yet"}
-            {session.mode
-              ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}`
-              : ""}
+            {session.mode ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}` : ""}
           </p>
           {session.player && (
             <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
               <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-800">
-                <Users className="h-3.5 w-3.5 text-power-orange" />
+                <Users className="text-power-orange h-3.5 w-3.5" />
                 {session.player.name}
                 {session.player.age ? ` · ${session.player.age} yrs` : ""}
                 {session.player.gender
@@ -233,7 +238,7 @@ export function SessionRow({
               </p>
               {session.player.topSportMatch && (
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-600">
-                  <Target className="h-3 w-3 text-power-orange" />
+                  <Target className="text-power-orange h-3 w-3" />
                   Best fit: {session.player.topSportMatch.sport} (
                   {session.player.topSportMatch.fitLabel})
                 </p>
@@ -243,7 +248,7 @@ export function SessionRow({
                   {playerTraitChips(session.player).map((chip) => (
                     <span
                       key={chip}
-                      className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200"
+                      className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200 ring-inset"
                     >
                       {chip}
                     </span>
@@ -252,16 +257,14 @@ export function SessionRow({
               )}
               <Link
                 href={`/expert/sessions/${id}`}
-                className="mt-2 inline-block text-xs font-semibold text-power-orange hover:underline"
+                className="text-power-orange mt-2 inline-block text-xs font-semibold hover:underline"
               >
                 View full child profile →
               </Link>
             </div>
           )}
           {session.clientNote && (
-            <p className="mt-1 text-sm italic text-slate-500">
-              “{session.clientNote}”
-            </p>
+            <p className="mt-1 text-sm text-slate-500 italic">“{session.clientNote}”</p>
           )}
           {session.reviewed && session.rating && (
             <p className="mt-1 flex items-center gap-1 text-sm text-amber-600">
@@ -273,31 +276,27 @@ export function SessionRow({
             <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                  <FileText className="h-3.5 w-3.5 text-power-orange" />
+                  <FileText className="text-power-orange h-3.5 w-3.5" />
                   Session notes (MOM)
                 </p>
                 <button
                   onClick={() => openMomDialog("edit")}
-                  className="text-xs font-semibold text-power-orange hover:underline"
+                  className="text-power-orange text-xs font-semibold hover:underline"
                 >
                   Edit
                 </button>
               </div>
               {session.momNotes && (
-                <p className="mt-1 text-sm text-slate-600">
-                  {session.momNotes}
-                </p>
+                <p className="mt-1 text-sm text-slate-600">{session.momNotes}</p>
               )}
             </div>
           )}
         </div>
         <div className="flex flex-col items-end gap-1.5">
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-900">
-              {formatInr(session.amount)}
-            </span>
+            <span className="font-semibold text-slate-900">{formatInr(session.amount)}</span>
             <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${STATUS_STYLES[session.status] || "bg-slate-100 text-slate-600"}`}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide uppercase ${STATUS_STYLES[session.status] || "bg-slate-100 text-slate-600"}`}
             >
               {session.status.replace(/_/g, " ")}
             </span>
@@ -323,9 +322,7 @@ export function SessionRow({
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
           {rescheduleOpen ? (
             <div>
-              <p className="mb-2 text-sm font-semibold text-slate-900">
-                Propose a new time
-              </p>
+              <p className="mb-2 text-sm font-semibold text-slate-900">Propose a new time</p>
               <SlotPicker
                 expertId={session.expertId}
                 value={newSlot}
@@ -336,7 +333,7 @@ export function SessionRow({
                 <button
                   onClick={saveReschedule}
                   disabled={busy || !newSlot}
-                  className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+                  className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
                 >
                   Confirm new time
                 </button>
@@ -358,11 +355,7 @@ export function SessionRow({
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <button
-                  onClick={() =>
-                    run(() =>
-                      expertApi.respondSession(id, { action: "ACCEPT" }),
-                    )
-                  }
+                  onClick={() => run(() => expertApi.respondSession(id, { action: "ACCEPT" }))}
                   disabled={busy}
                   className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
                 >
@@ -402,7 +395,7 @@ export function SessionRow({
                 <button
                   onClick={saveLink}
                   disabled={busy}
-                  className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+                  className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
                 >
                   Save link
                 </button>
@@ -426,9 +419,7 @@ export function SessionRow({
                 onClick={() => openMomDialog("complete")}
                 disabled={busy || !sessionStarted}
                 title={
-                  sessionStarted
-                    ? undefined
-                    : "You can complete this session once it has started."
+                  sessionStarted ? undefined : "You can complete this session once it has started."
                 }
                 className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
               >
@@ -463,9 +454,7 @@ export function SessionRow({
       <ConfirmDialog
         isOpen={showDecline}
         onClose={() => setShowDecline(false)}
-        onConfirm={() =>
-          run(() => expertApi.respondSession(id, { action: "DECLINE" }))
-        }
+        onConfirm={() => run(() => expertApi.respondSession(id, { action: "DECLINE" }))}
         title="Decline this session?"
         message="The client will be notified and, if they've paid, a manual refund will be required."
         confirmLabel="Decline"
@@ -477,11 +466,7 @@ export function SessionRow({
       <Modal
         isOpen={momOpen}
         onClose={() => setMomOpen(false)}
-        title={
-          momMode === "complete"
-            ? "Add session notes to complete"
-            : "Edit session notes"
-        }
+        title={momMode === "complete" ? "Add session notes to complete" : "Edit session notes"}
         size="md"
       >
         <p className="text-sm text-slate-600">
@@ -494,7 +479,7 @@ export function SessionRow({
           value={momText}
           onChange={(e) => setMomText(e.target.value)}
           placeholder="What did you cover? Any homework or next steps for the player?"
-          className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+          className="focus:border-power-orange focus:ring-power-orange/20 mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
         />
         <p className="mt-1 text-xs text-slate-400">
           {momText.trim().length}/{MOM_MIN_LENGTH} characters minimum

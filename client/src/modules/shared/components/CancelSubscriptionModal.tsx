@@ -27,20 +27,17 @@ export function CancelSubscriptionModal({
     <Modal isOpen={isOpen} onClose={onClose} title="Cancel Subscription">
       <div className="space-y-6 p-2 sm:p-4">
         {/* Sleek Warning Banner matching your theme */}
-        <div className="flex items-start gap-3 rounded-xl bg-rose-50 p-4 text-rose-800 border border-rose-200">
+        <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
           <p className="text-sm">
-            <strong>Are you sure?</strong> You will lose access to all coach
-            content and sessions at the end of your current billing cycle.
+            <strong>Are you sure?</strong> You will lose access to all coach content and sessions at
+            the end of your current billing cycle.
           </p>
         </div>
 
         {/* Input Section with premium styling */}
         <div className="space-y-3">
-          <label
-            htmlFor="reason"
-            className="text-sm font-semibold text-slate-900"
-          >
+          <label htmlFor="reason" className="text-sm font-semibold text-slate-900">
             Help us improve (Optional)
           </label>
           <Textarea
@@ -48,17 +45,17 @@ export function CancelSubscriptionModal({
             placeholder="Tell us why you're leaving..."
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="w-full resize-none rounded-xl border-slate-200 bg-slate-50 focus:bg-white transition-colors"
+            className="w-full resize-none rounded-xl border-slate-200 bg-slate-50 transition-colors focus:bg-white"
             rows={3}
             disabled={isLoading}
           />
         </div>
 
         {/* Action Buttons - Mobile responsive stack, Desktop right-align */}
-        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-slate-100">
+        <div className="flex flex-col-reverse justify-end gap-3 border-t border-slate-100 pt-4 sm:flex-row">
           <Button
             variant="outline"
-            className="w-full sm:w-auto text-slate-700"
+            className="w-full text-slate-700 sm:w-auto"
             onClick={onClose}
             disabled={isLoading}
           >
@@ -66,7 +63,7 @@ export function CancelSubscriptionModal({
           </Button>
           <Button
             variant="danger"
-            className="w-full sm:w-auto border-2 border-slate-100"
+            className="w-full border-2 border-slate-100 sm:w-auto"
             onClick={handleConfirm}
             disabled={isLoading}
           >

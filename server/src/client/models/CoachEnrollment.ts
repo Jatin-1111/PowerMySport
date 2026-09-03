@@ -117,7 +117,7 @@ const coachEnrollmentSchema = new Schema<CoachEnrollmentDocument>(
             },
           },
         },
-        { _id: false },
+        { _id: false }
       ),
       default: null,
     },
@@ -140,12 +140,10 @@ const coachEnrollmentSchema = new Schema<CoachEnrollmentDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
-coachEnrollmentSchema.virtual("id").get(function (
-  this: CoachEnrollmentDocument,
-) {
+coachEnrollmentSchema.virtual("id").get(function (this: CoachEnrollmentDocument) {
   return this._id.toString();
 });
 
@@ -164,7 +162,7 @@ coachEnrollmentSchema.index(
     partialFilterExpression: {
       status: { $in: ["PENDING", "ACTIVE", "PAUSED"] },
     },
-  },
+  }
 );
 
 coachEnrollmentSchema.index({ offeringId: 1, status: 1 });
@@ -176,5 +174,5 @@ coachEnrollmentSchema.index({ status: 1, holdExpiresAt: 1 });
 
 export const CoachEnrollment = mongoose.model<CoachEnrollmentDocument>(
   "CoachEnrollment",
-  coachEnrollmentSchema,
+  coachEnrollmentSchema
 );

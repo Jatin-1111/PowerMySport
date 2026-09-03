@@ -24,7 +24,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
   const prefersReducedMotion = useReducedMotion();
   const canUseNativeShare = useMemo(
     () => typeof window !== "undefined" && "share" in navigator,
-    [],
+    []
   );
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,13 +46,11 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
         setTimeout(() => setCopied(false), 2000);
         return true;
       } catch {
-        toast.error(
-          "Copy failed. Use the Copy Link button.",
-        );
+        toast.error("Copy failed. Use the Copy Link button.");
         return false;
       }
     },
-    [buildInviteLink],
+    [buildInviteLink]
   );
 
   const loadInviteCode = useCallback(async () => {
@@ -67,8 +65,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
       setInviteCode(data.inviteCode);
       void copyInviteLink(data.inviteCode);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to load invite code";
+      const message = error instanceof Error ? error.message : "Failed to load invite code";
       setError(message);
       toast.error(message);
     } finally {
@@ -105,14 +102,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
     } else {
       await copyInviteLink(inviteCode);
     }
-  }, [
-    buildInviteLink,
-    canUseNativeShare,
-    copyInviteLink,
-    groupName,
-    inviteCode,
-    loadInviteCode,
-  ]);
+  }, [buildInviteLink, canUseNativeShare, copyInviteLink, groupName, inviteCode, loadInviteCode]);
 
   return (
     <motion.div
@@ -123,9 +113,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
     >
       <div className="flex items-center gap-2">
         <Share2 size={16} className="text-slate-600" />
-        <h3 className="text-base font-semibold tracking-tight">
-          Invite Members
-        </h3>
+        <h3 className="text-base font-semibold tracking-tight">Invite Members</h3>
       </div>
       <p className="mt-1 text-sm leading-6 text-slate-500">
         Share this link to invite others to join the group
@@ -141,7 +129,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
         <button
           onClick={() => void loadInviteCode()}
           disabled={isLoading}
-          className="mt-4 w-full rounded-lg border border-border bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+          className="border-border mt-4 w-full rounded-lg border bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
         >
           {isLoading ? "Loading..." : "Generate Invite Link"}
         </button>
@@ -150,7 +138,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
       {inviteCode && (
         <div className="mt-4 space-y-3">
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-            <code className="flex-1 break-all text-xs text-slate-600 sm:text-sm">
+            <code className="flex-1 text-xs break-all text-slate-600 sm:text-sm">
               {buildInviteLink(inviteCode)}
             </code>
             <button
@@ -158,11 +146,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
               className="shrink-0 rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50"
               title={copied ? "Copied!" : "Copy invite link"}
             >
-              {copied ? (
-                <Check size={16} className="text-turf-green" />
-              ) : (
-                <Copy size={16} />
-              )}
+              {copied ? <Check size={16} className="text-turf-green" /> : <Copy size={16} />}
             </button>
           </div>
 
@@ -177,7 +161,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
             {canUseNativeShare && (
               <button
                 onClick={() => void openShareDialog()}
-                className="flex-1 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+                className="bg-power-orange flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
               >
                 <Share2 size={14} className="mr-2 inline" />
                 Share

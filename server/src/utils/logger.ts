@@ -31,8 +31,7 @@ const resolveLevel = (): number => {
 
 const activeLevel = resolveLevel();
 
-export const isLevelEnabled = (level: LogLevel): boolean =>
-  LEVELS[level] >= activeLevel;
+export const isLevelEnabled = (level: LogLevel): boolean => LEVELS[level] >= activeLevel;
 
 /* ------------------------------------------------------------------ colour */
 
@@ -70,7 +69,7 @@ export const visibleLength = (text: string): number =>
 export const padVisible = (
   text: string,
   width: number,
-  align: "left" | "right" = "left",
+  align: "left" | "right" = "left"
 ): string => {
   const len = visibleLength(text);
   if (len >= width) return text;
@@ -86,9 +85,7 @@ const namespaceRules = (process.env.LOG_NAMESPACES || "")
   .filter(Boolean);
 
 const includes = namespaceRules.filter((rule) => !rule.startsWith("-"));
-const excludes = namespaceRules
-  .filter((rule) => rule.startsWith("-"))
-  .map((rule) => rule.slice(1));
+const excludes = namespaceRules.filter((rule) => rule.startsWith("-")).map((rule) => rule.slice(1));
 
 const matches = (rule: string, namespace: string): boolean =>
   rule === "*" ||
@@ -186,8 +183,7 @@ export const logRaw = (line: string, dedupeKey?: string): void => {
 /* ------------------------------------------------------------------ format */
 
 const jsonFormat =
-  process.env.LOG_FORMAT === "json" ||
-  (!isDev && process.env.LOG_FORMAT !== "text");
+  process.env.LOG_FORMAT === "json" || (!isDev && process.env.LOG_FORMAT !== "text");
 
 /**
  * True when output is one JSON object per line. That is the shape CloudWatch
@@ -273,9 +269,7 @@ const renderExtra = (value: unknown): string => {
  * sites a mechanical rename instead of 400 hand-rewrites, each an opportunity
  * to change behaviour by accident.
  */
-const normalizeArgs = (
-  rest: unknown[],
-): { fields: Record<string, unknown>; suffix: string } => {
+const normalizeArgs = (rest: unknown[]): { fields: Record<string, unknown>; suffix: string } => {
   if (rest.length === 0) return { fields: {}, suffix: "" };
   if (rest.length === 1 && isFieldBag(rest[0])) {
     return { fields: rest[0], suffix: "" };
@@ -302,7 +296,7 @@ const emit = (
   level: LogLevel,
   namespace: string | undefined,
   message: string,
-  rest: unknown[],
+  rest: unknown[]
 ): void => {
   if (!isLevelEnabled(level)) return;
   if (!namespaceEnabled(namespace)) return;
@@ -323,7 +317,7 @@ const emit = (
         ...(namespace ? { ns: namespace } : {}),
         msg: message,
         ...merged,
-      }),
+      })
     );
     return;
   }

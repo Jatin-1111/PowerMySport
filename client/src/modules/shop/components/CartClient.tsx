@@ -1,10 +1,10 @@
 "use client";
 
 import {
-    clearShopCart,
-    getShopCartTotals,
-    updateShopCartQuantity,
-    useShopCart,
+  clearShopCart,
+  getShopCartTotals,
+  updateShopCartQuantity,
+  useShopCart,
 } from "@/lib/shop/cart";
 import { formatInr } from "@/lib/shop/format";
 import { AnimatePresence, motion } from "framer-motion";
@@ -19,9 +19,7 @@ export function CartClient() {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 shadow-sm">
-          <h1 className="text-3xl font-black text-slate-950">
-            Your cart is empty
-          </h1>
+          <h1 className="text-3xl font-black text-slate-950">Your cart is empty</h1>
           <p className="mt-3 text-slate-600">
             Add training gear to see live totals and checkout details here.
           </p>
@@ -41,7 +39,7 @@ export function CartClient() {
       <section>
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
+            <p className="text-sm font-bold tracking-[0.16em] text-orange-600 uppercase">
               Shopping Cart
             </p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
@@ -71,50 +69,31 @@ export function CartClient() {
               >
                 <div className="aspect-square overflow-hidden rounded-lg bg-linear-to-br from-blue-50 to-orange-50">
                   {item.image ? (
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                   ) : null}
                 </div>
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                  <p className="text-xs font-bold tracking-[0.14em] text-slate-500 uppercase">
                     {item.category || "Gear"}
                   </p>
-                  <h2 className="mt-1 text-lg font-black text-slate-950">
-                    {item.name}
-                  </h2>
+                  <h2 className="mt-1 text-lg font-black text-slate-950">{item.name}</h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    {item.variantLabel || "Standard"} ·{" "}
-                    {formatInr(item.unitPrice)} each
+                    {item.variantLabel || "Standard"} · {formatInr(item.unitPrice)} each
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">
                   <div className="flex h-10 items-center rounded-lg border border-slate-200 bg-slate-50">
                     <button
                       type="button"
-                      onClick={() =>
-                        updateShopCartQuantity(
-                          item.variantId,
-                          item.quantity - 1,
-                        )
-                      }
+                      onClick={() => updateShopCartQuantity(item.variantId, item.quantity - 1)}
                       className="grid h-10 w-10 place-items-center text-slate-600 hover:text-slate-950"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
-                    <span className="w-9 text-center text-sm font-black">
-                      {item.quantity}
-                    </span>
+                    <span className="w-9 text-center text-sm font-black">{item.quantity}</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        updateShopCartQuantity(
-                          item.variantId,
-                          item.quantity + 1,
-                        )
-                      }
+                      onClick={() => updateShopCartQuantity(item.variantId, item.quantity + 1)}
                       className="grid h-10 w-10 place-items-center text-slate-600 hover:text-slate-950"
                     >
                       <Plus className="h-4 w-4" />
@@ -143,11 +122,7 @@ export function CartClient() {
           </div>
           <div className="flex items-center justify-between">
             <span>Shipping</span>
-            <span>
-              {totals.shippingAmount
-                ? formatInr(totals.shippingAmount)
-                : "Free"}
-            </span>
+            <span>{totals.shippingAmount ? formatInr(totals.shippingAmount) : "Free"}</span>
           </div>
           <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-lg font-black text-slate-950">
             <span>Total</span>
@@ -156,7 +131,7 @@ export function CartClient() {
         </div>
         <Link
           href="/shop/checkout"
-          className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-power-orange text-sm font-bold text-white transition hover:bg-orange-600"
+          className="bg-power-orange mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg text-sm font-bold text-white transition hover:bg-orange-600"
         >
           Continue to Checkout
         </Link>

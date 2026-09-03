@@ -1,8 +1,5 @@
 import { Router } from "express";
-import {
-  getRoadmapProfile,
-  updateRoadmapProfile,
-} from "../controllers/roadmapProfileController";
+import { getRoadmapProfile, updateRoadmapProfile } from "../controllers/roadmapProfileController";
 import { authMiddleware } from "../../middleware/auth";
 
 const router = Router();

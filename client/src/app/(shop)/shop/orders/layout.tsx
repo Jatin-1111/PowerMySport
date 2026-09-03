@@ -4,13 +4,9 @@ import React from "react";
 
 export const metadata: Metadata = noindexMetadata(
   "My Orders",
-  "Track your PowerMySport shop orders.",
+  "Track your PowerMySport shop orders."
 );
 
-export default function ShopOrdersLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ShopOrdersLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

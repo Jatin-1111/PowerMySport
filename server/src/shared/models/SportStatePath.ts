@@ -66,7 +66,7 @@ const sportStatePathSchema = new Schema<SportStatePathDocument>(
     regionalCalendar: { type: String, required: true },
     generatedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 sportStatePathSchema.index({ sportSlug: 1, stateSlug: 1 }, { unique: true });

@@ -1,9 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import {
-  Product as ProductModel,
-  Order as OrderModel,
-} from "../models/Ecommerce";
+import { Product as ProductModel, Order as OrderModel } from "../models/Ecommerce";
 import { User } from "../../client/models/User";
 import { ProductService } from "../services/EcommerceService";
 import { v4 as uuidv4 } from "uuid";
@@ -60,9 +57,7 @@ export class SellerController {
 
       const user = await User.findById(sellerId);
       if (!user) {
-        res
-          .status(404)
-          .json({ ok: false, error: { message: "User profile not found" } });
+        res.status(404).json({ ok: false, error: { message: "User profile not found" } });
         return;
       }
 
@@ -179,31 +174,25 @@ export class SellerController {
       const { productId } = req.params;
 
       if (!sellerId || !productId) {
-        res
-          .status(400)
-          .json({
-            ok: false,
-            error: { message: "Unauthorized or missing parameters" },
-          });
+        res.status(400).json({
+          ok: false,
+          error: { message: "Unauthorized or missing parameters" },
+        });
         return;
       }
 
       const product = await ProductModel.findById(productId);
       if (!product) {
-        res
-          .status(404)
-          .json({ ok: false, error: { message: "Product not found" } });
+        res.status(404).json({ ok: false, error: { message: "Product not found" } });
         return;
       }
 
       // Check ownership
       if (product.seller?.toString() !== sellerId) {
-        res
-          .status(403)
-          .json({
-            ok: false,
-            error: { message: "Access denied. You do not own this listing." },
-          });
+        res.status(403).json({
+          ok: false,
+          error: { message: "Access denied. You do not own this listing." },
+        });
         return;
       }
 
@@ -215,10 +204,7 @@ export class SellerController {
       delete updateFields.sellerType;
 
       // Handle stock and price updates on the default variant if variants aren't directly provided
-      if (
-        updateFields.basePrice !== undefined ||
-        updateFields.stock !== undefined
-      ) {
+      if (updateFields.basePrice !== undefined || updateFields.stock !== undefined) {
         if (product.variants && product.variants.length > 0) {
           const mainVariant = product.variants[0];
           if (mainVariant) {
@@ -236,7 +222,7 @@ export class SellerController {
 
       const updatedProduct = await this.productService.updateProduct(
         productId as string,
-        updateFields,
+        updateFields
       );
 
       res.json({
@@ -261,31 +247,25 @@ export class SellerController {
       const { productId } = req.params;
 
       if (!sellerId || !productId) {
-        res
-          .status(400)
-          .json({
-            ok: false,
-            error: { message: "Unauthorized or missing parameters" },
-          });
+        res.status(400).json({
+          ok: false,
+          error: { message: "Unauthorized or missing parameters" },
+        });
         return;
       }
 
       const product = await ProductModel.findById(productId);
       if (!product) {
-        res
-          .status(404)
-          .json({ ok: false, error: { message: "Product not found" } });
+        res.status(404).json({ ok: false, error: { message: "Product not found" } });
         return;
       }
 
       // Check ownership
       if (product.seller?.toString() !== sellerId) {
-        res
-          .status(403)
-          .json({
-            ok: false,
-            error: { message: "Access denied. You do not own this listing." },
-          });
+        res.status(403).json({
+          ok: false,
+          error: { message: "Access denied. You do not own this listing." },
+        });
         return;
       }
 
@@ -323,7 +303,7 @@ export class SellerController {
       const formatted = orders.map((order) => {
         const orderObj = order.toObject();
         orderObj.items = orderObj.items.filter(
-          (item: any) => item.sellerId?.toString() === sellerId,
+          (item: any) => item.sellerId?.toString() === sellerId
         );
         return orderObj;
       });
@@ -344,10 +324,7 @@ export class SellerController {
    * PATCH /api/v1/seller/orders/:orderId/items/:productVariantId/fulfillment
    * Update fulfillment status of a specific item in an order
    */
-  async updateSellerOrderItemFulfillment(
-    req: Request,
-    res: Response,
-  ): Promise<void> {
+  async updateSellerOrderItemFulfillment(req: Request, res: Response): Promise<void> {
     try {
       const sellerId = (req as any).user?.id;
       const { orderId, productVariantId } = req.params;
@@ -359,38 +336,31 @@ export class SellerController {
       }
 
       if (!Object.values(FulfillmentStatus).includes(fulfillmentStatus)) {
-        res
-          .status(400)
-          .json({
-            ok: false,
-            error: { message: "Invalid fulfillment status" },
-          });
+        res.status(400).json({
+          ok: false,
+          error: { message: "Invalid fulfillment status" },
+        });
         return;
       }
 
       const order = await OrderModel.findById(orderId);
       if (!order) {
-        res
-          .status(404)
-          .json({ ok: false, error: { message: "Order not found" } });
+        res.status(404).json({ ok: false, error: { message: "Order not found" } });
         return;
       }
 
       const item = order.items.find(
         (i) =>
-          i.productVariantId.toString() === productVariantId &&
-          i.sellerId?.toString() === sellerId,
+          i.productVariantId.toString() === productVariantId && i.sellerId?.toString() === sellerId
       );
 
       if (!item) {
-        res
-          .status(403)
-          .json({
-            ok: false,
-            error: {
-              message: "Item not found or access denied for this seller",
-            },
-          });
+        res.status(403).json({
+          ok: false,
+          error: {
+            message: "Item not found or access denied for this seller",
+          },
+        });
         return;
       }
 
@@ -409,7 +379,7 @@ export class SellerController {
         order.status = OrderStatus.DELIVERED;
       } else if (
         allStatuses.some((s) =>
-          [FulfillmentStatus.SHIPPED, FulfillmentStatus.DELIVERED].includes(s),
+          [FulfillmentStatus.SHIPPED, FulfillmentStatus.DELIVERED].includes(s)
         )
       ) {
         order.fulfillmentStatus = FulfillmentStatus.SHIPPED;

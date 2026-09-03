@@ -40,7 +40,7 @@ export const conciergeApi = {
   updateStatus: async (
     id: string,
     status: "pending" | "processing" | "completed" | "rejected",
-    adminNotes?: string,
+    adminNotes?: string
   ) => {
     const res = await axiosInstance.patch<{
       success: boolean;
@@ -54,7 +54,7 @@ export const conciergeApi = {
       `/admin/concierge-requests/${requestId}/document`,
       {
         params: { key: s3Key },
-      },
+      }
     );
     return res.data.url;
   },

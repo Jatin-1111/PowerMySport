@@ -4,14 +4,7 @@ import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi, AdminDataSourceSubmission } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  ArrowLeft,
-  ExternalLink,
-  FileSearch,
-  Plus,
-  RefreshCw,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, ExternalLink, FileSearch, Plus, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -83,11 +76,7 @@ function DiffValue({ value }: { value: unknown }) {
       <ul className="space-y-1">
         {value.map((item, i) => (
           <li key={i} className="rounded-lg bg-slate-50 px-2 py-1 text-sm text-slate-700">
-            {item && typeof item === "object" ? (
-              <DiffValue value={item} />
-            ) : (
-              String(item)
-            )}
+            {item && typeof item === "object" ? <DiffValue value={item} /> : String(item)}
           </li>
         ))}
       </ul>
@@ -95,7 +84,9 @@ function DiffValue({ value }: { value: unknown }) {
   }
 
   if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).filter(([, v]) => !isEmptyValue(v));
+    const entries = Object.entries(value as Record<string, unknown>).filter(
+      ([, v]) => !isEmptyValue(v)
+    );
     if (entries.length === 0) return <span className="text-slate-400">—</span>;
     return (
       <div className="space-y-1 text-sm text-slate-700">
@@ -113,24 +104,32 @@ function DiffValue({ value }: { value: unknown }) {
 }
 
 function FieldDiff({ live, proposed }: { live: unknown; proposed: unknown }) {
-  const liveObj = live && typeof live === "object" && !Array.isArray(live) ? (live as Record<string, unknown>) : null;
+  const liveObj =
+    live && typeof live === "object" && !Array.isArray(live)
+      ? (live as Record<string, unknown>)
+      : null;
   const proposedObj =
-    proposed && typeof proposed === "object" && !Array.isArray(proposed) ? (proposed as Record<string, unknown>) : null;
+    proposed && typeof proposed === "object" && !Array.isArray(proposed)
+      ? (proposed as Record<string, unknown>)
+      : null;
 
   if (!liveObj && !proposedObj) {
     return <p className="text-sm text-slate-500">Nothing to compare yet.</p>;
   }
 
   const keys = Array.from(
-    new Set([...(liveObj ? Object.keys(liveObj) : []), ...(proposedObj ? Object.keys(proposedObj) : [])]),
+    new Set([
+      ...(liveObj ? Object.keys(liveObj) : []),
+      ...(proposedObj ? Object.keys(proposedObj) : []),
+    ])
   ).filter((k) => !HIDDEN_DIFF_KEYS.has(k));
 
   return (
     <div className="divide-y divide-slate-100">
       <div className="grid grid-cols-1 gap-3 pb-2 sm:grid-cols-[160px_1fr_1fr]">
         <span />
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Currently Live</p>
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Proposed</p>
+        <p className="text-xs font-bold tracking-wide text-slate-400 uppercase">Currently Live</p>
+        <p className="text-xs font-bold tracking-wide text-slate-400 uppercase">Proposed</p>
       </div>
       {keys.map((key) => {
         const liveVal = liveObj?.[key];
@@ -141,7 +140,9 @@ function FieldDiff({ live, proposed }: { live: unknown; proposed: unknown }) {
             key={key}
             className={`grid grid-cols-1 gap-3 rounded-lg px-2 py-3 sm:grid-cols-[160px_1fr_1fr] ${changed ? "bg-amber-50" : ""}`}
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{humanizeKey(key)}</p>
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              {humanizeKey(key)}
+            </p>
             <DiffValue value={liveVal} />
             <div className={changed ? "font-medium" : ""}>
               <DiffValue value={proposedVal} />
@@ -168,7 +169,7 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+        <p className="mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">
           Currently in Calendar ({liveList.length})
         </p>
         <ul className="space-y-1.5">
@@ -177,21 +178,25 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
           ) : (
             liveList.map((e, i) => (
               <li key={i} className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                <span className="font-medium">{String(e.name || "Untitled")}</span> — {formatEditionDate(e.startDate)}
+                <span className="font-medium">{String(e.name || "Untitled")}</span> —{" "}
+                {formatEditionDate(e.startDate)}
               </li>
             ))
           )}
         </ul>
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Proposed ({proposedList.length})</p>
+        <p className="mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">
+          Proposed ({proposedList.length})
+        </p>
         <ul className="space-y-1.5">
           {proposedList.length === 0 ? (
             <li className="text-sm text-slate-400">No editions proposed.</li>
           ) : (
             proposedList.map((e, i) => (
               <li key={i} className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-slate-700">
-                <span className="font-medium">{String(e.name || "Untitled")}</span> — {formatEditionDate(e.startDate)}
+                <span className="font-medium">{String(e.name || "Untitled")}</span> —{" "}
+                {formatEditionDate(e.startDate)}
               </li>
             ))
           )}
@@ -204,7 +209,7 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <details className="rounded-lg border border-slate-200 bg-slate-50/60 p-3" open>
-      <summary className="cursor-pointer text-xs font-bold uppercase tracking-wide text-slate-600">
+      <summary className="cursor-pointer text-xs font-bold tracking-wide text-slate-600 uppercase">
         {title}
       </summary>
       <div className="mt-3 space-y-4">{children}</div>
@@ -238,7 +243,7 @@ function StringListEditor({
           <button
             type="button"
             onClick={() => onChange(items.filter((_, i) => i !== idx))}
-            className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 hover:border-red-300 hover:text-red-600 transition-colors"
+            className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 transition-colors hover:border-red-300 hover:text-red-600"
           >
             <Trash2 size={14} />
           </button>
@@ -247,7 +252,7 @@ function StringListEditor({
       <button
         type="button"
         onClick={() => onChange([...items, ""])}
-        className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-slate-400 hover:text-slate-700 transition-colors"
+        className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-700"
       >
         <Plus size={14} /> Add item
       </button>
@@ -350,8 +355,11 @@ function FederationEditor({
   onChange: (data: FederationDraft) => void;
 }) {
   const patch = (partial: Partial<FederationDraft>) => onChange({ ...data, ...partial });
-  const eligibility: EligibilityCriteriaDraft =
-    data.eligibilityCriteria || { categories: [], registrationRequired: true, stateAssociationFirst: true };
+  const eligibility: EligibilityCriteriaDraft = data.eligibilityCriteria || {
+    categories: [],
+    registrationRequired: true,
+    stateAssociationFirst: true,
+  };
   const contact = data.contact || {};
 
   return (
@@ -359,11 +367,19 @@ function FederationEditor({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className={labelCls}>Name</label>
-          <input value={data.name} onChange={(e) => patch({ name: e.target.value })} className={inputCls} />
+          <input
+            value={data.name}
+            onChange={(e) => patch({ name: e.target.value })}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Acronym</label>
-          <input value={data.acronym} onChange={(e) => patch({ acronym: e.target.value })} className={inputCls} />
+          <input
+            value={data.acronym}
+            onChange={(e) => patch({ acronym: e.target.value })}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Type</label>
@@ -382,7 +398,9 @@ function FederationEditor({
           <input
             type="number"
             value={data.founded ?? ""}
-            onChange={(e) => patch({ founded: e.target.value ? Number(e.target.value) : undefined })}
+            onChange={(e) =>
+              patch({ founded: e.target.value ? Number(e.target.value) : undefined })
+            }
             className={inputCls}
           />
         </div>
@@ -396,7 +414,11 @@ function FederationEditor({
         </div>
         <div>
           <label className={labelCls}>Website</label>
-          <input value={data.website || ""} onChange={(e) => patch({ website: e.target.value })} className={inputCls} />
+          <input
+            value={data.website || ""}
+            onChange={(e) => patch({ website: e.target.value })}
+            className={inputCls}
+          />
         </div>
         <div className="sm:col-span-2">
           <label className={labelCls}>Official Calendar URL</label>
@@ -410,7 +432,12 @@ function FederationEditor({
 
       <div>
         <label className={labelCls}>About</label>
-        <textarea rows={3} value={data.about} onChange={(e) => patch({ about: e.target.value })} className={inputCls} />
+        <textarea
+          rows={3}
+          value={data.about}
+          onChange={(e) => patch({ about: e.target.value })}
+          className={inputCls}
+        />
       </div>
 
       <Section title="Affiliations">
@@ -422,7 +449,11 @@ function FederationEditor({
       </Section>
 
       <Section title="Key Facts">
-        <StringListEditor items={data.keyFacts} onChange={(keyFacts) => patch({ keyFacts })} placeholder="Verifiable fact" />
+        <StringListEditor
+          items={data.keyFacts}
+          onChange={(keyFacts) => patch({ keyFacts })}
+          placeholder="Verifiable fact"
+        />
       </Section>
 
       <Section title="State Associations">
@@ -434,9 +465,22 @@ function FederationEditor({
               patch({ stateAssociations: next });
             };
             return (
-              <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
-                <input value={sa.name} onChange={(e) => update({ name: e.target.value })} placeholder="Name" className={inputCls} />
-                <input value={sa.state} onChange={(e) => update({ state: e.target.value })} placeholder="State" className={inputCls} />
+              <div
+                key={idx}
+                className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
+              >
+                <input
+                  value={sa.name}
+                  onChange={(e) => update({ name: e.target.value })}
+                  placeholder="Name"
+                  className={inputCls}
+                />
+                <input
+                  value={sa.state}
+                  onChange={(e) => update({ state: e.target.value })}
+                  placeholder="State"
+                  className={inputCls}
+                />
                 <input
                   value={sa.website || ""}
                   onChange={(e) => update({ website: e.target.value })}
@@ -445,7 +489,9 @@ function FederationEditor({
                 />
                 <button
                   type="button"
-                  onClick={() => patch({ stateAssociations: data.stateAssociations.filter((_, i) => i !== idx) })}
+                  onClick={() =>
+                    patch({ stateAssociations: data.stateAssociations.filter((_, i) => i !== idx) })
+                  }
                   className="rounded-lg border border-slate-200 p-2 text-slate-400 hover:border-red-300 hover:text-red-600"
                 >
                   <Trash2 size={14} />
@@ -455,7 +501,14 @@ function FederationEditor({
           })}
           <button
             type="button"
-            onClick={() => patch({ stateAssociations: [...data.stateAssociations, { name: "", state: "", website: "" }] })}
+            onClick={() =>
+              patch({
+                stateAssociations: [
+                  ...data.stateAssociations,
+                  { name: "", state: "", website: "" },
+                ],
+              })
+            }
             className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-slate-400"
           >
             <Plus size={14} /> Add state association
@@ -469,7 +522,9 @@ function FederationEditor({
           <textarea
             rows={2}
             value={eligibility.ageCutoffRule || ""}
-            onChange={(e) => patch({ eligibilityCriteria: { ...eligibility, ageCutoffRule: e.target.value } })}
+            onChange={(e) =>
+              patch({ eligibilityCriteria: { ...eligibility, ageCutoffRule: e.target.value } })
+            }
             className={inputCls}
           />
         </div>
@@ -478,7 +533,11 @@ function FederationEditor({
             <input
               type="checkbox"
               checked={eligibility.registrationRequired}
-              onChange={(e) => patch({ eligibilityCriteria: { ...eligibility, registrationRequired: e.target.checked } })}
+              onChange={(e) =>
+                patch({
+                  eligibilityCriteria: { ...eligibility, registrationRequired: e.target.checked },
+                })
+              }
             />
             Registration required
           </label>
@@ -486,7 +545,11 @@ function FederationEditor({
             <input
               type="checkbox"
               checked={eligibility.stateAssociationFirst}
-              onChange={(e) => patch({ eligibilityCriteria: { ...eligibility, stateAssociationFirst: e.target.checked } })}
+              onChange={(e) =>
+                patch({
+                  eligibilityCriteria: { ...eligibility, stateAssociationFirst: e.target.checked },
+                })
+              }
             />
             State association first
           </label>
@@ -496,7 +559,9 @@ function FederationEditor({
           <textarea
             rows={2}
             value={eligibility.notes || ""}
-            onChange={(e) => patch({ eligibilityCriteria: { ...eligibility, notes: e.target.value } })}
+            onChange={(e) =>
+              patch({ eligibilityCriteria: { ...eligibility, notes: e.target.value } })
+            }
             className={inputCls}
           />
         </div>
@@ -510,8 +575,16 @@ function FederationEditor({
                 patch({ eligibilityCriteria: { ...eligibility, categories: next } });
               };
               return (
-                <div key={idx} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1.5fr_0.6fr_1fr_1fr_auto]">
-                  <input value={cat.name} onChange={(e) => update({ name: e.target.value })} placeholder="Category name" className={inputCls} />
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1.5fr_0.6fr_1fr_1fr_auto]"
+                >
+                  <input
+                    value={cat.name}
+                    onChange={(e) => update({ name: e.target.value })}
+                    placeholder="Category name"
+                    className={inputCls}
+                  />
                   <input
                     type="number"
                     value={cat.maxAge}
@@ -521,7 +594,14 @@ function FederationEditor({
                   />
                   <input
                     value={cat.genders.join(", ")}
-                    onChange={(e) => update({ genders: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })}
+                    onChange={(e) =>
+                      update({
+                        genders: e.target.value
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      })
+                    }
                     placeholder="Genders, comma-separated"
                     className={inputCls}
                   />
@@ -534,7 +614,12 @@ function FederationEditor({
                   <button
                     type="button"
                     onClick={() =>
-                      patch({ eligibilityCriteria: { ...eligibility, categories: eligibility.categories.filter((_, i) => i !== idx) } })
+                      patch({
+                        eligibilityCriteria: {
+                          ...eligibility,
+                          categories: eligibility.categories.filter((_, i) => i !== idx),
+                        },
+                      })
                     }
                     className="rounded-lg border border-slate-200 p-2 text-slate-400 hover:border-red-300 hover:text-red-600"
                   >
@@ -562,11 +647,19 @@ function FederationEditor({
       </Section>
 
       <Section title="Registration Steps">
-        <StringListEditor items={data.registrationSteps} onChange={(registrationSteps) => patch({ registrationSteps })} placeholder="Ordered step" />
+        <StringListEditor
+          items={data.registrationSteps}
+          onChange={(registrationSteps) => patch({ registrationSteps })}
+          placeholder="Ordered step"
+        />
       </Section>
 
       <Section title="Required Documents">
-        <StringListEditor items={data.requiredDocuments} onChange={(requiredDocuments) => patch({ requiredDocuments })} placeholder="Document" />
+        <StringListEditor
+          items={data.requiredDocuments}
+          onChange={(requiredDocuments) => patch({ requiredDocuments })}
+          placeholder="Document"
+        />
       </Section>
 
       <Section title="Contact">
@@ -608,11 +701,19 @@ function CuratedTournamentEditor({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className={labelCls}>Name</label>
-          <input value={data.name} onChange={(e) => patch({ name: e.target.value })} className={inputCls} />
+          <input
+            value={data.name}
+            onChange={(e) => patch({ name: e.target.value })}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Level</label>
-          <select value={data.level} onChange={(e) => patch({ level: e.target.value })} className={inputCls}>
+          <select
+            value={data.level}
+            onChange={(e) => patch({ level: e.target.value })}
+            className={inputCls}
+          >
             <option value="District">District</option>
             <option value="State">State</option>
             <option value="National">National</option>
@@ -621,11 +722,19 @@ function CuratedTournamentEditor({
         </div>
         <div>
           <label className={labelCls}>Age Group</label>
-          <input value={data.ageGroup} onChange={(e) => patch({ ageGroup: e.target.value })} className={inputCls} />
+          <input
+            value={data.ageGroup}
+            onChange={(e) => patch({ ageGroup: e.target.value })}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Typical Dates</label>
-          <input value={data.typicalDates || ""} onChange={(e) => patch({ typicalDates: e.target.value })} className={inputCls} />
+          <input
+            value={data.typicalDates || ""}
+            onChange={(e) => patch({ typicalDates: e.target.value })}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Registration Deadline</label>
@@ -639,7 +748,11 @@ function CuratedTournamentEditor({
           <label className={labelCls}>Prestige</label>
           <select
             value={data.prestige || ""}
-            onChange={(e) => patch({ prestige: (e.target.value || undefined) as CuratedTournamentDraft["prestige"] })}
+            onChange={(e) =>
+              patch({
+                prestige: (e.target.value || undefined) as CuratedTournamentDraft["prestige"],
+              })
+            }
             className={inputCls}
           >
             <option value="">—</option>
@@ -650,29 +763,56 @@ function CuratedTournamentEditor({
         </div>
         <div>
           <label className={labelCls}>Format</label>
-          <input value={data.format || ""} onChange={(e) => patch({ format: e.target.value })} className={inputCls} />
+          <input
+            value={data.format || ""}
+            onChange={(e) => patch({ format: e.target.value })}
+            className={inputCls}
+          />
         </div>
         <div>
           <label className={labelCls}>Prize Pool</label>
-          <input value={data.prizePool || ""} onChange={(e) => patch({ prizePool: e.target.value })} className={inputCls} />
+          <input
+            value={data.prizePool || ""}
+            onChange={(e) => patch({ prizePool: e.target.value })}
+            className={inputCls}
+          />
         </div>
         <div className="sm:col-span-2">
           <label className={labelCls}>Registration URL</label>
-          <input value={data.registrationUrl || ""} onChange={(e) => patch({ registrationUrl: e.target.value })} className={inputCls} />
+          <input
+            value={data.registrationUrl || ""}
+            onChange={(e) => patch({ registrationUrl: e.target.value })}
+            className={inputCls}
+          />
         </div>
       </div>
 
       <div>
         <label className={labelCls}>Description</label>
-        <textarea rows={3} value={data.description} onChange={(e) => patch({ description: e.target.value })} className={inputCls} />
+        <textarea
+          rows={3}
+          value={data.description}
+          onChange={(e) => patch({ description: e.target.value })}
+          className={inputCls}
+        />
       </div>
       <div>
         <label className={labelCls}>Qualification Path</label>
-        <textarea rows={2} value={data.qualificationPath || ""} onChange={(e) => patch({ qualificationPath: e.target.value })} className={inputCls} />
+        <textarea
+          rows={2}
+          value={data.qualificationPath || ""}
+          onChange={(e) => patch({ qualificationPath: e.target.value })}
+          className={inputCls}
+        />
       </div>
       <div>
         <label className={labelCls}>Circuit Context</label>
-        <textarea rows={4} value={data.circuitContext || ""} onChange={(e) => patch({ circuitContext: e.target.value })} className={inputCls} />
+        <textarea
+          rows={4}
+          value={data.circuitContext || ""}
+          onChange={(e) => patch({ circuitContext: e.target.value })}
+          className={inputCls}
+        />
       </div>
       <Section title="Participation Guide">
         <StringListEditor
@@ -685,7 +825,13 @@ function CuratedTournamentEditor({
   );
 }
 
-function CalendarEditor({ data, onChange }: { data: EditionDraft[]; onChange: (data: EditionDraft[]) => void }) {
+function CalendarEditor({
+  data,
+  onChange,
+}: {
+  data: EditionDraft[];
+  onChange: (data: EditionDraft[]) => void;
+}) {
   const update = (idx: number, partial: Partial<EditionDraft>) => {
     const next = [...data];
     next[idx] = { ...next[idx], ...partial };
@@ -735,11 +881,28 @@ function CalendarEditor({ data, onChange }: { data: EditionDraft[]; onChange: (d
               placeholder="Level"
               className={inputCls}
             />
-            <input value={edition.venue || ""} onChange={(e) => update(idx, { venue: e.target.value })} placeholder="Venue" className={inputCls} />
-            <input value={edition.city || ""} onChange={(e) => update(idx, { city: e.target.value })} placeholder="City" className={inputCls} />
+            <input
+              value={edition.venue || ""}
+              onChange={(e) => update(idx, { venue: e.target.value })}
+              placeholder="Venue"
+              className={inputCls}
+            />
+            <input
+              value={edition.city || ""}
+              onChange={(e) => update(idx, { city: e.target.value })}
+              placeholder="City"
+              className={inputCls}
+            />
             <input
               value={edition.ageGroups.join(", ")}
-              onChange={(e) => update(idx, { ageGroups: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })}
+              onChange={(e) =>
+                update(idx, {
+                  ageGroups: e.target.value
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                })
+              }
               placeholder="Age groups, comma-separated"
               className={`${inputCls} col-span-2`}
             />
@@ -771,7 +934,7 @@ function CalendarEditor({ data, onChange }: { data: EditionDraft[]; onChange: (d
                   href={edition.detailUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-power-orange"
+                  className="text-power-orange inline-flex items-center gap-1 text-xs font-semibold"
                 >
                   Tournament page <ExternalLink size={11} />
                 </a>
@@ -787,7 +950,7 @@ function CalendarEditor({ data, onChange }: { data: EditionDraft[]; onChange: (d
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="truncate text-slate-600 underline hover:text-power-orange"
+                        className="hover:text-power-orange truncate text-slate-600 underline"
                       >
                         {doc.label}
                       </a>
@@ -807,13 +970,15 @@ function CalendarEditor({ data, onChange }: { data: EditionDraft[]; onChange: (d
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-slate-400">No documents found on this tournament&apos;s page.</p>
+                <p className="text-xs text-slate-400">
+                  No documents found on this tournament&apos;s page.
+                </p>
               )}
             </div>
           )}
 
           {edition.sourceQuote && (
-            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs italic text-slate-500">
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 italic">
               “{edition.sourceQuote}”
             </p>
           )}
@@ -983,12 +1148,12 @@ export default function AdminDataSourceDetailPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-12">Loading data source...</div>;
+  if (loading) return <div className="py-12 text-center">Loading data source...</div>;
   if (error || !submission) {
     return (
       <Card className="bg-white">
-        <div className="py-10 text-center space-y-3">
-          <p className="text-red-600 font-semibold">{error || "Data source not found."}</p>
+        <div className="space-y-3 py-10 text-center">
+          <p className="font-semibold text-red-600">{error || "Data source not found."}</p>
           <Link href="/admin/data-sources" className="text-power-orange font-semibold">
             Back to Data Sources
           </Link>
@@ -1018,7 +1183,7 @@ export default function AdminDataSourceDetailPage() {
         action={
           <Link
             href="/admin/data-sources"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
           >
             <ArrowLeft size={16} /> Back to list
           </Link>
@@ -1029,12 +1194,20 @@ export default function AdminDataSourceDetailPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <p className="text-sm text-slate-600">
-              Status: <span className="font-semibold text-slate-900">{submission.status.replace(/_/g, " ")}</span>
+              Status:{" "}
+              <span className="font-semibold text-slate-900">
+                {submission.status.replace(/_/g, " ")}
+              </span>
             </p>
             <p className="text-sm text-slate-600">
               Source:{" "}
               {submission.sourceKind === "LINK" ? (
-                <a href={submission.sourceUrl} target="_blank" rel="noreferrer" className="text-power-orange inline-flex items-center gap-1">
+                <a
+                  href={submission.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-power-orange inline-flex items-center gap-1"
+                >
                   {submission.sourceUrl} <ExternalLink size={12} />
                 </a>
               ) : (
@@ -1044,15 +1217,22 @@ export default function AdminDataSourceDetailPage() {
             {submission.originUrl && (
               <p className="text-sm text-slate-600">
                 Cited origin:{" "}
-                <a href={submission.originUrl} target="_blank" rel="noreferrer" className="text-power-orange">
+                <a
+                  href={submission.originUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-power-orange"
+                >
                   {submission.originUrl}
                 </a>
               </p>
             )}
-            {submission.extractionError && <p className="text-sm text-red-600">Error: {submission.extractionError}</p>}
+            {submission.extractionError && (
+              <p className="text-sm text-red-600">Error: {submission.extractionError}</p>
+            )}
             {submission.extractionWarnings && submission.extractionWarnings.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
+                <p className="text-xs font-bold tracking-wide text-amber-700 uppercase">
                   Extraction warnings
                 </p>
                 <ul className="mt-1 space-y-0.5">
@@ -1063,8 +1243,8 @@ export default function AdminDataSourceDetailPage() {
                   ))}
                 </ul>
                 <p className="mt-1.5 text-xs text-amber-700">
-                  These entries never reached the review list — confirm the source really only contains what&apos;s
-                  shown below before approving.
+                  These entries never reached the review list — confirm the source really only
+                  contains what&apos;s shown below before approving.
                 </p>
               </div>
             )}
@@ -1080,10 +1260,10 @@ export default function AdminDataSourceDetailPage() {
       </Card>
 
       {calendarDraft && (
-        <Card className="bg-white space-y-3">
+        <Card className="space-y-3 bg-white">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
                 Tournament Details
               </h2>
               <p className="max-w-2xl text-xs text-slate-500">
@@ -1094,12 +1274,13 @@ export default function AdminDataSourceDetailPage() {
               <p className="text-xs text-slate-600">
                 <span className="font-semibold">{linkedCount}</span> of {calendarDraft.length}{" "}
                 entries link to a tournament page;{" "}
-                <span className="font-semibold">{withDocumentsCount}</span> currently have documents.
+                <span className="font-semibold">{withDocumentsCount}</span> currently have
+                documents.
               </p>
               {linkedCount === 0 && (
                 <p className="text-xs text-amber-700">
-                  No entry carries a link yet. Re-extract this source first — links are only captured
-                  by extractions run after this feature was added.
+                  No entry carries a link yet. Re-extract this source first — links are only
+                  captured by extractions run after this feature was added.
                 </p>
               )}
             </div>
@@ -1120,11 +1301,13 @@ export default function AdminDataSourceDetailPage() {
         </Card>
       )}
 
-      <Card className="bg-white space-y-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Live Now vs. Proposed</h2>
+      <Card className="space-y-3 bg-white">
+        <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
+          Live Now vs. Proposed
+        </h2>
         <p className="text-xs text-slate-500">
-          Fields highlighted below differ from what's currently live. Bookkeeping fields (IDs, timestamps, status
-          flags) are hidden since they're not content you need to review.
+          Fields highlighted below differ from what's currently live. Bookkeeping fields (IDs,
+          timestamps, status flags) are hidden since they're not content you need to review.
         </p>
         {submission.targetType === "TOURNAMENT_CALENDAR" ? (
           <CalendarComparison live={submission.currentLiveData} proposed={draft} />
@@ -1134,17 +1317,21 @@ export default function AdminDataSourceDetailPage() {
       </Card>
 
       {submission.citations && Object.keys(submission.citations).length > 0 && (
-        <Card className="bg-white space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Source Citations</h2>
+        <Card className="space-y-3 bg-white">
+          <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
+            Source Citations
+          </h2>
           <p className="text-xs text-slate-500">
-            Where the AI says it found each field — check these against the source instead of re-reading the whole
-            thing.
+            Where the AI says it found each field — check these against the source instead of
+            re-reading the whole thing.
           </p>
           <div className="space-y-2">
             {Object.entries(submission.citations).map(([field, quote]) => (
               <div key={field} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{field}</p>
-                <p className="mt-1 text-sm italic text-slate-700">“{quote}”</p>
+                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  {field}
+                </p>
+                <p className="mt-1 text-sm text-slate-700 italic">“{quote}”</p>
               </div>
             ))}
           </div>
@@ -1152,8 +1339,10 @@ export default function AdminDataSourceDetailPage() {
       )}
 
       {draft != null && (
-        <Card className="bg-white space-y-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Edit Before Approving</h2>
+        <Card className="space-y-4 bg-white">
+          <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
+            Edit Before Approving
+          </h2>
           {submission.targetType === "FEDERATION" && (
             <FederationEditor data={draft as FederationDraft} onChange={setDraft} />
           )}
@@ -1175,7 +1364,7 @@ export default function AdminDataSourceDetailPage() {
         </Card>
       )}
 
-      <Card className="bg-white space-y-3">
+      <Card className="space-y-3 bg-white">
         {showRejectPanel && (
           <div className="space-y-3 border-b border-slate-100 pb-4">
             <p className="text-sm font-semibold text-slate-800">Rejection reason</p>

@@ -7,19 +7,12 @@ import mongoose, { Document, Schema } from "mongoose";
  * Lane-A cron scraper — nothing here auto-publishes; `status` only reaches
  * APPROVED via an explicit admin action in dataSourceAdminController.
  */
-export type DataSourceTargetType =
-  | "FEDERATION"
-  | "CURATED_TOURNAMENT"
-  | "TOURNAMENT_CALENDAR";
+export type DataSourceTargetType = "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR";
 
 export type DataSourceKind = "PDF" | "LINK";
 
 export type DataSourceStatus =
-  | "PENDING_EXTRACTION"
-  | "EXTRACTION_FAILED"
-  | "PENDING_REVIEW"
-  | "APPROVED"
-  | "REJECTED";
+  "PENDING_EXTRACTION" | "EXTRACTION_FAILED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED";
 
 export interface DataSourceSubmissionDocument extends Document {
   targetType: DataSourceTargetType;
@@ -81,13 +74,7 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
 
     status: {
       type: String,
-      enum: [
-        "PENDING_EXTRACTION",
-        "EXTRACTION_FAILED",
-        "PENDING_REVIEW",
-        "APPROVED",
-        "REJECTED",
-      ],
+      enum: ["PENDING_EXTRACTION", "EXTRACTION_FAILED", "PENDING_REVIEW", "APPROVED", "REJECTED"],
       default: "PENDING_EXTRACTION",
       index: true,
     },
@@ -103,7 +90,7 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
     reviewedAt: { type: Date },
     submittedBy: { type: Schema.Types.ObjectId, ref: "Admin", required: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 dataSourceSubmissionSchema.index({ targetType: 1, sportSlug: 1 });
@@ -111,7 +98,4 @@ dataSourceSubmissionSchema.index({ status: 1, createdAt: -1 });
 
 export const DataSourceSubmission =
   mongoose.models.DataSourceSubmission ||
-  mongoose.model<DataSourceSubmissionDocument>(
-    "DataSourceSubmission",
-    dataSourceSubmissionSchema,
-  );
+  mongoose.model<DataSourceSubmissionDocument>("DataSourceSubmission", dataSourceSubmissionSchema);

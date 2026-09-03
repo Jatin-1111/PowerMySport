@@ -193,7 +193,7 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
     meetingLinkNudgeSentAt: { type: Date },
     startReminderSentAt: { type: Date },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 expertSessionSchema.index({ expertId: 1, status: 1, createdAt: -1 });

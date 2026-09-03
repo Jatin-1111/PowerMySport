@@ -28,19 +28,15 @@ const notify = (
   title: string,
   message: string,
   data: Record<string, unknown> = {},
-  email = false,
+  email = false
 ) => {
   NotificationService.send(
     { userId: userId.toString(), type, title, message, data },
-    { sendEmail: email },
-  ).catch((err: unknown) =>
-    log.error("[coachSessions] notification failed:", err),
-  );
+    { sendEmail: email }
+  ).catch((err: unknown) => log.error("[coachSessions] notification failed:", err));
 };
 
-const coachUserIdOf = async (
-  coachId: mongoose.Types.ObjectId,
-): Promise<string | null> => {
+const coachUserIdOf = async (coachId: mongoose.Types.ObjectId): Promise<string | null> => {
   const coach = await Coach.findById(coachId).select("userId").lean();
   return coach ? (coach.userId as mongoose.Types.ObjectId).toString() : null;
 };
@@ -60,10 +56,12 @@ const formatWhen = (at: Date, timeZone = "Asia/Kolkata"): string =>
  * dedup write is a conditional findOneAndUpdate so two overlapping sweeps
  * cannot both send it.
  */
-export const sendCoachMeetingLinkNudges = async (params: {
-  now?: Date;
-  windowHours?: number;
-} = {}): Promise<number> => {
+export const sendCoachMeetingLinkNudges = async (
+  params: {
+    now?: Date;
+    windowHours?: number;
+  } = {}
+): Promise<number> => {
   const now = params.now ?? new Date();
   const soon = new Date(now.getTime() + (params.windowHours ?? 3) * 60 * MINUTE_MS);
 
@@ -83,7 +81,7 @@ export const sendCoachMeetingLinkNudges = async (params: {
   for (const occurrence of candidates) {
     const claimed = await CoachSessionOccurrence.findOneAndUpdate(
       { _id: occurrence._id, meetingLinkNudgeSentAt: null },
-      { $set: { meetingLinkNudgeSentAt: now } },
+      { $set: { meetingLinkNudgeSentAt: now } }
     );
     if (!claimed) continue;
     count += 1;
@@ -97,7 +95,7 @@ export const sendCoachMeetingLinkNudges = async (params: {
       "Add your class link",
       `Your online class on ${formatWhen(occurrence.scheduledAt)} is coming up and still has no meeting link.`,
       { occurrenceId: occurrence._id.toString() },
-      true,
+      true
     );
   }
 
@@ -111,10 +109,12 @@ export const sendCoachMeetingLinkNudges = async (params: {
  *
  * Fires once per occurrence, deduped by `startReminderSentAt`.
  */
-export const sendCoachSessionStartReminders = async (params: {
-  now?: Date;
-  windowHours?: number;
-} = {}): Promise<number> => {
+export const sendCoachSessionStartReminders = async (
+  params: {
+    now?: Date;
+    windowHours?: number;
+  } = {}
+): Promise<number> => {
   const now = params.now ?? new Date();
   const soon = new Date(now.getTime() + (params.windowHours ?? 2) * 60 * MINUTE_MS);
 
@@ -128,7 +128,7 @@ export const sendCoachSessionStartReminders = async (params: {
   for (const occurrence of candidates) {
     const claimed = await CoachSessionOccurrence.findOneAndUpdate(
       { _id: occurrence._id, startReminderSentAt: null },
-      { $set: { startReminderSentAt: now } },
+      { $set: { startReminderSentAt: now } }
     );
     if (!claimed) continue;
     count += 1;
@@ -143,7 +143,7 @@ export const sendCoachSessionStartReminders = async (params: {
         "Your class starts soon",
         `${occurrence.sport} class at ${when}.${detail.student}`,
         { occurrenceId: occurrence._id.toString() },
-        true,
+        true
       );
     }
 
@@ -155,7 +155,7 @@ export const sendCoachSessionStartReminders = async (params: {
         "Your class starts soon",
         `${occurrence.sport} class at ${when} with ${occurrence.roster.length} student(s).${detail.coach}`,
         { occurrenceId: occurrence._id.toString() },
-        false,
+        false
       );
     }
   }
@@ -172,7 +172,7 @@ export const sendCoachSessionStartReminders = async (params: {
  * told nothing assumes the class is cancelled.
  */
 const connectionDetailFor = (
-  delivery: { kind?: string; meetingLink?: string; addressSnapshot?: string } | undefined,
+  delivery: { kind?: string; meetingLink?: string; addressSnapshot?: string } | undefined
 ): { student: string; coach: string } => {
   if (!delivery) return { student: "", coach: "" };
 
@@ -183,8 +183,7 @@ const connectionDetailFor = (
           coach: ` Link: ${delivery.meetingLink}`,
         }
       : {
-          student:
-            " Your coach hasn't shared the class link yet — check back shortly.",
+          student: " Your coach hasn't shared the class link yet — check back shortly.",
           coach: " You still need to add a meeting link.",
         };
   }

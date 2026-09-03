@@ -1,6 +1,14 @@
 "use client";
 
-import { AlertTriangle, Check, CheckCircle2, Clock, IndianRupee, Minus, ThumbsUp } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  Clock,
+  IndianRupee,
+  Minus,
+  ThumbsUp,
+} from "lucide-react";
 import type { SportFitResult, WizardAnswers } from "../../types";
 import { ChooseSportButton } from "./ChooseSportButton";
 
@@ -80,7 +88,7 @@ export function SportFitCard({
     <article
       className={`overflow-hidden rounded-2xl bg-white transition-shadow ${
         chosen
-          ? "border-2 border-turf-green shadow-md shadow-turf-green/10"
+          ? "border-turf-green shadow-turf-green/10 border-2 shadow-md"
           : "border border-slate-200 shadow-sm"
       }`}
     >
@@ -91,20 +99,22 @@ export function SportFitCard({
       <div className="flex flex-col sm:flex-row">
         {/* Score rail */}
         <div
-          className={`flex shrink-0 items-center gap-4 border-b border-slate-100 px-5 py-4 sm:w-[150px] sm:flex-col sm:justify-center sm:gap-2 sm:border-b-0 sm:border-r sm:px-4 sm:py-6 ${tone.rail}`}
+          className={`flex shrink-0 items-center gap-4 border-b border-slate-100 px-5 py-4 sm:w-[150px] sm:flex-col sm:justify-center sm:gap-2 sm:border-r sm:border-b-0 sm:px-4 sm:py-6 ${tone.rail}`}
         >
           <div className="flex items-baseline gap-1">
-            <span className={`font-title text-4xl font-bold tabular-nums leading-none ${tone.text}`}>
+            <span
+              className={`font-title text-4xl leading-none font-bold tabular-nums ${tone.text}`}
+            >
               {fit.score}
             </span>
             <span className="text-xs font-medium text-slate-400">/ 100</span>
           </div>
           <span
-            className={`ml-auto rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider sm:ml-0 ${tone.badge}`}
+            className={`ml-auto rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase sm:ml-0 ${tone.badge}`}
           >
             {fit.hasBlocker ? "Needs a fix first" : fit.fitLabel}
           </span>
-          <div className="ml-auto hidden h-1.5 w-full overflow-hidden rounded-full bg-white/70 sm:ml-0 sm:mt-1 sm:block">
+          <div className="ml-auto hidden h-1.5 w-full overflow-hidden rounded-full bg-white/70 sm:mt-1 sm:ml-0 sm:block">
             <div
               className={`h-full rounded-full transition-all duration-700 ${tone.bar}`}
               style={{ width: `${fit.score}%` }}
@@ -121,10 +131,10 @@ export function SportFitCard({
               <span className="text-lg font-bold">{fit.sport.name[0]}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-300">
+              <p className="text-[10px] font-bold tracking-wider text-slate-300 uppercase">
                 {eyebrow}
               </p>
-              <h3 className="font-title text-lg font-bold leading-tight text-slate-900">
+              <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
                 {fit.sport.name}
               </h3>
               <p className="mt-0.5 text-xs text-slate-400">{fit.sport.tagline}</p>
@@ -157,7 +167,7 @@ export function SportFitCard({
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-100/70">
               <ThumbsUp className="h-3 w-3 text-emerald-600" />
             </div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+            <p className="text-[11px] font-bold tracking-wider text-emerald-700 uppercase">
               Where {name} fits
             </p>
           </div>
@@ -179,7 +189,7 @@ export function SportFitCard({
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-amber-100/70">
               <AlertTriangle className="h-3 w-3 text-amber-600" />
             </div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+            <p className="text-[11px] font-bold tracking-wider text-amber-700 uppercase">
               Where it&apos;ll be harder
             </p>
           </div>
@@ -213,7 +223,7 @@ export function SportFitCard({
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3.5 sm:px-6">
         <p className="text-xs text-slate-400">
           {chosen ? (
-            <span className="inline-flex items-center gap-1.5 font-medium text-turf-green">
+            <span className="text-turf-green inline-flex items-center gap-1.5 font-medium">
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
               Your trial booking and follow-ups will use {fit.sport.name}
             </span>

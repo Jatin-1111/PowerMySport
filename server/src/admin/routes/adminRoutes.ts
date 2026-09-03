@@ -1,9 +1,6 @@
 import { Router } from "express";
 import { S3Service } from "../../shared/services/S3Service";
-import {
-  listPendingPayouts,
-  markPayoutsAsPaid,
-} from "../controllers/adminPayoutController";
+import { listPendingPayouts, markPayoutsAsPaid } from "../controllers/adminPayoutController";
 import {
   adminLogin,
   adminLogout,
@@ -79,12 +76,7 @@ const log = __rootLog.child("admin");
 const router = Router();
 
 // Public routes
-router.post(
-  "/login",
-  adminLoginRateLimiter,
-  validateRequest(adminLoginSchema),
-  adminLogin,
-);
+router.post("/login", adminLoginRateLimiter, validateRequest(adminLoginSchema), adminLogin);
 
 // Protected routes (require admin authentication)
 router.post("/logout", authMiddleware, adminLogout);
@@ -94,7 +86,7 @@ router.post(
   authMiddleware,
   adminMiddleware,
   validateRequest(adminChangePasswordSchema),
-  changeAdminPasswordHandler,
+  changeAdminPasswordHandler
 );
 
 // Coach verification management
@@ -103,42 +95,42 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:view"),
-  listCoachVerifications,
+  listCoachVerifications
 );
 router.get(
   "/coaches/:coachId",
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:view"),
-  getCoachVerificationDetails,
+  getCoachVerificationDetails
 );
 router.post(
   "/coaches/:coachId/verify",
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:verify"),
-  approveCoachVerification,
+  approveCoachVerification
 );
 router.post(
   "/coaches/:coachId/reject",
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:verify"),
-  rejectCoachVerification,
+  rejectCoachVerification
 );
 router.post(
   "/coaches/:coachId/mark-review",
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:verify"),
-  markCoachVerificationForReview,
+  markCoachVerificationForReview
 );
 router.post(
   "/coaches/:coachId/notify",
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:verify"),
-  notifyCoachVerificationPending,
+  notifyCoachVerificationPending
 );
 
 // ===== NEW: Admin venue and coach creation routes =====
@@ -148,7 +140,7 @@ router.post(
   adminMiddleware,
   requirePermission("venues:create"),
   validateRequest(adminCreateVenueSchema),
-  createVenueAdminHandler,
+  createVenueAdminHandler
 );
 
 router.put(
@@ -156,7 +148,7 @@ router.put(
   authMiddleware,
   adminMiddleware,
   requirePermission("venues:manage"),
-  updateVenueAdminHandler,
+  updateVenueAdminHandler
 );
 
 router.post(
@@ -165,7 +157,7 @@ router.post(
   adminMiddleware,
   requirePermission("coaches:create"),
   validateRequest(adminCreateCoachSchema),
-  createCoachAdminHandler,
+  createCoachAdminHandler
 );
 
 router.get(
@@ -173,7 +165,7 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:view"),
-  listCoaches,
+  listCoaches
 );
 
 router.post(
@@ -193,12 +185,11 @@ router.post(
       }
 
       const s3Service = new S3Service();
-      const { uploadUrl, downloadUrl, key } =
-        await s3Service.generateCoachPhotoUploadUrl(
-          fileName,
-          contentType,
-          "pending",
-        );
+      const { uploadUrl, downloadUrl, key } = await s3Service.generateCoachPhotoUploadUrl(
+        fileName,
+        contentType,
+        "pending"
+      );
 
       return res.json({
         success: true,
@@ -212,13 +203,10 @@ router.post(
       log.error("Photo upload URL generation error:", error);
       return res.status(500).json({
         success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to generate upload URL",
+        message: error instanceof Error ? error.message : "Failed to generate upload URL",
       });
     }
-  },
+  }
 );
 
 // Admin: presigned upload URL for coach verification / venue images
@@ -227,7 +215,7 @@ router.post(
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:create"),
-  getAdminCoachVerificationUploadUrlHandler,
+  getAdminCoachVerificationUploadUrlHandler
 );
 
 // Admin: update coach profile partially
@@ -236,7 +224,7 @@ router.put(
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:manage"),
-  updateCoachAdminHandler,
+  updateCoachAdminHandler
 );
 
 // Admin: submit verification on behalf of coach
@@ -245,7 +233,7 @@ router.post(
   authMiddleware,
   adminMiddleware,
   requirePermission("coaches:verify"),
-  submitCoachVerificationAdminHandler,
+  submitCoachVerificationAdminHandler
 );
 
 // Refund & dispute handling
@@ -254,28 +242,28 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:refund"),
-  listRefunds,
+  listRefunds
 );
 router.post(
   "/refunds/:bookingId",
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:refund"),
-  processRefund,
+  processRefund
 );
 router.get(
   "/refunds/:bookingId/status",
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:refund"),
-  getRefundStatus,
+  getRefundStatus
 );
 router.get(
   "/disputes",
   authMiddleware,
   adminMiddleware,
   requirePermission("disputes:view"),
-  listDisputes,
+  listDisputes
 );
 
 // Append-only lifecycle timeline for a booking or expert session.
@@ -285,14 +273,14 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:view"),
-  getBookingTimeline,
+  getBookingTimeline
 );
 router.post(
   "/disputes/:bookingId",
   authMiddleware,
   adminMiddleware,
   requirePermission("disputes:resolve"),
-  handleDispute,
+  handleDispute
 );
 
 // Webhook Recovery & Reconciliations
@@ -301,21 +289,21 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:refund"), // finance/ops-sensitive, same tier as payouts
-  listWebhookErrors,
+  listWebhookErrors
 );
 router.post(
   "/webhook-errors/:key/retry",
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:refund"),
-  retryWebhookError,
+  retryWebhookError
 );
 router.post(
   "/reconcile/:type/:orderId",
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:refund"),
-  reconcileOrderAdmin,
+  reconcileOrderAdmin
 );
 
 // Payouts & Settlements
@@ -324,14 +312,14 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:view"),
-  listPendingPayouts,
+  listPendingPayouts
 );
 router.post(
   "/payouts/mark-paid",
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:refund"), // You could create a 'payouts:manage' permission, but bookings:refund is functionally identical for finance ops
-  markPayoutsAsPaid,
+  markPayoutsAsPaid
 );
 
 router.get(
@@ -339,14 +327,14 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("users:view"),
-  listUsersForSafety,
+  listUsersForSafety
 );
 router.patch(
   "/users/:userId/safety",
   authMiddleware,
   adminMiddleware,
   requirePermission("users:manage"),
-  updateUserSafetyStatus,
+  updateUserSafetyStatus
 );
 
 router.get(
@@ -354,14 +342,14 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("users:view"),
-  listCommunityReports,
+  listCommunityReports
 );
 router.patch(
   "/community/reports/bulk-review",
   authMiddleware,
   adminMiddleware,
   requirePermission("users:manage"),
-  bulkReviewCommunityReports,
+  bulkReviewCommunityReports
 );
 router.patch(
   "/community/reports/:reportId",
@@ -369,7 +357,7 @@ router.patch(
   adminMiddleware,
   requirePermission("users:manage"),
   validateRequest(communityModerationActionSchema),
-  reviewCommunityReport,
+  reviewCommunityReport
 );
 
 // Promo code management
@@ -378,7 +366,7 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:view"),
-  listPromoCodesHandler,
+  listPromoCodesHandler
 );
 router.post(
   "/promo-codes",
@@ -386,21 +374,21 @@ router.post(
   adminMiddleware,
   requirePermission("bookings:manage"),
   validateRequest(promoCreateSchema),
-  createPromoCodeHandler,
+  createPromoCodeHandler
 );
 router.patch(
   "/promo-codes/:codeId/deactivate",
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:manage"),
-  deactivatePromoCodeHandler,
+  deactivatePromoCodeHandler
 );
 router.get(
   "/promo-codes/:codeId/stats",
   authMiddleware,
   adminMiddleware,
   requirePermission("bookings:view"),
-  promoCodeStatsHandler,
+  promoCodeStatsHandler
 );
 
 // Admin management routes (System Admin only)
@@ -410,55 +398,44 @@ router.post(
   adminMiddleware,
   superAdminMiddleware,
   validateRequest(adminCreateSchema),
-  createAdminAccount,
+  createAdminAccount
 );
-router.get(
-  "/list",
-  authMiddleware,
-  adminMiddleware,
-  requirePermission("admins:view"),
-  listAdmins,
-);
+router.get("/list", authMiddleware, adminMiddleware, requirePermission("admins:view"), listAdmins);
 router.get(
   "/audit-logs",
   authMiddleware,
   adminMiddleware,
   superAdminMiddleware,
-  listAuditLogsHandler,
+  listAuditLogsHandler
 );
-router.get(
-  "/role-templates",
-  authMiddleware,
-  adminMiddleware,
-  getRoleTemplates,
-);
+router.get("/role-templates", authMiddleware, adminMiddleware, getRoleTemplates);
 router.put(
   "/:adminId/permissions",
   authMiddleware,
   adminMiddleware,
   requirePermission("admins:manage"),
-  updateAdminPermissionsHandler,
+  updateAdminPermissionsHandler
 );
 router.put(
   "/:adminId/role",
   authMiddleware,
   adminMiddleware,
   requirePermission("admins:manage"),
-  updateAdminRoleHandler,
+  updateAdminRoleHandler
 );
 router.patch(
   "/:adminId/profile",
   authMiddleware,
   adminMiddleware,
   requirePermission("admins:manage"),
-  updateAdminProfileHandler,
+  updateAdminProfileHandler
 );
 router.patch(
   "/:adminId/status",
   authMiddleware,
   adminMiddleware,
   requirePermission("admins:manage"),
-  updateAdminStatusHandler,
+  updateAdminStatusHandler
 );
 
 // Concierge Requests management
@@ -467,21 +444,21 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("users:view"),
-  getAllConciergeRequests,
+  getAllConciergeRequests
 );
 router.patch(
   "/concierge-requests/:id/status",
   authMiddleware,
   adminMiddleware,
   requirePermission("users:manage"),
-  updateConciergeRequestStatus,
+  updateConciergeRequestStatus
 );
 router.get(
   "/concierge-requests/:id/document",
   authMiddleware,
   adminMiddleware,
   requirePermission("users:view"),
-  getConciergeDocumentDownloadUrl,
+  getConciergeDocumentDownloadUrl
 );
 
 export default router;

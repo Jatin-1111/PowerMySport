@@ -203,7 +203,7 @@ const playerSchema = new Schema<PlayerDocument>(
       graduationYear: { type: Number },
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 export const Player = mongoose.model<PlayerDocument>("Player", playerSchema);

@@ -21,11 +21,7 @@ interface AskQuestionModalProps {
   onSuccess: () => void;
 }
 
-export default function AskQuestionModal({
-  isOpen,
-  onClose,
-  onSuccess,
-}: AskQuestionModalProps) {
+export default function AskQuestionModal({ isOpen, onClose, onSuccess }: AskQuestionModalProps) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
@@ -138,7 +134,7 @@ export default function AskQuestionModal({
                 className="relative my-auto flex w-full max-w-2xl flex-col rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5"
               >
                 {/* Header */}
-                <div className="relative border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:px-8 sm:py-6 rounded-t-[2rem]">
+                <div className="relative rounded-t-[2rem] border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:px-8 sm:py-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="font-title text-xl font-bold tracking-tight text-slate-900">
@@ -175,7 +171,7 @@ export default function AskQuestionModal({
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className="h-4 w-4 text-turf-green"
+                          className="text-turf-green h-4 w-4"
                         >
                           <circle cx="12" cy="12" r="10" />
                           <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
@@ -183,7 +179,7 @@ export default function AskQuestionModal({
                         </svg>
                         Sport (Optional)
                       </label>
-                      <div className="[&>div>div:first-child]:py-3 [&>div>div:first-child]:rounded-2xl">
+                      <div className="[&>div>div:first-child]:rounded-2xl [&>div>div:first-child]:py-3">
                         <SportsSelect
                           value={sport}
                           onChange={setSport}
@@ -196,10 +192,7 @@ export default function AskQuestionModal({
                     {/* Title */}
                     <div>
                       <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                        <MessageCircle
-                          size={16}
-                          className="text-power-orange"
-                        />
+                        <MessageCircle size={16} className="text-power-orange" />
                         Question Title *
                       </label>
                       <input
@@ -208,9 +201,9 @@ export default function AskQuestionModal({
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="What's your question? (min 10 characters)"
                         required
-                        className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-power-orange/50 focus:outline-none focus:ring-4 focus:ring-power-orange/10"
+                        className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:ring-4 focus:outline-none"
                       />
-                      <p className="mt-1.5 pl-1 text-xs text-slate-400 font-medium">
+                      <p className="mt-1.5 pl-1 text-xs font-medium text-slate-400">
                         {title.length} / 500 characters
                       </p>
                     </div>
@@ -227,9 +220,9 @@ export default function AskQuestionModal({
                         placeholder="Describe: what's your situation? What have you already tried? What result do you want? (min 20 characters)"
                         rows={5}
                         required
-                        className="w-full resize-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-purple-500/50 focus:outline-none focus:ring-4 focus:ring-purple-500/10"
+                        className="w-full resize-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-purple-500/50 focus:ring-4 focus:ring-purple-500/10 focus:outline-none"
                       />
-                      <p className="mt-1.5 pl-1 text-xs text-slate-400 font-medium">
+                      <p className="mt-1.5 pl-1 text-xs font-medium text-slate-400">
                         {body.length} / 2000 characters
                       </p>
                     </div>
@@ -247,7 +240,7 @@ export default function AskQuestionModal({
                           value={tags}
                           onChange={(e) => setTags(e.target.value)}
                           placeholder="e.g. fitness, diet"
-                          className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-blue-500/50 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                          className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
                         />
                       </div>
 
@@ -262,7 +255,7 @@ export default function AskQuestionModal({
                           value={city}
                           onChange={(e) => setCity(e.target.value)}
                           placeholder="e.g. New York, NY"
-                          className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-rose-500/50 focus:outline-none focus:ring-4 focus:ring-rose-500/10"
+                          className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-rose-500/50 focus:ring-4 focus:ring-rose-500/10 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -277,7 +270,7 @@ export default function AskQuestionModal({
                         <select
                           value={category}
                           onChange={(e) => setCategory(e.target.value)}
-                          className="w-full appearance-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition focus:border-violet-500/50 focus:outline-none focus:ring-4 focus:ring-violet-500/10 pr-10"
+                          className="w-full appearance-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 pr-10 text-sm shadow-sm transition focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/10 focus:outline-none"
                         >
                           {COMMUNITY_POST_CATEGORIES.map((cat) => (
                             <option key={cat} value={cat}>
@@ -287,7 +280,7 @@ export default function AskQuestionModal({
                         </select>
                         <ChevronDown
                           size={16}
-                          className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                          className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-slate-400"
                         />
                       </div>
                     </div>
@@ -313,9 +306,7 @@ export default function AskQuestionModal({
                         <span className="text-sm font-semibold text-slate-800">
                           Post Anonymously
                         </span>
-                        <span className="text-xs text-slate-500">
-                          — your name will be hidden
-                        </span>
+                        <span className="text-xs text-slate-500">— your name will be hidden</span>
                       </div>
                     </label>
 
@@ -328,7 +319,7 @@ export default function AskQuestionModal({
                 </div>
 
                 {/* Footer */}
-                <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-end gap-3 rounded-b-[2rem] shrink-0">
+                <div className="flex shrink-0 items-center justify-end gap-3 rounded-b-[2rem] border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:px-8 sm:py-5">
                   <button
                     type="button"
                     onClick={onClose}
@@ -341,7 +332,7 @@ export default function AskQuestionModal({
                     type="submit"
                     form="ask-question-form"
                     disabled={isSubmitting}
-                    className="inline-flex min-w-[150px] items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-power-orange/20 transition hover:bg-[#d96610] focus:outline-none focus:ring-4 focus:ring-power-orange/20 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="bg-power-orange shadow-power-orange/20 focus:ring-power-orange/20 inline-flex min-w-[150px] items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] focus:ring-4 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {isSubmitting ? (
                       <>
@@ -359,6 +350,6 @@ export default function AskQuestionModal({
         </>
       )}
     </AnimatePresence>,
-    document.body,
+    document.body
   );
 }

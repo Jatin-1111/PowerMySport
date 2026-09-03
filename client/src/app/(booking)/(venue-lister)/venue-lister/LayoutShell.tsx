@@ -4,40 +4,36 @@ import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-    DashboardShell,
-    type DashboardNavItem,
+  DashboardShell,
+  type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import { PayoutBanner } from "@/modules/shared/components/payout/PayoutBanner";
 import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
 import {
-    BadgeIndianRupee,
-    BarChart2,
-    BookOpen,
-    Calendar,
-    Grid3x3,
-    LayoutDashboard,
-    Settings,
-    Star,
-    TrendingUp,
-    User,
+  BadgeIndianRupee,
+  BarChart2,
+  BookOpen,
+  Calendar,
+  Grid3x3,
+  LayoutDashboard,
+  Settings,
+  Star,
+  TrendingUp,
+  User,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 
-export default function VendorLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function VendorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   // undefined = loading, null = no method, object = has method
-  const [venuePayoutMethod, setVenuePayoutMethod] = useState<
-    IPayoutMethod | null | undefined
-  >(undefined);
+  const [venuePayoutMethod, setVenuePayoutMethod] = useState<IPayoutMethod | null | undefined>(
+    undefined
+  );
 
   // Who may be here is declared in src/flow/policy.ts, not repeated here.
   const guard = useRoleGuard();

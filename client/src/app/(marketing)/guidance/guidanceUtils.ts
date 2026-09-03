@@ -136,7 +136,10 @@ export const OBJECTIVE_MAP: Record<ProblemId, GuidanceFormState["primary_objecti
 // "custom" spans every ambition level (a burnout question and a national-trials
 // question both land here), so infer the objective from the experience-level
 // question when the parent answered it, instead of assuming one fixed level.
-export const CUSTOM_OBJECTIVE_BY_EXPERIENCE: Record<string, GuidanceFormState["primary_objective"]> = {
+export const CUSTOM_OBJECTIVE_BY_EXPERIENCE: Record<
+  string,
+  GuidanceFormState["primary_objective"]
+> = {
   beginner: "Recreational",
   intermediate: "Fitness",
   competitive: "Compete",
@@ -146,7 +149,8 @@ export const WEAKNESS_AREA_LABELS: Record<string, string> = {
   technique: "technical execution (incorrect form, poor timing, faulty mechanics)",
   fitness: "physical fitness (strength, speed, stamina, or agility)",
   mental: "mental focus and pressure management (nerves, concentration, composure)",
-  tactical: "tactical reading and game intelligence (decision-making, positioning, pattern recognition)",
+  tactical:
+    "tactical reading and game intelligence (decision-making, positioning, pattern recognition)",
 };
 
 export const WEAKNESS_CONTEXT_LABELS: Record<string, string> = {
@@ -220,7 +224,8 @@ export const BLOCKER_LABELS: Record<string, string> = {
   technique: "technical gaps — fundamentals aren't at the standard required for the next level",
   fitness: "physical conditioning — not strong or fit enough to compete at the next level",
   mental: "mental game — confidence, composure, or belief is holding them back",
-  competition: "lack of competitive exposure — not getting enough match practice at the right level",
+  competition:
+    "lack of competitive exposure — not getting enough match practice at the right level",
 };
 
 export const TOP_STRENGTH_LABELS: Record<string, string> = {
@@ -231,9 +236,12 @@ export const TOP_STRENGTH_LABELS: Record<string, string> = {
 };
 
 export const EXECUTOR_LABELS: Record<string, string> = {
-  child: "the child on their own — no adult running the sessions, so every drill must be self-explanatory, safe to do solo, and need no partner or feeder",
-  parent: "a parent with no coaching background — drills must be simple to supervise, with plain-words instructions on what 'done right' looks like",
-  coach: "a coach or trainer — drills can assume proper feeding, correction, and progression from a knowledgeable adult",
+  child:
+    "the child on their own — no adult running the sessions, so every drill must be self-explanatory, safe to do solo, and need no partner or feeder",
+  parent:
+    "a parent with no coaching background — drills must be simple to supervise, with plain-words instructions on what 'done right' looks like",
+  coach:
+    "a coach or trainer — drills can assume proper feeding, correction, and progression from a knowledgeable adult",
 };
 
 export const CHALLENGE_CATEGORY_LABELS: Record<string, string> = {
@@ -257,18 +265,20 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
   // Fix: avoid double space when age is empty
   const agePrefix = form.age ? `${form.age}-year-old ` : "";
   const levelLabel =
-    form.experienceLevel === "beginner" ? "beginner (city / neighbourhood)"
-    : form.experienceLevel === "intermediate" ? "intermediate (district / state)"
-    : form.experienceLevel === "competitive" ? "competitive (national / international)"
-    : "developing";
+    form.experienceLevel === "beginner"
+      ? "beginner (city / neighbourhood)"
+      : form.experienceLevel === "intermediate"
+        ? "intermediate (district / state)"
+        : form.experienceLevel === "competitive"
+          ? "competitive (national / international)"
+          : "developing";
   const genderLabel =
-    form.gender === "MALE" ? "son"
-    : form.gender === "FEMALE" ? "daughter"
-    : "child";
+    form.gender === "MALE" ? "son" : form.gender === "FEMALE" ? "daughter" : "child";
 
   switch (problemId) {
     case "weakness": {
-      const area = WEAKNESS_AREA_LABELS[form.weaknessArea ?? ""] ?? form.weaknessArea ?? "a specific weakness";
+      const area =
+        WEAKNESS_AREA_LABELS[form.weaknessArea ?? ""] ?? form.weaknessArea ?? "a specific weakness";
       const detail = form.weaknessDetail.trim();
       const context = WEAKNESS_CONTEXT_LABELS[form.weaknessContext ?? ""] ?? "";
       const tried = WEAKNESS_ATTEMPTS_LABELS[form.weaknessAttempts ?? ""] ?? "";
@@ -285,25 +295,38 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         context ? `This weakness shows up most ${context}.` : "",
         tried ? `What we have already tried: ${tried}.` : "We have not yet tried any specific fix.",
         `They can commit ${hrs} hours per week to fixing this, with a ${budget.toLowerCase()} budget for any specialist support.`,
-        executor ? `The sessions will be run by ${executor}. Scope every drill to what this person can realistically deliver.` : "",
+        executor
+          ? `The sessions will be run by ${executor}. Scope every drill to what this person can realistically deliver.`
+          : "",
         `Please create a highly targeted, practical plan to fix this specific weakness${detail ? " exactly as described above — do not default back to generic advice for the broader category" : ""}. Include:`,
         `1) Root cause analysis — why this weakness typically develops at the ${levelLabel} level in ${sport}.`,
         `2) A structured drill programme (daily/weekly schedule) with specific exercises addressing the root cause.`,
         `3) Progression checkpoints — how to know they are improving and when to move to the next phase.`,
         `4) Match application — how to translate the drill improvements into actual game performance.`,
         `5) Common mistakes to avoid when addressing this type of weakness.`,
-      ].filter(Boolean).join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
     }
 
     case "tournament": {
       const timeframe =
-        form.timeline === "weeks" ? "2–4 weeks"
-        : form.timeline === "months-1-3" ? "1–3 months"
-        : form.timeline === "months-3-6" ? "3–6 months"
-        : form.timeline ?? "a few months";
-      const tournLevel = TOURNAMENT_LEVEL_LABELS[form.tournamentLevel ?? ""] ?? form.tournamentLevel ?? "competitive";
+        form.timeline === "weeks"
+          ? "2–4 weeks"
+          : form.timeline === "months-1-3"
+            ? "1–3 months"
+            : form.timeline === "months-3-6"
+              ? "3–6 months"
+              : (form.timeline ?? "a few months");
+      const tournLevel =
+        TOURNAMENT_LEVEL_LABELS[form.tournamentLevel ?? ""] ??
+        form.tournamentLevel ??
+        "competitive";
       const fitness = PHYSICAL_READINESS_LABELS[form.physicalReadiness ?? ""] ?? "";
-      const gap = TOURNAMENT_GAP_LABELS[form.tournamentGap ?? ""] ?? form.tournamentGap ?? "overall preparation";
+      const gap =
+        TOURNAMENT_GAP_LABELS[form.tournamentGap ?? ""] ??
+        form.tournamentGap ??
+        "overall preparation";
       const hrs = HOURS_MAP[form.weeklyHours ?? ""] ?? 6;
       const budget = BUDGET_MAP[form.budgetRange ?? ""] ?? "Moderate";
       const executor = EXECUTOR_LABELS[form.executor ?? ""] ?? "";
@@ -312,7 +335,9 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         fitness ? `Their current match fitness: ${fitness}.` : "",
         `The most critical gap to close before the tournament: ${gap}.`,
         `They can train ${hrs} hours per week in the lead-up, with a ${budget.toLowerCase()} budget for prep support.`,
-        executor ? `The prep sessions will be run by ${executor}. Scope every drill to what this person can realistically deliver.` : "",
+        executor
+          ? `The prep sessions will be run by ${executor}. Scope every drill to what this person can realistically deliver.`
+          : "",
         `Please build a detailed, phase-by-phase tournament preparation plan. Include:`,
         `1) Phase breakdown — specific weekly focus areas across the ${timeframe} lead-up (technical, physical, tactical, match simulation).`,
         `2) Priority drills and sessions addressing the key gap: ${gap}.`,
@@ -320,7 +345,9 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         `4) Mental and match readiness — pre-match routine, pressure simulation, composure strategies.`,
         `5) Peak week strategy — how to taper and prepare in the final 7 days before the tournament.`,
         `6) What to do on competition day itself.`,
-      ].filter(Boolean).join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
     }
 
     case "levelup": {
@@ -328,7 +355,8 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
       const to = TARGET_LEVEL_LABELS[form.targetLevel ?? ""] ?? form.targetLevel ?? "next";
       const timeAtLevel = TIME_AT_LEVEL_LABELS[form.timeAtCurrentLevel ?? ""] ?? "";
       const training = TRAINING_TYPE_LABELS[form.trainingType ?? ""] ?? "";
-      const blocker = BLOCKER_LABELS[form.levelBlocker ?? ""] ?? form.levelBlocker ?? "general development";
+      const blocker =
+        BLOCKER_LABELS[form.levelBlocker ?? ""] ?? form.levelBlocker ?? "general development";
       const strength = TOP_STRENGTH_LABELS[form.topStrength ?? ""] ?? "";
       const hrs = HOURS_MAP[form.weeklyHours ?? ""] ?? 6;
       const budget = BUDGET_MAP[form.budgetRange ?? ""] ?? "Moderate";
@@ -344,7 +372,9 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         `Main bottleneck holding them back: ${blocker}.`,
         strength ? `Their biggest strength to build on: ${strength}.` : "",
         `They can commit ${hrs} hours per week, with a ${budget.toLowerCase()} monthly budget for development.`,
-        executor ? `The training will be run by ${executor}. Scope every recommendation to what this person can realistically deliver.` : "",
+        executor
+          ? `The training will be run by ${executor}. Scope every recommendation to what this person can realistically deliver.`
+          : "",
         `Please map out a comprehensive level-up roadmap. Include:`,
         `1) Honest gap analysis — exactly what the move from ${from} to ${to} requires in ${sport} (technical, physical, mental, competitive).`,
         `2) Addressing the primary blocker (${blocker}) first — specific actions, drills, or structural changes needed.`,
@@ -352,7 +382,9 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         `4) Milestone roadmap — what intermediate checkpoints look like and a realistic timeline.`,
         `5) Competitive exposure strategy — what tournaments, trials, or events to target at each stage.`,
         `6) What success looks like at the ${to} level — specific benchmarks to aim for.`,
-      ].filter(Boolean).join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
     }
 
     case "custom": {
@@ -363,14 +395,16 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         form.sport
           ? `My ${agePrefix}${genderLabel} plays ${sport} at the ${levelLabel} level.`
           : agePrefix
-          ? `My ${agePrefix}${genderLabel} is involved in sport.`
-          : `My ${genderLabel} is involved in sport.`,
+            ? `My ${agePrefix}${genderLabel} is involved in sport.`
+            : `My ${genderLabel} is involved in sport.`,
         category ? `The type of challenge we are facing: ${category}.` : "",
         `Here is the specific situation: ${challenge}`,
         `What I am looking for: ${outcome}.`,
         `Please provide practical, expert-backed advice and guidance tailored to this exact situation.`,
         `Be specific and actionable — avoid generic advice. If relevant, include concrete next steps, professional resources to seek, and what to watch out for.`,
-      ].filter(Boolean).join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
     }
 
     default:
@@ -382,9 +416,7 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
 
 export function buildPayload(form: ConsultForm, problemId: ProblemId): GuidanceFormState {
   const rawAge = Number(form.age);
-  const safeAge = form.age && !Number.isNaN(rawAge)
-    ? Math.max(3, Math.min(25, rawAge))
-    : 10;
+  const safeAge = form.age && !Number.isNaN(rawAge) ? Math.max(3, Math.min(25, rawAge)) : 10;
 
   return {
     child_age: safeAge,
@@ -400,8 +432,7 @@ export function buildPayload(form: ConsultForm, problemId: ProblemId): GuidanceF
         : OBJECTIVE_MAP[problemId],
     // Fixing a weakness / prepping a tournament are short, bounded problems;
     // levelling up is genuinely a journey; "ask anything" lets the AI decide.
-    plan_horizon:
-      problemId === "levelup" ? "journey" : problemId === "custom" ? "auto" : "short",
+    plan_horizon: problemId === "levelup" ? "journey" : problemId === "custom" ? "auto" : "short",
     weekly_time_commitment: HOURS_MAP[form.weeklyHours ?? ""] ?? 6,
     budget_tier: BUDGET_MAP[form.budgetRange ?? ""] ?? "Moderate",
     parent_specific_question: buildQuestion(form, problemId),

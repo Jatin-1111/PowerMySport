@@ -7,25 +7,25 @@ import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-    DashboardNavItem,
-    DashboardShell,
+  DashboardNavItem,
+  DashboardShell,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import {
-    Bell,
-    Calendar,
-    CalendarRange,
-    CreditCard,
-    Home,
-    LayoutDashboard,
-    LifeBuoy,
-    Mail,
-    MapPin,
-    Settings,
-    User,
-    UserPlus,
-    Users,
-    Wallet,
+  Bell,
+  Calendar,
+  CalendarRange,
+  CreditCard,
+  Home,
+  LayoutDashboard,
+  LifeBuoy,
+  Mail,
+  MapPin,
+  Settings,
+  User,
+  UserPlus,
+  Users,
+  Wallet,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -41,11 +41,7 @@ import React from "react";
  * `window.location.href = "/login"`, a full navigation that overwrites this
  * guard's `router.replace("/login?redirect=…")` and drops the return path.
  */
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const guard = useRoleGuard();
 
   if (guard !== "allowed") {
@@ -128,8 +124,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       href: "/dashboard/invitations",
       label: "Invitations",
       icon: Mail,
-      badge:
-        counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
+      badge: counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
       section: "Community",
     },
     {
@@ -199,8 +194,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       href: "/dashboard/invitations",
       label: "Invites",
       icon: Mail,
-      badge:
-        counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
+      badge: counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
     },
     {
       href: "/dashboard/my-profile",
@@ -217,9 +211,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
 
   return (
     <DashboardShell
-      dashboardLabel={
-        user?.role === "Parent" ? "Parent Dashboard" : "Player Dashboard"
-      }
+      dashboardLabel={user?.role === "Parent" ? "Parent Dashboard" : "Player Dashboard"}
       userName={user?.name}
       navItems={navItems}
       bottomNavItems={bottomNavItems}

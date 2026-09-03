@@ -12,10 +12,7 @@ const fail = (res: Response, error: unknown, code = 400) =>
 /**
  * GET /api/federations?sport=tennis
  */
-export const listFederations = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listFederations = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sport } = req.query;
     const filter: Record<string, unknown> = { isActive: true };
@@ -24,7 +21,7 @@ export const listFederations = async (
     }
     const federations = await Federation.find(filter)
       .select(
-        "-stateAssociations -eligibilityCriteria -registrationSteps -requiredDocuments -sourceUrls",
+        "-stateAssociations -eligibilityCriteria -registrationSteps -requiredDocuments -sourceUrls"
       )
       .lean();
     res.json({ success: true, data: federations });
@@ -36,10 +33,7 @@ export const listFederations = async (
 /**
  * GET /api/federations/:slug
  */
-export const getFederation = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getFederation = async (req: Request, res: Response): Promise<void> => {
   try {
     const slug = typeof req.params.slug === "string" ? req.params.slug : "";
     const fed = await Federation.findOne({ slug: slug.toLowerCase() }).lean();
@@ -56,10 +50,7 @@ export const getFederation = async (
 /**
  * GET /api/federations/:slug/tournaments?level=national&ageGroup=U-14&page=1&limit=20
  */
-export const getFederationTournaments = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getFederationTournaments = async (req: Request, res: Response): Promise<void> => {
   try {
     const slug = typeof req.params.slug === "string" ? req.params.slug : "";
     const { level, ageGroup, page = "1", limit = "20" } = req.query;
@@ -103,11 +94,7 @@ export const getFederationTournaments = async (
     const skip = (pageNum - 1) * limitNum;
 
     const [tournaments, total] = await Promise.all([
-      Tournament.find(filter)
-        .sort({ level: 1, name: 1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean(),
+      Tournament.find(filter).sort({ level: 1, name: 1 }).skip(skip).limit(limitNum).lean(),
       Tournament.countDocuments(filter),
     ]);
 
@@ -136,17 +123,12 @@ export const getFederationTournaments = async (
  * are keyed by sportSlug only (not a specific federation), so this is the
  * sport-wide calendar, not filtered to this federation's own events.
  */
-export const getFederationEditions = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getFederationEditions = async (req: Request, res: Response): Promise<void> => {
   try {
     const slug = typeof req.params.slug === "string" ? req.params.slug : "";
     const { limit = "50" } = req.query;
 
-    const fed = await Federation.findOne({ slug: slug.toLowerCase() })
-      .select("sportSlug")
-      .lean();
+    const fed = await Federation.findOne({ slug: slug.toLowerCase() }).select("sportSlug").lean();
     if (!fed) {
       res.status(404).json({ success: false, message: "Federation not found." });
       return;
@@ -171,7 +153,7 @@ export const getFederationEditions = async (
 
     const lastCheckedAt = editions.reduce<Date | null>(
       (latest, e) => (!latest || e.lastCheckedAt > latest ? e.lastCheckedAt : latest),
-      null,
+      null
     );
 
     res.json({ success: true, data: { editions, lastCheckedAt } });

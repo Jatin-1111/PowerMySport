@@ -1,10 +1,5 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import {
-  breadcrumbJsonLd,
-  clampText,
-  expertJsonLd,
-  NOINDEX_METADATA,
-} from "@/lib/seo";
+import { breadcrumbJsonLd, clampText, expertJsonLd, NOINDEX_METADATA } from "@/lib/seo";
 import type { Metadata } from "next";
 import { ExpertDetailClient } from "./ExpertDetailClient";
 
@@ -40,13 +35,11 @@ interface PublicExpert {
 }
 
 async function fetchExpert(expertId: string): Promise<PublicExpert | null> {
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
   try {
-    const res = await fetch(
-      `${apiBase}/experts/${encodeURIComponent(expertId)}`,
-      { next: { revalidate: 3600 } },
-    );
+    const res = await fetch(`${apiBase}/experts/${encodeURIComponent(expertId)}`, {
+      next: { revalidate: 3600 },
+    });
     if (!res.ok) return null;
     const body = await res.json();
     return body?.success ? (body.data as PublicExpert) : null;
@@ -59,7 +52,7 @@ function expertDescription(expert: PublicExpert): string {
   const sports = expert.sports?.length ? expert.sports.join(", ") : "sport";
   return clampText(
     expert.bio ||
-      `Book a 1:1 sports guidance session with ${expert.name ?? "this expert"} on PowerMySport — ${sports} guidance for parents and young athletes in India.`,
+      `Book a 1:1 sports guidance session with ${expert.name ?? "this expert"} on PowerMySport — ${sports} guidance for parents and young athletes in India.`
   );
 }
 
@@ -79,9 +72,7 @@ export async function generateMetadata({
 
   const name = expert.name ?? "PowerMySport Expert";
   const description = expertDescription(expert);
-  const title = expert.sports?.length
-    ? `${name} — ${expert.sports.join(", ")} expert`
-    : name;
+  const title = expert.sports?.length ? `${name} — ${expert.sports.join(", ")} expert` : name;
 
   return {
     title,
@@ -127,14 +118,10 @@ export default async function ExpertDetailPage({
                 ? expert.expertise.join(", ")
                 : "Sports guidance expert",
               ...(expert.sports?.length ? { sports: expert.sports } : {}),
-              ...(expert.languages?.length
-                ? { languages: expert.languages }
-                : {}),
+              ...(expert.languages?.length ? { languages: expert.languages } : {}),
               ...(expert.city ? { city: expert.city } : {}),
               // `sessionFee` is stored in whole rupees, unlike the shop's paise.
-              ...(typeof expert.sessionFee === "number"
-                ? { priceInr: expert.sessionFee }
-                : {}),
+              ...(typeof expert.sessionFee === "number" ? { priceInr: expert.sessionFee } : {}),
               ...(expert.reviewCount
                 ? {
                     ratingValue: expert.rating,

@@ -22,10 +22,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; icon: React.ReactNode; badge: string }
-> = {
+const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; badge: string }> = {
   pending: {
     label: "Pending",
     icon: <Clock size={14} />,
@@ -67,11 +64,7 @@ function RequestRow({
   onDownload,
 }: {
   req: ConciergeRequest;
-  onStatusChange: (
-    id: string,
-    status: ConciergeRequest["status"],
-    notes?: string,
-  ) => Promise<void>;
+  onStatusChange: (id: string, status: ConciergeRequest["status"], notes?: string) => Promise<void>;
   onDownload: (requestId: string, s3Key: string, fileName: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -80,8 +73,7 @@ function RequestRow({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const hasChanged =
-    pendingStatus !== req.status || notes !== (req.adminNotes || "");
+  const hasChanged = pendingStatus !== req.status || notes !== (req.adminNotes || "");
 
   const handleSave = async () => {
     setSaving(true);
@@ -92,29 +84,25 @@ function RequestRow({
   };
 
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm mb-3">
+    <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       {/* Row header */}
       <button
         type="button"
         onClick={() => setExpanded((o) => !o)}
-        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-slate-50 transition"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-50"
       >
-        <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-3">
           {/* User */}
           <div>
-            <p className="font-semibold text-slate-900 truncate">
-              {req.userId?.name || "Unknown"}
-            </p>
-            <p className="text-xs text-slate-500 truncate">
-              {req.userId?.email || "N/A"}
-            </p>
+            <p className="truncate font-semibold text-slate-900">{req.userId?.name || "Unknown"}</p>
+            <p className="truncate text-xs text-slate-500">{req.userId?.email || "N/A"}</p>
           </div>
           {/* Request */}
           <div>
-            <p className="font-semibold text-slate-900 capitalize truncate">
+            <p className="truncate font-semibold text-slate-900 capitalize">
               {req.sportSlug} · {req.itemType || "Tournament"}
             </p>
-            <p className="text-xs text-slate-600 truncate">
+            <p className="truncate text-xs text-slate-600">
               {req.itemName || req.prerequisiteName || "General Request"}
             </p>
           </div>
@@ -133,69 +121,55 @@ function RequestRow({
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="border-t border-slate-100 px-5 py-5 space-y-5 bg-slate-50/40">
+        <div className="space-y-5 border-t border-slate-100 bg-slate-50/40 px-5 py-5">
           {/* Request details */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                 Request Details
               </p>
               <div className="space-y-1.5 text-sm">
                 <div className="flex gap-2">
-                  <span className="text-slate-500 shrink-0">Sport:</span>
-                  <span className="font-semibold text-slate-900 capitalize">
-                    {req.sportSlug}
-                  </span>
+                  <span className="shrink-0 text-slate-500">Sport:</span>
+                  <span className="font-semibold text-slate-900 capitalize">{req.sportSlug}</span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-slate-500 shrink-0">Type:</span>
+                  <span className="shrink-0 text-slate-500">Type:</span>
                   <span className="font-semibold text-slate-900 capitalize">
                     {req.itemType || "Tournament"}
                   </span>
                 </div>
                 {req.itemName && (
                   <div className="flex gap-2">
-                    <span className="text-slate-500 shrink-0">For:</span>
-                    <span className="font-semibold text-slate-900">
-                      {req.itemName}
-                    </span>
+                    <span className="shrink-0 text-slate-500">For:</span>
+                    <span className="font-semibold text-slate-900">{req.itemName}</span>
                   </div>
                 )}
                 {req.prerequisiteName && (
                   <div className="flex gap-2">
-                    <span className="text-slate-500 shrink-0">
-                      Prerequisite:
-                    </span>
-                    <span className="font-semibold text-slate-900">
-                      {req.prerequisiteName}
-                    </span>
+                    <span className="shrink-0 text-slate-500">Prerequisite:</span>
+                    <span className="font-semibold text-slate-900">{req.prerequisiteName}</span>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+              <p className="mb-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                 Documents Submitted
               </p>
               {req.documents.length === 0 ? (
-                <p className="text-sm text-slate-400 italic">
-                  No documents attached
-                </p>
+                <p className="text-sm text-slate-400 italic">No documents attached</p>
               ) : (
                 <div className="space-y-2">
                   {req.documents.map((doc, idx) => (
                     <button
                       key={idx}
-                      onClick={() =>
-                        onDownload(req._id, doc.s3Key, doc.documentName)
-                      }
-                      className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition"
+                      onClick={() => onDownload(req._id, doc.s3Key, doc.documentName)}
+                      className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:border-indigo-200 hover:bg-indigo-50"
                     >
                       <Download size={13} />
-                      <span className="truncate flex-1 text-left">
-                        {doc.documentName}
-                      </span>
+                      <span className="flex-1 truncate text-left">{doc.documentName}</span>
                     </button>
                   ))}
                 </div>
@@ -204,20 +178,18 @@ function RequestRow({
           </div>
 
           {/* Action panel — status + notes */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+            <p className="flex items-center gap-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
               <MessageSquare size={12} /> Admin Response to Parent
             </p>
 
             {/* Status selector */}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">
                 Update Status
               </label>
               <div className="flex flex-wrap gap-2">
-                {(
-                  ["pending", "processing", "completed", "rejected"] as const
-                ).map((s) => {
+                {(["pending", "processing", "completed", "rejected"] as const).map((s) => {
                   const cfg = STATUS_CONFIG[s];
                   const active = pendingStatus === s;
                   return (
@@ -228,12 +200,12 @@ function RequestRow({
                       className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                         active
                           ? s === "completed"
-                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                            ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
                             : s === "rejected"
-                              ? "bg-red-600 text-white border-red-600 shadow-sm"
+                              ? "border-red-600 bg-red-600 text-white shadow-sm"
                               : s === "processing"
-                                ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                                : "bg-amber-500 text-white border-amber-500 shadow-sm"
+                                ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                                : "border-amber-500 bg-amber-500 text-white shadow-sm"
                           : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                       }`}
                     >
@@ -247,11 +219,9 @@ function RequestRow({
 
             {/* Notes textarea */}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">
                 Notes for Parent{" "}
-                <span className="font-normal text-slate-400">
-                  (shown in their dashboard)
-                </span>
+                <span className="font-normal text-slate-400">(shown in their dashboard)</span>
               </label>
               <textarea
                 value={notes}
@@ -267,17 +237,15 @@ function RequestRow({
                         ? "e.g. We have received your documents and are processing your BCCI registration. Estimated time: 3-5 business days."
                         : "Add any notes or updates for the parent..."
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 resize-none transition"
+                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 transition outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
               />
-              <p className="mt-1 text-[10px] text-slate-400 text-right">
-                {notes.length}/2000
-              </p>
+              <p className="mt-1 text-right text-[10px] text-slate-400">{notes.length}/2000</p>
             </div>
 
             {/* Suggested next-step templates */}
             {pendingStatus === "completed" && (
               <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-2 flex items-center gap-1">
+                <p className="mb-2 flex items-center gap-1 text-[10px] font-bold tracking-wider text-emerald-600 uppercase">
                   <Trophy size={12} /> Suggested Next Steps for Parent
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -294,10 +262,10 @@ function RequestRow({
                         setNotes((prev) =>
                           prev
                             ? `${prev}\n\nNext step: ${suggestion}.`
-                            : `Next step: ${suggestion}.`,
+                            : `Next step: ${suggestion}.`
                         )
                       }
-                      className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 transition"
+                      className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
                     >
                       + {suggestion}
                     </button>
@@ -309,12 +277,10 @@ function RequestRow({
             {/* Existing admin notes from DB */}
             {req.adminNotes && req.adminNotes !== notes && (
               <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-1 flex items-center gap-1">
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-bold tracking-wider text-amber-600 uppercase">
                   <AlertCircle size={12} /> Current Saved Note
                 </p>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  {req.adminNotes}
-                </p>
+                <p className="text-xs leading-relaxed text-amber-800">{req.adminNotes}</p>
               </div>
             )}
 
@@ -329,13 +295,9 @@ function RequestRow({
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !hasChanged}
-                className="ml-auto flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="ml-auto flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {saving ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : (
-                  <Send size={15} />
-                )}
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                 {saving ? "Saving..." : "Save & Notify Parent"}
               </button>
             </div>
@@ -374,31 +336,21 @@ export default function ConciergeRequestsAdminPage() {
   const handleStatusChange = async (
     id: string,
     newStatus: ConciergeRequest["status"],
-    adminNotes?: string,
+    adminNotes?: string
   ) => {
     try {
-      const updated = await conciergeApi.updateStatus(
-        id,
-        newStatus,
-        adminNotes,
-      );
+      const updated = await conciergeApi.updateStatus(id, newStatus, adminNotes);
       setRequests((prev) =>
         prev.map((req) =>
-          req._id === id
-            ? { ...req, status: updated.status, adminNotes: updated.adminNotes }
-            : req,
-        ),
+          req._id === id ? { ...req, status: updated.status, adminNotes: updated.adminNotes } : req
+        )
       );
     } catch (err) {
       alert("Failed to update request");
     }
   };
 
-  const handleDownload = async (
-    requestId: string,
-    s3Key: string,
-    fileName: string,
-  ) => {
+  const handleDownload = async (requestId: string, s3Key: string, fileName: string) => {
     try {
       const url = await conciergeApi.getDocumentDownloadUrl(requestId, s3Key);
       const a = document.createElement("a");
@@ -434,23 +386,17 @@ export default function ConciergeRequestsAdminPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Concierge Requests
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Review document submissions, update status, and send responses back
-            to parents.
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Concierge Requests</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Review document submissions, update status, and send responses back to parents.
           </p>
         </div>
         <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={16}
-          />
+          <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={16} />
           <input
             type="text"
             placeholder="Search by user, sport, or tournament..."
-            className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-4 text-sm focus:border-indigo-500 focus:outline-none sm:w-72"
+            className="w-full rounded-lg border border-slate-300 py-2 pr-4 pl-9 text-sm focus:border-indigo-500 focus:outline-none sm:w-72"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -459,9 +405,7 @@ export default function ConciergeRequestsAdminPage() {
 
       {/* Status filter tabs */}
       <div className="flex flex-wrap gap-2">
-        {(
-          ["all", "pending", "processing", "completed", "rejected"] as const
-        ).map((s) => {
+        {(["all", "pending", "processing", "completed", "rejected"] as const).map((s) => {
           const active = statusFilter === s;
           const count = counts[s];
           return (
@@ -471,7 +415,7 @@ export default function ConciergeRequestsAdminPage() {
               onClick={() => setStatusFilter(s)}
               className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                 active
-                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                  ? "border-slate-900 bg-slate-900 text-white shadow-sm"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
               }`}
             >
@@ -493,14 +437,12 @@ export default function ConciergeRequestsAdminPage() {
           <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
         </div>
       ) : error ? (
-        <div className="flex h-48 items-center justify-center text-red-500">
-          {error}
-        </div>
+        <div className="flex h-48 items-center justify-center text-red-500">{error}</div>
       ) : filteredRequests.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-slate-500 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-12 text-slate-500">
           <FileText size={40} className="mb-3 text-slate-300" />
           <p className="font-semibold text-slate-700">No requests found</p>
-          <p className="text-sm mt-1">Try adjusting your search or filter.</p>
+          <p className="mt-1 text-sm">Try adjusting your search or filter.</p>
         </div>
       ) : (
         <div>

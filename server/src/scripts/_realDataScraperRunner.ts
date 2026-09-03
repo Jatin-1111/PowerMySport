@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import "../config/env";
 import { Sport } from "../shared/models/Sport";
 
-
 function getCliFlag(name: string): string | undefined {
   const exactPrefix = `--${name}=`;
   const npmConfigName = `npm_config_${name.toLowerCase().replace(/-/g, "_")}`;
@@ -26,9 +25,7 @@ function getCliFlag(name: string): string | undefined {
 }
 
 function resolveSportFilter(): string | undefined {
-  return (
-    getCliFlag("sport") || getCliFlag("sportSlug") || getCliFlag("sport-slug")
-  );
+  return getCliFlag("sport") || getCliFlag("sportSlug") || getCliFlag("sport-slug");
 }
 
 /**
@@ -38,15 +35,13 @@ function resolveSportFilter(): string | undefined {
  */
 export async function runForEverySport(
   label: string,
-  handler: (sport: { slug: string; name: string }) => Promise<number>,
+  handler: (sport: { slug: string; name: string }) => Promise<number>
 ): Promise<void> {
   console.log(`🚀 Starting ${label}...`);
   const sportFilter = resolveSportFilter()?.trim().toLowerCase();
 
   const dbUri =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const weConnected = mongoose.connection.readyState === 0;
   if (weConnected) {
@@ -57,9 +52,7 @@ export async function runForEverySport(
   const sports = await Sport.find({}).select("slug name").lean();
 
   if (!sports || sports.length === 0) {
-    console.warn(
-      "⚠️ No sports found in the Sport collection. Nothing to scrape.",
-    );
+    console.warn("⚠️ No sports found in the Sport collection. Nothing to scrape.");
     if (weConnected && mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
@@ -69,15 +62,12 @@ export async function runForEverySport(
   const filteredSports = sportFilter
     ? sports.filter(
         (sport) =>
-          sport.slug.toLowerCase() === sportFilter ||
-          sport.name.toLowerCase() === sportFilter,
+          sport.slug.toLowerCase() === sportFilter || sport.name.toLowerCase() === sportFilter
       )
     : sports;
 
   if (sportFilter && filteredSports.length === 0) {
-    console.warn(
-      `⚠️ No sport matched "${sportFilter}". Use a sport slug or exact sport name.`,
-    );
+    console.warn(`⚠️ No sport matched "${sportFilter}". Use a sport slug or exact sport name.`);
     if (weConnected && mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
@@ -98,7 +88,7 @@ export async function runForEverySport(
   }
 
   console.log(
-    `\n🏁 ${label} complete. ${totalFound} total result(s) across ${filteredSports.length} sport(s).`,
+    `\n🏁 ${label} complete. ${totalFound} total result(s) across ${filteredSports.length} sport(s).`
   );
 
   if (weConnected && mongoose.connection.readyState !== 0) {

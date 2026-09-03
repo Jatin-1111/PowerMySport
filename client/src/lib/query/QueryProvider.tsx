@@ -72,7 +72,5 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     queryClient.clear();
   }, [userId, hydrated, queryClient]);
 
-  return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

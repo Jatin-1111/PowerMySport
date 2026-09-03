@@ -9,22 +9,14 @@ import {
 import { entryStatus, isJuniorBracket } from "@/modules/rankings/utils/aitaRules";
 import { EntryRules } from "@/modules/rankings/components/HowToRead";
 import { RankTrajectory } from "@/modules/rankings/components/RankTrajectory";
-import {
-  comboHref,
-  comboLabel,
-  getRankingSport,
-} from "@/modules/rankings/config/rankings";
+import { comboHref, comboLabel, getRankingSport } from "@/modules/rankings/config/rankings";
 import {
   formatPoints,
   nationalStandingPhrase,
   ownBracket,
   tierPhrase,
 } from "@/modules/rankings/utils/insights";
-import {
-  PlayerHero,
-  displayName,
-  summariseSeason,
-} from "@/modules/rankings/components/PlayerHero";
+import { PlayerHero, displayName, summariseSeason } from "@/modules/rankings/components/PlayerHero";
 import { PointsComposition } from "@/modules/rankings/components/PointsComposition";
 import { RankDelta } from "@/modules/rankings/components/RankDelta";
 import type { Metadata } from "next";
@@ -184,7 +176,7 @@ export default async function PlayerRankingPage({
             return (
               <div
                 key={key}
-                className="mt-4 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5"
+                className="border-border bg-card mt-4 rounded-xl border p-4 shadow-sm sm:p-5"
               >
                 <h3 className="text-sm font-semibold">{label}</h3>
                 <RankTrajectory
@@ -252,33 +244,25 @@ export default async function PlayerRankingPage({
         })()}
 
       {history.length === 0 && current.length === 0 && (
-        <p className="mt-10 rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+        <p className="text-muted-foreground mt-10 rounded-lg border border-dashed p-8 text-center">
           No ranking history held for this player.
         </p>
       )}
 
-      <p className="mt-10 text-xs leading-relaxed text-muted-foreground">
-        Rankings are published by the All India Tennis Association and mirrored here.
-        PowerMySport is not affiliated with AITA.
+      <p className="text-muted-foreground mt-10 text-xs leading-relaxed">
+        Rankings are published by the All India Tennis Association and mirrored here. PowerMySport
+        is not affiliated with AITA.
       </p>
     </div>
   );
 }
 
-function SectionHeading({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string | undefined;
-}) {
+function SectionHeading({ title, subtitle }: { title: string; subtitle?: string | undefined }) {
   return (
     <div>
       <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
       {subtitle && (
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          {subtitle}
-        </p>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">{subtitle}</p>
       )}
     </div>
   );
@@ -301,16 +285,13 @@ function FieldPosition({ rank, listSize }: { rank: number; listSize: number }) {
   const position = Math.min(100, Math.max(0, (rank / listSize) * 100));
   return (
     <div className="mt-2.5">
-      <div aria-hidden className="relative h-1.5 w-full rounded-full bg-muted">
+      <div aria-hidden className="bg-muted relative h-1.5 w-full rounded-full">
         <span
-          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-power-orange shadow-sm"
+          className="border-card bg-power-orange absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 shadow-sm"
           style={{ left: `${position}%` }}
         />
       </div>
-      <div
-        aria-hidden
-        className="mt-1 flex justify-between text-[11px] text-muted-foreground"
-      >
+      <div aria-hidden className="text-muted-foreground mt-1 flex justify-between text-[11px]">
         <span>best</span>
         <span>{listSize.toLocaleString("en-IN")}th</span>
       </div>
@@ -347,20 +328,20 @@ function StandingCard({
 
   return (
     <div
-      className={`flex h-full flex-col rounded-xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md ${
-        isHome ? "border-power-orange/40 ring-1 ring-power-orange/20" : "border-border"
+      className={`bg-card flex h-full flex-col rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md ${
+        isHome ? "border-power-orange/40 ring-power-orange/20 ring-1" : "border-border"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
             href={comboHref(sportSlug, combo)}
-            className="text-sm font-semibold text-foreground hover:text-power-orange hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+            className="text-foreground hover:text-power-orange focus-visible:ring-power-orange text-sm font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
           >
             {comboLabel(combo)}
           </Link>
           {showRole && (
-            <span className="mt-0.5 block text-xs text-muted-foreground">
+            <span className="text-muted-foreground mt-0.5 block text-xs">
               {isHome ? "Own age group" : "Playing up"}
             </span>
           )}
@@ -371,11 +352,11 @@ function StandingCard({
       </div>
 
       <p className="mt-3 flex items-baseline gap-2">
-        <span className="text-4xl font-bold tabular-nums tracking-tight">
+        <span className="text-4xl font-bold tracking-tight tabular-nums">
           #{entry.rank.toLocaleString("en-IN")}
         </span>
         {insight.listSize && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             of {insight.listSize.toLocaleString("en-IN")}
           </span>
         )}
@@ -383,12 +364,8 @@ function StandingCard({
       {/* `capitalize` would title-case every word — "In The Top 20% In India".
           Only the first letter should move, and the phrase is authored lower-case
           so it can also sit mid-sentence in the hero. */}
-      {standing && (
-        <p className="mt-1 text-sm font-medium first-letter:uppercase">{standing}</p>
-      )}
-      {insight.listSize && (
-        <FieldPosition rank={entry.rank} listSize={insight.listSize} />
-      )}
+      {standing && <p className="mt-1 text-sm font-medium first-letter:uppercase">{standing}</p>}
+      {insight.listSize && <FieldPosition rank={entry.rank} listSize={insight.listSize} />}
 
       <dl className="mt-4 mb-4 space-y-1.5 text-sm">
         <Row label="Points" value={formatPoints(entry.totalPoints)} />
@@ -409,7 +386,7 @@ function StandingCard({
       </dl>
 
       {insight.nextTier && (
-        <p className="mt-auto border-t border-border pt-3 text-sm leading-relaxed">
+        <p className="border-border mt-auto border-t pt-3 text-sm leading-relaxed">
           <span className="font-semibold tabular-nums">
             {formatPoints(insight.nextTier.gap)} more points
           </span>{" "}
@@ -423,16 +400,14 @@ function StandingCard({
       {/* One line of what this rank means for entries. The full rules, with their
           source, are in the panel below — this is the pointer, not the argument. */}
       {gates && (
-        <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">
+        <p className="text-muted-foreground mt-2.5 text-xs leading-relaxed">
           {gates.closed.length > 0
             ? `At this rank: ${gates.summary.toLowerCase()}.`
             : "At this rank, every tournament level is open to enter."}
         </p>
       )}
 
-      <p className="mt-3 text-xs text-muted-foreground">
-        as on {formatAsOn(entry.asOnDate)}
-      </p>
+      <p className="text-muted-foreground mt-3 text-xs">as on {formatAsOn(entry.asOnDate)}</p>
     </div>
   );
 }
@@ -440,7 +415,7 @@ function StandingCard({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-2">
-      <dt className="truncate text-muted-foreground">{label}</dt>
+      <dt className="text-muted-foreground truncate">{label}</dt>
       <dd className="shrink-0 text-right font-medium tabular-nums">{value}</dd>
     </div>
   );
@@ -464,8 +439,8 @@ function playerBand(entry: PlayerCurrentEntry, name: string): RankingBandProfile
 
   const classified = new Map(
     bands.flatMap((band) =>
-      (band.composition ?? []).map((slice) => [slice.label, slice.isDeduction] as const),
-    ),
+      (band.composition ?? []).map((slice) => [slice.label, slice.isDeduction] as const)
+    )
   );
 
   return {

@@ -37,11 +37,11 @@ export function PlayerSpotlight({
         return (
           <li
             key={entry._id}
-            className="rounded-lg border border-power-orange/30 bg-power-orange/[0.04] p-4"
+            className="border-power-orange/30 bg-power-orange/[0.04] rounded-lg border p-4"
           >
             <Link
               href={playerHref(sportSlug, entry.regNo)}
-              className="font-semibold hover:text-power-orange hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+              className="hover:text-power-orange focus-visible:ring-power-orange font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
               {entry.fullName}
             </Link>
@@ -62,7 +62,7 @@ export function PlayerSpotlight({
               )}
               {entry.stateRank && entry.state && (
                 <div className="flex justify-between gap-2">
-                  <dt className="truncate text-muted-foreground">{entry.state}</dt>
+                  <dt className="text-muted-foreground truncate">{entry.state}</dt>
                   <dd className="text-right font-medium tabular-nums">
                     #{entry.stateRank}
                     {entry.stateSize ? ` of ${entry.stateSize.toLocaleString("en-IN")}` : ""}

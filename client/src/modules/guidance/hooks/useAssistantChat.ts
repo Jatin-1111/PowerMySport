@@ -4,8 +4,7 @@ import { authHeaders, useChatCore } from "./useChatCore";
 import type { SessionSummary } from "../components/chat/ChatDrawer";
 import { useCallback, useState } from "react";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 interface ChatSessionMeta {
   dailyRemaining: number;
@@ -123,7 +122,7 @@ export function useAssistantChat() {
         setIsInitializing(false);
       }
     },
-    [currentSessionId, setMessages, setError],
+    [currentSessionId, setMessages, setError]
   );
 
   // ── Send a message ────────────────────────────────────────────────────────
@@ -150,12 +149,11 @@ export function useAssistantChat() {
                     ...s,
                     title:
                       s.title ??
-                      userContent.trim().slice(0, 60) +
-                        (userContent.trim().length > 60 ? "…" : ""),
+                      userContent.trim().slice(0, 60) + (userContent.trim().length > 60 ? "…" : ""),
                     updatedAt: new Date().toISOString(),
                   }
-                : s,
-            ),
+                : s
+            )
           );
         },
       });
@@ -164,7 +162,7 @@ export function useAssistantChat() {
         setMeta((m) => ({ ...m, dailyRemaining: 0 }));
       }
     },
-    [sendCore, currentSessionId],
+    [sendCore, currentSessionId]
   );
 
   return {

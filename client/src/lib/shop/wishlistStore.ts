@@ -23,9 +23,7 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
       const res = await api.get("/v1/wishlist");
       if (res.data?.ok) {
         const items = res.data.data || [];
-        const products = items
-          .map((item: any) => item.productId)
-          .filter(Boolean);
+        const products = items.map((item: any) => item.productId).filter(Boolean);
         const ids = products.map((p: any) => p.id || p._id);
         set({
           wishlistProductIds: ids,
@@ -54,9 +52,7 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
       const res = await api.post("/v1/wishlist/toggle", { productId });
       if (res.data?.ok) {
         const items = res.data.data || [];
-        const products = items
-          .map((item: any) => item.productId)
-          .filter(Boolean);
+        const products = items.map((item: any) => item.productId).filter(Boolean);
         const ids = products.map((p: any) => p.id || p._id);
         set({
           wishlistProductIds: ids,

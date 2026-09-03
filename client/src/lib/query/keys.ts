@@ -53,17 +53,14 @@ export const queryKeys = {
       ["bookings", "quote", { subtotal, discount }] as const,
     subscriptionQuote: (basePaise: number) =>
       ["bookings", "subscription-quote", basePaise] as const,
-    invitations: (status?: string) =>
-      ["bookings", "invitations", status ?? "ALL"] as const,
+    invitations: (status?: string) => ["bookings", "invitations", status ?? "ALL"] as const,
     pendingInvitationsCount: ["bookings", "pending-invitations-count"] as const,
   },
 
   discovery: {
     all: ["discovery"] as const,
-    nearbyVenues: (params: unknown) =>
-      ["discovery", "nearby-venues", params] as const,
-    nearbyCoaches: (params: unknown) =>
-      ["discovery", "nearby-coaches", params] as const,
+    nearbyVenues: (params: unknown) => ["discovery", "nearby-venues", params] as const,
+    nearbyCoaches: (params: unknown) => ["discovery", "nearby-coaches", params] as const,
     venue: (id: string) => ["discovery", "venue", id] as const,
     coach: (id: string) => ["discovery", "coach", id] as const,
   },

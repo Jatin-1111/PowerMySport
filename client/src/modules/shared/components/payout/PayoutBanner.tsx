@@ -29,7 +29,7 @@ export function PayoutBanner({
   if (payoutMethod !== null || dismissed) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+    <div className="animate-in fade-in slide-in-from-top-2 relative overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm duration-500">
       <div className="flex items-start gap-4">
         {/* Icon */}
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100">
@@ -37,18 +37,16 @@ export function PayoutBanner({
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-amber-900">
-            Payout method not set up
-          </p>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-amber-900">Payout method not set up</p>
           <p className="mt-0.5 text-sm text-amber-700">
-            You&apos;re not set up to receive payouts yet. Add your bank account
-            or UPI details so earnings from bookings reach you automatically.
+            You&apos;re not set up to receive payouts yet. Add your bank account or UPI details so
+            earnings from bookings reach you automatically.
           </p>
           <div className="mt-3">
             <Link
               href={payoutHref}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600 transition-colors"
+              className="bg-power-orange inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600"
             >
               {ctaLabel}
             </Link>
@@ -59,7 +57,7 @@ export function PayoutBanner({
         <button
           onClick={() => setDismissed(true)}
           aria-label="Dismiss"
-          className="shrink-0 rounded-lg p-1.5 text-amber-500/60 hover:bg-amber-500/10 hover:text-amber-300 transition-colors"
+          className="shrink-0 rounded-lg p-1.5 text-amber-500/60 transition-colors hover:bg-amber-500/10 hover:text-amber-300"
         >
           <X size={14} />
         </button>

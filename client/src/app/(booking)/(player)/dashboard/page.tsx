@@ -13,10 +13,7 @@ import { friendService } from "@/modules/shared/services/friend";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
-import {
-  StaggerContainer,
-  StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import type { Booking, CoachSubscription } from "@/types";
 import { motion } from "framer-motion";
 import {
@@ -48,17 +45,11 @@ interface UpcomingBooking {
 export default function DashboardPage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const [upcomingBookings, setUpcomingBookings] = useState<UpcomingBooking[]>(
-    [],
-  );
-  const [activeSubscriptions, setActiveSubscriptions] = useState<
-    CoachSubscription[]
-  >([]);
+  const [upcomingBookings, setUpcomingBookings] = useState<UpcomingBooking[]>([]);
+  const [activeSubscriptions, setActiveSubscriptions] = useState<CoachSubscription[]>([]);
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
   const [pendingInvitations, setPendingInvitations] = useState(0);
-  const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<
-    string | null
-  >(null);
+  const [cancellingSubscriptionId, setCancellingSubscriptionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const { socket } = useFriendSocket();
@@ -85,23 +76,18 @@ export default function DashboardPage() {
     try {
       setLoading(true);
 
-      const [
-        bookingsResult,
-        subscriptionsResult,
-        friendCountResult,
-        invitationCountResult,
-      ] = await Promise.allSettled([
-        bookingApi.getMyBookings({ page: 1, limit: 3 }),
-        coachApi.getMySubscriptions(),
-        friendService.getPendingRequestsCount(),
-        bookingApi.getPendingInvitationsCount(),
-      ]);
+      const [bookingsResult, subscriptionsResult, friendCountResult, invitationCountResult] =
+        await Promise.allSettled([
+          bookingApi.getMyBookings({ page: 1, limit: 3 }),
+          coachApi.getMySubscriptions(),
+          friendService.getPendingRequestsCount(),
+          bookingApi.getPendingInvitationsCount(),
+        ]);
       if (bookingsResult.status === "fulfilled") {
         const payload = bookingsResult.value;
         const bookings = Array.isArray(payload.data)
           ? payload.data
-          : ((payload.data as { bookings?: Booking[] } | undefined)?.bookings ??
-            []);
+          : ((payload.data as { bookings?: Booking[] } | undefined)?.bookings ?? []);
 
         const upcoming = bookings
           .filter((b: Booking) => new Date(b.date) >= new Date())
@@ -160,11 +146,7 @@ export default function DashboardPage() {
       await loadDashboardData();
     } catch (error) {
       console.error("Failed to cancel subscription:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to cancel subscription",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to cancel subscription");
     } finally {
       setCancellingSubscriptionId(null);
     }
@@ -179,10 +161,7 @@ export default function DashboardPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-28 animate-pulse rounded-2xl bg-slate-100"
-            />
+            <div key={i} className="h-28 animate-pulse rounded-2xl bg-slate-100" />
           ))}
         </div>
         <div className="h-48 animate-pulse rounded-2xl bg-slate-100" />
@@ -192,15 +171,13 @@ export default function DashboardPage() {
   }
 
   const liveSubscriptions = activeSubscriptions.filter((subscription) =>
-    ["ACTIVE", "PAST_DUE"].includes(subscription.status),
+    ["ACTIVE", "PAST_DUE"].includes(subscription.status)
   );
 
   return (
     <div className="space-y-6">
       <PlayerPageHeader
-        badge={
-          user?.role === "Parent" ? "Parent Dashboard" : "Player Dashboard"
-        }
+        badge={user?.role === "Parent" ? "Parent Dashboard" : "Player Dashboard"}
         title="Dashboard"
         subtitle="Welcome back! Here's what's happening with your activities."
       />
@@ -210,7 +187,7 @@ export default function DashboardPage() {
         {/* Pending Friend Requests */}
         <StaggerItem className="h-full">
           <motion.div
-            className="flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 shop-surface premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+            className="shop-surface premium-shadow flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             onClick={() => router.push("/dashboard/friends")}
             whileHover={{ scale: 1.01 }}
             transition={{ duration: 0.15 }}
@@ -225,10 +202,8 @@ export default function DashboardPage() {
                 </Badge>
               )}
             </div>
-            <p className="mt-3 text-2xl font-bold text-slate-900">
-              {pendingFriendRequests}
-            </p>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mt-3 text-2xl font-bold text-slate-900">{pendingFriendRequests}</p>
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Friend Requests
             </p>
             <p className="mt-1 text-xs text-slate-400">
@@ -242,13 +217,13 @@ export default function DashboardPage() {
         {/* Pending Invitations */}
         <StaggerItem className="h-full">
           <motion.div
-            className="flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 shop-surface premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+            className="shop-surface premium-shadow flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             onClick={() => router.push("/dashboard/invitations")}
             whileHover={{ scale: 1.01 }}
             transition={{ duration: 0.15 }}
           >
             <div className="flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-power-orange">
+              <div className="text-power-orange flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100">
                 <Mail className="h-5 w-5" />
               </div>
               {pendingInvitations > 0 && (
@@ -257,10 +232,8 @@ export default function DashboardPage() {
                 </Badge>
               )}
             </div>
-            <p className="mt-3 text-2xl font-bold text-slate-900">
-              {pendingInvitations}
-            </p>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mt-3 text-2xl font-bold text-slate-900">{pendingInvitations}</p>
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Booking Invitations
             </p>
             <p className="mt-1 text-xs text-slate-400">
@@ -274,7 +247,7 @@ export default function DashboardPage() {
         {/* Upcoming Bookings */}
         <StaggerItem className="h-full">
           <motion.div
-            className="flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 shop-surface premium-shadow transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+            className="shop-surface premium-shadow flex h-full cursor-pointer flex-col rounded-xl border border-slate-200/70 bg-white/70 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             onClick={() => router.push("/dashboard/my-bookings")}
             whileHover={{ scale: 1.01 }}
             transition={{ duration: 0.15 }}
@@ -289,10 +262,8 @@ export default function DashboardPage() {
                 </Badge>
               )}
             </div>
-            <p className="mt-3 text-2xl font-bold text-slate-900">
-              {upcomingBookings.length}
-            </p>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mt-3 text-2xl font-bold text-slate-900">{upcomingBookings.length}</p>
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Upcoming Bookings
             </p>
             <p className="mt-1 text-xs text-slate-400">
@@ -319,17 +290,13 @@ export default function DashboardPage() {
               description="Plans you purchased from coaches and their expiry dates."
               action={
                 <Link href="/dashboard/subscriptions">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    icon={<ChevronRight size={14} />}
-                  >
+                  <Button variant="outline" size="sm" icon={<ChevronRight size={14} />}>
                     Manage all
                   </Button>
                 </Link>
               }
             />
-            <CardContent className="px-6 py-5 space-y-3">
+            <CardContent className="space-y-3 px-6 py-5">
               {liveSubscriptions.slice(0, 3).map((subscription) => {
                 const subscriptionId = subscription.id || subscription._id;
                 const packageData = subscription.packageId as
@@ -358,8 +325,7 @@ export default function DashboardPage() {
                 const coachName =
                   typeof coachData === "string"
                     ? "Coach"
-                    : typeof coachData?.userId === "object" &&
-                        coachData.userId?.name
+                    : typeof coachData?.userId === "object" && coachData.userId?.name
                       ? coachData.userId.name
                       : coachData?.sports?.[0]
                         ? `${coachData.sports[0]} Coach`
@@ -371,15 +337,11 @@ export default function DashboardPage() {
                     className="flex flex-col gap-3 rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div>
-                      <p className="font-semibold text-slate-900">
-                        {packageName}
-                      </p>
+                      <p className="font-semibold text-slate-900">{packageName}</p>
                       <p className="text-sm text-slate-500">
                         {coachName} • Expires{" "}
                         {subscription.currentPeriodEnd
-                          ? new Date(
-                              subscription.currentPeriodEnd,
-                            ).toLocaleDateString("en-IN", {
+                          ? new Date(subscription.currentPeriodEnd).toLocaleDateString("en-IN", {
                               day: "numeric",
                               month: "short",
                               year: "numeric",
@@ -403,7 +365,7 @@ export default function DashboardPage() {
                           size="sm"
                           onClick={() =>
                             router.push(
-                              `/dashboard/subscription-checkout?coachId=${encodeURIComponent(coachId)}&packageId=${encodeURIComponent(packageId)}`,
+                              `/dashboard/subscription-checkout?coachId=${encodeURIComponent(coachId)}&packageId=${encodeURIComponent(packageId)}`
                             )
                           }
                         >
@@ -415,13 +377,9 @@ export default function DashboardPage() {
                           variant="secondary"
                           size="sm"
                           disabled={cancellingSubscriptionId === subscriptionId}
-                          onClick={() =>
-                            void handleCancelSubscription(subscriptionId)
-                          }
+                          onClick={() => void handleCancelSubscription(subscriptionId)}
                         >
-                          {cancellingSubscriptionId === subscriptionId
-                            ? "Cancelling..."
-                            : "Cancel"}
+                          {cancellingSubscriptionId === subscriptionId ? "Cancelling..." : "Cancel"}
                         </Button>
                       ) : null}
                     </div>
@@ -477,7 +435,7 @@ export default function DashboardPage() {
               ].map(({ href, icon: Icon, label, color }) => (
                 <Link key={href} href={href}>
                   <motion.div
-                    className="flex flex-col items-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/40 px-4 py-5 text-center transition-all hover:border-slate-300 hover:bg-white hover:shadow-sm cursor-pointer"
+                    className="flex cursor-pointer flex-col items-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/40 px-4 py-5 text-center transition-all hover:border-slate-300 hover:bg-white hover:shadow-sm"
                     whileHover={{ y: -3, scale: 1.01 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
                   >
@@ -486,9 +444,7 @@ export default function DashboardPage() {
                     >
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className="text-sm font-semibold text-slate-800">
-                      {label}
-                    </span>
+                    <span className="text-sm font-semibold text-slate-800">{label}</span>
                   </motion.div>
                 </Link>
               ))}

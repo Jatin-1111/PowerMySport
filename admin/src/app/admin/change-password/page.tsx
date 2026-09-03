@@ -81,37 +81,33 @@ export default function AdminChangePasswordPage() {
       toast.success("Password updated successfully.");
       router.replace("/admin");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to change password.",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to change password.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md">
         <div className="relative mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
           <div className="relative z-10 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
-              <Shield className="w-8 h-8 text-white" />
+            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+              <Shield className="h-8 w-8 text-white" />
             </div>
-            <h1 className="mb-2 text-2xl font-bold sm:text-3xl">
-              Change Password
-            </h1>
+            <h1 className="mb-2 text-2xl font-bold sm:text-3xl">Change Password</h1>
             <p className="text-sm text-slate-200">
               First login detected. Please set your new password.
             </p>
           </div>
-          <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
+          <div className="bg-power-orange/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Current Password
               </label>
               <input
@@ -120,13 +116,13 @@ export default function AdminChangePasswordPage() {
                 value={formData.currentPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 transition-all"
+                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:ring-2 focus:outline-none"
                 placeholder="Enter current password"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
                 New Password
               </label>
               <input
@@ -135,13 +131,13 @@ export default function AdminChangePasswordPage() {
                 value={formData.newPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 transition-all"
+                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:ring-2 focus:outline-none"
                 placeholder="Minimum 8 characters"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Confirm New Password
               </label>
               <input
@@ -150,7 +146,7 @@ export default function AdminChangePasswordPage() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 transition-all"
+                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:ring-2 focus:outline-none"
                 placeholder="Re-enter new password"
               />
             </div>
@@ -158,11 +154,11 @@ export default function AdminChangePasswordPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="w-full rounded-lg bg-slate-900 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                   Updating...
                 </span>
               ) : (

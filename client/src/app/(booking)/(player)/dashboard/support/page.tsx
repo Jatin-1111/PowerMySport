@@ -11,14 +11,7 @@ import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Modal } from "@/modules/shared/ui/Modal";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import {
-    AlertCircle,
-    CheckCircle,
-    Clock,
-    LifeBuoy,
-    MessageSquare,
-    Plus,
-} from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, LifeBuoy, MessageSquare, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface SupportTicket {
@@ -124,21 +117,16 @@ export default function SupportTicketsPage() {
   };
 
   // Stats
-  const openCount = tickets.filter(
-    (t) => t.status === "OPEN" || t.status === "IN_PROGRESS",
-  ).length;
+  const openCount = tickets.filter((t) => t.status === "OPEN" || t.status === "IN_PROGRESS").length;
   const resolvedCount = tickets.filter(
-    (t) => t.status === "RESOLVED" || t.status === "CLOSED",
+    (t) => t.status === "RESOLVED" || t.status === "CLOSED"
   ).length;
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Support Tickets" },
-          ]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Support Tickets" }]}
         />
         <PlayerPageHeader
           badge="Player"
@@ -153,10 +141,7 @@ export default function SupportTicketsPage() {
   return (
     <div className="space-y-6">
       <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Support Tickets" },
-        ]}
+        items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Support Tickets" }]}
       />
 
       <PlayerPageHeader
@@ -164,11 +149,7 @@ export default function SupportTicketsPage() {
         title="Support Tickets"
         subtitle="Get help with bookings, payments, and account issues."
         action={
-          <Button
-            variant="primary"
-            onClick={() => setIsCreateOpen(true)}
-            icon={<Plus size={16} />}
-          >
+          <Button variant="primary" onClick={() => setIsCreateOpen(true)} icon={<Plus size={16} />}>
             New Ticket
           </Button>
         }
@@ -176,27 +157,19 @@ export default function SupportTicketsPage() {
 
       {/* Stats strip */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Total
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {tickets.length}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Total</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{tickets.length}</p>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
             Open / In Progress
           </p>
           <p className="mt-1 text-2xl font-bold text-slate-900">{openCount}</p>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Resolved
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {resolvedCount}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Resolved</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{resolvedCount}</p>
         </div>
       </div>
 
@@ -233,15 +206,11 @@ export default function SupportTicketsPage() {
                   className="flex overflow-hidden rounded-xl border border-slate-200/70"
                 >
                   {/* Priority-colored left stripe */}
-                  <div
-                    className={`w-1 shrink-0 ${PRIORITY_STRIPE[ticket.priority]}`}
-                  />
+                  <div className={`w-1 shrink-0 ${PRIORITY_STRIPE[ticket.priority]}`} />
                   <div className="flex flex-1 flex-col gap-3 bg-slate-50/40 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-slate-900">
-                          {ticket.subject}
-                        </h3>
+                        <h3 className="text-base font-semibold text-slate-900">{ticket.subject}</h3>
                         <Badge
                           className={`border text-xs font-semibold ${STATUS_STYLES[ticket.status]}`}
                         >
@@ -259,14 +228,11 @@ export default function SupportTicketsPage() {
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
                         <span className="inline-flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(ticket.createdAt).toLocaleDateString(
-                            "en-IN",
-                            {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            },
-                          )}
+                          {new Date(ticket.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </span>
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
                           {ticket.category}
@@ -275,7 +241,7 @@ export default function SupportTicketsPage() {
 
                       {ticket.notes && ticket.notes.length > 0 && (
                         <div className="mt-4 space-y-2 border-t border-slate-200/60 pt-4">
-                          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                             <MessageSquare className="h-3.5 w-3.5" />
                             Updates
                           </p>
@@ -289,9 +255,7 @@ export default function SupportTicketsPage() {
                               }`}
                             >
                               <span className="text-xs font-semibold">
-                                {note.authorType === "Admin"
-                                  ? "Support team"
-                                  : "You"}
+                                {note.authorType === "Admin" ? "Support team" : "You"}
                               </span>
                               <p className="mt-0.5">{note.message}</p>
                             </div>
@@ -300,8 +264,7 @@ export default function SupportTicketsPage() {
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-1 self-start">
-                      {ticket.status === "RESOLVED" ||
-                      ticket.status === "CLOSED" ? (
+                      {ticket.status === "RESOLVED" || ticket.status === "CLOSED" ? (
                         <CheckCircle className="h-5 w-5 text-emerald-600" />
                       ) : (
                         <AlertCircle className="h-5 w-5 text-amber-500" />
@@ -347,11 +310,9 @@ export default function SupportTicketsPage() {
             </label>
             <input
               value={form.subject}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, subject: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, subject: e.target.value }))}
               placeholder="Brief summary of your issue"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange/20"
+              className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:ring-1 focus:outline-none"
             />
           </div>
           <div>
@@ -360,19 +321,15 @@ export default function SupportTicketsPage() {
             </label>
             <textarea
               value={form.description}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, description: e.target.value }))
-              }
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Describe your issue in detail"
               rows={4}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange/20"
+              className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition focus:ring-1 focus:outline-none"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Category
-              </label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Category</label>
               <select
                 value={form.category}
                 onChange={(e) =>
@@ -381,7 +338,7 @@ export default function SupportTicketsPage() {
                     category: e.target.value as SupportTicket["category"],
                   }))
                 }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange/20"
+                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:ring-1 focus:outline-none"
               >
                 <option value="BOOKING">Booking</option>
                 <option value="PAYMENT">Payment</option>
@@ -391,9 +348,7 @@ export default function SupportTicketsPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Priority
-              </label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Priority</label>
               <select
                 value={form.priority}
                 onChange={(e) =>
@@ -402,7 +357,7 @@ export default function SupportTicketsPage() {
                     priority: e.target.value as SupportTicket["priority"],
                   }))
                 }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange/20"
+                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:ring-1 focus:outline-none"
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>

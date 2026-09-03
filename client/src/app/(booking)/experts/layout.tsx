@@ -15,11 +15,7 @@ import React from "react";
  * /booking is noindex. The detail route sets its own canonical.
  */
 
-export default function ExpertsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ExpertsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <Navigation variant="dark" sticky />

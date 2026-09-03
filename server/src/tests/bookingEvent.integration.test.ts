@@ -70,7 +70,7 @@ describe("BookingEvent is append-only", () => {
     const event = await seedEvent();
     await assert.rejects(
       () => BookingEvent.updateOne({ _id: event._id }, { $set: { type: "CANCELLED" } }),
-      /append-only/,
+      /append-only/
     );
   });
 
@@ -78,16 +78,15 @@ describe("BookingEvent is append-only", () => {
     await seedEvent();
     await assert.rejects(
       () => BookingEvent.updateMany({}, { $set: { summary: "x" } }),
-      /append-only/,
+      /append-only/
     );
   });
 
   it("rejects findOneAndUpdate", async () => {
     const event = await seedEvent();
     await assert.rejects(
-      () =>
-        BookingEvent.findOneAndUpdate({ _id: event._id }, { $set: { summary: "x" } }),
-      /append-only/,
+      () => BookingEvent.findOneAndUpdate({ _id: event._id }, { $set: { summary: "x" } }),
+      /append-only/
     );
   });
 
@@ -95,25 +94,19 @@ describe("BookingEvent is append-only", () => {
     const event = await seedEvent();
     await assert.rejects(
       () => BookingEvent.replaceOne({ _id: event._id }, { summary: "x" }),
-      /append-only/,
+      /append-only/
     );
   });
 
   it("rejects deleteOne and deleteMany", async () => {
     const event = await seedEvent();
-    await assert.rejects(
-      () => BookingEvent.deleteOne({ _id: event._id }),
-      /append-only/,
-    );
+    await assert.rejects(() => BookingEvent.deleteOne({ _id: event._id }), /append-only/);
     await assert.rejects(() => BookingEvent.deleteMany({}), /append-only/);
   });
 
   it("rejects findOneAndDelete", async () => {
     const event = await seedEvent();
-    await assert.rejects(
-      () => BookingEvent.findOneAndDelete({ _id: event._id }),
-      /append-only/,
-    );
+    await assert.rejects(() => BookingEvent.findOneAndDelete({ _id: event._id }), /append-only/);
   });
 
   it("rejects document-level deleteOne()", async () => {
@@ -123,9 +116,7 @@ describe("BookingEvent is append-only", () => {
 
   it("leaves the record intact after every rejected mutation", async () => {
     const event = await seedEvent({ summary: "original" });
-    await BookingEvent.updateOne({ _id: event._id }, { $set: { summary: "x" } }).catch(
-      () => {},
-    );
+    await BookingEvent.updateOne({ _id: event._id }, { $set: { summary: "x" } }).catch(() => {});
     await BookingEvent.deleteOne({ _id: event._id }).catch(() => {});
 
     const found = await BookingEvent.findById(event._id);
@@ -258,14 +249,11 @@ describe("timeline queries", () => {
     // A different booking's event must not leak in.
     await seedEvent({ subjectId: oid(), type: "CANCELLED" });
 
-    const timeline = await BookingEventService.getTimeline(
-      "BOOKING",
-      subjectId.toString(),
-    );
+    const timeline = await BookingEventService.getTimeline("BOOKING", subjectId.toString());
 
     assert.deepEqual(
       timeline.map((e: any) => e.type),
-      ["CREATED", "PROVIDER_CONFIRMED", "PAYMENT_CONFIRMED"],
+      ["CREATED", "PROVIDER_CONFIRMED", "PAYMENT_CONFIRMED"]
     );
   });
 
@@ -279,30 +267,19 @@ describe("timeline queries", () => {
       type: "CANCELLED",
     });
 
-    const bookingTimeline = await BookingEventService.getTimeline(
-      "BOOKING",
-      sharedId.toString(),
-    );
+    const bookingTimeline = await BookingEventService.getTimeline("BOOKING", sharedId.toString());
     assert.deepEqual(
       bookingTimeline.map((e: any) => e.type),
-      ["CREATED"],
+      ["CREATED"]
     );
 
     // The support-tooling lookup deliberately spans both.
-    const both = await BookingEventService.getTimelineByIdAcrossSubjects(
-      sharedId.toString(),
-    );
+    const both = await BookingEventService.getTimelineByIdAcrossSubjects(sharedId.toString());
     assert.equal(both.length, 2);
   });
 
   it("returns empty for a malformed id instead of throwing", async () => {
-    assert.deepEqual(
-      await BookingEventService.getTimeline("BOOKING", "nope"),
-      [],
-    );
-    assert.deepEqual(
-      await BookingEventService.getTimelineByIdAcrossSubjects("nope"),
-      [],
-    );
+    assert.deepEqual(await BookingEventService.getTimeline("BOOKING", "nope"), []);
+    assert.deepEqual(await BookingEventService.getTimelineByIdAcrossSubjects("nope"), []);
   });
 });

@@ -9,10 +9,6 @@ import React from "react";
  */
 export const metadata: Metadata = noindexMetadata("Check In");
 
-export default function CheckInLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function CheckInLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

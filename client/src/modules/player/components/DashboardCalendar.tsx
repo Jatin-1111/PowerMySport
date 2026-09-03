@@ -3,13 +3,13 @@
 import { Badge } from "../../shared/ui/Badge";
 import { toast } from "@/lib/toast";
 import {
-    calendarApi,
-    type CalendarBooking,
-    type CalendarEvent,
-    type CalendarEventType,
-    EVENT_TYPE_BG,
-    EVENT_TYPE_COLORS,
-    EVENT_TYPE_LABELS,
+  calendarApi,
+  type CalendarBooking,
+  type CalendarEvent,
+  type CalendarEventType,
+  EVENT_TYPE_BG,
+  EVENT_TYPE_COLORS,
+  EVENT_TYPE_LABELS,
 } from "@/modules/booking/services/calendarApi";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Button } from "@/modules/shared/ui/Button";
@@ -17,27 +17,21 @@ import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    Bell,
-    Calendar,
-    ChevronLeft,
-    ChevronRight,
-    Clock,
-    Dumbbell,
-    Plus,
-    Star,
-    Tag,
-    Trash2,
-    Trophy,
-    X,
-    Zap,
+  Bell,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Dumbbell,
+  Plus,
+  Star,
+  Tag,
+  Trash2,
+  Trophy,
+  X,
+  Zap,
 } from "lucide-react";
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -119,9 +113,7 @@ function buildCalendarGrid(month: Date): Date[] {
   // Trailing days to fill 6-row grid (42 cells)
   while (cells.length < 42) {
     const last = cells[cells.length - 1]!;
-    cells.push(
-      new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1),
-    );
+    cells.push(new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1));
   }
   return cells;
 }
@@ -138,8 +130,7 @@ function formatShortDate(d: Date): string {
 function formatTime(t: string): string {
   const [h, m] = t.split(":").map(Number);
   const suffix = (h ?? 0) >= 12 ? "PM" : "AM";
-  const display =
-    (h ?? 0) > 12 ? (h ?? 0) - 12 : (h ?? 0) === 0 ? 12 : (h ?? 0);
+  const display = (h ?? 0) > 12 ? (h ?? 0) - 12 : (h ?? 0) === 0 ? 12 : (h ?? 0);
   return `${display}:${String(m ?? 0).padStart(2, "0")} ${suffix}`;
 }
 
@@ -153,10 +144,7 @@ function getBookingLabel(b: CalendarBooking): string {
 }
 
 function formatStatus(s: string): string {
-  return s
-    .charAt(0)
-    .toUpperCase()
-    .concat(s.slice(1).toLowerCase().replace(/_/g, " "));
+  return s.charAt(0).toUpperCase().concat(s.slice(1).toLowerCase().replace(/_/g, " "));
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -190,18 +178,16 @@ function CalendarCell({
         isCurrentMonth ? "text-slate-800" : "text-slate-300",
         isToday && !isSelected && "font-bold",
         isSelected
-          ? "bg-power-orange text-white shadow-md ring-2 ring-power-orange/40"
+          ? "bg-power-orange ring-power-orange/40 text-white shadow-md ring-2"
           : isToday
-            ? "bg-orange-50 ring-1 ring-power-orange/40"
-            : "hover:bg-slate-100",
+            ? "ring-power-orange/40 bg-orange-50 ring-1"
+            : "hover:bg-slate-100"
       )}
     >
       <span
         className={cn(
           "flex h-6 w-6 items-center justify-center rounded-full text-xs",
-          isToday &&
-            !isSelected &&
-            "bg-power-orange/10 text-power-orange font-bold",
+          isToday && !isSelected && "bg-power-orange/10 text-power-orange font-bold"
         )}
       >
         {date.getDate()}
@@ -215,7 +201,7 @@ function CalendarCell({
               key={i}
               className={cn(
                 "inline-block h-1.5 w-1.5 rounded-full",
-                isSelected ? "bg-white/80" : "",
+                isSelected ? "bg-white/80" : ""
               )}
               style={isSelected ? {} : { backgroundColor: dot.color }}
             />
@@ -224,7 +210,7 @@ function CalendarCell({
             <span
               className={cn(
                 "text-[9px] font-bold",
-                isSelected ? "text-white/80" : "text-slate-400",
+                isSelected ? "text-white/80" : "text-slate-400"
               )}
             >
               +{dots.length - 3}
@@ -239,8 +225,7 @@ function CalendarCell({
 function BookingCard({ booking }: { booking: CalendarBooking }) {
   const label = getBookingLabel(booking);
   const statusClass =
-    BOOKING_STATUS_COLORS[booking.status] ??
-    "bg-slate-50 text-slate-600 border-slate-200";
+    BOOKING_STATUS_COLORS[booking.status] ?? "bg-slate-50 text-slate-600 border-slate-200";
 
   return (
     <motion.div
@@ -249,13 +234,12 @@ function BookingCard({ booking }: { booking: CalendarBooking }) {
       className="flex items-start gap-3 rounded-xl border border-slate-200/70 bg-slate-50/60 p-3"
     >
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100">
-        <Calendar className="h-4 w-4 text-power-orange" />
+        <Calendar className="text-power-orange h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-slate-900">{label}</p>
         <p className="text-xs text-slate-500">
-          {booking.sport} · {formatTime(booking.startTime)} –{" "}
-          {formatTime(booking.endTime)}
+          {booking.sport} · {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
         </p>
       </div>
       <Badge className={cn("shrink-0 border text-xs", statusClass)}>
@@ -290,20 +274,9 @@ function EventCard({
         <Icon className="h-4 w-4" style={{ color: event.color }} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900">
-          {event.title}
-        </p>
-        {event.notes && (
-          <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
-            {event.notes}
-          </p>
-        )}
-        <Badge
-          className={cn(
-            "mt-1 border-0 px-1.5 py-0.5 text-[10px] font-semibold",
-            bgClass,
-          )}
-        >
+        <p className="truncate text-sm font-semibold text-slate-900">{event.title}</p>
+        {event.notes && <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{event.notes}</p>}
+        <Badge className={cn("mt-1 border-0 px-1.5 py-0.5 text-[10px] font-semibold", bgClass)}>
           {EVENT_TYPE_LABELS[event.type]}
         </Badge>
       </div>
@@ -379,14 +352,14 @@ function AddEventForm({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
       onSubmit={handleSubmit}
-      className="rounded-xl border border-power-orange/30 bg-orange-50/40 p-4 space-y-3"
+      className="border-power-orange/30 space-y-3 rounded-xl border bg-orange-50/40 p-4"
     >
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-800">New Event</p>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg p-1 text-slate-400 hover:text-slate-600 transition-colors"
+          className="rounded-lg p-1 text-slate-400 transition-colors hover:text-slate-600"
         >
           <X className="h-4 w-4" />
         </button>
@@ -398,7 +371,7 @@ function AddEventForm({
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Event title…"
         maxLength={120}
-        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange/40"
+        className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
       />
 
       {/* Event type chips */}
@@ -413,8 +386,8 @@ function AddEventForm({
               className={cn(
                 "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all",
                 type === t
-                  ? "ring-2 shadow-sm"
-                  : "bg-white/80 text-slate-500 border border-slate-200 hover:border-slate-300",
+                  ? "shadow-sm ring-2"
+                  : "border border-slate-200 bg-white/80 text-slate-500 hover:border-slate-300"
               )}
               style={
                 type === t
@@ -439,7 +412,7 @@ function AddEventForm({
         placeholder="Notes (optional)"
         maxLength={500}
         rows={2}
-        className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange/40"
+        className="focus:border-power-orange focus:ring-power-orange/40 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
       />
 
       <div className="flex items-center justify-end gap-2">
@@ -464,30 +437,19 @@ export function DashboardCalendar() {
   }, []);
 
   const [currentMonth, setCurrentMonth] = useState<Date>(
-    () => new Date(today.getFullYear(), today.getMonth(), 1),
+    () => new Date(today.getFullYear(), today.getMonth(), 1)
   );
-  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(
-    toDateKey(today),
-  );
-  const [bookingsByDate, setBookingsByDate] = useState<
-    Record<string, CalendarBooking[]>
-  >({});
-  const [eventsByDate, setEventsByDate] = useState<
-    Record<string, CalendarEvent[]>
-  >({});
-  const [upcomingBookings, setUpcomingBookings] = useState<CalendarBooking[]>(
-    [],
-  );
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(toDateKey(today));
+  const [bookingsByDate, setBookingsByDate] = useState<Record<string, CalendarBooking[]>>({});
+  const [eventsByDate, setEventsByDate] = useState<Record<string, CalendarEvent[]>>({});
+  const [upcomingBookings, setUpcomingBookings] = useState<CalendarBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [bookingTab, setBookingTab] = useState<"upcoming" | "past">("upcoming");
 
   // Build the visible grid cells once per month change
-  const calendarCells = useMemo(
-    () => buildCalendarGrid(currentMonth),
-    [currentMonth],
-  );
+  const calendarCells = useMemo(() => buildCalendarGrid(currentMonth), [currentMonth]);
 
   const loadMonthData = useCallback(async (month: Date) => {
     setLoading(true);
@@ -525,14 +487,10 @@ export function DashboardCalendar() {
   const loadUpcomingBookings = useCallback(async () => {
     try {
       const start = toDateKey(today);
-      const end = toDateKey(
-        new Date(today.getFullYear(), today.getMonth() + 3, today.getDate()),
-      );
+      const end = toDateKey(new Date(today.getFullYear(), today.getMonth() + 3, today.getDate()));
       const bookings = await calendarApi.getBookings(start, end);
       setUpcomingBookings(
-        bookings.sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        ),
+        bookings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       );
     } catch {
       // non-critical
@@ -551,26 +509,21 @@ export function DashboardCalendar() {
   const getDotsForDate = useCallback(
     (key: string): DayDot[] => {
       const bookingCount = bookingsByDate[key]?.length ?? 0;
-      const bookingDots: DayDot[] = Array.from(
-        { length: bookingCount },
-        () => ({
-          color: "#f97316",
-          kind: "booking" as const,
-        }),
-      );
+      const bookingDots: DayDot[] = Array.from({ length: bookingCount }, () => ({
+        color: "#f97316",
+        kind: "booking" as const,
+      }));
       const eventDots: DayDot[] = (eventsByDate[key] ?? []).map((e) => ({
         color: e.color,
         kind: "event" as const,
       }));
       return [...bookingDots, ...eventDots];
     },
-    [bookingsByDate, eventsByDate],
+    [bookingsByDate, eventsByDate]
   );
 
   const navigateMonth = (dir: -1 | 1) => {
-    setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() + dir, 1),
-    );
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + dir, 1));
     setSelectedDateKey(null);
   };
 
@@ -610,15 +563,9 @@ export function DashboardCalendar() {
   };
 
   // Selected date data
-  const selectedBookings = selectedDateKey
-    ? (bookingsByDate[selectedDateKey] ?? [])
-    : [];
-  const selectedEvents = selectedDateKey
-    ? (eventsByDate[selectedDateKey] ?? [])
-    : [];
-  const selectedDateObj = selectedDateKey
-    ? parseLocalDate(selectedDateKey)
-    : null;
+  const selectedBookings = selectedDateKey ? (bookingsByDate[selectedDateKey] ?? []) : [];
+  const selectedEvents = selectedDateKey ? (eventsByDate[selectedDateKey] ?? []) : [];
+  const selectedDateObj = selectedDateKey ? parseLocalDate(selectedDateKey) : null;
 
   // Upcoming / past bookings for the list tab
   const todayKey = toDateKey(today);
@@ -631,9 +578,7 @@ export function DashboardCalendar() {
   }, [bookingsByDate]);
 
   const upcomingEntries = allBookingEntries.filter((e) => e.key >= todayKey);
-  const pastEntries = allBookingEntries
-    .filter((e) => e.key < todayKey)
-    .reverse();
+  const pastEntries = allBookingEntries.filter((e) => e.key < todayKey).reverse();
 
   return (
     <Card className="shop-surface premium-shadow overflow-hidden p-0">
@@ -664,18 +609,17 @@ export function DashboardCalendar() {
               <button
                 type="button"
                 onClick={() => navigateMonth(-1)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <p className="text-sm font-semibold text-slate-800">
-                {MONTH_NAMES[currentMonth.getMonth()]}{" "}
-                {currentMonth.getFullYear()}
+                {MONTH_NAMES[currentMonth.getMonth()]} {currentMonth.getFullYear()}
               </p>
               <button
                 type="button"
                 onClick={() => navigateMonth(1)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -686,7 +630,7 @@ export function DashboardCalendar() {
               {DAY_LABELS.map((d) => (
                 <div
                   key={d}
-                  className="flex items-center justify-center py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400"
+                  className="flex items-center justify-center py-1 text-[10px] font-semibold tracking-wide text-slate-400 uppercase"
                 >
                   {d}
                 </div>
@@ -697,10 +641,7 @@ export function DashboardCalendar() {
             {loading ? (
               <div className="grid grid-cols-7 gap-0.5">
                 {Array.from({ length: 42 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-10 animate-pulse rounded-xl bg-slate-100"
-                  />
+                  <div key={i} className="h-10 animate-pulse rounded-xl bg-slate-100" />
                 ))}
               </div>
             ) : (
@@ -730,7 +671,7 @@ export function DashboardCalendar() {
             {/* Legend */}
             <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5">
               <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                <span className="h-2 w-2 rounded-full bg-power-orange" />
+                <span className="bg-power-orange h-2 w-2 rounded-full" />
                 Booking
               </span>
               <span className="flex items-center gap-1 text-[10px] text-slate-400">
@@ -738,7 +679,7 @@ export function DashboardCalendar() {
                 Competition
               </span>
               <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                <span className="h-2 w-2 rounded-full bg-turf-green" />
+                <span className="bg-turf-green h-2 w-2 rounded-full" />
                 Training
               </span>
               <span className="flex items-center gap-1 text-[10px] text-slate-400">
@@ -749,7 +690,7 @@ export function DashboardCalendar() {
           </div>
 
           {/* ── Right: Detail / List Panel ─────────────────── */}
-          <div className="flex-1 min-w-0 lg:border-l lg:border-slate-200/60 lg:pl-6">
+          <div className="min-w-0 flex-1 lg:border-l lg:border-slate-200/60 lg:pl-6">
             <AnimatePresence mode="wait">
               {selectedDateKey && selectedDateObj ? (
                 <motion.div
@@ -768,8 +709,7 @@ export function DashboardCalendar() {
                       </p>
                       <p className="text-xs text-slate-500">
                         {selectedBookings.length} booking
-                        {selectedBookings.length !== 1 ? "s" : ""} ·{" "}
-                        {selectedEvents.length} event
+                        {selectedBookings.length !== 1 ? "s" : ""} · {selectedEvents.length} event
                         {selectedEvents.length !== 1 ? "s" : ""}
                       </p>
                     </div>
@@ -779,7 +719,7 @@ export function DashboardCalendar() {
                         setSelectedDateKey(null);
                         setShowAddForm(false);
                       }}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                      className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -799,15 +739,12 @@ export function DashboardCalendar() {
                   {/* Bookings for this day */}
                   {selectedBookings.length > 0 && (
                     <div className="space-y-2">
-                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-400 uppercase">
                         <Clock className="h-3 w-3" />
                         Sessions
                       </p>
                       {selectedBookings.map((b, idx) => (
-                        <BookingCard
-                          key={b.id ?? (b as any)._id ?? `booking-${idx}`}
-                          booking={b}
-                        />
+                        <BookingCard key={b.id ?? (b as any)._id ?? `booking-${idx}`} booking={b} />
                       ))}
                     </div>
                   )}
@@ -815,7 +752,7 @@ export function DashboardCalendar() {
                   {/* Events for this day */}
                   {selectedEvents.length > 0 && (
                     <div className="space-y-2">
-                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-slate-400 uppercase">
                         <Star className="h-3 w-3" />
                         Events
                       </p>
@@ -831,31 +768,25 @@ export function DashboardCalendar() {
                   )}
 
                   {/* Empty state for this day */}
-                  {selectedBookings.length === 0 &&
-                    selectedEvents.length === 0 &&
-                    !showAddForm && (
-                      <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-200 py-10 text-center">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
-                          <Calendar className="h-5 w-5 text-slate-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-600">
-                            Nothing scheduled
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            Add an event to mark this date
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          icon={<Plus size={13} />}
-                          onClick={() => setShowAddForm(true)}
-                        >
-                          Add Event
-                        </Button>
+                  {selectedBookings.length === 0 && selectedEvents.length === 0 && !showAddForm && (
+                    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-200 py-10 text-center">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
+                        <Calendar className="h-5 w-5 text-slate-400" />
                       </div>
-                    )}
+                      <div>
+                        <p className="text-sm font-medium text-slate-600">Nothing scheduled</p>
+                        <p className="text-xs text-slate-400">Add an event to mark this date</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        icon={<Plus size={13} />}
+                        onClick={() => setShowAddForm(true)}
+                      >
+                        Add Event
+                      </Button>
+                    </div>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
@@ -868,8 +799,8 @@ export function DashboardCalendar() {
                 >
                   {/* Tab selector */}
                   <div className="flex items-center gap-2">
-                    <p className="mr-1 text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                      <Zap className="h-4 w-4 text-power-orange" />
+                    <p className="mr-1 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                      <Zap className="text-power-orange h-4 w-4" />
                       Sessions
                     </p>
                     {(["upcoming", "past"] as const).map((tab) => (
@@ -881,7 +812,7 @@ export function DashboardCalendar() {
                           "rounded-lg px-3 py-1 text-xs font-semibold transition-all",
                           bookingTab === tab
                             ? "bg-power-orange text-white shadow-sm"
-                            : "bg-slate-100 text-slate-500 hover:bg-slate-200",
+                            : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                         )}
                       >
                         {tab === "upcoming" ? "Upcoming" : "Past"}
@@ -895,95 +826,80 @@ export function DashboardCalendar() {
                   {loading ? (
                     <div className="space-y-2">
                       {[1, 2, 3].map((i) => (
-                        <div
-                          key={i}
-                          className="h-16 animate-pulse rounded-xl bg-slate-100"
-                        />
+                        <div key={i} className="h-16 animate-pulse rounded-xl bg-slate-100" />
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-1 overflow-y-auto max-h-72 pr-1">
-                      {(bookingTab === "upcoming"
-                        ? upcomingEntries
-                        : pastEntries
-                      ).length === 0 ? (
+                    <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
+                      {(bookingTab === "upcoming" ? upcomingEntries : pastEntries).length === 0 ? (
                         <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 py-8 text-center">
                           <Calendar className="h-8 w-8 text-slate-300" />
-                          <p className="text-sm text-slate-400">
-                            No {bookingTab} sessions
-                          </p>
+                          <p className="text-sm text-slate-400">No {bookingTab} sessions</p>
                         </div>
                       ) : (
-                        (bookingTab === "upcoming"
-                          ? upcomingEntries
-                          : pastEntries
-                        ).map(({ key, bookings }) => {
-                          const d = parseLocalDate(key);
-                          return (
-                            <div key={key}>
-                              <p
-                                className={cn(
-                                  "px-1 py-1.5 text-[10px] font-bold uppercase tracking-wider",
-                                  key === todayKey
-                                    ? "text-power-orange"
-                                    : "text-slate-400",
-                                )}
-                              >
-                                {key === todayKey
-                                  ? "Today"
-                                  : d.toLocaleDateString("en-IN", {
-                                      weekday: "short",
-                                      day: "numeric",
-                                      month: "short",
-                                    })}
-                              </p>
-                              <div className="space-y-1.5">
-                                {bookings.map((b, idx) => (
-                                  <motion.div
-                                    key={
-                                      b.id ??
-                                      (b as any)._id ??
-                                      `upc-booking-${idx}`
-                                    }
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/60 px-3 py-2.5 hover:bg-white transition-colors"
-                                    onClick={() =>
-                                      handleDateClick(
-                                        parseLocalDate(
-                                          typeof b.date === "string"
-                                            ? b.date
-                                            : toDateKey(new Date(b.date)),
-                                        ),
-                                      )
-                                    }
-                                  >
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100">
-                                      <Calendar className="h-3.5 w-3.5 text-power-orange" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <p className="truncate text-sm font-semibold text-slate-900">
-                                        {getBookingLabel(b)}
-                                      </p>
-                                      <p className="text-xs text-slate-500">
-                                        {b.sport} · {formatTime(b.startTime)}
-                                      </p>
-                                    </div>
-                                    <Badge
-                                      className={cn(
-                                        "shrink-0 border text-[10px]",
-                                        BOOKING_STATUS_COLORS[b.status] ??
-                                          "bg-slate-50 text-slate-600 border-slate-200",
-                                      )}
+                        (bookingTab === "upcoming" ? upcomingEntries : pastEntries).map(
+                          ({ key, bookings }) => {
+                            const d = parseLocalDate(key);
+                            return (
+                              <div key={key}>
+                                <p
+                                  className={cn(
+                                    "px-1 py-1.5 text-[10px] font-bold tracking-wider uppercase",
+                                    key === todayKey ? "text-power-orange" : "text-slate-400"
+                                  )}
+                                >
+                                  {key === todayKey
+                                    ? "Today"
+                                    : d.toLocaleDateString("en-IN", {
+                                        weekday: "short",
+                                        day: "numeric",
+                                        month: "short",
+                                      })}
+                                </p>
+                                <div className="space-y-1.5">
+                                  {bookings.map((b, idx) => (
+                                    <motion.div
+                                      key={b.id ?? (b as any)._id ?? `upc-booking-${idx}`}
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/60 px-3 py-2.5 transition-colors hover:bg-white"
+                                      onClick={() =>
+                                        handleDateClick(
+                                          parseLocalDate(
+                                            typeof b.date === "string"
+                                              ? b.date
+                                              : toDateKey(new Date(b.date))
+                                          )
+                                        )
+                                      }
                                     >
-                                      {formatStatus(b.status)}
-                                    </Badge>
-                                  </motion.div>
-                                ))}
+                                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-100">
+                                        <Calendar className="text-power-orange h-3.5 w-3.5" />
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold text-slate-900">
+                                          {getBookingLabel(b)}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                          {b.sport} · {formatTime(b.startTime)}
+                                        </p>
+                                      </div>
+                                      <Badge
+                                        className={cn(
+                                          "shrink-0 border text-[10px]",
+                                          BOOKING_STATUS_COLORS[b.status] ??
+                                            "border-slate-200 bg-slate-50 text-slate-600"
+                                        )}
+                                      >
+                                        {formatStatus(b.status)}
+                                      </Badge>
+                                    </motion.div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })
+                            );
+                          }
+                        )
                       )}
                     </div>
                   )}

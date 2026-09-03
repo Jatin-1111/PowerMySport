@@ -52,10 +52,10 @@ export default function PartnerTermsPage() {
       />
 
       {/* Main Content */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
           <PartnerTermsToc />
-          <Card className="legal-content bg-white p-8 prose prose-slate max-w-none lg:col-start-2">
+          <Card className="legal-content prose prose-slate max-w-none bg-white p-8 lg:col-start-2">
             <Scope />
             <Definitions />
             <Eligibility />

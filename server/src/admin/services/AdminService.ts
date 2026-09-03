@@ -6,10 +6,7 @@ import {
   ALL_PERMISSIONS,
   ROLE_TEMPLATES,
 } from "../../constants/adminPermissions";
-import {
-  normalizePermissions,
-  areValidPermissions,
-} from "../../utils/permissions";
+import { normalizePermissions, areValidPermissions } from "../../utils/permissions";
 import { sendAdminTemporaryCredentialsEmail } from "../../utils/email";
 import { generateToken } from "../../utils/jwt";
 import { randomInt } from "crypto";
@@ -33,8 +30,7 @@ interface ChangeAdminPasswordPayload {
   newPassword: string;
 }
 
-const TEMP_PASSWORD_CHARS =
-  "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@$!%*?&";
+const TEMP_PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@$!%*?&";
 
 const generateTemporaryPassword = (length: number = 12): string => {
   let password = "";
@@ -50,22 +46,17 @@ const normalizeUrl = (value: string): string => value.replace(/\/+$/, "");
 
 const deriveAdminBaseUrlFromFrontend = (frontendUrl: string): string | null => {
   try {
-    const valueWithProtocol = frontendUrl.includes("://")
-      ? frontendUrl
-      : `https://${frontendUrl}`;
+    const valueWithProtocol = frontendUrl.includes("://") ? frontendUrl : `https://${frontendUrl}`;
     const parsed = new URL(valueWithProtocol);
     const hostname = parsed.hostname.replace(/^www\./, "");
-    const adminHostname = hostname.startsWith("admin.")
-      ? hostname
-      : `admin.${hostname}`;
+    const adminHostname = hostname.startsWith("admin.") ? hostname : `admin.${hostname}`;
 
     const protocol =
       parsed.protocol === "http:" && process.env.NODE_ENV === "production"
         ? "https:"
         : parsed.protocol;
 
-    const hasCustomPort =
-      parsed.port && parsed.port !== "80" && parsed.port !== "443";
+    const hasCustomPort = parsed.port && parsed.port !== "80" && parsed.port !== "443";
     const port = hasCustomPort ? `:${parsed.port}` : "";
 
     return `${protocol}//${adminHostname}${port}`;
@@ -101,16 +92,13 @@ export const resolveAdminAppUrl = (): string => {
   return "http://localhost:3001";
 };
 
-const resolveAdminLoginUrl = (): string =>
-  `${resolveAdminAppUrl()}/admin/login`;
+const resolveAdminLoginUrl = (): string => `${resolveAdminAppUrl()}/admin/login`;
 
 export const loginAdmin = async (data: LoginPayload) => {
   const { email, password } = data;
 
   // Find admin with password field
-  const admin = await Admin.findOne({ email, isActive: true }).select(
-    "+password",
-  );
+  const admin = await Admin.findOne({ email, isActive: true }).select("+password");
 
   if (!admin) {
     throw new Error("Invalid credentials");
@@ -127,10 +115,7 @@ export const loginAdmin = async (data: LoginPayload) => {
   // would block login entirely for any admin carrying legacy/invalid
   // permission strings, for a change that has nothing to do with permissions.
   admin.lastLogin = new Date();
-  await Admin.updateOne(
-    { _id: admin._id },
-    { $set: { lastLogin: admin.lastLogin } },
-  );
+  await Admin.updateOne({ _id: admin._id }, { $set: { lastLogin: admin.lastLogin } });
 
   // Generate token
   const token = generateToken({
@@ -149,9 +134,7 @@ export const loginAdmin = async (data: LoginPayload) => {
   };
 };
 
-export const createAdmin = async (
-  data: CreateAdminPayload,
-): Promise<IAdmin> => {
+export const createAdmin = async (data: CreateAdminPayload): Promise<IAdmin> => {
   // Check if admin already exists
   const existingAdmin = await Admin.findOne({ email: data.email });
   if (existingAdmin) {
@@ -161,9 +144,7 @@ export const createAdmin = async (
   // Validate role
   const validRoles = Object.values(ADMIN_ROLES);
   const role =
-    data.role && validRoles.includes(data.role as any)
-      ? data.role
-      : ADMIN_ROLES.SUPPORT_ADMIN;
+    data.role && validRoles.includes(data.role as any) ? data.role : ADMIN_ROLES.SUPPORT_ADMIN;
 
   // Determine permissions
   let permissions: string[];
@@ -204,16 +185,14 @@ export const createAdmin = async (
     throw new Error(
       error instanceof Error
         ? `Failed to send temporary credentials email: ${error.message}`
-        : "Failed to send temporary credentials email",
+        : "Failed to send temporary credentials email"
     );
   }
 
   return admin;
 };
 
-export const changeAdminPassword = async (
-  payload: ChangeAdminPasswordPayload,
-): Promise<IAdmin> => {
+export const changeAdminPassword = async (payload: ChangeAdminPasswordPayload): Promise<IAdmin> => {
   const { adminId, currentPassword, newPassword } = payload;
 
   const admin = await Admin.findById(adminId).select("+password");
@@ -238,7 +217,7 @@ export const changeAdminPassword = async (
   const updatedAdmin = await Admin.findByIdAndUpdate(
     adminId,
     { $set: { password: hashedPassword, mustChangePassword: false } },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedAdmin) {
@@ -263,10 +242,10 @@ export const getAllAdmins = async () => {
  * a single hardcoded recipient.
  */
 export const getAdminsWithPermission = async (
-  permission: string,
+  permission: string
 ): Promise<Array<{ email: string; name: string }>> => {
   const rolesWithPermission = Object.values(ADMIN_ROLES).filter((role) =>
-    getRolePermissions(role).includes(permission),
+    getRolePermissions(role).includes(permission)
   );
 
   const admins = await Admin.find({
@@ -281,7 +260,7 @@ export const getAdminsWithPermission = async (
 
 export const updateAdmin = async (
   adminId: string,
-  updates: Partial<IAdmin>,
+  updates: Partial<IAdmin>
 ): Promise<IAdmin | null> => {
   // Don't allow password updates through this method
   delete updates.password;
@@ -292,10 +271,7 @@ export const updateAdmin = async (
   });
 };
 
-export const setAdminActiveStatus = async (
-  adminId: string,
-  isActive: boolean,
-): Promise<IAdmin> => {
+export const setAdminActiveStatus = async (adminId: string, isActive: boolean): Promise<IAdmin> => {
   // findByIdAndUpdate + runValidators only validates the fields being set
   // (just isActive here), unlike a full document .save() which re-validates
   // every field — including permissions, where legacy admin documents can
@@ -304,7 +280,7 @@ export const setAdminActiveStatus = async (
   const admin = await Admin.findByIdAndUpdate(
     adminId,
     { isActive },
-    { new: true, runValidators: true },
+    { new: true, runValidators: true }
   );
 
   if (!admin) {
@@ -319,7 +295,7 @@ export const setAdminActiveStatus = async (
  */
 export const updateAdminPermissions = async (
   adminId: string,
-  permissions: string[],
+  permissions: string[]
 ): Promise<IAdmin> => {
   // Validate permissions
   if (!areValidPermissions(permissions, ALL_PERMISSIONS)) {
@@ -340,10 +316,7 @@ export const updateAdminPermissions = async (
 /**
  * Update admin role and reset permissions to role template
  */
-export const updateAdminRole = async (
-  adminId: string,
-  role: string,
-): Promise<IAdmin> => {
+export const updateAdminRole = async (adminId: string, role: string): Promise<IAdmin> => {
   // Validate role
   const validRoles = Object.values(ADMIN_ROLES);
   if (!validRoles.includes(role as any)) {

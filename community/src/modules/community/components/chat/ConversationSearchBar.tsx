@@ -55,9 +55,7 @@ export default function ConversationSearchBar({
         />
         {query.trim() && (
           <span className="shrink-0 text-[11px] font-medium text-slate-500 tabular-nums">
-            {matchCount === 0
-              ? "No results"
-              : `${currentMatchIndex + 1} / ${matchCount}`}
+            {matchCount === 0 ? "No results" : `${currentMatchIndex + 1} / ${matchCount}`}
           </span>
         )}
         {matchCount > 0 && (

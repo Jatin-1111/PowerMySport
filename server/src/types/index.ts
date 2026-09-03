@@ -13,11 +13,7 @@ export type UserRole =
 
 // Admin role types
 export type AdminRole =
-  | "SUPPORT_ADMIN"
-  | "OPERATIONS_ADMIN"
-  | "FINANCE_ADMIN"
-  | "ANALYTICS_ADMIN"
-  | "SYSTEM_ADMIN";
+  "SUPPORT_ADMIN" | "OPERATIONS_ADMIN" | "FINANCE_ADMIN" | "ANALYTICS_ADMIN" | "SYSTEM_ADMIN";
 
 export type Permission = string; // e.g., "users:view", "venues:manage"
 
@@ -179,8 +175,7 @@ export interface ICoach {
   availabilityBySport?: Record<string, IAvailability[]>;
   onboardingProgressStep?: 1 | 2 | 3;
   verificationDocuments?: Array<{
-    type:
-      "CERTIFICATION" | "ID_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
+    type: "CERTIFICATION" | "ID_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
     url: string;
     s3Key?: string; // S3 key for document
     fileName: string;
@@ -274,12 +269,7 @@ export interface IAcademyDocument {
 // VENUE ONBOARDING TYPES
 // ============================================
 export interface IVenueDocument {
-  type:
-    | "OWNERSHIP_PROOF"
-    | "BUSINESS_REGISTRATION"
-    | "TAX_DOCUMENT"
-    | "INSURANCE"
-    | "CERTIFICATE";
+  type: "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
   url: string;
   s3Key?: string; // S3 object key for regenerating presigned URLs
   fileName: string;
@@ -330,11 +320,7 @@ export interface IVenueOnboardingStep4 {
   coverPhotoKey: string; // S3 key for cover photo
   documents: {
     type:
-      | "OWNERSHIP_PROOF"
-      | "BUSINESS_REGISTRATION"
-      | "TAX_DOCUMENT"
-      | "INSURANCE"
-      | "CERTIFICATE";
+      "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
     url: string;
     s3Key?: string; // S3 object key for regenerating URLs
     fileName: string;
@@ -365,12 +351,7 @@ export interface IPendingVenue {
 // ============================================
 // BOOKING TYPES
 // ============================================
-export type PaymentUserType =
-  | "VenueLister"
-  | "Coach"
-  | "Academy"
-  | "Expert"
-  | "Player";
+export type PaymentUserType = "VenueLister" | "Coach" | "Academy" | "Expert" | "Player";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {

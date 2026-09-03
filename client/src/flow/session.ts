@@ -49,8 +49,7 @@ export const AUTH_COOKIE_NAME = "token";
  * token's own lifetime. Enabling it earlier takes the app down for exactly the
  * users who were already signed in.
  */
-const shouldBlockAnonymous = (): boolean =>
-  process.env.PROXY_BLOCK_ANONYMOUS === "true";
+const shouldBlockAnonymous = (): boolean => process.env.PROXY_BLOCK_ANONYMOUS === "true";
 
 const KNOWN_ROLES: readonly UserRole[] = [
   "Player",
@@ -101,7 +100,7 @@ export const readSession = async ({
       new TextEncoder().encode(secret),
       // Pinned so a token claiming "alg": "none" cannot be substituted. Mirrors
       // the API's own pinning in server/src/utils/jwt.ts.
-      { algorithms: ["HS256"] },
+      { algorithms: ["HS256"] }
     );
 
     if (!isKnownRole(payload.role)) {
@@ -128,9 +127,7 @@ export const readSession = async ({
 };
 
 /** `readSession` wired to the ambient environment, for the proxy. */
-export const readSessionFromCookie = (
-  token: string | null | undefined,
-): Promise<SessionState> =>
+export const readSessionFromCookie = (token: string | null | undefined): Promise<SessionState> =>
   readSession({
     token,
     secret: process.env.JWT_SECRET,

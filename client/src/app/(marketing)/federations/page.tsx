@@ -87,7 +87,7 @@ export default async function FederationsIndexPage() {
     return index === -1 ? PATHWAY_SPORTS.length : index;
   };
   const groups = Array.from(bySport.entries()).sort(
-    ([a], [b]) => registryOrder(a) - registryOrder(b) || a.localeCompare(b),
+    ([a], [b]) => registryOrder(a) - registryOrder(b) || a.localeCompare(b)
   );
 
   return (
@@ -118,11 +118,10 @@ export default async function FederationsIndexPage() {
               Who decides what your child can enter
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
-              Every competitive sport in India runs on someone&apos;s rulebook —
-              age cut-offs, registration order, ranking points, an official
-              calendar. We keep the details for each body in one place, checked
-              against its own published sources rather than summarised from
-              memory.
+              Every competitive sport in India runs on someone&apos;s rulebook — age cut-offs,
+              registration order, ranking points, an official calendar. We keep the details for each
+              body in one place, checked against its own published sources rather than summarised
+              from memory.
             </p>
           </div>
         </div>
@@ -133,8 +132,7 @@ export default async function FederationsIndexPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {groups.length === 0 ? (
             <p className="mx-auto max-w-xl text-center text-sm text-slate-600 sm:text-base">
-              We&apos;re curating federation records one sport at a time — check
-              back shortly.
+              We&apos;re curating federation records one sport at a time — check back shortly.
             </p>
           ) : (
             <div className="flex flex-col gap-12">
@@ -147,7 +145,7 @@ export default async function FederationsIndexPage() {
                     {publishedSports.has(slug) && (
                       <Link
                         href={`/roadmap/${slug}`}
-                        className="inline-flex items-center gap-1 text-sm font-semibold text-power-orange transition hover:gap-1.5"
+                        className="text-power-orange inline-flex items-center gap-1 text-sm font-semibold transition hover:gap-1.5"
                       >
                         Read the {sportName(slug)} pathway
                         <ArrowRight className="h-4 w-4" />

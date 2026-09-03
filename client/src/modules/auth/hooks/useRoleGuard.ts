@@ -60,10 +60,8 @@ export const useRoleGuard = (): RoleGuardStatus => {
   // `decision` is a fresh object every render, so the effect depends on its
   // fields rather than the object itself.
   const redirectTo = decision.kind === "redirect" ? decision.to : null;
-  const redirectMessage =
-    decision.kind === "redirect" ? (decision.message ?? null) : null;
-  const preserveReturnPath =
-    decision.kind === "redirect" ? decision.preserveReturnPath : false;
+  const redirectMessage = decision.kind === "redirect" ? (decision.message ?? null) : null;
+  const preserveReturnPath = decision.kind === "redirect" ? decision.preserveReturnPath : false;
 
   // Redirecting is a one-shot action. Without this, a re-render between
   // `router.replace` being called and the navigation committing fires it again —
@@ -81,13 +79,7 @@ export const useRoleGuard = (): RoleGuardStatus => {
 
     if (redirectMessage) toast.error(redirectMessage);
     router.replace(redirectTo);
-  }, [
-    redirectTo,
-    redirectMessage,
-    preserveReturnPath,
-    pathname,
-    router,
-  ]);
+  }, [redirectTo, redirectMessage, preserveReturnPath, pathname, router]);
 
   return statusFor(decision);
 };

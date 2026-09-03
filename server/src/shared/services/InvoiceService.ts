@@ -24,7 +24,7 @@ const ROBOTO_DIR = path.join(
   require.resolve("roboto-fontface/package.json"),
   "..",
   "fonts",
-  "roboto",
+  "roboto"
 );
 const ROBOTO_REGULAR = path.join(ROBOTO_DIR, "Roboto-Regular.woff");
 const ROBOTO_BOLD = path.join(ROBOTO_DIR, "Roboto-Bold.woff");
@@ -156,18 +156,7 @@ const ONES = [
   "Eighteen",
   "Nineteen",
 ];
-const TENS = [
-  "",
-  "",
-  "Twenty",
-  "Thirty",
-  "Forty",
-  "Fifty",
-  "Sixty",
-  "Seventy",
-  "Eighty",
-  "Ninety",
-];
+const TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
 
 const twoDigitsToWords = (n: number): string => {
   if (n < 20) return ONES[n] || "";
@@ -204,13 +193,11 @@ export const numberToIndianWords = (amount: number): string => {
   return `${parts.join(" ")} Rupees Only`;
 };
 
-const collectPdfBuffer = (
-  doc: InstanceType<typeof PDFDocument>,
-): Promise<Buffer> => {
+const collectPdfBuffer = (doc: InstanceType<typeof PDFDocument>): Promise<Buffer> => {
   const chunks: Buffer[] = [];
   return new Promise((resolve, reject) => {
     doc.on("data", (chunk: Buffer | string) =>
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
     );
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
@@ -218,9 +205,7 @@ const collectPdfBuffer = (
   });
 };
 
-export const renderInvoicePdf = async (
-  data: InvoiceData,
-): Promise<Buffer> => {
+export const renderInvoicePdf = async (data: InvoiceData): Promise<Buffer> => {
   const doc = new PDFDocument({ size: "A4", margin: 0 });
   doc.registerFont("Roboto", ROBOTO_REGULAR);
   doc.registerFont("Roboto-Bold", ROBOTO_BOLD);
@@ -248,7 +233,7 @@ export const renderInvoicePdf = async (
       align?: "left" | "right" | "center";
       letterSpacingEm?: number;
       uppercase?: boolean;
-    },
+    }
   ): void => {
     const fontSize = s(opts.size);
     const font = opts.mono
@@ -272,12 +257,7 @@ export const renderInvoicePdf = async (
     doc.text(renderStr, x, y, drawOpts);
   };
 
-  const heightOf = (
-    str: string,
-    width: number,
-    size: number,
-    bold = false,
-  ): number => {
+  const heightOf = (str: string, width: number, size: number, bold = false): number => {
     doc.font(bold ? "Roboto-Bold" : "Roboto").fontSize(s(size));
     return doc.heightOfString(str, { width });
   };
@@ -289,7 +269,7 @@ export const renderInvoicePdf = async (
     h: number,
     r: number,
     fill: string,
-    stroke?: string,
+    stroke?: string
   ): void => {
     doc.save();
     doc.roundedRect(x, y, w, h, r);
@@ -300,7 +280,11 @@ export const renderInvoicePdf = async (
 
   const hLine = (x: number, y: number, w: number, color: string): void => {
     doc.save();
-    doc.moveTo(x, y).lineTo(x + w, y).lineWidth(s(1)).stroke(color);
+    doc
+      .moveTo(x, y)
+      .lineTo(x + w, y)
+      .lineWidth(s(1))
+      .stroke(color);
     doc.restore();
   };
 
@@ -311,8 +295,7 @@ export const renderInvoicePdf = async (
   const headerContentHeight = s(28) + s(6) + s(11 * 1.3);
   const badgeHeight = s(26);
   const headerRightHeight = badgeHeight + s(8) + s(11 * 1.3);
-  const headerHeight =
-    headerPadTop + Math.max(headerContentHeight, headerRightHeight) + s(22);
+  const headerHeight = headerPadTop + Math.max(headerContentHeight, headerRightHeight) + s(22);
 
   roundedRect(0, cursorY, pageWidth, headerHeight, 0, BRAND.orange);
 
@@ -321,18 +304,13 @@ export const renderInvoicePdf = async (
     bold: true,
     color: BRAND.white,
   });
-  text(
-    COMPANY_TAGLINE,
-    headerPadX,
-    cursorY + headerPadTop + s(28) + s(6),
-    {
-      size: 11,
-      bold: true,
-      color: "rgba(255,255,255,0.85)",
-      uppercase: true,
-      letterSpacingEm: 0.16,
-    },
-  );
+  text(COMPANY_TAGLINE, headerPadX, cursorY + headerPadTop + s(28) + s(6), {
+    size: 11,
+    bold: true,
+    color: "rgba(255,255,255,0.85)",
+    uppercase: true,
+    letterSpacingEm: 0.16,
+  });
 
   const headerRightColRight = pageWidth - headerPadX;
   const subtitleUpper = data.subtitle.toUpperCase();
@@ -478,15 +456,7 @@ export const renderInvoicePdf = async (
 
   const infoCardHeightMax = Math.max(infoCardHeight, infoCardHeightRight);
 
-  roundedRect(
-    contentX,
-    cursorY,
-    halfWidth,
-    infoCardHeightMax,
-    s(12),
-    BRAND.white,
-    BRAND.line,
-  );
+  roundedRect(contentX, cursorY, halfWidth, infoCardHeightMax, s(12), BRAND.white, BRAND.line);
   roundedRect(
     contentX + halfWidth + s(16),
     cursorY,
@@ -494,7 +464,7 @@ export const renderInvoicePdf = async (
     infoCardHeightMax,
     s(12),
     BRAND.white,
-    BRAND.line,
+    BRAND.line
   );
 
   const labelSmall = {
@@ -590,18 +560,9 @@ export const renderInvoicePdf = async (
       });
     })();
     const spPadY = s(14);
-    const spHeight =
-      spPadY + s(9 * 1.3) + s(3) + s(14 * 1.3) + s(3) + spAddrHeight + spPadY;
+    const spHeight = spPadY + s(9 * 1.3) + s(3) + s(14 * 1.3) + s(3) + spAddrHeight + spPadY;
 
-    roundedRect(
-      contentX,
-      cursorY,
-      contentWidth,
-      spHeight,
-      s(12),
-      BRAND.soft,
-      BRAND.line,
-    );
+    roundedRect(contentX, cursorY, contentWidth, spHeight, s(12), BRAND.soft, BRAND.line);
 
     const spInnerX = contentX + cardPadX;
     let spy = cursorY + spPadY;
@@ -647,19 +608,10 @@ export const renderInvoicePdf = async (
   const detailRows = Math.ceil(data.detailFields.length / 3);
   const detailRowH = s(10.5 * 1.3) + s(2) + s(13 * 1.3);
   const detailsGridPadY = s(13);
-  const detailsGridH =
-    detailsGridPadY * 2 + detailRows * detailRowH + (detailRows - 1) * s(11);
+  const detailsGridH = detailsGridPadY * 2 + detailRows * detailRowH + (detailRows - 1) * s(11);
   const detailsCardH = detailsHeaderH + detailsGridH;
 
-  roundedRect(
-    contentX,
-    cursorY,
-    contentWidth,
-    detailsCardH,
-    s(12),
-    BRAND.white,
-    BRAND.line,
-  );
+  roundedRect(contentX, cursorY, contentWidth, detailsCardH, s(12), BRAND.white, BRAND.line);
   doc.rect(contentX, cursorY, contentWidth, detailsHeaderH).fill(BRAND.soft);
   hLine(contentX, cursorY + detailsHeaderH, contentWidth, BRAND.line);
 
@@ -681,21 +633,16 @@ export const renderInvoicePdf = async (
     detailsBadgeW,
     s(19),
     s(10),
-    BRAND.badgeGreenBg,
+    BRAND.badgeGreenBg
   );
-  text(
-    badgeText,
-    contentX + contentWidth - cardPadX - detailsBadgeW,
-    cursorY + s(11),
-    {
-      size: 10,
-      bold: true,
-      color: BRAND.badgeGreenText,
-      width: detailsBadgeW,
-      align: "center",
-      letterSpacingEm: 0.06,
-    },
-  );
+  text(badgeText, contentX + contentWidth - cardPadX - detailsBadgeW, cursorY + s(11), {
+    size: 10,
+    bold: true,
+    color: BRAND.badgeGreenText,
+    width: detailsBadgeW,
+    align: "center",
+    letterSpacingEm: 0.06,
+  });
 
   const fieldsTop = cursorY + detailsHeaderH + detailsGridPadY;
   const detailColW = (contentWidth - cardPadX * 2 - s(20) * 2) / 3;
@@ -741,15 +688,7 @@ export const renderInvoicePdf = async (
   const lineItemsTotalH = lineItemRowHeights.reduce((a, b) => a + b, 0);
   const lineItemsCardH = lineItemHeaderH + lineItemsTotalH;
 
-  roundedRect(
-    contentX,
-    cursorY,
-    contentWidth,
-    lineItemsCardH,
-    s(12),
-    BRAND.white,
-    BRAND.line,
-  );
+  roundedRect(contentX, cursorY, contentWidth, lineItemsCardH, s(12), BRAND.white, BRAND.line);
   doc.rect(contentX, cursorY, contentWidth, lineItemHeaderH).fill(BRAND.slate);
 
   const headerLabelOpts = {
@@ -830,33 +769,14 @@ export const renderInvoicePdf = async (
 
   const paymentCardPadY = s(14);
   const paymentRowsH = 4 * (s(11.5 * 1.3) + s(8)) - s(8);
-  const paymentCardH =
-    paymentCardPadY +
-    s(9 * 1.3) +
-    s(10) +
-    paymentRowsH +
-    paymentCardPadY;
+  const paymentCardH = paymentCardPadY + s(9 * 1.3) + s(10) + paymentRowsH + paymentCardPadY;
 
   const wordsCardPadY = s(12);
-  const wordsValueH = heightOf(
-    numberToIndianWords(data.totalAmount),
-    leftColW - s(32),
-    12.5,
-    true,
-  );
-  const wordsCardH =
-    wordsCardPadY + s(9 * 1.3) + s(3) + wordsValueH + wordsCardPadY;
+  const wordsValueH = heightOf(numberToIndianWords(data.totalAmount), leftColW - s(32), 12.5, true);
+  const wordsCardH = wordsCardPadY + s(9 * 1.3) + s(3) + wordsValueH + wordsCardPadY;
 
   const leftStackY = cursorY;
-  roundedRect(
-    contentX,
-    leftStackY,
-    leftColW,
-    paymentCardH,
-    s(12),
-    BRAND.white,
-    BRAND.line,
-  );
+  roundedRect(contentX, leftStackY, leftColW, paymentCardH, s(12), BRAND.white, BRAND.line);
 
   let pry = leftStackY + paymentCardPadY;
   const prInnerX = contentX + s(16);
@@ -868,10 +788,7 @@ export const renderInvoicePdf = async (
     ["Method", data.payment.method],
     ["Merchant order ID", data.payment.merchantOrderId, true],
     ["Transaction ID", data.payment.transactionId || "-", true],
-    [
-      "Paid on",
-      data.payment.paidAt ? formatInvoiceDateTime(data.payment.paidAt) : "-",
-    ],
+    ["Paid on", data.payment.paidAt ? formatInvoiceDateTime(data.payment.paidAt) : "-"],
   ];
   paymentRows.forEach(([label, value, mono]) => {
     text(label, prInnerX, pry, {
@@ -891,21 +808,13 @@ export const renderInvoicePdf = async (
   });
 
   const wordsY = leftStackY + paymentCardH + s(12);
-  roundedRect(
-    contentX,
-    wordsY,
-    leftColW,
-    wordsCardH,
-    s(12),
-    BRAND.soft,
-    BRAND.line,
-  );
+  roundedRect(contentX, wordsY, leftColW, wordsCardH, s(12), BRAND.soft, BRAND.line);
   text("Amount in words", prInnerX, wordsY + wordsCardPadY, labelSmall);
   text(
     numberToIndianWords(data.totalAmount),
     prInnerX,
     wordsY + wordsCardPadY + s(9 * 1.3) + s(3),
-    { size: 12.5, bold: true, color: BRAND.text, width: prInnerW },
+    { size: 12.5, bold: true, color: BRAND.text, width: prInnerW }
   );
 
   // Totals card (right column)
@@ -914,12 +823,8 @@ export const renderInvoicePdf = async (
   const totalsRows: [string, string, string | undefined][] = [
     ["Subtotal", formatINR(subtotalFromLineItems(data.lineItems)), undefined],
     [
-      data.discountLabel && discountShown
-        ? `Discount · ${data.discountLabel}`
-        : "Discount",
-      discountShown
-        ? `−${formatINR(data.discountAmount)}`
-        : formatINR(0),
+      data.discountLabel && discountShown ? `Discount · ${data.discountLabel}` : "Discount",
+      discountShown ? `−${formatINR(data.discountAmount)}` : formatINR(0),
       discountShown ? BRAND.green : undefined,
     ],
     [
@@ -928,21 +833,12 @@ export const renderInvoicePdf = async (
       undefined,
     ],
   ];
-  const totalsUpperH =
-    totalsUpperPadY + totalsRows.length * s(12.5 * 1.3) + totalsUpperPadY;
+  const totalsUpperH = totalsUpperPadY + totalsRows.length * s(12.5 * 1.3) + totalsUpperPadY;
   const totalsLowerH = s(14) * 2 + s(12 * 1.3) + s(1) + s(10 * 1.3);
   const totalsCardH = totalsUpperH + totalsLowerH;
 
   const totalsY = cursorY;
-  roundedRect(
-    rightColX,
-    totalsY,
-    rightColW,
-    totalsCardH,
-    s(12),
-    BRAND.white,
-    BRAND.line,
-  );
+  roundedRect(rightColX, totalsY, rightColW, totalsCardH, s(12), BRAND.white, BRAND.line);
 
   let try_ = totalsY + totalsUpperPadY;
   const totalsInnerX = rightColX + s(16);
@@ -964,32 +860,23 @@ export const renderInvoicePdf = async (
   });
 
   const totalsLowerY = totalsY + totalsUpperH;
-  doc
-    .rect(rightColX, totalsLowerY, rightColW, totalsLowerH)
-    .fill(BRAND.slate);
+  doc.rect(rightColX, totalsLowerY, rightColW, totalsLowerH).fill(BRAND.slate);
   text("Total paid", totalsInnerX, totalsLowerY + s(14), {
     size: 12,
     bold: true,
     color: BRAND.white,
   });
-  text(
-    "Inclusive of all taxes",
-    totalsInnerX,
-    totalsLowerY + s(14) + s(12 * 1.3) + s(1),
-    { size: 10, color: BRAND.muted },
-  );
-  text(
-    formatINR(data.totalAmount),
-    totalsInnerX,
-    totalsLowerY + (totalsLowerH - s(22 * 1.2)) / 2,
-    {
-      size: 22,
-      bold: true,
-      color: BRAND.orange,
-      width: totalsInnerW,
-      align: "right",
-    },
-  );
+  text("Inclusive of all taxes", totalsInnerX, totalsLowerY + s(14) + s(12 * 1.3) + s(1), {
+    size: 10,
+    color: BRAND.muted,
+  });
+  text(formatINR(data.totalAmount), totalsInnerX, totalsLowerY + (totalsLowerH - s(22 * 1.2)) / 2, {
+    size: 22,
+    bold: true,
+    color: BRAND.orange,
+    width: totalsInnerW,
+    align: "right",
+  });
 
   cursorY = Math.max(wordsY + wordsCardH, totalsY + totalsCardH);
 
@@ -999,38 +886,37 @@ export const renderInvoicePdf = async (
   hLine(0, footerY, pageWidth, BRAND.line);
 
   const footerPadY = s(16);
-  text(
-    "Questions about this invoice?",
-    contentX,
-    footerY + footerPadY,
-    { size: 11, bold: true, color: BRAND.valueGray },
-  );
+  text("Questions about this invoice?", contentX, footerY + footerPadY, {
+    size: 11,
+    bold: true,
+    color: BRAND.valueGray,
+  });
   text(
     `${COMPANY_SUPPORT_EMAIL} · ${COMPANY_WEBSITE}`,
     contentX,
     footerY + footerPadY + s(11 * 1.3) + s(3),
-    { size: 11, color: BRAND.mutedDark },
+    { size: 11, color: BRAND.mutedDark }
   );
   text(
-    data.footerNote ||
-      "This is a system generated invoice and does not require a signature.",
+    data.footerNote || "This is a system generated invoice and does not require a signature.",
     contentX,
     footerY + footerPadY + (s(11 * 1.3) + s(3)) * 2,
-    { size: 10, color: BRAND.muted },
+    { size: 10, color: BRAND.muted }
   );
 
-  text(
-    COMPANY_DISPLAY_NAME,
-    contentX,
-    footerY + footerPadY,
-    { size: 13, bold: true, color: BRAND.text, width: contentWidth, align: "right" },
-  );
-  text(
-    "Page 1 of 1",
-    contentX,
-    footerY + footerPadY + s(13 * 1.3) + s(2),
-    { size: 10, color: BRAND.muted, width: contentWidth, align: "right" },
-  );
+  text(COMPANY_DISPLAY_NAME, contentX, footerY + footerPadY, {
+    size: 13,
+    bold: true,
+    color: BRAND.text,
+    width: contentWidth,
+    align: "right",
+  });
+  text("Page 1 of 1", contentX, footerY + footerPadY + s(13 * 1.3) + s(2), {
+    size: 10,
+    color: BRAND.muted,
+    width: contentWidth,
+    align: "right",
+  });
 
   return collectPdfBuffer(doc);
 };

@@ -5,8 +5,7 @@
  * Always escape untrusted input before building `new RegExp(input)` or
  * `{ $regex: input }`.
  */
-export const escapeRegex = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Maximum length we allow for a user-supplied search term before building a

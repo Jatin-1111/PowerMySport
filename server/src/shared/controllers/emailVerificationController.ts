@@ -1,8 +1,5 @@
 import { Request, Response } from "express";
-import {
-  sendVerificationCode,
-  verifyCode,
-} from "../services/EmailVerificationService";
+import { sendVerificationCode, verifyCode } from "../services/EmailVerificationService";
 import { Venue } from "../../client/models/Venue";
 
 /**
@@ -10,10 +7,7 @@ import { Venue } from "../../client/models/Venue";
  * POST /api/venues/onboarding/send-verification
  * Body: { email, name }
  */
-export const sendVerificationCodeHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const sendVerificationCodeHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, name } = req.body;
 
@@ -36,10 +30,7 @@ export const sendVerificationCodeHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to send verification code",
+      message: error instanceof Error ? error.message : "Failed to send verification code",
     });
   }
 };
@@ -49,10 +40,7 @@ export const sendVerificationCodeHandler = async (
  * POST /api/venues/onboarding/verify-email
  * Body: { email, code, venueId }
  */
-export const verifyEmailHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const verifyEmailHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, code, venueId } = req.body;
 
@@ -105,8 +93,7 @@ export const verifyEmailHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to verify email",
+      message: error instanceof Error ? error.message : "Failed to verify email",
     });
   }
 };

@@ -1,10 +1,5 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import {
-  OG_IMAGE,
-  organizationJsonLd,
-  SITE_DESCRIPTION,
-  websiteJsonLd,
-} from "@/lib/seo";
+import { OG_IMAGE, organizationJsonLd, SITE_DESCRIPTION, websiteJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 
 import HomeClient from "./HomeClient";

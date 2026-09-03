@@ -28,7 +28,7 @@ export async function streamChatAndPersist(
   session: ChatPersistableSession,
   systemPrompt: string,
   userMessage: string,
-  tools?: ChatToolDefinition[],
+  tools?: ChatToolDefinition[]
 ): Promise<void> {
   const historyForAI = session.messages.map((m) => ({
     role: m.role,
@@ -54,7 +54,7 @@ export async function streamChatAndPersist(
   } catch (aiError) {
     await decrementDailyMessageCount(userId);
     res.write(
-      `data: ${JSON.stringify({ error: aiError instanceof Error ? aiError.message : "AI error" })}\n\n`,
+      `data: ${JSON.stringify({ error: aiError instanceof Error ? aiError.message : "AI error" })}\n\n`
     );
     res.end();
     return;
@@ -65,7 +65,7 @@ export async function streamChatAndPersist(
 
   session.messages.push(
     { role: "user", content: userMessage, createdAt: new Date() },
-    { role: "assistant", content: fullAssistantResponse, createdAt: new Date() },
+    { role: "assistant", content: fullAssistantResponse, createdAt: new Date() }
   );
   session.totalMessageCount += 1;
   await session.save();

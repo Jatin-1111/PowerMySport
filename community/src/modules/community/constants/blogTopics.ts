@@ -129,9 +129,7 @@ export const BLOG_TOPICS: BlogTopic[] = [
   },
 ];
 
-const TOPIC_MAP = new Map(
-  BLOG_TOPICS.map((topic) => [topic.slug.toLowerCase(), topic]),
-);
+const TOPIC_MAP = new Map(BLOG_TOPICS.map((topic) => [topic.slug.toLowerCase(), topic]));
 
 export const getBlogTopic = (slug?: string | null): BlogTopic => {
   const found = slug ? TOPIC_MAP.get(slug.toLowerCase()) : undefined;

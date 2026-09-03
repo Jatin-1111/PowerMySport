@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type CalendarEventType =
-  "IMPORTANT" | "COMPETITION" | "TRAINING" | "REMINDER" | "OTHER";
+export type CalendarEventType = "IMPORTANT" | "COMPETITION" | "TRAINING" | "REMINDER" | "OTHER";
 
 export interface UserCalendarEventDocument extends Document {
   userId: mongoose.Types.ObjectId;
@@ -58,12 +57,12 @@ const userCalendarEventSchema = new Schema<UserCalendarEventDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 userCalendarEventSchema.index({ userId: 1, date: 1 });
 
 export const UserCalendarEvent = mongoose.model<UserCalendarEventDocument>(
   "UserCalendarEvent",
-  userCalendarEventSchema,
+  userCalendarEventSchema
 );

@@ -6,18 +6,9 @@ import app from "./app";
 import { createRedisPubSub } from "./config/redis";
 import { connectDB } from "./config/database";
 import { setupCommunitySocket } from "./community/sockets/communitySocket";
-import {
-  setupFriendSocket,
-  setFriendSocketInstance,
-} from "./client/sockets/friendSocket";
-import {
-  setupNotificationSocket,
-  setupPresenceSocket,
-} from "./client/sockets/notificationSocket";
-import {
-  setupBookingSocket,
-  setBookingSocketInstance,
-} from "./client/sockets/bookingSocket";
+import { setupFriendSocket, setFriendSocketInstance } from "./client/sockets/friendSocket";
+import { setupNotificationSocket, setupPresenceSocket } from "./client/sockets/notificationSocket";
+import { setupBookingSocket, setBookingSocketInstance } from "./client/sockets/bookingSocket";
 import { setupInfraSocket } from "./admin/sockets/infraSocket";
 import { setNotificationSocketInstance } from "./client/services/NotificationService";
 import { setCommunityRealtimeSocketInstance } from "./community/services/CommunityRealtimeService";
@@ -35,8 +26,7 @@ const PORT = process.env.PORT || 5000;
 
 let stopOutboxWorker: (() => void) | null = null;
 
-const normalizeOrigin = (origin: string): string =>
-  origin.trim().replace(/\/$/, "").toLowerCase();
+const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, "").toLowerCase();
 
 const configuredOrigins = [
   process.env.FRONTEND_URLS,
@@ -67,9 +57,7 @@ const isOriginAllowed = (origin: string): boolean => {
     return true;
   }
 
-  return allowedOriginPatterns.some((pattern) =>
-    pattern.test(normalizedOrigin),
-  );
+  return allowedOriginPatterns.some((pattern) => pattern.test(normalizedOrigin));
 };
 
 // Start server function
@@ -109,7 +97,7 @@ const startServer = async () => {
       bootFact("redis", "socket.io adapter attached");
     } catch {
       bootWarn(
-        "Redis unavailable — single-instance mode (start Redis to enable horizontal scaling)",
+        "Redis unavailable — single-instance mode (start Redis to enable horizontal scaling)"
       );
       // Stop ioredis retry loop — without this it floods the logs with
       // connection errors indefinitely even though we've fallen back to
@@ -138,10 +126,7 @@ const startServer = async () => {
     setCommunityRealtimeSocketInstance(io);
     setBookingSocketInstance(io);
 
-    bootFact(
-      "sockets",
-      "/community /friends /presence /notifications /bookings",
-    );
+    bootFact("sockets", "/community /friends /presence /notifications /bookings");
 
     let server: http.Server | null = null;
     let attempts = 5;

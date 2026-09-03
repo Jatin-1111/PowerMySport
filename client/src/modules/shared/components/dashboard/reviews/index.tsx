@@ -7,9 +7,7 @@ import { Star, ThumbsUp, User } from "lucide-react";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getReviewerName(
-  userId: string | { name?: string; _id?: string; id?: string },
-): string {
+function getReviewerName(userId: string | { name?: string; _id?: string; id?: string }): string {
   if (typeof userId === "string") return "User";
   return userId.name ?? "User";
 }
@@ -36,13 +34,7 @@ function formatDate(isoString: string): string {
 // 1. StarDisplay
 // ---------------------------------------------------------------------------
 
-export function StarDisplay({
-  rating,
-  size = 14,
-}: {
-  rating: number;
-  size?: number;
-}) {
+export function StarDisplay({ rating, size = 14 }: { rating: number; size?: number }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((i) => {
@@ -75,38 +67,34 @@ export function ReviewCard({ review }: { review: ReviewItem }) {
       : undefined;
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+    <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
       {/* Header row */}
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-400 flex items-center justify-center text-white text-sm font-semibold select-none">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-400 text-sm font-semibold text-white select-none">
           {initials || <User size={16} />}
         </div>
 
         {/* Name, date, stars */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-slate-800 text-sm truncate">
-              {name}
-            </span>
+            <span className="truncate text-sm font-semibold text-slate-800">{name}</span>
             {isVerified && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
                 Verified
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="mt-1 flex items-center gap-2">
             <StarDisplay rating={review.rating} size={13} />
-            <span className="text-xs text-slate-400">
-              {formatDate(review.createdAt)}
-            </span>
+            <span className="text-xs text-slate-400">{formatDate(review.createdAt)}</span>
           </div>
         </div>
       </div>
 
       {/* Review text */}
       {review.review && (
-        <p className="mt-3 text-sm italic text-slate-600 leading-relaxed">
+        <p className="mt-3 text-sm leading-relaxed text-slate-600 italic">
           &ldquo;{review.review}&rdquo;
         </p>
       )}
@@ -153,24 +141,23 @@ export function ReviewSummaryCard({
   const total = summary.reviewCount || reviews.length || 1;
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-200">
-      <div className="flex flex-col sm:flex-row items-center gap-8">
+    <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="flex flex-col items-center gap-8 sm:flex-row">
         {/* Left: big rating */}
-        <div className="flex flex-col items-center flex-shrink-0">
-          <span className="text-5xl font-bold text-slate-900 leading-none">
+        <div className="flex flex-shrink-0 flex-col items-center">
+          <span className="text-5xl leading-none font-bold text-slate-900">
             {summary.averageRating.toFixed(1)}
           </span>
           <div className="mt-2">
             <StarDisplay rating={summary.averageRating} size={18} />
           </div>
           <span className="mt-1.5 text-sm text-slate-500">
-            {summary.reviewCount}{" "}
-            {summary.reviewCount === 1 ? "review" : "reviews"}
+            {summary.reviewCount} {summary.reviewCount === 1 ? "review" : "reviews"}
           </span>
         </div>
 
         {/* Right: star distribution */}
-        <div className="flex-1 w-full space-y-2">
+        <div className="w-full flex-1 space-y-2">
           {[5, 4, 3, 2, 1].map((star) => {
             const count = distribution[star] ?? 0;
             const pct = total > 0 ? Math.round((count / total) * 100) : 0;
@@ -178,10 +165,8 @@ export function ReviewSummaryCard({
             return (
               <div key={star} className="flex items-center gap-2">
                 {/* Star label */}
-                <div className="flex items-center gap-0.5 w-10 flex-shrink-0 justify-end">
-                  <span className="text-xs text-slate-500 font-medium">
-                    {star}
-                  </span>
+                <div className="flex w-10 flex-shrink-0 items-center justify-end gap-0.5">
+                  <span className="text-xs font-medium text-slate-500">{star}</span>
                   <Star
                     width={11}
                     height={11}
@@ -191,7 +176,7 @@ export function ReviewSummaryCard({
                 </div>
 
                 {/* Track + fill */}
-                <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                   <div
                     className={`h-full rounded-full ${barColor} transition-all duration-300`}
                     style={{ width: `${pct}%` }}
@@ -199,9 +184,7 @@ export function ReviewSummaryCard({
                 </div>
 
                 {/* Count */}
-                <span className="w-5 text-right text-xs text-slate-400 flex-shrink-0">
-                  {count}
-                </span>
+                <span className="w-5 flex-shrink-0 text-right text-xs text-slate-400">{count}</span>
               </div>
             );
           })}

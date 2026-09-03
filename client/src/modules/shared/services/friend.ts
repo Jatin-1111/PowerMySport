@@ -1,6 +1,5 @@
 import api from "@/lib/api/client";
 
-
 export interface Friend {
   id: string;
   name: string;
@@ -101,10 +100,7 @@ export const friendService = {
   /**
    * Get all friends (paginated)
    */
-  async getFriends(
-    page: number = 1,
-    limit: number = 20,
-  ): Promise<FriendsResponse> {
+  async getFriends(page: number = 1, limit: number = 20): Promise<FriendsResponse> {
     const response = await api.get("/friends", {
       params: { page, limit },
     });
@@ -114,9 +110,7 @@ export const friendService = {
   /**
    * Get pending friend requests (sent or received)
    */
-  async getPendingRequests(
-    type: "SENT" | "RECEIVED" = "RECEIVED",
-  ): Promise<FriendRequest[]> {
+  async getPendingRequests(type: "SENT" | "RECEIVED" = "RECEIVED"): Promise<FriendRequest[]> {
     const response = await api.get("/friends/requests", {
       params: { type },
     });
@@ -138,7 +132,7 @@ export const friendService = {
    */
   async searchUsers(
     query: string,
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal }
   ): Promise<SearchUserResult[]> {
     const normalizedQuery = query.trim().toLowerCase();
     if (normalizedQuery.length < 2) {

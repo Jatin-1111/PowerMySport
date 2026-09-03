@@ -14,7 +14,7 @@ export default function CoachPayoutsPage() {
 
   const handleAdd = useCallback(
     async (
-      payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">,
+      payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">
     ): Promise<IPayoutMethod> => {
       const res = await payoutApi.upsertCoachPayoutMethod(payload);
       const methods = res.data?.payoutMethods ?? [];
@@ -24,27 +24,25 @@ export default function CoachPayoutsPage() {
       }
       return saved;
     },
-    [],
+    []
   );
 
   const handleUpdate = useCallback(
     async (
       methodId: string,
-      payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">,
+      payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">
     ): Promise<IPayoutMethod> => {
       const res = await payoutApi.upsertCoachPayoutMethod({
         ...payload,
         id: methodId,
       } as Omit<IPayoutMethod, "addedAt" | "updatedAt">);
-      const saved = res.data?.payoutMethods?.find(
-        (method) => method.id === methodId,
-      );
+      const saved = res.data?.payoutMethods?.find((method) => method.id === methodId);
       if (!res.success || !saved) {
         throw new Error(res.message || "Failed to update payout method");
       }
       return saved;
     },
-    [],
+    []
   );
 
   const handleDelete = useCallback(async (methodId: string) => {
@@ -66,17 +64,14 @@ export default function CoachPayoutsPage() {
       {/* ── Page header ── */}
       <div className="rounded-xl border border-slate-200 bg-linear-to-br from-blue-50 to-indigo-50 p-4 shadow-sm sm:p-6">
         <div className="flex flex-col items-start gap-4 sm:flex-row">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-power-orange/15 shrink-0">
+          <div className="bg-power-orange/15 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
             <BadgeIndianRupee size={24} className="text-power-orange" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
-              Payout Settings
-            </h1>
+            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Payout Settings</h1>
             <p className="mt-1 text-sm text-slate-600">
-              Manage how you receive earnings from your coaching sessions. Your
-              payout method is used when a booking is completed and funds are
-              released.
+              Manage how you receive earnings from your coaching sessions. Your payout method is
+              used when a booking is completed and funds are released.
             </p>
           </div>
         </div>
@@ -125,11 +120,11 @@ function InfoCard({
 }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-power-orange/15 mb-3">
+      <div className="bg-power-orange/15 mb-3 flex h-10 w-10 items-center justify-center rounded-lg">
         <Icon size={20} className="text-power-orange" />
       </div>
       <p className="mb-2 text-base font-bold text-slate-900">{title}</p>
-      <p className="text-sm text-slate-600 leading-relaxed">{description}</p>
+      <p className="text-sm leading-relaxed text-slate-600">{description}</p>
     </div>
   );
 }

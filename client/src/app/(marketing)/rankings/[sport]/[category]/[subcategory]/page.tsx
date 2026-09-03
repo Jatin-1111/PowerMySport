@@ -43,7 +43,7 @@ export function generateStaticParams() {
       sport: sport.slug,
       category: combo.category.toLowerCase(),
       subcategory: combo.subcategory.toLowerCase(),
-    })),
+    }))
   );
 }
 
@@ -149,7 +149,7 @@ export default async function RankingListPage({
               { name: "Rankings", path: "/rankings" },
               { name: sport.name, path: `/rankings/${sport.slug}` },
               { name: label, path: comboHref(sport.slug, combo) },
-            ]),
+            ])
           ),
         }}
       />
@@ -172,9 +172,8 @@ export default async function RankingListPage({
             </h1>
             {/* One sentence saying what this is, for the reader who arrived from
                 a forwarded link and has never seen an AITA list before. */}
-            <p className="mt-2 max-w-xl text-base text-muted-foreground">
-              The official {sport.federation.name} ranking for {label} in India,
-              updated most weeks.
+            <p className="text-muted-foreground mt-2 max-w-xl text-base">
+              The official {sport.federation.name} ranking for {label} in India, updated most weeks.
             </p>
             {/* Freshness first and as a pill, not buried in a sentence. Anyone
                 mirroring another body's data is asked "is this current?" before
@@ -182,8 +181,8 @@ export default async function RankingListPage({
             <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
               {result?.snapshot ? (
                 <>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 font-medium">
-                    <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+                  <span className="bg-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium">
+                    <CalendarDays className="text-muted-foreground h-3.5 w-3.5" aria-hidden />
                     As on {formatAsOn(result.snapshot.asOnDate)}
                   </span>
                   {hasBaseline && (
@@ -193,9 +192,7 @@ export default async function RankingListPage({
                   )}
                 </>
               ) : (
-                <span className="text-muted-foreground">
-                  This list has not been published yet.
-                </span>
+                <span className="text-muted-foreground">This list has not been published yet.</span>
               )}
             </div>
           </div>
@@ -205,7 +202,7 @@ export default async function RankingListPage({
               href={result.snapshot.sourceUrl}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors hover:border-power-orange hover:text-power-orange"
+              className="hover:border-power-orange hover:text-power-orange inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
             >
               Official {sport.federation.acronym} source
               <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -213,11 +210,7 @@ export default async function RankingListPage({
           )}
         </div>
 
-        <RankingStatStrip
-          listSize={listSize}
-          benchmarks={benchmarks}
-          listLabel={label}
-        />
+        <RankingStatStrip listSize={listSize} benchmarks={benchmarks} listLabel={label} />
 
         <HowToRead
           listLabel={label}
@@ -229,7 +222,7 @@ export default async function RankingListPage({
       </header>
 
       {isHistorical && (
-        <p className="mt-5 rounded-lg border border-power-orange/30 bg-power-orange/5 px-3.5 py-2.5 text-sm">
+        <p className="border-power-orange/30 bg-power-orange/5 mt-5 rounded-lg border px-3.5 py-2.5 text-sm">
           You are viewing an archived week.{" "}
           <Link href={comboHref(sport.slug, combo)} className="font-medium underline">
             Back to the latest list
@@ -242,9 +235,7 @@ export default async function RankingListPage({
         <RankingFilters
           states={meta?.states ?? []}
           dates={dates ?? []}
-          searchLabel={
-            isJunior ? "Find your child on this list" : "Find a player"
-          }
+          searchLabel={isJunior ? "Find your child on this list" : "Find a player"}
         />
       </div>
 
@@ -260,9 +251,8 @@ export default async function RankingListPage({
       {entries.length === 0 ? (
         <div className="mt-8 rounded-xl border border-dashed p-10 text-center">
           <p className="font-medium">No players match these filters.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Try a shorter name, the registration number on its own, or clear the
-            state filter.
+          <p className="text-muted-foreground mt-1 text-sm">
+            Try a shorter name, the registration number on its own, or clear the state filter.
           </p>
         </div>
       ) : (
@@ -306,30 +296,19 @@ export default async function RankingListPage({
       */}
       {(hasInsights || isJunior) && (
         <section className="mt-14 border-t pt-10" aria-labelledby="ranking-insights">
-          <h2
-            id="ranking-insights"
-            className="scroll-mt-8 text-2xl font-bold tracking-tight"
-          >
+          <h2 id="ranking-insights" className="scroll-mt-8 text-2xl font-bold tracking-tight">
             What these numbers mean
           </h2>
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Worked out across all{" "}
-            {listSize?.toLocaleString("en-IN") ?? "the"} ranked players, not just the
-            page above. The filters do not change anything here.
+          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm leading-relaxed">
+            Worked out across all {listSize?.toLocaleString("en-IN") ?? "the"} ranked players, not
+            just the page above. The filters do not change anything here.
           </p>
 
           <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
-            <PointsLadder
-              benchmarks={benchmarks}
-              listLabel={label}
-              parentAudience={isJunior}
-            />
+            <PointsLadder benchmarks={benchmarks} listLabel={label} parentAudience={isJunior} />
             <EntryRules subcategory={combo.subcategory} listLabel={label} />
             <div className="lg:col-span-2">
-              <PointsComposition
-                bands={bandProfiles}
-                subcategory={combo.subcategory}
-              />
+              <PointsComposition bands={bandProfiles} subcategory={combo.subcategory} />
             </div>
             <div className="lg:col-span-2">
               <StateDistribution stateCounts={stateCounts} listLabel={label} />
@@ -338,9 +317,9 @@ export default async function RankingListPage({
         </section>
       )}
 
-      <p className="mt-10 text-xs leading-relaxed text-muted-foreground">
-        Rankings are published by the {sport.federation.name} and mirrored here.
-        PowerMySport is not affiliated with {sport.federation.acronym}.
+      <p className="text-muted-foreground mt-10 text-xs leading-relaxed">
+        Rankings are published by the {sport.federation.name} and mirrored here. PowerMySport is not
+        affiliated with {sport.federation.acronym}.
       </p>
     </div>
   );
@@ -377,11 +356,8 @@ function Pagination({
     "inline-flex h-9 items-center rounded-md border px-3 text-sm font-medium transition-colors hover:border-power-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2";
 
   return (
-    <nav
-      className="mt-6 flex items-center justify-between gap-4"
-      aria-label="Ranking pages"
-    >
-      <p className="text-sm text-muted-foreground">
+    <nav className="mt-6 flex items-center justify-between gap-4" aria-label="Ranking pages">
+      <p className="text-muted-foreground text-sm">
         Page {page} of {pages}
         <span className="mx-1.5" aria-hidden>
           ·

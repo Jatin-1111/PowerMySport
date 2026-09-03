@@ -38,7 +38,7 @@ const scholarshipSchema = new Schema<ScholarshipDocument>(
     isVerified: { type: Boolean, default: false },
     lastScrapedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 scholarshipSchema.index({ sportSlug: 1, name: 1 }, { unique: true });

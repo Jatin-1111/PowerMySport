@@ -45,12 +45,7 @@ function buildResearchPrompt(tournament: {
   sourceUrls?: string[];
 }): string {
   const fed = tournament.federation;
-  const officialSites = [
-    fed?.website,
-    ...(tournament.sourceUrls ?? []),
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const officialSites = [fed?.website, ...(tournament.sourceUrls ?? [])].filter(Boolean).join(", ");
 
   return `Use Google Search to research the "${tournament.name}" — a ${tournament.level} ${tournament.sportSlug} tournament in India for ${tournament.ageGroup} players, organised by ${fed?.name ?? "the national federation"} (${fed?.acronym ?? ""}).
 
@@ -118,7 +113,7 @@ Return ONLY the JSON object. No markdown fences, no commentary.`;
 
 async function enrichTournament(
   genAI: GoogleGenAI,
-  tournament: InstanceType<typeof Tournament>,
+  tournament: InstanceType<typeof Tournament>
 ): Promise<EnrichmentResult | null> {
   const researchPrompt = buildResearchPrompt({
     name: tournament.name,
@@ -166,7 +161,11 @@ async function enrichTournament(
       } catch {
         const match = raw.match(/\{[\s\S]*\}/);
         if (match) {
-          try { parsed = JSON.parse(match[0]); } catch { continue; }
+          try {
+            parsed = JSON.parse(match[0]);
+          } catch {
+            continue;
+          }
         } else {
           continue;
         }
@@ -239,15 +238,12 @@ async function main() {
     if (result.circuitContext) updateFields.circuitContext = result.circuitContext;
 
     if (Object.keys(updateFields).length > 0) {
-      await Tournament.updateOne(
-        { _id: t._id },
-        { $set: updateFields },
-      );
+      await Tournament.updateOne({ _id: t._id }, { $set: updateFields });
     }
 
     console.log(
       `OK (${Object.keys(updateFields).length} fields, ` +
-      `${result.keyFacts.length} facts, ${result.importantNotes.length} notes)`,
+        `${result.keyFacts.length} facts, ${result.importantNotes.length} notes)`
     );
     enriched++;
 

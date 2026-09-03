@@ -14,8 +14,7 @@ export const RUPEE_EPSILON = 0.005;
 
 export const toPaise = (rupees: number): number => Math.round(rupees * 100);
 
-export const nearlyEqual = (a: number, b: number): boolean =>
-  Math.abs(a - b) < RUPEE_EPSILON;
+export const nearlyEqual = (a: number, b: number): boolean => Math.abs(a - b) < RUPEE_EPSILON;
 
 export type AmountVerdict =
   | { kind: "RUPEES"; correctedPaise: number }
@@ -31,10 +30,7 @@ export type AmountVerdict =
  * booking's expected rupee figure — exactly what payBookingWithWallet() read
  * when it wrote the row — is what disambiguates them.
  */
-export const classifyAmount = (
-  amount: number,
-  expectedRupees: number,
-): AmountVerdict => {
+export const classifyAmount = (amount: number, expectedRupees: number): AmountVerdict => {
   if (!Number.isFinite(amount) || !Number.isFinite(expectedRupees)) {
     return { kind: "UNCLASSIFIED", reason: "non-finite amount" };
   }

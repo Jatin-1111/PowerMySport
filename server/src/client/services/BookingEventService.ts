@@ -48,13 +48,11 @@ export interface RecordBookingEventInput {
 }
 
 const toObjectId = (
-  value: mongoose.Types.ObjectId | string | null | undefined,
+  value: mongoose.Types.ObjectId | string | null | undefined
 ): mongoose.Types.ObjectId | undefined => {
   if (!value) return undefined;
   if (value instanceof mongoose.Types.ObjectId) return value;
-  return mongoose.Types.ObjectId.isValid(value)
-    ? new mongoose.Types.ObjectId(value)
-    : undefined;
+  return mongoose.Types.ObjectId.isValid(value) ? new mongoose.Types.ObjectId(value) : undefined;
 };
 
 /**
@@ -78,8 +76,8 @@ export const providerDimensionsForBooking = (booking: {
   providerType: BookingEventProviderType;
   providerId?: mongoose.Types.ObjectId;
 } => {
-  const providerType = (booking.providerType as BookingEventProviderType) ||
-    deriveBookingProviderType(booking);
+  const providerType =
+    (booking.providerType as BookingEventProviderType) || deriveBookingProviderType(booking);
 
   const sourceId =
     providerType === "ACADEMY"
@@ -103,15 +101,15 @@ export const providerDimensionsForBooking = (booking: {
  * unusable) — callers that care can check, but none are expected to.
  */
 export const recordBookingEvent = async (
-  input: RecordBookingEventInput,
+  input: RecordBookingEventInput
 ): Promise<BookingEventDocument | null> => {
   try {
     const subjectId = toObjectId(input.subjectId);
     if (!subjectId) {
-      log.error(
-        "[BookingEventService] refusing to record event without a valid subjectId",
-        { type: input.type, subjectId: input.subjectId },
-      );
+      log.error("[BookingEventService] refusing to record event without a valid subjectId", {
+        type: input.type,
+        subjectId: input.subjectId,
+      });
       return null;
     }
 
@@ -145,9 +143,9 @@ export const recordBookingEvent = async (
     // Deliberately swallowed — see the contract at the top of this file.
     log.error(
       `[BookingEventService] failed to record ${input.type} for ${input.subjectType} ${String(
-        input.subjectId,
+        input.subjectId
       )}:`,
-      error,
+      error
     );
     return null;
   }
@@ -164,10 +162,7 @@ export const recordBookingEventFor = async (
     coachId?: unknown;
     academyId?: unknown;
   },
-  input: Omit<
-    RecordBookingEventInput,
-    "subjectType" | "subjectId" | "providerType" | "providerId"
-  >,
+  input: Omit<RecordBookingEventInput, "subjectType" | "subjectId" | "providerType" | "providerId">
 ): Promise<BookingEventDocument | null> => {
   const dimensions = providerDimensionsForBooking(booking);
   return recordBookingEvent({
@@ -182,14 +177,9 @@ export const recordBookingEventFor = async (
 /** Convenience wrapper for ExpertSession-subject events. */
 export const recordExpertSessionEvent = async (
   session: { _id: mongoose.Types.ObjectId | string; expertId?: unknown },
-  input: Omit<
-    RecordBookingEventInput,
-    "subjectType" | "subjectId" | "providerType" | "providerId"
-  >,
+  input: Omit<RecordBookingEventInput, "subjectType" | "subjectId" | "providerType" | "providerId">
 ): Promise<BookingEventDocument | null> => {
-  const providerId = session.expertId
-    ? toObjectId(String(session.expertId))
-    : undefined;
+  const providerId = session.expertId ? toObjectId(String(session.expertId)) : undefined;
   return recordBookingEvent({
     ...input,
     subjectType: "EXPERT_SESSION",
@@ -205,7 +195,7 @@ export const recordExpertSessionEvent = async (
  */
 export const getBookingEventTimeline = async (
   subjectType: BookingEventSubjectType,
-  subjectId: string,
+  subjectId: string
 ): Promise<BookingEventDocument[]> => {
   if (!mongoose.Types.ObjectId.isValid(subjectId)) {
     return [];
@@ -226,7 +216,7 @@ export const getBookingEventTimeline = async (
  * pastes an id from an email or a URL.
  */
 export const getBookingEventTimelineByIdAcrossSubjects = async (
-  subjectId: string,
+  subjectId: string
 ): Promise<BookingEventDocument[]> => {
   if (!mongoose.Types.ObjectId.isValid(subjectId)) {
     return [];

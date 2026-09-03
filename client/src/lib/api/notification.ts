@@ -15,8 +15,7 @@ export interface Notification {
 }
 
 export interface NotificationFilters {
-  category?:
-    "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
+  category?: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
   isRead?: boolean;
 }
 
@@ -66,7 +65,7 @@ export const notificationApi = {
   getNotifications: async (
     page: number = 1,
     limit: number = 20,
-    filters?: NotificationFilters,
+    filters?: NotificationFilters
   ): Promise<NotificationResponse> => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -89,8 +88,7 @@ export const notificationApi = {
    * Get unread notification count
    */
   getUnreadCount: async (
-    category?:
-      "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY",
+    category?: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY"
   ): Promise<UnreadCountResponse> => {
     const params = category ? `?category=${category}` : "";
     const response = await axios.get(`/notifications/unread-count${params}`);
@@ -100,9 +98,7 @@ export const notificationApi = {
   /**
    * Mark a notification as read
    */
-  markAsRead: async (
-    notificationId: string,
-  ): Promise<{ success: boolean; data: Notification }> => {
+  markAsRead: async (notificationId: string): Promise<{ success: boolean; data: Notification }> => {
     const response = await axios.patch(`/notifications/${notificationId}/read`);
     return response.data;
   },
@@ -118,9 +114,7 @@ export const notificationApi = {
   /**
    * Delete a notification
    */
-  deleteNotification: async (
-    notificationId: string,
-  ): Promise<{ success: boolean }> => {
+  deleteNotification: async (notificationId: string): Promise<{ success: boolean }> => {
     const response = await axios.delete(`/notifications/${notificationId}`);
     return response.data;
   },
@@ -137,12 +131,9 @@ export const notificationApi = {
    * Update notification preferences
    */
   updatePreferences: async (
-    preferences: NotificationPreferences,
+    preferences: NotificationPreferences
   ): Promise<NotificationPreferencesResponse> => {
-    const response = await axios.patch(
-      "/notifications/preferences",
-      preferences,
-    );
+    const response = await axios.patch("/notifications/preferences", preferences);
     return response.data;
   },
 };

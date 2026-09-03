@@ -43,127 +43,125 @@ export interface CoachSubscriptionPaymentDocument extends Document {
   updatedAt: Date;
 }
 
-const coachSubscriptionPaymentSchema =
-  new Schema<CoachSubscriptionPaymentDocument>(
-    {
-      coachId: {
-        type: Schema.Types.ObjectId,
-        ref: "Coach",
-        required: true,
-        index: true,
-      },
-      userId: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-        index: true,
-      },
-      dependentId: {
-        type: Schema.Types.ObjectId,
-        ref: "Player",
-      },
-      packageId: {
-        type: Schema.Types.ObjectId,
-        ref: "CoachSubscriptionPackage",
-        required: true,
-        index: true,
-      },
-      offeringId: {
-        type: Schema.Types.ObjectId,
-        ref: "CoachOffering",
-        default: null,
-        index: true,
-      },
-      enrollmentId: {
-        type: Schema.Types.ObjectId,
-        ref: "CoachEnrollment",
-        default: null,
-        index: true,
-      },
-      merchantOrderId: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true,
-      },
-      phonepeOrderId: {
-        type: String,
-      },
-      linkedSubscriptionId: {
-        type: Schema.Types.ObjectId,
-        ref: "CoachSubscription",
-        default: null,
-      },
-      baseAmount: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-      platformFeeAmount: {
-        type: Number,
-        required: true,
-        min: 0,
-        default: 0,
-      },
-      taxAmount: {
-        type: Number,
-        required: true,
-        min: 0,
-        default: 0,
-      },
-      amount: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-      status: {
-        type: String,
-        enum: ["PENDING", "COMPLETED", "FAILED"],
-        default: "PENDING",
-      },
-      state: {
-        type: String,
-      },
-      redirectUrl: {
-        type: String,
-      },
-      callbackPayload: {
-        type: Schema.Types.Mixed,
-      },
-      refundMerchantId: { type: String, index: true },
-      refundId: { type: String },
-      refundState: { type: String },
-      refundAmount: { type: Number, min: 0 },
-      refundResponse: { type: Schema.Types.Mixed },
-      lastStatusPayload: {
-        type: Schema.Types.Mixed,
+const coachSubscriptionPaymentSchema = new Schema<CoachSubscriptionPaymentDocument>(
+  {
+    coachId: {
+      type: Schema.Types.ObjectId,
+      ref: "Coach",
+      required: true,
+      index: true,
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    dependentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
+    },
+    packageId: {
+      type: Schema.Types.ObjectId,
+      ref: "CoachSubscriptionPackage",
+      required: true,
+      index: true,
+    },
+    offeringId: {
+      type: Schema.Types.ObjectId,
+      ref: "CoachOffering",
+      default: null,
+      index: true,
+    },
+    enrollmentId: {
+      type: Schema.Types.ObjectId,
+      ref: "CoachEnrollment",
+      default: null,
+      index: true,
+    },
+    merchantOrderId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    phonepeOrderId: {
+      type: String,
+    },
+    linkedSubscriptionId: {
+      type: Schema.Types.ObjectId,
+      ref: "CoachSubscription",
+      default: null,
+    },
+    baseAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    platformFeeAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    taxAmount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
+    amount: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    status: {
+      type: String,
+      enum: ["PENDING", "COMPLETED", "FAILED"],
+      default: "PENDING",
+    },
+    state: {
+      type: String,
+    },
+    redirectUrl: {
+      type: String,
+    },
+    callbackPayload: {
+      type: Schema.Types.Mixed,
+    },
+    refundMerchantId: { type: String, index: true },
+    refundId: { type: String },
+    refundState: { type: String },
+    refundAmount: { type: Number, min: 0 },
+    refundResponse: { type: Schema.Types.Mixed },
+    lastStatusPayload: {
+      type: Schema.Types.Mixed,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform(doc: any, ret: any) {
+        ret.id = ret._id;
+        delete ret.__v;
+        return ret;
       },
     },
-    {
-      timestamps: true,
-      toJSON: {
-        virtuals: true,
-        transform(doc: any, ret: any) {
-          ret.id = ret._id;
-          delete ret.__v;
-          return ret;
-        },
-      },
-      toObject: {
-        virtuals: true,
-        transform(doc: any, ret: any) {
-          ret.id = ret._id;
-          delete ret.__v;
-          return ret;
-        },
+    toObject: {
+      virtuals: true,
+      transform(doc: any, ret: any) {
+        ret.id = ret._id;
+        delete ret.__v;
+        return ret;
       },
     },
-  );
+  }
+);
 
 coachSubscriptionPaymentSchema.index({ coachId: 1, userId: 1, createdAt: -1 });
 
-export const CoachSubscriptionPaymentTransaction =
-  mongoose.model<CoachSubscriptionPaymentDocument>(
-    "CoachSubscriptionPaymentTransaction",
-    coachSubscriptionPaymentSchema,
-  );
+export const CoachSubscriptionPaymentTransaction = mongoose.model<CoachSubscriptionPaymentDocument>(
+  "CoachSubscriptionPaymentTransaction",
+  coachSubscriptionPaymentSchema
+);

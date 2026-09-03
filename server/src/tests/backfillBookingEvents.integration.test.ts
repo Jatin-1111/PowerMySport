@@ -109,10 +109,7 @@ describe("migration 21 — apply", () => {
     assert.equal(result.inserted, 3);
     assert.equal(await BookingEvent.countDocuments({ type: "CREATED" }), 3);
     assert.equal(await BookingEvent.countDocuments({ subjectType: "BOOKING" }), 2);
-    assert.equal(
-      await BookingEvent.countDocuments({ subjectType: "EXPERT_SESSION" }),
-      1,
-    );
+    assert.equal(await BookingEvent.countDocuments({ subjectType: "EXPERT_SESSION" }), 1);
   });
 
   it("dates the event from createdAt, not from now", async () => {
@@ -123,10 +120,7 @@ describe("migration 21 — apply", () => {
     await up({ apply: true });
 
     const event = await BookingEvent.findOne({ subjectId: bookingId });
-    assert.equal(
-      new Date(event.occurredAt).toISOString(),
-      "2025-11-20T06:15:00.000Z",
-    );
+    assert.equal(new Date(event.occurredAt).toISOString(), "2025-11-20T06:15:00.000Z");
   });
 
   it("marks the event as BACKFILL and never invents a creation status", async () => {
@@ -181,12 +175,9 @@ describe("migration 21 — apply", () => {
 
     assert.equal(
       (await BookingEvent.findOne({ subjectId: academyBooking })).providerType,
-      "ACADEMY",
+      "ACADEMY"
     );
-    assert.equal(
-      (await BookingEvent.findOne({ subjectId: coachBooking })).providerType,
-      "COACH",
-    );
+    assert.equal((await BookingEvent.findOne({ subjectId: coachBooking })).providerType, "COACH");
   });
 });
 
@@ -237,10 +228,7 @@ describe("migration 21 — idempotency", () => {
     const result = await up({ apply: true });
 
     assert.equal(result.inserted, 1);
-    assert.equal(
-      await BookingEvent.countDocuments({ subjectId: bookingId, type: "CREATED" }),
-      1,
-    );
+    assert.equal(await BookingEvent.countDocuments({ subjectId: bookingId, type: "CREATED" }), 1);
   });
 });
 

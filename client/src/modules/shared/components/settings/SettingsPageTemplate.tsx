@@ -7,22 +7,19 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Modal } from "@/modules/shared/ui/Modal";
-import {
-    StaggerContainer,
-    StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { UserRole } from "@/types";
 import {
-    AlertTriangle,
-    Bell,
-    ChevronRight,
-    Eye,
-    EyeOff,
-    KeyRound,
-    Loader2,
-    Settings,
-    Shield,
-    Trash2,
+  AlertTriangle,
+  Bell,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Settings,
+  Shield,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -124,11 +121,7 @@ const initials = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join("") || "?";
 
-export function SettingsPageTemplate({
-  basePath = "/settings",
-}: {
-  basePath?: string;
-}) {
+export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: string }) {
   const router = useRouter();
   const { user, setUser, logout } = useAuthStore();
 
@@ -152,9 +145,7 @@ export function SettingsPageTemplate({
   // have one to change. Re-fetch the authoritative profile on mount so
   // hasPassword is never stale here, on a page where getting it wrong
   // matters (it also gates the delete-account confirmation below).
-  const [hasPasswordKnown, setHasPasswordKnown] = useState(
-    user?.hasPassword !== undefined,
-  );
+  const [hasPasswordKnown, setHasPasswordKnown] = useState(user?.hasPassword !== undefined);
 
   // `useProfile` owns the fetch, the caching and writing the result back to the
   // auth store. It replaces a bespoke effect here that duplicated all three, and
@@ -251,10 +242,7 @@ export function SettingsPageTemplate({
     try {
       const response = await authApi.deleteAccount("");
       if (response.success) {
-        toast.success(
-          response.message ||
-            "Account deactivated and scheduled for deletion",
-        );
+        toast.success(response.message || "Account deactivated and scheduled for deletion");
         logout();
         router.push("/");
       } else {
@@ -274,7 +262,7 @@ export function SettingsPageTemplate({
         {/* Header */}
         <StaggerItem>
           <div className="relative overflow-hidden rounded-2xl border-0 bg-white/70 p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)] backdrop-blur-sm sm:p-8">
-            <div className="relative z-10 inline-flex items-center gap-2 rounded-full border border-power-orange/30 bg-power-orange/10 px-3 py-1 text-sm font-semibold text-power-orange">
+            <div className="border-power-orange/30 bg-power-orange/10 text-power-orange relative z-10 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold">
               <Settings size={14} />
               Account Settings
             </div>
@@ -284,8 +272,8 @@ export function SettingsPageTemplate({
             <p className="relative z-10 mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
               Manage your account, security, and preferences.
             </p>
-            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/5 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-turf-green/5 blur-3xl" />
+            <div className="bg-power-orange/5 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-turf-green/5 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </StaggerItem>
 
@@ -293,13 +281,11 @@ export function SettingsPageTemplate({
         <StaggerItem>
           <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <div className="flex items-center gap-4 p-6">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-power-orange to-orange-500 text-lg font-bold text-white shadow-md">
+              <div className="from-power-orange flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br to-orange-500 text-lg font-bold text-white shadow-md">
                 {initials(user.name)}
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="truncate text-lg font-semibold text-slate-900">
-                  {user.name}
-                </h2>
+                <h2 className="truncate text-lg font-semibold text-slate-900">{user.name}</h2>
                 <p className="truncate text-sm text-slate-500">{user.email}</p>
                 <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                   <Shield size={12} />
@@ -313,20 +299,18 @@ export function SettingsPageTemplate({
         {/* Security */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
               Security
             </h2>
             <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
               <div className="p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange/10">
+                    <div className="bg-power-orange/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
                       <KeyRound className="text-power-orange" size={18} />
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-slate-900">
-                        Password
-                      </h3>
+                      <h3 className="text-base font-semibold text-slate-900">Password</h3>
                       <p className="mt-1 text-sm text-slate-600">
                         {!hasPasswordKnown
                           ? "Checking your sign-in method..."
@@ -337,11 +321,7 @@ export function SettingsPageTemplate({
                     </div>
                   </div>
                   {hasPasswordKnown && canSetPassword && !showPasswordForm && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowPasswordForm(true)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => setShowPasswordForm(true)}>
                       Change
                     </Button>
                   )}
@@ -358,20 +338,16 @@ export function SettingsPageTemplate({
                           type={showCurrent ? "text" : "password"}
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 outline-none transition-all focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
+                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 transition-all outline-none focus:ring-2"
                           placeholder="••••••••"
                         />
                         <button
                           type="button"
                           onClick={() => setShowCurrent((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                           aria-label="Toggle password visibility"
                         >
-                          {showCurrent ? (
-                            <EyeOff size={16} />
-                          ) : (
-                            <Eye size={16} />
-                          )}
+                          {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                     </div>
@@ -386,13 +362,13 @@ export function SettingsPageTemplate({
                             type={showNew ? "text" : "password"}
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 outline-none transition-all focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 transition-all outline-none focus:ring-2"
                             placeholder="At least 6 characters"
                           />
                           <button
                             type="button"
                             onClick={() => setShowNew((v) => !v)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                             aria-label="Toggle password visibility"
                           >
                             {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -407,7 +383,7 @@ export function SettingsPageTemplate({
                           type={showNew ? "text" : "password"}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all focus:border-power-orange focus:ring-2 focus:ring-power-orange/20"
+                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 transition-all outline-none focus:ring-2"
                           placeholder="Re-enter new password"
                         />
                       </div>
@@ -422,11 +398,7 @@ export function SettingsPageTemplate({
                       >
                         Cancel
                       </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleChangePassword}
-                        loading={changingPassword}
-                      >
+                      <Button size="sm" onClick={handleChangePassword} loading={changingPassword}>
                         Save Password
                       </Button>
                     </div>
@@ -440,7 +412,7 @@ export function SettingsPageTemplate({
         {/* Linked Accounts */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
               Linked Accounts
             </h2>
             <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
@@ -449,19 +421,29 @@ export function SettingsPageTemplate({
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100">
                       <svg className="h-5 w-5" viewBox="0 0 24 24">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        <path
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          fill="#4285F4"
+                        />
+                        <path
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          fill="#34A853"
+                        />
+                        <path
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                          fill="#FBBC05"
+                        />
+                        <path
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                          fill="#EA4335"
+                        />
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-slate-900">
-                        Google
-                      </h3>
+                      <h3 className="text-base font-semibold text-slate-900">Google</h3>
                       <p className="mt-1 text-sm text-slate-600">
-                        {user.googleId 
-                          ? "Your Google account is linked." 
+                        {user.googleId
+                          ? "Your Google account is linked."
                           : "Link your Google account to sign in easily."}
                       </p>
                     </div>
@@ -490,7 +472,7 @@ export function SettingsPageTemplate({
         {/* Notifications */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
               General
             </h2>
             <Link href={`${basePath}/notifications`}>
@@ -499,7 +481,7 @@ export function SettingsPageTemplate({
                 className="group border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]"
               >
                 <div className="flex items-center gap-4 p-6">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange/10">
+                  <div className="bg-power-orange/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
                     <Bell className="text-power-orange" size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -507,8 +489,7 @@ export function SettingsPageTemplate({
                       Notification Preferences
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
-                      Control how you receive notifications via email, push, and
-                      in-app.
+                      Control how you receive notifications via email, push, and in-app.
                     </p>
                   </div>
                   <ChevronRight
@@ -524,7 +505,7 @@ export function SettingsPageTemplate({
         {/* Role-specific links */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
               {user.role.replace(/_/g, " ")} Settings
             </h2>
             <div className="grid gap-3">
@@ -536,12 +517,8 @@ export function SettingsPageTemplate({
                   >
                     <div className="flex items-center gap-4 p-5">
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-semibold text-slate-900">
-                          {item.label}
-                        </h3>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {item.description}
-                        </p>
+                        <h3 className="text-base font-semibold text-slate-900">{item.label}</h3>
+                        <p className="mt-1 text-sm text-slate-600">{item.description}</p>
                       </div>
                       <ChevronRight
                         className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5"
@@ -558,22 +535,20 @@ export function SettingsPageTemplate({
         {/* Danger zone */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-rose-600">
+            <h2 className="mb-3 text-sm font-semibold tracking-wide text-rose-600 uppercase">
               Danger Zone
             </h2>
-            <Card className="border-0 bg-rose-50/40 p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)] ring-1 ring-inset ring-rose-100">
+            <Card className="border-0 bg-rose-50/40 p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)] ring-1 ring-rose-100 ring-inset">
               <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100">
                     <Trash2 className="text-rose-600" size={18} />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-slate-900">
-                      Delete Account
-                    </h3>
+                    <h3 className="text-base font-semibold text-slate-900">Delete Account</h3>
                     <p className="mt-1 max-w-md text-sm text-slate-600">
-                      Deactivate your account immediately, then permanently
-                      delete it in 30 days. Log back in before then to cancel.
+                      Deactivate your account immediately, then permanently delete it in 30 days.
+                      Log back in before then to cancel.
                     </p>
                   </div>
                 </div>
@@ -610,13 +585,10 @@ export function SettingsPageTemplate({
           </div>
           <p className="text-sm leading-relaxed text-slate-700">
             Your account will be deactivated immediately. It will be{" "}
-            <span className="font-semibold text-rose-600">
-              permanently deleted in 30 days
-            </span>{" "}
-            — your name, email, and phone number will be removed, along with
-            personal content like calendar events and AI guidance history.
-            Bookings and payment records are kept for legal and accounting
-            purposes.{" "}
+            <span className="font-semibold text-rose-600">permanently deleted in 30 days</span> —
+            your name, email, and phone number will be removed, along with personal content like
+            calendar events and AI guidance history. Bookings and payment records are kept for legal
+            and accounting purposes.{" "}
             <span className="font-semibold text-rose-600">
               Log back in before the 30 days are up to cancel.
             </span>
@@ -625,15 +597,13 @@ export function SettingsPageTemplate({
 
         <div className="mt-5">
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
-            Type{" "}
-            <span className="font-bold text-rose-600">{DELETE_CONFIRM_WORD}</span>{" "}
-            to confirm
+            Type <span className="font-bold text-rose-600">{DELETE_CONFIRM_WORD}</span> to confirm
           </label>
           <input
             type="text"
             value={deleteConfirmText}
             onChange={(e) => setDeleteConfirmText(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm uppercase text-slate-900 outline-none transition-all focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 uppercase transition-all outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
             placeholder={DELETE_CONFIRM_WORD}
             autoFocus
           />
@@ -654,8 +624,7 @@ export function SettingsPageTemplate({
             variant="danger"
             onClick={handleDeleteAccount}
             disabled={
-              deletingAccount ||
-              deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD
+              deletingAccount || deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD
             }
           >
             {deletingAccount ? (

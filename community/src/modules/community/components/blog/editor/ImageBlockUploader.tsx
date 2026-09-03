@@ -62,12 +62,8 @@ export default function ImageBlockUploader({
       <div
         className={`group relative w-full overflow-hidden rounded-2xl border border-slate-200 ${className}`}
       >
-        <img
-          src={resolvedUrl}
-          alt="Upload preview"
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100">
+        <img src={resolvedUrl} alt="Upload preview" className="h-full w-full object-cover" />
+        <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100">
           <button
             type="button"
             onClick={() => inputRef.current?.click()}

@@ -14,9 +14,10 @@ import type { Metadata } from "next";
  */
 
 /** Public origin of the PowerMySport site (no trailing slash, no base path). */
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com"
-).replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com").replace(
+  /\/$/,
+  ""
+);
 
 /** The app's base path (see `next.config.ts` → `basePath`). */
 export const BASE_PATH = "/community";
@@ -58,8 +59,7 @@ export const OG_IMAGE = `${COMMUNITY_BASE_URL}/og-image.png`;
 export const TWITTER_IMAGE = `${COMMUNITY_BASE_URL}/twitter-image.png`;
 export const LOGO_URL = `${COMMUNITY_BASE_URL}/android-chrome-512x512.png`;
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 /** Build a fully-qualified community URL for a given path (e.g. "/blog"). */
 export function communityUrl(path = "/"): string {
@@ -144,9 +144,7 @@ export function buildMetadata({
     siteName: SITE_NAME,
     title,
     description,
-    images: [
-      { url: ogImage, width: 1200, height: 630, alt: title || SITE_NAME },
-    ],
+    images: [{ url: ogImage, width: 1200, height: 630, alt: title || SITE_NAME }],
   };
 
   const openGraph: Metadata["openGraph"] =
@@ -231,9 +229,7 @@ export const rootMetadata: Metadata = {
     siteName: SITE_NAME,
     title: "PowerMySport Community | Ask, Learn & Connect in Youth Sports",
     description: SITE_DESCRIPTION,
-    images: [
-      { url: OG_IMAGE, width: 1200, height: 630, alt: `${SITE_NAME} preview` },
-    ],
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: `${SITE_NAME} preview` }],
   },
   twitter: {
     card: "summary_large_image",

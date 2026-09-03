@@ -108,12 +108,8 @@ export default function VenueListerProfilePage() {
       <Card className="bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Account Details
-            </h2>
-            <p className="text-sm text-slate-500">
-              Your profile information and contact details.
-            </p>
+            <h2 className="text-lg font-semibold text-slate-900">Account Details</h2>
+            <p className="text-sm text-slate-500">Your profile information and contact details.</p>
           </div>
           {!isEditingProfile && (
             <button
@@ -136,16 +132,12 @@ export default function VenueListerProfilePage() {
                   }}
                   size="lg"
                 />
-                <p className="text-center text-xs text-slate-500 lg:text-left">
-                  JPG/PNG up to 5MB
-                </p>
+                <p className="text-center text-xs text-slate-500 lg:text-left">JPG/PNG up to 5MB</p>
               </div>
 
               <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Full Name
-                  </label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Full Name</label>
                   <input
                     type="text"
                     value={profileForm.name}
@@ -161,9 +153,7 @@ export default function VenueListerProfilePage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Email
-                  </label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Email</label>
                   <input
                     type="email"
                     value={profileForm.email}
@@ -179,9 +169,7 @@ export default function VenueListerProfilePage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Phone
-                  </label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Phone</label>
                   <input
                     type="tel"
                     value={profileForm.phone}
@@ -239,9 +227,7 @@ export default function VenueListerProfilePage() {
                 size="md"
               />
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">
-                  {user.name}
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900">{user.name}</h3>
                 <p className="text-sm text-slate-600">{user.email}</p>
               </div>
             </div>
@@ -249,16 +235,12 @@ export default function VenueListerProfilePage() {
             <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
               <div>
                 <span className="text-slate-500">Phone:</span>
-                <p className="font-medium text-slate-900">
-                  {user.phone || "Not provided"}
-                </p>
+                <p className="font-medium text-slate-900">{user.phone || "Not provided"}</p>
               </div>
               <div>
                 <span className="text-slate-500">Date of Birth:</span>
                 <p className="font-medium text-slate-900">
-                  {user.dob
-                    ? new Date(user.dob).toLocaleDateString()
-                    : "Not provided"}
+                  {user.dob ? new Date(user.dob).toLocaleDateString() : "Not provided"}
                 </p>
               </div>
             </div>

@@ -41,10 +41,7 @@ export default function LanguagesMultiSelect({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -57,9 +54,7 @@ export default function LanguagesMultiSelect({
   }, [isOpen]);
 
   const toggleLanguage = (lang: string) => {
-    const updated = value.includes(lang)
-      ? value.filter((l) => l !== lang)
-      : [...value, lang];
+    const updated = value.includes(lang) ? value.filter((l) => l !== lang) : [...value, lang];
     onChange(updated);
   };
 
@@ -68,14 +63,14 @@ export default function LanguagesMultiSelect({
   };
 
   return (
-    <div className="w-full relative" ref={containerRef}>
+    <div className="relative w-full" ref={containerRef}>
       {/* Selected Tags Display */}
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2 pb-2">
+        <div className="mb-2 flex flex-wrap gap-2 pb-2">
           {value.map((lang) => (
             <div
               key={lang}
-              className="inline-flex items-center gap-1 bg-power-orange/10 text-power-orange px-2.5 py-1 rounded-md text-xs font-medium"
+              className="bg-power-orange/10 text-power-orange inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium"
             >
               <span>{lang}</span>
               <button
@@ -103,21 +98,16 @@ export default function LanguagesMultiSelect({
           className={cn(
             "flex w-full items-center justify-between rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:outline-none",
             isOpen
-              ? "border-power-orange ring-2 ring-power-orange/20 bg-white"
+              ? "border-power-orange ring-power-orange/20 bg-white ring-2"
               : "border-slate-200 hover:bg-slate-100",
-            disabled && "opacity-50 cursor-not-allowed",
+            disabled && "cursor-not-allowed opacity-50"
           )}
         >
           <span className="text-slate-500">
-            {value.length === 0
-              ? "Select languages..."
-              : `Add more languages...`}
+            {value.length === 0 ? "Select languages..." : `Add more languages...`}
           </span>
           <ChevronDown
-            className={cn(
-              "h-4 w-4 text-slate-400 transition-transform",
-              isOpen && "rotate-180",
-            )}
+            className={cn("h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")}
           />
         </button>
 
@@ -132,16 +122,14 @@ export default function LanguagesMultiSelect({
                   type="button"
                   onClick={() => toggleLanguage(lang)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition-colors",
+                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
                     isSelected
                       ? "bg-power-orange/10 text-power-orange font-semibold"
-                      : "text-slate-700 hover:bg-slate-50",
+                      : "text-slate-700 hover:bg-slate-50"
                   )}
                 >
                   {lang}
-                  {isSelected && (
-                    <div className="h-2 w-2 rounded-full bg-power-orange" />
-                  )}
+                  {isSelected && <div className="bg-power-orange h-2 w-2 rounded-full" />}
                 </button>
               );
             })}

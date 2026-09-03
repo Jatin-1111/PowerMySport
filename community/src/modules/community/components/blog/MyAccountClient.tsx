@@ -34,9 +34,7 @@ export default function MyAccountClient() {
       const data = await blogService.listBlogs(1, 50, { mine: true });
       setBlogs(data.items || []);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load account",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load account");
     } finally {
       setIsLoading(false);
       setIsLoadingBlogs(false);
@@ -55,22 +53,18 @@ export default function MyAccountClient() {
           const proceed = async () => {
             try {
               await blogService.deleteBlog(blog.id);
-              setBlogs((current) =>
-                current.filter((item) => item.id !== blog.id),
-              );
+              setBlogs((current) => current.filter((item) => item.id !== blog.id));
               setProfile((current) =>
                 current
                   ? {
                       ...current,
                       blogCount: Math.max(0, current.blogCount - 1),
                     }
-                  : current,
+                  : current
               );
               toast.success("Blog deleted");
             } catch (error) {
-              toast.error(
-                error instanceof Error ? error.message : "Failed to delete",
-              );
+              toast.error(error instanceof Error ? error.message : "Failed to delete");
             }
           };
           void proceed();

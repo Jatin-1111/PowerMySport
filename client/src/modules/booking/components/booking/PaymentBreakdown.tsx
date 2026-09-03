@@ -5,52 +5,41 @@ interface PaymentBreakdownProps {
   totalAmount: number;
 }
 
-export default function PaymentBreakdown({
-  payments,
-  totalAmount,
-}: PaymentBreakdownProps) {
+export default function PaymentBreakdown({ payments, totalAmount }: PaymentBreakdownProps) {
   return (
-    <div className="bg-card border border-border rounded-lg p-6">
-      <h3 className="text-lg font-semibold mb-4 text-deep-slate">
-        Payment Breakdown
-      </h3>
+    <div className="bg-card border-border rounded-lg border p-6">
+      <h3 className="text-deep-slate mb-4 text-lg font-semibold">Payment Breakdown</h3>
 
       <div className="space-y-3">
         {payments.map((payment, index) => (
           <div
             key={index}
-            className="flex justify-between items-center pb-3 border-b border-border last:border-0"
+            className="border-border flex items-center justify-between border-b pb-3 last:border-0"
           >
             <div>
-              <p className="font-medium text-foreground">
+              <p className="text-foreground font-medium">
                 {payment.userType === "VenueLister"
                   ? "Venue Fee"
                   : payment.userType === "Academy"
                     ? "Academy Fee"
                     : "Coach Fee"}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Status:{" "}
                 <span
-                  className={
-                    payment.status === "PAID"
-                      ? "text-emerald-600"
-                      : "text-orange-600"
-                  }
+                  className={payment.status === "PAID" ? "text-emerald-600" : "text-orange-600"}
                 >
                   {payment.status}
                 </span>
               </p>
             </div>
-            <p className="text-lg font-bold text-power-orange">
-              ₹{payment.amount}
-            </p>
+            <p className="text-power-orange text-lg font-bold">₹{payment.amount}</p>
           </div>
         ))}
 
-        <div className="flex justify-between items-center pt-3 border-t-2 border-deep-slate">
-          <p className="text-lg font-bold text-deep-slate">Total</p>
-          <p className="text-xl font-bold text-power-orange">₹{totalAmount}</p>
+        <div className="border-deep-slate flex items-center justify-between border-t-2 pt-3">
+          <p className="text-deep-slate text-lg font-bold">Total</p>
+          <p className="text-power-orange text-xl font-bold">₹{totalAmount}</p>
         </div>
       </div>
     </div>

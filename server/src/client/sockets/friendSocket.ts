@@ -26,18 +26,14 @@ const extractTokenFromCookie = (cookieHeader?: string): string | null => {
 };
 
 const getSocketUserId = async (socket: Socket): Promise<string | null> => {
-  const authToken = (
-    socket.handshake.auth?.token as string | undefined
-  )?.trim();
-  const bearerToken = (
-    socket.handshake.headers.authorization as string | undefined
-  )
+  const authToken = (socket.handshake.auth?.token as string | undefined)?.trim();
+  const bearerToken = (socket.handshake.headers.authorization as string | undefined)
     ?.replace(/^Bearer\s+/i, "")
     .trim();
   const cookieToken = extractTokenFromCookie(socket.handshake.headers.cookie);
 
-  const candidates = [authToken, bearerToken, cookieToken].filter(
-    (token): token is string => Boolean(token),
+  const candidates = [authToken, bearerToken, cookieToken].filter((token): token is string =>
+    Boolean(token)
   );
 
   for (const token of candidates) {
@@ -58,7 +54,6 @@ const getSocketUserId = async (socket: Socket): Promise<string | null> => {
 export const setupFriendSocket = (io: Server): void => {
   // Use /friends namespace for friend notifications
   const friendsNamespace = io.of("/friends");
-
 
   friendsNamespace.use(async (socket, next) => {
     const userId = await getSocketUserId(socket);
@@ -87,9 +82,7 @@ export const setupFriendSocket = (io: Server): void => {
       });
     }, 60_000);
 
-    log.info(
-      `Friend socket connected: User ${userId} socket ${socket.id}`,
-    );
+    log.info(`Friend socket connected: User ${userId} socket ${socket.id}`);
 
     socket.on("disconnect", () => {
       clearInterval(heartbeat);
@@ -99,7 +92,6 @@ export const setupFriendSocket = (io: Server): void => {
       log.info(`Friend socket disconnected: User ${userId}`);
     });
   });
-
 };
 
 // Export a singleton instance that will be set during server initialization
@@ -124,18 +116,15 @@ export const notifyFriendRequest = (
       email: string;
       photoUrl?: string | undefined;
     };
-  },
+  }
 ) => {
   if (!friendSocketInstance) return;
 
-  friendSocketInstance
-    .of("/friends")
-    .to(`user:${recipientId}`)
-    .emit("friend:requestReceived", {
-      requestId: data.requestId,
-      requester: data.requester,
-      timestamp: new Date().toISOString(),
-    });
+  friendSocketInstance.of("/friends").to(`user:${recipientId}`).emit("friend:requestReceived", {
+    requestId: data.requestId,
+    requester: data.requester,
+    timestamp: new Date().toISOString(),
+  });
 };
 
 export const notifyFriendRequestAccepted = (
@@ -147,17 +136,14 @@ export const notifyFriendRequestAccepted = (
       email: string;
       photoUrl?: string | undefined;
     };
-  },
+  }
 ) => {
   if (!friendSocketInstance) return;
 
-  friendSocketInstance
-    .of("/friends")
-    .to(`user:${requesterId}`)
-    .emit("friend:requestAccepted", {
-      friend: data.acceptedBy,
-      timestamp: new Date().toISOString(),
-    });
+  friendSocketInstance.of("/friends").to(`user:${requesterId}`).emit("friend:requestAccepted", {
+    friend: data.acceptedBy,
+    timestamp: new Date().toISOString(),
+  });
 };
 
 export const notifyFriendRequestDeclined = (
@@ -167,18 +153,15 @@ export const notifyFriendRequestDeclined = (
       id: string;
       name: string;
     };
-  },
+  }
 ) => {
   if (!friendSocketInstance) return;
 
-  friendSocketInstance
-    .of("/friends")
-    .to(`user:${requesterId}`)
-    .emit("friend:requestDeclined", {
-      userId: data.declinedBy.id,
-      userName: data.declinedBy.name,
-      timestamp: new Date().toISOString(),
-    });
+  friendSocketInstance.of("/friends").to(`user:${requesterId}`).emit("friend:requestDeclined", {
+    userId: data.declinedBy.id,
+    userName: data.declinedBy.name,
+    timestamp: new Date().toISOString(),
+  });
 };
 
 export const notifyFriendRemoved = (
@@ -188,24 +171,17 @@ export const notifyFriendRemoved = (
       id: string;
       name: string;
     };
-  },
+  }
 ) => {
   if (!friendSocketInstance) return;
 
-  friendSocketInstance
-    .of("/friends")
-    .to(`user:${userId}`)
-    .emit("friend:removed", {
-      removedBy: data.removedBy,
-      timestamp: new Date().toISOString(),
-    });
+  friendSocketInstance.of("/friends").to(`user:${userId}`).emit("friend:removed", {
+    removedBy: data.removedBy,
+    timestamp: new Date().toISOString(),
+  });
 };
 
-export const notifyUserDataUpdated = (
-  userId: string,
-  event: string,
-  payload?: any,
-) => {
+export const notifyUserDataUpdated = (userId: string, event: string, payload?: any) => {
   if (!friendSocketInstance) return;
   friendSocketInstance.of("/friends").to(`user:${userId}`).emit(event, payload);
 };

@@ -30,7 +30,7 @@ const args = process.argv.slice(2);
 
 function argVal(flag: string): string | null {
   const idx = args.indexOf(flag);
-  return idx >= 0 ? args[idx + 1] ?? null : null;
+  return idx >= 0 ? (args[idx + 1] ?? null) : null;
 }
 
 const forceSport = argVal("--sport");
@@ -41,7 +41,10 @@ const concurrency = Math.min(5, Math.max(1, Number(argVal("--concurrency")) || 3
 // ─── State slugs (derived from INDIAN_STATES_AND_UTS display names) ───────────
 
 function toStateSlug(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 // ─── Prompt ───────────────────────────────────────────────────────────────────
@@ -109,7 +112,7 @@ Rules:
 async function pool<T>(
   items: T[],
   maxConcurrent: number,
-  fn: (item: T, idx: number) => Promise<void>,
+  fn: (item: T, idx: number) => Promise<void>
 ): Promise<void> {
   let idx = 0;
 
@@ -130,7 +133,7 @@ async function generateStatePath(
   genAI: GoogleGenAI,
   sportSlug: string,
   sportName: string,
-  stateName: string,
+  stateName: string
 ): Promise<void> {
   const stateSlug = toStateSlug(stateName);
   const label = `${sportName} / ${stateName}`;
@@ -176,7 +179,7 @@ async function generateStatePath(
         generatedAt: new Date(),
       },
     },
-    { upsert: true, new: true },
+    { upsert: true, new: true }
   );
 
   console.log(`  ✓  ${label}`);
@@ -185,8 +188,14 @@ async function generateStatePath(
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  if (!MONGO_URI) { console.error("MONGO_URI not set"); process.exit(1); }
-  if (!GEMINI_KEY) { console.error("GEMINI_API_KEY not set"); process.exit(1); }
+  if (!MONGO_URI) {
+    console.error("MONGO_URI not set");
+    process.exit(1);
+  }
+  if (!GEMINI_KEY) {
+    console.error("GEMINI_API_KEY not set");
+    process.exit(1);
+  }
 
   await mongoose.connect(MONGO_URI);
   console.log("Connected to MongoDB\n");
@@ -198,7 +207,7 @@ async function main() {
   const allStates: string[] = [...INDIAN_STATES_AND_UTS];
   const targetStates = forceState
     ? allStates.filter(
-        (s) => toStateSlug(s) === forceState || s.toLowerCase() === forceState.toLowerCase(),
+        (s) => toStateSlug(s) === forceState || s.toLowerCase() === forceState.toLowerCase()
       )
     : allStates;
 
@@ -207,16 +216,14 @@ async function main() {
     process.exit(1);
   }
 
-  const pairs: Array<{ sport: typeof targetSports[0]; state: string }> = [];
+  const pairs: Array<{ sport: (typeof targetSports)[0]; state: string }> = [];
   for (const sport of targetSports) {
     for (const state of targetStates) {
       pairs.push({ sport, state });
     }
   }
 
-  console.log(
-    `Generating ${pairs.length} state paths (concurrency: ${concurrency})...\n`,
-  );
+  console.log(`Generating ${pairs.length} state paths (concurrency: ${concurrency})...\n`);
 
   const genAI = new GoogleGenAI({ apiKey: GEMINI_KEY });
 

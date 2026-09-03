@@ -4,26 +4,14 @@ import { FilterBar, type ActiveFilter } from "@/modules/discovery/components/Fil
 import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import {
-    StaggerContainer,
-    StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { cn } from "@/utils/cn";
-import {
-    ArrowRight,
-    Globe,
-    Languages,
-    MapPin,
-    Search,
-    ServerCrash,
-    Star,
-} from "lucide-react";
+import { ArrowRight, Globe, Languages, MapPin, Search, ServerCrash, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
-const normalize = (v: string) =>
-  v.toLocaleLowerCase().trim().replace(/\s+/g, " ");
+const normalize = (v: string) => v.toLocaleLowerCase().trim().replace(/\s+/g, " ");
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
 const MODE_OPTIONS = ["ALL", "ONLINE", "IN_PERSON", "BOTH"];
@@ -31,19 +19,9 @@ const MIN_RATING_OPTIONS = ["0", "3", "4", "4.5"];
 const SORT_OPTIONS = ["relevance", "priceAsc", "priceDesc", "ratingDesc"];
 
 const modeLabel = (mode: Expert["sessionMode"]) =>
-  mode === "BOTH"
-    ? "Online or in-person"
-    : mode === "ONLINE"
-      ? "Online"
-      : "In-person";
+  mode === "BOTH" ? "Online or in-person" : mode === "ONLINE" ? "Online" : "In-person";
 
-function ExpertAvatar({
-  expert,
-  className,
-}: {
-  expert: Expert;
-  className: string;
-}) {
+function ExpertAvatar({ expert, className }: { expert: Expert; className: string }) {
   const [failed, setFailed] = useState(false);
   const initial = (expert.name || "E").charAt(0).toUpperCase();
   if (!expert.photoUrl || failed) {
@@ -51,7 +29,7 @@ function ExpertAvatar({
       <div
         className={cn(
           "flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-5xl font-bold text-slate-300",
-          className,
+          className
         )}
       >
         {initial}
@@ -179,14 +157,12 @@ export function ExpertsTab({
           (e.sports || []).join(" "),
           (e.expertise || []).join(" "),
           e.city || "",
-        ].join(" "),
+        ].join(" ")
       );
       const matchSearch = !term || haystack.includes(term);
       const matchMode = modeFilter === "ALL" || e.sessionMode === modeFilter;
       const matchFee =
-        parsedMax === undefined ||
-        isNaN(parsedMax) ||
-        Number(e.sessionFee || 0) <= parsedMax;
+        parsedMax === undefined || isNaN(parsedMax) || Number(e.sessionFee || 0) <= parsedMax;
       const matchRating = (e.rating || 0) >= parsedRating;
       return matchSearch && matchMode && matchFee && matchRating;
     });
@@ -198,20 +174,15 @@ export function ExpertsTab({
       if (term) {
         if ((e.sports || []).some((s) => normalize(s) === term)) match = 1;
         else if (normalize(e.name || "").includes(term)) match = 0.7;
-        else if ((e.expertise || []).some((s) => normalize(s).includes(term)))
-          match = 0.5;
+        else if ((e.expertise || []).some((s) => normalize(s).includes(term))) match = 0.5;
       }
       return rating * 0.55 + reviews * 0.2 + match * 0.25;
     };
 
     if (sortBy === "priceAsc")
-      next = [...next].sort(
-        (a, b) => (a.sessionFee || 0) - (b.sessionFee || 0),
-      );
+      next = [...next].sort((a, b) => (a.sessionFee || 0) - (b.sessionFee || 0));
     else if (sortBy === "priceDesc")
-      next = [...next].sort(
-        (a, b) => (b.sessionFee || 0) - (a.sessionFee || 0),
-      );
+      next = [...next].sort((a, b) => (b.sessionFee || 0) - (a.sessionFee || 0));
     else if (sortBy === "ratingDesc")
       next = [...next].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     else next = [...next].sort((a, b) => relevance(b) - relevance(a));
@@ -256,11 +227,7 @@ export function ExpertsTab({
     activeFilters.push({
       id: "sort",
       label: `Sort: ${
-        sortBy === "priceAsc"
-          ? "Fee ↑"
-          : sortBy === "priceDesc"
-            ? "Fee ↓"
-            : "Top rated"
+        sortBy === "priceAsc" ? "Fee ↑" : sortBy === "priceDesc" ? "Fee ↓" : "Top rated"
       }`,
       onRemove: () => setSortBy("relevance"),
     });
@@ -282,9 +249,7 @@ export function ExpertsTab({
         onClearAll={handleClear}
       >
         <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">
-            Session mode
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Session mode</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { val: "ALL", label: "Any" },
@@ -299,8 +264,8 @@ export function ExpertsTab({
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   modeFilter === opt.val
-                    ? "border-power-orange bg-orange-50 text-power-orange"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-power-orange text-power-orange bg-orange-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -314,7 +279,7 @@ export function ExpertsTab({
             Maximum session fee (₹)
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+            <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
               ₹
             </span>
             <input
@@ -323,15 +288,13 @@ export function ExpertsTab({
               value={maxFee}
               onChange={(e) => setMaxFee(e.target.value)}
               placeholder="Max fee"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">
-            Minimum rating
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Minimum rating</label>
           <div className="grid grid-cols-4 gap-2">
             {[
               { val: "0", label: "Any" },
@@ -346,8 +309,8 @@ export function ExpertsTab({
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   minRating === opt.val
-                    ? "border-power-orange bg-orange-50 text-power-orange"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-power-orange text-power-orange bg-orange-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -357,9 +320,7 @@ export function ExpertsTab({
         </div>
 
         <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">
-            Sort by
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Sort by</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { val: "relevance", label: "Recommended" },
@@ -374,8 +335,8 @@ export function ExpertsTab({
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   sortBy === opt.val
-                    ? "border-power-orange bg-orange-50 text-power-orange"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-power-orange text-power-orange bg-orange-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -386,7 +347,7 @@ export function ExpertsTab({
       </FilterBar>
 
       {/* ── Content ──────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="max-w-8xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {loading ? (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -407,9 +368,7 @@ export function ExpertsTab({
           <div className="rounded-2xl border border-slate-100 bg-white">
             <EmptyState
               icon={Search}
-              title={
-                hasFilters ? "No experts match your filters" : "No experts yet"
-              }
+              title={hasFilters ? "No experts match your filters" : "No experts yet"}
               description={
                 hasFilters
                   ? "Try broadening your search or clearing filters."
@@ -456,7 +415,7 @@ export function ExpertsTab({
                           expert={expert}
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
-                        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                        <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
                           <Globe className="h-3 w-3" />
                           {modeLabel(expert.sessionMode)}
                         </span>
@@ -479,10 +438,12 @@ export function ExpertsTab({
                             <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-700">
                               <Star size={11} className="fill-amber-400 text-amber-400" />
                               {expert.rating.toFixed(1)}
-                              <span className="font-normal text-slate-400">({expert.reviewCount})</span>
+                              <span className="font-normal text-slate-400">
+                                ({expert.reviewCount})
+                              </span>
                             </span>
                           )}
-                          <span className="rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-power-orange">
+                          <span className="text-power-orange rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium">
                             {primarySport}
                           </span>
                           {expert.languages && expert.languages.length > 0 && (
@@ -500,7 +461,7 @@ export function ExpertsTab({
                             </span>
                             <span className="text-xs font-medium text-slate-500">/session</span>
                           </div>
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:bg-power-orange group-hover:text-white">
+                          <div className="group-hover:bg-power-orange flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:text-white">
                             <ArrowRight size={16} strokeWidth={2.5} />
                           </div>
                         </div>

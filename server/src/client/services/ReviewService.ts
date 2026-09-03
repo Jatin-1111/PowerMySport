@@ -21,9 +21,7 @@ export interface CreateReviewPayload {
  * Only allows reviews for COMPLETED bookings
  * Updates venue and coach average ratings
  */
-export const createReview = async (
-  payload: CreateReviewPayload,
-): Promise<ReviewDocument> => {
+export const createReview = async (payload: CreateReviewPayload): Promise<ReviewDocument> => {
   // Verify booking exists and is completed
   const booking = await Booking.findById(payload.bookingId);
 
@@ -63,9 +61,7 @@ export const createReview = async (
   });
 
   if (existingReview) {
-    throw new Error(
-      `You have already reviewed this ${payload.targetType.toLowerCase()}`,
-    );
+    throw new Error(`You have already reviewed this ${payload.targetType.toLowerCase()}`);
   }
 
   // Validate rating
@@ -96,15 +92,11 @@ export const createReview = async (
   // Notify the provider of the new review (fire-and-forget).
   void (async () => {
     try {
-      const reviewer = await User.findById(payload.userId)
-        .select("name")
-        .lean();
+      const reviewer = await User.findById(payload.userId).select("name").lean();
       let providerEmail: string | undefined;
       let providerName: string | undefined;
       if (payload.targetType === "VENUE") {
-        const venue = await Venue.findById(targetId)
-          .populate("ownerId", "name email")
-          .lean();
+        const venue = await Venue.findById(targetId).populate("ownerId", "name email").lean();
         const owner = venue?.ownerId as unknown as {
           name?: string;
           email?: string;
@@ -112,9 +104,7 @@ export const createReview = async (
         providerEmail = owner?.email;
         providerName = owner?.name;
       } else {
-        const coach = await Coach.findById(targetId)
-          .populate("userId", "name email")
-          .lean();
+        const coach = await Coach.findById(targetId).populate("userId", "name email").lean();
         const coachUser = coach?.userId as unknown as {
           name?: string;
           email?: string;
@@ -196,7 +186,7 @@ const updateCoachRating = async (coachId: string): Promise<void> => {
 export const getVenueReviews = async (
   venueId: string,
   page: number = 1,
-  limit: number = 10,
+  limit: number = 10
 ): Promise<{
   reviews: ReviewDocument[];
   total: number;
@@ -233,7 +223,7 @@ export const getVenueReviews = async (
 export const getCoachReviews = async (
   coachId: string,
   page: number = 1,
-  limit: number = 10,
+  limit: number = 10
 ): Promise<{
   reviews: ReviewDocument[];
   total: number;
@@ -267,14 +257,8 @@ export const getCoachReviews = async (
 /**
  * Mark review as helpful
  */
-export const markReviewHelpful = async (
-  reviewId: string,
-): Promise<ReviewDocument | null> => {
-  return Review.findByIdAndUpdate(
-    reviewId,
-    { $inc: { helpfulCount: 1 } },
-    { new: true },
-  );
+export const markReviewHelpful = async (reviewId: string): Promise<ReviewDocument | null> => {
+  return Review.findByIdAndUpdate(reviewId, { $inc: { helpfulCount: 1 } }, { new: true });
 };
 
 /**
@@ -283,7 +267,7 @@ export const markReviewHelpful = async (
 export const reportReview = async (
   reviewId: string,
   userId: string,
-  reason: string,
+  reason: string
 ): Promise<ReviewDocument | null> => {
   const review = await Review.findById(reviewId);
 
@@ -292,9 +276,7 @@ export const reportReview = async (
   }
 
   // Check if user already reported this review
-  const alreadyReported = review.reports?.some(
-    (report) => report.userId.toString() === userId,
-  );
+  const alreadyReported = review.reports?.some((report) => report.userId.toString() === userId);
 
   if (alreadyReported) {
     throw new Error("You have already reported this review");
@@ -314,11 +296,10 @@ export const reportReview = async (
       },
       // Auto-flag if 3+ reports
       $set: {
-        moderationStatus:
-          review.reportCount + 1 >= 3 ? "FLAGGED" : review.moderationStatus,
+        moderationStatus: review.reportCount + 1 >= 3 ? "FLAGGED" : review.moderationStatus,
       },
     },
-    { new: true },
+    { new: true }
   );
 
   return updatedReview;
@@ -329,7 +310,7 @@ export const reportReview = async (
  */
 export const getFlaggedReviews = async (
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   reviews: ReviewDocument[];
   total: number;
@@ -365,7 +346,7 @@ export const getFlaggedReviews = async (
 export const moderateReview = async (
   reviewId: string,
   action: "APPROVE" | "REMOVE" | "HIDE",
-  moderationNotes?: string,
+  moderationNotes?: string
 ): Promise<ReviewDocument | null> => {
   const update: any = {
     moderationNotes,

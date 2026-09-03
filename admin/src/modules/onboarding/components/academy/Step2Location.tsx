@@ -42,9 +42,7 @@ export default function Step2Location({
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [hasSelectedLocation, setHasSelectedLocation] = useState(
-    !!previousData?.address,
-  );
+  const [hasSelectedLocation, setHasSelectedLocation] = useState(!!previousData?.address);
   const skipAutocompleteRef = useRef(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -226,9 +224,7 @@ export default function Step2Location({
       };
       await onSubmit(payload);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save location",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save location");
     } finally {
       setIsSubmitting(false);
     }
@@ -237,9 +233,7 @@ export default function Step2Location({
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-3xl font-bold text-slate-900">
-          Step 2: Location & Contact
-        </h2>
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 2: Location & Contact</h2>
         <p className="text-slate-600">Where is your academy located?</p>
       </div>
 
@@ -254,20 +248,18 @@ export default function Step2Location({
               value={addressQuery}
               onChange={handleAddressChange}
               placeholder="Search your academy location..."
-              className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                fieldErrors.address
-                  ? "border-red-300 bg-red-50"
-                  : "border-slate-300 bg-white"
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                fieldErrors.address ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             />
             {isSearching && (
-              <div className="absolute right-3 top-2.5">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-power-orange border-t-transparent" />
+              <div className="absolute top-2.5 right-3">
+                <div className="border-power-orange h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
               </div>
             )}
             {suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-10 max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+              <div className="absolute top-full right-0 left-0 z-10 max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                 {suggestions.map((suggestion) => (
                   <button
                     key={`${suggestion.lat}-${suggestion.lon}`}
@@ -275,20 +267,14 @@ export default function Step2Location({
                     onClick={() => handleSuggestionSelect(suggestion)}
                     className="w-full border-b border-slate-100 px-3 py-2 text-left text-sm hover:bg-slate-100"
                   >
-                    <p className="font-medium text-slate-900">
-                      {suggestion.label.split(",")[0]}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">
-                      {suggestion.label}
-                    </p>
+                    <p className="font-medium text-slate-900">{suggestion.label.split(",")[0]}</p>
+                    <p className="truncate text-xs text-slate-500">{suggestion.label}</p>
                   </button>
                 ))}
               </div>
             )}
           </div>
-          {searchError && (
-            <p className="mt-1 text-xs text-amber-600">{searchError}</p>
-          )}
+          {searchError && <p className="mt-1 text-xs text-amber-600">{searchError}</p>}
           {fieldErrors.address && (
             <p className="mt-1 text-xs text-red-600">{fieldErrors.address}</p>
           )}
@@ -310,20 +296,14 @@ export default function Step2Location({
             <input
               type="text"
               value={formData.city}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, city: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
               placeholder="Mumbai"
-              className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                fieldErrors.city
-                  ? "border-red-300 bg-red-50"
-                  : "border-slate-300 bg-white"
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                fieldErrors.city ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             />
-            {fieldErrors.city && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.city}</p>
-            )}
+            {fieldErrors.city && <p className="mt-1 text-xs text-red-600">{fieldErrors.city}</p>}
           </div>
 
           <div>
@@ -332,13 +312,9 @@ export default function Step2Location({
             </label>
             <select
               value={formData.state}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, state: e.target.value }))
-              }
-              className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                fieldErrors.state
-                  ? "border-red-300 bg-red-50"
-                  : "border-slate-300 bg-white"
+              onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                fieldErrors.state ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             >
@@ -349,9 +325,7 @@ export default function Step2Location({
                 </option>
               ))}
             </select>
-            {fieldErrors.state && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.state}</p>
-            )}
+            {fieldErrors.state && <p className="mt-1 text-xs text-red-600">{fieldErrors.state}</p>}
           </div>
 
           <div>
@@ -361,15 +335,11 @@ export default function Step2Location({
             <input
               type="text"
               value={formData.pincode}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, pincode: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, pincode: e.target.value }))}
               placeholder="400001"
               maxLength={6}
-              className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                fieldErrors.pincode
-                  ? "border-red-300 bg-red-50"
-                  : "border-slate-300 bg-white"
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                fieldErrors.pincode ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             />
@@ -380,9 +350,7 @@ export default function Step2Location({
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="mb-4 font-semibold text-slate-900">
-            Contact Information
-          </h3>
+          <h3 className="mb-4 font-semibold text-slate-900">Contact Information</h3>
 
           <div className="space-y-4">
             <div>
@@ -399,7 +367,7 @@ export default function Step2Location({
                   }))
                 }
                 placeholder="Full name"
-                className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                   fieldErrors.contactPersonName
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -407,9 +375,7 @@ export default function Step2Location({
                 disabled={isSubmitting}
               />
               {fieldErrors.contactPersonName && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.contactPersonName}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.contactPersonName}</p>
               )}
             </div>
 
@@ -426,9 +392,7 @@ export default function Step2Location({
                     type="tel"
                     value={formData.contactPhone.replace(/^\+91/, "")}
                     onChange={(e) => {
-                      const digits = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 10);
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                       setFormData((prev) => ({
                         ...prev,
                         contactPhone: `+91${digits}`,
@@ -441,7 +405,7 @@ export default function Step2Location({
                     }}
                     placeholder="9876543210"
                     maxLength={10}
-                    className={`flex-1 rounded-r-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                    className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                       fieldErrors.contactPhone
                         ? "border-red-300 bg-red-50"
                         : "border-slate-300 bg-white"
@@ -450,9 +414,7 @@ export default function Step2Location({
                   />
                 </div>
                 {fieldErrors.contactPhone && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {fieldErrors.contactPhone}
-                  </p>
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.contactPhone}</p>
                 )}
               </div>
 
@@ -470,7 +432,7 @@ export default function Step2Location({
                     }))
                   }
                   placeholder="contact@academy.com"
-                  className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                  className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                     fieldErrors.contactEmail
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white"
@@ -478,9 +440,7 @@ export default function Step2Location({
                   disabled={isSubmitting}
                 />
                 {fieldErrors.contactEmail && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {fieldErrors.contactEmail}
-                  </p>
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.contactEmail}</p>
                 )}
               </div>
             </div>
@@ -497,9 +457,7 @@ export default function Step2Location({
                   type="tel"
                   value={formData.whatsappNumber.replace(/^\+91/, "")}
                   onChange={(e) => {
-                    const digits = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 10);
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                     setFormData((prev) => ({
                       ...prev,
                       whatsappNumber: `+91${digits}`,
@@ -512,7 +470,7 @@ export default function Step2Location({
                   }}
                   placeholder="9876543210"
                   maxLength={10}
-                  className={`flex-1 rounded-r-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                  className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                     fieldErrors.whatsappNumber
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white"
@@ -521,9 +479,7 @@ export default function Step2Location({
                 />
               </div>
               {fieldErrors.whatsappNumber && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.whatsappNumber}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.whatsappNumber}</p>
               )}
             </div>
           </div>
@@ -535,15 +491,12 @@ export default function Step2Location({
           </label>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             {languageOptions.map((lang) => (
-              <label
-                key={lang}
-                className="flex cursor-pointer items-center gap-2"
-              >
+              <label key={lang} className="flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
                   checked={formData.languagesSpoken.includes(lang)}
                   onChange={() => toggleLanguage(lang)}
-                  className="w-4 h-4 rounded border-slate-300"
+                  className="h-4 w-4 rounded border-slate-300"
                   disabled={isSubmitting}
                 />
                 <span className="text-sm text-slate-700">{lang}</span>
@@ -551,28 +504,17 @@ export default function Step2Location({
             ))}
           </div>
           {fieldErrors.languagesSpoken && (
-            <p className="mt-2 text-xs text-red-600">
-              {fieldErrors.languagesSpoken}
-            </p>
+            <p className="mt-2 text-xs text-red-600">{fieldErrors.languagesSpoken}</p>
           )}
         </div>
 
         <div className="flex gap-3 pt-4">
           {onBack && (
-            <Button
-              type="button"
-              onClick={onBack}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button type="button" onClick={onBack} variant="outline" disabled={isSubmitting}>
               Back
             </Button>
           )}
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Saving..." : "Continue to Step 3"}
           </Button>
         </div>

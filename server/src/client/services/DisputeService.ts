@@ -12,8 +12,7 @@ const log = __rootLog.child("dispute");
  */
 export interface DisputeAnalysis {
   disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER";
-  recommendedAction:
-    "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND" | "MANUAL_REVIEW";
+  recommendedAction: "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND" | "MANUAL_REVIEW";
   refundPercentage: number;
   reasoning: string;
   confidence: "HIGH" | "MEDIUM" | "LOW";
@@ -27,7 +26,7 @@ export interface DisputeAnalysis {
 export const analyzeDispute = async (
   bookingId: string,
   disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER",
-  disputeDetails?: string,
+  disputeDetails?: string
 ): Promise<DisputeAnalysis> => {
   // Independent of each other — both only need `bookingId`. Read-only:
   // neither is saved anywhere in this file.
@@ -70,7 +69,7 @@ export const openDispute = async (
   bookingId: string,
   userId: string,
   disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER",
-  disputeDetails?: string,
+  disputeDetails?: string
 ) => {
   const analysis = await analyzeDispute(bookingId, disputeType, disputeDetails);
 
@@ -91,9 +90,7 @@ export const openDispute = async (
   // Notify the user their dispute was logged (fire-and-forget).
   void (async () => {
     try {
-      const disputeUser = await User.findById(userId)
-        .select("name email")
-        .lean();
+      const disputeUser = await User.findById(userId).select("name email").lean();
       if (disputeUser?.email) {
         await sendDisputeStatusEmail({
           name: disputeUser.name,
@@ -114,18 +111,14 @@ export const openDispute = async (
 /**
  * Analyze no-show disputes
  */
-const analyzeNoShowDispute = async (
-  booking: any,
-  review: any,
-): Promise<DisputeAnalysis> => {
+const analyzeNoShowDispute = async (booking: any, review: any): Promise<DisputeAnalysis> => {
   // If booking is marked NO_SHOW, favor venue/coach
   if (booking.status === "NO_SHOW") {
     return {
       disputeType: "NO_SHOW",
       recommendedAction: "NO_REFUND",
       refundPercentage: 0,
-      reasoning:
-        "Booking marked as NO_SHOW. No refund recommended per cancellation policy.",
+      reasoning: "Booking marked as NO_SHOW. No refund recommended per cancellation policy.",
       confidence: "HIGH",
       requiresManualReview: false,
     };
@@ -137,8 +130,7 @@ const analyzeNoShowDispute = async (
       disputeType: "NO_SHOW",
       recommendedAction: "NO_REFUND",
       refundPercentage: 0,
-      reasoning:
-        "Booking completed with positive review. Dispute appears invalid.",
+      reasoning: "Booking completed with positive review. Dispute appears invalid.",
       confidence: "HIGH",
       requiresManualReview: false,
     };
@@ -150,8 +142,7 @@ const analyzeNoShowDispute = async (
       disputeType: "NO_SHOW",
       recommendedAction: "MANUAL_REVIEW",
       refundPercentage: 0,
-      reasoning:
-        "Booking completed but no review. Requires manual investigation.",
+      reasoning: "Booking completed but no review. Requires manual investigation.",
       confidence: "LOW",
       requiresManualReview: true,
     };
@@ -171,18 +162,14 @@ const analyzeNoShowDispute = async (
 /**
  * Analyze poor quality disputes
  */
-const analyzePoorQualityDispute = async (
-  booking: any,
-  review: any,
-): Promise<DisputeAnalysis> => {
+const analyzePoorQualityDispute = async (booking: any, review: any): Promise<DisputeAnalysis> => {
   // If there's a review with low rating, likely legitimate complaint
   if (review && review.venueRating <= 2) {
     return {
       disputeType: "POOR_QUALITY",
       recommendedAction: "PARTIAL_REFUND",
       refundPercentage: 50,
-      reasoning:
-        "Low rating review supports quality complaint. 50% refund recommended.",
+      reasoning: "Low rating review supports quality complaint. 50% refund recommended.",
       confidence: "MEDIUM",
       requiresManualReview: true, // Still needs admin confirmation
     };
@@ -194,8 +181,7 @@ const analyzePoorQualityDispute = async (
       disputeType: "POOR_QUALITY",
       recommendedAction: "NO_REFUND",
       refundPercentage: 0,
-      reasoning:
-        "High rating review contradicts quality complaint. No refund recommended.",
+      reasoning: "High rating review contradicts quality complaint. No refund recommended.",
       confidence: "MEDIUM",
       requiresManualReview: true,
     };
@@ -206,8 +192,7 @@ const analyzePoorQualityDispute = async (
     disputeType: "POOR_QUALITY",
     recommendedAction: "MANUAL_REVIEW",
     refundPercentage: 0,
-    reasoning:
-      "Insufficient data to auto-resolve. Requires manual review with evidence.",
+    reasoning: "Insufficient data to auto-resolve. Requires manual review with evidence.",
     confidence: "LOW",
     requiresManualReview: true,
   };
@@ -216,9 +201,7 @@ const analyzePoorQualityDispute = async (
 /**
  * Analyze payment disputes
  */
-const analyzePaymentDispute = async (
-  booking: any,
-): Promise<DisputeAnalysis> => {
+const analyzePaymentDispute = async (booking: any): Promise<DisputeAnalysis> => {
   // Check if all payments are marked PAID
   const allPaid = booking.payments.every((p: any) => p.status === "PAID");
 
@@ -227,8 +210,7 @@ const analyzePaymentDispute = async (
       disputeType: "PAYMENT_ISSUE",
       recommendedAction: "MANUAL_REVIEW",
       refundPercentage: 0,
-      reasoning:
-        "Payment records show incomplete payments. Requires manual investigation.",
+      reasoning: "Payment records show incomplete payments. Requires manual investigation.",
       confidence: "HIGH",
       requiresManualReview: true,
     };
@@ -241,17 +223,14 @@ const analyzePaymentDispute = async (
     paymentCounts.set(key, (paymentCounts.get(key) || 0) + 1);
   });
 
-  const hasDuplicates = Array.from(paymentCounts.values()).some(
-    (count) => count > 1,
-  );
+  const hasDuplicates = Array.from(paymentCounts.values()).some((count) => count > 1);
 
   if (hasDuplicates) {
     return {
       disputeType: "PAYMENT_ISSUE",
       recommendedAction: "FULL_REFUND",
       refundPercentage: 100,
-      reasoning:
-        "Duplicate payment detected. Full refund of duplicate payment recommended.",
+      reasoning: "Duplicate payment detected. Full refund of duplicate payment recommended.",
       confidence: "HIGH",
       requiresManualReview: true, // Confirm before processing
     };

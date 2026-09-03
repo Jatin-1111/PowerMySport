@@ -7,12 +7,7 @@
 // A separate module rather than an export from the reader, so a server component
 // can link into a section without importing a client component to do it.
 
-export type SectionId =
-  | "overview"
-  | "questions"
-  | "signals"
-  | "decisions"
-  | "next";
+export type SectionId = "overview" | "questions" | "signals" | "decisions" | "next";
 
 export const sectionDomId = (id: SectionId) => `pathway-section-${id}`;
 export const headingDomId = (id: SectionId) => `pathway-heading-${id}`;

@@ -3,20 +3,9 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
-import {
-  CommunityGroupSummary,
-  CommunityGroupVisibility,
-} from "@/modules/community/types";
+import { CommunityGroupSummary, CommunityGroupVisibility } from "@/modules/community/types";
 import SportsSelect from "@/modules/sports/components/SportsSelect";
-import {
-  X,
-  Upload,
-  Loader2,
-  Users,
-  MapPin,
-  AlignLeft,
-  Shield,
-} from "lucide-react";
+import { X, Upload, Loader2, Users, MapPin, AlignLeft, Shield } from "lucide-react";
 
 interface EditCommunityModalProps {
   isOpen: boolean;
@@ -58,10 +47,12 @@ export default function EditCommunityModal({
   const [sport, setSport] = useState(initialData.sport || "");
   const [city, setCity] = useState(initialData.city || "");
   const [visibility, setVisibility] = useState<CommunityGroupVisibility>(
-    initialData.visibility || "PUBLIC",
+    initialData.visibility || "PUBLIC"
   );
 
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(initialData.profilePicture || null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(
+    initialData.profilePicture || null
+  );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,7 +141,7 @@ export default function EditCommunityModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-1/2 top-1/2 z-[201] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 p-4"
+            className="fixed top-1/2 left-1/2 z-[201] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 p-4"
           >
             <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5">
               {/* Header */}
@@ -182,7 +173,7 @@ export default function EditCommunityModal({
                 >
                   {/* Community Icon Preview */}
                   <div className="flex flex-col items-center gap-4 sm:flex-row">
-                    <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 ring-4 ring-white shadow-sm">
+                    <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 shadow-sm ring-4 ring-white">
                       {profilePictureUrl ? (
                         <img
                           src={profilePictureUrl}
@@ -190,7 +181,7 @@ export default function EditCommunityModal({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-power-orange/20 to-power-orange/5 text-3xl font-bold text-power-orange">
+                        <div className="from-power-orange/20 to-power-orange/5 text-power-orange flex h-full w-full items-center justify-center bg-gradient-to-br text-3xl font-bold">
                           {name ? name.charAt(0).toUpperCase() : "?"}
                         </div>
                       )}
@@ -199,7 +190,7 @@ export default function EditCommunityModal({
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 transition hover:bg-slate-100"
+                        className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 transition ring-inset hover:bg-slate-100"
                       >
                         <Upload size={16} className="text-slate-400" />
                         Upload Logo
@@ -229,7 +220,7 @@ export default function EditCommunityModal({
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Downtown Runners"
                       required
-                      className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-power-orange/50 focus:outline-none focus:ring-4 focus:ring-power-orange/10"
+                      className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:ring-4 focus:outline-none"
                     />
                   </div>
 
@@ -244,7 +235,7 @@ export default function EditCommunityModal({
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className="h-4 w-4 text-turf-green"
+                        className="text-turf-green h-4 w-4"
                       >
                         <circle cx="12" cy="12" r="10" />
                         <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
@@ -271,7 +262,7 @@ export default function EditCommunityModal({
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="e.g. New York, NY"
-                      className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-blue-500/50 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                      className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none"
                     />
                   </div>
 
@@ -286,7 +277,7 @@ export default function EditCommunityModal({
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="What is this community about?"
                       rows={3}
-                      className="w-full resize-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-purple-500/50 focus:outline-none focus:ring-4 focus:ring-purple-500/10"
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-purple-500/50 focus:ring-4 focus:ring-purple-500/10 focus:outline-none"
                     />
                   </div>
 
@@ -308,14 +299,12 @@ export default function EditCommunityModal({
                               : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                           }`}
                         >
-                          <span className="block text-xs font-semibold uppercase tracking-wide">
+                          <span className="block text-xs font-semibold tracking-wide uppercase">
                             {opt.label}
                           </span>
                           <span
                             className={`mt-0.5 block text-xs ${
-                              visibility === opt.value
-                                ? "text-white/70"
-                                : "text-slate-500"
+                              visibility === opt.value ? "text-white/70" : "text-slate-500"
                             }`}
                           >
                             {opt.hint}
@@ -334,7 +323,7 @@ export default function EditCommunityModal({
               </div>
 
               {/* Footer */}
-              <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-end gap-3">
+              <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:px-8 sm:py-5">
                 <button
                   type="button"
                   onClick={onClose}
@@ -347,7 +336,7 @@ export default function EditCommunityModal({
                   type="submit"
                   form="edit-community-form"
                   disabled={isSubmitting}
-                  className="inline-flex min-w-[140px] items-center justify-center gap-2 rounded-2xl bg-power-orange px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-power-orange/20 transition hover:bg-[#d96610] focus:outline-none focus:ring-4 focus:ring-power-orange/20 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="bg-power-orange shadow-power-orange/20 focus:ring-power-orange/20 inline-flex min-w-[140px] items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] focus:ring-4 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <>

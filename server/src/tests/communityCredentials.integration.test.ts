@@ -12,9 +12,7 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 const { CommunityPost } = require("../community/models/CommunityPost");
 const { CommunityAnswer } = require("../community/models/CommunityAnswer");
 const { CommunityService } = require("../community/services/CommunityService");
-const {
-  resolveCommunityCredentials,
-} = require("../community/services/communityCredentials");
+const { resolveCommunityCredentials } = require("../community/services/communityCredentials");
 const { User } = require("../client/models/User");
 const { Coach } = require("../client/models/Coach");
 const { Expert } = require("../client/models/ExpertProfile");
@@ -44,11 +42,7 @@ const makeCoach = (userId: string, isVerified: boolean) =>
     isVerified,
   });
 
-const makeExpert = (
-  userId: string,
-  verificationStatus: string,
-  isActive: boolean,
-) =>
+const makeExpert = (userId: string, verificationStatus: string, isActive: boolean) =>
   Expert.create({
     userId,
     bio: "Pathway guidance for junior athletes.",
@@ -175,12 +169,7 @@ describe("credentials on Q&A payloads", () => {
       title: "How do I pick a first racket for my daughter?",
       body: "She is nine and just started weekly lessons at school.",
     });
-    await CommunityService.createAnswer(
-      coach,
-      post.id,
-      "Start light, 25 inch.",
-      true,
-    );
+    await CommunityService.createAnswer(coach, post.id, "Start light, 25 inch.", true);
 
     const detail = await CommunityService.getPostDetails(asker, post.id);
     // A credential is an identity claim; showing it would narrow who wrote an
@@ -201,12 +190,7 @@ describe("credentials on Q&A payloads", () => {
       title: "How do I pick a first racket for my daughter?",
       body: "She is nine and just started weekly lessons at school.",
     });
-    await CommunityService.createAnswer(
-      coach,
-      post.id,
-      "Start light, 25 inch.",
-      true,
-    );
+    await CommunityService.createAnswer(coach, post.id, "Start light, 25 inch.", true);
 
     const asAuthor = await CommunityService.getPostDetails(coach, post.id);
     assert.equal(asAuthor.answers[0].author.isVerifiedExpert, true);

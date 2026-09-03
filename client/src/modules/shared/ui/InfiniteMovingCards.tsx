@@ -42,11 +42,11 @@ export function InfiniteMovingCards({
 
       containerRef.current.style.setProperty(
         "--animation-direction",
-        direction === "left" ? "forwards" : "reverse",
+        direction === "left" ? "forwards" : "reverse"
       );
       containerRef.current.style.setProperty(
         "--animation-duration",
-        speed === "fast" ? "20s" : speed === "normal" ? "40s" : "80s",
+        speed === "fast" ? "20s" : speed === "normal" ? "40s" : "80s"
       );
       setStart(true);
     }
@@ -57,7 +57,7 @@ export function InfiniteMovingCards({
       ref={containerRef}
       className={cn(
         "scroller relative z-10 max-w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_10%,white_90%,transparent)]",
-        className,
+        className
       )}
     >
       <ul
@@ -65,26 +65,22 @@ export function InfiniteMovingCards({
         className={cn(
           "flex w-max min-w-full shrink-0 flex-nowrap gap-4 py-2",
           start && "animate-scroll",
-          pauseOnHover && "hover:[animation-play-state:paused]",
+          pauseOnHover && "hover:[animation-play-state:paused]"
         )}
       >
         {items.map((item, idx) => (
           <li
             key={item.name + idx}
-            className="relative w-[320px] max-w-full shrink-0 rounded-2xl border border-white/70 bg-white/80 px-6 py-5 shadow-sm backdrop-blur-md premium-shadow md:w-[400px]"
+            className="premium-shadow relative w-[320px] max-w-full shrink-0 rounded-2xl border border-white/70 bg-white/80 px-6 py-5 shadow-sm backdrop-blur-md md:w-[400px]"
           >
             <blockquote>
-              <p className="text-sm leading-relaxed text-slate-700">
-                &ldquo;{item.quote}&rdquo;
-              </p>
+              <p className="text-sm leading-relaxed text-slate-700">&ldquo;{item.quote}&rdquo;</p>
               <footer className="mt-4 flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-power-orange to-amber-500 text-xs font-bold text-white">
+                <span className="from-power-orange flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br to-amber-500 text-xs font-bold text-white">
                   {item.name.charAt(0)}
                 </span>
                 <span className="flex flex-col">
-                  <span className="text-sm font-bold text-slate-900">
-                    {item.name}
-                  </span>
+                  <span className="text-sm font-bold text-slate-900">{item.name}</span>
                   <span className="text-xs text-slate-500">{item.title}</span>
                 </span>
               </footer>

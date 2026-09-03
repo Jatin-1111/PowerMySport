@@ -42,12 +42,9 @@ export class WebhookController {
   private verifyPhonePeSignature(
     payload: string | Buffer,
     signature: string,
-    secret: string,
+    secret: string
   ): boolean {
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(payload)
-      .digest("hex");
+    const expectedSignature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
 
     const expectedBuffer = Buffer.from(expectedSignature, "utf8");
     const signatureBuffer = Buffer.from(signature, "utf8");
@@ -93,15 +90,12 @@ export class WebhookController {
       }
 
       // Parse payload
-      const payloadText = Buffer.isBuffer(req.body)
-        ? req.body.toString("utf8")
-        : req.body;
-      const payload =
-        typeof payloadText === "string" ? JSON.parse(payloadText) : payloadText;
+      const payloadText = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : req.body;
+      const payload = typeof payloadText === "string" ? JSON.parse(payloadText) : payloadText;
       const { event, created_at, payload: eventPayload } = payload;
 
       log.info(
-        `[Webhook] Processing event: ${event} at ${new Date(created_at * 1000).toISOString()}`,
+        `[Webhook] Processing event: ${event} at ${new Date(created_at * 1000).toISOString()}`
       );
 
       // Process based on event type
@@ -154,9 +148,7 @@ export class WebhookController {
     const payment = payload.payment;
     const orderId = payment.notes?.orderId;
 
-    log.info(
-      `[Webhook:Authorized] Payment ${payment.id} for order ${orderId}`,
-    );
+    log.info(`[Webhook:Authorized] Payment ${payment.id} for order ${orderId}`);
 
     if (!orderId) {
       log.warn("[Webhook:Authorized] Order ID not found in payment notes");
@@ -175,9 +167,7 @@ export class WebhookController {
     const payment = payload.payment;
     const orderId = payment.notes?.orderId;
 
-    log.info(
-      `[Webhook:Captured] Payment ${payment.id} for order ${orderId}`,
-    );
+    log.info(`[Webhook:Captured] Payment ${payment.id} for order ${orderId}`);
 
     if (!orderId) {
       log.warn("[Webhook:Captured] Order ID not found in payment notes");
@@ -186,11 +176,7 @@ export class WebhookController {
 
     try {
       // Confirm payment in order service
-      const order = await this.orderService.confirmPayment(
-        orderId,
-        payment.id,
-        payment.order_id,
-      );
+      const order = await this.orderService.confirmPayment(orderId, payment.id, payment.order_id);
 
       log.info(`[Webhook:Captured] Order ${orderId} payment confirmed`);
 
@@ -210,18 +196,10 @@ export class WebhookController {
       //   status: order.status,
       // });
     } catch (error: any) {
-      log.error(
-        `[Webhook:Captured] Error confirming payment for order ${orderId}:`,
-        error,
-      );
+      log.error(`[Webhook:Captured] Error confirming payment for order ${orderId}:`, error);
 
       // Log for manual review
-      await this.logWebhookError(
-        "payment.captured",
-        orderId,
-        error.message,
-        payload,
-      );
+      await this.logWebhookError("payment.captured", orderId, error.message, payload);
     }
   }
 
@@ -233,9 +211,7 @@ export class WebhookController {
     const payment = payload.payment;
     const orderId = payment.notes?.orderId;
 
-    log.info(
-      `[Webhook:Failed] Payment ${payment.id} failed for order ${orderId}`,
-    );
+    log.info(`[Webhook:Failed] Payment ${payment.id} failed for order ${orderId}`);
 
     if (!orderId) {
       log.warn("[Webhook:Failed] Order ID not found in payment notes");
@@ -246,7 +222,7 @@ export class WebhookController {
       // Update order with payment failure
       const order = await this.orderService.handlePaymentFailure(
         orderId,
-        payment.reason || payment.error_code,
+        payment.reason || payment.error_code
       );
 
       log.info(`[Webhook:Failed] Order ${orderId} marked as payment failed`);
@@ -267,17 +243,9 @@ export class WebhookController {
       //   reason: payment.reason,
       // });
     } catch (error: any) {
-      log.error(
-        `[Webhook:Failed] Error handling payment failure for order ${orderId}:`,
-        error,
-      );
+      log.error(`[Webhook:Failed] Error handling payment failure for order ${orderId}:`, error);
 
-      await this.logWebhookError(
-        "payment.failed",
-        orderId,
-        error.message,
-        payload,
-      );
+      await this.logWebhookError("payment.failed", orderId, error.message, payload);
     }
   }
 
@@ -289,9 +257,7 @@ export class WebhookController {
     const refund = payload.refund;
     const paymentId = refund.payment_id;
 
-    log.info(
-      `[Webhook:Refund] Refund ${refund.id} for payment ${paymentId}`,
-    );
+    log.info(`[Webhook:Refund] Refund ${refund.id} for payment ${paymentId}`);
 
     try {
       // Find order by payment ID and mark as refunded
@@ -300,17 +266,12 @@ export class WebhookController {
       });
 
       if (!order) {
-        log.warn(
-          `[Webhook:Refund] Order not found for payment ${paymentId}`,
-        );
+        log.warn(`[Webhook:Refund] Order not found for payment ${paymentId}`);
         return;
       }
 
       // Update order status
-      await this.refundService.confirmRefundCompletion(
-        order._id.toString(),
-        refund.id,
-      );
+      await this.refundService.confirmRefundCompletion(order._id.toString(), refund.id);
 
       log.info(`[Webhook:Refund] Order ${order._id} marked as refunded`);
 
@@ -330,17 +291,9 @@ export class WebhookController {
       //   refundAmount: refund.amount / 100,
       // });
     } catch (error: any) {
-      log.error(
-        `[Webhook:Refund] Error processing refund ${refund.id}:`,
-        error,
-      );
+      log.error(`[Webhook:Refund] Error processing refund ${refund.id}:`, error);
 
-      await this.logWebhookError(
-        "refund.created",
-        paymentId,
-        error.message,
-        payload,
-      );
+      await this.logWebhookError("refund.created", paymentId, error.message, payload);
     }
   }
 
@@ -352,9 +305,7 @@ export class WebhookController {
     const refund = payload.refund;
     const paymentId = refund.payment_id;
 
-    log.info(
-      `[Webhook:Refund Failed] Refund ${refund.id} failed for payment ${paymentId}`,
-    );
+    log.info(`[Webhook:Refund Failed] Refund ${refund.id} failed for payment ${paymentId}`);
 
     try {
       // Find order and log failure for manual review
@@ -364,10 +315,7 @@ export class WebhookController {
 
       if (order) {
         // Log the failure with full context
-        log.error(
-          `[Webhook:Refund Failed] Order ${order._id} refund failed:`,
-          refund.reason_code,
-        );
+        log.error(`[Webhook:Refund Failed] Order ${order._id} refund failed:`, refund.reason_code);
 
         // Alert support team via email
         try {
@@ -391,10 +339,7 @@ export class WebhookController {
             `,
           });
         } catch (emailError) {
-          log.error(
-            "[Webhook:Refund Failed] Failed to send support alert email:",
-            emailError,
-          );
+          log.error("[Webhook:Refund Failed] Failed to send support alert email:", emailError);
         }
 
         // Notify the order owner of the failure
@@ -412,17 +357,11 @@ export class WebhookController {
             },
           });
         } catch (notifError) {
-          log.error(
-            "[Webhook:Refund Failed] Failed to notify order owner:",
-            notifError,
-          );
+          log.error("[Webhook:Refund Failed] Failed to notify order owner:", notifError);
         }
       }
     } catch (error: any) {
-      log.error(
-        `[Webhook:Refund Failed] Error handling refund failure:`,
-        error,
-      );
+      log.error(`[Webhook:Refund Failed] Error handling refund failure:`, error);
     }
   }
 
@@ -435,7 +374,7 @@ export class WebhookController {
     eventType: string,
     reference: string,
     errorMessage: string,
-    payload: any,
+    payload: any
   ): Promise<void> {
     const logEntry = {
       timestamp: new Date().toISOString(),
@@ -446,10 +385,7 @@ export class WebhookController {
         event: payload?.event,
         created_at: payload?.created_at,
         entityId:
-          payload?.payload?.payment?.id ||
-          payload?.payload?.refund?.id ||
-          payload?.id ||
-          "unknown",
+          payload?.payload?.payment?.id || payload?.payload?.refund?.id || payload?.id || "unknown",
       },
     };
 
@@ -474,10 +410,7 @@ interface WebhookErrorEntry {
 
 export class WebhookRecoveryService {
   /** In-memory log of recent webhook errors (survives until server restart) */
-  private static errorLog: Map<
-    string,
-    WebhookErrorEntry & { retryCount: number }
-  > = new Map();
+  private static errorLog: Map<string, WebhookErrorEntry & { retryCount: number }> = new Map();
 
   /**
    * Record a webhook error for potential retry
@@ -497,15 +430,11 @@ export class WebhookRecoveryService {
   /**
    * List all recorded webhook errors (for admin dashboard)
    */
-  static listErrors(): Array<
-    WebhookErrorEntry & { retryCount: number; key: string }
-  > {
-    return Array.from(WebhookRecoveryService.errorLog.entries()).map(
-      ([key, entry]) => ({
-        key,
-        ...entry,
-      }),
-    );
+  static listErrors(): Array<WebhookErrorEntry & { retryCount: number; key: string }> {
+    return Array.from(WebhookRecoveryService.errorLog.entries()).map(([key, entry]) => ({
+      key,
+      ...entry,
+    }));
   }
 
   /**
@@ -520,9 +449,7 @@ export class WebhookRecoveryService {
       throw new Error(`No recorded error found for key: ${errorKey}`);
     }
 
-    log.info(
-      `[WebhookRecovery] Retrying event ${entry.eventType} | ref: ${entry.reference}`,
-    );
+    log.info(`[WebhookRecovery] Retrying event ${entry.eventType} | ref: ${entry.reference}`);
 
     // Increment retry count
     entry.retryCount++;
@@ -539,30 +466,25 @@ export class WebhookRecoveryService {
           await orderService.confirmPayment(
             entry.reference,
             order.paymentGatewayPaymentId,
-            order.paymentGatewayOrderId,
+            order.paymentGatewayOrderId
           );
           log.info(
-            `[WebhookRecovery] Successfully recovered payment.captured for order ${entry.reference}`,
+            `[WebhookRecovery] Successfully recovered payment.captured for order ${entry.reference}`
           );
         }
       } else if (entry.eventType === "payment.failed") {
         await orderService.handlePaymentFailure(entry.reference);
         log.info(
-          `[WebhookRecovery] Successfully recovered payment.failed for order ${entry.reference}`,
+          `[WebhookRecovery] Successfully recovered payment.failed for order ${entry.reference}`
         );
       } else {
-        throw new Error(
-          `No retry handler implemented for event type: ${entry.eventType}`,
-        );
+        throw new Error(`No retry handler implemented for event type: ${entry.eventType}`);
       }
 
       // Remove from error log on successful retry
       WebhookRecoveryService.errorLog.delete(errorKey);
     } catch (retryError) {
-      log.error(
-        `[WebhookRecovery] Retry failed for ${errorKey}:`,
-        retryError,
-      );
+      log.error(`[WebhookRecovery] Retry failed for ${errorKey}:`, retryError);
       throw retryError;
     }
   }
@@ -580,7 +502,7 @@ export class WebhookRecoveryService {
 
     if (!order.paymentGatewayPaymentId) {
       log.warn(
-        `[WebhookRecovery] No gateway payment ID on order ${orderId} — skipping reconciliation`,
+        `[WebhookRecovery] No gateway payment ID on order ${orderId} — skipping reconciliation`
       );
       return true;
     }
@@ -594,7 +516,7 @@ export class WebhookRecoveryService {
 
     if (!gatewayStatus) {
       log.warn(
-        `[WebhookRecovery] Could not fetch gateway status for payment ${order.paymentGatewayPaymentId}`,
+        `[WebhookRecovery] Could not fetch gateway status for payment ${order.paymentGatewayPaymentId}`
       );
       return false;
     }
@@ -602,40 +524,30 @@ export class WebhookRecoveryService {
     const dbPaymentTx = await PaymentTransactionModel.findOne({ orderId });
     const dbStatus = dbPaymentTx?.status;
 
-    if (
-      gatewayStatus === PaymentStatus.CAPTURED &&
-      dbStatus !== PaymentStatus.CAPTURED
-    ) {
+    if (gatewayStatus === PaymentStatus.CAPTURED && dbStatus !== PaymentStatus.CAPTURED) {
       log.warn(
-        `[WebhookRecovery] Discrepancy detected for order ${orderId}: gateway=CAPTURED, db=${dbStatus}. Fixing...`,
+        `[WebhookRecovery] Discrepancy detected for order ${orderId}: gateway=CAPTURED, db=${dbStatus}. Fixing...`
       );
       const orderService = new OrderService();
       await orderService.confirmPayment(
         orderId,
         order.paymentGatewayPaymentId,
-        order.paymentGatewayOrderId,
+        order.paymentGatewayOrderId
       );
-      log.info(
-        `[WebhookRecovery] Fixed payment status for order ${orderId}`,
-      );
+      log.info(`[WebhookRecovery] Fixed payment status for order ${orderId}`);
       return true;
     }
 
-    if (
-      gatewayStatus === PaymentStatus.FAILED &&
-      dbStatus !== PaymentStatus.FAILED
-    ) {
+    if (gatewayStatus === PaymentStatus.FAILED && dbStatus !== PaymentStatus.FAILED) {
       log.warn(
-        `[WebhookRecovery] Discrepancy for order ${orderId}: gateway=FAILED, db=${dbStatus}. Fixing...`,
+        `[WebhookRecovery] Discrepancy for order ${orderId}: gateway=FAILED, db=${dbStatus}. Fixing...`
       );
       const orderService = new OrderService();
       await orderService.handlePaymentFailure(orderId);
       return true;
     }
 
-    log.info(
-      `[WebhookRecovery] Payment status consistent for order ${orderId}: ${dbStatus}`,
-    );
+    log.info(`[WebhookRecovery] Payment status consistent for order ${orderId}: ${dbStatus}`);
     return true;
   }
 
@@ -652,16 +564,14 @@ export class WebhookRecoveryService {
 
     if (!paymentTx.gatewayPaymentId) {
       log.warn(
-        `[WebhookRecovery] No gateway payment ID for order ${orderId} — skipping refund reconciliation`,
+        `[WebhookRecovery] No gateway payment ID for order ${orderId} — skipping refund reconciliation`
       );
       return true;
     }
 
     // If no refund has been initiated, nothing to reconcile
     if (paymentTx.status !== PaymentStatus.REFUND_INITIATED) {
-      log.info(
-        `[WebhookRecovery] No pending refund to reconcile for order ${orderId}`,
-      );
+      log.info(`[WebhookRecovery] No pending refund to reconcile for order ${orderId}`);
       return true;
     }
 
@@ -673,7 +583,7 @@ export class WebhookRecoveryService {
 
     if (!refundStatus) {
       log.warn(
-        `[WebhookRecovery] Could not fetch refund status for payment ${paymentTx.gatewayPaymentId}`,
+        `[WebhookRecovery] Could not fetch refund status for payment ${paymentTx.gatewayPaymentId}`
       );
       return false;
     }
@@ -683,7 +593,7 @@ export class WebhookRecoveryService {
       (paymentTx.status as string) !== PaymentStatus.REFUNDED
     ) {
       log.warn(
-        `[WebhookRecovery] Refund discrepancy for order ${orderId}: gateway=REFUNDED, db=${paymentTx.status}. Fixing...`,
+        `[WebhookRecovery] Refund discrepancy for order ${orderId}: gateway=REFUNDED, db=${paymentTx.status}. Fixing...`
       );
       paymentTx.status = PaymentStatus.REFUNDED;
       await paymentTx.save();
@@ -697,7 +607,7 @@ export class WebhookRecoveryService {
       log.info(`[WebhookRecovery] Fixed refund status for order ${orderId}`);
     } else {
       log.info(
-        `[WebhookRecovery] Refund status consistent for order ${orderId}: ${paymentTx.status}`,
+        `[WebhookRecovery] Refund status consistent for order ${orderId}: ${paymentTx.status}`
       );
     }
 

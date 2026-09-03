@@ -52,11 +52,7 @@ interface AdminDataTableProps<T> {
 }
 
 const alignClass = (align?: "left" | "right" | "center") =>
-  align === "right"
-    ? "text-right"
-    : align === "center"
-      ? "text-center"
-      : "text-left";
+  align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 
 /**
  * Generic, presentational admin list table: search input, sortable column
@@ -104,16 +100,16 @@ export function AdminDataTable<T>({
           key={1}
           type="button"
           onClick={() => pagination.onPageChange(1)}
-          className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
         >
           1
-        </button>,
+        </button>
       );
       if (start > 2) {
         buttons.push(
-          <span key="dots-start" className="px-1 text-slate-400 self-center">
+          <span key="dots-start" className="self-center px-1 text-slate-400">
             ...
-          </span>,
+          </span>
         );
       }
     }
@@ -126,14 +122,14 @@ export function AdminDataTable<T>({
           type="button"
           onClick={() => pagination.onPageChange(p)}
           className={cn(
-            "px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors",
+            "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
             current === p
               ? "bg-power-orange text-white"
-              : "border border-slate-300 text-slate-700 hover:bg-slate-50",
+              : "border border-slate-300 text-slate-700 hover:bg-slate-50"
           )}
         >
           {p}
-        </button>,
+        </button>
       );
     }
 
@@ -141,9 +137,9 @@ export function AdminDataTable<T>({
     if (end < total) {
       if (end < total - 1) {
         buttons.push(
-          <span key="dots-end" className="px-1 text-slate-400 self-center">
+          <span key="dots-end" className="self-center px-1 text-slate-400">
             ...
-          </span>,
+          </span>
         );
       }
       buttons.push(
@@ -151,10 +147,10 @@ export function AdminDataTable<T>({
           key={total}
           type="button"
           onClick={() => pagination.onPageChange(total)}
-          className="px-3 py-1.5 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
         >
           {total}
-        </button>,
+        </button>
       );
     }
 
@@ -167,19 +163,17 @@ export function AdminDataTable<T>({
         <div className="flex flex-wrap items-center justify-between gap-3">
           {search && (
             <div className="relative w-full max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={search.value}
                 onChange={(e) => search.onChange(e.target.value)}
                 placeholder={search.placeholder || "Search..."}
-                className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 bg-white py-2 pr-3 pl-9 text-sm focus:ring-2 focus:outline-none"
               />
             </div>
           )}
-          {toolbarExtra && (
-            <div className="flex items-center gap-2">{toolbarExtra}</div>
-          )}
+          {toolbarExtra && <div className="flex items-center gap-2">{toolbarExtra}</div>}
         </div>
       )}
 
@@ -193,17 +187,12 @@ export function AdminDataTable<T>({
                   <th
                     key={col.key}
                     className={cn(
-                      "px-4 py-3 text-xs font-semibold uppercase text-slate-500",
+                      "px-4 py-3 text-xs font-semibold text-slate-500 uppercase",
                       alignClass(col.align),
-                      col.sortable &&
-                        "cursor-pointer select-none hover:text-slate-700",
-                      col.className,
+                      col.sortable && "cursor-pointer select-none hover:text-slate-700",
+                      col.className
                     )}
-                    onClick={
-                      col.sortable && sort
-                        ? () => sort.onChange(col.key)
-                        : undefined
-                    }
+                    onClick={col.sortable && sort ? () => sort.onChange(col.key) : undefined}
                   >
                     <span className="inline-flex items-center gap-1">
                       {col.header}
@@ -227,19 +216,13 @@ export function AdminDataTable<T>({
           <tbody className="divide-y divide-slate-100 bg-white">
             {loading ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-10 text-center text-slate-500"
-                >
+                <td colSpan={columns.length} className="px-4 py-10 text-center text-slate-500">
                   Loading...
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-10 text-center text-slate-500"
-                >
+                <td colSpan={columns.length} className="px-4 py-10 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -248,17 +231,12 @@ export function AdminDataTable<T>({
                 <tr
                   key={getRowKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={cn(
-                    onRowClick && "cursor-pointer hover:bg-slate-50",
-                  )}
+                  className={cn(onRowClick && "cursor-pointer hover:bg-slate-50")}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={cn(
-                        "px-4 py-3 text-slate-700",
-                        alignClass(col.align),
-                      )}
+                      className={cn("px-4 py-3 text-slate-700", alignClass(col.align))}
                     >
                       {col.render(row)}
                     </td>
@@ -271,20 +249,17 @@ export function AdminDataTable<T>({
       </div>
 
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border border-slate-200 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-slate-500 text-center sm:text-left">
+        <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-center text-xs text-slate-500 sm:text-left">
             Page {pagination.page} of {pagination.totalPages}
-            {typeof pagination.total === "number" &&
-              ` · ${pagination.total} total`}
+            {typeof pagination.total === "number" && ` · ${pagination.total} total`}
           </p>
           <div className="flex items-center justify-center gap-2">
             <button
               type="button"
-              onClick={() =>
-                pagination.onPageChange(Math.max(1, pagination.page - 1))
-              }
+              onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
               disabled={pagination.page <= 1}
-              className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -294,12 +269,10 @@ export function AdminDataTable<T>({
             <button
               type="button"
               onClick={() =>
-                pagination.onPageChange(
-                  Math.min(pagination.totalPages, pagination.page + 1),
-                )
+                pagination.onPageChange(Math.min(pagination.totalPages, pagination.page + 1))
               }
               disabled={pagination.page >= pagination.totalPages}
-              className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

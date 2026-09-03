@@ -1,10 +1,6 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import {
-  authMiddleware,
-  optionalAuthMiddleware,
-  adminMiddleware,
-} from "../../middleware/auth";
+import { authMiddleware, optionalAuthMiddleware, adminMiddleware } from "../../middleware/auth";
 import * as expert from "../controllers/expertsController";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
 import { cacheControl } from "../../middleware/cacheControl";
@@ -38,130 +34,88 @@ const expertMutationRateLimiter = rateLimit({
 
 // ── Admin (literal segments first so they aren't captured by /:expertId) ──────
 router.post("/admin", authMiddleware, adminMiddleware, expert.createExpert);
-router.get(
-  "/admin/all",
-  authMiddleware,
-  adminMiddleware,
-  expert.listExpertsAdmin,
-);
-router.patch(
-  "/admin/:expertId",
-  authMiddleware,
-  adminMiddleware,
-  expert.updateExpertAdmin,
-);
+router.get("/admin/all", authMiddleware, adminMiddleware, expert.listExpertsAdmin);
+router.patch("/admin/:expertId", authMiddleware, adminMiddleware, expert.updateExpertAdmin);
 router.patch(
   "/admin/:expertId/active",
   authMiddleware,
   adminMiddleware,
-  expert.setExpertActiveAdmin,
+  expert.setExpertActiveAdmin
 );
 router.get(
   "/admin/:expertId/sessions",
   authMiddleware,
   adminMiddleware,
-  expert.expertSessionsAdmin,
+  expert.expertSessionsAdmin
 );
-router.post(
-  "/admin/:expertId/approve",
-  authMiddleware,
-  adminMiddleware,
-  expert.approveExpertAdmin,
-);
-router.post(
-  "/admin/:expertId/reject",
-  authMiddleware,
-  adminMiddleware,
-  expert.rejectExpertAdmin,
-);
+router.post("/admin/:expertId/approve", authMiddleware, adminMiddleware, expert.approveExpertAdmin);
+router.post("/admin/:expertId/reject", authMiddleware, adminMiddleware, expert.rejectExpertAdmin);
 
 // ── Expert self-service (literal /me before /:expertId) ───────────────────────
 router.get("/me", authMiddleware, expert.getMyProfile);
-router.patch(
-  "/me",
-  expertMutationRateLimiter,
-  authMiddleware,
-  expert.updateMyProfile,
-);
-router.post(
-  "/me/review",
-  expertMutationRateLimiter,
-  authMiddleware,
-  expert.submitForReview,
-);
+router.patch("/me", expertMutationRateLimiter, authMiddleware, expert.updateMyProfile);
+router.post("/me/review", expertMutationRateLimiter, authMiddleware, expert.submitForReview);
 
 // ── Session routes (literal /sessions before /:expertId) ─────────────────────
 router.get("/sessions/mine", authMiddleware, expert.mySessions);
 router.get("/sessions/expert", authMiddleware, expert.expertSessions);
-router.post(
-  "/sessions/:sessionId/reconcile",
-  authMiddleware,
-  expert.reconcileSession,
-);
+router.post("/sessions/:sessionId/reconcile", authMiddleware, expert.reconcileSession);
 router.get("/sessions/:sessionId", authMiddleware, expert.getSession);
-router.get(
-  "/sessions/:sessionId/player-detail",
-  authMiddleware,
-  expert.getSessionPlayerDetail,
-);
-router.get(
-  "/sessions/:sessionId/invoice/pdf",
-  authMiddleware,
-  expert.downloadSessionInvoicePdf,
-);
+router.get("/sessions/:sessionId/player-detail", authMiddleware, expert.getSessionPlayerDetail);
+router.get("/sessions/:sessionId/invoice/pdf", authMiddleware, expert.downloadSessionInvoicePdf);
 router.patch(
   "/sessions/:sessionId/schedule",
   expertMutationRateLimiter,
   authMiddleware,
-  expert.scheduleSession,
+  expert.scheduleSession
 );
 router.patch(
   "/sessions/:sessionId/meeting-link",
   expertMutationRateLimiter,
   authMiddleware,
-  expert.updateMeetingLink,
+  expert.updateMeetingLink
 );
 router.post(
   "/sessions/:sessionId/complete",
   expertMutationRateLimiter,
   authMiddleware,
-  expert.completeSession,
+  expert.completeSession
 );
 router.patch(
   "/sessions/:sessionId/mom",
   expertMutationRateLimiter,
   authMiddleware,
-  expert.updateSessionMom,
+  expert.updateSessionMom
 );
 router.post(
   "/sessions/:sessionId/respond",
   expertMutationRateLimiter,
   authMiddleware,
-  expert.respondSession,
+  expert.respondSession
 );
 router.post(
   "/sessions/:sessionId/cancel",
   expertMutationRateLimiter,
   authMiddleware,
-  expert.cancelSession,
+  expert.cancelSession
 );
 router.post(
   "/sessions/:sessionId/review",
   expertMutationRateLimiter,
   authMiddleware,
-  expert.reviewSession,
+  expert.reviewSession
 );
 router.post(
   "/sessions/:sessionId/refund-done",
   authMiddleware,
   adminMiddleware,
-  expert.refundDoneAdmin,
+  expert.refundDoneAdmin
 );
 router.post(
   "/sessions/:sessionId/hide-review",
   authMiddleware,
   adminMiddleware,
-  expert.hideReviewAdmin,
+  expert.hideReviewAdmin
 );
 
 // ── Public discovery + booking ───────────────────────────────────────────────
@@ -173,22 +127,12 @@ router.get(
   optionalAuthMiddleware,
   cacheControl(60, "public"),
   cacheResponse(60),
-  expert.getExperts,
+  expert.getExperts
 );
 // Public expert detail — 60s Redis cache, same pattern as venues/coaches.
-router.get(
-  "/:expertId",
-  cacheControl(60, "public"),
-  cacheResponse(60),
-  expert.getExpert,
-);
+router.get("/:expertId", cacheControl(60, "public"), cacheResponse(60), expert.getExpert);
 router.get("/:expertId/reviews", expert.getReviews);
 router.get("/:expertId/availability", expert.getAvailability);
-router.post(
-  "/:expertId/sessions",
-  bookingRateLimiter,
-  authMiddleware,
-  expert.initiateSession,
-);
+router.post("/:expertId/sessions", bookingRateLimiter, authMiddleware, expert.initiateSession);
 
 export default router;

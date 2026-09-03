@@ -35,7 +35,7 @@ function dismissTraitsNudge(dependentId: string): void {
  * session. Session-scoped (not permanent) so a quick dismiss doesn't silence
  * it forever — mirrors the persona banner's dismiss pattern. */
 export function shouldShowTraitsNudge(
-  dependent: (DependentCompletionProfile & { _id?: string }) | null | undefined,
+  dependent: (DependentCompletionProfile & { _id?: string }) | null | undefined
 ): boolean {
   if (!dependent?._id) return false;
   if (readDismissed().includes(dependent._id)) return false;
@@ -68,7 +68,7 @@ export function CompleteProfileNudge({
     window.open(
       `/dashboard/my-profile?editDependent=${dependentId}&step=physical`,
       "_blank",
-      "noopener,noreferrer",
+      "noopener,noreferrer"
     );
     dismissTraitsNudge(dependentId);
     onProceed();
@@ -77,13 +77,13 @@ export function CompleteProfileNudge({
   return (
     <Modal isOpen={isOpen} onClose={handleSkip} title="A few more details?" size="sm">
       <div className="flex flex-col items-center gap-3 py-2 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-power-orange/10">
-          <Sparkles className="h-6 w-6 text-power-orange" />
+        <div className="bg-power-orange/10 flex h-12 w-12 items-center justify-center rounded-2xl">
+          <Sparkles className="text-power-orange h-6 w-6" />
         </div>
         <p className="text-sm text-slate-600">
-          {dependentName}&apos;s profile is missing a few personality and play-style
-          details. Adding them helps us personalise guidance and gives the expert
-          better context — takes about a minute, in a new tab.
+          {dependentName}&apos;s profile is missing a few personality and play-style details. Adding
+          them helps us personalise guidance and gives the expert better context — takes about a
+          minute, in a new tab.
         </p>
       </div>
       <div className="mt-4 flex flex-col gap-2">

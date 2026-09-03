@@ -106,7 +106,7 @@ const slotSchema = new Schema<CoachOfferingSlot>(
       max: [480, "A session cannot exceed 8 hours"],
     },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const coachOfferingSchema = new Schema<CoachOfferingDocument>(
@@ -184,7 +184,7 @@ const coachOfferingSchema = new Schema<CoachOfferingDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 coachOfferingSchema.virtual("id").get(function (this: CoachOfferingDocument) {
@@ -201,7 +201,7 @@ coachOfferingSchema.pre<CoachOfferingDocument>("validate", function () {
     this.invalidate(
       "capacity",
       "A batch cannot be delivered at a student's location — eight students " +
-        "cannot share one home. Use a venue or online for capacity > 1.",
+        "cannot share one home. Use a venue or online for capacity > 1."
     );
   }
 
@@ -210,10 +210,7 @@ coachOfferingSchema.pre<CoachOfferingDocument>("validate", function () {
   }
 
   if (this.deliveryKind === "ONLINE" && !this.onlinePlatform?.trim()) {
-    this.invalidate(
-      "onlinePlatform",
-      "An online offering must say which platform it runs on",
-    );
+    this.invalidate("onlinePlatform", "An online offering must say which platform it runs on");
   }
 
   if (this.endDate && this.startDate && this.endDate <= this.startDate) {
@@ -258,5 +255,5 @@ coachOfferingSchema.index({
 
 export const CoachOffering = mongoose.model<CoachOfferingDocument>(
   "CoachOffering",
-  coachOfferingSchema,
+  coachOfferingSchema
 );

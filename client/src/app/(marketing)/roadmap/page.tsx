@@ -62,8 +62,7 @@ import { sectionDomId } from "@/modules/pathway/utils/sectionIds";
 // `position: sticky` for every descendant on the page.
 
 /** Every raised card on this page. One definition, so they cannot drift apart. */
-const SURFACE =
-  "rounded-2xl border border-white/70 bg-white/80 backdrop-blur-sm premium-shadow";
+const SURFACE = "rounded-2xl border border-white/70 bg-white/80 backdrop-blur-sm premium-shadow";
 
 /** The same, plus the lift that marks a card as a link. */
 const SURFACE_LINK = `${SURFACE} transition duration-300 hover:-translate-y-0.5 hover:border-power-orange/40 hover:shadow-lg`;
@@ -123,7 +122,7 @@ function SectionHead({
 }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-power-orange">
+      <p className="text-power-orange text-[11px] font-black tracking-[0.2em] uppercase">
         {eyebrow}
       </p>
       <h2 className="font-title mt-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -163,25 +162,23 @@ export default async function PathwaysIndexPage() {
           pushed the only thing a parent can actually click below the fold on a
           laptop: a page whose job is "pick your sport" opened with no sport in
           sight. */}
-      <section className="relative pb-14 pt-14 sm:pb-16 sm:pt-20">
-        <AmbientBlob className="-right-24 -top-10 h-80 w-80 bg-orange-100/50" />
-        <AmbientBlob className="-left-28 top-40 h-72 w-72 bg-emerald-100/40" />
+      <section className="relative pt-14 pb-14 sm:pt-20 sm:pb-16">
+        <AmbientBlob className="-top-10 -right-24 h-80 w-80 bg-orange-100/50" />
+        <AmbientBlob className="top-40 -left-28 h-72 w-72 bg-emerald-100/40" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* No eyebrow badge: "Sports Pathways" restated the headline a line
               above it, and cost a row to do it. */}
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="font-title text-[2rem] font-bold leading-[1.1] tracking-[-0.02em] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
+            <h1 className="font-title text-[2rem] leading-[1.1] font-bold tracking-[-0.02em] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
               Starting a sport is easy.
               {/* The turn is the whole headline, so it gets its own line rather
                   than wrapping wherever the viewport happens to break it. */}
-              <span className="mt-1 block text-slate-400">
-                Navigating the journey is not.
-              </span>
+              <span className="mt-1 block text-slate-400">Navigating the journey is not.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Coaches, academies, competitions, costs, education — the answers
-              are scattered everywhere. We put them in one place, stage by stage.
+              Coaches, academies, competitions, costs, education — the answers are scattered
+              everywhere. We put them in one place, stage by stage.
             </p>
           </div>
 
@@ -225,8 +222,8 @@ export default async function PathwaysIndexPage() {
               eyebrow="Straight to the answer"
               title="Questions other parents already asked"
             >
-              Answered inside the pathway, at the stage they come up. Open one
-              and you land on the answer.
+              Answered inside the pathway, at the stage they come up. Open one and you land on the
+              answer.
             </SectionHead>
 
             {/* Three columns at nine questions — two would run to five rows and
@@ -239,20 +236,20 @@ export default async function PathwaysIndexPage() {
                     // stage in the HTML; the hash then scrolls to the questions
                     // section within it. Both work without JavaScript.
                     href={`/roadmap/${item.sportSlug}?stage=${encodeURIComponent(
-                      item.stageKey,
+                      item.stageKey
                     )}#${sectionDomId("questions")}`}
                     className={`group flex h-full flex-col justify-between gap-3 p-4 ${SURFACE_LINK}`}
                   >
-                    <span className="text-[15px] font-bold leading-snug text-slate-900 transition group-hover:text-power-orange">
+                    <span className="group-hover:text-power-orange text-[15px] leading-snug font-bold text-slate-900 transition">
                       {item.question}
                     </span>
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[12px] font-semibold uppercase tracking-wider text-slate-400">
+                      <span className="truncate text-[12px] font-semibold tracking-wider text-slate-400 uppercase">
                         {item.sportName} · {item.stageName}
                       </span>
                       <ArrowRight
                         aria-hidden
-                        className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-power-orange"
+                        className="group-hover:text-power-orange h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5"
                       />
                     </span>
                   </Link>
@@ -275,8 +272,8 @@ export default async function PathwaysIndexPage() {
             eyebrow="The same shape, every time"
             title="Every stage answers the same five questions"
           >
-            Learn the shape once and it never moves again — whatever the sport,
-            whatever your child&apos;s age.
+            Learn the shape once and it never moves again — whatever the sport, whatever your
+            child&apos;s age.
           </SectionHead>
 
           {/* The rail behind the numbers turns five boxes into one sequence.
@@ -291,12 +288,10 @@ export default async function PathwaysIndexPage() {
             <ol className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
               {BUCKETS.map((bucket) => (
                 <li key={bucket.n} className="flex h-full flex-col">
-                  <span className="font-title mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white text-[13px] font-extrabold text-power-orange shadow-sm">
+                  <span className="font-title text-power-orange mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white text-[13px] font-extrabold shadow-sm">
                     {bucket.n}
                   </span>
-                  <p className="font-title text-[15px] font-bold text-slate-900">
-                    {bucket.title}
-                  </p>
+                  <p className="font-title text-[15px] font-bold text-slate-900">{bucket.title}</p>
                   <p className="mt-1.5 text-[13.5px] leading-relaxed text-slate-600">
                     {bucket.body}
                   </p>
@@ -315,31 +310,24 @@ export default async function PathwaysIndexPage() {
               row of clickable things in a section where nothing is clickable. */}
           <div className="mx-auto mt-12 grid max-w-4xl gap-8 sm:grid-cols-2 sm:gap-10">
             <div>
-              <span
-                aria-hidden
-                className="block h-0.5 w-8 rounded-full bg-power-orange"
-              />
+              <span aria-hidden className="bg-power-orange block h-0.5 w-8 rounded-full" />
               <h3 className="font-title mt-4 text-[17px] font-bold text-slate-900">
                 Why sport matters
               </h3>
               <p className="mt-2 text-[14.5px] leading-relaxed text-slate-600">
-                There is no single right way to start. Some children find their
-                sport by playing, others need guiding to it — what matters is
-                choosing with your eyes open.
+                There is no single right way to start. Some children find their sport by playing,
+                others need guiding to it — what matters is choosing with your eyes open.
               </p>
             </div>
             <div>
-              <span
-                aria-hidden
-                className="block h-0.5 w-8 rounded-full bg-emerald-500"
-              />
+              <span aria-hidden className="block h-0.5 w-8 rounded-full bg-emerald-500" />
               <h3 className="font-title mt-4 text-[17px] font-bold text-slate-900">
                 Why the journey matters
               </h3>
               <p className="mt-2 text-[14.5px] leading-relaxed text-slate-600">
-                The hard part is not information, it is finding the right
-                information at the right time. Every pathway is written with
-                coaches, experts and parents who have already walked it.
+                The hard part is not information, it is finding the right information at the right
+                time. Every pathway is written with coaches, experts and parents who have already
+                walked it.
               </p>
             </div>
           </div>
@@ -353,7 +341,7 @@ export default async function PathwaysIndexPage() {
           and the "PowerMySport helps you grow faster" pair, which between them
           asked for a long scroll and offered no specific action. */}
       <section className="reveal-on-scroll relative overflow-hidden border-y border-white/60 bg-white/50 py-16 sm:py-20">
-        <AmbientBlob className="-right-24 top-10 h-72 w-72 bg-orange-100/40" />
+        <AmbientBlob className="top-10 -right-24 h-72 w-72 bg-orange-100/40" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHead
@@ -375,13 +363,13 @@ export default async function PathwaysIndexPage() {
                   >
                     <Icon aria-hidden className="h-5 w-5" />
                   </span>
-                  <span className="font-title text-[17px] font-bold leading-snug text-slate-900">
+                  <span className="font-title text-[17px] leading-snug font-bold text-slate-900">
                     {step.title}
                   </span>
                   <span className="mt-2.5 flex-1 text-[14px] leading-relaxed text-slate-600">
                     {step.body}
                   </span>
-                  <span className="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold text-power-orange">
+                  <span className="text-power-orange mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold">
                     {step.cta}
                     <ArrowRight
                       aria-hidden

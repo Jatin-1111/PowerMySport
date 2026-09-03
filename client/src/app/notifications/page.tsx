@@ -2,45 +2,38 @@
 
 import { Container } from "@/components/layout/Container";
 import {
-    notificationApi,
-    type Notification,
-    type NotificationChannelPreferences,
-    type NotificationPreferences,
+  notificationApi,
+  type Notification,
+  type NotificationChannelPreferences,
+  type NotificationPreferences,
 } from "@/lib/api/notification";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { cn } from "@/utils/cn";
 import { formatDistanceToNow } from "@/utils/date";
 import {
-    Bell,
-    Calendar,
-    Check,
-    CheckCheck,
-    ChevronLeft,
-    ChevronRight,
-    CreditCard,
-    ExternalLink,
-    Inbox,
-    Loader2,
-    MessageCircle,
-    Settings,
-    Star,
-    Trash2,
-    Users,
-    X,
-    Zap,
+  Bell,
+  Calendar,
+  Check,
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  ExternalLink,
+  Inbox,
+  Loader2,
+  MessageCircle,
+  Settings,
+  Star,
+  Trash2,
+  Users,
+  X,
+  Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 
 type FilterType =
-  | "all"
-  | "unread"
-  | "social"
-  | "booking"
-  | "payment"
-  | "review"
-  | "admin"
-  | "community";
+  "all" | "unread" | "social" | "booking" | "payment" | "review" | "admin" | "community";
 
 // --- Constants & Helpers ---
 
@@ -203,27 +196,21 @@ const getPaginationRange = (currentPage: number, totalPages: number) => {
 };
 
 // --- Toggle Switch ---
-function Toggle({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: () => void;
-}) {
+function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
       onClick={onChange}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
-        checked ? "bg-power-orange" : "bg-slate-200",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none",
+        checked ? "bg-power-orange" : "bg-slate-200"
       )}
     >
       <span
         className={cn(
-          "inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transform transition-transform duration-200",
-          checked ? "translate-x-4.5" : "translate-x-0.5",
+          "inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200",
+          checked ? "translate-x-4.5" : "translate-x-0.5"
         )}
         style={{ transform: checked ? "translateX(18px)" : "translateX(2px)" }}
       />
@@ -235,13 +222,13 @@ function Toggle({
 function NotificationSkeleton() {
   return (
     <div className="flex items-start gap-3 px-4 py-4 sm:px-5 sm:py-5">
-      <div className="h-10 w-10 rounded-xl bg-slate-100 animate-pulse shrink-0" />
+      <div className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-slate-100" />
       <div className="flex-1 space-y-2 pt-0.5">
-        <div className="h-4 bg-slate-100 rounded-lg w-2/3 animate-pulse" />
-        <div className="h-3 bg-slate-100 rounded-lg w-full animate-pulse" />
-        <div className="h-3 bg-slate-100 rounded-lg w-1/3 animate-pulse" />
+        <div className="h-4 w-2/3 animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-3 w-full animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-3 w-1/3 animate-pulse rounded-lg bg-slate-100" />
       </div>
-      <div className="h-8 w-8 bg-slate-100 rounded-lg animate-pulse shrink-0" />
+      <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-slate-100" />
     </div>
   );
 }
@@ -265,11 +252,9 @@ function NotificationCard({
   return (
     <div
       className={cn(
-        "group relative flex items-start gap-3 sm:gap-4 px-4 py-4 sm:px-5 sm:py-4 transition-all duration-150",
+        "group relative flex items-start gap-3 px-4 py-4 transition-all duration-150 sm:gap-4 sm:px-5 sm:py-4",
         "border-l-2",
-        isUnread
-          ? [config.accent, config.unreadBg]
-          : "border-l-transparent hover:bg-slate-50/60",
+        isUnread ? [config.accent, config.unreadBg] : "border-l-transparent hover:bg-slate-50/60"
       )}
     >
       {/* Icon */}
@@ -278,24 +263,20 @@ function NotificationCard({
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <p
             className={cn(
-              "text-sm leading-snug text-slate-800 truncate pr-2",
-              isUnread && "font-semibold text-slate-900",
+              "truncate pr-2 text-sm leading-snug text-slate-800",
+              isUnread && "font-semibold text-slate-900"
             )}
           >
             {notification.title}
           </p>
-          {isUnread && (
-            <span
-              className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", config.dot)}
-            />
-          )}
+          {isUnread && <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", config.dot)} />}
         </div>
 
-        <p className="mt-0.5 text-sm text-slate-500 line-clamp-2 leading-relaxed">
+        <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-slate-500">
           {notification.message}
         </p>
 
@@ -303,7 +284,7 @@ function NotificationCard({
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-[11px] font-medium capitalize",
-              config.badge,
+              config.badge
             )}
           >
             {notification.category.toLowerCase()}
@@ -316,7 +297,7 @@ function NotificationCard({
               href={action.href}
               target="_blank"
               rel="noreferrer"
-              className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-power-orange hover:text-orange-600 hover:underline transition-colors"
+              className="text-power-orange ml-auto inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:text-orange-600 hover:underline"
             >
               {action.label}
               <ExternalLink className="h-3 w-3" />
@@ -324,7 +305,7 @@ function NotificationCard({
           ) : (
             <button
               onClick={() => router.push(action.href)}
-              className="ml-auto text-xs font-semibold text-power-orange hover:text-orange-600 hover:underline transition-colors"
+              className="text-power-orange ml-auto text-xs font-semibold transition-colors hover:text-orange-600 hover:underline"
             >
               {action.label} →
             </button>
@@ -336,7 +317,7 @@ function NotificationCard({
       <div
         className={cn(
           "flex shrink-0 items-center gap-1 transition-all",
-          "opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
+          "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         )}
       >
         {isUnread && (
@@ -372,21 +353,19 @@ function PreferencesPanel({
   onClose: () => void;
   onToggle: (
     channel: "email" | "push" | "inApp",
-    key: keyof NotificationChannelPreferences,
+    key: keyof NotificationChannelPreferences
   ) => void;
 }) {
   const channels = ["inApp", "push", "email"] as const;
   const channelLabels = { inApp: "In-App", push: "Push", email: "Email" };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden mb-5">
+    <div className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
       {/* Panel Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 sm:px-5 border-b border-slate-100">
+      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5 sm:px-5">
         <div className="flex items-center gap-2">
           <Settings className="h-4 w-4 text-slate-500" />
-          <span className="text-sm font-semibold text-slate-800">
-            Notification Preferences
-          </span>
+          <span className="text-sm font-semibold text-slate-800">Notification Preferences</span>
           {isSaving && (
             <span className="flex items-center gap-1 text-xs text-slate-400">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -396,7 +375,7 @@ function PreferencesPanel({
         </div>
         <button
           onClick={onClose}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
         >
           <X className="h-4 w-4" />
         </button>
@@ -404,16 +383,16 @@ function PreferencesPanel({
 
       {/* Grid */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[500px]">
+        <table className="w-full min-w-[500px] text-sm">
           <thead>
             <tr className="border-b border-slate-100">
-              <th className="px-4 sm:px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-full">
+              <th className="w-full px-4 py-3 text-left text-xs font-semibold tracking-wider text-slate-500 uppercase sm:px-5">
                 Notification Type
               </th>
               {channels.map((ch) => (
                 <th
                   key={ch}
-                  className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-4 py-3 text-center text-xs font-semibold tracking-wider whitespace-nowrap text-slate-500 uppercase"
                 >
                   {channelLabels[ch]}
                 </th>
@@ -422,11 +401,8 @@ function PreferencesPanel({
           </thead>
           <tbody className="divide-y divide-slate-50">
             {preferenceKeys.map((pref, idx) => (
-              <tr
-                key={pref.key}
-                className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"}
-              >
-                <td className="px-4 sm:px-5 py-3 text-sm text-slate-700 font-medium">
+              <tr key={pref.key} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
+                <td className="px-4 py-3 text-sm font-medium text-slate-700 sm:px-5">
                   {pref.label}
                 </td>
                 {channels.map((ch) => (
@@ -479,23 +455,13 @@ function NotificationsPageContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showPreferences, setShowPreferences] = useState(false);
-  const [preferences, setPreferences] =
-    useState<NotificationPreferences | null>(null);
+  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
 
   useEffect(() => {
-    const intent = (
-      searchParams.get("intent") || ""
-    ).toLowerCase() as FilterType;
-    const valid: FilterType[] = [
-      "community",
-      "booking",
-      "social",
-      "payment",
-      "review",
-      "admin",
-    ];
+    const intent = (searchParams.get("intent") || "").toLowerCase() as FilterType;
+    const valid: FilterType[] = ["community", "booking", "social", "payment", "review", "admin"];
     if (valid.includes(intent)) setFilter(intent);
   }, [searchParams]);
 
@@ -526,11 +492,7 @@ function NotificationsPageContent() {
       const filters: Record<string, boolean | string> = {};
       if (filter === "unread") filters.isRead = false;
       else if (filter !== "all") filters.category = filter.toUpperCase();
-      const response = await notificationApi.getNotifications(
-        page,
-        20,
-        filters,
-      );
+      const response = await notificationApi.getNotifications(page, 20, filters);
       setNotifications(response.data);
       setTotalPages(response.pagination.pages);
     } catch (e) {
@@ -552,9 +514,7 @@ function NotificationsPageContent() {
   const handleMarkAsRead = async (id: string) => {
     try {
       await notificationApi.markAsRead(id);
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)),
-      );
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (e) {
       console.error(e);
@@ -577,8 +537,7 @@ function NotificationsPageContent() {
 
   const handleDelete = async (id: string) => {
     try {
-      const wasUnread =
-        notifications.find((n) => n._id === id)?.isRead === false;
+      const wasUnread = notifications.find((n) => n._id === id)?.isRead === false;
       await notificationApi.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n._id !== id));
       if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
@@ -589,7 +548,7 @@ function NotificationsPageContent() {
 
   const togglePreference = async (
     channel: "email" | "push" | "inApp",
-    key: keyof NotificationChannelPreferences,
+    key: keyof NotificationChannelPreferences
   ) => {
     if (!preferences) return;
     const next = {
@@ -616,31 +575,31 @@ function NotificationsPageContent() {
       <Container>
         {/* Page Header */}
         <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                 Notifications
               </h1>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="mt-1 text-sm text-slate-400">
                 {unreadCount > 0
                   ? `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
                   : "You're all caught up"}
               </p>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
                   disabled={isMarkingAllRead}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isMarkingAllRead ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <CheckCheck className="h-4 w-4" />
                   )}
-                  <span className="hidden xs:inline">Mark all read</span>
+                  <span className="xs:inline hidden">Mark all read</span>
                 </button>
               )}
               <button
@@ -649,11 +608,11 @@ function NotificationsPageContent() {
                   "inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-medium shadow-sm transition",
                   showPreferences
                     ? "border-orange-200 bg-orange-50 text-orange-600"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 )}
               >
                 <Settings className="h-4 w-4" />
-                <span className="hidden xs:inline">Preferences</span>
+                <span className="xs:inline hidden">Preferences</span>
               </button>
             </div>
           </div>
@@ -670,7 +629,7 @@ function NotificationsPageContent() {
 
           {/* Filter Tabs */}
           <div className="relative">
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+            <div className="-mx-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto px-1 pb-1">
               {filterOptions.map((option) => {
                 const Icon = option.icon;
                 const isActive = filter === option.value;
@@ -682,10 +641,10 @@ function NotificationsPageContent() {
                       setPage(1);
                     }}
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium whitespace-nowrap shrink-0 transition-all duration-150",
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium whitespace-nowrap transition-all duration-150",
                       isActive
-                        ? "border-orange-300 bg-power-orange text-white shadow-sm shadow-orange-200"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                        ? "bg-power-orange border-orange-300 text-white shadow-sm shadow-orange-200"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -693,10 +652,8 @@ function NotificationsPageContent() {
                     {option.value === "unread" && unreadCount > 0 && (
                       <span
                         className={cn(
-                          "rounded-full px-1.5 py-0 text-[11px] font-bold leading-5 min-w-[20px] text-center",
-                          isActive
-                            ? "bg-white/20 text-white"
-                            : "bg-red-500 text-white",
+                          "min-w-[20px] rounded-full px-1.5 py-0 text-center text-[11px] leading-5 font-bold",
+                          isActive ? "bg-white/20 text-white" : "bg-red-500 text-white"
                         )}
                       >
                         {unreadCount}
@@ -710,7 +667,7 @@ function NotificationsPageContent() {
         </div>
 
         {/* Notifications Container */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
           {loading ? (
             <div className="divide-y divide-slate-100">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -718,14 +675,12 @@ function NotificationsPageContent() {
               ))}
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-              <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+            <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
                 <Inbox className="h-8 w-8 text-slate-300" />
               </div>
-              <p className="text-base font-semibold text-slate-700">
-                No notifications
-              </p>
-              <p className="text-sm text-slate-400 mt-1 max-w-xs">
+              <p className="text-base font-semibold text-slate-700">No notifications</p>
+              <p className="mt-1 max-w-xs text-sm text-slate-400">
                 {filter === "unread"
                   ? "You're all caught up! Nothing left to read."
                   : "No notifications here yet. Check back later."}
@@ -751,7 +706,7 @@ function NotificationsPageContent() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -761,7 +716,7 @@ function NotificationsPageContent() {
                 pageNum === "..." ? (
                   <span
                     key={`ellipsis-${idx}`}
-                    className="flex h-9 w-9 items-center justify-center text-slate-400 text-sm"
+                    className="flex h-9 w-9 items-center justify-center text-sm text-slate-400"
                   >
                     ···
                   </span>
@@ -772,20 +727,20 @@ function NotificationsPageContent() {
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-medium transition-all",
                       page === pageNum
-                        ? "border-orange-300 bg-power-orange text-white shadow-sm shadow-orange-200"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                        ? "bg-power-orange border-orange-300 text-white shadow-sm shadow-orange-200"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     )}
                   >
                     {pageNum}
                   </button>
-                ),
+                )
               )}
             </div>
 
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

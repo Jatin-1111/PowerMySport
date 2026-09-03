@@ -61,7 +61,7 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
           setActiveId(visible[0].target.id);
         }
       },
-      { rootMargin: "-96px 0px -70% 0px", threshold: 0 },
+      { rootMargin: "-96px 0px -70% 0px", threshold: 0 }
     );
 
     headings.forEach((heading) => observerRef.current?.observe(heading));
@@ -111,8 +111,8 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
             className={cn(
               "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm leading-snug transition-colors",
               activeId === id
-                ? "bg-power-orange/10 font-semibold text-power-orange"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                ? "bg-power-orange/10 text-power-orange font-semibold"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             )}
           >
             <Icon size={14} className="shrink-0" />
@@ -154,19 +154,16 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
           instead of floating on top of the footer. Aligned to the page's own
           container so it lines up with the reserved grid gap. */}
       <div
-        className={cn(
-          "pointer-events-none inset-x-0 z-10 hidden lg:block",
-          mode.position,
-        )}
+        className={cn("pointer-events-none inset-x-0 z-10 hidden lg:block", mode.position)}
         style={{ top: mode.top }}
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <nav
             ref={navRef}
             aria-label="Table of contents"
-            className="pointer-events-auto w-[280px] max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
+            className="pointer-events-auto max-h-[calc(100vh-8rem)] w-[280px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
           >
-            <p className="mb-2 px-2.5 pt-1.5 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <p className="mb-2 px-2.5 pt-1.5 text-xs font-bold tracking-widest text-slate-400 uppercase">
               On this page
             </p>
             {list}

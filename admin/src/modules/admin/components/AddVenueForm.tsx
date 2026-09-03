@@ -257,9 +257,7 @@ export function AddVenueForm() {
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -374,8 +372,7 @@ export function AddVenueForm() {
       const phoneRegex = /^[+]?[0-9\s().\-]+$/;
       const digitsOnly = formData.ownerPhone.replace(/\D/g, "");
       if (digitsOnly.length < 10) {
-        newErrors.ownerPhone =
-          "Owner mobile number must have at least 10 digits";
+        newErrors.ownerPhone = "Owner mobile number must have at least 10 digits";
       } else if (!phoneRegex.test(formData.ownerPhone)) {
         newErrors.ownerPhone = "Enter a valid mobile number";
       }
@@ -406,7 +403,7 @@ export function AddVenueForm() {
       }
     } else {
       const invalidSport = formData.sports.find(
-        (sport) => (formData.sportPricing[sport] || 0) <= 0,
+        (sport) => (formData.sportPricing[sport] || 0) <= 0
       );
       if (invalidSport) {
         newErrors.sportPricing = `Please enter valid price for ${invalidSport}`;
@@ -433,8 +430,7 @@ export function AddVenueForm() {
       throw new Error(response.message || "Failed to create draft venue");
     }
 
-    const createdVenueId =
-      (response.data as any).id || (response.data as any)._id;
+    const createdVenueId = (response.data as any).id || (response.data as any)._id;
     if (!createdVenueId) {
       throw new Error("Created venue ID not found");
     }
@@ -459,9 +455,7 @@ export function AddVenueForm() {
       await ensureDraftVenue();
       setCurrentStep(3);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create draft venue",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to create draft venue");
     } finally {
       setLoading(false);
     }
@@ -526,7 +520,7 @@ export function AddVenueForm() {
       if (status === 409 && data?.requiresConversion) {
         const shouldConvert = window.confirm(
           data.message ||
-            "An account already exists for this owner. Convert it to a venue lister to continue?",
+            "An account already exists for this owner. Convert it to a venue lister to continue?"
         );
 
         if (shouldConvert) {
@@ -545,9 +539,7 @@ export function AddVenueForm() {
             toast.error(retryResponse.message || "Failed to create venue");
           } catch (retryError) {
             toast.error(
-              retryError instanceof Error
-                ? retryError.message
-                : "Failed to create venue",
+              retryError instanceof Error ? retryError.message : "Failed to create venue"
             );
           }
         }
@@ -555,9 +547,7 @@ export function AddVenueForm() {
         return;
       }
 
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create venue",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to create venue");
     } finally {
       setLoading(false);
     }
@@ -584,21 +574,21 @@ export function AddVenueForm() {
     <div className="min-h-screen py-10 md:py-12">
       <div className="container mx-auto px-4">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Add Venue</h1>
+          <h1 className="mb-2 text-4xl font-bold text-slate-900">Add Venue</h1>
           <p className="text-slate-600">
             Complete these 5 steps to publish a venue from the admin panel
           </p>
-          <p className="mt-3 inline-flex items-center rounded-full border border-power-orange/20 bg-power-orange/10 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-power-orange">
+          <p className="border-power-orange/20 bg-power-orange/10 text-power-orange mt-3 inline-flex items-center rounded-full border px-4 py-1 text-xs font-semibold tracking-wide uppercase">
             Step {currentStep} of 5
           </p>
         </div>
 
-        <div className="sticky top-4 z-20 max-w-4xl mx-auto mb-8 rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-xs backdrop-blur-sm">
+        <div className="sticky top-4 z-20 mx-auto mb-8 max-w-4xl rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-xs backdrop-blur-sm">
           <div className="relative mb-4 overflow-x-auto">
             <div className="relative min-w-180 pb-2">
-              <div className="absolute left-6 right-6 top-6 h-0.5 rounded-full bg-slate-200" />
+              <div className="absolute top-6 right-6 left-6 h-0.5 rounded-full bg-slate-200" />
               <div
-                className="absolute left-6 top-6 h-0.5 rounded-full bg-power-orange transition-all duration-500"
+                className="bg-power-orange absolute top-6 left-6 h-0.5 rounded-full transition-all duration-500"
                 style={{
                   width: `max(0px, calc(${progressPercent}% - 0.5rem))`,
                 }}
@@ -609,11 +599,7 @@ export function AddVenueForm() {
                   const isCompleted = item.step < currentStep;
                   const isActive = item.step === currentStep;
                   const isFuture = item.step > currentStep;
-                  const stateLabel = isCompleted
-                    ? "Done"
-                    : isActive
-                      ? "Current"
-                      : "Upcoming";
+                  const stateLabel = isCompleted ? "Done" : isActive ? "Current" : "Upcoming";
 
                   return (
                     <div key={item.step} className="relative text-center">
@@ -630,10 +616,10 @@ export function AddVenueForm() {
                         }
                         className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold ring-4 ring-white transition-all duration-300 ${
                           isCompleted
-                            ? "bg-emerald-500 text-white shadow-md hover:scale-105 cursor-pointer"
+                            ? "cursor-pointer bg-emerald-500 text-white shadow-md hover:scale-105"
                             : isActive
-                              ? "bg-linear-to-br from-power-orange to-orange-500 text-white shadow-lg scale-110"
-                              : "bg-slate-200 text-slate-600 cursor-not-allowed"
+                              ? "from-power-orange scale-110 bg-linear-to-br to-orange-500 text-white shadow-lg"
+                              : "cursor-not-allowed bg-slate-200 text-slate-600"
                         }`}
                       >
                         {isCompleted ? (
@@ -647,7 +633,7 @@ export function AddVenueForm() {
                       <div
                         className={`mt-3 rounded-2xl border px-3 py-3 transition-all duration-300 ${
                           isActive
-                            ? "border-power-orange/25 bg-linear-to-b from-power-orange/10 to-white shadow-sm"
+                            ? "border-power-orange/25 from-power-orange/10 bg-linear-to-b to-white shadow-sm"
                             : isCompleted
                               ? "border-emerald-200 bg-emerald-50/70"
                               : "border-slate-200 bg-slate-50/80"
@@ -655,7 +641,7 @@ export function AddVenueForm() {
                       >
                         <div className="flex items-center justify-center gap-2">
                           <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
                               isActive
                                 ? "bg-power-orange/15 text-power-orange"
                                 : isCompleted
@@ -667,7 +653,7 @@ export function AddVenueForm() {
                           </span>
                         </div>
                         <p
-                          className={`mt-2 text-[11px] md:text-xs font-semibold leading-tight ${
+                          className={`mt-2 text-[11px] leading-tight font-semibold md:text-xs ${
                             isActive ? "text-power-orange" : "text-slate-800"
                           }`}
                         >
@@ -681,9 +667,9 @@ export function AddVenueForm() {
             </div>
           </div>
 
-          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full bg-power-orange transition-all duration-500"
+              className="bg-power-orange h-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -694,7 +680,7 @@ export function AddVenueForm() {
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto">
+        <div className="mx-auto max-w-3xl">
           {currentStep === 1 && (
             <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-xs">
               <form
@@ -708,9 +694,9 @@ export function AddVenueForm() {
                   title="Basic Details"
                   subtitle="Owner contact, name, address, and description"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
                         Owner Name *
                       </label>
                       <input
@@ -718,23 +704,21 @@ export function AddVenueForm() {
                         name="ownerName"
                         value={formData.ownerName}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                        className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
                           errors.ownerName
-                            ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                            : "border-slate-300 focus:ring-power-orange/40"
+                            ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                            : "focus:ring-power-orange/40 border-slate-300"
                         }`}
                         placeholder="Enter owner name"
                         disabled={loading}
                       />
                       {errors.ownerName && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.ownerName}
-                        </p>
+                        <p className="mt-1 text-xs text-red-500">{errors.ownerName}</p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
                         Owner Email *
                       </label>
                       <input
@@ -742,24 +726,22 @@ export function AddVenueForm() {
                         name="ownerEmail"
                         value={formData.ownerEmail}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                        className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
                           errors.ownerEmail
-                            ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                            : "border-slate-300 focus:ring-power-orange/40"
+                            ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                            : "focus:ring-power-orange/40 border-slate-300"
                         }`}
                         placeholder="Enter owner email"
                         disabled={loading}
                       />
                       {errors.ownerEmail && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.ownerEmail}
-                        </p>
+                        <p className="mt-1 text-xs text-red-500">{errors.ownerEmail}</p>
                       )}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
                       Owner Mobile Number *
                     </label>
                     <input
@@ -768,26 +750,24 @@ export function AddVenueForm() {
                       value={formData.ownerPhone}
                       onChange={handleInputChange}
                       maxLength={20}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                      className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
                         errors.ownerPhone
-                          ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                          : "border-slate-300 focus:ring-power-orange/40"
+                          ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                          : "focus:ring-power-orange/40 border-slate-300"
                       }`}
                       placeholder="Enter owner mobile number"
                       disabled={loading}
                     />
                     {errors.ownerPhone && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.ownerPhone}
-                      </p>
+                      <p className="mt-1 text-xs text-red-500">{errors.ownerPhone}</p>
                     )}
-                    <p className="text-xs text-slate-600 mt-1">
+                    <p className="mt-1 text-xs text-slate-600">
                       Supports +91 prefix and common phone number formatting
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
                       Venue Name *
                     </label>
                     <input
@@ -795,47 +775,41 @@ export function AddVenueForm() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                      className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
                         errors.name
-                          ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                          : "border-slate-300 focus:ring-power-orange/40"
+                          ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                          : "focus:ring-power-orange/40 border-slate-300"
                       }`}
                       placeholder="Enter venue name"
                       disabled={loading}
                     />
-                    {errors.name && (
-                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-                    )}
+                    {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
                       Address *
                     </label>
                     <input
                       type="text"
                       value={addressQuery}
                       onChange={(e) => setAddressQuery(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                      className={`w-full rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
                         errors.address
-                          ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                          : "border-slate-300 focus:ring-power-orange/40"
+                          ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                          : "focus:ring-power-orange/40 border-slate-300"
                       }`}
                       placeholder="Start typing address and pick suggestion"
                       disabled={loading}
                     />
 
-                    {isSearching && (
-                      <p className="text-sm text-slate-500 mt-1">
-                        Searching...
-                      </p>
-                    )}
+                    {isSearching && <p className="mt-1 text-sm text-slate-500">Searching...</p>}
                     {suggestions.length > 0 && (
                       <ul className="mt-2 max-h-40 overflow-auto rounded-md border bg-white shadow-md">
                         {suggestions.map((suggestion) => (
                           <li
                             key={suggestion.label}
-                            className="px-3 py-2 cursor-pointer hover:bg-slate-50 border-b last:border-b-0"
+                            className="cursor-pointer border-b px-3 py-2 last:border-b-0 hover:bg-slate-50"
                             onClick={() => handleSelectSuggestion(suggestion)}
                           >
                             {suggestion.label}
@@ -845,14 +819,12 @@ export function AddVenueForm() {
                     )}
 
                     {formData.location && (
-                      <div className="flex items-center justify-between rounded-lg border p-3 bg-green-50 border-green-300 mt-3">
-                        <div className="text-sm text-slate-800 font-medium">
-                          {formData.address}
-                        </div>
+                      <div className="mt-3 flex items-center justify-between rounded-lg border border-green-300 bg-green-50 p-3">
+                        <div className="text-sm font-medium text-slate-800">{formData.address}</div>
                         <button
                           type="button"
                           onClick={clearLocation}
-                          className="text-sm text-slate-600 hover:text-red-600 transition-colors"
+                          className="text-sm text-slate-600 transition-colors hover:text-red-600"
                         >
                           Clear
                         </button>
@@ -860,14 +832,12 @@ export function AddVenueForm() {
                     )}
 
                     {errors.address && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors.address}
-                      </p>
+                      <p className="mt-1 text-xs text-red-500">{errors.address}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
                       Description
                     </label>
                     <textarea
@@ -876,21 +846,21 @@ export function AddVenueForm() {
                       onChange={handleInputChange}
                       rows={4}
                       maxLength={500}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-power-orange/40 focus:outline-none"
+                      className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
                       placeholder="Tell users about your venue"
                       disabled={loading}
                     />
-                    <p className="text-xs text-slate-600 mt-1">
+                    <p className="mt-1 text-xs text-slate-600">
                       {formData.description.length}/500 characters
                     </p>
                   </div>
                 </OnboardingSectionCard>
 
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex gap-3 border-t pt-4">
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="flex items-center gap-2 bg-power-orange hover:bg-orange-600 text-white px-6"
+                    className="bg-power-orange flex items-center gap-2 px-6 text-white hover:bg-orange-600"
                   >
                     {loading ? (
                       <>
@@ -905,7 +875,7 @@ export function AddVenueForm() {
                     type="button"
                     onClick={() => router.back()}
                     disabled={loading}
-                    className="bg-slate-600 hover:bg-slate-700 text-white px-6"
+                    className="bg-slate-600 px-6 text-white hover:bg-slate-700"
                   >
                     Cancel
                   </Button>
@@ -923,7 +893,7 @@ export function AddVenueForm() {
                 >
                   <div className="space-y-5">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
                         Sports Available *
                       </label>
                       <SportsMultiSelect
@@ -946,9 +916,7 @@ export function AddVenueForm() {
                         required
                       />
                       {errors.sports && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.sports}
-                        </p>
+                        <p className="mt-1 text-xs text-red-500">{errors.sports}</p>
                       )}
                     </div>
 
@@ -961,10 +929,8 @@ export function AddVenueForm() {
                           <input
                             type="checkbox"
                             checked={samePriceForAll}
-                            onChange={(e) =>
-                              toggleSamePriceMode(e.target.checked)
-                            }
-                            className="w-4 h-4 text-power-orange rounded"
+                            onChange={(e) => toggleSamePriceMode(e.target.checked)}
+                            className="text-power-orange h-4 w-4 rounded"
                             disabled={loading}
                           />
                           Same price for all sports
@@ -973,28 +939,24 @@ export function AddVenueForm() {
 
                       {samePriceForAll ? (
                         <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
                             Base price per hour
                           </label>
                           <div className="flex items-center gap-2">
-                            <span className="text-slate-600 font-medium">
-                              ₹
-                            </span>
+                            <span className="font-medium text-slate-600">₹</span>
                             <input
                               type="number"
                               value={basePricePerHour}
                               onChange={(e) =>
                                 handleBasePriceChange(
-                                  e.target.value === ""
-                                    ? ""
-                                    : Number(e.target.value),
+                                  e.target.value === "" ? "" : Number(e.target.value)
                                 )
                               }
                               min="1"
-                              className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                              className={`flex-1 rounded-lg border px-3 py-2 transition-colors focus:ring-2 focus:outline-none ${
                                 errors.pricePerHour
-                                  ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                                  : "border-slate-300 focus:ring-power-orange/40"
+                                  ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                                  : "focus:ring-power-orange/40 border-slate-300"
                               }`}
                               placeholder="500"
                               disabled={loading}
@@ -1002,80 +964,61 @@ export function AddVenueForm() {
                             <span className="text-slate-600">/hour</span>
                           </div>
                           {errors.pricePerHour && (
-                            <p className="text-red-500 text-xs mt-1">
-                              {errors.pricePerHour}
-                            </p>
+                            <p className="mt-1 text-xs text-red-500">{errors.pricePerHour}</p>
                           )}
                         </div>
                       ) : (
-                        <div className="space-y-3 bg-slate-50 p-4 rounded-lg">
-                          <h4 className="font-medium text-slate-900">
-                            Sport-Specific Pricing
-                          </h4>
+                        <div className="space-y-3 rounded-lg bg-slate-50 p-4">
+                          <h4 className="font-medium text-slate-900">Sport-Specific Pricing</h4>
                           {formData.sports.length === 0 ? (
-                            <p className="text-sm text-slate-600">
-                              Select sports first
-                            </p>
+                            <p className="text-sm text-slate-600">Select sports first</p>
                           ) : (
                             formData.sports.map((sport) => (
-                              <div
-                                key={sport}
-                                className="flex items-center gap-4"
-                              >
+                              <div key={sport} className="flex items-center gap-4">
                                 <label className="w-32 text-sm font-medium text-slate-700">
                                   {sport}
                                 </label>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm text-slate-600">
-                                    ₹
-                                  </span>
+                                  <span className="text-sm text-slate-600">₹</span>
                                   <input
                                     type="number"
                                     value={formData.sportPricing[sport] || ""}
                                     onChange={(e) =>
                                       handleSportPriceChange(
                                         sport,
-                                        e.target.value === ""
-                                          ? 0
-                                          : Number(e.target.value),
+                                        e.target.value === "" ? 0 : Number(e.target.value)
                                       )
                                     }
                                     min="1"
-                                    className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-power-orange/40 focus:outline-none"
+                                    className="focus:ring-power-orange/40 w-24 rounded border border-slate-300 px-2 py-1 text-sm focus:ring-2 focus:outline-none"
                                     placeholder="500"
                                     disabled={loading}
                                   />
-                                  <span className="text-sm text-slate-600">
-                                    /hour
-                                  </span>
+                                  <span className="text-sm text-slate-600">/hour</span>
                                 </div>
                               </div>
                             ))
                           )}
                           {errors.sportPricing && (
-                            <p className="text-red-500 text-xs mt-2">
-                              {errors.sportPricing}
-                            </p>
+                            <p className="mt-2 text-xs text-red-500">{errors.sportPricing}</p>
                           )}
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
                         Amenities
                       </label>
                       <AmenitiesMultiSelect
                         value={formData.amenities}
-                        onChange={(amenities) =>
-                          setFormData((prev) => ({ ...prev, amenities }))
-                        }
+                        onChange={(amenities) => setFormData((prev) => ({ ...prev, amenities }))}
                         disabled={loading}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
                         Opening Hours
                       </label>
                       <OpeningHoursInput
@@ -1089,7 +1032,7 @@ export function AddVenueForm() {
                       />
                     </div>
 
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex cursor-pointer items-center gap-2">
                       <input
                         type="checkbox"
                         name="allowExternalCoaches"
@@ -1104,14 +1047,14 @@ export function AddVenueForm() {
                     </label>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <label className="mb-2 block text-sm font-medium text-slate-700">
                         Approval Status
                       </label>
                       <select
                         name="approvalStatus"
                         value={formData.approvalStatus}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-power-orange/40 focus:outline-none"
+                        className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
                         disabled={loading}
                       >
                         <option value="APPROVED">Approved</option>
@@ -1123,12 +1066,12 @@ export function AddVenueForm() {
                   </div>
                 </OnboardingSectionCard>
 
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex gap-3 border-t pt-4">
                   <Button
                     type="button"
                     onClick={handleBack}
                     disabled={loading}
-                    className="bg-slate-600 hover:bg-slate-700 text-white px-6"
+                    className="bg-slate-600 px-6 text-white hover:bg-slate-700"
                   >
                     Back
                   </Button>
@@ -1136,7 +1079,7 @@ export function AddVenueForm() {
                     type="button"
                     onClick={handleNextFromStep2}
                     disabled={loading}
-                    className="flex items-center gap-2 bg-power-orange hover:bg-orange-600 text-white px-6"
+                    className="bg-power-orange flex items-center gap-2 px-6 text-white hover:bg-orange-600"
                   >
                     {loading ? (
                       <>
@@ -1168,18 +1111,17 @@ export function AddVenueForm() {
                     />
                   ) : (
                     <div className="rounded-lg border border-dashed border-slate-300 p-6 text-sm text-slate-600">
-                      Create the draft venue from Step 2 before uploading
-                      photos.
+                      Create the draft venue from Step 2 before uploading photos.
                     </div>
                   )}
                 </OnboardingSectionCard>
 
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex gap-3 border-t pt-4">
                   <Button
                     type="button"
                     onClick={handleBack}
                     disabled={loading}
-                    className="bg-slate-600 hover:bg-slate-700 text-white px-6"
+                    className="bg-slate-600 px-6 text-white hover:bg-slate-700"
                   >
                     Back
                   </Button>
@@ -1191,7 +1133,7 @@ export function AddVenueForm() {
                       formData.generalImages.length === 0 ||
                       Object.keys(formData.sportImages).length === 0
                     }
-                    className="flex items-center gap-2 bg-power-orange hover:bg-orange-600 text-white px-6"
+                    className="bg-power-orange flex items-center gap-2 px-6 text-white hover:bg-orange-600"
                   >
                     Continue to Documents
                   </Button>
@@ -1208,23 +1150,20 @@ export function AddVenueForm() {
                   subtitle="No document upload is required for admin-created venues"
                 >
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 text-slate-700">
-                    <p className="font-medium text-emerald-900">
-                      Frictionless admin flow
-                    </p>
+                    <p className="font-medium text-emerald-900">Frictionless admin flow</p>
                     <p className="mt-2 text-sm leading-6">
-                      Venue documents are required only in the public onboarding
-                      flow. Admin-created venues can be published without any
-                      document upload.
+                      Venue documents are required only in the public onboarding flow. Admin-created
+                      venues can be published without any document upload.
                     </p>
                   </div>
                 </OnboardingSectionCard>
 
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex gap-3 border-t pt-4">
                   <Button
                     type="button"
                     onClick={handleBack}
                     disabled={loading}
-                    className="bg-slate-600 hover:bg-slate-700 text-white px-6"
+                    className="bg-slate-600 px-6 text-white hover:bg-slate-700"
                   >
                     Back
                   </Button>
@@ -1232,7 +1171,7 @@ export function AddVenueForm() {
                     type="button"
                     onClick={handleContinueWithoutDocuments}
                     disabled={loading}
-                    className="flex items-center gap-2 bg-power-orange hover:bg-orange-600 text-white px-6"
+                    className="bg-power-orange flex items-center gap-2 px-6 text-white hover:bg-orange-600"
                   >
                     Continue to Review
                   </Button>
@@ -1244,24 +1183,17 @@ export function AddVenueForm() {
           {currentStep === 5 && (
             <Card className="rounded-2xl border border-slate-200 bg-white/90 shadow-xs">
               <div className="space-y-6 p-6 md:p-8">
-                <OnboardingSectionCard
-                  title="Review"
-                  subtitle="Check everything before publishing"
-                >
-                  <div className="grid gap-4 md:grid-cols-2 text-sm text-slate-700">
+                <OnboardingSectionCard title="Review" subtitle="Check everything before publishing">
+                  <div className="grid gap-4 text-sm text-slate-700 md:grid-cols-2">
                     <div className="rounded-xl border border-slate-200 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Venue
-                      </p>
+                      <p className="text-xs tracking-wide text-slate-500 uppercase">Venue</p>
                       <p className="mt-1 font-semibold text-slate-900">
                         {formData.name || "Untitled venue"}
                       </p>
                       <p className="mt-2 text-slate-600">{formData.address}</p>
                     </div>
                     <div className="rounded-xl border border-slate-200 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Pricing
-                      </p>
+                      <p className="text-xs tracking-wide text-slate-500 uppercase">Pricing</p>
                       <p className="mt-1 font-semibold text-slate-900">
                         {samePriceForAll
                           ? `₹${basePricePerHour || 0} / hour`
@@ -1272,32 +1204,27 @@ export function AddVenueForm() {
                       </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Amenities
-                      </p>
+                      <p className="text-xs tracking-wide text-slate-500 uppercase">Amenities</p>
                       <p className="mt-1 font-semibold text-slate-900">
                         {formData.amenities.length || 0} selected
                       </p>
                     </div>
                     <div className="rounded-xl border border-slate-200 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">
-                        Photos
-                      </p>
+                      <p className="text-xs tracking-wide text-slate-500 uppercase">Photos</p>
                       <p className="mt-1 font-semibold text-slate-900">
                         {formData.generalImages.length} general,{" "}
-                        {Object.values(formData.sportImages).flat().length}{" "}
-                        sport images
+                        {Object.values(formData.sportImages).flat().length} sport images
                       </p>
                     </div>
                   </div>
                 </OnboardingSectionCard>
 
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex gap-3 border-t pt-4">
                   <Button
                     type="button"
                     onClick={handleBack}
                     disabled={loading}
-                    className="bg-slate-600 hover:bg-slate-700 text-white px-6"
+                    className="bg-slate-600 px-6 text-white hover:bg-slate-700"
                   >
                     Back
                   </Button>
@@ -1305,7 +1232,7 @@ export function AddVenueForm() {
                     type="button"
                     onClick={handlePublish}
                     disabled={loading}
-                    className="flex items-center gap-2 bg-power-orange hover:bg-orange-600 text-white px-6"
+                    className="bg-power-orange flex items-center gap-2 px-6 text-white hover:bg-orange-600"
                   >
                     {loading ? (
                       <>

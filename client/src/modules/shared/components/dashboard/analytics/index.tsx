@@ -25,14 +25,12 @@ export function KpiCard({
   return (
     <SlideUp delay={delay ?? 0}>
       <div className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-orange-300">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-power-orange">
+        <div className="text-power-orange flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50">
           {icon}
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm text-slate-500">{label}</p>
-          <p
-            className={`mt-0.5 text-2xl font-semibold text-slate-900 ${valueClass ?? ""}`}
-          >
+          <p className={`mt-0.5 text-2xl font-semibold text-slate-900 ${valueClass ?? ""}`}>
             {value}
           </p>
         </div>
@@ -45,11 +43,7 @@ export function KpiCard({
 // SparklineBarChart
 // ---------------------------------------------------------------------------
 
-export function SparklineBarChart({
-  data,
-}: {
-  data: Array<{ label: string; count: number }>;
-}) {
+export function SparklineBarChart({ data }: { data: Array<{ label: string; count: number }> }) {
   const PAD = { top: 12, right: 0, bottom: 28, left: 28 };
   const W = 600;
   const H = 120;
@@ -62,24 +56,12 @@ export function SparklineBarChart({
   const barW = barCount > 0 ? (chartW - gap * (barCount - 1)) / barCount : 0;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
       {/* Y-axis labels */}
-      <text
-        x={PAD.left - 4}
-        y={PAD.top + 4}
-        textAnchor="end"
-        fontSize={10}
-        fill="#94a3b8"
-      >
+      <text x={PAD.left - 4} y={PAD.top + 4} textAnchor="end" fontSize={10} fill="#94a3b8">
         {maxCount}
       </text>
-      <text
-        x={PAD.left - 4}
-        y={PAD.top + chartH}
-        textAnchor="end"
-        fontSize={10}
-        fill="#94a3b8"
-      >
+      <text x={PAD.left - 4} y={PAD.top + chartH} textAnchor="end" fontSize={10} fill="#94a3b8">
         0
       </text>
 
@@ -115,13 +97,7 @@ export function SparklineBarChart({
       {/* X-axis: first and last labels only */}
       {data.length > 0 && (
         <>
-          <text
-            x={PAD.left + barW / 2}
-            y={H - 4}
-            textAnchor="middle"
-            fontSize={10}
-            fill="#94a3b8"
-          >
+          <text x={PAD.left + barW / 2} y={H - 4} textAnchor="middle" fontSize={10} fill="#94a3b8">
             {data[0].label}
           </text>
           {data.length > 1 && (
@@ -170,9 +146,7 @@ export function SportBreakdownPanel({
       {top5.map((item, i) => (
         <div key={item.sport} className="flex items-center gap-3">
           <div className="w-28 shrink-0">
-            <p className="truncate text-sm font-medium text-slate-700">
-              {item.sport}
-            </p>
+            <p className="truncate text-sm font-medium text-slate-700">{item.sport}</p>
             <p className="text-xs text-slate-500">{item.count} sessions</p>
           </div>
           <div
@@ -204,11 +178,7 @@ export function SportBreakdownPanel({
 
 const HEATMAP_HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 6–21
 
-export function BusyHoursHeatmap({
-  data,
-}: {
-  data: Array<{ hour: number; count: number }>;
-}) {
+export function BusyHoursHeatmap({ data }: { data: Array<{ hour: number; count: number }> }) {
   const countByHour = new Map(data.map((d) => [d.hour, d.count]));
   const maxCount = Math.max(...Array.from(countByHour.values()), 1);
 
@@ -219,9 +189,7 @@ export function BusyHoursHeatmap({
         const intensity = count / maxCount;
         const isEmpty = count === 0;
 
-        const bgColor = isEmpty
-          ? "#f1f5f9"
-          : `rgba(249,115,22,${0.12 + intensity * 0.75})`;
+        const bgColor = isEmpty ? "#f1f5f9" : `rgba(249,115,22,${0.12 + intensity * 0.75})`;
         const borderColor = isEmpty ? "#e2e8f0" : "transparent";
         const textColor = intensity > 0.55 ? "#ffffff" : "#64748b";
 
@@ -271,14 +239,7 @@ export function DonutChart({ rate }: { rate: number }) {
   return (
     <svg width={96} height={96} viewBox="0 0 96 96">
       {/* Track */}
-      <circle
-        cx={48}
-        cy={48}
-        r={R}
-        fill="none"
-        stroke="#f1f5f9"
-        strokeWidth={10}
-      />
+      <circle cx={48} cy={48} r={R} fill="none" stroke="#f1f5f9" strokeWidth={10} />
       {/* Animated arc */}
       <motion.circle
         cx={48}
@@ -365,9 +326,7 @@ export function RetentionCard({
       {/* Retention rate label */}
       <p className="text-center text-sm text-slate-500">
         Retention rate:{" "}
-        <span className="font-semibold text-slate-700">
-          {clampedRate.toFixed(0)}%
-        </span>
+        <span className="font-semibold text-slate-700">{clampedRate.toFixed(0)}%</span>
       </p>
     </div>
   );

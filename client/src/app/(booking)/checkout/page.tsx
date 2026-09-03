@@ -1,29 +1,24 @@
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion, Variants } from "framer-motion";
 import {
-    AnimatePresence,
-    motion,
-    useReducedMotion,
-    Variants,
-} from "framer-motion";
-import {
-    ArrowLeft,
-    ArrowRight,
-    BadgeCheck,
-    Calendar,
-    Check,
-    CheckCircle2,
-    ChevronLeft,
-    Clock,
-    CreditCard,
-    MapPin,
-    ShieldCheck,
-    Star,
-    TicketPercent,
-    User as UserIcon,
-    Users,
-    Wallet,
-    Zap,
+  ArrowLeft,
+  ArrowRight,
+  BadgeCheck,
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  Clock,
+  CreditCard,
+  MapPin,
+  ShieldCheck,
+  Star,
+  TicketPercent,
+  User as UserIcon,
+  Users,
+  Wallet,
+  Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -32,8 +27,8 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
 import { statsApi } from "@/modules/analytics/services/stats";
 import {
-    PaymentMethodOption,
-    PaymentMethodSelector,
+  PaymentMethodOption,
+  PaymentMethodSelector,
 } from "@/modules/booking/components/checkout/PaymentMethodSelector";
 import { GroupBookingInviteSection } from "@/modules/booking/components/GroupBookingInviteSection";
 import { PaymentType } from "@/modules/booking/components/PaymentTypeSelector";
@@ -125,23 +120,14 @@ const normalizeImageUrl = (value?: string) => {
 
 const getCoachDisplayName = (coach: Coach) => {
   const userName =
-    typeof coach.userId === "object" && coach.userId !== null
-      ? coach.userId.name
-      : "";
+    typeof coach.userId === "object" && coach.userId !== null ? coach.userId.name : "";
   return userName?.trim() || `${coach.sports?.[0] || "Coach"} Coach`;
 };
 
 const getCoachImageCandidates = (coach: Coach) => {
   const userPhoto =
-    typeof coach.userId === "object" && coach.userId !== null
-      ? coach.userId.photoUrl
-      : "";
-  return [
-    coach.photoUrl,
-    coach.profileImage,
-    userPhoto,
-    coach.ownVenueDetails?.images?.[0],
-  ]
+    typeof coach.userId === "object" && coach.userId !== null ? coach.userId.photoUrl : "";
+  return [coach.photoUrl, coach.profileImage, userPhoto, coach.ownVenueDetails?.images?.[0]]
     .map((v) => normalizeImageUrl(v))
     .filter((v): v is string => Boolean(v));
 };
@@ -157,20 +143,9 @@ const getCoachLocationLabel = (coach: Coach) => {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function SectionCard({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+function SectionCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div
-      className={cn(
-        "rounded-2xl border border-slate-200/80 bg-white shadow-sm",
-        className,
-      )}
-    >
+    <div className={cn("rounded-2xl border border-slate-200/80 bg-white shadow-sm", className)}>
       {children}
     </div>
   );
@@ -193,7 +168,7 @@ function SectionHeader({
     <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
       <div className="flex items-start gap-3">
         {step !== undefined && (
-          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-power-orange text-xs font-bold text-white">
+          <span className="bg-power-orange mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white">
             {step}
           </span>
         )}
@@ -203,12 +178,8 @@ function SectionHeader({
           </span>
         )}
         <div>
-          <h2 className="font-title text-base font-semibold text-slate-900 sm:text-lg">
-            {title}
-          </h2>
-          {description && (
-            <p className="mt-0.5 text-sm text-slate-500">{description}</p>
-          )}
+          <h2 className="font-title text-base font-semibold text-slate-900 sm:text-lg">{title}</h2>
+          {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
         </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}
@@ -233,11 +204,7 @@ function StepPill({
             <div className="flex items-center gap-2">
               <motion.div
                 animate={{
-                  backgroundColor: isComplete
-                    ? "#E97316"
-                    : isActive
-                      ? "#fff"
-                      : "#f1f5f9",
+                  backgroundColor: isComplete ? "#E97316" : isActive ? "#fff" : "#f1f5f9",
                   borderColor: isComplete || isActive ? "#E97316" : "#e2e8f0",
                   color: isComplete ? "#fff" : isActive ? "#E97316" : "#94a3b8",
                 }}
@@ -249,11 +216,7 @@ function StepPill({
               <span
                 className={cn(
                   "hidden text-xs font-semibold sm:inline",
-                  isActive
-                    ? "text-slate-800"
-                    : isComplete
-                      ? "text-power-orange"
-                      : "text-slate-400",
+                  isActive ? "text-slate-800" : isComplete ? "text-power-orange" : "text-slate-400"
                 )}
               >
                 {step.label}
@@ -262,8 +225,7 @@ function StepPill({
             {index < steps.length - 1 && (
               <motion.div
                 animate={{
-                  backgroundColor:
-                    currentStep > step.id ? "#E97316" : "#e2e8f0",
+                  backgroundColor: currentStep > step.id ? "#E97316" : "#e2e8f0",
                 }}
                 transition={{ duration: 0.3 }}
                 className="mx-1 h-px w-6 sm:w-10"
@@ -288,14 +250,12 @@ function BookingSummaryRow({
   hint?: string;
 }) {
   return (
-    <div className="flex items-start gap-3.5 py-3 border-b border-slate-100 last:border-0">
+    <div className="flex items-start gap-3.5 border-b border-slate-100 py-3 last:border-0">
       <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
         {icon}
       </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-          {label}
-        </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase">{label}</p>
         <p className="mt-0.5 text-sm font-semibold text-slate-800">{value}</p>
         {hint && <p className="mt-0.5 text-xs text-slate-400">{hint}</p>}
       </div>
@@ -317,24 +277,20 @@ function EntityCard({
   if (type === "venue" && venue) {
     return (
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="relative h-32 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-32 sm:w-44 shrink-0">
+        <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-32 sm:w-44">
           {venue.images?.[0] ? (
-            <img
-              src={venue.images[0]}
-              alt={venue.name}
-              className="h-full w-full object-cover"
-            />
+            <img src={venue.images[0]} alt={venue.name} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
               <MapPin size={28} className="text-slate-300" />
             </div>
           )}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-lg font-bold text-slate-900">{venue.name}</p>
           {venue.address && (
             <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-              <MapPin size={13} className="mt-0.5 shrink-0 text-power-orange" />
+              <MapPin size={13} className="text-power-orange mt-0.5 shrink-0" />
               <span>{venue.address}</span>
             </p>
           )}
@@ -342,7 +298,7 @@ function EntityCard({
             {venue.sports.map((s) => (
               <span
                 key={s}
-                className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
+                className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-semibold"
               >
                 {s}
               </span>
@@ -360,7 +316,7 @@ function EntityCard({
     const venueLocation = getOwnVenueLocationDisplay(coach.ownVenueDetails);
     return (
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="relative h-32 w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 sm:h-32 sm:w-44 shrink-0">
+        <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 sm:h-32 sm:w-44">
           {img ? (
             <img src={img} alt={name} className="h-full w-full object-cover" />
           ) : (
@@ -369,7 +325,7 @@ function EntityCard({
             </div>
           )}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-lg font-bold text-slate-900">{name}</p>
           <div className="mt-1 flex items-center gap-2">
             <div className="flex items-center gap-1">
@@ -379,28 +335,21 @@ function EntityCard({
               </span>
             </div>
             <span className="text-slate-300">·</span>
-            <span className="text-sm text-slate-500">
-              {coach.reviewCount} reviews
-            </span>
+            <span className="text-sm text-slate-500">{coach.reviewCount} reviews</span>
           </div>
           <div className="mt-2">
             {venueLocation ? (
               <div className="flex items-start gap-1.5 text-sm text-slate-500">
-                <MapPin
-                  size={13}
-                  className="mt-0.5 shrink-0 text-power-orange"
-                />
+                <MapPin size={13} className="text-power-orange mt-0.5 shrink-0" />
                 <div>
                   <p>{locationLabel}</p>
-                  <p className="text-xs text-slate-400">
-                    {venueLocation.description}
-                  </p>
+                  <p className="text-xs text-slate-400">{venueLocation.description}</p>
                   {venueLocation.mapsUrl && (
                     <a
                       href={venueLocation.mapsUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs font-semibold text-power-orange hover:underline"
+                      className="text-power-orange text-xs font-semibold hover:underline"
                     >
                       Open in Maps →
                     </a>
@@ -409,7 +358,7 @@ function EntityCard({
               </div>
             ) : (
               <p className="flex items-center gap-1.5 text-sm text-slate-500">
-                <MapPin size={13} className="shrink-0 text-power-orange" />
+                <MapPin size={13} className="text-power-orange shrink-0" />
                 {locationLabel}
               </p>
             )}
@@ -418,7 +367,7 @@ function EntityCard({
             {coach.sports.slice(0, 4).map((s) => (
               <span
                 key={s}
-                className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
+                className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-semibold"
               >
                 {s}
               </span>
@@ -436,24 +385,19 @@ function EntityCard({
 
   if (type === "academy" && academy) {
     const coverImage =
-      normalizeImageUrl(academy.coverPhotoUrl) ||
-      normalizeImageUrl(academy.logoUrl);
+      normalizeImageUrl(academy.coverPhotoUrl) || normalizeImageUrl(academy.logoUrl);
     return (
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="relative h-32 w-full overflow-hidden rounded-xl bg-slate-100 sm:h-32 sm:w-44 shrink-0">
+        <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-32 sm:w-44">
           {coverImage ? (
-            <img
-              src={coverImage}
-              alt={academy.name}
-              className="h-full w-full object-cover"
-            />
+            <img src={coverImage} alt={academy.name} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
               <Users size={32} className="text-slate-300" />
             </div>
           )}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
             <p className="text-lg font-bold text-slate-900">{academy.name}</p>
             {(academy.kycVerified || academy.isApproved) && (
@@ -465,7 +409,7 @@ function EntityCard({
           </div>
           {academy.city && (
             <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-              <MapPin size={13} className="mt-0.5 shrink-0 text-power-orange" />
+              <MapPin size={13} className="text-power-orange mt-0.5 shrink-0" />
               <span>{academy.city}</span>
             </p>
           )}
@@ -473,7 +417,7 @@ function EntityCard({
             {(academy.sports || []).slice(0, 4).map((s) => (
               <span
                 key={s}
-                className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-semibold text-power-orange"
+                className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-semibold"
               >
                 {s}
               </span>
@@ -503,9 +447,7 @@ function CheckoutPageContent() {
 
   const [sport, setSport] = useState(searchParams.get("sport") || "");
   const [date, setDate] = useState(searchParams.get("date") || "");
-  const [startTime, setStartTime] = useState(
-    searchParams.get("startTime") || "",
-  );
+  const [startTime, setStartTime] = useState(searchParams.get("startTime") || "");
   const [endTime, setEndTime] = useState(searchParams.get("endTime") || "");
 
   const [coach, setCoach] = useState<Coach | null>(null);
@@ -538,8 +480,7 @@ function CheckoutPageContent() {
       .trackFunnelEvent({
         eventName: "checkout_viewed",
         entityType: type.toUpperCase(),
-        entityId:
-          type === "coach" ? coachId : type === "academy" ? academyId : venueId,
+        entityId: type === "coach" ? coachId : type === "academy" ? academyId : venueId,
         metadata: { sport, date, startTime, endTime },
         source: "WEB",
       })
@@ -555,9 +496,7 @@ function CheckoutPageContent() {
             : type === "venue" && venueId
               ? venueApi.getVenue(venueId)
               : type === "academy" && (academySlug || academyId)
-                ? academyOnboardingApi.getAcademyProfile(
-                    academySlug || academyId,
-                  )
+                ? academyOnboardingApi.getAcademyProfile(academySlug || academyId)
                 : Promise.resolve(null);
 
         const [entityResp, profileResp, walletResp] = await Promise.all([
@@ -566,12 +505,9 @@ function CheckoutPageContent() {
           walletApi.getWallet().catch(() => null),
         ]);
 
-        if (type === "coach" && entityResp?.success)
-          setCoach(entityResp.data as Coach);
-        if (type === "venue" && entityResp?.success)
-          setVenue(entityResp.data as Venue);
-        if (type === "academy" && entityResp?.success)
-          setAcademy(entityResp.data as AcademyCard);
+        if (type === "coach" && entityResp?.success) setCoach(entityResp.data as Coach);
+        if (type === "venue" && entityResp?.success) setVenue(entityResp.data as Venue);
+        if (type === "academy" && entityResp?.success) setAcademy(entityResp.data as AcademyCard);
 
         if (profileResp) {
           setUser(profileResp);
@@ -598,20 +534,16 @@ function CheckoutPageContent() {
     const [eh, em = "0"] = endTime.split(":");
     return Math.max(
       0,
-      parseInt(eh, 10) * 60 +
-        parseInt(em, 10) -
-        parseInt(sh, 10) * 60 -
-        parseInt(sm, 10),
+      parseInt(eh, 10) * 60 + parseInt(em, 10) - parseInt(sh, 10) * 60 - parseInt(sm, 10)
     );
   }, [startTime, endTime]);
 
   const durationHours = useMemo(
     () => (durationMinutes ? Number((durationMinutes / 60).toFixed(2)) : 0),
-    [durationMinutes],
+    [durationMinutes]
   );
 
-  const selectedDependent =
-    user?.dependents?.find((d) => d._id === selectedDependentId) || null;
+  const selectedDependent = user?.dependents?.find((d) => d._id === selectedDependentId) || null;
 
   const availableSports = useMemo(() => {
     if (type === "coach" && coach) return coach.sports || [];
@@ -653,11 +585,7 @@ function CheckoutPageContent() {
   const hasRequiredDetails = Boolean(date && startTime && endTime && sport);
   const hasValidDuration = durationMinutes > 0;
   const isDetailsReady =
-    type === "coach"
-      ? Boolean(coach)
-      : type === "venue"
-        ? Boolean(venue)
-        : Boolean(academy);
+    type === "coach" ? Boolean(coach) : type === "venue" ? Boolean(venue) : Boolean(academy);
 
   const steps = [
     { id: 1, label: "Review" },
@@ -736,9 +664,7 @@ function CheckoutPageContent() {
       setPromoMessage(result.message || "Promo applied.");
     } catch (err) {
       setDiscount(0);
-      setPromoMessage(
-        err instanceof Error ? err.message : "Unable to validate promo code.",
-      );
+      setPromoMessage(err instanceof Error ? err.message : "Unable to validate promo code.");
     } finally {
       setIsApplyingPromo(false);
     }
@@ -758,9 +684,7 @@ function CheckoutPageContent() {
       toast.success("Added to waitlist.");
       setShowWaitlistPrompt(false);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to join waitlist.",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to join waitlist.");
     } finally {
       setIsJoiningWaitlist(false);
     }
@@ -798,10 +722,7 @@ function CheckoutPageContent() {
           type: "Point";
           coordinates: [number, number];
         }>((resolve, reject) => {
-          const timeout = setTimeout(
-            () => reject(new Error("Location request timed out.")),
-            10000,
-          );
+          const timeout = setTimeout(() => reject(new Error("Location request timed out.")), 10000);
           navigator.geolocation.getCurrentPosition(
             (pos) => {
               clearTimeout(timeout);
@@ -814,7 +735,7 @@ function CheckoutPageContent() {
               clearTimeout(timeout);
               reject(err);
             },
-            { enableHighAccuracy: true },
+            { enableHighAccuracy: true }
           );
         });
 
@@ -888,17 +809,14 @@ function CheckoutPageContent() {
             metadata: { total, paymentMethod, isGroupBooking, paymentType },
           })
           .catch(() => {});
-        router.replace(
-          `/dashboard/my-bookings?success=true&bookingId=${bookingId}`,
-        );
+        router.replace(`/dashboard/my-bookings?success=true&bookingId=${bookingId}`);
         return;
       }
 
       const phonePeInit = await bookingApi.initiatePhonePePayment(bookingId, {
         type: type === "academy" ? "venue" : type,
       });
-      if (!phonePeInit?.redirectUrl)
-        throw new Error("Payment could not be initiated");
+      if (!phonePeInit?.redirectUrl) throw new Error("Payment could not be initiated");
 
       statsApi
         .trackFunnelEvent({
@@ -910,15 +828,14 @@ function CheckoutPageContent() {
         .catch(() => {});
       window.location.assign(phonePeInit.redirectUrl);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Unable to complete checkout.";
+      const msg = err instanceof Error ? err.message : "Unable to complete checkout.";
       if (type === "venue" && msg.toLowerCase().includes("already booked")) {
         try {
           const av = await bookingApi.getVenueAvailabilityWithAlternates(
             venueId,
             new Date(date).toISOString(),
             startTime,
-            endTime,
+            endTime
           );
           setAlternateSlots(av.data?.alternateSlots || []);
         } catch {
@@ -947,8 +864,7 @@ function CheckoutPageContent() {
       : type === "venue"
         ? venue?.name || "Venue"
         : academy?.name || "Academy";
-  const entityLabel =
-    type === "coach" ? "coach" : type === "venue" ? "venue" : "academy";
+  const entityLabel = type === "coach" ? "coach" : type === "venue" ? "venue" : "academy";
   const communityUrl = getCommunityAppUrl({
     path: "q",
     searchParams: {
@@ -967,7 +883,7 @@ function CheckoutPageContent() {
     return (
       <div className="flex min-h-[420px] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-power-orange" />
+          <div className="border-t-power-orange h-9 w-9 animate-spin rounded-full border-2 border-slate-200" />
           <p className="text-sm text-slate-500">Loading your booking...</p>
         </div>
       </div>
@@ -977,9 +893,7 @@ function CheckoutPageContent() {
   if (!isDetailsReady) {
     return (
       <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200/70 bg-white/95 p-8 text-center">
-        <p className="text-sm text-slate-500 capitalize">
-          {entityLabel} not found.
-        </p>
+        <p className="text-sm text-slate-500 capitalize">{entityLabel} not found.</p>
         <Button variant="outline" onClick={() => router.push("/booking")}>
           Browse options
         </Button>
@@ -992,7 +906,7 @@ function CheckoutPageContent() {
       {currentStep > 1 && (
         <Button
           variant="outline"
-          className="hidden lg:flex w-full"
+          className="hidden w-full lg:flex"
           onClick={handlePrevStep}
           disabled={isSubmitting}
         >
@@ -1002,13 +916,9 @@ function CheckoutPageContent() {
       )}
       <Button
         variant="primary"
-        className="w-[180px] lg:w-full gap-2"
+        className="w-[180px] gap-2 lg:w-full"
         disabled={
-          !hasRequiredDetails ||
-          !hasValidDuration ||
-          isSubmitting ||
-          isQuoteLoading ||
-          total <= 0
+          !hasRequiredDetails || !hasValidDuration || isSubmitting || isQuoteLoading || total <= 0
         }
         loading={currentStep === 3 ? isSubmitting : false}
         onClick={currentStep === 3 ? handleCheckout : handleNextStep}
@@ -1028,8 +938,7 @@ function CheckoutPageContent() {
         {currentStep === 3 && (
           <>
             <span>
-              Pay{" "}
-              <span className="hidden lg:inline">{formatCurrency(total)}</span>
+              Pay <span className="hidden lg:inline">{formatCurrency(total)}</span>
             </span>
             <ArrowRight size={15} />
           </>
@@ -1042,11 +951,7 @@ function CheckoutPageContent() {
     <div className="space-y-5 pb-28 lg:pb-0">
       {/* Back link */}
       <motion.div variants={fadeUp} initial="hidden" animate="show">
-        <Button
-          variant="ghost"
-          onClick={() => router.push(backHref)}
-          className="text-slate-600"
-        >
+        <Button variant="ghost" onClick={() => router.push(backHref)} className="text-slate-600">
           <ArrowLeft size={16} className="mr-2" />
           Back to {entityLabel}
         </Button>
@@ -1060,23 +965,23 @@ function CheckoutPageContent() {
         transition={{ delay: 0.05 }}
         className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 shadow-lg sm:p-8"
       >
-        <div className="pointer-events-none absolute -right-12 -top-10 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-8 left-1/3 h-32 w-32 rounded-full bg-turf-green/15 blur-2xl" />
+        <div className="bg-power-orange/20 pointer-events-none absolute -top-10 -right-12 h-48 w-48 rounded-full blur-3xl" />
+        <div className="bg-turf-green/15 pointer-events-none absolute -bottom-8 left-1/3 h-32 w-32 rounded-full blur-2xl" />
 
         <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-power-orange/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-power-orange">
+              <span className="bg-power-orange/20 text-power-orange inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wider uppercase">
                 <Zap size={11} />
                 Secure Checkout
               </span>
               {isZeroCommission && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-turf-green/20 px-3 py-1 text-xs font-semibold text-turf-green">
+                <span className="bg-turf-green/20 text-turf-green inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold">
                   0% Platform Fee
                 </span>
               )}
             </div>
-            <h1 className="mt-3 font-title text-2xl font-bold text-white sm:text-3xl">
+            <h1 className="font-title mt-3 text-2xl font-bold text-white sm:text-3xl">
               {type === "coach"
                 ? "Book your coach session"
                 : type === "academy"
@@ -1111,7 +1016,7 @@ function CheckoutPageContent() {
 
         <div className="relative z-10 mt-6 flex items-center justify-between rounded-xl bg-white/10 px-4 py-3 backdrop-blur-sm">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
               Step {currentStep} of {steps.length}
             </p>
             <p className="mt-0.5 text-sm font-semibold text-white">
@@ -1148,12 +1053,7 @@ function CheckoutPageContent() {
                       description="Confirm who you're booking with."
                     />
                     <div className="p-5 sm:p-6">
-                      <EntityCard
-                        coach={coach}
-                        venue={venue}
-                        academy={academy}
-                        type={type}
-                      />
+                      <EntityCard coach={coach} venue={venue} academy={academy} type={type} />
                     </div>
                   </SectionCard>
 
@@ -1163,10 +1063,10 @@ function CheckoutPageContent() {
                       title="Booking details"
                       description="Choose your sport, date, and time."
                     />
-                    <div className="p-5 sm:p-6 space-y-4">
+                    <div className="space-y-4 p-5 sm:p-6">
                       {/* Sport */}
                       <div>
-                        <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                           <Zap size={12} />
                           Sport
                         </label>
@@ -1174,7 +1074,7 @@ function CheckoutPageContent() {
                           <select
                             value={sport}
                             onChange={(e) => setSport(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
                           >
                             <option value="">Select sport</option>
                             {availableSports.map((s) => (
@@ -1189,13 +1089,13 @@ function CheckoutPageContent() {
                             value={sport}
                             onChange={(e) => setSport(e.target.value)}
                             placeholder="e.g. Cricket, Football"
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
                           />
                         )}
                       </div>
                       {/* Date */}
                       <div>
-                        <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                           <Calendar size={12} />
                           Date
                         </label>
@@ -1204,13 +1104,13 @@ function CheckoutPageContent() {
                           value={date}
                           min={new Date().toISOString().split("T")[0]}
                           onChange={(e) => setDate(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
                         />
                       </div>
                       {/* Start / End time */}
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                             <Clock size={12} />
                             Start time
                           </label>
@@ -1218,11 +1118,11 @@ function CheckoutPageContent() {
                             type="time"
                             value={startTime}
                             onChange={(e) => setStartTime(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
                           />
                         </div>
                         <div>
-                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                             <Clock size={12} />
                             End time
                           </label>
@@ -1230,7 +1130,7 @@ function CheckoutPageContent() {
                             type="time"
                             value={endTime}
                             onChange={(e) => setEndTime(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -1245,16 +1145,14 @@ function CheckoutPageContent() {
                       {/* Attendee */}
                       {user?.dependents && user.dependents.length > 0 && (
                         <div>
-                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                             <Users size={12} />
                             Who is attending?
                           </label>
                           <select
                             value={selectedDependentId}
-                            onChange={(e) =>
-                              setSelectedDependentId(e.target.value)
-                            }
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                            onChange={(e) => setSelectedDependentId(e.target.value)}
+                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:outline-none"
                           >
                             <option value="">Me ({user.name})</option>
                             {user.dependents.map((d) => (
@@ -1307,7 +1205,7 @@ function CheckoutPageContent() {
                       title="Payment method"
                       description="Choose how you want to pay."
                     />
-                    <div className="p-5 sm:p-6 space-y-4">
+                    <div className="space-y-4 p-5 sm:p-6">
                       <PaymentMethodSelector
                         value={paymentMethod}
                         onChange={setPaymentMethod}
@@ -1326,12 +1224,10 @@ function CheckoutPageContent() {
                     title="Confirm booking"
                     description="Final review before payment."
                   />
-                  <div className="p-5 sm:p-6 space-y-5">
+                  <div className="space-y-5 p-5 sm:p-6">
                     <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
                       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-200">
-                        {type === "coach" &&
-                        coach &&
-                        getCoachImageCandidates(coach)[0] ? (
+                        {type === "coach" && coach && getCoachImageCandidates(coach)[0] ? (
                           <img
                             src={getCoachImageCandidates(coach)[0]}
                             alt={entityName}
@@ -1366,9 +1262,7 @@ function CheckoutPageContent() {
                         )}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-slate-800">
-                          {entityName}
-                        </p>
+                        <p className="text-sm font-bold text-slate-800">{entityName}</p>
                         <p className="text-xs text-slate-500">
                           {sport && `${sport} · `}
                           {date ? formatDate(date) : ""}
@@ -1390,18 +1284,12 @@ function CheckoutPageContent() {
                             ? `${formatTime(startTime)} – ${formatTime(endTime)}`
                             : "Not selected"
                         }
-                        hint={
-                          durationHours ? `${durationHours} hour(s)` : undefined
-                        }
+                        hint={durationHours ? `${durationHours} hour(s)` : undefined}
                       />
                       <BookingSummaryRow
                         icon={<UserIcon size={15} />}
                         label="Participant"
-                        value={
-                          selectedDependent
-                            ? selectedDependent.name
-                            : user?.name || "Me"
-                        }
+                        value={selectedDependent ? selectedDependent.name : user?.name || "Me"}
                       />
                     </div>
 
@@ -1410,14 +1298,10 @@ function CheckoutPageContent() {
                       <div>
                         <p className="text-xs text-slate-400">Paying with</p>
                         <p className="text-sm font-semibold text-slate-800">
-                          {
-                            dynamicPaymentOptions.find(
-                              (o) => o.id === paymentMethod,
-                            )?.label
-                          }
+                          {dynamicPaymentOptions.find((o) => o.id === paymentMethod)?.label}
                         </p>
                       </div>
-                      <span className="ml-auto rounded-full bg-turf-green/10 px-2.5 py-0.5 text-xs font-semibold text-turf-green">
+                      <span className="bg-turf-green/10 text-turf-green ml-auto rounded-full px-2.5 py-0.5 text-xs font-semibold">
                         Encrypted
                       </span>
                     </div>
@@ -1438,8 +1322,7 @@ function CheckoutPageContent() {
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-xs font-bold">
                       !
                     </span>
-                    Missing booking details. Go back and select a date, time,
-                    and sport.
+                    Missing booking details. Go back and select a date, time, and sport.
                   </motion.div>
                 )}
                 {hasRequiredDetails && !hasValidDuration && (
@@ -1464,9 +1347,7 @@ function CheckoutPageContent() {
                     exit="hidden"
                     className="rounded-xl border border-indigo-200/60 bg-indigo-50/80 p-4"
                   >
-                    <p className="text-sm font-semibold text-blue-800">
-                      This slot was just taken.
-                    </p>
+                    <p className="text-sm font-semibold text-blue-800">This slot was just taken.</p>
                     {alternateSlots.length > 0 ? (
                       <p className="mt-1 text-xs text-indigo-600">
                         Nearby alternates: {alternateSlots.join(", ")}
@@ -1510,16 +1391,14 @@ function CheckoutPageContent() {
             className="space-y-4"
           >
             {isZeroCommission && (
-              <div className="relative overflow-hidden rounded-2xl border border-turf-green/20 bg-gradient-to-br from-turf-green/5 via-white to-emerald-50/40 p-4">
-                <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-turf-green/10 blur-xl" />
+              <div className="border-turf-green/20 from-turf-green/5 relative overflow-hidden rounded-2xl border bg-gradient-to-br via-white to-emerald-50/40 p-4">
+                <div className="bg-turf-green/10 absolute -top-6 -right-6 h-16 w-16 rounded-full blur-xl" />
                 <div className="relative flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-turf-green/10">
-                    <span className="text-xs font-extrabold text-turf-green">
-                      0%
-                    </span>
+                  <div className="bg-turf-green/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl">
+                    <span className="text-turf-green text-xs font-extrabold">0%</span>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
                       Limited offer
                     </p>
                     <p className="mt-0.5 text-sm font-semibold text-slate-900">
@@ -1535,28 +1414,25 @@ function CheckoutPageContent() {
 
             {/* Promo code */}
             <SectionCard>
-              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center gap-2">
+              <div className="flex items-center gap-2 border-b border-slate-100 p-4 sm:p-5">
                 <TicketPercent size={16} className="text-slate-500" />
                 <h2 className="font-title text-base font-semibold text-slate-900">
                   Offers & Promos
                 </h2>
               </div>
               <div className="p-4 sm:p-5">
-                <form
-                  onSubmit={handleApplyPromo}
-                  className="flex flex-col gap-3"
-                >
+                <form onSubmit={handleApplyPromo} className="flex flex-col gap-3">
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <TicketPercent
                         size={14}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                        className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
                       />
                       <input
                         value={promoCode}
                         onChange={(e) => setPromoCode(e.target.value)}
                         placeholder="Enter promo code"
-                        className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 uppercase"
+                        className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm text-slate-700 uppercase placeholder:text-slate-400 focus:ring-2 focus:outline-none"
                       />
                     </div>
                     <Button
@@ -1580,12 +1456,10 @@ function CheckoutPageContent() {
                         "mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium",
                         promoSuccess
                           ? "bg-turf-green/10 text-turf-green"
-                          : "bg-slate-100 text-slate-500",
+                          : "bg-slate-100 text-slate-500"
                       )}
                     >
-                      {promoSuccess && (
-                        <CheckCircle2 size={13} className="shrink-0" />
-                      )}
+                      {promoSuccess && <CheckCircle2 size={13} className="shrink-0" />}
                       {promoMessage}
                     </motion.div>
                   )}
@@ -1596,7 +1470,7 @@ function CheckoutPageContent() {
             {/* Order summary */}
             <SectionCard>
               <SectionHeader title="Order summary" />
-              <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+              <div className="px-5 pt-4 pb-5 sm:px-6 sm:pb-6">
                 <div className="space-y-2.5">
                   {[
                     {
@@ -1631,47 +1505,33 @@ function CheckoutPageContent() {
                     >
                       <div>
                         <p className="text-slate-600">{item.label}</p>
-                        {item.sub && (
-                          <p className="text-xs text-slate-400">{item.sub}</p>
-                        )}
+                        {item.sub && <p className="text-xs text-slate-400">{item.sub}</p>}
                       </div>
-                      <p className="shrink-0 font-medium text-slate-800">
-                        {item.value}
-                      </p>
+                      <p className="shrink-0 font-medium text-slate-800">{item.value}</p>
                     </div>
                   ))}
                   {discount > 0 && (
-                    <div className="flex items-start justify-between gap-3 rounded-lg bg-turf-green/8 px-2.5 py-2 text-sm">
+                    <div className="bg-turf-green/8 flex items-start justify-between gap-3 rounded-lg px-2.5 py-2 text-sm">
                       <div>
-                        <p className="font-semibold text-turf-green">
-                          Promo discount
-                        </p>
-                        <p className="text-xs text-turf-green/70">
-                          {promoCode.toUpperCase()}
-                        </p>
+                        <p className="text-turf-green font-semibold">Promo discount</p>
+                        <p className="text-turf-green/70 text-xs">{promoCode.toUpperCase()}</p>
                       </div>
-                      <p className="shrink-0 font-semibold text-turf-green">
+                      <p className="text-turf-green shrink-0 font-semibold">
                         -{formatCurrency(discount)}
                       </p>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-4 rounded-xl bg-gradient-to-r from-power-orange/8 to-amber-50/60 px-4 py-3">
+                <div className="from-power-orange/8 mt-4 rounded-xl bg-gradient-to-r to-amber-50/60 px-4 py-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-700">
-                      Total due
-                    </span>
+                    <span className="text-sm font-semibold text-slate-700">Total due</span>
                     <motion.span
                       key={total}
-                      initial={
-                        shouldReduceMotion
-                          ? false
-                          : { scale: 1.08, opacity: 0.7 }
-                      }
+                      initial={shouldReduceMotion ? false : { scale: 1.08, opacity: 0.7 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ duration: 0.25 }}
-                      className="text-2xl font-bold text-power-orange"
+                      className="text-power-orange text-2xl font-bold"
                     >
                       {formatCurrency(total)}
                     </motion.span>
@@ -1685,19 +1545,16 @@ function CheckoutPageContent() {
               </div>
             </SectionCard>
 
-            <div className="hidden lg:block mt-6">{ctaButtons}</div>
+            <div className="mt-6 hidden lg:block">{ctaButtons}</div>
 
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200/70 bg-white px-4 py-3.5 shadow-sm">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                 <ShieldCheck size={16} />
               </span>
               <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  Protected checkout
-                </p>
+                <p className="text-sm font-semibold text-slate-900">Protected checkout</p>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Payments are 256-bit encrypted. Reschedule any time from your
-                  dashboard.
+                  Payments are 256-bit encrypted. Reschedule any time from your dashboard.
                 </p>
               </div>
             </div>
@@ -1715,11 +1572,11 @@ function CheckoutPageContent() {
       </div>
 
       {/* Mobile Fixed CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden">
+      <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-slate-200 bg-white px-4 py-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-4">
           <div className="flex-1">
-            <p className="text-xs text-slate-500 font-medium">Total due</p>
-            <p className="text-lg font-bold text-slate-900 leading-none mt-0.5">
+            <p className="text-xs font-medium text-slate-500">Total due</p>
+            <p className="mt-0.5 text-lg leading-none font-bold text-slate-900">
               {formatCurrency(total)}
             </p>
           </div>
@@ -1735,7 +1592,7 @@ export default function CheckoutPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[420px] items-center justify-center">
-          <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-power-orange" />
+          <div className="border-t-power-orange h-9 w-9 animate-spin rounded-full border-2 border-slate-200" />
         </div>
       }
     >

@@ -9,17 +9,13 @@ export const metadata: Metadata = {
   ...NOINDEX_METADATA,
 };
 
-export default function CheckoutLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function CheckoutLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50">
       <Navigation sticky />
       <div className="h-16" aria-hidden />
-      <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">{children}</div>
+      <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">{children}</div>
       </main>
     </div>
   );

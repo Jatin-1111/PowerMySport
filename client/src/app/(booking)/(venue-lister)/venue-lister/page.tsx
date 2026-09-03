@@ -5,10 +5,7 @@ import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
-import {
-    StaggerContainer,
-    StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { venueApi } from "@/modules/venue/services/venue";
 import { Booking, Venue } from "@/types";
 import { formatCurrency } from "@/utils/format";
@@ -39,13 +36,9 @@ export default function VenueListerDashboard() {
         const bookings = bookingsRes.success ? bookingsRes.data || [] : [];
 
         // Calculate stats
-        const confirmedBookings = bookings.filter(
-          (b) => b.status === "CONFIRMED",
-        );
+        const confirmedBookings = bookings.filter((b) => b.status === "CONFIRMED");
         const earnings = confirmedBookings.reduce((sum, b) => {
-          const venuePayment = b.payments?.find(
-            (p) => p.userType === "VenueLister",
-          );
+          const venuePayment = b.payments?.find((p) => p.userType === "VenueLister");
           return (
             sum +
             (venuePayment?.status === "PAID" // Note: status is PAID not COMPLETED in types
@@ -58,15 +51,14 @@ export default function VenueListerDashboard() {
           totalVenues: venues.length,
           totalBookings: bookings.length,
           totalEarnings: earnings,
-          pendingBookings: bookings.filter((b) => b.status === "IN_PROGRESS")
-            .length,
+          pendingBookings: bookings.filter((b) => b.status === "IN_PROGRESS").length,
         });
 
         setRecentBookings(bookings.slice(0, 5));
 
         if (venues.length > 0) {
           const sorted = [...venues].sort((a, b) =>
-            (a.createdAt || "").localeCompare(b.createdAt || ""),
+            (a.createdAt || "").localeCompare(b.createdAt || "")
           );
           setPrimaryVenue(sorted[0]);
         }
@@ -81,13 +73,13 @@ export default function VenueListerDashboard() {
   }, []);
 
   if (loading) {
-    return <div className="text-center py-12">Loading dashboard...</div>;
+    return <div className="py-12 text-center">Loading dashboard...</div>;
   }
 
   const getDisplayPrice = (venue: Venue) => {
     if (venue.sportPricing) {
       const values = Object.values(venue.sportPricing).filter(
-        (value) => typeof value === "number" && value >= 0,
+        (value) => typeof value === "number" && value >= 0
       );
       if (values.length > 0) {
         return Math.min(...values);
@@ -117,21 +109,15 @@ export default function VenueListerDashboard() {
       {/* Stats Grid */}
       <StaggerContainer className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StaggerItem className="h-full">
-          <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Total Venues
-            </p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">
-              {stats.totalVenues}
-            </p>
+          <Card className="glass-panel premium-shadow h-full transition-all hover:shadow-xl">
+            <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Total Venues</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">{stats.totalVenues}</p>
           </Card>
         </StaggerItem>
 
         <StaggerItem className="h-full">
-          <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Total Bookings
-            </p>
+          <Card className="glass-panel premium-shadow h-full transition-all hover:shadow-xl">
+            <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Total Bookings</p>
             <p className="text-3xl font-bold text-slate-900 dark:text-white">
               {stats.totalBookings}
             </p>
@@ -139,24 +125,18 @@ export default function VenueListerDashboard() {
         </StaggerItem>
 
         <StaggerItem className="h-full">
-          <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Total Earnings
-            </p>
-            <p className="text-xl font-bold text-power-orange sm:text-2xl">
+          <Card className="glass-panel premium-shadow h-full transition-all hover:shadow-xl">
+            <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Total Earnings</p>
+            <p className="text-power-orange text-xl font-bold sm:text-2xl">
               {formatCurrency(stats.totalEarnings)}
             </p>
           </Card>
         </StaggerItem>
 
         <StaggerItem className="h-full">
-          <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Pending Bookings
-            </p>
-            <p className="text-xl font-bold text-yellow-600 sm:text-2xl">
-              {stats.pendingBookings}
-            </p>
+          <Card className="glass-panel premium-shadow h-full transition-all hover:shadow-xl">
+            <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Pending Bookings</p>
+            <p className="text-xl font-bold text-yellow-600 sm:text-2xl">{stats.pendingBookings}</p>
           </Card>
         </StaggerItem>
       </StaggerContainer>
@@ -164,10 +144,8 @@ export default function VenueListerDashboard() {
       <SlideUp delay={0.2} yOffset={20}>
         {primaryVenue && (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Your First Venue
-            </h2>
-            <Card className="glass-panel premium-shadow p-0 overflow-hidden border-0">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Your First Venue</h2>
+            <Card className="glass-panel premium-shadow overflow-hidden border-0 p-0">
               {primaryVenue.coverPhotoUrl ||
               (primaryVenue.images && primaryVenue.images.length > 0) ? (
                 <img
@@ -179,28 +157,24 @@ export default function VenueListerDashboard() {
               <div className="p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      {primaryVenue.name}
-                    </h3>
-                    <p className="text-sm text-slate-600 mt-1 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-slate-900">{primaryVenue.name}</h3>
+                    <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
                       <MapPin size={16} className="text-power-orange" />
                       {primaryVenue.address || "Location on file"}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs uppercase text-slate-500">
-                      Starting at
-                    </p>
-                    <p className="text-lg font-bold text-power-orange">
+                    <p className="text-xs text-slate-500 uppercase">Starting at</p>
+                    <p className="text-power-orange text-lg font-bold">
                       {formatCurrency(getDisplayPrice(primaryVenue))}/hr
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2 mt-4">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {primaryVenue.sports.map((sport) => (
                     <span
                       key={sport}
-                      className="text-xs bg-power-orange/10 text-power-orange px-2 py-1 rounded-full"
+                      className="bg-power-orange/10 text-power-orange rounded-full px-2 py-1 text-xs"
                     >
                       {sport}
                     </span>
@@ -209,7 +183,7 @@ export default function VenueListerDashboard() {
                 <div className="mt-4">
                   <Link
                     href="/venue-lister/inventory"
-                    className="inline-flex items-center gap-2 text-sm text-power-orange font-semibold hover:text-orange-600"
+                    className="text-power-orange inline-flex items-center gap-2 text-sm font-semibold hover:text-orange-600"
                   >
                     Manage this venue
                     <ArrowRight size={16} />
@@ -224,35 +198,27 @@ export default function VenueListerDashboard() {
       {/* Quick Actions */}
       {/* Quick Actions */}
       <SlideUp delay={0.3} yOffset={20}>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-          Quick Actions
-        </h2>
+        <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">Quick Actions</h2>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Link
             href="/venue-lister/inventory"
-            className="flex items-center justify-between p-6 bg-slate-900 text-white rounded-lg hover:bg-slate-800 hover:shadow-lg transition-all group"
+            className="group flex items-center justify-between rounded-lg bg-slate-900 p-6 text-white transition-all hover:bg-slate-800 hover:shadow-lg"
           >
             <div>
-              <h3 className="text-lg font-bold mb-1">Manage Inventory</h3>
-              <p className="text-slate-300 text-sm">Add or edit your venues</p>
+              <h3 className="mb-1 text-lg font-bold">Manage Inventory</h3>
+              <p className="text-sm text-slate-300">Add or edit your venues</p>
             </div>
-            <ArrowRight
-              size={24}
-              className="group-hover:translate-x-2 transition-transform"
-            />
+            <ArrowRight size={24} className="transition-transform group-hover:translate-x-2" />
           </Link>
           <Link
             href="/venue-lister/vendor-bookings"
-            className="flex items-center justify-between p-6 bg-power-orange text-white rounded-lg hover:bg-orange-600 hover:shadow-lg transition-all group"
+            className="bg-power-orange group flex items-center justify-between rounded-lg p-6 text-white transition-all hover:bg-orange-600 hover:shadow-lg"
           >
             <div>
-              <h3 className="text-lg font-bold mb-1">View Bookings</h3>
-              <p className="text-orange-100 text-sm">Check upcoming sessions</p>
+              <h3 className="mb-1 text-lg font-bold">View Bookings</h3>
+              <p className="text-sm text-orange-100">Check upcoming sessions</p>
             </div>
-            <ArrowRight
-              size={24}
-              className="group-hover:translate-x-2 transition-transform"
-            />
+            <ArrowRight size={24} className="transition-transform group-hover:translate-x-2" />
           </Link>
         </div>
       </SlideUp>

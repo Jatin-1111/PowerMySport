@@ -44,19 +44,17 @@ run(
     "--at-rest-encryption-enabled",
     "--snapshot-retention-limit 1",
     `--region ${REGION}`,
-  ].join(" "),
+  ].join(" ")
 );
 
 console.log("\nProvisioning started — this takes 5-10 minutes.");
 console.log("Poll status with:");
 console.log(
-  `  aws elasticache describe-replication-groups --replication-group-id ${REPLICATION_GROUP_ID} --query "ReplicationGroups[0].Status" --output text --profile ${AWS_PROFILE}`,
+  `  aws elasticache describe-replication-groups --replication-group-id ${REPLICATION_GROUP_ID} --query "ReplicationGroups[0].Status" --output text --profile ${AWS_PROFILE}`
 );
 console.log("\nOnce status is 'available', get the new endpoint with:");
 console.log(
-  `  aws elasticache describe-replication-groups --replication-group-id ${REPLICATION_GROUP_ID} --query "ReplicationGroups[0].NodeGroups[0].PrimaryEndpoint.Address" --output text --profile ${AWS_PROFILE}`,
+  `  aws elasticache describe-replication-groups --replication-group-id ${REPLICATION_GROUP_ID} --query "ReplicationGroups[0].NodeGroups[0].PrimaryEndpoint.Address" --output text --profile ${AWS_PROFILE}`
 );
 console.log("\nThen point the app at it (from server/):");
-console.log(
-  `  eb setenv REDIS_URL=rediss://<new-endpoint>:6379 --environment ${EB_ENV}`,
-);
+console.log(`  eb setenv REDIS_URL=rediss://<new-endpoint>:6379 --environment ${EB_ENV}`);

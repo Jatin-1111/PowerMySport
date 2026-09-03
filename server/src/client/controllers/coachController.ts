@@ -35,17 +35,11 @@ interface CoachDiscoveryContext {
 const buildCoachDiscoveryContext = (req: Request): CoachDiscoveryContext => {
   const lat = (req.query.lat || req.query.latitude) as string | undefined;
   const lng = (req.query.lng || req.query.longitude) as string | undefined;
-  const radius = (req.query.radius || req.query.maxDistance) as
-    string | undefined;
+  const radius = (req.query.radius || req.query.maxDistance) as string | undefined;
   const { sport } = req.query;
 
   const sportFilter = sport as string | undefined;
-  const { page, limit } = getPaginationParams(
-    req.query.page,
-    req.query.limit,
-    20,
-    100,
-  );
+  const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
 
   const hasLocation = Boolean(lat && lng);
   const latitude = hasLocation ? parseFloat(lat as string) : undefined;
@@ -66,10 +60,7 @@ const buildCoachDiscoveryContext = (req: Request): CoachDiscoveryContext => {
  * Discovery endpoint: Search for coaches near a location
  * GET /api/coaches/discover?lat=28.6139&lng=77.2090&radius=5000&sport=cricket
  */
-export const discoverCoachesNearby = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const discoverCoachesNearby = async (req: Request, res: Response): Promise<void> => {
   try {
     const requestStartedAt = Date.now();
     const context = buildCoachDiscoveryContext(req);
@@ -77,9 +68,7 @@ export const discoverCoachesNearby = async (
     const startedAt = Date.now();
     const skip = (context.page - 1) * context.limit;
     const coaches =
-      !context.hasLocation ||
-      context.latitude === undefined ||
-      context.longitude === undefined
+      !context.hasLocation || context.latitude === undefined || context.longitude === undefined
         ? await getAllCoaches(context.sportFilter, context.limit, skip)
         : await findCoachesNearby(
             context.latitude,
@@ -87,7 +76,7 @@ export const discoverCoachesNearby = async (
             context.radiusMeters / 1000,
             context.sportFilter,
             context.limit,
-            skip,
+            skip
           );
     const coachesFetchMs = Date.now() - startedAt;
     const totalDurationMs = Date.now() - requestStartedAt;
@@ -103,7 +92,7 @@ export const discoverCoachesNearby = async (
         coachCount: coaches.length,
         coachesFetchMs,
         totalDurationMs,
-      }),
+      })
     );
 
     res.status(200).json({
@@ -116,8 +105,7 @@ export const discoverCoachesNearby = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Coach discovery failed",
+      message: error instanceof Error ? error.message : "Coach discovery failed",
     });
   }
 };
@@ -126,10 +114,7 @@ export const discoverCoachesNearby = async (
  * Create a new coach profile
  * POST /api/coaches
  */
-export const createNewCoach = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createNewCoach = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -218,10 +203,7 @@ export const createNewCoach = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to create coach profile",
+      message: error instanceof Error ? error.message : "Failed to create coach profile",
     });
   }
 };
@@ -249,8 +231,7 @@ export const getCoach = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isPubliclyVisible =
-      coach.isVerified || coach.verificationStatus === "VERIFIED";
+    const isPubliclyVisible = coach.isVerified || coach.verificationStatus === "VERIFIED";
 
     if (!isPubliclyVisible) {
       res.status(404).json({
@@ -280,10 +261,7 @@ export const getCoach = async (req: Request, res: Response): Promise<void> => {
  * Get current user's coach profile
  * GET /api/coaches/my-profile
  */
-export const getMyCoachProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getMyCoachProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -323,10 +301,7 @@ export const getMyCoachProfile = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch coach profile",
+      message: error instanceof Error ? error.message : "Failed to fetch coach profile",
     });
   }
 };
@@ -335,10 +310,7 @@ export const getMyCoachProfile = async (
  * Update coach availability by sport
  * PUT /api/coaches/my-profile/availability
  */
-export const updateMyCoachAvailability = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateMyCoachAvailability = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
@@ -391,7 +363,7 @@ export const updateMyCoachAvailability = async (
             slot.dayOfWeek <= 6 &&
             /^([01]\d|2[0-3]):([0-5]\d)$/.test(slot.startTime) &&
             /^([01]\d|2[0-3]):([0-5]\d)$/.test(slot.endTime) &&
-            slot.startTime < slot.endTime,
+            slot.startTime < slot.endTime
         );
     }
 
@@ -419,10 +391,7 @@ export const updateMyCoachAvailability = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to update coach availability",
+      message: error instanceof Error ? error.message : "Failed to update coach availability",
     });
   }
 };
@@ -431,10 +400,7 @@ export const updateMyCoachAvailability = async (
  * Update coach profile
  * PUT /api/coaches/:coachId
  */
-export const updateCoachProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateCoachProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
 
@@ -485,10 +451,7 @@ export const updateCoachProfile = async (
       // If no ownVenueDetails provided, that's ok - they can add them later
     } else if (newServiceMode === "FREELANCE") {
       // For FREELANCE mode: clear ownVenueDetails if switching from OWN_VENUE/HYBRID
-      if (
-        existingCoach.serviceMode !== "FREELANCE" &&
-        !updates.ownVenueDetails
-      ) {
+      if (existingCoach.serviceMode !== "FREELANCE" && !updates.ownVenueDetails) {
         updates.ownVenueDetails = undefined;
       }
     }
@@ -506,10 +469,7 @@ export const updateCoachProfile = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to update coach profile",
+      message: error instanceof Error ? error.message : "Failed to update coach profile",
     });
   }
 };
@@ -518,10 +478,7 @@ export const updateCoachProfile = async (
  * Delete coach profile
  * DELETE /api/coaches/:coachId
  */
-export const deleteCoachProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteCoachProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
 
@@ -559,10 +516,7 @@ export const deleteCoachProfile = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to delete coach profile",
+      message: error instanceof Error ? error.message : "Failed to delete coach profile",
     });
   }
 };
@@ -571,10 +525,7 @@ export const deleteCoachProfile = async (
  * Check coach availability
  * GET /api/coaches/availability/:coachId
  */
-export const getCoachAvailability = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCoachAvailability = async (req: Request, res: Response): Promise<void> => {
   try {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     const { date, startTime, endTime, sport } = req.query;
@@ -592,7 +543,7 @@ export const getCoachAvailability = async (
         coachId,
         new Date(date as string),
         startTime as string,
-        endTime as string,
+        endTime as string
       );
 
       res.status(200).json({
@@ -624,17 +575,11 @@ export const getCoachAvailability = async (
     }
     const dayOfWeek = targetDate.getDay();
     const availabilityBySport = (coach as any).availabilityBySport as
-      | Record<
-          string,
-          Array<{ dayOfWeek: number; startTime: string; endTime: string }>
-        >
-      | undefined;
+      Record<string, Array<{ dayOfWeek: number; startTime: string; endTime: string }>> | undefined;
 
     const selectedSport = typeof sport === "string" ? sport : undefined;
     const sourceSlots =
-      (selectedSport && availabilityBySport?.[selectedSport]) ||
-      coach.availability ||
-      [];
+      (selectedSport && availabilityBySport?.[selectedSport]) || coach.availability || [];
 
     const daySlots = sourceSlots.filter((slot) => slot.dayOfWeek === dayOfWeek);
 
@@ -655,11 +600,7 @@ export const getCoachAvailability = async (
     daySlots.forEach((slot) => {
       const startMinutes = toMinutes(slot.startTime);
       const endMinutes = toMinutes(slot.endTime);
-      for (
-        let current = startMinutes;
-        current + 60 <= endMinutes;
-        current += 60
-      ) {
+      for (let current = startMinutes; current + 60 <= endMinutes; current += 60) {
         const start = toTime(current);
         const end = toTime(current + 60);
         candidateSlots.push(`${start}-${end}`);
@@ -669,16 +610,8 @@ export const getCoachAvailability = async (
     const activeBookings = await Booking.find({
       coachId,
       date: {
-        $gte: new Date(
-          targetDate.getFullYear(),
-          targetDate.getMonth(),
-          targetDate.getDate(),
-        ),
-        $lt: new Date(
-          targetDate.getFullYear(),
-          targetDate.getMonth(),
-          targetDate.getDate() + 1,
-        ),
+        $gte: new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()),
+        $lt: new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() + 1),
       },
       status: {
         $in: [
@@ -709,12 +642,7 @@ export const getCoachAvailability = async (
       if (isToday) {
         const [startHour = "0", startMinute = "0"] = slotStart.split(":");
         const slotStartDateTime = new Date(targetDate);
-        slotStartDateTime.setHours(
-          parseInt(startHour, 10),
-          parseInt(startMinute, 10),
-          0,
-          0,
-        );
+        slotStartDateTime.setHours(parseInt(startHour, 10), parseInt(startMinute, 10), 0, 0);
 
         // If the slot has already started, don't show it
         if (slotStartDateTime <= now) {
@@ -723,7 +651,7 @@ export const getCoachAvailability = async (
       }
 
       return !bookedSlots.some((booked) =>
-        doTimesOverlap(slotStart, slotEnd, booked.startTime, booked.endTime),
+        doTimesOverlap(slotStart, slotEnd, booked.startTime, booked.endTime)
       );
     });
 
@@ -738,8 +666,7 @@ export const getCoachAvailability = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to check availability",
+      message: error instanceof Error ? error.message : "Failed to check availability",
     });
   }
 };
@@ -751,7 +678,7 @@ const normalizeVerificationDocuments = (
     s3Key?: string;
     fileName: string;
     uploadedAt?: string | Date;
-  }>,
+  }>
 ) => {
   const allowedTypes = [
     "CERTIFICATION",
@@ -775,9 +702,7 @@ const normalizeVerificationDocuments = (
       url: doc.url,
       fileName: doc.fileName,
       ...(doc.s3Key ? { s3Key: doc.s3Key } : {}),
-      ...(doc.uploadedAt
-        ? { uploadedAt: new Date(doc.uploadedAt) }
-        : { uploadedAt: new Date() }),
+      ...(doc.uploadedAt ? { uploadedAt: new Date(doc.uploadedAt) } : { uploadedAt: new Date() }),
     };
   });
 
@@ -794,9 +719,7 @@ const hasValidMobileNumber = (mobileNumber?: string) => {
   return /^[+]?[0-9\s().\-]+$/.test(mobileNumber.trim());
 };
 
-const hasCoordinates = (
-  coordinates?: unknown,
-): coordinates is [number, number] => {
+const hasCoordinates = (coordinates?: unknown): coordinates is [number, number] => {
   return (
     Array.isArray(coordinates) &&
     coordinates.length === 2 &&
@@ -828,7 +751,7 @@ const hasStep1Completed = async (userId: string, bioCandidate?: string) => {
  */
 export const saveCoachVerificationStep1Handler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -884,14 +807,11 @@ export const saveCoachVerificationStep1Handler = async (
       return;
     }
 
-    const coachId = (existingCoach.id ||
-      existingCoach._id?.toString()) as string;
+    const coachId = (existingCoach.id || existingCoach._id?.toString()) as string;
     const coach = await updateCoach(coachId, {
       bio,
-      onboardingProgressStep: Math.max(
-        Number(existingCoach.onboardingProgressStep || 1),
-        1,
-      ) as 1 | 2 | 3,
+      onboardingProgressStep: Math.max(Number(existingCoach.onboardingProgressStep || 1), 1) as
+        1 | 2 | 3,
     });
 
     const coachData = transformDocument(coach?.toJSON());
@@ -904,10 +824,7 @@ export const saveCoachVerificationStep1Handler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to save verification step 1",
+      message: error instanceof Error ? error.message : "Failed to save verification step 1",
     });
   }
 };
@@ -918,7 +835,7 @@ export const saveCoachVerificationStep1Handler = async (
  */
 export const saveCoachVerificationStep2Handler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -996,11 +913,7 @@ export const saveCoachVerificationStep2Handler = async (
       return;
     }
 
-    if (
-      serviceMode !== "OWN_VENUE" &&
-      serviceMode !== "FREELANCE" &&
-      serviceMode !== "HYBRID"
-    ) {
+    if (serviceMode !== "OWN_VENUE" && serviceMode !== "FREELANCE" && serviceMode !== "HYBRID") {
       res.status(400).json({
         success: false,
         message: "A valid service mode is required for step 2",
@@ -1010,15 +923,11 @@ export const saveCoachVerificationStep2Handler = async (
 
     const effectiveServiceMode = serviceMode;
 
-    if (
-      effectiveServiceMode === "OWN_VENUE" ||
-      effectiveServiceMode === "HYBRID"
-    ) {
+    if (effectiveServiceMode === "OWN_VENUE" || effectiveServiceMode === "HYBRID") {
       if (!ownVenueDetails?.name?.trim() || !ownVenueDetails?.address?.trim()) {
         res.status(400).json({
           success: false,
-          message:
-            "Venue name and address are required for OWN_VENUE or HYBRID mode",
+          message: "Venue name and address are required for OWN_VENUE or HYBRID mode",
         });
         return;
       }
@@ -1028,8 +937,7 @@ export const saveCoachVerificationStep2Handler = async (
       if (!hasCoordinates(ownVenueCoordinates)) {
         res.status(400).json({
           success: false,
-          message:
-            "Venue coordinates are required for OWN_VENUE or HYBRID mode",
+          message: "Venue coordinates are required for OWN_VENUE or HYBRID mode",
         });
         return;
       }
@@ -1039,16 +947,12 @@ export const saveCoachVerificationStep2Handler = async (
       if (!hasCoordinates(baseLocation?.coordinates)) {
         res.status(400).json({
           success: false,
-          message:
-            "Base location coordinates are required for FREELANCE or HYBRID mode",
+          message: "Base location coordinates are required for FREELANCE or HYBRID mode",
         });
         return;
       }
 
-      if (
-        !Number.isFinite(Number(serviceRadiusKm)) ||
-        Number(serviceRadiusKm) <= 0
-      ) {
+      if (!Number.isFinite(Number(serviceRadiusKm)) || Number(serviceRadiusKm) <= 0) {
         res.status(400).json({
           success: false,
           message: "Service radius must be a valid number greater than 0",
@@ -1056,10 +960,7 @@ export const saveCoachVerificationStep2Handler = async (
         return;
       }
 
-      if (
-        !Number.isFinite(Number(travelBufferTime)) ||
-        Number(travelBufferTime) < 0
-      ) {
+      if (!Number.isFinite(Number(travelBufferTime)) || Number(travelBufferTime) < 0) {
         res.status(400).json({
           success: false,
           message: "Travel buffer time must be a valid non-negative number",
@@ -1070,23 +971,14 @@ export const saveCoachVerificationStep2Handler = async (
 
     // Build venue details for coach if provided
     let venueDetailsPayload;
-    if (
-      ownVenueDetails &&
-      (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID")
-    ) {
+    if (ownVenueDetails && (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID")) {
       // Validate that coordinates exist
-      const coordinates =
-        ownVenueDetails.location?.coordinates || ownVenueDetails.coordinates;
+      const coordinates = ownVenueDetails.location?.coordinates || ownVenueDetails.coordinates;
 
-      if (
-        !coordinates ||
-        !Array.isArray(coordinates) ||
-        coordinates.length !== 2
-      ) {
+      if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
         res.status(400).json({
           success: false,
-          message:
-            "Venue coordinates are required and must be [longitude, latitude]",
+          message: "Venue coordinates are required and must be [longitude, latitude]",
         });
         return;
       }
@@ -1112,8 +1004,7 @@ export const saveCoachVerificationStep2Handler = async (
     const existingCoach = await getCoachByUserId(req.user.id);
 
     if (existingCoach) {
-      const coachId = (existingCoach.id ||
-        existingCoach._id?.toString()) as string;
+      const coachId = (existingCoach.id || existingCoach._id?.toString()) as string;
       const updatePayload: any = {
         bio,
         sports,
@@ -1121,19 +1012,14 @@ export const saveCoachVerificationStep2Handler = async (
         hourlyRate,
         sportPricing: sportPricing || {},
         serviceMode: serviceMode || existingCoach.serviceMode || "FREELANCE",
-        onboardingProgressStep: Math.max(
-          Number(existingCoach.onboardingProgressStep || 1),
-          2,
-        ) as 1 | 2 | 3,
+        onboardingProgressStep: Math.max(Number(existingCoach.onboardingProgressStep || 1), 2) as
+          1 | 2 | 3,
       };
 
       if (baseLocation) {
         updatePayload.baseLocation = {
           type: "Point",
-          coordinates: [
-            Number(baseLocation.coordinates[0]),
-            Number(baseLocation.coordinates[1]),
-          ],
+          coordinates: [Number(baseLocation.coordinates[0]), Number(baseLocation.coordinates[1])],
         };
       }
 
@@ -1177,10 +1063,7 @@ export const saveCoachVerificationStep2Handler = async (
     if (baseLocation) {
       createPayload.baseLocation = {
         type: "Point",
-        coordinates: [
-          Number(baseLocation.coordinates[0]),
-          Number(baseLocation.coordinates[1]),
-        ],
+        coordinates: [Number(baseLocation.coordinates[0]), Number(baseLocation.coordinates[1])],
       };
     }
 
@@ -1200,10 +1083,7 @@ export const saveCoachVerificationStep2Handler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to save verification step 2",
+      message: error instanceof Error ? error.message : "Failed to save verification step 2",
     });
   }
 };
@@ -1214,7 +1094,7 @@ export const saveCoachVerificationStep2Handler = async (
  */
 export const submitCoachVerificationStep3Handler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -1252,27 +1132,19 @@ export const submitCoachVerificationStep3Handler = async (
       return;
     }
 
-    const step1Completed = await hasStep1Completed(
-      req.user.id,
-      existingCoach.bio,
-    );
+    const step1Completed = await hasStep1Completed(req.user.id, existingCoach.bio);
     if (!step1Completed) {
       res.status(400).json({
         success: false,
-        message:
-          "Step 1 is incomplete. Add profile picture, bio, and mobile number first",
+        message: "Step 1 is incomplete. Add profile picture, bio, and mobile number first",
       });
       return;
     }
 
-    if (
-      !Array.isArray(existingCoach.sports) ||
-      existingCoach.sports.length === 0
-    ) {
+    if (!Array.isArray(existingCoach.sports) || existingCoach.sports.length === 0) {
       res.status(400).json({
         success: false,
-        message:
-          "Step 2 is incomplete. Add at least one sport and pricing before submitting",
+        message: "Step 2 is incomplete. Add at least one sport and pricing before submitting",
       });
       return;
     }
@@ -1283,8 +1155,7 @@ export const submitCoachVerificationStep3Handler = async (
     ) {
       res.status(400).json({
         success: false,
-        message:
-          "Step 2 is incomplete. Add a valid hourly rate before submitting",
+        message: "Step 2 is incomplete. Add a valid hourly rate before submitting",
       });
       return;
     }
@@ -1305,10 +1176,7 @@ export const submitCoachVerificationStep3Handler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to submit verification",
+      message: error instanceof Error ? error.message : "Failed to submit verification",
     });
   }
 };
@@ -1319,7 +1187,7 @@ export const submitCoachVerificationStep3Handler = async (
  */
 export const submitCoachVerificationHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   await submitCoachVerificationStep3Handler(req, res);
 };
@@ -1329,7 +1197,7 @@ export const submitCoachVerificationHandler = async (
  */
 export const getCoachVerificationUploadUrlHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -1352,12 +1220,7 @@ export const getCoachVerificationUploadUrlHandler = async (
       fileName?: string;
       contentType?: string;
       documentType?:
-        | "CERTIFICATION"
-        | "ID_PROOF"
-        | "ADDRESS_PROOF"
-        | "BACKGROUND_CHECK"
-        | "INSURANCE"
-        | "OTHER";
+        "CERTIFICATION" | "ID_PROOF" | "ADDRESS_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
       purpose?: "DOCUMENT" | "VENUE_IMAGE";
     };
 
@@ -1372,8 +1235,7 @@ export const getCoachVerificationUploadUrlHandler = async (
     const allowedDocumentTypes = ["application/pdf", "image/jpeg", "image/png"];
     const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
 
-    const allowedTypes =
-      purpose === "VENUE_IMAGE" ? allowedImageTypes : allowedDocumentTypes;
+    const allowedTypes = purpose === "VENUE_IMAGE" ? allowedImageTypes : allowedDocumentTypes;
     if (!allowedTypes.includes(contentType)) {
       res.status(400).json({
         success: false,
@@ -1397,13 +1259,13 @@ export const getCoachVerificationUploadUrlHandler = async (
         ? await s3Service.generateCoachVenueImageUploadUrl(
             fileName,
             contentType,
-            coach._id.toString(),
+            coach._id.toString()
           )
         : await s3Service.generateCoachVerificationUploadUrl(
             fileName,
             contentType,
             coach._id.toString(),
-            documentType,
+            documentType
           );
 
     res.status(200).json({
@@ -1417,10 +1279,7 @@ export const getCoachVerificationUploadUrlHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate upload URL",
+      message: error instanceof Error ? error.message : "Failed to generate upload URL",
     });
   }
 };
@@ -1429,10 +1288,7 @@ export const getCoachVerificationUploadUrlHandler = async (
  * Get coach calendar data for a date range
  * GET /api/coaches/my-profile/calendar?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  */
-export const getCoachCalendarHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCoachCalendarHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -1483,8 +1339,7 @@ export const getCoachCalendarHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch calendar",
+      message: error instanceof Error ? error.message : "Failed to fetch calendar",
     });
   }
 };
@@ -1493,10 +1348,7 @@ export const getCoachCalendarHandler = async (
  * Block a date or date range for the coach
  * POST /api/coaches/my-profile/block-dates
  */
-export const blockCoachDatesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const blockCoachDatesHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -1550,10 +1402,7 @@ export const blockCoachDatesHandler = async (
  * Remove a blocked date entry
  * DELETE /api/coaches/my-profile/block-dates/:blockId
  */
-export const unblockCoachDateHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const unblockCoachDateHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -1575,8 +1424,7 @@ export const unblockCoachDateHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to unblock date",
+      message: error instanceof Error ? error.message : "Failed to unblock date",
     });
   }
 };

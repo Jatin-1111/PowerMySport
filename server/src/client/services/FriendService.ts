@@ -1,6 +1,4 @@
-import FriendConnection, {
-  IFriendConnection,
-} from "../models/FriendConnection";
+import FriendConnection, { IFriendConnection } from "../models/FriendConnection";
 import { User } from "../models/User";
 import { CommunityProfile } from "../../community/models/CommunityProfile";
 import mongoose from "mongoose";
@@ -17,19 +15,13 @@ type UserWithPhoto = {
 export class FriendService {
   private readonly s3Service = new S3Service();
 
-  private async resolvePhotoUrl(
-    user: UserWithPhoto,
-  ): Promise<string | undefined> {
+  private async resolvePhotoUrl(user: UserWithPhoto): Promise<string | undefined> {
     if (!user.photoS3Key) {
       return user.photoUrl;
     }
 
     try {
-      return await this.s3Service.generateCachedDownloadUrl(
-        user.photoS3Key,
-        "images",
-        3600,
-      );
+      return await this.s3Service.generateCachedDownloadUrl(user.photoS3Key, "images", 3600);
     } catch (error) {
       log.error("Failed to regenerate friend photo URL:", error);
       return user.photoUrl;
@@ -39,10 +31,7 @@ export class FriendService {
   /**
    * Send a friend request
    */
-  async sendFriendRequest(
-    requesterId: string,
-    recipientId: string,
-  ): Promise<IFriendConnection> {
+  async sendFriendRequest(requesterId: string, recipientId: string): Promise<IFriendConnection> {
     // Validate: cannot send request to yourself
     if (requesterId === recipientId) {
       throw new Error("Cannot send friend request to yourself");
@@ -60,10 +49,7 @@ export class FriendService {
 
     // Check if requester is a PLAYER (Parent counts too, same as above)
     const requester = await User.findById(requesterId);
-    if (
-      !requester ||
-      (requester.role !== "Player" && requester.role !== "Parent")
-    ) {
+    if (!requester || (requester.role !== "Player" && requester.role !== "Parent")) {
       throw new Error("Only players can send friend requests");
     }
 
@@ -71,11 +57,7 @@ export class FriendService {
     const recipientProfile = await CommunityProfile.findOne({
       userId: recipientId,
     });
-    if (
-      recipientProfile?.blockedUsers?.includes(
-        new mongoose.Types.ObjectId(requesterId),
-      )
-    ) {
+    if (recipientProfile?.blockedUsers?.includes(new mongoose.Types.ObjectId(requesterId))) {
       throw new Error("Cannot send friend request to this user");
     }
 
@@ -117,10 +99,7 @@ export class FriendService {
   /**
    * Accept a friend request
    */
-  async acceptFriendRequest(
-    userId: string,
-    requestId: string,
-  ): Promise<IFriendConnection> {
+  async acceptFriendRequest(userId: string, requestId: string): Promise<IFriendConnection> {
     const friendRequest = await FriendConnection.findById(requestId);
 
     if (!friendRequest) {
@@ -143,10 +122,7 @@ export class FriendService {
   /**
    * Decline a friend request
    */
-  async declineFriendRequest(
-    userId: string,
-    requestId: string,
-  ): Promise<IFriendConnection> {
+  async declineFriendRequest(userId: string, requestId: string): Promise<IFriendConnection> {
     const friendRequest = await FriendConnection.findById(requestId);
 
     if (!friendRequest) {
@@ -189,10 +165,7 @@ export class FriendService {
   /**
    * Block a user
    */
-  async blockUser(
-    userId: string,
-    targetId: string,
-  ): Promise<IFriendConnection> {
+  async blockUser(userId: string, targetId: string): Promise<IFriendConnection> {
     if (userId === targetId) {
       throw new Error("Cannot block yourself");
     }
@@ -226,7 +199,7 @@ export class FriendService {
     await CommunityProfile.findOneAndUpdate(
       { userId: new mongoose.Types.ObjectId(userId) },
       { $addToSet: { blockedUsers: new mongoose.Types.ObjectId(targetId) } },
-      { upsert: true },
+      { upsert: true }
     );
 
     return await block.save();
@@ -245,7 +218,7 @@ export class FriendService {
     // Remove from community profile blocked list
     await CommunityProfile.findOneAndUpdate(
       { userId: new mongoose.Types.ObjectId(userId) },
-      { $pull: { blockedUsers: new mongoose.Types.ObjectId(targetId) } },
+      { $pull: { blockedUsers: new mongoose.Types.ObjectId(targetId) } }
     );
   }
 
@@ -255,7 +228,7 @@ export class FriendService {
   async getFriends(
     userId: string,
     page: number = 1,
-    limit: number = 20,
+    limit: number = 20
   ): Promise<{
     friends: any[];
     total: number;
@@ -282,16 +255,14 @@ export class FriendService {
 
     // Filter out connections where either user was deleted
     const validConnections = connections.filter(
-      (conn: any) => conn.requesterId && conn.recipientId,
+      (conn: any) => conn.requesterId && conn.recipientId
     );
 
     // Extract the friend user object (the one that's not the current user)
     const friends = await Promise.all(
       validConnections.map(async (conn: any) => {
         const friend =
-          conn.requesterId._id.toString() === userId
-            ? conn.recipientId
-            : conn.requesterId;
+          conn.requesterId._id.toString() === userId ? conn.recipientId : conn.requesterId;
 
         return {
           id: friend._id,
@@ -301,7 +272,7 @@ export class FriendService {
           friendsSince: conn.updatedAt,
           connectionId: conn._id,
         };
-      }),
+      })
     );
 
     return {
@@ -315,10 +286,7 @@ export class FriendService {
   /**
    * Get pending friend requests (received)
    */
-  async getPendingRequests(
-    userId: string,
-    type: "SENT" | "RECEIVED" = "RECEIVED",
-  ): Promise<any[]> {
+  async getPendingRequests(userId: string, type: "SENT" | "RECEIVED" = "RECEIVED"): Promise<any[]> {
     const query =
       type === "RECEIVED"
         ? { recipientId: userId, status: "PENDING" }
@@ -330,9 +298,7 @@ export class FriendService {
       .sort({ createdAt: -1 })
       .lean();
 
-    const validRequests = requests.filter(
-      (req: any) => req.requesterId && req.recipientId,
-    );
+    const validRequests = requests.filter((req: any) => req.requesterId && req.recipientId);
 
     return await Promise.all(
       validRequests.map(async (req: any) => ({
@@ -351,7 +317,7 @@ export class FriendService {
         },
         status: req.status,
         createdAt: req.createdAt,
-      })),
+      }))
     );
   }
 
@@ -360,7 +326,7 @@ export class FriendService {
    *  read `.length`. */
   async countPendingRequests(
     userId: string,
-    type: "SENT" | "RECEIVED" = "RECEIVED",
+    type: "SENT" | "RECEIVED" = "RECEIVED"
   ): Promise<number> {
     const query =
       type === "RECEIVED"
@@ -373,10 +339,7 @@ export class FriendService {
   /**
    * Search friends for booking (with optional query filter)
    */
-  async searchFriendsForBooking(
-    userId: string,
-    query?: string,
-  ): Promise<any[]> {
+  async searchFriendsForBooking(userId: string, query?: string): Promise<any[]> {
     // Get all accepted friends
     const connections = await FriendConnection.find({
       $or: [{ requesterId: userId }, { recipientId: userId }],
@@ -389,9 +352,7 @@ export class FriendService {
     let friends = connections
       .filter((conn: any) => conn.requesterId && conn.recipientId)
       .map((conn: any) => {
-        return conn.requesterId._id.toString() === userId
-          ? conn.recipientId
-          : conn.requesterId;
+        return conn.requesterId._id.toString() === userId ? conn.recipientId : conn.requesterId;
       });
 
     // Filter by query if provided
@@ -400,7 +361,7 @@ export class FriendService {
       friends = friends.filter(
         (friend) =>
           friend.name.toLowerCase().includes(lowerQuery) ||
-          friend.email.toLowerCase().includes(lowerQuery),
+          friend.email.toLowerCase().includes(lowerQuery)
       );
     }
 
@@ -411,7 +372,7 @@ export class FriendService {
         name: friend.name,
         email: friend.email,
         photoUrl: await this.resolvePhotoUrl(friend),
-      })),
+      }))
     );
   }
 
@@ -420,15 +381,14 @@ export class FriendService {
    */
   async searchUsers(
     userId: string,
-    query: string,
+    query: string
   ): Promise<
     Array<{
       id: string;
       name: string;
       email: string;
       photoUrl?: string;
-      friendStatus:
-        "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE";
+      friendStatus: "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE";
     }>
   > {
     if (!query || query.trim().length < 2) {
@@ -470,8 +430,7 @@ export class FriendService {
       const recipientId = connection.recipientId.toString();
       const otherId = requesterId === userId ? recipientId : requesterId;
 
-      let status: "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE" =
-        "NONE";
+      let status: "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE" = "NONE";
       if (connection.status === "ACCEPTED") {
         status = "FRIENDS";
       } else if (connection.status === "BLOCKED") {
@@ -494,7 +453,7 @@ export class FriendService {
           ...(photoUrl && { photoUrl }),
           friendStatus: status,
         };
-      }),
+      })
     );
 
     return usersWithStatus;
@@ -520,10 +479,8 @@ export class FriendService {
    */
   async getFriendStatus(
     userId: string,
-    targetId: string,
-  ): Promise<
-    "FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE"
-  > {
+    targetId: string
+  ): Promise<"FRIENDS" | "PENDING_SENT" | "PENDING_RECEIVED" | "BLOCKED" | "NONE"> {
     const connection = await FriendConnection.findOne({
       $or: [
         { requesterId: userId, recipientId: targetId },
@@ -536,9 +493,7 @@ export class FriendService {
     if (connection.status === "ACCEPTED") return "FRIENDS";
     if (connection.status === "BLOCKED") return "BLOCKED";
     if (connection.status === "PENDING") {
-      return connection.requesterId.toString() === userId
-        ? "PENDING_SENT"
-        : "PENDING_RECEIVED";
+      return connection.requesterId.toString() === userId ? "PENDING_SENT" : "PENDING_RECEIVED";
     }
 
     return "NONE";

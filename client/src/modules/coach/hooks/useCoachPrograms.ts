@@ -43,10 +43,7 @@ export const useBrowseProgrammes = (params: {
   online?: boolean;
 }): UseQueryResult<CoachOffering[]> =>
   useQuery({
-    queryKey: queryKeys.coachPrograms.browse(
-      params.sport ?? "",
-      Boolean(params.online),
-    ),
+    queryKey: queryKeys.coachPrograms.browse(params.sport ?? "", Boolean(params.online)),
     queryFn: async () => {
       const response = await coachProgramsApi.browse({
         ...(params.sport ? { sport: params.sport } : {}),
@@ -106,9 +103,7 @@ export const useMyEnrollments = (): UseQueryResult<CoachEnrollment[]> =>
     retry: noRetryOnAuth,
   });
 
-export const useMyUpcomingSessions = (): UseQueryResult<
-  CoachSessionOccurrence[]
-> =>
+export const useMyUpcomingSessions = (): UseQueryResult<CoachSessionOccurrence[]> =>
   useQuery({
     queryKey: queryKeys.coachPrograms.myUpcoming,
     queryFn: async () => {

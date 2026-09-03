@@ -31,11 +31,7 @@ interface AuthorAvatarProps {
   className?: string;
 }
 
-export default function AuthorAvatar({
-  author,
-  size = 32,
-  className = "",
-}: AuthorAvatarProps) {
+export default function AuthorAvatar({ author, size = 32, className = "" }: AuthorAvatarProps) {
   const name = (author.displayName || "?").trim();
   const dimension = { width: size, height: size };
   const fontSize = Math.max(10, Math.round(size * 0.4));
@@ -47,7 +43,7 @@ export default function AuthorAvatar({
         src={author.photoUrl}
         alt={name}
         style={dimension}
-        className={`shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm ${className}`}
+        className={`shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white ${className}`}
       />
     );
   }
@@ -55,8 +51,8 @@ export default function AuthorAvatar({
   return (
     <span
       style={{ ...dimension, fontSize }}
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold ring-2 ring-white shadow-sm ${colorFor(
-        name,
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold shadow-sm ring-2 ring-white ${colorFor(
+        name
       )} ${className}`}
       aria-hidden="true"
     >

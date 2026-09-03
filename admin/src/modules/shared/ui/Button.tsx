@@ -3,8 +3,7 @@ import { Loader2 } from "lucide-react";
 import React from "react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?:
-    "primary" | "secondary" | "outline" | "ghost" | "success" | "danger";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "success" | "danger";
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   loading?: boolean;
@@ -29,21 +28,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       ...props
     },
-    ref,
+    ref
   ) => {
     const baseStyles =
       "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
-      primary:
-        "bg-power-orange text-white hover:bg-orange-600 focus:ring-power-orange",
-      secondary:
-        "bg-deep-slate text-white hover:bg-slate-700 focus:ring-deep-slate",
+      primary: "bg-power-orange text-white hover:bg-orange-600 focus:ring-power-orange",
+      secondary: "bg-deep-slate text-white hover:bg-slate-700 focus:ring-deep-slate",
       outline:
         "border-2 border-power-orange text-power-orange hover:bg-power-orange hover:text-white focus:ring-power-orange",
       ghost: "text-power-orange hover:bg-orange-50 focus:ring-power-orange",
-      success:
-        "bg-turf-green text-white hover:bg-green-600 focus:ring-turf-green",
+      success: "bg-turf-green text-white hover:bg-green-600 focus:ring-turf-green",
       danger: "bg-error-red text-white hover:bg-red-600 focus:ring-error-red",
     };
 
@@ -62,14 +58,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           sizes[size],
           fullWidth && "w-full",
           loading && "cursor-wait",
-          className,
+          className
         )}
         disabled={disabled || loading}
         {...props}
       >
         {loading ? (
           <>
-            <Loader2 className="animate-spin h-5 w-5" />
+            <Loader2 className="h-5 w-5 animate-spin" />
             <span>Loading...</span>
           </>
         ) : (
@@ -80,7 +76,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </button>
     );
-  },
+  }
 );
 
 Button.displayName = "Button";

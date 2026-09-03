@@ -10,8 +10,7 @@ import Link from "next/link";
  */
 export const metadata = buildMetadata({
   title: "Page not found",
-  description:
-    "This PowerMySport community page doesn't exist or may have moved.",
+  description: "This PowerMySport community page doesn't exist or may have moved.",
   path: "/404",
   noindex: true,
 });
@@ -20,23 +19,18 @@ export default function NotFound() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-6 py-16">
       <div className="w-full max-w-md rounded-2xl border border-white/70 bg-white/90 p-8 text-center shadow-sm backdrop-blur">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-power-orange">
+        <p className="text-power-orange mb-2 text-xs font-semibold tracking-[0.2em] uppercase">
           Error 404
         </p>
-        <h1 className="font-title text-6xl font-extrabold text-slate-900">
-          404
-        </h1>
-        <h2 className="mt-3 text-xl font-bold text-slate-900">
-          Page not found
-        </h2>
+        <h1 className="font-title text-6xl font-extrabold text-slate-900">404</h1>
+        <h2 className="mt-3 text-xl font-bold text-slate-900">Page not found</h2>
         <p className="mt-2 text-sm text-slate-600">
-          This page doesn&apos;t exist or may have moved. Head back to the
-          community.
+          This page doesn&apos;t exist or may have moved. Head back to the community.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-power-orange px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <Home className="h-4 w-4" /> Community home
           </Link>

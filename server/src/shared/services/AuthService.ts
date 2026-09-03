@@ -32,7 +32,7 @@ export interface VerifiedGoogleIdentity {
  * forged to impersonate any account.
  */
 export const verifyGoogleCredential = async (
-  credential: unknown,
+  credential: unknown
 ): Promise<VerifiedGoogleIdentity> => {
   if (!GOOGLE_CLIENT_ID) {
     throw new Error("Google login is not configured on the server.");
@@ -89,9 +89,7 @@ export interface LoginPayload {
   password: string;
 }
 
-export const registerUser = async (
-  payload: RegisterPayload,
-): Promise<UserDocument> => {
+export const registerUser = async (payload: RegisterPayload): Promise<UserDocument> => {
   const existingUser = await User.findOne({
     $or: [{ email: payload.email }, { phone: payload.phone }],
   });
@@ -143,7 +141,7 @@ export const registerUser = async (
 };
 
 export const loginUser = async (
-  payload: LoginPayload,
+  payload: LoginPayload
 ): Promise<{ user: UserDocument; deletionCancelled: boolean }> => {
   const user = await User.findOne({ email: payload.email }).select("+password");
 
@@ -171,7 +169,7 @@ export const loginUser = async (
       {
         $set: { isActive: true, pendingDeletion: false },
         $unset: { deletionRequestedAt: "", deactivatedAt: "" },
-      },
+      }
     );
     user.isActive = true;
     user.pendingDeletion = false;
@@ -186,9 +184,7 @@ export const getUserById = async (id: string): Promise<UserDocument | null> => {
 };
 
 export const requestPasswordReset = async (email: string): Promise<string> => {
-  const user = await User.findOne({ email }).select(
-    "+resetPasswordToken +resetPasswordExpires",
-  );
+  const user = await User.findOne({ email }).select("+resetPasswordToken +resetPasswordExpires");
 
   if (!user) {
     // Return the same message as success — never reveal whether the email exists
@@ -197,10 +193,7 @@ export const requestPasswordReset = async (email: string): Promise<string> => {
 
   // Generate reset token
   const resetToken = crypto.randomBytes(32).toString("hex");
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
+  const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
   user.resetPasswordToken = hashedToken;
   user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour
@@ -219,10 +212,7 @@ export const requestPasswordReset = async (email: string): Promise<string> => {
   return "If this email is registered, you will receive a reset link shortly.";
 };
 
-export const resetPassword = async (
-  token: string,
-  newPassword: string,
-): Promise<void> => {
+export const resetPassword = async (token: string, newPassword: string): Promise<void> => {
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
   const user = await User.findOne({
@@ -243,13 +233,13 @@ export const resetPassword = async (
 
   await User.updateOne(
     { _id: user._id },
-    { $unset: { resetPasswordToken: "", resetPasswordExpires: "" } },
+    { $unset: { resetPasswordToken: "", resetPasswordExpires: "" } }
   );
 
   // Security confirmation that the password was changed (fire-and-forget).
   if (user.email) {
-    sendPasswordChangedEmail({ name: user.name, email: user.email }).catch(
-      (error) => log.error("Failed to send password-changed email:", error),
+    sendPasswordChangedEmail({ name: user.name, email: user.email }).catch((error) =>
+      log.error("Failed to send password-changed email:", error)
     );
   }
 };
@@ -263,7 +253,7 @@ export const resetPassword = async (
 export const changePassword = async (
   userId: string,
   currentPassword: string,
-  newPassword: string,
+  newPassword: string
 ): Promise<void> => {
   const user = await User.findById(userId).select("+password");
   if (!user) {
@@ -271,9 +261,7 @@ export const changePassword = async (
   }
 
   if (!user.password) {
-    throw new Error(
-      "This account signed in with Google and has no password to change",
-    );
+    throw new Error("This account signed in with Google and has no password to change");
   }
 
   const isValid = await user.comparePassword(currentPassword);
@@ -285,8 +273,8 @@ export const changePassword = async (
   await user.save();
 
   if (user.email) {
-    sendPasswordChangedEmail({ name: user.name, email: user.email }).catch(
-      (error) => log.error("Failed to send password-changed email:", error),
+    sendPasswordChangedEmail({ name: user.name, email: user.email }).catch((error) =>
+      log.error("Failed to send password-changed email:", error)
     );
   }
 };
@@ -296,11 +284,7 @@ export const changePassword = async (
  * scheduled job actually finalizing it. Overridable for testing.
  */
 export const ACCOUNT_DELETION_GRACE_PERIOD_MS =
-  (Number(process.env.ACCOUNT_DELETION_GRACE_PERIOD_DAYS) || 30) *
-  24 *
-  60 *
-  60 *
-  1000;
+  (Number(process.env.ACCOUNT_DELETION_GRACE_PERIOD_DAYS) || 30) * 24 * 60 * 60 * 1000;
 
 /**
  * Step 1 of account deletion: verify the password and immediately lock the
@@ -313,7 +297,7 @@ export const ACCOUNT_DELETION_GRACE_PERIOD_MS =
  */
 export const requestAccountDeletion = async (
   userId: string,
-  currentPassword: string,
+  currentPassword: string
 ): Promise<void> => {
   const user = await User.findById(userId).select("+password");
   if (!user) {
@@ -337,7 +321,7 @@ export const requestAccountDeletion = async (
         deletionRequestedAt: now,
         deactivatedAt: now,
       },
-    },
+    }
   );
 };
 
@@ -399,7 +383,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
         involvementYears: "",
         deletionRequestedAt: "",
       },
-    },
+    }
   );
 
   // Cascade-delete data with no legal/financial retention need. Each is
@@ -409,9 +393,9 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     [
       "UserCalendarEvent",
       async () =>
-        (
-          await import("../../client/models/UserCalendarEvent")
-        ).UserCalendarEvent.deleteMany({ userId }),
+        (await import("../../client/models/UserCalendarEvent")).UserCalendarEvent.deleteMany({
+          userId,
+        }),
     ],
     [
       "FriendConnection",
@@ -423,52 +407,42 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     [
       "BookingWaitlist",
       async () =>
-        (
-          await import("../../client/models/BookingWaitlist")
-        ).BookingWaitlist.deleteMany({ userId }),
+        (await import("../../client/models/BookingWaitlist")).BookingWaitlist.deleteMany({
+          userId,
+        }),
     ],
     [
       "GuidanceSubmission",
       async () =>
-        (
-          await import("../../client/models/GuidanceSubmission")
-        ).GuidanceSubmission.deleteMany({ userId }),
+        (await import("../../client/models/GuidanceSubmission")).GuidanceSubmission.deleteMany({
+          userId,
+        }),
     ],
     [
       "GuidanceChatSession",
       async () =>
-        (
-          await import("../../client/models/GuidanceChatSession")
-        ).GuidanceChatSession.deleteMany({ userId }),
+        (await import("../../client/models/GuidanceChatSession")).GuidanceChatSession.deleteMany({
+          userId,
+        }),
     ],
     [
       "RoadmapChatSession",
       async () =>
-        (
-          await import("../../client/models/RoadmapChatSession")
-        ).RoadmapChatSession.deleteMany({ userId }),
+        (await import("../../client/models/RoadmapChatSession")).RoadmapChatSession.deleteMany({
+          userId,
+        }),
     ],
     [
       "PlanCheckIn",
-      async () =>
-        (await import("../models/PlanCheckIn")).PlanCheckIn.deleteMany({ userId }),
+      async () => (await import("../models/PlanCheckIn")).PlanCheckIn.deleteMany({ userId }),
     ],
     [
       "UserPathwayProfile",
       async () =>
-        (
-          await import("../models/UserPathwayProfile")
-        ).UserPathwayProfile.deleteMany({ userId }),
+        (await import("../models/UserPathwayProfile")).UserPathwayProfile.deleteMany({ userId }),
     ],
-    [
-      "Player",
-      async () => Player.deleteMany({ userId }),
-    ],
-    [
-      "Cart",
-      async () =>
-        (await import("../../shop/models/Ecommerce")).Cart.deleteMany({ userId }),
-    ],
+    ["Player", async () => Player.deleteMany({ userId })],
+    ["Cart", async () => (await import("../../shop/models/Ecommerce")).Cart.deleteMany({ userId })],
     [
       "Wishlist",
       async () =>
@@ -479,23 +453,21 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     [
       "CommunityReputation",
       async () =>
-        (
-          await import("../../community/models/CommunityReputation")
-        ).CommunityReputation.deleteMany({ userId }),
+        (await import("../../community/models/CommunityReputation")).CommunityReputation.deleteMany(
+          { userId }
+        ),
     ],
     [
       "CommunityVote",
       async () =>
-        (
-          await import("../../community/models/CommunityVote")
-        ).CommunityVote.deleteMany({ userId }),
+        (await import("../../community/models/CommunityVote")).CommunityVote.deleteMany({ userId }),
     ],
     [
       "CommunityFollow",
       async () =>
-        (
-          await import("../../community/models/CommunityFollow")
-        ).CommunityFollow.deleteMany({ userId }),
+        (await import("../../community/models/CommunityFollow")).CommunityFollow.deleteMany({
+          userId,
+        }),
     ],
     [
       "CommunityGroupMember",
@@ -513,10 +485,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     ],
     [
       "Notification",
-      async () =>
-        (
-          await import("../../client/models/Notification")
-        ).default.deleteMany({ userId }),
+      async () => (await import("../../client/models/Notification")).default.deleteMany({ userId }),
     ],
     [
       "ScheduledNotification (pending)",
@@ -531,10 +500,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     try {
       await run();
     } catch (error) {
-      log.error(
-        `finalizeAccountDeletion: failed to clean up ${label} for user ${userId}:`,
-        error,
-      );
+      log.error(`finalizeAccountDeletion: failed to clean up ${label} for user ${userId}:`, error);
     }
   }
 
@@ -552,7 +518,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
         } catch (error) {
           log.error(
             `finalizeAccountDeletion: failed to delete S3 document ${doc.s3Key} for user ${userId}:`,
-            error,
+            error
           );
         }
       }
@@ -561,7 +527,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
   } catch (error) {
     log.error(
       `finalizeAccountDeletion: failed to clean up ConciergeRequest for user ${userId}:`,
-      error,
+      error
     );
   }
 
@@ -573,7 +539,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
   } catch (error) {
     log.error(
       `finalizeAccountDeletion: failed to strip userId from AnalyticsEvent for user ${userId}:`,
-      error,
+      error
     );
   }
 };
@@ -598,7 +564,7 @@ export const finalizePendingAccountDeletions = async (): Promise<number> => {
     } catch (error) {
       log.error(
         `finalizePendingAccountDeletions: failed to finalize user ${candidate._id.toString()}:`,
-        error,
+        error
       );
     }
   }
@@ -617,9 +583,7 @@ export interface GoogleLoginPayload {
   acceptedPrivacy?: boolean;
 }
 
-export const googleLogin = async (
-  payload: GoogleLoginPayload,
-): Promise<UserDocument> => {
+export const googleLogin = async (payload: GoogleLoginPayload): Promise<UserDocument> => {
   let user = await User.findOne({ googleId: payload.googleId });
 
   if (!user) {
@@ -635,15 +599,11 @@ export const googleLogin = async (
       await user.save();
     } else {
       if (payload.action === "login") {
-        throw new Error(
-          "Account not found. Please sign up on the Register page.",
-        );
+        throw new Error("Account not found. Please sign up on the Register page.");
       }
 
       if (!payload.acceptedTerms || !payload.acceptedPrivacy) {
-        throw new Error(
-          "You must accept Terms of Service and Privacy Policy to register.",
-        );
+        throw new Error("You must accept Terms of Service and Privacy Policy to register.");
       }
 
       const now = new Date();
@@ -716,7 +676,7 @@ export interface GraduateDependentPayload {
  * ALL bookings where the dependent is the participant are transferred to the new user
  */
 export const graduateDependent = async (
-  payload: GraduateDependentPayload,
+  payload: GraduateDependentPayload
 ): Promise<UserDocument> => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -773,7 +733,7 @@ export const graduateDependent = async (
           participantId: "",
         },
       },
-      { session },
+      { session }
     );
 
     log.info(`Transferred ${result.modifiedCount} bookings to new user`);
@@ -869,19 +829,14 @@ function calculateAge(dob: Date): number {
   return Math.abs(ageDate.getUTCFullYear() - 1970);
 }
 
-export const addDependent = async (
-  userId: string,
-  payload: AddDependentPayload,
-): Promise<any> => {
+export const addDependent = async (userId: string, payload: AddDependentPayload): Promise<any> => {
   const user = await User.findById(userId);
   if (!user) {
     throw new Error("User not found");
   }
 
   if (user.role === "Player") {
-    throw new Error(
-      "Only Parent profiles can add dependents. Please upgrade your profile first.",
-    );
+    throw new Error("Only Parent profiles can add dependents. Please upgrade your profile first.");
   }
 
   let age = payload.age;
@@ -962,7 +917,7 @@ export const addDependent = async (
 export const updateDependent = async (
   userId: string,
   dependentId: string,
-  payload: Partial<AddDependentPayload>,
+  payload: Partial<AddDependentPayload>
 ): Promise<any> => {
   const dependent = await Player.findOne({
     _id: dependentId,
@@ -990,51 +945,64 @@ export const updateDependent = async (
   if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
   if (payload.sports) dependent.sportsFocus = payload.sports;
   if (payload.skillLevel) dependent.skillLevel = payload.skillLevel;
-  if (payload.yearsPlaying !== undefined)
-    dependent.yearsPlaying = payload.yearsPlaying;
-  if (payload.personalityTags)
-    dependent.personalityTags = payload.personalityTags;
-  if (payload.primaryObjective)
-    dependent.primaryObjective = payload.primaryObjective;
+  if (payload.yearsPlaying !== undefined) dependent.yearsPlaying = payload.yearsPlaying;
+  if (payload.personalityTags) dependent.personalityTags = payload.personalityTags;
+  if (payload.primaryObjective) dependent.primaryObjective = payload.primaryObjective;
   if (payload.weeklyTimeCommitment !== undefined)
     dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
   if (payload.budgetTier) dependent.budgetTier = payload.budgetTier;
   if (payload.location !== undefined) dependent.location = payload.location;
   if (payload.heightCm !== undefined) (dependent as any).heightCm = payload.heightCm;
   if (payload.weightKg !== undefined) (dependent as any).weightKg = payload.weightKg;
-  if (payload.medicalConditions !== undefined) (dependent as any).medicalConditions = payload.medicalConditions;
+  if (payload.medicalConditions !== undefined)
+    (dependent as any).medicalConditions = payload.medicalConditions;
   // Wizard physical
   if (payload.build !== undefined) (dependent as any).build = payload.build;
-  if (payload.heightCategory !== undefined) (dependent as any).heightCategory = payload.heightCategory;
+  if (payload.heightCategory !== undefined)
+    (dependent as any).heightCategory = payload.heightCategory;
   if (payload.energyType !== undefined) (dependent as any).energyType = payload.energyType;
   if (payload.motorType !== undefined) (dependent as any).motorType = payload.motorType;
-  if (payload.visualTracking !== undefined) (dependent as any).visualTracking = payload.visualTracking;
+  if (payload.visualTracking !== undefined)
+    (dependent as any).visualTracking = payload.visualTracking;
   // Wizard personality
-  if (payload.teamIndividual !== undefined) (dependent as any).teamIndividual = payload.teamIndividual;
-  if (payload.competitiveResponse !== undefined) (dependent as any).competitiveResponse = payload.competitiveResponse;
+  if (payload.teamIndividual !== undefined)
+    (dependent as any).teamIndividual = payload.teamIndividual;
+  if (payload.competitiveResponse !== undefined)
+    (dependent as any).competitiveResponse = payload.competitiveResponse;
   if (payload.focusStyle !== undefined) (dependent as any).focusStyle = payload.focusStyle;
   if (payload.decisionStyle !== undefined) (dependent as any).decisionStyle = payload.decisionStyle;
-  if (payload.pressureResponse !== undefined) (dependent as any).pressureResponse = payload.pressureResponse;
-  if (payload.repetitionTolerance !== undefined) (dependent as any).repetitionTolerance = payload.repetitionTolerance;
+  if (payload.pressureResponse !== undefined)
+    (dependent as any).pressureResponse = payload.pressureResponse;
+  if (payload.repetitionTolerance !== undefined)
+    (dependent as any).repetitionTolerance = payload.repetitionTolerance;
   // Wizard comfort
-  if (payload.contactComfort !== undefined) (dependent as any).contactComfort = payload.contactComfort;
+  if (payload.contactComfort !== undefined)
+    (dependent as any).contactComfort = payload.contactComfort;
   if (payload.environment !== undefined) (dependent as any).environment = payload.environment;
   if (payload.waterComfort !== undefined) (dependent as any).waterComfort = payload.waterComfort;
   // Wizard practical
   if (payload.budgetRange !== undefined) (dependent as any).budgetRange = payload.budgetRange;
   if (payload.ambition !== undefined) (dependent as any).ambition = payload.ambition;
-  if (payload.weeklyHoursCategory !== undefined) (dependent as any).weeklyHoursCategory = payload.weeklyHoursCategory;
-  if (payload.experienceLevel !== undefined) (dependent as any).experienceLevel = payload.experienceLevel;
+  if (payload.weeklyHoursCategory !== undefined)
+    (dependent as any).weeklyHoursCategory = payload.weeklyHoursCategory;
+  if (payload.experienceLevel !== undefined)
+    (dependent as any).experienceLevel = payload.experienceLevel;
   if (payload.trainingType !== undefined) (dependent as any).trainingType = payload.trainingType;
-  if (payload.consideringSports !== undefined) (dependent as any).consideringSports = payload.consideringSports;
+  if (payload.consideringSports !== undefined)
+    (dependent as any).consideringSports = payload.consideringSports;
   // Build-the-profile: current standing / track record
-  if (payload.currentStandingTier !== undefined) (dependent as any).currentStandingTier = payload.currentStandingTier;
-  if (payload.bestResultTier !== undefined) (dependent as any).bestResultTier = payload.bestResultTier;
-  if (payload.achievementsNote !== undefined) (dependent as any).achievementsNote = payload.achievementsNote;
+  if (payload.currentStandingTier !== undefined)
+    (dependent as any).currentStandingTier = payload.currentStandingTier;
+  if (payload.bestResultTier !== undefined)
+    (dependent as any).bestResultTier = payload.bestResultTier;
+  if (payload.achievementsNote !== undefined)
+    (dependent as any).achievementsNote = payload.achievementsNote;
   // Build-the-profile: training setup
   if (payload.academyName !== undefined) (dependent as any).academyName = payload.academyName;
-  if (payload.sessionsPerWeek !== undefined) (dependent as any).sessionsPerWeek = payload.sessionsPerWeek;
-  if (payload.trainingMonths !== undefined) (dependent as any).trainingMonths = payload.trainingMonths;
+  if (payload.sessionsPerWeek !== undefined)
+    (dependent as any).sessionsPerWeek = payload.sessionsPerWeek;
+  if (payload.trainingMonths !== undefined)
+    (dependent as any).trainingMonths = payload.trainingMonths;
   if (payload.wizardCity !== undefined) (dependent as any).wizardCity = payload.wizardCity;
   if (payload.sportMatches !== undefined) (dependent as any).sportMatches = payload.sportMatches;
   if (payload.wizardCompletedAt !== undefined) {
@@ -1051,10 +1019,7 @@ export const updateDependent = async (
   return dependent;
 };
 
-export const deleteDependent = async (
-  userId: string,
-  dependentId: string,
-): Promise<void> => {
+export const deleteDependent = async (userId: string, dependentId: string): Promise<void> => {
   const dependent = await Player.findOne({
     _id: dependentId,
     userId,
@@ -1070,7 +1035,7 @@ export const deleteDependent = async (
 
   if (bookingCount > 0) {
     throw new Error(
-      `Cannot delete dependent with ${bookingCount} active booking(s). Please cancel or complete these bookings first.`,
+      `Cannot delete dependent with ${bookingCount} active booking(s). Please cancel or complete these bookings first.`
     );
   }
 
@@ -1121,7 +1086,7 @@ export interface UpdateProfilePayload {
 
 export const updateProfile = async (
   userId: string,
-  payload: UpdateProfilePayload,
+  payload: UpdateProfilePayload
 ): Promise<UserDocument> => {
   const user = await User.findById(userId);
   if (!user) {
@@ -1169,8 +1134,7 @@ export const updateProfile = async (
         sportsFocus: payload.playerProfile.sports,
       });
     } else {
-      if (payload.playerProfile.sports)
-        selfPlayer.sportsFocus = payload.playerProfile.sports;
+      if (payload.playerProfile.sports) selfPlayer.sportsFocus = payload.playerProfile.sports;
     }
 
     if (payload.playerProfile.yearsPlaying !== undefined)
@@ -1180,19 +1144,14 @@ export const updateProfile = async (
     if (payload.playerProfile.primaryObjective)
       selfPlayer.primaryObjective = payload.playerProfile.primaryObjective;
     if (payload.playerProfile.weeklyTimeCommitment !== undefined)
-      selfPlayer.weeklyTimeCommitment =
-        payload.playerProfile.weeklyTimeCommitment;
-    if (payload.playerProfile.budgetTier)
-      selfPlayer.budgetTier = payload.playerProfile.budgetTier;
+      selfPlayer.weeklyTimeCommitment = payload.playerProfile.weeklyTimeCommitment;
+    if (payload.playerProfile.budgetTier) selfPlayer.budgetTier = payload.playerProfile.budgetTier;
     if (payload.playerProfile.location !== undefined)
       selfPlayer.location = payload.playerProfile.location;
 
     if (payload.playerProfile.pathwayState) {
       if (!selfPlayer.pathwayState) selfPlayer.pathwayState = {};
-      Object.assign(
-        selfPlayer.pathwayState,
-        payload.playerProfile.pathwayState,
-      );
+      Object.assign(selfPlayer.pathwayState, payload.playerProfile.pathwayState);
     }
 
     await selfPlayer.save();
@@ -1225,7 +1184,7 @@ export const updateProfile = async (
 export const getProfilePictureUploadUrl = async (
   userId: string,
   fileName: string,
-  contentType: string,
+  contentType: string
 ): Promise<{
   uploadUrl: string;
   downloadUrl: string;
@@ -1237,11 +1196,7 @@ export const getProfilePictureUploadUrl = async (
   }
 
   const s3Service = new S3Service();
-  const result = await s3Service.generateProfilePictureUploadUrl(
-    fileName,
-    contentType,
-    userId,
-  );
+  const result = await s3Service.generateProfilePictureUploadUrl(fileName, contentType, userId);
 
   return {
     uploadUrl: result.uploadUrl,
@@ -1256,7 +1211,7 @@ export const getProfilePictureUploadUrl = async (
 export const confirmProfilePictureUpload = async (
   userId: string,
   photoUrl: string,
-  photoS3Key: string,
+  photoS3Key: string
 ): Promise<UserDocument> => {
   const user = await User.findById(userId);
   if (!user) {
@@ -1285,7 +1240,7 @@ export const addAddress = async (
     state: string;
     postalCode: string;
     country?: string;
-  },
+  }
 ): Promise<UserDocument> => {
   const user = await User.findById(userId);
   if (!user) {
@@ -1305,9 +1260,7 @@ export const addAddress = async (
     email: data.email,
     phone: data.phone,
     addressLine1: data.addressLine1,
-    ...(data.addressLine2 !== undefined
-      ? { addressLine2: data.addressLine2 }
-      : {}),
+    ...(data.addressLine2 !== undefined ? { addressLine2: data.addressLine2 } : {}),
     city: data.city,
     state: data.state,
     postalCode: data.postalCode,
@@ -1342,16 +1295,14 @@ export const updateAddress = async (
     state?: string;
     postalCode?: string;
     country?: string;
-  },
+  }
 ): Promise<UserDocument> => {
   const user = await User.findById(userId);
   if (!user || !user.addresses) {
     throw new Error("User or address not found");
   }
 
-  const address = user.addresses.find(
-    (addr) => addr._id?.toString() === addressId,
-  );
+  const address = user.addresses.find((addr) => addr._id?.toString() === addressId);
   if (!address) {
     throw new Error("Address not found");
   }
@@ -1379,18 +1330,13 @@ export const updateAddress = async (
 /**
  * Delete an address
  */
-export const deleteAddress = async (
-  userId: string,
-  addressId: string,
-): Promise<UserDocument> => {
+export const deleteAddress = async (userId: string, addressId: string): Promise<UserDocument> => {
   const user = await User.findById(userId);
   if (!user || !user.addresses) {
     throw new Error("User or address not found");
   }
 
-  const addressIndex = user.addresses.findIndex(
-    (addr) => addr._id?.toString() === addressId,
-  );
+  const addressIndex = user.addresses.findIndex((addr) => addr._id?.toString() === addressId);
   if (addressIndex === -1) {
     throw new Error("Address not found");
   }
@@ -1425,16 +1371,14 @@ export const deleteAddress = async (
  */
 export const setDefaultAddress = async (
   userId: string,
-  addressId: string,
+  addressId: string
 ): Promise<UserDocument> => {
   const user = await User.findById(userId);
   if (!user || !user.addresses) {
     throw new Error("User or address not found");
   }
 
-  const address = user.addresses.find(
-    (addr) => addr._id?.toString() === addressId,
-  );
+  const address = user.addresses.find((addr) => addr._id?.toString() === addressId);
   if (!address) {
     throw new Error("Address not found");
   }
@@ -1455,9 +1399,7 @@ export const setDefaultAddress = async (
 /**
  * Get all addresses for a user
  */
-export const getUserAddresses = async (
-  userId: string,
-): Promise<UserDocument["addresses"]> => {
+export const getUserAddresses = async (userId: string): Promise<UserDocument["addresses"]> => {
   const user = await User.findById(userId).select("addresses defaultAddressId");
   if (!user) {
     throw new Error("User not found");
@@ -1471,7 +1413,7 @@ export const getUserAddresses = async (
  */
 export const linkGoogleAccount = async (
   userId: string,
-  credential: string,
+  credential: string
 ): Promise<UserDocument> => {
   const identity = await verifyGoogleCredential(credential);
 

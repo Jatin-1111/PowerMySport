@@ -221,8 +221,7 @@ const SEED_DATA = [
     ],
     contact: {
       email: "communications@itftennis.com",
-      address:
-        "ITF, Bank Lane, Roehampton, London SW15 5XZ, United Kingdom",
+      address: "ITF, Bank Lane, Roehampton, London SW15 5XZ, United Kingdom",
     },
     stateAssociations: [
       {
@@ -251,7 +250,8 @@ const SEED_DATA = [
     about:
       "The Association of Tennis Professionals (ATP) is the governing body for men's professional tennis, founded in 1972. It administers the ATP Tour (Grand Slams, ATP Masters 1000, ATP 500, ATP 250) and the ATP Challenger Tour — the second tier of men's professional tennis, one level below the ATP Tour. The ATP Challenger Tour is the most direct development pathway for players ranked ~100–500 ATP to earn points toward breaking into the ATP Top 100 and competing on the main Tour.",
     founded: 1972,
-    headquarters: "London, United Kingdom (European HQ) / Ponte Vedra Beach, Florida, USA (Americas HQ)",
+    headquarters:
+      "London, United Kingdom (European HQ) / Ponte Vedra Beach, Florida, USA (Americas HQ)",
     website: "https://www.atptour.com",
     officialCalendarUrl: "https://www.atptour.com/en/tournaments",
     affiliations: [
@@ -275,7 +275,8 @@ const SEED_DATA = [
           name: "ATP Challenger Tour",
           maxAge: 99,
           genders: ["Men"],
-          minRanking: "Approximately ATP ranking 100–500 for direct acceptance (varies by Challenger grade: 50/75/100/125)",
+          minRanking:
+            "Approximately ATP ranking 100–500 for direct acceptance (varies by Challenger grade: 50/75/100/125)",
           notes:
             "The ATP Challenger Tour is the development circuit for men aspiring to the ATP main Tour. Prize money ranges from $50,000–$175,000 USD depending on Challenger grade. A Challenger 75 event (like Bengaluru Open) typically requires ~ATP ranking 200–400 for direct acceptance. Lower-ranked players can enter qualifying.",
         },
@@ -283,7 +284,8 @@ const SEED_DATA = [
           name: "ATP Tour (Main Tour)",
           maxAge: 99,
           genders: ["Men"],
-          minRanking: "Top 100–200 ATP for direct acceptance into ATP 250 events (varies by event prestige)",
+          minRanking:
+            "Top 100–200 ATP for direct acceptance into ATP 250 events (varies by event prestige)",
           notes:
             "The ATP main Tour consists of ATP 250, ATP 500, ATP Masters 1000, and Grand Slams. Players ranked outside the direct acceptance range can qualify through wild cards or qualifying rounds. No Indian player currently holds a main Tour singles ranking in the top 100.",
         },
@@ -460,15 +462,13 @@ const SEED_DATA = [
           name: "Under-15 (Sub-Junior)",
           maxAge: 15,
           genders: ["Boys", "Girls"],
-          notes:
-            "Yonex-Sunrise All India Sub-Junior Ranking Tournaments run at this level.",
+          notes: "Yonex-Sunrise All India Sub-Junior Ranking Tournaments run at this level.",
         },
         {
           name: "Under-17 (Sub-Junior)",
           maxAge: 17,
           genders: ["Boys", "Girls"],
-          notes:
-            "Feeds into the Junior National Championship selection alongside Under-19.",
+          notes: "Feeds into the Junior National Championship selection alongside Under-19.",
         },
         {
           name: "Under-19 (Junior)",
@@ -507,8 +507,7 @@ const SEED_DATA = [
       "Entry fee payment proof as specified in the tournament circular",
     ],
     contact: {
-      address:
-        "Badminton Association of India, New Delhi",
+      address: "Badminton Association of India, New Delhi",
     },
     sourceUrls: [
       "https://www.badmintonindia.org",
@@ -528,7 +527,7 @@ async function main() {
     const result = await Federation.findOneAndUpdate(
       { slug: doc.slug },
       { $set: doc },
-      { upsert: true, new: true, runValidators: true },
+      { upsert: true, new: true, runValidators: true }
     );
     console.log(`Upserted: ${result.acronym} (${result.slug})`);
   }

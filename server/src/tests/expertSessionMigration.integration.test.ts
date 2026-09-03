@@ -127,10 +127,7 @@ describe("migration 25 — core field mapping", () => {
     assert.equal(booking.expertId.toString(), expertId.toString());
     assert.equal(booking.status, "CONFIRMED", "SCHEDULED + ACCEPTED");
     assert.equal(booking.totalAmount, 1000, "Booking stays rupee-denominated");
-    assert.equal(
-      new Date(booking.scheduledAt).toISOString(),
-      "2026-05-01T04:30:00.000Z",
-    );
+    assert.equal(new Date(booking.scheduledAt).toISOString(), "2026-05-01T04:30:00.000Z");
     assert.equal(booking.durationMinutes, 60);
     // Derived so the existing slot/listing queries can see expert bookings.
     assert.equal(new Date(booking.date).toISOString(), "2026-05-01T00:00:00.000Z");
@@ -236,10 +233,7 @@ describe("migration 25 — core field mapping", () => {
     await migration25.up({ apply: true });
 
     const booking = await bookingFor(sessionId);
-    assert.equal(
-      new Date(booking.createdAt).toISOString(),
-      "2026-04-20T09:00:00.000Z",
-    );
+    assert.equal(new Date(booking.createdAt).toISOString(), "2026-04-20T09:00:00.000Z");
   });
 });
 
@@ -268,7 +262,7 @@ describe("migration 25 — reviews", () => {
     assert.equal(
       review.isAnonymous,
       true,
-      "anonymity must survive — losing it would expose a reviewer who opted out",
+      "anonymity must survive — losing it would expose a reviewer who opted out"
     );
     assert.equal(review.isVerified, true);
   });
@@ -310,7 +304,7 @@ describe("migration 25 — safety", () => {
     const { sessionId } = await seedSession();
     await ExpertSession.collection.updateOne(
       { _id: sessionId },
-      { $set: { expertId: orphanExpertId } },
+      { $set: { expertId: orphanExpertId } }
     );
 
     const result = await migration25.up({ apply: true });
@@ -375,11 +369,11 @@ describe("migration 25 — safety", () => {
     assert.equal(
       (await Booking.collection.findOne({})).providerType,
       "VENUE",
-      "the unrelated booking survives",
+      "the unrelated booking survives"
     );
     assert.ok(
       await ExpertSession.collection.findOne({ _id: sessionId }),
-      "the source session is still intact",
+      "the source session is still intact"
     );
   });
 });

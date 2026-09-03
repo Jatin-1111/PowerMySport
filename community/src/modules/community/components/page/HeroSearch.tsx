@@ -31,12 +31,9 @@ export function HeroSearch() {
     <form
       onSubmit={submit}
       role="search"
-      className="mx-auto mt-6 flex w-full max-w-xl items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm focus-within:border-power-orange/50 focus-within:ring-4 focus-within:ring-power-orange/10"
+      className="focus-within:border-power-orange/50 focus-within:ring-power-orange/10 mx-auto mt-6 flex w-full max-w-xl items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm focus-within:ring-4"
     >
-      <Search
-        className="ml-2 h-4 w-4 shrink-0 text-slate-400"
-        aria-hidden="true"
-      />
+      <Search className="ml-2 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
       <input
         value={query}
         onChange={(event) => setQuery(event.target.value)}
@@ -46,7 +43,7 @@ export function HeroSearch() {
       />
       <button
         type="submit"
-        className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl bg-power-orange px-4 text-sm font-semibold text-white transition hover:bg-power-orange/90"
+        className="bg-power-orange hover:bg-power-orange/90 inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
       >
         Search
       </button>

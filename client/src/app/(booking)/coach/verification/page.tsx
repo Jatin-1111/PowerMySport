@@ -5,28 +5,28 @@ import { toast } from "@/lib/toast";
 import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
 import { coachApi } from "@/modules/coach/services/coach";
 import {
-    getCoachVerificationStatus,
-    isCoachVerificationFlowComplete,
+  getCoachVerificationStatus,
+  isCoachVerificationFlowComplete,
 } from "@/modules/coach/utils/verification";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import OpeningHoursInput, {
-    getDefaultOpeningHours,
-    OpeningHours,
+  getDefaultOpeningHours,
+  OpeningHours,
 } from "@/modules/onboarding/components/onboarding/OpeningHoursInput";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Coach, CoachVerificationDocument, ServiceMode, User } from "@/types";
 import {
-    Award,
-    Briefcase,
-    Clock,
-    Lightbulb,
-    MapPin,
-    Star,
-    Target,
-    Upload,
-    Users,
+  Award,
+  Briefcase,
+  Clock,
+  Lightbulb,
+  MapPin,
+  Star,
+  Target,
+  Upload,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -34,12 +34,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 type VerificationStep = 1 | 2 | 3;
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_FILE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/pdf",
-];
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const ALLOWED_IMAGE_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const COACH_VERIFICATION_DRAFT_STORAGE_KEY = "coachVerificationDraft:v1";
 
@@ -49,22 +44,16 @@ const getInitialServiceMode = (): ServiceMode => {
   }
 
   const savedMode = localStorage.getItem("coachServiceMode");
-  if (
-    savedMode === "OWN_VENUE" ||
-    savedMode === "FREELANCE" ||
-    savedMode === "HYBRID"
-  ) {
+  if (savedMode === "OWN_VENUE" || savedMode === "FREELANCE" || savedMode === "HYBRID") {
     return savedMode;
   }
 
   return "FREELANCE";
 };
 
-const isValidMobileNumber = (value: string) =>
-  /^[+]?[0-9\s().\-]+$/.test(value.trim());
+const isValidMobileNumber = (value: string) => /^[+]?[0-9\s().\-]+$/.test(value.trim());
 
-const sanitizeMobileNumber = (value: string) =>
-  value.replace(/[^0-9+\s().\-]/g, "");
+const sanitizeMobileNumber = (value: string) => value.replace(/[^0-9+\s().\-]/g, "");
 
 // Helper to parse simple opening hours string to structured format
 const parseOpeningHoursString = (hoursStr: string): OpeningHours => {
@@ -101,9 +90,7 @@ const formatOpeningHoursToString = (hours: OpeningHours): string => {
   // Check if all open days have the same hours
   const firstDay = openDays[0][1];
   const allSame = openDays.every(
-    ([, day]) =>
-      day.openTime === firstDay.openTime &&
-      day.closeTime === firstDay.closeTime,
+    ([, day]) => day.openTime === firstDay.openTime && day.closeTime === firstDay.closeTime
   );
 
   if (allSame && openDays.length === 7) {
@@ -116,9 +103,7 @@ const formatOpeningHoursToString = (hours: OpeningHours): string => {
   }
 
   // Return detailed format
-  return openDays
-    .map(([day, hours]) => `${day}: ${hours.openTime}-${hours.closeTime}`)
-    .join("; ");
+  return openDays.map(([day, hours]) => `${day}: ${hours.openTime}-${hours.closeTime}`).join("; ");
 };
 
 interface CoachVerificationDraft {
@@ -148,9 +133,7 @@ interface CoachVerificationDraft {
 const getCoachVerificationDraftStorageKey = (userId?: string) =>
   userId ? `${COACH_VERIFICATION_DRAFT_STORAGE_KEY}:${userId}` : null;
 
-const readCoachVerificationDraft = (
-  storageKey: string,
-): CoachVerificationDraft | null => {
+const readCoachVerificationDraft = (storageKey: string): CoachVerificationDraft | null => {
   if (typeof window === "undefined") {
     return null;
   }
@@ -167,10 +150,7 @@ const readCoachVerificationDraft = (
   }
 };
 
-const writeCoachVerificationDraft = (
-  storageKey: string,
-  draft: CoachVerificationDraft,
-) => {
+const writeCoachVerificationDraft = (storageKey: string, draft: CoachVerificationDraft) => {
   if (typeof window === "undefined") {
     return;
   }
@@ -253,9 +233,7 @@ export default function CoachVerificationPage() {
   const fetchProfile = useFetchProfile();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingDocIndex, setUploadingDocIndex] = useState<number | null>(
-    null,
-  );
+  const [uploadingDocIndex, setUploadingDocIndex] = useState<number | null>(null);
   const [isUploadingVenueImage, setIsUploadingVenueImage] = useState(false);
   const [isDraggingVenueImages, setIsDraggingVenueImages] = useState(false);
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
@@ -264,16 +242,12 @@ export default function CoachVerificationPage() {
   const [bio, setBio] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [hourlyRateInput, setHourlyRateInput] = useState("");
-  const [pricingMode, setPricingMode] = useState<"SAME" | "PER_SPORT">(
-    "PER_SPORT",
-  );
+  const [pricingMode, setPricingMode] = useState<"SAME" | "PER_SPORT">("PER_SPORT");
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [sportPricing, setSportPricing] = useState<Record<string, string>>({});
 
   // Service mode tracking
-  const [serviceMode, setServiceMode] = useState<ServiceMode>(
-    getInitialServiceMode(),
-  );
+  const [serviceMode, setServiceMode] = useState<ServiceMode>(getInitialServiceMode());
   const [serviceRadiusKmInput, setServiceRadiusKmInput] = useState("10");
   const [travelBufferTimeInput, setTravelBufferTimeInput] = useState("30");
 
@@ -289,36 +263,23 @@ export default function CoachVerificationPage() {
 
   // Address autocomplete state
   const [addressQuery, setAddressQuery] = useState("");
-  const [addressSuggestions, setAddressSuggestions] = useState<GeoSuggestion[]>(
-    [],
-  );
+  const [addressSuggestions, setAddressSuggestions] = useState<GeoSuggestion[]>([]);
   const [isAddressSearching, setIsAddressSearching] = useState(false);
   const [addressSearchError, setAddressSearchError] = useState("");
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const [venueCoordinates, setVenueCoordinates] = useState<
-    [number, number] | null
-  >(null);
+  const [venueCoordinates, setVenueCoordinates] = useState<[number, number] | null>(null);
   const skipSearchRef = useRef(false); // Flag to skip search effect after selection
   const venueImageInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [verificationDocs, setVerificationDocs] = useState<
-    CoachVerificationDocument[]
-  >([]);
-  const [requestedStep, setRequestedStep] = useState<VerificationStep | null>(
-    null,
-  );
+  const [verificationDocs, setVerificationDocs] = useState<CoachVerificationDocument[]>([]);
+  const [requestedStep, setRequestedStep] = useState<VerificationStep | null>(null);
   const [isEditModeFromProfile, setIsEditModeFromProfile] = useState(false);
-  const [resumeStepHint, setResumeStepHint] = useState<VerificationStep | null>(
-    null,
-  );
+  const [resumeStepHint, setResumeStepHint] = useState<VerificationStep | null>(null);
   const [showResumeBanner, setShowResumeBanner] = useState(false);
   const hasHydratedDraftRef = useRef(false);
   const hasResolvedInitialStepRef = useRef(false);
 
-  const status = useMemo(
-    () => getCoachVerificationStatus(coachProfile),
-    [coachProfile],
-  );
+  const status = useMemo(() => getCoachVerificationStatus(coachProfile), [coachProfile]);
 
   const isLockedByReview = status === "PENDING" || status === "REVIEW";
   // Must match the dashboard gate in coach/layout.tsx exactly. If this page
@@ -326,12 +287,9 @@ export default function CoachVerificationPage() {
   // pushed to /coach/profile while the gate pushed them straight back here.
   const isVerificationDataComplete = useMemo(
     () => isCoachVerificationFlowComplete(coachProfile),
-    [coachProfile],
+    [coachProfile]
   );
-  const draftStorageKey = useMemo(
-    () => getCoachVerificationDraftStorageKey(user?.id),
-    [user?.id],
-  );
+  const draftStorageKey = useMemo(() => getCoachVerificationDraftStorageKey(user?.id), [user?.id]);
 
   const isStep1Complete = useMemo(() => {
     return (
@@ -362,11 +320,7 @@ export default function CoachVerificationPage() {
     }
 
     if (serviceMode === "OWN_VENUE" || serviceMode === "HYBRID") {
-      if (
-        !venueDetails.name.trim() ||
-        !venueDetails.address.trim() ||
-        !venueCoordinates
-      ) {
+      if (!venueDetails.name.trim() || !venueDetails.address.trim() || !venueCoordinates) {
         return false;
       }
     }
@@ -416,14 +370,13 @@ export default function CoachVerificationPage() {
 
   const maxAccessibleStep: VerificationStep = useMemo(
     () => Math.max(firstIncompleteStep, serverProgressStep) as VerificationStep,
-    [firstIncompleteStep, serverProgressStep],
+    [firstIncompleteStep, serverProgressStep]
   );
 
   // A verified coach whose bio/sports are missing is here to restore lost data,
   // not to re-submit. Their `onboardingProgressStep` still says 3, so resume
   // hints would drop them on the submission screen instead of the empty fields.
-  const isRestoringVerifiedProfile =
-    status === "VERIFIED" && !isVerificationDataComplete;
+  const isRestoringVerifiedProfile = status === "VERIFIED" && !isVerificationDataComplete;
 
   const navigateToStep = useCallback(
     (nextStep: VerificationStep, showError = true) => {
@@ -437,7 +390,7 @@ export default function CoachVerificationPage() {
         toast.error("Complete required fields in previous steps first.");
       }
     },
-    [maxAccessibleStep],
+    [maxAccessibleStep]
   );
 
   useEffect(() => {
@@ -448,9 +401,7 @@ export default function CoachVerificationPage() {
     const params = new URLSearchParams(window.location.search);
     const requestedStepParam = params.get("step");
     const nextRequestedStep: VerificationStep | null =
-      requestedStepParam === "1" ||
-      requestedStepParam === "2" ||
-      requestedStepParam === "3"
+      requestedStepParam === "1" || requestedStepParam === "2" || requestedStepParam === "3"
         ? (Number(requestedStepParam) as VerificationStep)
         : null;
 
@@ -551,7 +502,7 @@ export default function CoachVerificationPage() {
       () => {
         setAddressSearchError("Location access was denied");
         setIsGeocoding(false);
-      },
+      }
     );
   };
 
@@ -567,14 +518,7 @@ export default function CoachVerificationPage() {
     ) {
       router.push("/coach/profile");
     }
-  }, [
-    loading,
-    status,
-    isVerificationDataComplete,
-    requestedStep,
-    isEditModeFromProfile,
-    router,
-  ]);
+  }, [loading, status, isVerificationDataComplete, requestedStep, isEditModeFromProfile, router]);
 
   useEffect(() => {
     if (step > maxAccessibleStep) {
@@ -611,9 +555,7 @@ export default function CoachVerificationPage() {
         setBio(coach.bio || "");
         setSelectedSports(coach.sports || []);
         setHourlyRateInput(
-          coach.hourlyRate && coach.hourlyRate > 0
-            ? String(coach.hourlyRate)
-            : "",
+          coach.hourlyRate && coach.hourlyRate > 0 ? String(coach.hourlyRate) : ""
         );
 
         // Load service mode
@@ -667,9 +609,7 @@ export default function CoachVerificationPage() {
           });
           return prices;
         });
-        const pricingValues = Object.values(
-          (coach.sportPricing || {}) as Record<string, number>,
-        );
+        const pricingValues = Object.values((coach.sportPricing || {}) as Record<string, number>);
         const hasPerSport = pricingValues.some((value) => value > 0);
         const allMatchHourly =
           hasPerSport &&
@@ -685,7 +625,7 @@ export default function CoachVerificationPage() {
               s3Key: doc.s3Key,
               fileName: doc.fileName,
               uploadedAt: doc.uploadedAt,
-            })),
+            }))
           );
         }
       } else {
@@ -718,13 +658,8 @@ export default function CoachVerificationPage() {
 
     if (draft) {
       const draftStep: VerificationStep =
-        draft.step === 1 || draft.step === 2 || draft.step === 3
-          ? draft.step
-          : 1;
-      const resumeStep = Math.max(
-        draftStep,
-        serverProgressStep,
-      ) as VerificationStep;
+        draft.step === 1 || draft.step === 2 || draft.step === 3 ? draft.step : 1;
+      const resumeStep = Math.max(draftStep, serverProgressStep) as VerificationStep;
 
       setBio(draft.bio || "");
       setMobileNumber(draft.mobileNumber || "");
@@ -743,7 +678,7 @@ export default function CoachVerificationPage() {
           openingHours: getDefaultOpeningHours(),
           images: [],
           imageS3Keys: [],
-        },
+        }
       );
       setAddressQuery(draft.venueDetails?.address || "");
       setVenueCoordinates(draft.venueCoordinates || null);
@@ -759,11 +694,7 @@ export default function CoachVerificationPage() {
   }, [loading, draftStorageKey, isLockedByReview, serverProgressStep]);
 
   useEffect(() => {
-    if (
-      loading ||
-      !hasHydratedDraftRef.current ||
-      hasResolvedInitialStepRef.current
-    ) {
+    if (loading || !hasHydratedDraftRef.current || hasResolvedInitialStepRef.current) {
       return;
     }
 
@@ -791,12 +722,7 @@ export default function CoachVerificationPage() {
   ]);
 
   useEffect(() => {
-    if (
-      loading ||
-      !hasHydratedDraftRef.current ||
-      isLockedByReview ||
-      !draftStorageKey
-    ) {
+    if (loading || !hasHydratedDraftRef.current || isLockedByReview || !draftStorageKey) {
       return;
     }
 
@@ -908,14 +834,12 @@ export default function CoachVerificationPage() {
                 fileName,
                 uploadedAt: new Date().toISOString(),
               }
-            : doc,
-        ),
+            : doc
+        )
       );
       toast.success(`${fileName} uploaded.`);
     } catch (uploadError) {
-      toast.error(
-        uploadError instanceof Error ? uploadError.message : "Upload failed",
-      );
+      toast.error(uploadError instanceof Error ? uploadError.message : "Upload failed");
     } finally {
       setUploadingDocIndex(null);
     }
@@ -923,9 +847,7 @@ export default function CoachVerificationPage() {
 
   const handleUploadVenueImage = async (file: File) => {
     if (file.size > MAX_FILE_SIZE) {
-      toast.error(
-        `Image exceeds 5MB (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`,
-      );
+      toast.error(`Image exceeds 5MB (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
       return;
     }
 
@@ -967,9 +889,7 @@ export default function CoachVerificationPage() {
       }));
       toast.success("Venue image uploaded.");
     } catch (uploadError) {
-      toast.error(
-        uploadError instanceof Error ? uploadError.message : "Upload failed",
-      );
+      toast.error(uploadError instanceof Error ? uploadError.message : "Upload failed");
     } finally {
       setIsUploadingVenueImage(false);
     }
@@ -1043,11 +963,7 @@ export default function CoachVerificationPage() {
 
         navigateToStep(2, false);
       } catch (saveError) {
-        toast.error(
-          saveError instanceof Error
-            ? saveError.message
-            : "Failed to save step 1",
-        );
+        toast.error(saveError instanceof Error ? saveError.message : "Failed to save step 1");
       } finally {
         setSaving(false);
       }
@@ -1114,9 +1030,7 @@ export default function CoachVerificationPage() {
         return;
       }
       if (!venueCoordinates) {
-        toast.error(
-          "Select a venue address from the suggestions or use your current location.",
-        );
+        toast.error("Select a venue address from the suggestions or use your current location.");
         return;
       }
     }
@@ -1208,9 +1122,7 @@ export default function CoachVerificationPage() {
       toast.success("Step 2 completed. Proceed to final submission.");
     } catch (saveError) {
       toast.error(
-        saveError instanceof Error
-          ? saveError.message
-          : "Failed to save your profile details",
+        saveError instanceof Error ? saveError.message : "Failed to save your profile details"
       );
     } finally {
       setSaving(false);
@@ -1278,9 +1190,7 @@ export default function CoachVerificationPage() {
                 name: venueDetails.name.trim(),
                 address: venueDetails.address.trim(),
                 description: venueDetails.description.trim(),
-                openingHours: formatOpeningHoursToString(
-                  venueDetails.openingHours,
-                ),
+                openingHours: formatOpeningHoursToString(venueDetails.openingHours),
                 images: venueDetails.images || [],
                 imageS3Keys: venueDetails.imageS3Keys || [],
                 ...(venueCoordinates
@@ -1313,12 +1223,9 @@ export default function CoachVerificationPage() {
       setCoachProfile(step2SyncResponse.data);
 
       if (serviceMode === "OWN_VENUE") {
-        const ownVenueImages =
-          step2SyncResponse.data.ownVenueDetails?.images || [];
+        const ownVenueImages = step2SyncResponse.data.ownVenueDetails?.images || [];
         if (ownVenueImages.length < 3) {
-          toast.error(
-            "Upload at least 3 venue images before submitting verification.",
-          );
+          toast.error("Upload at least 3 venue images before submitting verification.");
           return;
         }
       }
@@ -1341,9 +1248,7 @@ export default function CoachVerificationPage() {
       }, 2000);
     } catch (submitError) {
       toast.error(
-        submitError instanceof Error
-          ? submitError.message
-          : "Failed to submit verification",
+        submitError instanceof Error ? submitError.message : "Failed to submit verification"
       );
     } finally {
       setSaving(false);
@@ -1360,17 +1265,14 @@ export default function CoachVerificationPage() {
 
   const badge = getVerificationBadge(coachProfile);
   const guidance = getStatusGuidance(status, isVerificationDataComplete);
-  const canShowResumeBanner =
-    showResumeBanner && !isLockedByReview && !isRestoringVerifiedProfile;
+  const canShowResumeBanner = showResumeBanner && !isLockedByReview && !isRestoringVerifiedProfile;
 
   return (
     <div className="space-y-5 sm:space-y-6">
       <Card className="bg-white">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Coach Verification
-            </p>
+            <p className="text-xs tracking-wide text-slate-500 uppercase">Coach Verification</p>
             <h1 className="text-xl font-bold text-slate-900 sm:text-3xl">
               Complete Your Verification
             </h1>
@@ -1398,13 +1300,12 @@ export default function CoachVerificationPage() {
         {canShowResumeBanner && resumeStepHint && (
           <div className="mt-4 flex flex-col gap-3 rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-orange-800">
-              You can continue where you left off. Resume from Step{" "}
-              {resumeStepHint}.
+              You can continue where you left off. Resume from Step {resumeStepHint}.
             </p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="rounded-md bg-power-orange px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600"
+                className="bg-power-orange rounded-md px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600"
                 onClick={() => navigateToStep(resumeStepHint, false)}
               >
                 Resume Step {resumeStepHint}
@@ -1435,15 +1336,16 @@ export default function CoachVerificationPage() {
                 disabled={!isAccessible || isLockedByReview}
                 className={`rounded-lg border px-3 py-2 text-center text-sm font-semibold transition-all ${
                   isActive
-                    ? "border-power-orange bg-orange-50 text-power-orange shadow-sm"
+                    ? "border-power-orange text-power-orange bg-orange-50 shadow-sm"
                     : isCompleted
-                      ? "border-emerald-400 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer"
+                      ? "cursor-pointer border-emerald-400 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                       : isAccessible
-                        ? "border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100 cursor-pointer"
-                        : "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
+                        ? "cursor-pointer border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                        : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 opacity-60"
                 }`}
               >
-                {isCompleted ? "✓ Step " : "Step "}{current}
+                {isCompleted ? "✓ Step " : "Step "}
+                {current}
               </button>
             );
           })}
@@ -1479,46 +1381,39 @@ export default function CoachVerificationPage() {
 
               {/* Bio Tips Banner */}
               <div className="mb-4 rounded-lg border-l-4 border-blue-500 bg-indigo-50 p-4">
-                <div className="flex items-start gap-3 mb-3">
-                  <Lightbulb className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+                <div className="mb-3 flex items-start gap-3">
+                  <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600" />
                   <div className="flex-1">
-                    <p className="font-semibold text-blue-900 mb-2">
-                      Tips to Write a Great Bio
-                    </p>
+                    <p className="mb-2 font-semibold text-blue-900">Tips to Write a Great Bio</p>
                     <ul className="space-y-2 text-sm text-blue-800">
                       <li className="flex items-start gap-2">
-                        <Award className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                        <Award className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
                         <span>
-                          <strong>Experience:</strong> Years of coaching, sports
-                          background
+                          <strong>Experience:</strong> Years of coaching, sports background
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Briefcase className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                        <Briefcase className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
                         <span>
-                          <strong>Certifications:</strong> Relevant credentials
-                          and achievements
+                          <strong>Certifications:</strong> Relevant credentials and achievements
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Target className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                        <Target className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
                         <span>
-                          <strong>Specialization:</strong> What levels
-                          (beginner/advanced)
+                          <strong>Specialization:</strong> What levels (beginner/advanced)
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Star className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                        <Star className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
                         <span>
-                          <strong>Coaching Style:</strong> Your approach and
-                          philosophy
+                          <strong>Coaching Style:</strong> Your approach and philosophy
                         </span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <Users className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+                        <Users className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
                         <span>
-                          <strong>Track Record:</strong> Success stories or
-                          player achievements
+                          <strong>Track Record:</strong> Success stories or player achievements
                         </span>
                       </li>
                     </ul>
@@ -1533,7 +1428,7 @@ export default function CoachVerificationPage() {
                 disabled={isLockedByReview}
                 minLength={20}
                 maxLength={2000}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                 placeholder="Tell players about your experience, achievements, and coaching style."
               />
             </div>
@@ -1545,14 +1440,12 @@ export default function CoachVerificationPage() {
               <input
                 type="tel"
                 value={mobileNumber}
-                onChange={(event) =>
-                  setMobileNumber(sanitizeMobileNumber(event.target.value))
-                }
+                onChange={(event) => setMobileNumber(sanitizeMobileNumber(event.target.value))}
                 disabled={isLockedByReview}
                 inputMode="tel"
                 pattern="^[+]?[0-9\s().\-]+$"
                 maxLength={20}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                 placeholder="e.g., 9876543210"
               />
             </div>
@@ -1615,7 +1508,7 @@ export default function CoachVerificationPage() {
                   onChange={(event) => setHourlyRateInput(event.target.value)}
                   inputMode="decimal"
                   pattern="^\d+(\.\d{1,2})?$"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                  className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                   placeholder="e.g., 500"
                 />
               </div>
@@ -1633,8 +1526,7 @@ export default function CoachVerificationPage() {
                   const updatedPricing = { ...sportPricing };
                   sports.forEach((sport) => {
                     if (!updatedPricing[sport]) {
-                      updatedPricing[sport] =
-                        pricingMode === "SAME" ? hourlyRateInput || "" : "";
+                      updatedPricing[sport] = pricingMode === "SAME" ? hourlyRateInput || "" : "";
                     }
                   });
                   // Remove pricing for unselected sports
@@ -1649,8 +1541,8 @@ export default function CoachVerificationPage() {
                 required
               />
               <p className="mt-2 text-xs text-slate-500">
-                Search for sports or add custom ones. Gemini will verify custom
-                sports automatically.
+                Search for sports or add custom ones. Gemini will verify custom sports
+                automatically.
               </p>
             </div>
 
@@ -1662,7 +1554,7 @@ export default function CoachVerificationPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {selectedSports.map((sport) => (
                     <div key={sport}>
-                      <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
+                      <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase">
                         {sport}
                       </label>
                       <input
@@ -1679,7 +1571,7 @@ export default function CoachVerificationPage() {
                             [sport]: event.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                        className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:ring-2 focus:outline-none"
                         placeholder="e.g., 600"
                       />
                     </div>
@@ -1689,16 +1581,14 @@ export default function CoachVerificationPage() {
             )}
 
             {(serviceMode === "OWN_VENUE" || serviceMode === "HYBRID") && (
-              <div className="space-y-4 border-t border-slate-200 pt-6 mt-6">
+              <div className="mt-6 space-y-4 border-t border-slate-200 pt-6">
                 <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-power-orange mt-1 shrink-0" />
+                  <MapPin className="text-power-orange mt-1 h-5 w-5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Your Venue Details
-                    </p>
-                    <p className="text-sm text-slate-600 mt-1">
-                      Provide information about your venue where you&apos;ll
-                      conduct coaching sessions.
+                    <p className="text-sm font-semibold text-slate-900">Your Venue Details</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Provide information about your venue where you&apos;ll conduct coaching
+                      sessions.
                     </p>
                   </div>
                 </div>
@@ -1718,7 +1608,7 @@ export default function CoachVerificationPage() {
                         }))
                       }
                       disabled={isLockedByReview}
-                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                       placeholder="e.g., Elite Sports Arena"
                     />
                   </div>
@@ -1733,43 +1623,37 @@ export default function CoachVerificationPage() {
                         value={addressQuery}
                         onChange={handleAddressChange}
                         disabled={isLockedByReview}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                        className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                         placeholder="Search your venue location"
                       />
                       {isAddressSearching && (
-                        <span className="absolute right-3 top-3 text-xs text-slate-500">
+                        <span className="absolute top-3 right-3 text-xs text-slate-500">
                           Searching...
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-slate-500">
-                        Start typing to see suggestions
-                      </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-xs text-slate-500">Start typing to see suggestions</p>
                       <button
                         type="button"
                         onClick={handleUseCurrentLocation}
-                        className="text-xs font-semibold text-power-orange hover:text-orange-600 disabled:opacity-50"
+                        className="text-power-orange text-xs font-semibold hover:text-orange-600 disabled:opacity-50"
                         disabled={isLockedByReview || isGeocoding}
                       >
                         {isGeocoding ? "Locating..." : "Use current location"}
                       </button>
                     </div>
                     {addressSearchError && (
-                      <p className="text-xs text-red-500 mt-2">
-                        {addressSearchError}
-                      </p>
+                      <p className="mt-2 text-xs text-red-500">{addressSearchError}</p>
                     )}
                     {addressSuggestions.length > 0 && (
-                      <div className="mt-2 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm z-10">
+                      <div className="z-10 mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                         {addressSuggestions.map((suggestion) => (
                           <button
                             type="button"
                             key={`${suggestion.lat}-${suggestion.lon}-${suggestion.label}`}
-                            onClick={() =>
-                              handleSelectAddressSuggestion(suggestion)
-                            }
-                            className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-power-orange/5 border-b border-slate-100 last:border-b-0"
+                            onClick={() => handleSelectAddressSuggestion(suggestion)}
+                            className="hover:bg-power-orange/5 w-full border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-700 last:border-b-0"
                           >
                             {suggestion.label}
                           </button>
@@ -1792,14 +1676,14 @@ export default function CoachVerificationPage() {
                       }
                       disabled={isLockedByReview}
                       rows={3}
-                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                       placeholder="Describe the facilities, equipment, and amenities available at your venue."
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Clock className="h-4 w-4 text-power-orange" />
+                    <div className="mb-3 flex items-center gap-2">
+                      <Clock className="text-power-orange h-4 w-4" />
                       <label className="block text-sm font-semibold text-slate-900">
                         Opening Hours
                       </label>
@@ -1822,16 +1706,13 @@ export default function CoachVerificationPage() {
             )}
 
             {serviceMode === "FREELANCE" && (
-              <div className="space-y-4 border-t border-slate-200 pt-6 mt-6">
+              <div className="mt-6 space-y-4 border-t border-slate-200 pt-6">
                 <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-power-orange mt-1 shrink-0" />
+                  <MapPin className="text-power-orange mt-1 h-5 w-5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Service Base Location
-                    </p>
-                    <p className="text-sm text-slate-600 mt-1">
-                      Set your base location. Only players within your service
-                      radius can book you.
+                    <p className="text-sm font-semibold text-slate-900">Service Base Location</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Set your base location. Only players within your service radius can book you.
                     </p>
                   </div>
                 </div>
@@ -1846,43 +1727,37 @@ export default function CoachVerificationPage() {
                       value={addressQuery}
                       onChange={handleAddressChange}
                       disabled={isLockedByReview}
-                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                       placeholder="Search your base location"
                     />
                     {isAddressSearching && (
-                      <span className="absolute right-3 top-3 text-xs text-slate-500">
+                      <span className="absolute top-3 right-3 text-xs text-slate-500">
                         Searching...
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-xs text-slate-500">
-                      Start typing to see suggestions
-                    </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-xs text-slate-500">Start typing to see suggestions</p>
                     <button
                       type="button"
                       onClick={handleUseCurrentLocation}
-                      className="text-xs font-semibold text-power-orange hover:text-orange-600 disabled:opacity-50"
+                      className="text-power-orange text-xs font-semibold hover:text-orange-600 disabled:opacity-50"
                       disabled={isLockedByReview || isGeocoding}
                     >
                       {isGeocoding ? "Locating..." : "Use current location"}
                     </button>
                   </div>
                   {addressSearchError && (
-                    <p className="text-xs text-red-500 mt-2">
-                      {addressSearchError}
-                    </p>
+                    <p className="mt-2 text-xs text-red-500">{addressSearchError}</p>
                   )}
                   {addressSuggestions.length > 0 && (
-                    <div className="mt-2 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm z-10">
+                    <div className="z-10 mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                       {addressSuggestions.map((suggestion) => (
                         <button
                           type="button"
                           key={`${suggestion.lat}-${suggestion.lon}-${suggestion.label}`}
-                          onClick={() =>
-                            handleSelectAddressSuggestion(suggestion)
-                          }
-                          className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-power-orange/5 border-b border-slate-100 last:border-b-0"
+                          onClick={() => handleSelectAddressSuggestion(suggestion)}
+                          className="hover:bg-power-orange/5 w-full border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-700 last:border-b-0"
                         >
                           {suggestion.label}
                         </button>
@@ -1894,15 +1769,12 @@ export default function CoachVerificationPage() {
             )}
 
             {serviceMode !== "OWN_VENUE" && (
-              <div className="space-y-4 border-t border-slate-200 pt-6 mt-6">
-                <p className="text-sm font-semibold text-slate-900">
-                  Service Radius Settings
-                </p>
+              <div className="mt-6 space-y-4 border-t border-slate-200 pt-6">
+                <p className="text-sm font-semibold text-slate-900">Service Radius Settings</p>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-900">
-                      Service Radius (km){" "}
-                      <span className="text-red-500">*</span>
+                      Service Radius (km) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -1910,10 +1782,8 @@ export default function CoachVerificationPage() {
                       step={1}
                       value={serviceRadiusKmInput}
                       disabled={isLockedByReview}
-                      onChange={(event) =>
-                        setServiceRadiusKmInput(event.target.value)
-                      }
-                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      onChange={(event) => setServiceRadiusKmInput(event.target.value)}
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                       placeholder="e.g., 10"
                     />
                   </div>
@@ -1928,10 +1798,8 @@ export default function CoachVerificationPage() {
                       step={5}
                       value={travelBufferTimeInput}
                       disabled={isLockedByReview}
-                      onChange={(event) =>
-                        setTravelBufferTimeInput(event.target.value)
-                      }
-                      className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-power-orange/50"
+                      onChange={(event) => setTravelBufferTimeInput(event.target.value)}
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:outline-none"
                       placeholder="e.g., 30"
                     />
                   </div>
@@ -2004,9 +1872,7 @@ export default function CoachVerificationPage() {
                   <p className="text-sm font-semibold text-slate-900">
                     Drag & drop venue images here
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    JPG, PNG, WebP • Max 5MB per image
-                  </p>
+                  <p className="mt-1 text-xs text-slate-500">JPG, PNG, WebP • Max 5MB per image</p>
                   <button
                     type="button"
                     onClick={() => venueImageInputRef.current?.click()}
@@ -2092,25 +1958,22 @@ export default function CoachVerificationPage() {
                   <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                     <div className="grid gap-3 md:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
+                        <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase">
                           Document Type
                         </label>
                         <select
                           value={doc.type}
-                          disabled={
-                            isLockedByReview || uploadingDocIndex !== null
-                          }
+                          disabled={isLockedByReview || uploadingDocIndex !== null}
                           onChange={(event) =>
                             setVerificationDocs((prev) =>
                               prev.map((item, i) =>
                                 i === index
                                   ? {
                                       ...item,
-                                      type: event.target
-                                        .value as CoachVerificationDocument["type"],
+                                      type: event.target.value as CoachVerificationDocument["type"],
                                     }
-                                  : item,
-                              ),
+                                  : item
+                              )
                             )
                           }
                           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
@@ -2118,16 +1981,14 @@ export default function CoachVerificationPage() {
                           <option value="CERTIFICATION">Certification</option>
                           <option value="ID_PROOF">ID Proof</option>
                           <option value="ADDRESS_PROOF">Address Proof</option>
-                          <option value="BACKGROUND_CHECK">
-                            Background Check
-                          </option>
+                          <option value="BACKGROUND_CHECK">Background Check</option>
                           <option value="INSURANCE">Insurance</option>
                           <option value="OTHER">Other</option>
                         </select>
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
+                        <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase">
                           Uploaded File
                         </label>
                         <div className="truncate rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
@@ -2139,14 +2000,10 @@ export default function CoachVerificationPage() {
                     <div className="grid gap-2 sm:flex">
                       <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto">
                         <Upload size={14} />
-                        {uploadingDocIndex === index
-                          ? "Uploading..."
-                          : "Upload"}
+                        {uploadingDocIndex === index ? "Uploading..." : "Upload"}
                         <input
                           type="file"
-                          disabled={
-                            isLockedByReview || uploadingDocIndex === index
-                          }
+                          disabled={isLockedByReview || uploadingDocIndex === index}
                           accept=".jpg,.jpeg,.png,.webp,.pdf"
                           className="hidden"
                           onChange={(event) => {
@@ -2163,9 +2020,7 @@ export default function CoachVerificationPage() {
                           type="button"
                           disabled={uploadingDocIndex !== null}
                           onClick={() =>
-                            setVerificationDocs((prev) =>
-                              prev.filter((_, i) => i !== index),
-                            )
+                            setVerificationDocs((prev) => prev.filter((_, i) => i !== index))
                           }
                           className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
                         >
@@ -2191,10 +2046,7 @@ export default function CoachVerificationPage() {
                 type="button"
                 variant="primary"
                 disabled={
-                  saving ||
-                  isLockedByReview ||
-                  uploadingDocIndex !== null ||
-                  isUploadingVenueImage
+                  saving || isLockedByReview || uploadingDocIndex !== null || isUploadingVenueImage
                 }
                 onClick={handleSubmitVerification}
                 className="w-full sm:w-auto"

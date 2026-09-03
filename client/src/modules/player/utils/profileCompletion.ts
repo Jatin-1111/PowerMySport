@@ -81,13 +81,10 @@ export interface ProfileCompletionResult {
 }
 
 export function calculateProfileCompletion(
-  profile: CompletionProfile | null | undefined,
+  profile: CompletionProfile | null | undefined
 ): ProfileCompletionResult {
   const safeProfile = profile ?? {};
-  const totalWeight = PROFILE_COMPLETION_FIELDS.reduce(
-    (sum, f) => sum + f.weight,
-    0,
-  );
+  const totalWeight = PROFILE_COMPLETION_FIELDS.reduce((sum, f) => sum + f.weight, 0);
 
   let filledWeight = 0;
   const missing: ProfileCompletionResult["missing"] = [];
@@ -101,8 +98,7 @@ export function calculateProfileCompletion(
   }
 
   return {
-    percent:
-      totalWeight > 0 ? Math.round((filledWeight / totalWeight) * 100) : 100,
+    percent: totalWeight > 0 ? Math.round((filledWeight / totalWeight) * 100) : 100,
     missing,
   };
 }

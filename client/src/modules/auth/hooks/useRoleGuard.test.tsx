@@ -34,9 +34,7 @@ const userWithRole = (role: User["role"]): User =>
   ({ id: "u1", name: "Test", email: "t@example.com", role }) as User;
 
 /** Put the store into one of the three session states. */
-const setSession = (
-  state: "unknown" | "anonymous" | { role: User["role"] },
-) => {
+const setSession = (state: "unknown" | "anonymous" | { role: User["role"] }) => {
   if (state === "unknown") {
     useAuthStore.setState({ hydrated: false, user: null });
   } else if (state === "anonymous") {
@@ -71,9 +69,7 @@ describe("useRoleGuard", () => {
     const { result } = renderHook(() => useRoleGuard());
 
     expect(result.current).toBe("redirecting");
-    expect(replace).toHaveBeenCalledWith(
-      "/login?redirect=%2Fdashboard%2Fmy-bookings",
-    );
+    expect(replace).toHaveBeenCalledWith("/login?redirect=%2Fdashboard%2Fmy-bookings");
   });
 
   it("admits a permitted role and stays put", () => {

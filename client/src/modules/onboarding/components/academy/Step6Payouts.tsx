@@ -33,8 +33,7 @@ export default function Step6Payouts({
     bankAccountNumber: previousData?.bankAccountNumber || "",
     bankIfsc: previousData?.bankIfsc || "",
     upiId: previousData?.upiId || "",
-    payoutFrequency: (previousData?.payoutFrequency ||
-      "monthly") as AcademyPayoutFrequency,
+    payoutFrequency: (previousData?.payoutFrequency || "monthly") as AcademyPayoutFrequency,
     cancellationPolicy: previousData?.cancellationPolicy || "",
     refundPolicy: previousData?.refundPolicy || "",
     agreedToTerms: false,
@@ -47,22 +46,18 @@ export default function Step6Payouts({
     const errors: Record<string, string> = {};
 
     const hasBankDetails =
-      formData.bankAccountNumber ||
-      formData.bankIfsc ||
-      formData.bankAccountName;
+      formData.bankAccountNumber || formData.bankIfsc || formData.bankAccountName;
     const hasUpi = formData.upiId.trim();
 
     // Must provide at least one payment method
     if (!hasBankDetails && !hasUpi) {
-      errors.paymentMethod =
-        "Please provide either a bank account or UPI ID for payouts";
+      errors.paymentMethod = "Please provide either a bank account or UPI ID for payouts";
     }
 
     // If any bank field is filled, validate all bank fields
     if (hasBankDetails) {
       if (formData.bankAccountName.trim().length < 3) {
-        errors.bankAccountName =
-          "Account holder name is required (min 3 characters)";
+        errors.bankAccountName = "Account holder name is required (min 3 characters)";
       }
       if (!/^\d{9,18}$/.test(formData.bankAccountNumber)) {
         errors.bankAccountNumber = "Invalid account number (9-18 digits)";
@@ -73,20 +68,15 @@ export default function Step6Payouts({
     }
 
     // If UPI is provided, validate format
-    if (
-      hasUpi &&
-      !/^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(formData.upiId.trim())
-    ) {
+    if (hasUpi && !/^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(formData.upiId.trim())) {
       errors.upiId = "Invalid UPI ID format (e.g., name@upi)";
     }
 
     if (formData.cancellationPolicy.trim().length < 10) {
-      errors.cancellationPolicy =
-        "Please provide a clear cancellation policy (min 10 characters)";
+      errors.cancellationPolicy = "Please provide a clear cancellation policy (min 10 characters)";
     }
     if (formData.refundPolicy.trim().length < 10) {
-      errors.refundPolicy =
-        "Please provide a clear refund policy (min 10 characters)";
+      errors.refundPolicy = "Please provide a clear refund policy (min 10 characters)";
     }
     if (!formData.agreedToTerms) {
       errors.agreedToTerms = "You must agree to the terms and conditions";
@@ -119,9 +109,7 @@ export default function Step6Payouts({
       };
       await onSubmit(payload);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save payouts",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save payouts");
     } finally {
       setIsSubmitting(false);
     }
@@ -129,40 +117,34 @@ export default function Step6Payouts({
 
   return (
     <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">
-          Step 6: Payouts & Policies
-        </h2>
-        <p className="text-slate-600">
-          Final step - Set up your payment details and policies
-        </p>
+      <div className="mb-8 text-center">
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 6: Payouts & Policies</h2>
+        <p className="text-slate-600">Final step - Set up your payment details and policies</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Payment method error */}
         {fieldErrors.paymentMethod && (
-          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
-            <AlertCircle size={18} className="text-red-600 mt-0.5 shrink-0" />
-            <p className="text-red-700 text-sm">{fieldErrors.paymentMethod}</p>
+          <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+            <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600" />
+            <p className="text-sm text-red-700">{fieldErrors.paymentMethod}</p>
           </div>
         )}
 
-        <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-          <CheckCircle2 size={18} className="text-indigo-600 mt-0.5 shrink-0" />
-          <p className="text-blue-900 text-sm">
-            Provide either a <strong>bank account</strong> or{" "}
-            <strong>UPI ID</strong> (or both) for receiving payouts.
+        <div className="flex items-start gap-3 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+          <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-indigo-600" />
+          <p className="text-sm text-blue-900">
+            Provide either a <strong>bank account</strong> or <strong>UPI ID</strong> (or both) for
+            receiving payouts.
           </p>
         </div>
 
         {/* Bank Account Section */}
-        <fieldset className="rounded-lg bg-slate-50 p-6 border border-slate-200 space-y-4">
-          <legend className="text-base font-bold text-slate-900 mb-4">
-            Bank Account Details
-          </legend>
+        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-6">
+          <legend className="mb-4 text-base font-bold text-slate-900">Bank Account Details</legend>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
               Account Holder Name <span className="text-red-500">*</span>
             </label>
             <Input
@@ -176,19 +158,15 @@ export default function Step6Payouts({
               }
               placeholder="As per your bank records"
               disabled={isSubmitting}
-              className={
-                fieldErrors.bankAccountName ? "border-red-300 bg-red-50" : ""
-              }
+              className={fieldErrors.bankAccountName ? "border-red-300 bg-red-50" : ""}
             />
             {fieldErrors.bankAccountName && (
-              <p className="text-red-600 text-xs mt-1">
-                {fieldErrors.bankAccountName}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.bankAccountName}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
               Account Number <span className="text-red-500">*</span>
             </label>
             <Input
@@ -202,19 +180,15 @@ export default function Step6Payouts({
               }
               placeholder="1234567890123456"
               disabled={isSubmitting}
-              className={
-                fieldErrors.bankAccountNumber ? "border-red-300 bg-red-50" : ""
-              }
+              className={fieldErrors.bankAccountNumber ? "border-red-300 bg-red-50" : ""}
             />
             {fieldErrors.bankAccountNumber && (
-              <p className="text-red-600 text-xs mt-1">
-                {fieldErrors.bankAccountNumber}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.bankAccountNumber}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
               IFSC Code <span className="text-red-500">*</span>
             </label>
             <Input
@@ -231,20 +205,16 @@ export default function Step6Payouts({
               disabled={isSubmitting}
               className={fieldErrors.bankIfsc ? "border-red-300 bg-red-50" : ""}
             />
-            <p className="text-xs text-slate-500 mt-1">
-              Format: 4 letters + 0 + 6 alphanumeric
-            </p>
+            <p className="mt-1 text-xs text-slate-500">Format: 4 letters + 0 + 6 alphanumeric</p>
             {fieldErrors.bankIfsc && (
-              <p className="text-red-600 text-xs mt-1">
-                {fieldErrors.bankIfsc}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.bankIfsc}</p>
             )}
           </div>
         </fieldset>
 
         {/* UPI Optional */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             UPI ID{" "}
             <span className="text-xs font-normal text-slate-500">
               (optional if bank account provided)
@@ -269,17 +239,13 @@ export default function Step6Payouts({
             disabled={isSubmitting}
             className={fieldErrors.upiId ? "border-red-300 bg-red-50" : ""}
           />
-          <p className="text-xs text-slate-500 mt-1">
-            Format: name@bankname (e.g., john@okaxis)
-          </p>
-          {fieldErrors.upiId && (
-            <p className="text-red-600 text-xs mt-1">{fieldErrors.upiId}</p>
-          )}
+          <p className="mt-1 text-xs text-slate-500">Format: name@bankname (e.g., john@okaxis)</p>
+          {fieldErrors.upiId && <p className="mt-1 text-xs text-red-600">{fieldErrors.upiId}</p>}
         </div>
 
         {/* Payout Frequency */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Payout Frequency <span className="text-red-500">*</span>
           </label>
           <select
@@ -290,7 +256,7 @@ export default function Step6Payouts({
                 payoutFrequency: e.target.value as AcademyPayoutFrequency,
               }))
             }
-            className="w-full h-10 px-3 rounded-md border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-2"
+            className="focus:ring-power-orange h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
             disabled={isSubmitting}
           >
             <option value="weekly">Weekly</option>
@@ -300,13 +266,11 @@ export default function Step6Payouts({
         </div>
 
         {/* Policies Section */}
-        <fieldset className="rounded-lg bg-slate-50 p-6 border border-slate-200 space-y-4">
-          <legend className="text-base font-bold text-slate-900 mb-4">
-            Policies
-          </legend>
+        <fieldset className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-6">
+          <legend className="mb-4 text-base font-bold text-slate-900">Policies</legend>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
               Cancellation Policy <span className="text-red-500">*</span>
             </label>
             <Textarea
@@ -320,19 +284,15 @@ export default function Step6Payouts({
               placeholder="Describe your cancellation policy (e.g., 24 hours before session)"
               rows={3}
               disabled={isSubmitting}
-              className={
-                fieldErrors.cancellationPolicy ? "border-red-300 bg-red-50" : ""
-              }
+              className={fieldErrors.cancellationPolicy ? "border-red-300 bg-red-50" : ""}
             />
             {fieldErrors.cancellationPolicy && (
-              <p className="text-red-600 text-xs mt-1">
-                {fieldErrors.cancellationPolicy}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.cancellationPolicy}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
               Refund Policy <span className="text-red-500">*</span>
             </label>
             <Textarea
@@ -346,25 +306,20 @@ export default function Step6Payouts({
               placeholder="Describe your refund policy"
               rows={3}
               disabled={isSubmitting}
-              className={
-                fieldErrors.refundPolicy ? "border-red-300 bg-red-50" : ""
-              }
+              className={fieldErrors.refundPolicy ? "border-red-300 bg-red-50" : ""}
             />
             {fieldErrors.refundPolicy && (
-              <p className="text-red-600 text-xs mt-1">
-                {fieldErrors.refundPolicy}
-              </p>
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.refundPolicy}</p>
             )}
           </div>
         </fieldset>
 
         {/* Terms Agreement */}
-        <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-          <p className="text-sm text-blue-900 mb-3">
-            PowerMySport charges a platform commission of{" "}
-            <strong>15% of your listed fee</strong> on every completed booking
-            made through the Platform (plus GST on the commission). There is no
-            joining or listing fee. Full details are in the{" "}
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+          <p className="mb-3 text-sm text-blue-900">
+            PowerMySport charges a platform commission of <strong>15% of your listed fee</strong> on
+            every completed booking made through the Platform (plus GST on the commission). There is
+            no joining or listing fee. Full details are in the{" "}
             <Link
               href="/partner-terms"
               target="_blank"
@@ -374,7 +329,7 @@ export default function Step6Payouts({
             </Link>
             .
           </p>
-          <label className="flex items-start gap-3 cursor-pointer">
+          <label className="flex cursor-pointer items-start gap-3">
             <Checkbox
               checked={formData.agreedToTerms}
               onCheckedChange={(checked) =>
@@ -407,30 +362,18 @@ export default function Step6Payouts({
             </span>
           </label>
           {fieldErrors.agreedToTerms && (
-            <p className="text-red-600 text-xs mt-2">
-              {fieldErrors.agreedToTerms}
-            </p>
+            <p className="mt-2 text-xs text-red-600">{fieldErrors.agreedToTerms}</p>
           )}
         </div>
 
         {/* Actions */}
         <div className="flex gap-3 pt-4">
           {onBack && (
-            <Button
-              type="button"
-              onClick={onBack}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button type="button" onClick={onBack} variant="outline" disabled={isSubmitting}>
               Back
             </Button>
           )}
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={isSubmitting || loading}
-            fullWidth
-          >
+          <Button type="submit" variant="primary" disabled={isSubmitting || loading} fullWidth>
             {isSubmitting ? "Submitting..." : "Submit for Approval"}
           </Button>
         </div>

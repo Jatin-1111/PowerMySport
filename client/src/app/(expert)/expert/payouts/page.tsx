@@ -14,7 +14,7 @@ export default function ExpertPayoutsPage() {
 
   const handleAdd = useCallback(
     async (
-      payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">,
+      payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">
     ): Promise<IPayoutMethod> => {
       const res = await payoutApi.upsertExpertPayoutMethod(payload);
       const methods = res.data?.payoutMethods ?? [];
@@ -24,27 +24,25 @@ export default function ExpertPayoutsPage() {
       }
       return saved;
     },
-    [],
+    []
   );
 
   const handleUpdate = useCallback(
     async (
       methodId: string,
-      payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">,
+      payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">
     ): Promise<IPayoutMethod> => {
       const res = await payoutApi.upsertExpertPayoutMethod({
         ...payload,
         id: methodId,
       } as Omit<IPayoutMethod, "addedAt" | "updatedAt">);
-      const saved = res.data?.payoutMethods?.find(
-        (method) => method.id === methodId,
-      );
+      const saved = res.data?.payoutMethods?.find((method) => method.id === methodId);
       if (!res.success || !saved) {
         throw new Error(res.message || "Failed to update payout method");
       }
       return saved;
     },
-    [],
+    []
   );
 
   const handleDelete = useCallback(async (methodId: string) => {
@@ -65,22 +63,19 @@ export default function ExpertPayoutsPage() {
     <div className="mx-auto max-w-5xl space-y-6 px-6 py-8 sm:space-y-8">
       {/* ── Page header ── */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full bg-power-orange/20 blur-3xl" />
+        <div className="bg-power-orange/20 pointer-events-none absolute -top-12 -right-16 h-40 w-40 rounded-full blur-3xl" />
         <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10">
             <BadgeIndianRupee size={22} className="text-power-orange" />
           </div>
           <div>
-            <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+            <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/80 uppercase">
               Expert
             </span>
-            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">
-              Payout Settings
-            </h1>
+            <h1 className="mt-3 text-2xl font-bold sm:text-3xl">Payout Settings</h1>
             <p className="mt-1 max-w-xl text-sm text-slate-200">
-              Manage how you receive earnings from your expert sessions. Your
-              payout method is used when a completed session's payment is
-              released to you.
+              Manage how you receive earnings from your expert sessions. Your payout method is used
+              when a completed session's payment is released to you.
             </p>
           </div>
         </div>
@@ -129,11 +124,11 @@ function InfoCard({
 }) {
   return (
     <div className="rounded-xl border-0 bg-white p-5 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)] sm:p-6">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-power-orange/15 mb-3">
+      <div className="bg-power-orange/15 mb-3 flex h-10 w-10 items-center justify-center rounded-lg">
         <Icon size={20} className="text-power-orange" />
       </div>
       <p className="mb-2 text-base font-bold text-slate-900">{title}</p>
-      <p className="text-sm text-slate-600 leading-relaxed">{description}</p>
+      <p className="text-sm leading-relaxed text-slate-600">{description}</p>
     </div>
   );
 }

@@ -29,18 +29,14 @@ const extractTokenFromCookie = (cookieHeader?: string): string | null => {
 };
 
 const getSocketUserId = async (socket: Socket): Promise<string | null> => {
-  const authToken = (
-    socket.handshake.auth?.token as string | undefined
-  )?.trim();
-  const bearerToken = (
-    socket.handshake.headers.authorization as string | undefined
-  )
+  const authToken = (socket.handshake.auth?.token as string | undefined)?.trim();
+  const bearerToken = (socket.handshake.headers.authorization as string | undefined)
     ?.replace(/^Bearer\s+/i, "")
     .trim();
   const cookieToken = extractTokenFromCookie(socket.handshake.headers.cookie);
 
-  const candidates = [authToken, bearerToken, cookieToken].filter(
-    (token): token is string => Boolean(token),
+  const candidates = [authToken, bearerToken, cookieToken].filter((token): token is string =>
+    Boolean(token)
   );
 
   for (const token of candidates) {
@@ -67,7 +63,7 @@ const consumeRateLimit = (
   state: Map<string, RateLimitState>,
   key: string,
   limit: number,
-  windowMs: number,
+  windowMs: number
 ): boolean => {
   const now = Date.now();
   const current = state.get(key);
@@ -125,8 +121,10 @@ export const setupCommunitySocket = (io: Server): void => {
     socket.join(`user:${userId}`);
 
     try {
-      const recentConversationIds =
-        await CommunityService.listRecentConversationIdsForRealtime(userId, 30);
+      const recentConversationIds = await CommunityService.listRecentConversationIdsForRealtime(
+        userId,
+        30
+      );
       for (const conversationId of recentConversationIds) {
         socket.join(`conversation:${conversationId}`);
       }
@@ -136,12 +134,7 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("community:joinConversation", async (payload) => {
       try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:joinConversation",
-          60,
-          10_000,
-        );
+        const allowed = consumeRateLimit(socketRateLimit, "community:joinConversation", 60, 10_000);
         if (!allowed) {
           socket.emit("community:error", {
             message: "Too many join requests, please slow down",
@@ -161,10 +154,7 @@ export const setupCommunitySocket = (io: Server): void => {
         socket.join(`conversation:${conversationId}`);
       } catch (error) {
         socket.emit("community:error", {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Failed to join conversation",
+          message: error instanceof Error ? error.message : "Failed to join conversation",
         });
       }
     });
@@ -195,12 +185,7 @@ export const setupCommunitySocket = (io: Server): void => {
         return;
       }
 
-      const allowed = consumeRateLimit(
-        socketRateLimit,
-        "community:subscribe",
-        60,
-        10_000,
-      );
+      const allowed = consumeRateLimit(socketRateLimit, "community:subscribe", 60, 10_000);
       if (!allowed) {
         socket.emit("community:error", {
           message: "Too many subscribe requests, please slow down",
@@ -220,12 +205,7 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("community:markRead", async (payload, callback) => {
       try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:markRead",
-          80,
-          10_000,
-        );
+        const allowed = consumeRateLimit(socketRateLimit, "community:markRead", 80, 10_000);
         if (!allowed) {
           const message = "Too many read updates, please slow down";
           socket.emit("community:error", { message });
@@ -245,26 +225,19 @@ export const setupCommunitySocket = (io: Server): void => {
           return;
         }
 
-        const result = await CommunityService.markConversationRead(
-          userId,
-          conversationId,
-        );
+        const result = await CommunityService.markConversationRead(userId, conversationId);
 
         if (result.messageIds.length) {
-          communityNamespace
-            .to(`conversation:${conversationId}`)
-            .emit("community:messagesRead", {
-              conversationId,
-              readerId: userId,
-              messageIds: result.messageIds,
-            });
+          communityNamespace.to(`conversation:${conversationId}`).emit("community:messagesRead", {
+            conversationId,
+            readerId: userId,
+            messageIds: result.messageIds,
+          });
 
           for (const participantId of result.participantIds) {
-            communityNamespace
-              .to(`user:${participantId}`)
-              .emit("community:conversationUpdated", {
-                conversationId,
-              });
+            communityNamespace.to(`user:${participantId}`).emit("community:conversationUpdated", {
+              conversationId,
+            });
           }
         }
 
@@ -272,10 +245,7 @@ export const setupCommunitySocket = (io: Server): void => {
           callback({ success: true, data: result });
         }
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to mark messages as read";
+        const message = error instanceof Error ? error.message : "Failed to mark messages as read";
         socket.emit("community:error", { message });
         if (typeof callback === "function") {
           callback({ success: false, message });
@@ -285,12 +255,7 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("community:typingStart", async (payload, callback) => {
       try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:typingStart",
-          10,
-          2000,
-        );
+        const allowed = consumeRateLimit(socketRateLimit, "community:typingStart", 10, 2000);
         if (!allowed) return;
 
         const conversationId = payload?.conversationId;
@@ -299,13 +264,11 @@ export const setupCommunitySocket = (io: Server): void => {
         // `socket.to(...)`, not `communityNamespace.to(...)`: the namespace
         // form includes the sender, so typing echoed back to the person doing
         // the typing and rendered as "someone is typing" on their own screen.
-        socket
-          .to(`conversation:${conversationId}`)
-          .emit("community:userTyping", {
-            conversationId,
-            userId,
-            isTyping: true,
-          });
+        socket.to(`conversation:${conversationId}`).emit("community:userTyping", {
+          conversationId,
+          userId,
+          isTyping: true,
+        });
 
         if (typeof callback === "function") callback({ success: true });
       } catch (error) {
@@ -315,12 +278,7 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("community:typingStop", async (payload, callback) => {
       try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:typingStop",
-          10,
-          2000,
-        );
+        const allowed = consumeRateLimit(socketRateLimit, "community:typingStop", 10, 2000);
         if (!allowed) return;
 
         const conversationId = payload?.conversationId;
@@ -329,13 +287,11 @@ export const setupCommunitySocket = (io: Server): void => {
         // `socket.to(...)`, not `communityNamespace.to(...)`: the namespace
         // form includes the sender, so typing echoed back to the person doing
         // the typing and rendered as "someone is typing" on their own screen.
-        socket
-          .to(`conversation:${conversationId}`)
-          .emit("community:userTyping", {
-            conversationId,
-            userId,
-            isTyping: false,
-          });
+        socket.to(`conversation:${conversationId}`).emit("community:userTyping", {
+          conversationId,
+          userId,
+          isTyping: false,
+        });
 
         if (typeof callback === "function") callback({ success: true });
       } catch (error) {
@@ -343,74 +299,61 @@ export const setupCommunitySocket = (io: Server): void => {
       }
     });
 
-    socket.on(
-      "community:markConversationAsDelivered",
-      async (payload, callback) => {
-        try {
-          const allowed = consumeRateLimit(
-            socketRateLimit,
-            "community:markConversationAsDelivered",
-            60,
-            10_000,
-          );
-          if (!allowed) {
-            const message = "Too many read requests, please slow down";
-            socket.emit("community:error", { message });
-            if (typeof callback === "function") {
-              callback({ success: false, message });
-            }
-            return;
-          }
-
-          const conversationId = String(payload?.conversationId || "");
-          if (!conversationId) {
-            const message = "conversationId is required";
-            socket.emit("community:error", { message });
-            if (typeof callback === "function") {
-              callback({ success: false, message });
-            }
-            return;
-          }
-
-          const result = await CommunityService.markConversationDelivered(
-            userId,
-            conversationId,
-          );
-
-          if (result.messageIds.length) {
-            communityNamespace
-              .to(`conversation:${conversationId}`)
-              .emit("community:messagesDelivered", {
-                conversationId,
-                readerId: userId,
-                messageIds: result.messageIds,
-              });
-          }
-
-          if (typeof callback === "function") {
-            callback({ success: true, data: result });
-          }
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Failed to mark messages as delivered";
+    socket.on("community:markConversationAsDelivered", async (payload, callback) => {
+      try {
+        const allowed = consumeRateLimit(
+          socketRateLimit,
+          "community:markConversationAsDelivered",
+          60,
+          10_000
+        );
+        if (!allowed) {
+          const message = "Too many read requests, please slow down";
           socket.emit("community:error", { message });
           if (typeof callback === "function") {
             callback({ success: false, message });
           }
+          return;
         }
-      },
-    );
+
+        const conversationId = String(payload?.conversationId || "");
+        if (!conversationId) {
+          const message = "conversationId is required";
+          socket.emit("community:error", { message });
+          if (typeof callback === "function") {
+            callback({ success: false, message });
+          }
+          return;
+        }
+
+        const result = await CommunityService.markConversationDelivered(userId, conversationId);
+
+        if (result.messageIds.length) {
+          communityNamespace
+            .to(`conversation:${conversationId}`)
+            .emit("community:messagesDelivered", {
+              conversationId,
+              readerId: userId,
+              messageIds: result.messageIds,
+            });
+        }
+
+        if (typeof callback === "function") {
+          callback({ success: true, data: result });
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to mark messages as delivered";
+        socket.emit("community:error", { message });
+        if (typeof callback === "function") {
+          callback({ success: false, message });
+        }
+      }
+    });
 
     socket.on("community:sendMessage", async (payload, callback) => {
       try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:sendMessage",
-          30,
-          10_000,
-        );
+        const allowed = consumeRateLimit(socketRateLimit, "community:sendMessage", 30, 10_000);
         if (!allowed) {
           const message = "Too many messages sent, please slow down";
           socket.emit("community:error", { message });
@@ -424,11 +367,7 @@ export const setupCommunitySocket = (io: Server): void => {
         const content = String(payload?.content || "").trim();
         const rawType = payload?.type;
         const messageType: CommunityMessageType =
-          rawType === "IMAGE" ||
-          rawType === "FILE" ||
-          rawType === "VOICE"
-            ? rawType
-            : "TEXT";
+          rawType === "IMAGE" || rawType === "FILE" || rawType === "VOICE" ? rawType : "TEXT";
         // Every field is re-read and re-clamped here rather than trusting the
         // payload shape: this is the socket path, so nothing has been through
         // the HTTP request schema.
@@ -447,13 +386,9 @@ export const setupCommunitySocket = (io: Server): void => {
           messageType !== "TEXT" && payload?.metadata
             ? {
                 width:
-                  typeof payload.metadata.width === "number"
-                    ? payload.metadata.width
-                    : undefined,
+                  typeof payload.metadata.width === "number" ? payload.metadata.width : undefined,
                 height:
-                  typeof payload.metadata.height === "number"
-                    ? payload.metadata.height
-                    : undefined,
+                  typeof payload.metadata.height === "number" ? payload.metadata.height : undefined,
                 caption:
                   typeof payload.metadata.caption === "string"
                     ? payload.metadata.caption.substring(0, 2000)
@@ -482,7 +417,7 @@ export const setupCommunitySocket = (io: Server): void => {
                       .map((value: unknown) =>
                         typeof value === "number"
                           ? Math.max(0, Math.min(100, Math.round(value)))
-                          : 0,
+                          : 0
                       )
                   : undefined,
               }
@@ -497,39 +432,30 @@ export const setupCommunitySocket = (io: Server): void => {
           return;
         }
 
-        const replyToId =
-          typeof payload?.replyToId === "string" ? payload.replyToId : "";
+        const replyToId = typeof payload?.replyToId === "string" ? payload.replyToId : "";
 
-        const message = await CommunityService.sendMessage(
-          userId,
-          conversationId,
-          content,
-          {
-            type: messageType,
-            ...(metadata ? { metadata } : {}),
-            ...(replyToId ? { replyToId } : {}),
-          },
-        );
+        const message = await CommunityService.sendMessage(userId, conversationId, content, {
+          type: messageType,
+          ...(metadata ? { metadata } : {}),
+          ...(replyToId ? { replyToId } : {}),
+        });
 
         communityNamespace
           .to(`conversation:${conversationId}`)
           .emit("community:newMessage", message);
 
         for (const participantId of message.participantIds) {
-          communityNamespace
-            .to(`user:${participantId}`)
-            .emit("community:conversationUpdated", {
-              conversationId,
-              conversationType: message.conversationType || "DM",
-            });
+          communityNamespace.to(`user:${participantId}`).emit("community:conversationUpdated", {
+            conversationId,
+            conversationType: message.conversationType || "DM",
+          });
         }
 
         if (typeof callback === "function") {
           callback({ success: true, data: message });
         }
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to send message";
+        const message = error instanceof Error ? error.message : "Failed to send message";
         socket.emit("community:error", {
           message,
         });
@@ -541,12 +467,7 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("community:reactToMessage", async (payload, callback) => {
       try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:reactToMessage",
-          60,
-          10_000,
-        );
+        const allowed = consumeRateLimit(socketRateLimit, "community:reactToMessage", 60, 10_000);
         if (!allowed) {
           const message = "Too many reactions, please slow down";
           socket.emit("community:error", { message });
@@ -567,11 +488,7 @@ export const setupCommunitySocket = (io: Server): void => {
           return;
         }
 
-        const result = await CommunityService.reactToMessage(
-          userId,
-          messageId,
-          emoji,
-        );
+        const result = await CommunityService.reactToMessage(userId, messageId, emoji);
 
         communityNamespace
           .to(`conversation:${result.conversationId}`)
@@ -581,8 +498,7 @@ export const setupCommunitySocket = (io: Server): void => {
           callback({ success: true, data: result });
         }
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to react";
+        const message = error instanceof Error ? error.message : "Failed to react";
         socket.emit("community:error", { message });
         if (typeof callback === "function") {
           callback({ success: false, message });
@@ -592,12 +508,7 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("community:editMessage", async (payload, callback) => {
       try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:editMessage",
-          20,
-          10_000,
-        );
+        const allowed = consumeRateLimit(socketRateLimit, "community:editMessage", 20, 10_000);
         if (!allowed) {
           const message = "Too many message edits, please slow down";
           socket.emit("community:error", { message });
@@ -619,31 +530,24 @@ export const setupCommunitySocket = (io: Server): void => {
           return;
         }
 
-        const updated = await CommunityService.editMessage(
-          userId,
-          messageId,
-          content,
-        );
+        const updated = await CommunityService.editMessage(userId, messageId, content);
 
         communityNamespace
           .to(`conversation:${updated.conversationId}`)
           .emit("community:messageEdited", updated);
 
         for (const participantId of updated.participantIds) {
-          communityNamespace
-            .to(`user:${participantId}`)
-            .emit("community:conversationUpdated", {
-              conversationId: updated.conversationId,
-              conversationType: updated.conversationType || "DM",
-            });
+          communityNamespace.to(`user:${participantId}`).emit("community:conversationUpdated", {
+            conversationId: updated.conversationId,
+            conversationType: updated.conversationType || "DM",
+          });
         }
 
         if (typeof callback === "function") {
           callback({ success: true, data: updated });
         }
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to edit message";
+        const message = error instanceof Error ? error.message : "Failed to edit message";
         socket.emit("community:error", { message });
         if (typeof callback === "function") {
           callback({ success: false, message });
@@ -653,12 +557,7 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("community:deleteMessage", async (payload, callback) => {
       try {
-        const allowed = consumeRateLimit(
-          socketRateLimit,
-          "community:deleteMessage",
-          20,
-          10_000,
-        );
+        const allowed = consumeRateLimit(socketRateLimit, "community:deleteMessage", 20, 10_000);
         if (!allowed) {
           const message = "Too many message deletes, please slow down";
           socket.emit("community:error", { message });
@@ -685,20 +584,17 @@ export const setupCommunitySocket = (io: Server): void => {
           .emit("community:messageDeleted", deleted);
 
         for (const participantId of deleted.participantIds) {
-          communityNamespace
-            .to(`user:${participantId}`)
-            .emit("community:conversationUpdated", {
-              conversationId: deleted.conversationId,
-              conversationType: deleted.conversationType || "DM",
-            });
+          communityNamespace.to(`user:${participantId}`).emit("community:conversationUpdated", {
+            conversationId: deleted.conversationId,
+            conversationType: deleted.conversationType || "DM",
+          });
         }
 
         if (typeof callback === "function") {
           callback({ success: true, data: deleted });
         }
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to delete message";
+        const message = error instanceof Error ? error.message : "Failed to delete message";
         socket.emit("community:error", { message });
         if (typeof callback === "function") {
           callback({ success: false, message });
@@ -717,10 +613,7 @@ export const setupCommunitySocket = (io: Server): void => {
       try {
         await CommunityService.touchLastSeen(userId);
       } catch (error) {
-        log.error(
-          "Failed to persist community last seen on disconnect:",
-          error,
-        );
+        log.error("Failed to persist community last seen on disconnect:", error);
       }
     });
   });

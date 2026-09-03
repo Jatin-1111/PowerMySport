@@ -61,7 +61,7 @@ const ANSWER_NEW_NAME = "postId_1_voteScore_-1_createdAt_1_fixed";
 export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Starting migration 32: fix community sort indexes (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 32: fix community sort indexes (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   const reputationCollection = CommunityReputation.collection;
@@ -73,24 +73,20 @@ export const up = async (options: Options = {}) => {
   ]);
 
   const reputationStale = reputationIndexes.filter((index) =>
-    keysMatch(index.key || {}, REPUTATION_OLD_SPEC),
+    keysMatch(index.key || {}, REPUTATION_OLD_SPEC)
   );
   const reputationHasNew = reputationIndexes.some((index) =>
-    keysMatch(index.key || {}, REPUTATION_NEW_SPEC),
+    keysMatch(index.key || {}, REPUTATION_NEW_SPEC)
   );
 
-  const answerStale = answerIndexes.filter((index) =>
-    keysMatch(index.key || {}, ANSWER_OLD_SPEC),
-  );
-  const answerHasNew = answerIndexes.some((index) =>
-    keysMatch(index.key || {}, ANSWER_NEW_SPEC),
-  );
+  const answerStale = answerIndexes.filter((index) => keysMatch(index.key || {}, ANSWER_OLD_SPEC));
+  const answerHasNew = answerIndexes.some((index) => keysMatch(index.key || {}, ANSWER_NEW_SPEC));
 
   console.log(
-    `  reputation: stale=${reputationStale.map((i) => i.name).join(",") || "none"} corrected-present=${reputationHasNew}`,
+    `  reputation: stale=${reputationStale.map((i) => i.name).join(",") || "none"} corrected-present=${reputationHasNew}`
   );
   console.log(
-    `  answer:     stale=${answerStale.map((i) => i.name).join(",") || "none"} corrected-present=${answerHasNew}`,
+    `  answer:     stale=${answerStale.map((i) => i.name).join(",") || "none"} corrected-present=${answerHasNew}`
   );
 
   if (reputationHasNew && answerHasNew && !reputationStale.length && !answerStale.length) {
@@ -140,7 +136,7 @@ export const up = async (options: Options = {}) => {
 export const down = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Reverting migration 32 (${apply ? "APPLY" : "DRY RUN"}) — restoring stale index directions...`,
+    `Reverting migration 32 (${apply ? "APPLY" : "DRY RUN"}) — restoring stale index directions...`
   );
 
   const reputationCollection = CommunityReputation.collection;
@@ -157,15 +153,13 @@ export const down = async (options: Options = {}) => {
   ]);
 
   for (const index of reputationIndexes.filter((i) =>
-    keysMatch(i.key || {}, REPUTATION_NEW_SPEC),
+    keysMatch(i.key || {}, REPUTATION_NEW_SPEC)
   )) {
     if (index.name) await reputationCollection.dropIndex(index.name);
   }
   await reputationCollection.createIndex(REPUTATION_OLD_SPEC);
 
-  for (const index of answerIndexes.filter((i) =>
-    keysMatch(i.key || {}, ANSWER_NEW_SPEC),
-  )) {
+  for (const index of answerIndexes.filter((i) => keysMatch(i.key || {}, ANSWER_NEW_SPEC))) {
     if (index.name) await answerCollection.dropIndex(index.name);
   }
   await answerCollection.createIndex(ANSWER_OLD_SPEC);

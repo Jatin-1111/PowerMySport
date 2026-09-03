@@ -49,16 +49,10 @@ export const LegalConsentForm: React.FC<LegalConsentProps> = ({
   };
 
   return (
-    <div className="space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-      <h3 className="font-semibold text-slate-900">
-        Legal & Policy Agreements
-      </h3>
+    <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <h3 className="font-semibold text-slate-900">Legal & Policy Agreements</h3>
 
-      {error && (
-        <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded bg-red-100 p-3 text-sm text-red-700">{error}</div>}
 
       {showTerms && (
         <div className="flex items-start space-x-3">
@@ -69,21 +63,14 @@ export const LegalConsentForm: React.FC<LegalConsentProps> = ({
             onChange={(e) => handleConsentChange("terms", e.target.checked)}
             disabled={isLoading}
             required={required}
-            className="mt-1 w-4 h-4 text-orange-600 rounded cursor-pointer disabled:opacity-50"
+            className="mt-1 h-4 w-4 cursor-pointer rounded text-orange-600 disabled:opacity-50"
           />
-          <label
-            htmlFor="terms-consent"
-            className="text-sm text-slate-700 cursor-pointer flex-1"
-          >
+          <label htmlFor="terms-consent" className="flex-1 cursor-pointer text-sm text-slate-700">
             I agree to the{" "}
-            <Link
-              href="/terms"
-              target="_blank"
-              className="text-orange-600 hover:underline"
-            >
+            <Link href="/terms" target="_blank" className="text-orange-600 hover:underline">
               Terms of Service
             </Link>
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="ml-1 text-red-500">*</span>}
           </label>
         </div>
       )}
@@ -97,52 +84,39 @@ export const LegalConsentForm: React.FC<LegalConsentProps> = ({
             onChange={(e) => handleConsentChange("privacy", e.target.checked)}
             disabled={isLoading}
             required={required}
-            className="mt-1 w-4 h-4 text-orange-600 rounded cursor-pointer disabled:opacity-50"
+            className="mt-1 h-4 w-4 cursor-pointer rounded text-orange-600 disabled:opacity-50"
           />
-          <label
-            htmlFor="privacy-consent"
-            className="text-sm text-slate-700 cursor-pointer flex-1"
-          >
+          <label htmlFor="privacy-consent" className="flex-1 cursor-pointer text-sm text-slate-700">
             I agree to the{" "}
-            <Link
-              href="/privacy"
-              target="_blank"
-              className="text-orange-600 hover:underline"
-            >
+            <Link href="/privacy" target="_blank" className="text-orange-600 hover:underline">
               Privacy Policy
             </Link>
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="ml-1 text-red-500">*</span>}
           </label>
         </div>
       )}
 
       {showHealthWaiver && (
-        <div className="flex items-start space-x-3 bg-yellow-50 p-3 rounded border border-yellow-200">
+        <div className="flex items-start space-x-3 rounded border border-yellow-200 bg-yellow-50 p-3">
           <input
             type="checkbox"
             id="health-waiver-consent"
             checked={accepted.healthWaiver}
-            onChange={(e) =>
-              handleConsentChange("healthWaiver", e.target.checked)
-            }
+            onChange={(e) => handleConsentChange("healthWaiver", e.target.checked)}
             disabled={isLoading}
             required={required}
-            className="mt-1 w-4 h-4 text-orange-600 rounded cursor-pointer disabled:opacity-50"
+            className="mt-1 h-4 w-4 cursor-pointer rounded text-orange-600 disabled:opacity-50"
           />
           <label
             htmlFor="health-waiver-consent"
-            className="text-sm text-slate-700 cursor-pointer flex-1"
+            className="flex-1 cursor-pointer text-sm text-slate-700"
           >
-            I acknowledge and assume all health and injury risks associated with
-            sports activities. I have read and agree to the{" "}
-            <Link
-              href="/health-waiver"
-              target="_blank"
-              className="text-orange-600 hover:underline"
-            >
+            I acknowledge and assume all health and injury risks associated with sports activities.
+            I have read and agree to the{" "}
+            <Link href="/health-waiver" target="_blank" className="text-orange-600 hover:underline">
               Health, Safety & Liability Waiver
             </Link>
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="ml-1 text-red-500">*</span>}
           </label>
         </div>
       )}
@@ -156,26 +130,19 @@ export const LegalConsentForm: React.FC<LegalConsentProps> = ({
             onChange={(e) => handleConsentChange("cookies", e.target.checked)}
             disabled={isLoading}
             required={required}
-            className="mt-1 w-4 h-4 text-orange-600 rounded cursor-pointer disabled:opacity-50"
+            className="mt-1 h-4 w-4 cursor-pointer rounded text-orange-600 disabled:opacity-50"
           />
-          <label
-            htmlFor="cookies-consent"
-            className="text-sm text-slate-700 cursor-pointer flex-1"
-          >
+          <label htmlFor="cookies-consent" className="flex-1 cursor-pointer text-sm text-slate-700">
             I agree to our use of cookies as described in the{" "}
-            <Link
-              href="/cookies"
-              target="_blank"
-              className="text-orange-600 hover:underline"
-            >
+            <Link href="/cookies" target="_blank" className="text-orange-600 hover:underline">
               Cookie Policy
             </Link>
-            {required && <span className="text-red-500 ml-1">*</span>}
+            {required && <span className="ml-1 text-red-500">*</span>}
           </label>
         </div>
       )}
 
-      <p className="text-xs text-slate-500 mt-4">
+      <p className="mt-4 text-xs text-slate-500">
         {required && "All marked with * are required to continue. "}
         You can review our policies anytime in the footer.
       </p>
@@ -195,25 +162,23 @@ export const BookingHealthWaiverModal: React.FC<{
   const [accepted, setAccepted] = useState(false);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white">
         <div className="bg-linear-to-r from-orange-600 to-orange-500 p-6 text-white">
           <h2 className="text-2xl font-bold">Health & Safety Waiver</h2>
-          <p className="mt-2 text-orange-100">
-            Please read and accept before proceeding
-          </p>
+          <p className="mt-2 text-orange-100">Please read and accept before proceeding</p>
         </div>
 
-        <div className="p-6 space-y-4">
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded">
-            <p className="text-sm text-slate-700 mb-3">
+        <div className="space-y-4 p-6">
+          <div className="rounded border border-yellow-200 bg-yellow-50 p-4">
+            <p className="mb-3 text-sm text-slate-700">
               <strong className="inline-flex items-center gap-1">
                 <AlertTriangle className="h-4 w-4" /> WARNING:
               </strong>{" "}
-              Sports activities carry inherent risks of physical injury, serious
-              injury, permanent disability, and even death. By proceeding, you:
+              Sports activities carry inherent risks of physical injury, serious injury, permanent
+              disability, and even death. By proceeding, you:
             </p>
-            <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+            <ul className="list-inside list-disc space-y-1 text-sm text-slate-700">
               <li>Acknowledge these risks</li>
               <li>Confirm you are physically fit for this activity</li>
               <li>Assume full responsibility for your safety</li>
@@ -221,56 +186,51 @@ export const BookingHealthWaiverModal: React.FC<{
             </ul>
           </div>
 
-          <div className="max-h-48 overflow-y-auto bg-slate-50 p-4 rounded border">
-            <p className="text-xs text-slate-600 leading-relaxed">
-              You acknowledge that participation in sports activities carries
-              inherent risks including but not limited to: sprains, strains,
-              fractures, head trauma, cardiovascular incidents, and other
-              serious injuries. You confirm that you are in good physical health
-              and have consulted with a medical professional if you have
-              pre-existing conditions...
+          <div className="max-h-48 overflow-y-auto rounded border bg-slate-50 p-4">
+            <p className="text-xs leading-relaxed text-slate-600">
+              You acknowledge that participation in sports activities carries inherent risks
+              including but not limited to: sprains, strains, fractures, head trauma, cardiovascular
+              incidents, and other serious injuries. You confirm that you are in good physical
+              health and have consulted with a medical professional if you have pre-existing
+              conditions...
             </p>
             <div className="mt-3 text-xs text-indigo-600">
-              <Link
-                href="/health-waiver"
-                target="_blank"
-                className="hover:underline"
-              >
+              <Link href="/health-waiver" target="_blank" className="hover:underline">
                 Read full waiver →
               </Link>
             </div>
           </div>
 
-          <div className="flex items-start space-x-3 bg-slate-50 p-4 rounded">
+          <div className="flex items-start space-x-3 rounded bg-slate-50 p-4">
             <input
               type="checkbox"
               id="confirm-waiver"
               checked={accepted}
               onChange={(e) => setAccepted(e.target.checked)}
               disabled={isLoading}
-              className="mt-1 w-4 h-4 text-orange-600 rounded cursor-pointer disabled:opacity-50"
+              className="mt-1 h-4 w-4 cursor-pointer rounded text-orange-600 disabled:opacity-50"
             />
             <label
               htmlFor="confirm-waiver"
-              className="text-sm text-slate-700 cursor-pointer flex-1"
+              className="flex-1 cursor-pointer text-sm text-slate-700"
             >
-              I have read and understood the waiver. I confirm that I am
-              physically fit and assume all health and injury risks.
+              I have read and understood the waiver. I confirm that I am physically fit and assume
+              all health and injury risks.
             </label>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t">
+          <div className="flex gap-3 border-t pt-4">
             <button
               onClick={onDecline}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 rounded-lg border border-slate-200 px-4 py-2 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={onAccept}
               disabled={!accepted || isLoading}
-              className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="flex-1 rounded-lg bg-orange-600 px-4 py-2 font-medium text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? "Processing..." : "Accept & Continue"}
             </button>
@@ -297,42 +257,33 @@ export const ParentalConsentForm: React.FC<{
   };
 
   return (
-    <div className="space-y-4 p-4 bg-indigo-50 rounded-lg border-2 border-indigo-200">
+    <div className="space-y-4 rounded-lg border-2 border-indigo-200 bg-indigo-50 p-4">
       <div className="flex items-start space-x-3">
         <div className="text-indigo-600">
           <Users className="h-7 w-7" />
         </div>
         <div>
-          <h3 className="font-semibold text-slate-900">
-            Parental Consent Required
-          </h3>
-          <p className="text-sm text-slate-700 mt-1">
-            You are adding a minor. As the legal guardian, you must accept our
-            parental consent terms.
+          <h3 className="font-semibold text-slate-900">Parental Consent Required</h3>
+          <p className="mt-1 text-sm text-slate-700">
+            You are adding a minor. As the legal guardian, you must accept our parental consent
+            terms.
           </p>
         </div>
       </div>
 
-      {error && (
-        <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded bg-red-100 p-3 text-sm text-red-700">{error}</div>}
 
-      <div className="flex items-start space-x-3 bg-white p-3 rounded">
+      <div className="flex items-start space-x-3 rounded bg-white p-3">
         <input
           type="checkbox"
           id="parental-consent"
           checked={accepted}
           onChange={(e) => handleChange(e.target.checked)}
           disabled={isLoading}
-          className="mt-1 w-4 h-4 text-indigo-600 rounded cursor-pointer disabled:opacity-50"
+          className="mt-1 h-4 w-4 cursor-pointer rounded text-indigo-600 disabled:opacity-50"
           required
         />
-        <label
-          htmlFor="parental-consent"
-          className="text-sm text-slate-700 cursor-pointer flex-1"
-        >
+        <label htmlFor="parental-consent" className="flex-1 cursor-pointer text-sm text-slate-700">
           I am the legal parent/guardian and agree to the{" "}
           <Link
             href="/parental-consent"
@@ -342,21 +293,16 @@ export const ParentalConsentForm: React.FC<{
             Parental Consent & Minor Protection Policy
           </Link>{" "}
           and{" "}
-          <Link
-            href="/health-waiver"
-            target="_blank"
-            className="text-indigo-600 hover:underline"
-          >
+          <Link href="/health-waiver" target="_blank" className="text-indigo-600 hover:underline">
             Health Waiver
           </Link>
-          <span className="text-red-500 ml-1">*</span>
+          <span className="ml-1 text-red-500">*</span>
         </label>
       </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 p-3 rounded text-sm text-yellow-800">
-        <strong>Important:</strong> By consenting, you assume full liability for
-        your child's participation and release all coaches, venues, and
-        PowerMySport from liability for injuries.
+      <div className="rounded border border-yellow-200 bg-yellow-50 p-3 text-sm text-yellow-800">
+        <strong>Important:</strong> By consenting, you assume full liability for your child's
+        participation and release all coaches, venues, and PowerMySport from liability for injuries.
       </div>
     </div>
   );
@@ -372,16 +318,14 @@ export const RefundPolicyAcknowledgment: React.FC<{
   const [understood, setUnderstood] = useState(false);
 
   return (
-    <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+    <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
       <div>
-        <h4 className="font-semibold text-sm text-slate-900 mb-2">
-          Cancellation & Refund Policy
-        </h4>
-        <div className="text-xs text-slate-700 space-y-1">
+        <h4 className="mb-2 text-sm font-semibold text-slate-900">Cancellation & Refund Policy</h4>
+        <div className="space-y-1 text-xs text-slate-700">
           <p>
             <strong>₹{bookingAmount}</strong> charged for this booking
           </p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
+          <ul className="mt-2 list-inside list-disc space-y-1">
             <li>Cancel &gt;48 hours before: 100% refund</li>
             <li>Cancel 24-48 hours before: 50% refund</li>
             <li>Cancel &lt;24 hours before: No refund</li>
@@ -396,12 +340,9 @@ export const RefundPolicyAcknowledgment: React.FC<{
           id="refund-ack"
           checked={understood}
           onChange={(e) => setUnderstood(e.target.checked)}
-          className="mt-1 w-4 h-4 rounded cursor-pointer"
+          className="mt-1 h-4 w-4 cursor-pointer rounded"
         />
-        <label
-          htmlFor="refund-ack"
-          className="text-xs text-slate-700 cursor-pointer"
-        >
+        <label htmlFor="refund-ack" className="cursor-pointer text-xs text-slate-700">
           I understand the refund policy and accept these terms
         </label>
       </div>
@@ -409,7 +350,7 @@ export const RefundPolicyAcknowledgment: React.FC<{
       {understood && (
         <button
           onClick={onAccept}
-          className="w-full px-3 py-2 bg-emerald-600 text-white rounded text-sm font-medium hover:bg-emerald-700"
+          className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
         >
           Accept & Proceed to Payment
         </button>

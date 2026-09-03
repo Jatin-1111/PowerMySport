@@ -17,8 +17,7 @@ import redis from "../../config/redis";
 // ─── Config ────────────────────────────────────────────────────────────────────
 
 const REGION = process.env.AWS_REGION || "ap-south-1";
-const ENV_NAME =
-  process.env.AWS_EB_ENVIRONMENT_NAME || "powermysport-api-docker";
+const ENV_NAME = process.env.AWS_EB_ENVIRONMENT_NAME || "powermysport-api-docker";
 const APP_NAME = process.env.AWS_EB_APPLICATION_NAME || "PowerMySport-API";
 
 const OVERVIEW_CACHE_KEY = "infra:overview";
@@ -69,11 +68,7 @@ const readCache = async <T>(key: string): Promise<T | null> => {
   }
 };
 
-const writeCache = async (
-  key: string,
-  value: unknown,
-  ttlSec: number,
-): Promise<void> => {
+const writeCache = async (key: string, value: unknown, ttlSec: number): Promise<void> => {
   try {
     await redis.set(key, JSON.stringify(value), "EX", ttlSec);
   } catch {
@@ -205,9 +200,7 @@ const computeCpuBusy = (cpu?: {
   return Math.max(0, Math.min(100, round(100 - idle)));
 };
 
-export const getInfraOverview = async (
-  forceFresh = false,
-): Promise<InfraOverview> => {
+export const getInfraOverview = async (forceFresh = false): Promise<InfraOverview> => {
   if (!forceFresh) {
     const cached = await readCache<InfraOverview>(OVERVIEW_CACHE_KEY);
     if (cached) return { ...cached, runtime: getRuntimeStats() };
@@ -225,34 +218,32 @@ export const getInfraOverview = async (
     events: [],
   };
 
-  const [envRes, healthRes, instancesRes, eventsRes] = await Promise.allSettled(
-    [
-      getEb().send(
-        new DescribeEnvironmentsCommand({
-          ApplicationName: APP_NAME,
-          EnvironmentNames: [ENV_NAME],
-        }),
-      ),
-      getEb().send(
-        new DescribeEnvironmentHealthCommand({
-          EnvironmentName: ENV_NAME,
-          AttributeNames: ["All"],
-        }),
-      ),
-      getEb().send(
-        new DescribeInstancesHealthCommand({
-          EnvironmentName: ENV_NAME,
-          AttributeNames: ["All"],
-        }),
-      ),
-      getEb().send(
-        new DescribeEventsCommand({
-          EnvironmentName: ENV_NAME,
-          MaxRecords: 15,
-        }),
-      ),
-    ],
-  );
+  const [envRes, healthRes, instancesRes, eventsRes] = await Promise.allSettled([
+    getEb().send(
+      new DescribeEnvironmentsCommand({
+        ApplicationName: APP_NAME,
+        EnvironmentNames: [ENV_NAME],
+      })
+    ),
+    getEb().send(
+      new DescribeEnvironmentHealthCommand({
+        EnvironmentName: ENV_NAME,
+        AttributeNames: ["All"],
+      })
+    ),
+    getEb().send(
+      new DescribeInstancesHealthCommand({
+        EnvironmentName: ENV_NAME,
+        AttributeNames: ["All"],
+      })
+    ),
+    getEb().send(
+      new DescribeEventsCommand({
+        EnvironmentName: ENV_NAME,
+        MaxRecords: 15,
+      })
+    ),
+  ]);
 
   // If every call failed (e.g. bad credentials / no permissions), surface it.
   if (
@@ -328,18 +319,16 @@ export const getInfraOverview = async (
   }
 
   if (instancesRes.status === "fulfilled") {
-    base.instances = (instancesRes.value.InstanceHealthList ?? []).map(
-      (inst) => ({
-        instanceId: inst.InstanceId ?? "unknown",
-        health: inst.HealthStatus,
-        color: inst.Color,
-        cpuBusyPct: computeCpuBusy(inst.System?.CPUUtilization),
-        loadAvg: (inst.System?.LoadAverage ?? []).map((n) => round(n, 2)),
-        version: inst.Deployment?.VersionLabel,
-        launchedAt: inst.LaunchedAt?.toISOString(),
-        causes: inst.Causes ?? [],
-      }),
-    );
+    base.instances = (instancesRes.value.InstanceHealthList ?? []).map((inst) => ({
+      instanceId: inst.InstanceId ?? "unknown",
+      health: inst.HealthStatus,
+      color: inst.Color,
+      cpuBusyPct: computeCpuBusy(inst.System?.CPUUtilization),
+      loadAvg: (inst.System?.LoadAverage ?? []).map((n) => round(n, 2)),
+      version: inst.Deployment?.VersionLabel,
+      launchedAt: inst.LaunchedAt?.toISOString(),
+      causes: inst.Causes ?? [],
+    }));
   }
 
   if (eventsRes.status === "fulfilled") {
@@ -377,7 +366,7 @@ const deriveLbDimension = (raw?: string): string | undefined => {
 const toPoints = (
   timestamps: Date[] | undefined,
   values: number[] | undefined,
-  scale = 1,
+  scale = 1
 ): MetricPoint[] => {
   if (!timestamps || !values) return [];
   return timestamps.map((ts, i) => ({
@@ -386,10 +375,7 @@ const toPoints = (
   }));
 };
 
-export const getInfraMetrics = async (
-  hours: number,
-  forceFresh = false,
-): Promise<InfraMetrics> => {
+export const getInfraMetrics = async (hours: number, forceFresh = false): Promise<InfraMetrics> => {
   const cacheKey = `${METRICS_CACHE_PREFIX}${hours}`;
   if (!forceFresh) {
     const cached = await readCache<InfraMetrics>(cacheKey);
@@ -414,17 +400,13 @@ export const getInfraMetrics = async (
   let lbDim: string | undefined;
   try {
     const resources = await getEb().send(
-      new DescribeEnvironmentResourcesCommand({ EnvironmentName: ENV_NAME }),
+      new DescribeEnvironmentResourcesCommand({ EnvironmentName: ENV_NAME })
     );
     asg = resources.EnvironmentResources?.AutoScalingGroups?.[0]?.Name;
-    lbDim = deriveLbDimension(
-      resources.EnvironmentResources?.LoadBalancers?.[0]?.Name,
-    );
+    lbDim = deriveLbDimension(resources.EnvironmentResources?.LoadBalancers?.[0]?.Name);
   } catch (error) {
     result.error =
-      error instanceof Error
-        ? error.message
-        : "Unable to resolve environment resources";
+      error instanceof Error ? error.message : "Unable to resolve environment resources";
     return result;
   }
 
@@ -492,7 +474,7 @@ export const getInfraMetrics = async (
           Period: periodSec,
           Stat: "Sum",
         },
-      },
+      }
     );
   }
 
@@ -510,12 +492,10 @@ export const getInfraMetrics = async (
         StartTime: new Date(startMs),
         EndTime: end,
         ScanBy: "TimestampAscending",
-      }),
+      })
     );
 
-    const byId = new Map(
-      (response.MetricDataResults ?? []).map((r) => [r.Id, r]),
-    );
+    const byId = new Map((response.MetricDataResults ?? []).map((r) => [r.Id, r]));
     const series = (id: string, scale = 1) =>
       toPoints(byId.get(id)?.Timestamps, byId.get(id)?.Values, scale);
 
@@ -528,10 +508,7 @@ export const getInfraMetrics = async (
     };
     result.available = true;
   } catch (error) {
-    result.error =
-      error instanceof Error
-        ? error.message
-        : "Failed to fetch CloudWatch data";
+    result.error = error instanceof Error ? error.message : "Failed to fetch CloudWatch data";
     return result;
   }
 

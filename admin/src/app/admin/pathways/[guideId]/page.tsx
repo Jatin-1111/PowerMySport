@@ -12,10 +12,7 @@
 
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import {
-  emptyStage,
-  StageEditor,
-} from "@/modules/admin/components/pathway/StageEditor";
+import { emptyStage, StageEditor } from "@/modules/admin/components/pathway/StageEditor";
 import {
   ErrorList,
   Field,
@@ -202,7 +199,10 @@ export default function AdminPathwayEditPage() {
     return (
       <Card variant="elevated">
         <p className="text-sm text-slate-600">That pathway no longer exists.</p>
-        <Link href="/admin/pathways" className="mt-2 inline-block text-sm font-semibold text-power-orange">
+        <Link
+          href="/admin/pathways"
+          className="text-power-orange mt-2 inline-block text-sm font-semibold"
+        >
           Back to pathways
         </Link>
       </Card>
@@ -210,9 +210,7 @@ export default function AdminPathwayEditPage() {
   }
 
   const isPublished = guide.status === "published";
-  const editing = addingStage
-    ? emptyStage()
-    : guide.stages.find((s) => s.key === selected);
+  const editing = addingStage ? emptyStage() : guide.stages.find((s) => s.key === selected);
 
   return (
     <div className="space-y-6">
@@ -281,9 +279,7 @@ export default function AdminPathwayEditPage() {
           makeEmpty={() => ""}
           addLabel="Add paragraph"
           emptyText="No introduction yet."
-          renderRow={(item, setItem) => (
-            <TextArea value={item} rows={2} onChange={setItem} />
-          )}
+          renderRow={(item, setItem) => <TextArea value={item} rows={2} onChange={setItem} />}
         />
 
         <Field label="Reviewed on" hint="Free text, e.g. “Reviewed with AITA coaches, Aug 2026”.">
@@ -298,11 +294,7 @@ export default function AdminPathwayEditPage() {
           disabled={metaSaving}
           className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-40"
         >
-          {metaSaving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          {metaSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Save introduction
         </button>
       </Card>

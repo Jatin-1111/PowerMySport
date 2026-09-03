@@ -21,8 +21,7 @@ export const sportsApi = {
    */
   getAllSports: async (): Promise<Sport[]> => {
     try {
-      const response =
-        await axiosInstance.get<SportsResponse<Sport[]>>("/sports");
+      const response = await axiosInstance.get<SportsResponse<Sport[]>>("/sports");
       return response.data.data || [];
     } catch (error) {
       console.error("Error fetching all sports:", error);
@@ -39,7 +38,7 @@ export const sportsApi = {
         return await sportsApi.getAllSports();
       }
       const response = await axiosInstance.get<SportsResponse<Sport[]>>(
-        `/sports/search?q=${encodeURIComponent(query)}`,
+        `/sports/search?q=${encodeURIComponent(query)}`
       );
       return response.data.data || [];
     } catch (error) {

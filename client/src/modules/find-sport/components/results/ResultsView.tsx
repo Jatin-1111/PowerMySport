@@ -49,7 +49,8 @@ const PORTFOLIO_META: Record<
   stretch: {
     icon: TrendingUp,
     label: "Stretch pick",
-    watchFor: (name) => `Asks more of ${name} — a good sign is wanting more even after the hard parts.`,
+    watchFor: (name) =>
+      `Asks more of ${name} — a good sign is wanting more even after the hard parts.`,
     accentBorder: "border-t-indigo-400",
     badgeBg: "bg-indigo-50 text-indigo-600",
     iconBg: "bg-indigo-50 text-indigo-500",
@@ -82,7 +83,7 @@ function demandScore(result: SportResult): number {
 
 /** Assigns portfolio roles to the top-3 results without touching the scorer. */
 function buildPortfolio(
-  results: SportResult[],
+  results: SportResult[]
 ): Array<{ result: SportResult; role: PortfolioRole }> {
   if (results.length === 0) return [];
   const [bestFit, ...rest] = results;
@@ -149,7 +150,9 @@ function buildKeyFindings(answers: WizardAnswers): string[] {
   const findings: string[] = [];
 
   if (answers.energyType === "explosive") {
-    findings.push(`${name} has explosive, fast-twitch energy — built for short bursts of power, not long grinding effort.`);
+    findings.push(
+      `${name} has explosive, fast-twitch energy — built for short bursts of power, not long grinding effort.`
+    );
   } else if (answers.energyType === "endurance") {
     findings.push(`${name} has real endurance — built to keep going, not for short bursts.`);
   }
@@ -158,32 +161,50 @@ function buildKeyFindings(answers: WizardAnswers): string[] {
   // so 4–5 is the team end and 1–2 is the solo end.
   if (answers.teamIndividual !== null) {
     if (answers.teamIndividual >= 4) {
-      findings.push(`Prefers team environments — plays better with shared effort and shared momentum.`);
+      findings.push(
+        `Prefers team environments — plays better with shared effort and shared momentum.`
+      );
     } else if (answers.teamIndividual <= 2) {
-      findings.push(`Prefers individual competition — wants the result to rest on ${poss} own performance alone.`);
+      findings.push(
+        `Prefers individual competition — wants the result to rest on ${poss} own performance alone.`
+      );
     }
   }
 
   if (answers.pressureResponse === "thrives") {
-    findings.push(`${name} gets better under pressure — big moments bring out ${poss} best, not ${poss} worst.`);
+    findings.push(
+      `${name} gets better under pressure — big moments bring out ${poss} best, not ${poss} worst.`
+    );
   } else if (answers.pressureResponse === "avoids") {
-    findings.push(`${name} plays better without pressure — high-stakes moments work against ${obj}, not for ${obj}.`);
+    findings.push(
+      `${name} plays better without pressure — high-stakes moments work against ${obj}, not for ${obj}.`
+    );
   }
 
   if (answers.agility === "high") {
-    findings.push(`High agility and flexibility — a real edge in any sport built on quick footwork.`);
+    findings.push(
+      `High agility and flexibility — a real edge in any sport built on quick footwork.`
+    );
   } else if (answers.agility === "low") {
-    findings.push(`Agility isn't the strength here — strategy and consistency matter more than raw speed.`);
+    findings.push(
+      `Agility isn't the strength here — strategy and consistency matter more than raw speed.`
+    );
   }
 
   if (answers.decisionStyle === "react") {
-    findings.push(`${name} reacts fast and trusts instinct — built for sports with no time to think.`);
+    findings.push(
+      `${name} reacts fast and trusts instinct — built for sports with no time to think.`
+    );
   } else if (answers.decisionStyle === "strategic") {
-    findings.push(`${name} thinks ahead instead of reacting — built for sports that reward planning.`);
+    findings.push(
+      `${name} thinks ahead instead of reacting — built for sports that reward planning.`
+    );
   }
 
   if (answers.budget && answers.weeklyHours) {
-    findings.push(`${BUDGET_LABEL[answers.budget]} and ${HOURS_LABEL[answers.weeklyHours]} set the real limit on what's realistic below.`);
+    findings.push(
+      `${BUDGET_LABEL[answers.budget]} and ${HOURS_LABEL[answers.weeklyHours]} set the real limit on what's realistic below.`
+    );
   }
 
   return findings.slice(0, 5);
@@ -220,13 +241,11 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
-      >
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
         {icon}
       </div>
       <div className="min-w-0">
-        <h2 className="font-title text-base font-bold leading-tight text-slate-900">{title}</h2>
+        <h2 className="font-title text-base leading-tight font-bold text-slate-900">{title}</h2>
         <p className="mt-0.5 text-xs text-slate-400">{sub}</p>
       </div>
     </div>
@@ -255,11 +274,13 @@ function SportCard({
   return (
     <div
       className={`relative flex flex-col rounded-2xl border-2 border-t-4 bg-white ${
-        chosen ? "border-turf-green shadow-md shadow-turf-green/10" : `border-slate-100 ${meta.accentBorder} ${meta.shadow}`
+        chosen
+          ? "border-turf-green shadow-turf-green/10 shadow-md"
+          : `border-slate-100 ${meta.accentBorder} ${meta.shadow}`
       }`}
     >
       {/* Role badge */}
-      <div className="border-b border-slate-50 px-5 pb-4 pt-5">
+      <div className="border-b border-slate-50 px-5 pt-5 pb-4">
         <div className="mb-3 flex items-center justify-between gap-2">
           <div
             className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badgeBg}`}
@@ -277,7 +298,7 @@ function SportCard({
             <span className="text-xl font-bold">{result.sport.name[0]}</span>
           </div>
           <div className="min-w-0">
-            <h3 className="font-title text-xl font-bold leading-tight text-slate-900">
+            <h3 className="font-title text-xl leading-tight font-bold text-slate-900">
               {result.sport.name}
             </h3>
             <p className="mt-0.5 text-xs text-slate-400">{result.sport.tagline}</p>
@@ -289,8 +310,8 @@ function SportCard({
       <div className="flex-1 space-y-2.5 px-5 py-4">
         {result.reasons.slice(0, 3).map((reason, i) => (
           <div key={i} className="flex items-start gap-2.5">
-            <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-turf-green/10">
-              <Check className="h-2.5 w-2.5 text-turf-green" />
+            <div className="bg-turf-green/10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full">
+              <Check className="text-turf-green h-2.5 w-2.5" />
             </div>
             <p className="text-xs leading-relaxed text-slate-600">{reason}</p>
           </div>
@@ -299,7 +320,7 @@ function SportCard({
 
       {/* What to watch for in a trial */}
       <div className="mx-5 mb-4 rounded-xl bg-slate-50 px-3.5 py-3">
-        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <p className="mb-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
           Cost to try: {result.sport.costRange}
         </p>
         <p className="text-xs leading-relaxed text-slate-600">{meta.watchFor(name)}</p>
@@ -335,8 +356,10 @@ function shortlistSummary(fits: SportFitResult[], name: string): string {
   }
 
   const lead = `Of the ${fits.length} you picked, ${best.sport.name} lines up best for ${name} at ${best.score}/100.`;
-  if (blocked.length === 0) return `${lead} Every one of them has something that fits and something that doesn't — both are below.`;
-  if (blocked.length === fits.length) return `${lead} All of them have something to sort out first — see the right-hand column on each.`;
+  if (blocked.length === 0)
+    return `${lead} Every one of them has something that fits and something that doesn't — both are below.`;
+  if (blocked.length === fits.length)
+    return `${lead} All of them have something to sort out first — see the right-hand column on each.`;
   return `${lead} ${blocked.length === 1 ? `${blocked[0].sport.name} has` : `${blocked.length} of them have`} something to sort out first.`;
 }
 
@@ -379,7 +402,9 @@ export function ResultsView({
   // would just be the same sport twice with a thinner writeup.
   const chosenIds = new Set(chosenFits.map((f) => f.sport.id));
   const topResults = results.slice(0, 3);
-  const portfolio = buildPortfolio(topResults).filter(({ result }) => !chosenIds.has(result.sport.id));
+  const portfolio = buildPortfolio(topResults).filter(
+    ({ result }) => !chosenIds.has(result.sport.id)
+  );
 
   const keyFindings = buildKeyFindings(answers);
   const contextChips = buildContextChips(answers);
@@ -414,7 +439,7 @@ export function ResultsView({
         <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-10">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase">
                 Assessment complete
               </p>
               {savedStatus === "saving" && (
@@ -436,7 +461,7 @@ export function ResultsView({
               )}
             </div>
 
-            <h1 className="font-title text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
+            <h1 className="font-title text-3xl leading-tight font-bold text-slate-900 sm:text-4xl">
               {hasShortlist
                 ? `How ${name} fits the sports you're considering`
                 : `${name}'s personalised sports roadmap`}
@@ -453,13 +478,13 @@ export function ResultsView({
           {headlineSport && (
             <div className="w-full shrink-0 rounded-2xl bg-slate-900 p-5 lg:w-[268px]">
               <p
-                className={`text-[10px] font-bold uppercase tracking-[0.18em] ${
+                className={`text-[10px] font-bold tracking-[0.18em] uppercase ${
                   chosenSport ? "text-turf-green" : "text-power-orange"
                 }`}
               >
                 {chosenSport ? "You're starting with" : topFit ? "Strongest fit" : "Best fit"}
               </p>
-              <p className="font-title mt-1 text-2xl font-bold leading-tight text-white">
+              <p className="font-title mt-1 text-2xl leading-tight font-bold text-white">
                 {headlineSport}
               </p>
 
@@ -468,17 +493,17 @@ export function ResultsView({
               {topFit && !chosenSport && (
                 <div className="mt-3">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="font-title text-3xl font-bold tabular-nums leading-none text-white">
+                    <span className="font-title text-3xl leading-none font-bold text-white tabular-nums">
                       {topFit.score}
                     </span>
                     <span className="text-xs font-medium text-slate-500">/ 100</span>
-                    <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="ml-auto text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                       {topFit.hasBlocker ? "Needs a fix" : topFit.fitLabel}
                     </span>
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div
-                      className="h-full rounded-full bg-power-orange transition-all duration-700"
+                      className="bg-power-orange h-full rounded-full transition-all duration-700"
                       style={{ width: `${topFit.score}%` }}
                     />
                   </div>
@@ -488,7 +513,7 @@ export function ResultsView({
               <button
                 type="button"
                 onClick={scrollToNextStep}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-orange-600"
+                className="bg-power-orange mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-orange-600"
               >
                 Book a trial class
                 <ArrowDown className="h-3.5 w-3.5" />
@@ -500,7 +525,7 @@ export function ResultsView({
         {/* Constraints every score was measured against */}
         {contextChips.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 bg-slate-50/60 px-6 py-3 sm:px-8">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
               Scored against
             </span>
             {contextChips.map((chip) => (
@@ -518,7 +543,9 @@ export function ResultsView({
         <div className="mb-8 flex items-start gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3.5">
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
           <p className="text-sm leading-relaxed text-indigo-900">
-            At {answers.age}, we wouldn&apos;t pick just one yet — playing 2-3 of these together builds broader athleticism than specialising early. Treat the ones below as sports to rotate between, not a single choice to commit to.
+            At {answers.age}, we wouldn&apos;t pick just one yet — playing 2-3 of these together
+            builds broader athleticism than specialising early. Treat the ones below as sports to
+            rotate between, not a single choice to commit to.
           </p>
         </div>
       )}
@@ -555,7 +582,7 @@ export function ResultsView({
       {hasShortlist && (
         <section className="mb-10">
           <SectionHeader
-            icon={<ClipboardList className="h-4 w-4 text-power-orange" />}
+            icon={<ClipboardList className="text-power-orange h-4 w-4" />}
             iconClass="bg-power-orange/10"
             title="Sports you're considering"
             sub="Scored on the same engine we use for our own recommendations — best fit first"
@@ -589,7 +616,9 @@ export function ResultsView({
             />
           )}
 
-          <div className={`grid grid-cols-1 items-stretch gap-5 ${PORTFOLIO_GRID[portfolio.length] ?? "sm:grid-cols-2 lg:grid-cols-3"}`}>
+          <div
+            className={`grid grid-cols-1 items-stretch gap-5 ${PORTFOLIO_GRID[portfolio.length] ?? "sm:grid-cols-2 lg:grid-cols-3"}`}
+          >
             {portfolio.map(({ result, role }) => (
               <SportCard
                 key={result.sport.id}

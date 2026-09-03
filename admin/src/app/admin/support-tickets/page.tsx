@@ -3,13 +3,7 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { SupportTicketRecord, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  AlertTriangle,
-  Clock3,
-  MessageSquare,
-  RefreshCw,
-  Search,
-} from "lucide-react";
+import { AlertTriangle, Clock3, MessageSquare, RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -27,12 +21,8 @@ const formatDate = (value: string) => {
 export default function AdminSupportTicketsPage() {
   const [tickets, setTickets] = useState<SupportTicketRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<"ALL" | SupportStatus>(
-    "ALL",
-  );
-  const [priorityFilter, setPriorityFilter] = useState<"ALL" | SupportPriority>(
-    "ALL",
-  );
+  const [statusFilter, setStatusFilter] = useState<"ALL" | SupportStatus>("ALL");
+  const [priorityFilter, setPriorityFilter] = useState<"ALL" | SupportPriority>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   const loadTickets = useCallback(async () => {
@@ -61,10 +51,7 @@ export default function AdminSupportTicketsPage() {
     loadTickets();
   }, [loadTickets]);
 
-  const handleStatusUpdate = async (
-    ticketId: string,
-    status: SupportStatus,
-  ) => {
+  const handleStatusUpdate = async (ticketId: string, status: SupportStatus) => {
     try {
       await adminApi.updateSupportTicket(ticketId, { status });
       toast.success("Support ticket updated.");
@@ -105,14 +92,10 @@ export default function AdminSupportTicketsPage() {
   }, [searchQuery, tickets]);
 
   const stats = useMemo(() => {
-    const open = visibleTickets.filter(
-      (ticket) => ticket.status === "OPEN",
-    ).length;
-    const inProgress = visibleTickets.filter(
-      (ticket) => ticket.status === "IN_PROGRESS",
-    ).length;
+    const open = visibleTickets.filter((ticket) => ticket.status === "OPEN").length;
+    const inProgress = visibleTickets.filter((ticket) => ticket.status === "IN_PROGRESS").length;
     const urgent = visibleTickets.filter(
-      (ticket) => ticket.priority === "URGENT" || ticket.priority === "HIGH",
+      (ticket) => ticket.priority === "URGENT" || ticket.priority === "HIGH"
     ).length;
 
     return {
@@ -155,17 +138,13 @@ export default function AdminSupportTicketsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="bg-white">
           <p className="text-sm text-slate-600">Showing</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">
-            {stats.total}
-          </p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{stats.total}</p>
         </Card>
         <Card className="bg-white">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm text-slate-600">Open</p>
-              <p className="mt-2 text-3xl font-bold text-amber-600">
-                {stats.open}
-              </p>
+              <p className="mt-2 text-3xl font-bold text-amber-600">{stats.open}</p>
             </div>
             <MessageSquare className="text-amber-500" size={18} />
           </div>
@@ -174,9 +153,7 @@ export default function AdminSupportTicketsPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm text-slate-600">In progress</p>
-              <p className="mt-2 text-3xl font-bold text-blue-600">
-                {stats.inProgress}
-              </p>
+              <p className="mt-2 text-3xl font-bold text-blue-600">{stats.inProgress}</p>
             </div>
             <Clock3 className="text-blue-500" size={18} />
           </div>
@@ -185,18 +162,16 @@ export default function AdminSupportTicketsPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm text-slate-600">Urgent / High</p>
-              <p className="mt-2 text-3xl font-bold text-red-600">
-                {stats.urgent}
-              </p>
+              <p className="mt-2 text-3xl font-bold text-red-600">{stats.urgent}</p>
             </div>
             <AlertTriangle className="text-red-500" size={18} />
           </div>
         </Card>
       </div>
 
-      <Card className="bg-white space-y-4">
+      <Card className="space-y-4 bg-white">
         <div className="grid gap-3 lg:grid-cols-[1.5fr_0.7fr_0.7fr_auto]">
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-700 focus-within:border-power-orange">
+          <label className="focus-within:border-power-orange flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-700">
             <Search size={18} className="text-slate-400" />
             <input
               type="search"
@@ -209,10 +184,8 @@ export default function AdminSupportTicketsPage() {
 
           <select
             value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(event.target.value as typeof statusFilter)
-            }
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-power-orange"
+            onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
+            className="focus:border-power-orange rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition outline-none"
           >
             <option value="ALL">All statuses</option>
             <option value="OPEN">Open</option>
@@ -223,10 +196,8 @@ export default function AdminSupportTicketsPage() {
 
           <select
             value={priorityFilter}
-            onChange={(event) =>
-              setPriorityFilter(event.target.value as typeof priorityFilter)
-            }
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-power-orange"
+            onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}
+            className="focus:border-power-orange rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition outline-none"
           >
             <option value="ALL">All priorities</option>
             <option value="LOW">Low</option>
@@ -246,9 +217,7 @@ export default function AdminSupportTicketsPage() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-slate-500">
-            Loading support tickets...
-          </div>
+          <div className="py-12 text-center text-slate-500">Loading support tickets...</div>
         ) : visibleTickets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-12 text-center text-slate-500">
             No support tickets match the current filters.
@@ -263,9 +232,7 @@ export default function AdminSupportTicketsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-semibold text-slate-900">
-                        {ticket.subject}
-                      </h3>
+                      <h3 className="text-base font-semibold text-slate-900">{ticket.subject}</h3>
                       <span
                         className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusBadgeClasses[ticket.status]}`}
                       >
@@ -284,22 +251,14 @@ export default function AdminSupportTicketsPage() {
 
                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
                       <span>
-                        {ticket.userId?.name ||
-                          ticket.requesterName ||
-                          "Anonymous"}{" "}
-                        (
-                        {ticket.userId?.email || ticket.requesterEmail || "N/A"}
-                        )
+                        {ticket.userId?.name || ticket.requesterName || "Anonymous"} (
+                        {ticket.userId?.email || ticket.requesterEmail || "N/A"})
                       </span>
                       <span>Category: {ticket.category}</span>
                       {ticket.requesterType && (
-                        <span>
-                          Type: {ticket.requesterType.replace("_", " ")}
-                        </span>
+                        <span>Type: {ticket.requesterType.replace("_", " ")}</span>
                       )}
-                      {ticket.requesterPhone && (
-                        <span>Phone: {ticket.requesterPhone}</span>
-                      )}
+                      {ticket.requesterPhone && <span>Phone: {ticket.requesterPhone}</span>}
                       {ticket.assignedAdminId?.name && (
                         <span>Assigned to: {ticket.assignedAdminId.name}</span>
                       )}
@@ -319,9 +278,7 @@ export default function AdminSupportTicketsPage() {
                       <button
                         key={action.value}
                         type="button"
-                        onClick={() =>
-                          handleStatusUpdate(ticket._id, action.value)
-                        }
+                        onClick={() => handleStatusUpdate(ticket._id, action.value)}
                         className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
                           isActive
                             ? "bg-slate-900 text-white"

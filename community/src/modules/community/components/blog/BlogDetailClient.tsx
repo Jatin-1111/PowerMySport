@@ -17,11 +17,7 @@ import { blogService } from "@/modules/community/services/blog";
 import { BlogDetail } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
-import {
-  getCommunitySocket,
-  blogRoom,
-  subscribeToCommunityRoom,
-} from "@/lib/realtime/socket";
+import { getCommunitySocket, blogRoom, subscribeToCommunityRoom } from "@/lib/realtime/socket";
 import { toast } from "@/lib/toast";
 import { getBlogTopic } from "@/modules/community/constants/blogTopics";
 import { formatBlogDate } from "@/modules/community/utils/blogFormat";
@@ -32,9 +28,7 @@ import AuthorAvatar from "./AuthorAvatar";
 import LikeButton from "./LikeButton";
 
 const authorHref = (author: BlogDetail["author"]) =>
-  author.username
-    ? `/blog/writer/${author.username}`
-    : `/blog/writer/${author.id}`;
+  author.username ? `/blog/writer/${author.username}` : `/blog/writer/${author.id}`;
 
 export default function BlogDetailClient({
   blogId,
@@ -66,9 +60,7 @@ export default function BlogDetailClient({
       setBlog(data);
       hasContentRef.current = true;
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load story",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load story");
       setBlog(null);
     } finally {
       setIsLoading(false);
@@ -93,9 +85,7 @@ export default function BlogDetailClient({
         typeof payload.likeCount === "number"
       ) {
         setBlog((current) =>
-          current
-            ? { ...current, likeCount: payload.likeCount as number }
-            : current,
+          current ? { ...current, likeCount: payload.likeCount as number } : current
         );
       }
     };
@@ -123,15 +113,11 @@ export default function BlogDetailClient({
     try {
       const result = await blogService.toggleLike("BLOG", blog.id);
       setBlog((current) =>
-        current
-          ? { ...current, likedByMe: result.liked, likeCount: result.likeCount }
-          : current,
+        current ? { ...current, likedByMe: result.liked, likeCount: result.likeCount } : current
       );
     } catch (error) {
       setBlog((current) =>
-        current
-          ? { ...current, likedByMe: blog.likedByMe, likeCount: blog.likeCount }
-          : current,
+        current ? { ...current, likedByMe: blog.likedByMe, likeCount: blog.likeCount } : current
       );
       toast.error(error instanceof Error ? error.message : "Failed to react");
     } finally {
@@ -163,7 +149,7 @@ export default function BlogDetailClient({
     const url = typeof window !== "undefined" ? window.location.href : "";
     const text = `${blog.title} — on PowerMySport`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-      text,
+      text
     )}&url=${encodeURIComponent(url)}`;
     window.open(shareUrl, "_blank", "noopener,noreferrer");
   };
@@ -231,36 +217,23 @@ export default function BlogDetailClient({
           className="mt-5 aspect-[16/9] w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100"
         >
           {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={blog.title}
-              className="h-full w-full object-cover"
-            />
+            <img src={coverUrl} alt={blog.title} className="h-full w-full object-cover" />
           ) : (
             <BlogCoverFallback topic={blog.topic} />
           )}
         </motion.div>
 
         {/* Title */}
-        <h1 className="font-title mt-6 text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="font-title mt-6 text-3xl leading-tight font-bold tracking-tight text-slate-900 sm:text-4xl">
           {blog.title}
         </h1>
 
         {/* Author + date */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
-          <Link
-            href={authorHref(blog.author)}
-            className="flex items-center gap-3"
-          >
-            <AuthorAvatar
-              name={blog.author.name}
-              photoUrl={blog.author.photoUrl}
-              size={44}
-            />
+          <Link href={authorHref(blog.author)} className="flex items-center gap-3">
+            <AuthorAvatar name={blog.author.name} photoUrl={blog.author.photoUrl} size={44} />
             <span>
-              <span className="block text-sm font-semibold text-slate-900">
-                {blog.author.name}
-              </span>
+              <span className="block text-sm font-semibold text-slate-900">{blog.author.name}</span>
               <span className="block text-xs text-slate-400">
                 {blog.author.username ? `@${blog.author.username} · ` : ""}
                 Published on {formatBlogDate(blog.createdAt)}
@@ -328,9 +301,7 @@ export default function BlogDetailClient({
 
         {/* Share */}
         <div className="mt-8 flex items-center justify-between gap-3 border-t border-slate-100 pt-6">
-          <p className="text-sm text-slate-500">
-            Enjoyed this story? Share it.
-          </p>
+          <p className="text-sm text-slate-500">Enjoyed this story? Share it.</p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => void copyLink()}
@@ -362,7 +333,7 @@ export default function BlogDetailClient({
                   ...current,
                   commentCount: Math.max(0, current.commentCount + delta),
                 }
-              : current,
+              : current
           )
         }
       />

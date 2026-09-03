@@ -10,13 +10,9 @@ const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const { CommunityGroup } = require("../community/models/CommunityGroup");
-const {
-  CommunityGroupMember,
-} = require("../community/models/CommunityGroupMember");
+const { CommunityGroupMember } = require("../community/models/CommunityGroupMember");
 const { CommunityService } = require("../community/services/CommunityService");
-const {
-  addMember,
-} = require("../community/services/communityGroupMembership");
+const { addMember } = require("../community/services/communityGroupMembership");
 const { User } = require("../client/models/User");
 const migration26 = require("../migrations/26_extract_community_group_members");
 
@@ -94,10 +90,7 @@ describe("community group membership", () => {
 
     const stored = await CommunityGroup.findById(group.id).lean();
     assert.equal(stored.memberCount, 2);
-    assert.equal(
-      await CommunityGroupMember.countDocuments({ groupId: group.id }),
-      2,
-    );
+    assert.equal(await CommunityGroupMember.countDocuments({ groupId: group.id }), 2);
   });
 
   it("counts a membership once even if two admins add the same person", async () => {
@@ -117,10 +110,7 @@ describe("community group membership", () => {
 
     const stored = await CommunityGroup.findById(group.id).lean();
     assert.equal(stored.memberCount, 2);
-    assert.equal(
-      await CommunityGroupMember.countDocuments({ groupId: group.id }),
-      2,
-    );
+    assert.equal(await CommunityGroupMember.countDocuments({ groupId: group.id }), 2);
   });
 
   it("refuses a self-join to an invite-only group", async () => {
@@ -131,10 +121,7 @@ describe("community group membership", () => {
       visibility: "INVITE_ONLY",
     });
 
-    await assert.rejects(
-      () => CommunityService.joinGroup(outsider, group.id),
-      /invite-only/i,
-    );
+    await assert.rejects(() => CommunityService.joinGroup(outsider, group.id), /invite-only/i);
   });
 
   it("lets an invite code into a private group", async () => {
@@ -146,10 +133,7 @@ describe("community group membership", () => {
     });
 
     const stored = await CommunityGroup.findById(group.id).lean();
-    const result = await CommunityService.joinGroupByCode(
-      invitee,
-      stored.inviteCode,
-    );
+    const result = await CommunityService.joinGroupByCode(invitee, stored.inviteCode);
 
     assert.equal(result.memberCount, 2);
   });
@@ -196,10 +180,7 @@ describe("community group membership", () => {
 
     assert.equal(result.deletedGroup, true);
     assert.equal(await CommunityGroup.countDocuments({ _id: group.id }), 0);
-    assert.equal(
-      await CommunityGroupMember.countDocuments({ groupId: group.id }),
-      0,
-    );
+    assert.equal(await CommunityGroupMember.countDocuments({ groupId: group.id }), 0);
   });
 
   it("leaves no orphan memberships when a group is deleted", async () => {
@@ -210,10 +191,7 @@ describe("community group membership", () => {
 
     await CommunityService.deleteGroup(owner, group.id);
 
-    assert.equal(
-      await CommunityGroupMember.countDocuments({ groupId: group.id }),
-      0,
-    );
+    assert.equal(await CommunityGroupMember.countDocuments({ groupId: group.id }), 0);
   });
 
   it("keeps non-members out of the member list", async () => {
@@ -223,7 +201,7 @@ describe("community group membership", () => {
 
     await assert.rejects(
       () => CommunityService.getGroupMembers(outsider, group.id),
-      /Access denied/,
+      /Access denied/
     );
   });
 
@@ -234,9 +212,8 @@ describe("community group membership", () => {
     await CommunityService.joinGroup(member, group.id);
 
     await assert.rejects(
-      () =>
-        CommunityService.updateGroup(member, group.id, { name: "Hijacked" }),
-      /Only group admins/,
+      () => CommunityService.updateGroup(member, group.id, { name: "Hijacked" }),
+      /Only group admins/
     );
   });
 });
@@ -249,11 +226,7 @@ describe("migration 26: extract group members", () => {
 
   /** Writes a group in the pre-migration shape, bypassing the schema — which
    *  no longer declares members/admins. */
-  const seedLegacyGroup = async (
-    members: string[],
-    admins: string[],
-    name = "Legacy Group",
-  ) => {
+  const seedLegacyGroup = async (members: string[], admins: string[], name = "Legacy Group") => {
     const result = await CommunityGroup.collection.insertOne({
       name,
       description: "",
@@ -289,10 +262,7 @@ describe("migration 26: extract group members", () => {
     const rows = await CommunityGroupMember.find({ groupId }).lean();
     assert.equal(rows.length, 2);
     const byUser = new Map(
-      rows.map((row: { userId: unknown; role: string }) => [
-        String(row.userId),
-        row.role,
-      ]),
+      rows.map((row: { userId: unknown; role: string }) => [String(row.userId), row.role])
     );
     assert.equal(byUser.get(admin), "ADMIN");
     assert.equal(byUser.get(member), "MEMBER");
@@ -312,10 +282,7 @@ describe("migration 26: extract group members", () => {
     const rows = await CommunityGroupMember.find({ groupId }).lean();
     assert.equal(rows.length, 2);
     const roles = new Map(
-      rows.map((row: { userId: unknown; role: string }) => [
-        String(row.userId),
-        row.role,
-      ]),
+      rows.map((row: { userId: unknown; role: string }) => [String(row.userId), row.role])
     );
     assert.equal(roles.get(ghostAdmin), "ADMIN");
   });

@@ -6,13 +6,13 @@ import { ExpertsTab } from "@/modules/discovery/components/ExpertsTab";
 import VenuesTab from "@/modules/discovery/components/VenuesTab";
 import { cn } from "@/utils/cn";
 import {
-    Building2,
-    CircleCheck,
-    GraduationCap,
-    MapPin,
-    ShieldCheck,
-    UserRoundSearch,
-    Zap,
+  Building2,
+  CircleCheck,
+  GraduationCap,
+  MapPin,
+  ShieldCheck,
+  UserRoundSearch,
+  Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -59,20 +59,14 @@ const ALL_TABS: {
 
 const TABS = ALL_TABS.filter((t) => t.id === "experts");
 
-function TabBar({
-  activeTab,
-  onTabChange,
-}: {
-  activeTab: Tab;
-  onTabChange: (t: Tab) => void;
-}) {
+function TabBar({ activeTab, onTabChange }: { activeTab: Tab; onTabChange: (t: Tab) => void }) {
   return (
     <div className="sticky top-16 z-40 border-b border-slate-200 bg-white shadow-sm">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <div
           role="tablist"
           aria-label="Discovery categories"
-          className="flex overflow-x-auto no-scrollbar whitespace-nowrap"
+          className="no-scrollbar flex overflow-x-auto whitespace-nowrap"
         >
           {TABS.map(({ id, label, icon: Icon, sub }) => {
             const isActive = activeTab === id;
@@ -88,18 +82,16 @@ function TabBar({
                 tabIndex={isActive ? 0 : -1}
                 className={cn(
                   "relative flex items-center gap-2 px-5 py-3.5 text-sm font-semibold transition-colors focus-visible:outline-none",
-                  isActive
-                    ? "text-orange-700"
-                    : "text-slate-500 hover:text-slate-800",
+                  isActive ? "text-orange-700" : "text-slate-500 hover:text-slate-800"
                 )}
               >
                 <Icon size={15} />
                 {label}
-                <span className="hidden lg:inline text-xs font-normal text-slate-500 ml-0.5">
+                <span className="ml-0.5 hidden text-xs font-normal text-slate-500 lg:inline">
                   · {sub}
                 </span>
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full bg-power-orange" />
+                  <span className="bg-power-orange absolute right-0 bottom-0 left-0 h-0.5 rounded-t-full" />
                 )}
               </button>
             );
@@ -122,9 +114,7 @@ function BookingPageContent() {
   const handleTabChange = (tab: Tab) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    ["sport", "mode", "maxRate", "maxFee", "minRating", "sort"].forEach((k) =>
-      params.delete(k),
-    );
+    ["sport", "mode", "maxRate", "maxFee", "minRating", "sort"].forEach((k) => params.delete(k));
     router.push(`/booking?${params.toString()}`);
   };
 
@@ -132,26 +122,25 @@ function BookingPageContent() {
     <div className="min-h-screen bg-[#F4F3F0]">
       {/* ── Hero ─────────────────────────────────────────────────── */}
       <div className="border-b border-slate-200 bg-white">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-8xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             {/* Headline block */}
             <div className="max-w-2xl">
-              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-700">
+              <p className="mb-4 text-[11px] font-bold tracking-[0.22em] text-orange-700 uppercase">
                 Instant Booking
               </p>
               <h1
-                className="font-title font-black leading-[0.92] tracking-tight text-slate-900"
+                className="font-title leading-[0.92] font-black tracking-tight text-slate-900"
                 style={{
                   fontSize: "clamp(2.2rem, 5vw, 3.75rem)",
                   textWrap: "balance",
                 }}
               >
-                Book 1:1 sessions with{" "}
-                <span className="text-power-orange">verified experts.</span>
+                Book 1:1 sessions with <span className="text-power-orange">verified experts.</span>
               </h1>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-slate-500">
-                Get personalised guidance from verified sports experts —
-                bookable in minutes across India.
+                Get personalised guidance from verified sports experts — bookable in minutes across
+                India.
               </p>
             </div>
 
@@ -179,11 +168,7 @@ function BookingPageContent() {
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* ── Tab content ──────────────────────────────────────────── */}
-      <div
-        role="tabpanel"
-        id={`tabpanel-${activeTab}`}
-        aria-labelledby={`tab-${activeTab}`}
-      >
+      <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>
         <ExpertsTab />
       </div>
     </div>
@@ -195,7 +180,7 @@ export default function BookingPage() {
     <Suspense
       fallback={
         <div className="flex min-h-[480px] items-center justify-center bg-white">
-          <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
+          <div className="border-t-power-orange h-9 w-9 animate-spin rounded-full border-2 border-slate-100" />
         </div>
       }
     >

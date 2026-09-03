@@ -37,8 +37,7 @@ export default function AdminCoachVerificationPage() {
   const [actionMode, setActionMode] = useState<ActionMode | null>(null);
   const [actionText, setActionText] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
-  const [pendingApproveCoach, setPendingApproveCoach] =
-    useState<PendingApproveCoach | null>(null);
+  const [pendingApproveCoach, setPendingApproveCoach] = useState<PendingApproveCoach | null>(null);
   const PAGE_SIZE = 10;
 
   const loadVerifications = useCallback(async () => {
@@ -153,8 +152,8 @@ export default function AdminCoachVerificationPage() {
     } catch (error) {
       console.error("Failed to send verification reminder:", error);
       const message =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || "Failed to send verification reminder.";
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Failed to send verification reminder.";
       toast.error(message);
     } finally {
       setActionLoading(false);
@@ -178,15 +177,12 @@ export default function AdminCoachVerificationPage() {
     setActionLoading(true);
     try {
       if (actionMode === "REJECT") {
-        await adminApi.rejectCoachVerification(
-          actionCoachId,
-          actionText.trim(),
-        );
+        await adminApi.rejectCoachVerification(actionCoachId, actionText.trim());
         toast.success("Coach rejected successfully.");
       } else {
         await adminApi.markCoachVerificationForReview(
           actionCoachId,
-          actionText.trim() || undefined,
+          actionText.trim() || undefined
         );
         toast.success("Coach moved to review.");
       }
@@ -202,9 +198,7 @@ export default function AdminCoachVerificationPage() {
   };
 
   if (loading) {
-    return (
-      <div className="text-center py-12">Loading coach verifications...</div>
-    );
+    return <div className="py-12 text-center">Loading coach verifications...</div>;
   }
 
   if (error) {
@@ -216,11 +210,11 @@ export default function AdminCoachVerificationPage() {
           subtitle="Review and verify coach documents to ensure trust on the platform."
         />
         <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
+          <div className="space-y-3 py-10 text-center">
+            <p className="font-semibold text-red-600">{error}</p>
             <button
               onClick={loadVerifications}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
             >
               Retry
             </button>
@@ -283,7 +277,7 @@ export default function AdminCoachVerificationPage() {
                       {coachId ? (
                         <Link
                           href={coachDetailsHref}
-                          className="text-lg font-semibold text-slate-900 transition-colors hover:text-power-orange"
+                          className="hover:text-power-orange text-lg font-semibold text-slate-900 transition-colors"
                         >
                           {userInfo?.name || "Coach"}
                         </Link>
@@ -293,8 +287,8 @@ export default function AdminCoachVerificationPage() {
                         </h3>
                       )}
                       <span
-                        className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                          coach.verificationStatus,
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadge(
+                          coach.verificationStatus
                         )}`}
                       >
                         {coach.verificationStatus || "UNVERIFIED"}
@@ -303,29 +297,23 @@ export default function AdminCoachVerificationPage() {
                     {coachId ? (
                       <Link
                         href={coachDetailsHref}
-                        className="block text-sm text-slate-600 transition-colors hover:text-power-orange"
+                        className="hover:text-power-orange block text-sm text-slate-600 transition-colors"
                       >
                         {userInfo?.email || "No email"}
                       </Link>
                     ) : (
-                      <p className="text-sm text-slate-600">
-                        {userInfo?.email || "No email"}
-                      </p>
+                      <p className="text-sm text-slate-600">{userInfo?.email || "No email"}</p>
                     )}
-                    <p className="text-sm text-slate-500">
-                      Sports: {coach.sports.join(", ")}
-                    </p>
+                    <p className="text-sm text-slate-500">Sports: {coach.sports.join(", ")}</p>
                     {coach.verificationNotes && (
-                      <p className="text-sm text-red-600">
-                        Notes: {coach.verificationNotes}
-                      </p>
+                      <p className="text-sm text-red-600">Notes: {coach.verificationNotes}</p>
                     )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     <Link
                       href={`/admin/coach-verification/${coachId}`}
-                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                     >
                       View Details
                     </Link>
@@ -333,7 +321,7 @@ export default function AdminCoachVerificationPage() {
                       <button
                         onClick={() => handleNotify(coach)}
                         disabled={actionLoading}
-                        className="rounded-lg border border-orange-300 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-orange-300 px-4 py-2 text-sm font-semibold text-orange-700 transition-colors hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Notify
                       </button>
@@ -341,21 +329,21 @@ export default function AdminCoachVerificationPage() {
                     <button
                       onClick={() => handleApprove(coach)}
                       disabled={actionLoading}
-                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
+                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700"
                     >
                       Approve
                     </button>
                     <button
                       onClick={() => startAction(coach, "REVIEW")}
                       disabled={actionLoading}
-                      className="rounded-lg border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition-colors"
+                      className="rounded-lg border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
                     >
                       Mark Review
                     </button>
                     <button
                       onClick={() => startAction(coach, "REJECT")}
                       disabled={actionLoading}
-                      className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 transition-colors"
+                      className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
                     >
                       Reject
                     </button>
@@ -363,11 +351,9 @@ export default function AdminCoachVerificationPage() {
                 </div>
 
                 {actionCoachId === coachId && actionMode && (
-                  <div className="mt-4 border-t border-slate-100 pt-4 space-y-3">
+                  <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                     <p className="text-sm font-semibold text-slate-800">
-                      {actionMode === "REJECT"
-                        ? "Rejection reason"
-                        : "Review notes (optional)"}
+                      {actionMode === "REJECT" ? "Rejection reason" : "Review notes (optional)"}
                     </p>
                     <textarea
                       rows={3}
@@ -383,11 +369,8 @@ export default function AdminCoachVerificationPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={submitAction}
-                        disabled={
-                          actionLoading ||
-                          (actionMode === "REJECT" && !actionText.trim())
-                        }
-                        className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={actionLoading || (actionMode === "REJECT" && !actionText.trim())}
+                        className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {actionLoading ? "Saving..." : "Submit"}
                       </button>
@@ -403,9 +386,7 @@ export default function AdminCoachVerificationPage() {
                 )}
 
                 <div className="mt-4 border-t border-slate-100 pt-4">
-                  <p className="text-sm font-semibold text-slate-700 mb-2">
-                    Documents
-                  </p>
+                  <p className="mb-2 text-sm font-semibold text-slate-700">Documents</p>
                   <div className="flex flex-wrap gap-2">
                     {coach.verificationDocuments?.length ? (
                       coach.verificationDocuments.map((doc, index) => (
@@ -414,15 +395,13 @@ export default function AdminCoachVerificationPage() {
                           href={doc.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-power-orange hover:text-power-orange transition-colors"
+                          className="hover:border-power-orange hover:text-power-orange rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors"
                         >
                           {doc.type}: {doc.fileName}
                         </a>
                       ))
                     ) : (
-                      <span className="text-sm text-slate-500">
-                        No documents uploaded.
-                      </span>
+                      <span className="text-sm text-slate-500">No documents uploaded.</span>
                     )}
                   </div>
                 </div>
@@ -434,14 +413,13 @@ export default function AdminCoachVerificationPage() {
             <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-center text-sm text-slate-600 sm:text-left">
                 Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                {Math.min(currentPage * PAGE_SIZE, pagination.total)} of{" "}
-                {pagination.total}
+                {Math.min(currentPage * PAGE_SIZE, pagination.total)} of {pagination.total}
               </p>
               <div className="flex items-center justify-center gap-2">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -449,13 +427,13 @@ export default function AdminCoachVerificationPage() {
                 {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
                   .slice(
                     Math.max(0, currentPage - 2),
-                    Math.min(pagination.totalPages, currentPage + 1),
+                    Math.min(pagination.totalPages, currentPage + 1)
                   )
                   .map((page) => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-2 rounded-lg font-semibold transition-colors ${
+                      className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
                         currentPage === page
                           ? "bg-power-orange text-white"
                           : "border border-slate-300 text-slate-700 hover:bg-slate-50"
@@ -466,13 +444,9 @@ export default function AdminCoachVerificationPage() {
                   ))}
 
                 <button
-                  onClick={() =>
-                    setCurrentPage(
-                      Math.min(pagination.totalPages, currentPage + 1),
-                    )
-                  }
+                  onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
                   disabled={currentPage === pagination.totalPages}
-                  className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ChevronRight size={18} />
                 </button>

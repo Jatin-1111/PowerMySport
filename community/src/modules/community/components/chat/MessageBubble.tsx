@@ -77,13 +77,8 @@ function ImageUploadingPlaceholder({ isOwn }: { isOwn: boolean }) {
     >
       <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/30 to-transparent" />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-        <ImageIcon
-          size={28}
-          className={isOwn ? "text-orange-100/70" : "text-slate-400"}
-        />
-        <span
-          className={`text-xs font-medium ${isOwn ? "text-orange-100/80" : "text-slate-500"}`}
-        >
+        <ImageIcon size={28} className={isOwn ? "text-orange-100/70" : "text-slate-400"} />
+        <span className={`text-xs font-medium ${isOwn ? "text-orange-100/80" : "text-slate-500"}`}>
           Uploading…
         </span>
         <div className="h-1 w-20 overflow-hidden rounded-full bg-white/20">
@@ -105,8 +100,7 @@ function ImageMessageContent({
   height?: number | null;
   isOwn: boolean;
 }) {
-  const aspectRatio =
-    width && height && width > 0 && height > 0 ? width / height : 4 / 3;
+  const aspectRatio = width && height && width > 0 && height > 0 ? width / height : 4 / 3;
   const maxDisplayWidth = 260;
   const displayWidth = Math.min(width ?? maxDisplayWidth, maxDisplayWidth);
   const displayHeight = Math.round(displayWidth / aspectRatio);
@@ -118,7 +112,7 @@ function ImageMessageContent({
       href={src}
       target="_blank"
       rel="noopener noreferrer"
-      className="block overflow-hidden rounded-2xl focus:outline-none focus:ring-2 focus:ring-power-orange/60"
+      className="focus:ring-power-orange/60 block overflow-hidden rounded-2xl focus:ring-2 focus:outline-none"
       style={{ width: displayWidth, maxWidth: "100%", height: displayHeight }}
       aria-label="View full image"
     >
@@ -162,9 +156,7 @@ export const MessageBubble = memo(function MessageBubble({
   onToggleSelect,
   onClickName,
 }: MessageBubbleProps) {
-  const participantIds = Array.isArray(message.participantIds)
-    ? message.participantIds
-    : [];
+  const participantIds = Array.isArray(message.participantIds) ? message.participantIds : [];
   let otherParticipantId: string | undefined;
   for (const participantId of participantIds) {
     if (participantId !== profileUserId) {
@@ -180,14 +172,10 @@ export const MessageBubble = memo(function MessageBubble({
   const isFailed = message.messageStatus === "FAILED";
 
   const hasBeenSeenByOther = Boolean(
-    isOwnMessage &&
-    otherParticipantId &&
-    message.readBy?.includes(otherParticipantId),
+    isOwnMessage && otherParticipantId && message.readBy?.includes(otherParticipantId)
   );
   const hasBeenDeliveredToOther = Boolean(
-    isOwnMessage &&
-    otherParticipantId &&
-    message.deliveredTo?.includes(otherParticipantId),
+    isOwnMessage && otherParticipantId && message.deliveredTo?.includes(otherParticipantId)
   );
   const canMutateMessage =
     !isImageMessage &&
@@ -200,13 +188,10 @@ export const MessageBubble = memo(function MessageBubble({
     ? "rounded-[20px] rounded-br-[6px]"
     : "rounded-[20px] rounded-bl-[6px]";
 
-  const canOpenMobileActions =
-    (isOwnMessage && isFailed) || !message.isDeleted || canMutateMessage;
+  const canOpenMobileActions = (isOwnMessage && isFailed) || !message.isDeleted || canMutateMessage;
 
   const senderAvatarChar = getAvatarCharacter(message.senderDisplayName);
-  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const longPressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   const handleEmojiSelect = useCallback(
@@ -216,7 +201,7 @@ export const MessageBubble = memo(function MessageBubble({
       onReact?.(message, emoji);
       setShowReactionPicker(false);
     },
-    [message, onReact],
+    [message, onReact]
   );
 
   const clearLongPressTimeout = useCallback(() => {
@@ -242,12 +227,7 @@ export const MessageBubble = memo(function MessageBubble({
       openMobileActions();
       clearLongPressTimeout();
     }, 380);
-  }, [
-    canOpenMobileActions,
-    clearLongPressTimeout,
-    onOpenMobileActions,
-    openMobileActions,
-  ]);
+  }, [canOpenMobileActions, clearLongPressTimeout, onOpenMobileActions, openMobileActions]);
 
   useEffect(() => {
     return () => clearLongPressTimeout();
@@ -275,13 +255,14 @@ export const MessageBubble = memo(function MessageBubble({
     >
       {/* Checkbox for Select Messages Mode */}
       {isSelectMode && (
-        <div className={`mt-auto mb-1 flex items-center justify-center shrink-0`}>
+        <div className={`mt-auto mb-1 flex shrink-0 items-center justify-center`}>
           <button
             onClick={() => onToggleSelect?.(message.id)}
-            className={`flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${isSelected
+            className={`flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
+              isSelected
                 ? "bg-power-orange border-power-orange text-white"
                 : "border-slate-300 bg-white"
-              }`}
+            }`}
           >
             {isSelected && <Check size={12} strokeWidth={3} />}
           </button>
@@ -296,9 +277,9 @@ export const MessageBubble = memo(function MessageBubble({
       >
         {/* Group avatar (other's messages) */}
         {!isOwnMessage && isGroupConversation && (
-          <div 
+          <div
             onClick={onClickName ? () => onClickName(message) : undefined}
-            className={`mt-auto mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white ${onClickName ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+            className={`mt-auto mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold text-slate-700 uppercase shadow-sm ring-2 ring-white ${onClickName ? "cursor-pointer transition-opacity hover:opacity-80" : ""}`}
           >
             {senderAvatarChar}
           </div>
@@ -306,19 +287,22 @@ export const MessageBubble = memo(function MessageBubble({
 
         {/* Avatar for DM other's messages */}
         {!isOwnMessage && !isGroupConversation && (
-          <div className="mt-auto mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white">
+          <div className="mt-auto mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold text-slate-700 uppercase shadow-sm ring-2 ring-white">
             {senderAvatarChar}
           </div>
         )}
 
         <div className="relative max-w-[82%] sm:max-w-[75%] md:max-w-[68%] lg:max-w-[62%]">
           <div
-            className={`relative ${isImageMessage ? "p-1.5" : "px-3.5 py-2 sm:px-4 sm:py-2.5"
-              } ${bubbleShapeClass} text-[14px] shadow-sm transition-all ${isFailed ? "ring-2 ring-red-400/60" : ""
-              } ${isOwnMessage
-                ? "bg-orange-50 border border-orange-100 text-slate-800 shadow-[0_1px_3px_rgba(234,88,12,0.05)]"
+            className={`relative ${
+              isImageMessage ? "p-1.5" : "px-3.5 py-2 sm:px-4 sm:py-2.5"
+            } ${bubbleShapeClass} text-[14px] shadow-sm transition-all ${
+              isFailed ? "ring-2 ring-red-400/60" : ""
+            } ${
+              isOwnMessage
+                ? "border border-orange-100 bg-orange-50 text-slate-800 shadow-[0_1px_3px_rgba(234,88,12,0.05)]"
                 : "border border-slate-200/50 bg-white text-slate-800 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
-              }`}
+            }`}
             onTouchStart={startLongPress}
             onTouchEnd={clearLongPressTimeout}
             onTouchCancel={clearLongPressTimeout}
@@ -327,8 +311,7 @@ export const MessageBubble = memo(function MessageBubble({
             onMouseLeave={clearLongPressTimeout}
             onContextMenu={(event) => {
               if (typeof window !== "undefined") {
-                const isMobileViewport =
-                  window.matchMedia("(max-width: 639px)").matches;
+                const isMobileViewport = window.matchMedia("(max-width: 639px)").matches;
                 if (isMobileViewport && canOpenMobileActions) {
                   event.preventDefault();
                   openMobileActions();
@@ -345,7 +328,7 @@ export const MessageBubble = memo(function MessageBubble({
                     onClickName(message);
                   }
                 }}
-                className={`mb-0.5 text-[11px] font-semibold text-power-orange ${isImageMessage ? "px-0.5" : ""} ${message.senderDisplayName !== "Anonymous" && onClickName ? "hover:underline cursor-pointer" : ""}`}
+                className={`text-power-orange mb-0.5 text-[11px] font-semibold ${isImageMessage ? "px-0.5" : ""} ${message.senderDisplayName !== "Anonymous" && onClickName ? "cursor-pointer hover:underline" : ""}`}
               >
                 {message.senderDisplayName}
               </div>
@@ -387,7 +370,7 @@ export const MessageBubble = memo(function MessageBubble({
               isUploading ? (
                 <ImageUploadingPlaceholder isOwn={isOwnMessage} />
               ) : message.isDeleted ? (
-                <div className="px-2 py-1 italic opacity-60 text-[13px] leading-5">
+                <div className="px-2 py-1 text-[13px] leading-5 italic opacity-60">
                   Image deleted
                 </div>
               ) : (
@@ -399,7 +382,7 @@ export const MessageBubble = memo(function MessageBubble({
                     isOwn={isOwnMessage}
                   />
                   {message.metadata?.caption && !message.isDeleted && (
-                    <div className="mt-1.5 px-0.5 pb-0.5 text-[13px] whitespace-pre-wrap leading-5">
+                    <div className="mt-1.5 px-0.5 pb-0.5 text-[13px] leading-5 whitespace-pre-wrap">
                       {message.metadata.caption}
                     </div>
                   )}
@@ -408,7 +391,7 @@ export const MessageBubble = memo(function MessageBubble({
             ) : isFileMessage ? (
               /* ── File attachment ── */
               message.isDeleted ? (
-                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
+                <div className="px-2 py-1 text-[13px] leading-5 italic opacity-60">
                   File deleted
                 </div>
               ) : (
@@ -444,7 +427,7 @@ export const MessageBubble = memo(function MessageBubble({
             ) : isVoiceMessage ? (
               /* ── Voice note ── */
               message.isDeleted ? (
-                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
+                <div className="px-2 py-1 text-[13px] leading-5 italic opacity-60">
                   Voice message deleted
                 </div>
               ) : (
@@ -458,8 +441,9 @@ export const MessageBubble = memo(function MessageBubble({
             ) : (
               /* ── Text message ── */
               <div
-                className={`whitespace-pre-wrap leading-relaxed ${message.isDeleted ? "italic opacity-60" : ""
-                  }`}
+                className={`leading-relaxed whitespace-pre-wrap ${
+                  message.isDeleted ? "italic opacity-60" : ""
+                }`}
               >
                 {message.isDeleted ? "This message was deleted" : message.content}
               </div>
@@ -467,10 +451,9 @@ export const MessageBubble = memo(function MessageBubble({
 
             {/* ── Meta row: timestamp + receipts ── */}
             <div
-              className={`mt-0.5 flex flex-wrap items-center gap-1 text-[10px] ${isOwnMessage
-                  ? "justify-end text-orange-400/80"
-                  : "justify-start text-slate-400"
-                } ${isImageMessage ? "px-0.5" : ""}`}
+              className={`mt-0.5 flex flex-wrap items-center gap-1 text-[10px] ${
+                isOwnMessage ? "justify-end text-orange-400/80" : "justify-start text-slate-400"
+              } ${isImageMessage ? "px-0.5" : ""}`}
             >
               {message.isEdited && !message.isDeleted && (
                 <span className="opacity-70">(edited)</span>
@@ -490,14 +473,10 @@ export const MessageBubble = memo(function MessageBubble({
                       event.stopPropagation();
                       onReact?.(message, reaction.emoji);
                     }}
-                    title={
-                      reaction.reactedByMe
-                        ? "Remove your reaction"
-                        : "React with this"
-                    }
+                    title={reaction.reactedByMe ? "Remove your reaction" : "React with this"}
                     className={`flex h-6 items-center gap-0.5 rounded-full border px-1.5 text-[11px] shadow-sm transition ${
                       reaction.reactedByMe
-                        ? "border-power-orange/50 bg-orange-50 text-power-orange"
+                        ? "border-power-orange/50 text-power-orange bg-orange-50"
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -512,19 +491,16 @@ export const MessageBubble = memo(function MessageBubble({
           </div>
 
           {/* Timestamp below bubble */}
-          <div className={`mt-1.5 flex items-center gap-1.5 text-[10px] text-slate-400 ${isOwnMessage ? "justify-end pr-1" : "justify-start pl-1"}`}>
+          <div
+            className={`mt-1.5 flex items-center gap-1.5 text-[10px] text-slate-400 ${isOwnMessage ? "justify-end pr-1" : "justify-start pl-1"}`}
+          >
             {isPinned && <Pin size={10} className="text-power-orange fill-power-orange" />}
-            <span className="tabular-nums">
-              {getMessageTimestamp(message.createdAt)}
-            </span>
+            <span className="tabular-nums">{getMessageTimestamp(message.createdAt)}</span>
 
             {/* Delivery status moved next to time */}
             {isOwnMessage &&
               (isFailed ? (
-                <span
-                  title="Failed to send. Tap to retry."
-                  className="text-red-400"
-                >
+                <span title="Failed to send. Tap to retry." className="text-red-400">
                   <AlertCircle size={12} strokeWidth={2.2} />
                 </span>
               ) : message.messageStatus === "SENDING" ? (
@@ -547,25 +523,30 @@ export const MessageBubble = memo(function MessageBubble({
           </div>
 
           <div
-            className={`absolute hidden sm:flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150 ${isOwnMessage
-                ? "left-0 -translate-x-full pr-1 top-1/2 -translate-y-1/2"
-                : "right-0 translate-x-full pl-1 top-1/2 -translate-y-1/2"
-              }`}
+            className={`absolute hidden items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/msg:opacity-100 sm:flex ${
+              isOwnMessage
+                ? "top-1/2 left-0 -translate-x-full -translate-y-1/2 pr-1"
+                : "top-1/2 right-0 translate-x-full -translate-y-1/2 pl-1"
+            }`}
           >
-            <div className={`flex items-center gap-0.5 rounded-xl border border-slate-200/60 bg-white/95 backdrop-blur-sm shadow-md px-1 py-0.5 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}>
+            <div
+              className={`flex items-center gap-0.5 rounded-xl border border-slate-200/60 bg-white/95 px-1 py-0.5 shadow-md backdrop-blur-sm ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
+            >
               {/* React */}
               {!message.isDeleted && (
                 <div className="relative">
                   <button
                     onClick={() => setShowReactionPicker(!showReactionPicker)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                     title="React"
                   >
                     <Smile size={14} />
                   </button>
                   <AnimatePresence>
                     {showReactionPicker && (
-                      <div className={`absolute bottom-full mb-2 z-50 ${isOwnMessage ? "right-0" : "left-0"}`}>
+                      <div
+                        className={`absolute bottom-full z-50 mb-2 ${isOwnMessage ? "right-0" : "left-0"}`}
+                      >
                         <EmojiPicker
                           onSelect={handleEmojiSelect}
                           onClose={() => setShowReactionPicker(false)}
@@ -581,7 +562,7 @@ export const MessageBubble = memo(function MessageBubble({
               {!message.isDeleted && onReply && (
                 <button
                   onClick={() => onReply(message)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                   title="Reply"
                 >
                   <CornerUpLeft size={14} />
@@ -592,7 +573,7 @@ export const MessageBubble = memo(function MessageBubble({
               {!message.isDeleted && !isImageMessage && (
                 <button
                   onClick={() => onCopy(message)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                   title={isCopied ? "Copied!" : "Copy"}
                 >
                   {isCopied ? <Check size={14} className="text-turf-green" /> : <Copy size={14} />}
@@ -603,7 +584,7 @@ export const MessageBubble = memo(function MessageBubble({
               {!message.isDeleted && (
                 <button
                   onClick={() => onForward?.(message)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                   title="Forward"
                 >
                   <Forward size={14} />
@@ -614,8 +595,11 @@ export const MessageBubble = memo(function MessageBubble({
               {!message.isDeleted && (
                 <button
                   onClick={() => onPin?.(message)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${isPinned ? "text-power-orange bg-orange-50 hover:bg-orange-100" : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                    }`}
+                  className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
+                    isPinned
+                      ? "text-power-orange bg-orange-50 hover:bg-orange-100"
+                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  }`}
                   title={isPinned ? "Unpin" : "Pin"}
                 >
                   <Pin size={14} className={isPinned ? "fill-power-orange" : ""} />
@@ -626,7 +610,7 @@ export const MessageBubble = memo(function MessageBubble({
               {isOwnMessage && isFailed && (
                 <button
                   onClick={() => onRetry(message)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-power-orange hover:bg-orange-50 transition"
+                  className="text-power-orange flex h-7 w-7 items-center justify-center rounded-lg transition hover:bg-orange-50"
                   title="Retry"
                 >
                   <RotateCcw size={14} />
@@ -638,21 +622,19 @@ export const MessageBubble = memo(function MessageBubble({
                 <button
                   onClick={() => onEdit(message)}
                   disabled={isMutating}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition disabled:opacity-50"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                   title={isEditing ? "Editing…" : "Edit"}
                 >
                   <Pencil size={14} />
                 </button>
               )}
 
-
-
               {/* Delete */}
               {!message.isDeleted && (
                 <button
                   onClick={() => onDelete(message)}
                   disabled={isMutating}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 transition disabled:opacity-50"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 disabled:opacity-50"
                   title="Delete"
                 >
                   <Trash2 size={14} />

@@ -72,10 +72,7 @@ const registerHooks = () => {
 export const sanitizeRichHtml = (html: string): string => {
   if (!html) return "";
   // SSR / non-DOM fallback: DOMPurify has no window to bind to there.
-  if (
-    typeof window === "undefined" ||
-    typeof DOMPurify.sanitize !== "function"
-  ) {
+  if (typeof window === "undefined" || typeof DOMPurify.sanitize !== "function") {
     return html.replace(/<[^>]*>/g, "");
   }
 

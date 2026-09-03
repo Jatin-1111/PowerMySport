@@ -74,9 +74,7 @@ const requireOwnCoach = async (req: Request, res: Response) => {
 };
 
 const asObjectId = (value: string): mongoose.Types.ObjectId | null =>
-  mongoose.Types.ObjectId.isValid(value)
-    ? new mongoose.Types.ObjectId(value)
-    : null;
+  mongoose.Types.ObjectId.isValid(value) ? new mongoose.Types.ObjectId(value) : null;
 
 /**
  * Load an offering the caller owns. Returns null (response already written)
@@ -86,7 +84,7 @@ const asObjectId = (value: string): mongoose.Types.ObjectId | null =>
 const ownedOffering = async (
   res: Response,
   coachId: mongoose.Types.ObjectId,
-  offeringId: string,
+  offeringId: string
 ) => {
   const id = asObjectId(offeringId);
   if (!id) {
@@ -104,7 +102,7 @@ const ownedOffering = async (
 const ownedOccurrence = async (
   res: Response,
   coachId: mongoose.Types.ObjectId,
-  occurrenceId: string,
+  occurrenceId: string
 ) => {
   const id = asObjectId(occurrenceId);
   if (!id) {
@@ -121,10 +119,7 @@ const ownedOccurrence = async (
 
 // ───────────────── offerings ─────────────────
 
-export const createOfferingHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createOfferingHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
@@ -163,10 +158,7 @@ export const createOfferingHandler = async (
   }
 };
 
-export const listMyOfferingsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listMyOfferingsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
@@ -184,17 +176,14 @@ export const listMyOfferingsHandler = async (
   }
 };
 
-export const activateOfferingHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const activateOfferingHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const offering = await ownedOffering(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.offeringId as string,
+      req.params.offeringId as string
     );
     if (!offering) return;
 
@@ -212,17 +201,14 @@ export const activateOfferingHandler = async (
   }
 };
 
-export const pauseOfferingHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const pauseOfferingHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const offering = await ownedOffering(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.offeringId as string,
+      req.params.offeringId as string
     );
     if (!offering) return;
 
@@ -239,23 +225,18 @@ export const pauseOfferingHandler = async (
   }
 };
 
-export const offeringRosterHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const offeringRosterHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const offering = await ownedOffering(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.offeringId as string,
+      req.params.offeringId as string
     );
     if (!offering) return;
 
-    const roster = await rosterForOffering(
-      offering._id as mongoose.Types.ObjectId,
-    );
+    const roster = await rosterForOffering(offering._id as mongoose.Types.ObjectId);
 
     ok(res, "Roster retrieved", {
       roster: transformDocuments(roster as any),
@@ -271,10 +252,7 @@ export const offeringRosterHandler = async (
 
 // ───────────────── sessions ─────────────────
 
-export const listMySessionsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listMySessionsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
@@ -300,17 +278,14 @@ export const listMySessionsHandler = async (
   }
 };
 
-export const completeSessionHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const completeSessionHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const occurrence = await ownedOccurrence(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.occurrenceId as string,
+      req.params.occurrenceId as string
     );
     if (!occurrence) return;
 
@@ -331,17 +306,14 @@ export const completeSessionHandler = async (
   }
 };
 
-export const cancelSessionHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const cancelSessionHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const occurrence = await ownedOccurrence(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.occurrenceId as string,
+      req.params.occurrenceId as string
     );
     if (!occurrence) return;
 
@@ -350,28 +322,23 @@ export const cancelSessionHandler = async (
       reason: req.body?.reason,
     });
 
-    ok(
-      res,
-      "Session cancelled — your students keep their session credit and are owed a makeup",
-      { session: updated },
-    );
+    ok(res, "Session cancelled — your students keep their session credit and are owed a makeup", {
+      session: updated,
+    });
   } catch (error) {
     log.error("cancelSessionHandler failed:", error);
     fail(res, 400, (error as Error).message);
   }
 };
 
-export const scheduleMakeupHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const scheduleMakeupHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const occurrence = await ownedOccurrence(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.occurrenceId as string,
+      req.params.occurrenceId as string
     );
     if (!occurrence) return;
 
@@ -392,10 +359,7 @@ export const scheduleMakeupHandler = async (
   }
 };
 
-export const outstandingMakeupsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const outstandingMakeupsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
@@ -413,17 +377,14 @@ export const outstandingMakeupsHandler = async (
   }
 };
 
-export const markAttendanceHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const markAttendanceHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const occurrence = await ownedOccurrence(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.occurrenceId as string,
+      req.params.occurrenceId as string
     );
     if (!occurrence) return;
 
@@ -448,17 +409,14 @@ export const markAttendanceHandler = async (
 
 // ───────────────── online links ─────────────────
 
-export const setSessionLinkHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const setSessionLinkHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const occurrence = await ownedOccurrence(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.occurrenceId as string,
+      req.params.occurrenceId as string
     );
     if (!occurrence) return;
 
@@ -474,17 +432,14 @@ export const setSessionLinkHandler = async (
   }
 };
 
-export const setOfferingLinkHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const setOfferingLinkHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const offering = await ownedOffering(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.offeringId as string,
+      req.params.offeringId as string
     );
     if (!offering) return;
 
@@ -493,11 +448,9 @@ export const setOfferingLinkHandler = async (
       meetingLink: req.body.meetingLink,
     });
 
-    ok(
-      res,
-      `Class link updated on ${result.updatedSessions} upcoming session(s)`,
-      { offering: result.offering },
-    );
+    ok(res, `Class link updated on ${result.updatedSessions} upcoming session(s)`, {
+      offering: result.offering,
+    });
   } catch (error) {
     log.error("setOfferingLinkHandler failed:", error);
     fail(res, 400, (error as Error).message);
@@ -506,10 +459,7 @@ export const setOfferingLinkHandler = async (
 
 // ───────────────── earnings ─────────────────
 
-export const coachSessionEarningsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const coachSessionEarningsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
@@ -539,10 +489,7 @@ export const coachSessionEarningsHandler = async (
  * CoachSubscriptionPaymentService.applySubscriptionActivation). If the payer
  * abandons the checkout the hold expires and the seat returns.
  */
-export const enrollHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const enrollHandler = async (req: Request, res: Response): Promise<void> => {
   let heldEnrollmentId: mongoose.Types.ObjectId | null = null;
 
   try {
@@ -619,9 +566,7 @@ export const enrollHandler = async (
 };
 
 /** Undo a seat hold whose checkout never got off the ground. */
-const releaseHeldSeat = async (
-  enrollmentId: mongoose.Types.ObjectId,
-): Promise<void> => {
+const releaseHeldSeat = async (enrollmentId: mongoose.Types.ObjectId): Promise<void> => {
   const claimed = await CoachEnrollment.findOneAndUpdate(
     { _id: enrollmentId, status: "PENDING" },
     {
@@ -630,7 +575,7 @@ const releaseHeldSeat = async (
         leftAt: new Date(),
         cancellationReason: "Checkout could not be started",
       },
-    },
+    }
   );
   if (!claimed) return;
 
@@ -639,10 +584,7 @@ const releaseHeldSeat = async (
   });
 };
 
-export const myEnrollmentsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const myEnrollmentsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       fail(res, 401, "Sign in to view your programmes");
@@ -662,7 +604,7 @@ export const myEnrollmentsHandler = async (
       transformDocuments(enrollments).map(async (enrollment: any) => ({
         ...enrollment,
         credits: await creditSummaryForEnrollment(enrollment._id),
-      })),
+      }))
     );
 
     ok(res, "Programmes retrieved", { enrollments: withCredits });
@@ -672,10 +614,7 @@ export const myEnrollmentsHandler = async (
   }
 };
 
-export const leaveEnrollmentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const leaveEnrollmentHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       fail(res, 401, "Sign in first");
@@ -724,7 +663,7 @@ export const leaveEnrollmentHandler = async (
           amountPaise: refund.amountPaise,
           ...(refund.refundId ? { refundId: refund.refundId } : {}),
         },
-      },
+      }
     );
   } catch (error) {
     log.error("leaveEnrollmentHandler failed:", error);
@@ -740,10 +679,7 @@ export const leaveEnrollmentHandler = async (
  * not us charging them. Reconciliation then extends the subscription's period
  * and grants the next period's credits, exactly as it did the first time.
  */
-export const renewEnrollmentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const renewEnrollmentHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       fail(res, 401, "Sign in first");
@@ -765,11 +701,7 @@ export const renewEnrollmentHandler = async (
       // Covers both "not yours" and "already released" on purpose — a fully
       // expired enrolment has lost its seat and must go through enrolment
       // again, which is a different, capacity-checked path.
-      fail(
-        res,
-        404,
-        "This programme can no longer be renewed — join it again to get a place",
-      );
+      fail(res, 404, "This programme can no longer be renewed — join it again to get a place");
       return;
     }
 
@@ -795,10 +727,7 @@ export const renewEnrollmentHandler = async (
 
 // ───────────────── waitlist ─────────────────
 
-export const joinWaitlistHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const joinWaitlistHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       fail(res, 401, "Sign in to join the waiting list");
@@ -829,10 +758,7 @@ export const joinWaitlistHandler = async (
   }
 };
 
-export const leaveWaitlistHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const leaveWaitlistHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       fail(res, 401, "Sign in first");
@@ -862,19 +788,14 @@ export const leaveWaitlistHandler = async (
   }
 };
 
-export const myWaitlistHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const myWaitlistHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       fail(res, 401, "Sign in first");
       return;
     }
 
-    const entries = await waitlistEntriesForUser(
-      new mongoose.Types.ObjectId(req.user.id),
-    );
+    const entries = await waitlistEntriesForUser(new mongoose.Types.ObjectId(req.user.id));
 
     ok(res, "Waiting list retrieved", { entries: transformDocuments(entries) });
   } catch (error) {
@@ -884,23 +805,18 @@ export const myWaitlistHandler = async (
 };
 
 /** The coach's view of who is queueing for their programme. */
-export const offeringWaitlistHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const offeringWaitlistHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const coach = await requireOwnCoach(req, res);
     if (!coach) return;
     const offering = await ownedOffering(
       res,
       coach._id as mongoose.Types.ObjectId,
-      req.params.offeringId as string,
+      req.params.offeringId as string
     );
     if (!offering) return;
 
-    const entries = await waitlistForOffering(
-      offering._id as mongoose.Types.ObjectId,
-    );
+    const entries = await waitlistForOffering(offering._id as mongoose.Types.ObjectId);
 
     ok(res, "Waiting list retrieved", { entries: transformDocuments(entries) });
   } catch (error) {
@@ -909,10 +825,7 @@ export const offeringWaitlistHandler = async (
   }
 };
 
-export const myUpcomingSessionsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const myUpcomingSessionsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       fail(res, 401, "Sign in first");
@@ -947,10 +860,7 @@ export const myUpcomingSessionsHandler = async (
  * location, and an online-only coach has none, so they would be invisible there
  * forever. This is the non-geographic lane.
  */
-export const browseOfferingsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const browseOfferingsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const query: Record<string, unknown> = { status: "ACTIVE" };
 

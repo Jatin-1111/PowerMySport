@@ -4,10 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
-import {
-  CommunityGroupSummary,
-  CommunityUserSearchResult,
-} from "@/modules/community/types";
+import { CommunityGroupSummary, CommunityUserSearchResult } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
@@ -44,16 +41,13 @@ export default function DiscoverPageClient() {
   const [communities, setCommunities] = useState<CommunityGroupSummary[]>([]);
   const [players, setPlayers] = useState<CommunityUserSearchResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"COMMUNITIES" | "PARENTS">(
-    initialTab,
-  );
+  const [activeTab, setActiveTab] = useState<"COMMUNITIES" | "PARENTS">(initialTab);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [groupToEdit, setGroupToEdit] = useState<CommunityGroupSummary | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const [selectedCommunity, setSelectedCommunity] =
-    useState<CommunityGroupSummary | null>(null);
+  const [selectedCommunity, setSelectedCommunity] = useState<CommunityGroupSummary | null>(null);
   const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
   const [isJoiningCommunity, setIsJoiningCommunity] = useState(false);
 
@@ -85,15 +79,15 @@ export default function DiscoverPageClient() {
       ...(activeTab === "COMMUNITIES"
         ? (communities.map((c) => c.sport).filter(Boolean) as string[])
         : (players.flatMap((p) => p.sports || []) as string[])),
-    ]),
+    ])
   ).sort();
 
   const availableCities = Array.from(
     new Set(
       activeTab === "COMMUNITIES"
         ? (communities.map((c) => c.city).filter(Boolean) as string[])
-        : (players.map((p) => p.city).filter(Boolean) as string[]),
-    ),
+        : (players.map((p) => p.city).filter(Boolean) as string[])
+    )
   ).sort();
 
   // Debounce search
@@ -120,10 +114,9 @@ export default function DiscoverPageClient() {
             setPlayers([]);
           }
         } else {
-          const playersData = await communityService.searchPlayers(
-            debouncedQuery,
-            { role: "Parent" },
-          );
+          const playersData = await communityService.searchPlayers(debouncedQuery, {
+            role: "Parent",
+          });
           if (isMounted) {
             setPlayers(playersData);
             setCommunities([]);
@@ -156,10 +149,8 @@ export default function DiscoverPageClient() {
       // Update local state to reflect membership
       setCommunities((prev) =>
         prev.map((c) =>
-          c.id === groupId
-            ? { ...c, isMember: true, memberCount: c.memberCount + 1 }
-            : c,
-        ),
+          c.id === groupId ? { ...c, isMember: true, memberCount: c.memberCount + 1 } : c
+        )
       );
       if (selectedCommunity?.id === groupId) {
         setSelectedCommunity({
@@ -206,9 +197,7 @@ export default function DiscoverPageClient() {
       });
       const groupConv = convs.find((c) => c.group?.id === groupId);
       if (groupConv) {
-        router.push(
-          `/chats?sidebar=conversations&directory=groups&conversation=${groupConv.id}`,
-        );
+        router.push(`/chats?sidebar=conversations&directory=groups&conversation=${groupConv.id}`);
       } else {
         router.push("/chats?sidebar=conversations&directory=groups");
       }
@@ -249,8 +238,7 @@ export default function DiscoverPageClient() {
     if (activeTab !== "PARENTS") return false;
     if (p.role !== "Parent") return false;
 
-    if (selectedSport !== "All" && !(p.sports || []).includes(selectedSport))
-      return false;
+    if (selectedSport !== "All" && !(p.sports || []).includes(selectedSport)) return false;
     if (selectedCity !== "All" && p.city !== selectedCity) return false;
     return true;
   });
@@ -269,8 +257,8 @@ export default function DiscoverPageClient() {
           {/* Search Bar & Filters Toggle */}
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
             <div className="flex w-full gap-3">
-              <div className="relative flex-1 group">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition-colors duration-200 group-focus-within:text-power-orange group-focus-within:scale-110">
+              <div className="group relative flex-1">
+                <div className="group-focus-within:text-power-orange pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition-colors duration-200 group-focus-within:scale-110">
                   <Search size={18} />
                 </div>
                 <input
@@ -288,7 +276,7 @@ export default function DiscoverPageClient() {
                       exit={{ opacity: 0, scale: 0.6 }}
                       transition={{ duration: 0.15 }}
                       onClick={() => setSearchQuery("")}
-                      className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-power-orange transition-colors"
+                      className="hover:text-power-orange absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition-colors"
                     >
                       <X size={16} />
                     </motion.button>
@@ -301,10 +289,18 @@ export default function DiscoverPageClient() {
                 onClick={() => setShowFilters(!showFilters)}
                 style={
                   showFilters || selectedSport !== "All" || selectedCity !== "All"
-                    ? { border: '1px solid rgba(233, 115, 22, 0.35)', background: 'rgba(233, 115, 22, 0.08)', color: '#E97316' }
-                    : { border: '1px solid rgba(226, 232, 240, 0.7)', background: 'rgba(255, 255, 255, 0.85)', color: '#64748b' }
+                    ? {
+                        border: "1px solid rgba(233, 115, 22, 0.35)",
+                        background: "rgba(233, 115, 22, 0.08)",
+                        color: "#E97316",
+                      }
+                    : {
+                        border: "1px solid rgba(226, 232, 240, 0.7)",
+                        background: "rgba(255, 255, 255, 0.85)",
+                        color: "#64748b",
+                      }
                 }
-                className="shrink-0 flex items-center gap-1.5 rounded-full px-4 py-3 text-[13px] font-semibold backdrop-blur transition-colors duration-300 shadow-sm hover:shadow-md"
+                className="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-3 text-[13px] font-semibold shadow-sm backdrop-blur transition-colors duration-300 hover:shadow-md"
               >
                 <motion.span
                   animate={showFilters ? { rotate: 180 } : { rotate: 0 }}
@@ -319,10 +315,9 @@ export default function DiscoverPageClient() {
                       initial={{ opacity: 0, scale: 0.5 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.5 }}
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-power-orange/15 text-[10px] text-power-orange font-bold"
+                      className="bg-power-orange/15 text-power-orange flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
                     >
-                      {(selectedSport !== "All" ? 1 : 0) +
-                        (selectedCity !== "All" ? 1 : 0)}
+                      {(selectedSport !== "All" ? 1 : 0) + (selectedCity !== "All" ? 1 : 0)}
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -340,17 +335,20 @@ export default function DiscoverPageClient() {
                 >
                   <div
                     className="rounded-2xl p-5 shadow-sm backdrop-blur-md"
-                    style={{ border: '1px solid rgba(226, 232, 240, 0.6)', background: 'rgba(255, 255, 255, 0.8)' }}
+                    style={{
+                      border: "1px solid rgba(226, 232, 240, 0.6)",
+                      background: "rgba(255, 255, 255, 0.8)",
+                    }}
                   >
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <label className="mb-2 block text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                           Sport
                         </label>
                         <select
                           value={selectedSport}
                           onChange={(e) => setSelectedSport(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:border-power-orange/40 focus:ring-2 focus:ring-power-orange/10"
+                          className="focus:border-power-orange/40 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition-colors outline-none focus:ring-2"
                         >
                           <option value="All">All Sports</option>
                           {availableSports.map((s) => (
@@ -362,13 +360,13 @@ export default function DiscoverPageClient() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <label className="mb-2 block text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                           City
                         </label>
                         <select
                           value={selectedCity}
                           onChange={(e) => setSelectedCity(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:border-power-orange/40 focus:ring-2 focus:ring-power-orange/10"
+                          className="focus:border-power-orange/40 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 transition-colors outline-none focus:ring-2"
                         >
                           <option value="All">All Cities</option>
                           {availableCities.map((c) => (
@@ -387,7 +385,7 @@ export default function DiscoverPageClient() {
                             setSelectedSport("All");
                             setSelectedCity("All");
                           }}
-                          className="text-xs font-semibold text-power-orange/80 hover:text-power-orange transition-colors"
+                          className="text-power-orange/80 hover:text-power-orange text-xs font-semibold transition-colors"
                         >
                           Clear Filters
                         </button>
@@ -402,7 +400,10 @@ export default function DiscoverPageClient() {
           {/* Tabs */}
           <div
             className="mx-auto flex w-full max-w-3xl rounded-2xl p-1 shadow-inner backdrop-blur-md"
-            style={{ background: 'rgba(241, 245, 249, 0.8)', boxShadow: '0 0 0 1px rgba(226, 232, 240, 0.5) inset' }}
+            style={{
+              background: "rgba(241, 245, 249, 0.8)",
+              boxShadow: "0 0 0 1px rgba(226, 232, 240, 0.5) inset",
+            }}
           >
             {["COMMUNITIES", "PARENTS"].map((tab) => {
               const isActive = activeTab === tab;
@@ -427,7 +428,10 @@ export default function DiscoverPageClient() {
                     <motion.div
                       layoutId="discoverTab"
                       className="absolute inset-0 z-0 rounded-xl bg-white shadow-md"
-                      style={{ boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 0 0 1px rgba(226,232,240,0.6)' }}
+                      style={{
+                        boxShadow:
+                          "0 4px 6px -1px rgba(0,0,0,0.1), 0 0 0 1px rgba(226,232,240,0.6)",
+                      }}
                       initial={false}
                       transition={{ type: "spring", stiffness: 280, damping: 26, mass: 0.8 }}
                     />
@@ -444,7 +448,7 @@ export default function DiscoverPageClient() {
 
           {loading ? (
             <div className="flex h-64 items-center justify-center">
-              <Loader2 className="animate-spin text-power-orange" size={32} />
+              <Loader2 className="text-power-orange animate-spin" size={32} />
             </div>
           ) : (
             <div className="flex flex-col gap-12">
@@ -459,11 +463,11 @@ export default function DiscoverPageClient() {
                   <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="community-section-title">Communities</h2>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="mt-1 flex items-center gap-2">
                         <p className="text-sm leading-6 text-slate-500 sm:text-base">
                           Groups and squads for your favorite sports
                         </p>
-                        <span className="inline-flex items-center justify-center rounded-full bg-white/80 shadow-sm border border-white px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                        <span className="inline-flex items-center justify-center rounded-full border border-white bg-white/80 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm">
                           {filteredCommunities.length}
                         </span>
                       </div>
@@ -476,7 +480,7 @@ export default function DiscoverPageClient() {
                         }
                         setIsCreateModalOpen(true);
                       }}
-                      style={{ background: 'rgba(233,115,22,0.9)' }}
+                      style={{ background: "rgba(233,115,22,0.9)" }}
                       className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                     >
                       <Plus size={16} />
@@ -488,7 +492,10 @@ export default function DiscoverPageClient() {
                   {filteredCommunities.length === 0 ? (
                     <div
                       className="community-card flex flex-col items-center justify-center py-12 text-center backdrop-blur-sm"
-                      style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid rgba(255, 255, 255, 0.6)' }}
+                      style={{
+                        background: "rgba(255, 255, 255, 0.5)",
+                        border: "1px solid rgba(255, 255, 255, 0.6)",
+                      }}
                     >
                       <Users size={32} className="text-slate-300" />
                       <p className="mt-3 text-sm font-medium text-slate-900">
@@ -512,14 +519,21 @@ export default function DiscoverPageClient() {
                           >
                             {/* Rectangular Logo/Cover */}
                             <div
-                              className="relative w-full rounded-xl flex items-center justify-center mb-4 shrink-0 overflow-hidden"
-                              style={{ aspectRatio: '5/3', background: 'linear-gradient(135deg, #fff7ed, #f1f5f9)' }}
+                              className="relative mb-4 flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl"
+                              style={{
+                                aspectRatio: "5/3",
+                                background: "linear-gradient(135deg, #fff7ed, #f1f5f9)",
+                              }}
                             >
-                              <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
+                              <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5">
                                 {group.isMember && (
                                   <span
                                     className="discover-badge"
-                                    style={{ color: '#059669', borderColor: 'rgba(16,185,129,0.3)', background: 'rgba(236,253,245,0.92)' }}
+                                    style={{
+                                      color: "#059669",
+                                      borderColor: "rgba(16,185,129,0.3)",
+                                      background: "rgba(236,253,245,0.92)",
+                                    }}
                                   >
                                     Joined
                                   </span>
@@ -533,38 +547,50 @@ export default function DiscoverPageClient() {
                                   className="absolute inset-0 h-full w-full object-cover"
                                 />
                               ) : (
-                                <span className="font-title text-4xl font-bold text-power-orange/20 uppercase">
+                                <span className="font-title text-power-orange/20 text-4xl font-bold uppercase">
                                   {group.name.charAt(0)}
                                 </span>
                               )}
                             </div>
-                            
-                            <div className="flex-1 flex flex-col px-2 pb-2">
-                              <div className="flex-1 min-w-0 w-full text-left">
-                                <h3 className="font-title text-base font-bold text-slate-900 truncate">
+
+                            <div className="flex flex-1 flex-col px-2 pb-2">
+                              <div className="w-full min-w-0 flex-1 text-left">
+                                <h3 className="font-title truncate text-base font-bold text-slate-900">
                                   {group.name}
-                               </h3>
-                                <p className="mt-1.5 text-xs leading-relaxed text-slate-500 line-clamp-2 min-h-[32px]">
+                                </h3>
+                                <p className="mt-1.5 line-clamp-2 min-h-[32px] text-xs leading-relaxed text-slate-500">
                                   {group.description || "No description provided."}
                                 </p>
                               </div>
-                              
-                              <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 w-full">
+
+                              <div className="mt-4 flex w-full flex-col gap-3 border-t border-slate-100 pt-4">
                                 <div className="flex items-center gap-2 text-[11px] font-medium">
                                   <div
                                     className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
-                                    style={{ border: '1px solid rgba(186,210,235,0.6)', background: 'rgba(240,249,255,0.6)', color: '#0369a1', fontSize: 11, fontWeight: 500 }}
+                                    style={{
+                                      border: "1px solid rgba(186,210,235,0.6)",
+                                      background: "rgba(240,249,255,0.6)",
+                                      color: "#0369a1",
+                                      fontSize: 11,
+                                      fontWeight: 500,
+                                    }}
                                   >
-                                    <Users size={12} style={{ color: '#0ea5e9' }} />
+                                    <Users size={12} style={{ color: "#0ea5e9" }} />
                                     {group.memberCount} members
                                   </div>
                                   {group.sport && (
                                     <div
                                       className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
-                                      style={{ border: '1px solid rgba(252,211,77,0.6)', background: 'rgba(255,251,235,0.6)', color: '#b45309', fontSize: 11, fontWeight: 500 }}
+                                      style={{
+                                        border: "1px solid rgba(252,211,77,0.6)",
+                                        background: "rgba(255,251,235,0.6)",
+                                        color: "#b45309",
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                      }}
                                     >
-                                      <Trophy size={12} style={{ color: '#f59e0b' }} />
-                                      <span className="truncate max-w-[80px]">{group.sport}</span>
+                                      <Trophy size={12} style={{ color: "#f59e0b" }} />
+                                      <span className="max-w-[80px] truncate">{group.sport}</span>
                                     </div>
                                   )}
                                 </div>
@@ -574,15 +600,15 @@ export default function DiscoverPageClient() {
                                       setSelectedCommunity(group);
                                       setIsCommunityModalOpen(true);
                                     }}
-                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 transition hover:bg-slate-50 hover:border-slate-300"
+                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold tracking-wider text-slate-600 uppercase transition hover:border-slate-300 hover:bg-slate-50"
                                   >
                                     <Eye size={14} /> Details
                                   </button>
                                   {group.isMember ? (
                                     <button
                                       onClick={() => handleCommunityChat(group.id)}
-                                      style={{ background: 'rgba(233,115,22,0.85)' }}
-                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
+                                      style={{ background: "rgba(233,115,22,0.85)" }}
+                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold tracking-wider text-white uppercase shadow-sm transition hover:opacity-90"
                                     >
                                       <MessageSquare size={14} /> Chat
                                     </button>
@@ -590,7 +616,7 @@ export default function DiscoverPageClient() {
                                     <button
                                       onClick={() => handleJoinGroup(group.id)}
                                       disabled={isJoiningCommunity}
-                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-800 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
+                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-800 px-3 py-2 text-[11px] font-bold tracking-wider text-white uppercase shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
                                     >
                                       <LogIn size={14} /> Join
                                     </button>
@@ -616,14 +642,10 @@ export default function DiscoverPageClient() {
                 >
                   <div className="mb-4 flex items-center justify-between">
                     <div>
-                      <h2 className="community-section-title">
-                        Sports Parents
-                      </h2>
-                      <p className="community-section-copy">
-                        Connect with other parents
-                      </p>
+                      <h2 className="community-section-title">Sports Parents</h2>
+                      <p className="community-section-copy">Connect with other parents</p>
                     </div>
-                    <span className="inline-flex items-center justify-center rounded-full bg-white/80 shadow-sm border border-white px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                    <span className="inline-flex items-center justify-center rounded-full border border-white bg-white/80 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm">
                       {filteredPlayers.length}
                     </span>
                   </div>
@@ -631,15 +653,16 @@ export default function DiscoverPageClient() {
                   {filteredPlayers.length === 0 ? (
                     <div
                       className="community-card flex flex-col items-center justify-center py-12 text-center backdrop-blur-sm"
-                      style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px solid rgba(255, 255, 255, 0.6)' }}
+                      style={{
+                        background: "rgba(255, 255, 255, 0.5)",
+                        border: "1px solid rgba(255, 255, 255, 0.6)",
+                      }}
                     >
                       <User size={32} className="text-slate-300" />
                       <p className="mt-3 text-sm font-medium text-slate-900">
                         No {activeTab.toLowerCase()} found
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Try a different search term.
-                      </p>
+                      <p className="mt-1 text-xs text-slate-500">Try a different search term.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -652,11 +675,17 @@ export default function DiscoverPageClient() {
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.3, delay: idx * 0.05 }}
                             className="discover-card group flex flex-col items-center text-center"
-                            style={{ padding: '20px' }}
+                            style={{ padding: "20px" }}
                           >
                             <div
                               className={`discover-avatar-ring mb-3 h-28 w-28 shrink-0 ${player.photoUrl ? "cursor-pointer transition-transform duration-200 hover:scale-105" : ""}`}
-                              onClick={() => { if (player.photoUrl) setPhotoLightbox({ url: player.photoUrl, name: player.displayName }); }}
+                              onClick={() => {
+                                if (player.photoUrl)
+                                  setPhotoLightbox({
+                                    url: player.photoUrl,
+                                    name: player.displayName,
+                                  });
+                              }}
                             >
                               {player.photoUrl ? (
                                 <img
@@ -670,22 +699,40 @@ export default function DiscoverPageClient() {
                                 </div>
                               )}
                             </div>
-                            <h3 className="font-title text-base font-bold text-slate-900 line-clamp-1">
+                            <h3 className="font-title line-clamp-1 text-base font-bold text-slate-900">
                               {player.displayName}
                             </h3>
-                            
-                            <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 min-h-[24px]">
+
+                            <div className="mt-3 flex min-h-[24px] flex-wrap items-center justify-center gap-1.5">
                               {player.sports?.slice(0, 2).map((s) => (
                                 <span
                                   key={s}
-                                  style={{ display: 'inline-flex', borderRadius: 8, background: '#f1f5f9', padding: '2px 8px', fontSize: 10, fontWeight: 500, color: '#475569', border: '1px solid rgba(226,232,240,0.6)' }}
+                                  style={{
+                                    display: "inline-flex",
+                                    borderRadius: 8,
+                                    background: "#f1f5f9",
+                                    padding: "2px 8px",
+                                    fontSize: 10,
+                                    fontWeight: 500,
+                                    color: "#475569",
+                                    border: "1px solid rgba(226,232,240,0.6)",
+                                  }}
                                 >
                                   {s}
                                 </span>
                               ))}
                               {player.sports?.length > 2 && (
                                 <span
-                                  style={{ display: 'inline-flex', borderRadius: 8, background: '#f1f5f9', padding: '2px 8px', fontSize: 10, fontWeight: 500, color: '#475569', border: '1px solid rgba(226,232,240,0.6)' }}
+                                  style={{
+                                    display: "inline-flex",
+                                    borderRadius: 8,
+                                    background: "#f1f5f9",
+                                    padding: "2px 8px",
+                                    fontSize: 10,
+                                    fontWeight: 500,
+                                    color: "#475569",
+                                    border: "1px solid rgba(226,232,240,0.6)",
+                                  }}
                                 >
                                   +{player.sports.length - 2}
                                 </span>
@@ -698,14 +745,14 @@ export default function DiscoverPageClient() {
                                   setSelectedPlayerId(player.id);
                                   setIsPlayerModalOpen(true);
                                 }}
-                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition hover:bg-slate-50 hover:border-slate-300"
+                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[10px] font-bold tracking-wider text-slate-600 uppercase transition hover:border-slate-300 hover:bg-slate-50"
                               >
                                 <Eye size={12} /> Details
                               </button>
                               <button
                                 onClick={() => handlePlayerChat(player.id)}
-                                style={{ background: 'rgba(233,115,22,0.85)' }}
-                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
+                                style={{ background: "rgba(233,115,22,0.85)" }}
+                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-bold tracking-wider text-white uppercase shadow-sm transition hover:opacity-90"
                               >
                                 <MessageSquare size={12} /> Chat
                               </button>
@@ -764,36 +811,37 @@ export default function DiscoverPageClient() {
       />
 
       {/* Photo lightbox — portalled to body so it covers the fixed header */}
-      {typeof document !== "undefined" && createPortal(
-        <AnimatePresence>
-          {photoLightbox && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-              onClick={() => setPhotoLightbox(null)}
-            >
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {photoLightbox && (
               <motion.div
-                initial={{ scale: 0.85, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.85, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 320, damping: 26 }}
-                className="relative flex flex-col items-center"
-                onClick={(e) => e.stopPropagation()}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+                onClick={() => setPhotoLightbox(null)}
               >
-                <img
-                  src={photoLightbox.url}
-                  alt={photoLightbox.name}
-                  className="max-h-[78vh] max-w-[78vw] rounded-2xl object-contain shadow-2xl"
-                />
-                <p className="mt-3 text-sm font-semibold text-white/90">{photoLightbox.name}</p>
+                <motion.div
+                  initial={{ scale: 0.85, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.85, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 26 }}
+                  className="relative flex flex-col items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img
+                    src={photoLightbox.url}
+                    alt={photoLightbox.name}
+                    className="max-h-[78vh] max-w-[78vw] rounded-2xl object-contain shadow-2xl"
+                  />
+                  <p className="mt-3 text-sm font-semibold text-white/90">{photoLightbox.name}</p>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
     </div>
   );
 }

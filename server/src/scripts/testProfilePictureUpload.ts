@@ -20,7 +20,7 @@ async function testProfilePictureUpload() {
     const result = await s3Service.generateProfilePictureUploadUrl(
       testFileName,
       testContentType,
-      testUserId,
+      testUserId
     );
 
     console.log("\n✅ Presigned URL generated successfully:");
@@ -31,9 +31,7 @@ async function testProfilePictureUpload() {
 
     console.log("\n2. Testing with a simple fetch...");
     console.log("   Note: This will fail with 403 if bucket policy is wrong");
-    console.log(
-      "   Note: This will fail with SignatureDoesNotMatch if credentials are wrong",
-    );
+    console.log("   Note: This will fail with SignatureDoesNotMatch if credentials are wrong");
 
     // Try a simple test upload
     const testData = Buffer.from("test data");
@@ -46,9 +44,7 @@ async function testProfilePictureUpload() {
       body: testData,
     });
 
-    console.log(
-      `\n   Response Status: ${response.status} ${response.statusText}`,
-    );
+    console.log(`\n   Response Status: ${response.status} ${response.statusText}`);
 
     if (response.ok) {
       console.log("   ✅ Upload successful!");

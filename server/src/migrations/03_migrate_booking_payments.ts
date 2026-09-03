@@ -20,9 +20,7 @@ const migrateBookingPayments = async () => {
 
     // Connect to database
     const mongoUri =
-      process.env.MONGO_URI ||
-      process.env.MONGODB_URI ||
-      "mongodb://localhost:27017/powermysport";
+      process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
     await mongoose.connect(mongoUri);
     console.log("Connected to database");
 
@@ -52,8 +50,7 @@ const migrateBookingPayments = async () => {
 
         // Get old payment status
         const oldPaymentStatus = (booking as any).paymentStatus || "pending";
-        const newPaymentStatus =
-          oldPaymentStatus === "paid" ? "PAID" : "PENDING";
+        const newPaymentStatus = oldPaymentStatus === "paid" ? "PAID" : "PENDING";
 
         // Create single payment entry for venue owner
         (booking as any).payments = [

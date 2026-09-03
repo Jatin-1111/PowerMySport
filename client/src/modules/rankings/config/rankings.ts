@@ -54,8 +54,7 @@ const TENNIS_COMBOS: readonly RankingCombo[] = [
   { category: "Women", subcategory: "Doubles" },
 ] as const;
 
-const byCategory = (category: string) =>
-  TENNIS_COMBOS.filter((c) => c.category === category);
+const byCategory = (category: string) => TENNIS_COMBOS.filter((c) => c.category === category);
 
 const TENNIS: RankingSport = {
   slug: "tennis",
@@ -102,15 +101,13 @@ export const playerHref = (sportSlug: string, regNo: string) =>
 export function resolveCombo(
   sport: RankingSport,
   categorySlug: string,
-  subcategorySlug: string,
+  subcategorySlug: string
 ): RankingCombo | null {
   const category = decodeURIComponent(categorySlug).toLowerCase();
   const subcategory = decodeURIComponent(subcategorySlug).toLowerCase();
   return (
     sport.combos.find(
-      (c) =>
-        c.category.toLowerCase() === category &&
-        c.subcategory.toLowerCase() === subcategory,
+      (c) => c.category.toLowerCase() === category && c.subcategory.toLowerCase() === subcategory
     ) ?? null
   );
 }
@@ -121,11 +118,7 @@ export function comboLabel(combo: RankingCombo): string {
     return `${combo.category} Under-${combo.subcategory.replace(/^U-/i, "")}`;
   }
   const possessive =
-    combo.category === "Men"
-      ? "Men's"
-      : combo.category === "Women"
-        ? "Women's"
-        : combo.category;
+    combo.category === "Men" ? "Men's" : combo.category === "Women" ? "Women's" : combo.category;
   return `${possessive} ${combo.subcategory}`;
 }
 

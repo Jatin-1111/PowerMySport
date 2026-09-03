@@ -31,9 +31,9 @@ describe("scorer tolerates partial answers (WizardShell derive-scores refactor)"
     const progressive: Partial<WizardAnswers> = {};
     const keys = Object.keys(EMPTY_ANSWERS) as (keyof WizardAnswers)[];
     for (const key of keys) {
-      (progressive as Record<string, unknown>)[key] = (
-        EMPTY_ANSWERS as Record<string, unknown>
-      )[key];
+      (progressive as Record<string, unknown>)[key] = (EMPTY_ANSWERS as Record<string, unknown>)[
+        key
+      ];
       const partial = { ...EMPTY_ANSWERS, ...progressive } as WizardAnswers;
       expect(() => scoreSports(partial)).not.toThrow();
       expect(() => scoreChosenSports(partial)).not.toThrow();
@@ -66,7 +66,7 @@ describe("`career` ambition scores as an elite tier", () => {
     const career = scoreSports(withAmbition("career"));
     const professional = scoreSports(withAmbition("professional"));
     expect(career.map((r) => [r.sport.name, r.score])).toEqual(
-      professional.map((r) => [r.sport.name, r.score]),
+      professional.map((r) => [r.sport.name, r.score])
     );
   });
 

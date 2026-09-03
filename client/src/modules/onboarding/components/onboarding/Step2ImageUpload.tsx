@@ -21,14 +21,13 @@ interface Step2ImageUploadProps {
     sportImages: Record<string, string[]>,
     sportImageKeys: Record<string, string[]>,
     coverPhotoUrl: string,
-    coverPhotoKey: string,
+    coverPhotoKey: string
   ) => Promise<void>;
   loading?: boolean;
   onSkip?: () => Promise<void>;
 }
 
-const isDev =
-  typeof window !== "undefined" && process.env.NODE_ENV === "development";
+const isDev = typeof window !== "undefined" && process.env.NODE_ENV === "development";
 
 export default function Step2ImageUpload({
   presignedUrls,
@@ -36,9 +35,7 @@ export default function Step2ImageUpload({
   loading,
   onSkip,
 }: Step2ImageUploadProps) {
-  const [uploadedImages, setUploadedImages] = useState<
-    Record<string, UploadedImage>
-  >({});
+  const [uploadedImages, setUploadedImages] = useState<Record<string, UploadedImage>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
   const [coverPhotoIndex, setCoverPhotoIndex] = useState<number>(0); // Index in general images (0-2)
@@ -72,11 +69,7 @@ export default function Step2ImageUpload({
     return { general, sports: sortedSportsMap };
   }, [presignedUrls]);
 
-  const handleImageSelect = async (
-    file: File,
-    fieldName: string,
-    presignedUrl: PresignedUrl,
-  ) => {
+  const handleImageSelect = async (file: File, fieldName: string, presignedUrl: PresignedUrl) => {
     if (!file.type.startsWith("image/")) {
       setUploadErrors((prev) => ({
         ...prev,
@@ -100,11 +93,7 @@ export default function Step2ImageUpload({
 
     try {
       // Upload to S3
-      await uploadFileToPresignedUrl(
-        file,
-        presignedUrl.uploadUrl,
-        presignedUrl.contentType,
-      );
+      await uploadFileToPresignedUrl(file, presignedUrl.uploadUrl, presignedUrl.contentType);
 
       // Store uploaded image info
       setUploadedImages((prev) => ({
@@ -118,8 +107,7 @@ export default function Step2ImageUpload({
     } catch (err) {
       setUploadErrors((prev) => ({
         ...prev,
-        [fieldName]:
-          err instanceof Error ? err.message : "Failed to upload image",
+        [fieldName]: err instanceof Error ? err.message : "Failed to upload image",
       }));
     } finally {
       setUploading((prev) => ({ ...prev, [fieldName]: false }));
@@ -141,9 +129,7 @@ export default function Step2ImageUpload({
 
   const handleSubmit = async () => {
     // Validate: All general images must be uploaded
-    const generalUploaded = categorizedUrls.general.filter(
-      (url) => uploadedImages[url.field],
-    );
+    const generalUploaded = categorizedUrls.general.filter((url) => uploadedImages[url.field]);
     if (generalUploaded.length !== 3) {
       toast.error("Please upload all 3 general venue images");
       return;
@@ -196,7 +182,7 @@ export default function Step2ImageUpload({
       sportImages,
       sportImageKeys,
       coverPhotoUrl,
-      coverPhotoKey,
+      coverPhotoKey
     );
   };
 
@@ -206,25 +192,22 @@ export default function Step2ImageUpload({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
-      <h2 className="text-2xl font-bold text-slate-900 mb-2">
-        Upload Venue Images
-      </h2>
-      <p className="text-slate-600 mb-6">
-        Upload {totalRequired} images: 3 general venue images + 5 images per
-        sport
+      <h2 className="mb-2 text-2xl font-bold text-slate-900">Upload Venue Images</h2>
+      <p className="mb-6 text-slate-600">
+        Upload {totalRequired} images: 3 general venue images + 5 images per sport
       </p>
 
       {/* Progress */}
       <div className="mb-6">
-        <div className="flex justify-between text-sm text-slate-600 mb-2">
+        <div className="mb-2 flex justify-between text-sm text-slate-600">
           <span>
             {totalUploaded} of {totalRequired} images uploaded
           </span>
           <span>{Math.round((totalUploaded / totalRequired) * 100)}%</span>
         </div>
-        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div className="h-2 overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full bg-power-orange transition-all duration-300"
+            className="bg-power-orange h-full transition-all duration-300"
             style={{ width: `${(totalUploaded / totalRequired) * 100}%` }}
           ></div>
         </div>
@@ -232,17 +215,17 @@ export default function Step2ImageUpload({
 
       {/* General Venue Images Section */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-          <span className="bg-power-orange/10 text-power-orange px-2 py-1 rounded text-sm">
+        <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <span className="bg-power-orange/10 text-power-orange rounded px-2 py-1 text-sm">
             Required
           </span>
           General Venue Images (3)
         </h3>
-        <p className="text-sm text-slate-600 mb-4">
+        <p className="mb-4 text-sm text-slate-600">
           Upload overall facility shots. Select one as your cover photo.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {categorizedUrls.general.map((presignedUrl, index) => {
             const uploaded = uploadedImages[presignedUrl.field];
             const isUploading = uploading[presignedUrl.field];
@@ -251,57 +234,51 @@ export default function Step2ImageUpload({
             return (
               <div
                 key={presignedUrl.field}
-                className="border-2 border-dashed border-slate-300 rounded-lg p-4 hover:border-power-orange/60 transition"
+                className="hover:border-power-orange/60 rounded-lg border-2 border-dashed border-slate-300 p-4 transition"
               >
                 {uploaded ? (
                   <div className="relative">
                     <img
                       src={uploaded.url}
                       alt={`General image ${index + 1}`}
-                      className="w-full h-48 object-cover rounded"
+                      className="h-48 w-full rounded object-cover"
                     />
                     <button
                       onClick={() => handleRemoveImage(presignedUrl.field)}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                      className="absolute top-2 right-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
                       aria-label="Remove image"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="h-4 w-4" />
                     </button>
 
                     {/* Cover Photo Selection */}
                     <div className="mt-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex cursor-pointer items-center gap-2">
                         <input
                           type="radio"
                           name="coverPhoto"
                           checked={coverPhotoIndex === index}
                           onChange={() => setCoverPhotoIndex(index)}
-                          className="w-4 h-4 accent-power-orange"
+                          className="accent-power-orange h-4 w-4"
                         />
-                        <span className="text-sm text-slate-700">
-                          Set as cover photo
-                        </span>
+                        <span className="text-sm text-slate-700">Set as cover photo</span>
                       </label>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <label className="cursor-pointer block">
-                      <div className="flex flex-col items-center justify-center h-48 text-slate-500">
+                    <label className="block cursor-pointer">
+                      <div className="flex h-48 flex-col items-center justify-center text-slate-500">
                         {isUploading ? (
                           <div className="text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-power-orange mx-auto mb-2"></div>
+                            <div className="border-power-orange mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2"></div>
                             <p className="text-sm">Uploading...</p>
                           </div>
                         ) : (
                           <>
-                            <Camera className="w-12 h-12 mb-3 text-slate-400" />
-                            <p className="text-sm font-medium">
-                              Click to upload image {index + 1}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-1">
-                              JPG, PNG up to 10MB
-                            </p>
+                            <Camera className="mb-3 h-12 w-12 text-slate-400" />
+                            <p className="text-sm font-medium">Click to upload image {index + 1}</p>
+                            <p className="mt-1 text-xs text-slate-400">JPG, PNG up to 10MB</p>
                           </>
                         )}
                       </div>
@@ -312,21 +289,13 @@ export default function Step2ImageUpload({
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            handleImageSelect(
-                              file,
-                              presignedUrl.field,
-                              presignedUrl,
-                            );
+                            handleImageSelect(file, presignedUrl.field, presignedUrl);
                           }
                         }}
                         disabled={isUploading}
                       />
                     </label>
-                    {uploadError && (
-                      <p className="text-error-red text-sm mt-2">
-                        {uploadError}
-                      </p>
-                    )}
+                    {uploadError && <p className="text-error-red mt-2 text-sm">{uploadError}</p>}
                   </div>
                 )}
               </div>
@@ -337,23 +306,21 @@ export default function Step2ImageUpload({
 
       {/* Sport-Specific Images Sections */}
       {Object.entries(categorizedUrls.sports).map(([sport, urls]) => {
-        const sportUploaded = urls.filter(
-          (url) => uploadedImages[url.field],
-        ).length;
+        const sportUploaded = urls.filter((url) => uploadedImages[url.field]).length;
 
         return (
           <div key={sport} className="mb-8">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-              <span className="bg-power-orange/10 text-power-orange px-2 py-1 rounded text-sm">
+            <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-900">
+              <span className="bg-power-orange/10 text-power-orange rounded px-2 py-1 text-sm">
                 Required
               </span>
               {sport} Images ({sportUploaded}/5)
             </h3>
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="mb-4 text-sm text-slate-600">
               Upload 5 images showcasing your {sport} facilities
             </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
               {urls.map((presignedUrl, index) => {
                 const uploaded = uploadedImages[presignedUrl.field];
                 const isUploading = uploading[presignedUrl.field];
@@ -362,35 +329,35 @@ export default function Step2ImageUpload({
                 return (
                   <div
                     key={presignedUrl.field}
-                    className="border-2 border-dashed border-slate-300 rounded-lg p-2 hover:border-power-orange/60 transition"
+                    className="hover:border-power-orange/60 rounded-lg border-2 border-dashed border-slate-300 p-2 transition"
                   >
                     {uploaded ? (
                       <div className="relative">
                         <img
                           src={uploaded.url}
                           alt={`${sport} image ${index + 1}`}
-                          className="w-full h-32 object-cover rounded"
+                          className="h-32 w-full rounded object-cover"
                         />
                         <button
                           onClick={() => handleRemoveImage(presignedUrl.field)}
-                          className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 text-xs transition-colors"
+                          className="absolute top-1 right-1 rounded-full bg-red-500 p-1 text-xs text-white transition-colors hover:bg-red-600"
                           aria-label="Remove image"
                         >
-                          <X className="w-3 h-3" />
+                          <X className="h-3 w-3" />
                         </button>
                       </div>
                     ) : (
                       <div>
-                        <label className="cursor-pointer block">
-                          <div className="flex flex-col items-center justify-center h-32 text-slate-500">
+                        <label className="block cursor-pointer">
+                          <div className="flex h-32 flex-col items-center justify-center text-slate-500">
                             {isUploading ? (
                               <>
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-power-orange"></div>
+                                <div className="border-power-orange h-8 w-8 animate-spin rounded-full border-b-2"></div>
                                 <p className="mt-1 text-xs">Uploading...</p>
                               </>
                             ) : (
                               <>
-                                <Upload className="w-8 h-8 mb-2 text-slate-400" />
+                                <Upload className="mb-2 h-8 w-8 text-slate-400" />
                                 <p className="text-xs">Image {index + 1}</p>
                               </>
                             )}
@@ -402,20 +369,14 @@ export default function Step2ImageUpload({
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                handleImageSelect(
-                                  file,
-                                  presignedUrl.field,
-                                  presignedUrl,
-                                );
+                                handleImageSelect(file, presignedUrl.field, presignedUrl);
                               }
                             }}
                             disabled={isUploading}
                           />
                         </label>
                         {uploadError && (
-                          <p className="text-error-red text-xs mt-1">
-                            {uploadError}
-                          </p>
+                          <p className="text-error-red mt-1 text-xs">{uploadError}</p>
                         )}
                       </div>
                     )}
@@ -428,14 +389,14 @@ export default function Step2ImageUpload({
       })}
 
       {/* Action Buttons */}
-      <div className="flex gap-4 mt-6">
+      <div className="mt-6 flex gap-4">
         <button
           onClick={handleSubmit}
           disabled={!isComplete || loading}
-          className={`flex-1 py-3 rounded-lg font-medium transition ${
+          className={`flex-1 rounded-lg py-3 font-medium transition ${
             isComplete && !loading
               ? "bg-power-orange text-white hover:bg-orange-600"
-              : "bg-slate-300 text-slate-500 cursor-not-allowed"
+              : "cursor-not-allowed bg-slate-300 text-slate-500"
           }`}
         >
           {loading ? "Processing..." : "Continue"}
@@ -445,7 +406,7 @@ export default function Step2ImageUpload({
           <button
             onClick={onSkip}
             disabled={loading}
-            className="px-6 py-3 bg-yellow-100 text-yellow-700 font-medium rounded-lg hover:bg-yellow-200 disabled:opacity-50"
+            className="rounded-lg bg-yellow-100 px-6 py-3 font-medium text-yellow-700 hover:bg-yellow-200 disabled:opacity-50"
           >
             Skip (Dev)
           </button>
@@ -453,9 +414,9 @@ export default function Step2ImageUpload({
       </div>
 
       {/* Help Text */}
-      <p className="text-sm text-slate-500 mt-4 text-center">
-        Tip: Use high-quality images that showcase your facilities well. The
-        cover photo will be displayed prominently on your venue listing.
+      <p className="mt-4 text-center text-sm text-slate-500">
+        Tip: Use high-quality images that showcase your facilities well. The cover photo will be
+        displayed prominently on your venue listing.
       </p>
     </div>
   );

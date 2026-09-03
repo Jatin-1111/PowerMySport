@@ -37,10 +37,7 @@ export type RefundMethod = "ORIGINAL_CARD" | "BANK_TRANSFER" | "STORE_CREDIT";
  */
 export type RefundSource = "BOOKING" | "COACH_SUBSCRIPTION";
 
-const findRefundableTransaction = async (
-  id: string,
-  source: RefundSource,
-): Promise<any | null> =>
+const findRefundableTransaction = async (id: string, source: RefundSource): Promise<any | null> =>
   source === "COACH_SUBSCRIPTION"
     ? CoachSubscriptionPaymentTransaction.findById(id)
     : BookingPaymentTransaction.findById(id);
@@ -76,7 +73,7 @@ export interface RefundStatusResponse {
  * Creates a refund transaction and initiates based on selected method
  */
 export async function initiateRefund(
-  payload: InitiateRefundPayload,
+  payload: InitiateRefundPayload
 ): Promise<RefundStatusResponse> {
   const {
     bookingPaymentTransactionId,
@@ -87,10 +84,7 @@ export async function initiateRefund(
   } = payload;
 
   // Get the payment transaction
-  const transaction = await findRefundableTransaction(
-    bookingPaymentTransactionId,
-    source,
-  );
+  const transaction = await findRefundableTransaction(bookingPaymentTransactionId, source);
   if (!transaction) {
     throw new Error("Payment transaction not found");
   }
@@ -98,15 +92,13 @@ export async function initiateRefund(
   // Validate refund amount (both values are in paise)
   if (amount > transaction.amount) {
     throw new Error(
-      `Refund amount (${amount} paise) cannot exceed original payment (${transaction.amount} paise)`,
+      `Refund amount (${amount} paise) cannot exceed original payment (${transaction.amount} paise)`
     );
   }
 
   // Validate refund not already processed
   if (transaction.refundState && transaction.refundState !== "FAILED") {
-    throw new Error(
-      `Refund already ${transaction.refundState.toLowerCase()} for this transaction`,
-    );
+    throw new Error(`Refund already ${transaction.refundState.toLowerCase()} for this transaction`);
   }
 
   let refundId: string | undefined;
@@ -121,11 +113,7 @@ export async function initiateRefund(
         if (!payload.bankDetails) {
           throw new Error("Bank details required for bank transfer refunds");
         }
-        return await initiateBankTransferRefund(
-          transaction,
-          amount,
-          payload.bankDetails,
-        );
+        return await initiateBankTransferRefund(transaction, amount, payload.bankDetails);
 
       case "STORE_CREDIT":
         return await initiateStoreCreditRefund(transaction, amount);
@@ -142,10 +130,7 @@ export async function initiateRefund(
 /**
  * Refund via PhonePe to original card (default method)
  */
-async function initiateCardRefund(
-  transaction: any,
-  amount: number,
-): Promise<RefundStatusResponse> {
+async function initiateCardRefund(transaction: any, amount: number): Promise<RefundStatusResponse> {
   if (!transaction.merchantOrderId) {
     throw new Error("Merchant order ID not found for refund");
   }
@@ -204,7 +189,7 @@ async function initiateBankTransferRefund(
     accountNumber: string;
     ifscCode: string;
     bankName?: string;
-  },
+  }
 ): Promise<RefundStatusResponse> {
   const bankTransferId = `BANK-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
@@ -264,9 +249,7 @@ async function initiateBankTransferRefund(
         </html>
       `,
     });
-    log.info(
-      `Finance team notified for bank transfer refund ${bankTransferId}`,
-    );
+    log.info(`Finance team notified for bank transfer refund ${bankTransferId}`);
   } catch (emailError) {
     log.error("Failed to send finance team notification:", emailError);
     // Don't throw — refund record was already created
@@ -306,7 +289,7 @@ async function initiateBankTransferRefund(
  */
 async function initiateStoreCreditRefund(
   transaction: any,
-  amount: number,
+  amount: number
 ): Promise<RefundStatusResponse> {
   try {
     // amount is in paise; wallet balance is denominated in rupees — convert before crediting
@@ -315,7 +298,7 @@ async function initiateStoreCreditRefund(
       transaction.userId.toString(),
       amountInRupees,
       "Booking Refund",
-      transaction._id.toString(),
+      transaction._id.toString()
     );
     const storeCreditId = walletTx.id;
 
@@ -353,9 +336,7 @@ async function initiateStoreCreditRefund(
 /**
  * Check refund status for a payment transaction
  */
-export async function checkRefundStatus(
-  transactionId: string,
-): Promise<RefundStatusResponse> {
+export async function checkRefundStatus(transactionId: string): Promise<RefundStatusResponse> {
   const transaction = await BookingPaymentTransaction.findById(transactionId);
 
   if (!transaction) {
@@ -484,7 +465,7 @@ export async function updatePendingRefundStatuses(): Promise<{
           const { Booking } = await import("../../client/models/Booking");
           await Booking.updateOne(
             { _id: transaction.bookingId, refundStatus: { $ne: "PROCESSED" } },
-            { $set: { refundStatus: "PROCESSED" } },
+            { $set: { refundStatus: "PROCESSED" } }
           ).catch(() => {});
         }
         // Send completion notification
@@ -502,7 +483,7 @@ export async function updatePendingRefundStatuses(): Promise<{
                 transactionId: transaction._id.toString(),
               },
             },
-            { sendEmail: true, sendPush: true },
+            { sendEmail: true, sendPush: true }
           );
         }
       } else if (status.state === "FAILED") {

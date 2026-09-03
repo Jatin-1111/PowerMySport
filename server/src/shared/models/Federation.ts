@@ -65,7 +65,7 @@ const EligibilityCategorySchema = new Schema<EligibilityCategory>(
     minRanking: String,
     notes: String,
   },
-  { _id: false },
+  { _id: false }
 );
 
 const EligibilityCriteriaSchema = new Schema<EligibilityCriteria>(
@@ -76,7 +76,7 @@ const EligibilityCriteriaSchema = new Schema<EligibilityCriteria>(
     stateAssociationFirst: { type: Boolean, default: true },
     notes: String,
   },
-  { _id: false },
+  { _id: false }
 );
 
 const StateAssociationSchema = new Schema<StateAssociation>(
@@ -85,7 +85,7 @@ const StateAssociationSchema = new Schema<StateAssociation>(
     state: { type: String, required: true },
     website: String,
   },
-  { _id: false },
+  { _id: false }
 );
 
 const FederationSchema = new Schema<FederationDocument>(
@@ -131,12 +131,9 @@ const FederationSchema = new Schema<FederationDocument>(
     sourceUrls: [String],
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 FederationSchema.index({ sportSlug: 1 });
 
-export const Federation = mongoose.model<FederationDocument>(
-  "Federation",
-  FederationSchema,
-);
+export const Federation = mongoose.model<FederationDocument>("Federation", FederationSchema);

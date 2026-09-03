@@ -53,7 +53,7 @@ const planCheckInSchema = new Schema<PlanCheckInDocument>(
     outcomeNote: { type: String, trim: true, maxlength: 2000 },
     respondedAt: { type: Date },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 planCheckInSchema.index({ userId: 1, status: 1, createdAt: -1 });
@@ -64,7 +64,4 @@ planCheckInSchema.index({ userId: 1, status: 1, createdAt: -1 });
 // this also needs migration 35.
 planCheckInSchema.index({ userId: 1, status: 1, checkInDueAt: 1 });
 
-export const PlanCheckIn = mongoose.model<PlanCheckInDocument>(
-  "PlanCheckIn",
-  planCheckInSchema,
-);
+export const PlanCheckIn = mongoose.model<PlanCheckInDocument>("PlanCheckIn", planCheckInSchema);

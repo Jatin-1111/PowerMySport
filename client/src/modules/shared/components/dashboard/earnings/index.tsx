@@ -1,12 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-    CheckCircle,
-    IndianRupee,
-    TrendingDown,
-    TrendingUp,
-} from "lucide-react";
+import { CheckCircle, IndianRupee, TrendingDown, TrendingUp } from "lucide-react";
 import React from "react";
 
 // ---------------------------------------------------------------------------
@@ -56,26 +51,25 @@ export function EarningsStatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
       className={[
-        "rounded-2xl p-5 shadow-sm flex flex-col gap-3 border",
+        "flex flex-col gap-3 rounded-2xl border p-5 shadow-sm",
         accent
-          ? "bg-gradient-to-br from-orange-500 to-orange-600 border-orange-400 text-white"
-          : "bg-white border-slate-100 text-slate-800",
+          ? "border-orange-400 bg-gradient-to-br from-orange-500 to-orange-600 text-white"
+          : "border-slate-100 bg-white text-slate-800",
       ].join(" ")}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <span
-          className={[
-            "text-sm font-medium",
-            accent ? "text-orange-100" : "text-slate-500",
-          ].join(" ")}
+          className={["text-sm font-medium", accent ? "text-orange-100" : "text-slate-500"].join(
+            " "
+          )}
         >
           {title}
         </span>
         <span
           className={[
-            "flex items-center justify-center w-9 h-9 rounded-xl",
-            accent ? "bg-white/20" : "bg-orange-50 text-power-orange",
+            "flex h-9 w-9 items-center justify-center rounded-xl",
+            accent ? "bg-white/20" : "text-power-orange bg-orange-50",
           ].join(" ")}
         >
           {icon}
@@ -85,31 +79,21 @@ export function EarningsStatCard({
       {/* Amount */}
       <div className="flex items-baseline gap-1">
         <IndianRupee
-          className={[
-            "w-5 h-5",
-            accent ? "text-orange-100" : "text-slate-400",
-          ].join(" ")}
+          className={["h-5 w-5", accent ? "text-orange-100" : "text-slate-400"].join(" ")}
           strokeWidth={2.5}
         />
-        <span className="text-2xl font-bold tracking-tight">
-          {fmtAmount(amount)}
-        </span>
+        <span className="text-2xl font-bold tracking-tight">{fmtAmount(amount)}</span>
       </div>
 
       {/* Subtitle + Trend */}
       <div className="flex items-center justify-between gap-2">
-        <span
-          className={[
-            "text-xs",
-            accent ? "text-orange-100" : "text-slate-400",
-          ].join(" ")}
-        >
+        <span className={["text-xs", accent ? "text-orange-100" : "text-slate-400"].join(" ")}>
           {subtitle}
         </span>
         {trend != null && (
           <span
             className={[
-              "flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full",
+              "flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold",
               trend.positive
                 ? accent
                   ? "bg-white/20 text-white"
@@ -120,9 +104,9 @@ export function EarningsStatCard({
             ].join(" ")}
           >
             {trend.positive ? (
-              <TrendingUp className="w-3 h-3" />
+              <TrendingUp className="h-3 w-3" />
             ) : (
-              <TrendingDown className="w-3 h-3" />
+              <TrendingDown className="h-3 w-3" />
             )}
             {trend.positive ? "+" : ""}
             {trend.value}%
@@ -157,9 +141,7 @@ function formatYLabel(n: number): string {
 }
 
 export function MonthlyBarChart({ months }: { months: MonthlyDataPoint[] }) {
-  const currentShortMonth = new Date()
-    .toLocaleString("en-US", { month: "short" })
-    .slice(0, 3);
+  const currentShortMonth = new Date().toLocaleString("en-US", { month: "short" }).slice(0, 3);
 
   const maxVal = Math.max(...months.map((m) => m.total), 1);
   const yMax = Math.ceil(maxVal / GRID_LINES) * GRID_LINES || GRID_LINES;
@@ -175,7 +157,7 @@ export function MonthlyBarChart({ months }: { months: MonthlyDataPoint[] }) {
     <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-        className="w-full h-auto"
+        className="h-auto w-full"
         aria-label="Monthly earnings bar chart"
       >
         <defs>
@@ -203,13 +185,7 @@ export function MonthlyBarChart({ months }: { months: MonthlyDataPoint[] }) {
                 stroke="#e2e8f0"
                 strokeWidth={1}
               />
-              <text
-                x={PAD.left - 6}
-                y={y + 4}
-                textAnchor="end"
-                fontSize={10}
-                fill="#94a3b8"
-              >
+              <text x={PAD.left - 6} y={y + 4} textAnchor="end" fontSize={10} fill="#94a3b8">
                 {formatYLabel(val)}
               </text>
             </g>
@@ -305,8 +281,8 @@ export function CategoryBreakdownList({
 
   if (items.length === 0) {
     return (
-      <div className="py-10 flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
-        <IndianRupee className="w-8 h-8 text-slate-200" />
+      <div className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-slate-400">
+        <IndianRupee className="h-8 w-8 text-slate-200" />
         <span>{emptyMessage}</span>
       </div>
     );
@@ -319,25 +295,20 @@ export function CategoryBreakdownList({
         return (
           <li key={item.category} className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-slate-700">
-                {capitalize(item.category)}
-              </span>
+              <span className="font-medium text-slate-700">{capitalize(item.category)}</span>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-400">
                   {item.sessions} session{item.sessions !== 1 ? "s" : ""}
                 </span>
                 <span className="flex items-center gap-0.5 font-semibold text-slate-800">
-                  <IndianRupee
-                    className="w-3.5 h-3.5 text-slate-400"
-                    strokeWidth={2.5}
-                  />
+                  <IndianRupee className="h-3.5 w-3.5 text-slate-400" strokeWidth={2.5} />
                   {fmtAmount(item.total)}
                 </span>
               </div>
             </div>
 
             {/* Progress bar */}
-            <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
@@ -373,8 +344,8 @@ export function RecentTransactionsList({
 }) {
   if (transactions.length === 0) {
     return (
-      <div className="py-10 flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
-        <CheckCircle className="w-8 h-8 text-slate-200" />
+      <div className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-slate-400">
+        <CheckCircle className="h-8 w-8 text-slate-200" />
         <span>{emptyMessage}</span>
       </div>
     );
@@ -383,35 +354,27 @@ export function RecentTransactionsList({
   return (
     <ul className="divide-y divide-slate-100">
       {transactions.map((tx) => (
-        <li
-          key={tx.id}
-          className="flex items-center gap-4 py-3 first:pt-0 last:pb-0"
-        >
+        <li key={tx.id} className="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
           {/* Avatar */}
-          <span className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl bg-orange-50 text-power-orange">
-            <CheckCircle className="w-5 h-5" strokeWidth={2} />
+          <span className="text-power-orange flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-orange-50">
+            <CheckCircle className="h-5 w-5" strokeWidth={2} />
           </span>
 
           {/* Details */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-800 truncate">
-              {tx.customerName}
-            </p>
-            <p className="text-xs text-slate-400 truncate">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-slate-800">{tx.customerName}</p>
+            <p className="truncate text-xs text-slate-400">
               {capitalize(tx.category)} &middot; {fmtDate(tx.date)}
             </p>
           </div>
 
           {/* Amount + status */}
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <div className="flex flex-shrink-0 flex-col items-end gap-1">
             <span className="flex items-center gap-0.5 text-sm font-bold text-slate-800">
-              <IndianRupee
-                className="w-3.5 h-3.5 text-slate-400"
-                strokeWidth={2.5}
-              />
+              <IndianRupee className="h-3.5 w-3.5 text-slate-400" strokeWidth={2.5} />
               {fmtAmount(tx.amount)}
             </span>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
               Completed
             </span>
           </div>

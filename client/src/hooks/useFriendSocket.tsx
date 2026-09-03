@@ -52,15 +52,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 // Socket.IO namespaces are at root level, strip /api if present
 const SOCKET_URL = API_URL.replace(/\/api\/?$/, "");
 
-export function FriendSocketProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function FriendSocketProvider({ children }: { children: React.ReactNode }) {
   const [connected, setConnected] = useState(false);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
-  const [pendingBookingInvitationsCount, setPendingBookingInvitationsCount] =
-    useState(0);
+  const [pendingBookingInvitationsCount, setPendingBookingInvitationsCount] = useState(0);
   const [socket, setSocket] = useState<Socket | null>(null);
   const { user } = useAuthStore();
 
@@ -94,10 +89,7 @@ export function FriendSocketProvider({
       return;
     }
 
-    console.log(
-      "Attempting to connect to friend socket at:",
-      `${SOCKET_URL}/friends`,
-    );
+    console.log("Attempting to connect to friend socket at:", `${SOCKET_URL}/friends`);
 
     const socketInstance = io(`${SOCKET_URL}/friends`, {
       auth: { token },
@@ -347,51 +339,33 @@ export function FriendSocketProvider({
     });
 
     // Keep legacy event listeners for backward compatibility (can be removed later)
-    socketInstance.on(
-      "friend:requestReceived",
-      (data: FriendRequestReceivedData) => {
-        console.log("Legacy friend request event:", data);
-        setPendingRequestCount((prev) => prev + 1);
-        toast.info(
-          `${data.requester?.name || "Someone"} sent you a friend request`,
-          {
-            duration: 5000,
-          },
-        );
-      },
-    );
+    socketInstance.on("friend:requestReceived", (data: FriendRequestReceivedData) => {
+      console.log("Legacy friend request event:", data);
+      setPendingRequestCount((prev) => prev + 1);
+      toast.info(`${data.requester?.name || "Someone"} sent you a friend request`, {
+        duration: 5000,
+      });
+    });
 
-    socketInstance.on(
-      "friend:requestAccepted",
-      (data: FriendRequestAcceptedData) => {
-        console.log("Legacy friend request accepted event:", data);
-        toast.success(
-          `${data.friend?.name || "User"} accepted your friend request`,
-          {
-            duration: 5000,
-          },
-        );
-      },
-    );
+    socketInstance.on("friend:requestAccepted", (data: FriendRequestAcceptedData) => {
+      console.log("Legacy friend request accepted event:", data);
+      toast.success(`${data.friend?.name || "User"} accepted your friend request`, {
+        duration: 5000,
+      });
+    });
 
-    socketInstance.on(
-      "friend:requestDeclined",
-      (data: FriendRequestDeclinedData) => {
-        console.log("Legacy friend request declined event:", data);
-        toast.info(`Your friend request was declined`, {
-          duration: 5000,
-        });
-      },
-    );
+    socketInstance.on("friend:requestDeclined", (data: FriendRequestDeclinedData) => {
+      console.log("Legacy friend request declined event:", data);
+      toast.info(`Your friend request was declined`, {
+        duration: 5000,
+      });
+    });
 
     socketInstance.on("friend:removed", (data: FriendRemovedData) => {
       console.log("Legacy friend removed event:", data);
-      toast.info(
-        `${data.removedBy?.name || "A user"} removed you as a friend`,
-        {
-          duration: 5000,
-        },
-      );
+      toast.info(`${data.removedBy?.name || "A user"} removed you as a friend`, {
+        duration: 5000,
+      });
     });
 
     socketInstance.on("disconnect", () => {

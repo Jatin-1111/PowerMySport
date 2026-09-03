@@ -46,7 +46,7 @@ router.post(
   authMiddleware,
   playerOnlyMiddleware,
   validateRequest(promoValidateSchema),
-  validateBookingPromoCode,
+  validateBookingPromoCode
 );
 
 // Pricing quote. Authenticated (it is only used inside checkout) but requires no
@@ -59,7 +59,7 @@ router.post(
   authMiddleware,
   playerOnlyMiddleware,
   validateRequest(bookingWaitlistSchema),
-  joinBookingWaitlist,
+  joinBookingWaitlist
 );
 
 router.post(
@@ -68,7 +68,7 @@ router.post(
   playerOnlyMiddleware,
   coachVerificationCompletedMiddleware,
   validateRequest(bookingSchema),
-  initiateNewBooking,
+  initiateNewBooking
 );
 
 // Initiate group booking with friends
@@ -77,23 +77,18 @@ router.post(
   authMiddleware,
   playerOnlyMiddleware,
   coachVerificationCompletedMiddleware,
-  initiateNewGroupBooking,
+  initiateNewGroupBooking
 );
 
 // Get booking invitations
-router.get(
-  "/invitations",
-  authMiddleware,
-  playerOnlyMiddleware,
-  getMyInvitations,
-);
+router.get("/invitations", authMiddleware, playerOnlyMiddleware, getMyInvitations);
 
 // Get pending invitations count
 router.get(
   "/invitations/pending-count",
   authMiddleware,
   playerOnlyMiddleware,
-  getPendingInvitationsCount,
+  getPendingInvitationsCount
 );
 
 // Respond to booking invitation
@@ -101,7 +96,7 @@ router.post(
   "/invitations/:invitationId/respond",
   authMiddleware,
   playerOnlyMiddleware,
-  respondToInvitation,
+  respondToInvitation
 );
 
 // Organizer covers unpaid shares
@@ -109,7 +104,7 @@ router.post(
   "/:bookingId/cover-payments",
   authMiddleware,
   playerOnlyMiddleware,
-  coverUnpaidPayments,
+  coverUnpaidPayments
 );
 
 // Check-in to booking with random code
@@ -118,7 +113,7 @@ router.post(
   authMiddleware,
   coachVerificationCompletedMiddleware,
   validateRequest(bookingCheckInCodeSchema),
-  checkInBookingWithCode,
+  checkInBookingWithCode
 );
 
 // Confirm mock payment success — development/staging only, never in production
@@ -127,7 +122,7 @@ if (process.env.NODE_ENV !== "production") {
     "/:bookingId/mock-payment-success",
     authMiddleware,
     coachVerificationCompletedMiddleware,
-    confirmMockPaymentSuccessById,
+    confirmMockPaymentSuccessById
   );
 }
 
@@ -136,16 +131,11 @@ router.post(
   "/:bookingId/phonepe/initiate",
   authMiddleware,
   playerOnlyMiddleware,
-  initiatePhonePePaymentForBooking,
+  initiatePhonePePaymentForBooking
 );
 
 // Pay for a booking using Wallet
-router.post(
-  "/:bookingId/wallet/pay",
-  authMiddleware,
-  playerOnlyMiddleware,
-  payBookingWithWallet,
-);
+router.post("/:bookingId/wallet/pay", authMiddleware, playerOnlyMiddleware, payBookingWithWallet);
 
 // PhonePe callback (no auth)
 router.post("/phonepe/callback", handlePhonePeCallback);
@@ -155,66 +145,43 @@ router.get(
   "/phonepe/status/:merchantOrderId",
   authMiddleware,
   playerOnlyMiddleware,
-  verifyPhonePeOrderStatus,
+  verifyPhonePeOrderStatus
 );
 
 // Get user's bookings
-router.get(
-  "/my-bookings",
-  authMiddleware,
-  coachVerificationCompletedMiddleware,
-  getMyBookings,
-);
+router.get("/my-bookings", authMiddleware, coachVerificationCompletedMiddleware, getMyBookings);
 
 // Get venue availability
 router.get("/availability/:venueId", getVenueAvailability);
 
 // Get booking by ID
-router.get(
-  "/:bookingId",
-  authMiddleware,
-  coachVerificationCompletedMiddleware,
-  getBookingById,
-);
+router.get("/:bookingId", authMiddleware, coachVerificationCompletedMiddleware, getBookingById);
 
 // Download booking invoice PDF
 router.get(
   "/:bookingId/invoice/pdf",
   authMiddleware,
   coachVerificationCompletedMiddleware,
-  downloadBookingInvoicePdf,
+  downloadBookingInvoicePdf
 );
 
 // Provider confirmation
-router.post(
-  "/:bookingId/provider/confirm",
-  authMiddleware,
-  confirmBookingByProviderHandler,
-);
+router.post("/:bookingId/provider/confirm", authMiddleware, confirmBookingByProviderHandler);
 
-router.post(
-  "/:bookingId/provider/reject",
-  authMiddleware,
-  rejectBookingByProviderHandler,
-);
+router.post("/:bookingId/provider/reject", authMiddleware, rejectBookingByProviderHandler);
 
 // Reschedule booking — coach only
 router.post("/:bookingId/reschedule", authMiddleware, rescheduleBookingHandler);
 
 // Retry a failed refund (player-initiated)
-router.post(
-  "/:bookingId/retry-refund",
-  authMiddleware,
-  playerOnlyMiddleware,
-  retryBookingRefund,
-);
+router.post("/:bookingId/retry-refund", authMiddleware, playerOnlyMiddleware, retryBookingRefund);
 
 // Cancel booking
 router.delete(
   "/:bookingId",
   authMiddleware,
   coachVerificationCompletedMiddleware,
-  cancelBookingById,
+  cancelBookingById
 );
 
 export default router;

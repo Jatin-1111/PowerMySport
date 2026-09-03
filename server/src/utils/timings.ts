@@ -25,8 +25,7 @@ import { recordSpan } from "./requestContext";
 
 let installed = false;
 
-const elapsedMs = (start: bigint): number =>
-  Number(process.hrtime.bigint() - start) / 1e6;
+const elapsedMs = (start: bigint): number => Number(process.hrtime.bigint() - start) / 1e6;
 
 /** Wrap a promise-returning method so its duration is attributed on settle. */
 const timeAround = <T>(kind: "db" | "ext", run: () => Promise<T>): Promise<T> => {
@@ -49,7 +48,7 @@ const timeAround = <T>(kind: "db" | "ext", run: () => Promise<T>): Promise<T> =>
         // interesting kind, since timeouts are the slow ones.
         finish();
         throw error;
-      },
+      }
     );
   } catch (error) {
     finish();
@@ -119,8 +118,8 @@ const patchAxios = (): void => {
     return;
   }
 
-  const proto = (axios as unknown as { Axios?: { prototype: Record<string, unknown> } })
-    .Axios?.prototype;
+  const proto = (axios as unknown as { Axios?: { prototype: Record<string, unknown> } }).Axios
+    ?.prototype;
   if (!proto) return;
   if ((proto as { __pmsTimed?: boolean }).__pmsTimed) return;
 

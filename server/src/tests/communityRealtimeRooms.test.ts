@@ -55,30 +55,22 @@ const BLOG_ID = "64b7f0c2a1d4e5f60718293b";
 test("qna events never broadcast namespace-wide", () => {
   const sink = setup();
 
-  emitCommunityQnaEvent("community:qnaPostCreated", { postId: POST_ID }, [
+  emitCommunityQnaEvent("community:qnaPostCreated", { postId: POST_ID }, [QNA_FEED_ROOM]);
+  emitCommunityQnaEvent("community:qnaAnswerCreated", { postId: POST_ID }, [
     QNA_FEED_ROOM,
+    qnaPostRoom(POST_ID),
   ]);
-  emitCommunityQnaEvent(
-    "community:qnaAnswerCreated",
-    { postId: POST_ID },
-    [QNA_FEED_ROOM, qnaPostRoom(POST_ID)],
-  );
 
   assert.equal(sink.length, 2);
   for (const entry of sink) {
-    assert.ok(
-      roomsOf(entry).length > 0,
-      `${entry.event} was emitted without a room`,
-    );
+    assert.ok(roomsOf(entry).length > 0, `${entry.event} was emitted without a room`);
   }
 });
 
 test("answer edits reach the detail room only, not the feed", () => {
   const sink = setup();
 
-  emitCommunityQnaEvent("community:qnaAnswerUpdated", { postId: POST_ID }, [
-    qnaPostRoom(POST_ID),
-  ]);
+  emitCommunityQnaEvent("community:qnaAnswerUpdated", { postId: POST_ID }, [qnaPostRoom(POST_ID)]);
 
   assert.deepEqual(roomsOf(sink[0]!), [`qna:post:${POST_ID}`]);
 });
@@ -86,11 +78,9 @@ test("answer edits reach the detail room only, not the feed", () => {
 test("blog likes address the parent blog's room", () => {
   const sink = setup();
 
-  emitCommunityBlogEvent(
-    "community:blogLiked",
-    { targetType: "COMMENT", blogId: BLOG_ID },
-    [blogRoom(BLOG_ID)],
-  );
+  emitCommunityBlogEvent("community:blogLiked", { targetType: "COMMENT", blogId: BLOG_ID }, [
+    blogRoom(BLOG_ID),
+  ]);
 
   assert.deepEqual(roomsOf(sink[0]!), [`blog:${BLOG_ID}`]);
 });
@@ -118,9 +108,7 @@ test("group and user events stay on their own rooms", () => {
 test("emitted payloads carry a timestamp", () => {
   const sink = setup();
 
-  emitCommunityBlogEvent("community:blogCreated", { blogId: BLOG_ID }, [
-    BLOG_FEED_ROOM,
-  ]);
+  emitCommunityBlogEvent("community:blogCreated", { blogId: BLOG_ID }, [BLOG_FEED_ROOM]);
 
   assert.equal(typeof sink[0]!.payload.timestamp, "string");
 });

@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
-import { PlanCheckIn, PlanCheckInDocument, PlanCheckInSource, PlanCheckInStatus } from "../models/PlanCheckIn";
+import {
+  PlanCheckIn,
+  PlanCheckInDocument,
+  PlanCheckInSource,
+  PlanCheckInStatus,
+} from "../models/PlanCheckIn";
 import { ScheduledNotification } from "../../client/models/ScheduledNotification";
 import type { GuidanceResponse } from "./guidanceAiService";
 
@@ -101,7 +106,7 @@ export class PlanCheckInService {
           "data.sport": params.sport,
           "data.signals": params.signals,
         },
-      },
+      }
     );
 
     return checkIn;
@@ -147,14 +152,18 @@ export class PlanCheckInService {
         sourceId: params.sourceId,
         sport: params.sport,
         title: `A few months ago we mapped out a plan for ${params.sport} — how's it going?`,
-        signals: [response.goalAssessment?.statedGoal || "Overall progress toward the goal"].filter(Boolean),
+        signals: [response.goalAssessment?.statedGoal || "Overall progress toward the goal"].filter(
+          Boolean
+        ),
         checkInDueAt: new Date(Date.now() + SEASONAL_REVISIT_DAYS * 24 * 60 * 60 * 1000),
       });
     }
   }
 
   /** What the client should do next, given the source and the parent's answer. */
-  static computeFollowUp(checkIn: PlanCheckInDocument):
+  static computeFollowUp(
+    checkIn: PlanCheckInDocument
+  ):
     | { kind: "done"; message: string }
     | { kind: "try_next_sport"; message: string }
     | { kind: "re_diagnose"; message: string }

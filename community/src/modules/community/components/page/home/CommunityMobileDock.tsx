@@ -21,7 +21,7 @@ export default function CommunityMobileDock({ page }: Props) {
   }
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/96 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/96 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-3 gap-0.5 p-2">
         <button
           onClick={() => {

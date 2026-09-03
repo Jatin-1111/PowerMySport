@@ -105,21 +105,16 @@ function getMemoryUsage() {
 }
 
 // Create test reminder data
-async function createTestReminders(
-  count: number,
-): Promise<{ created: number; timeMs: number }> {
+async function createTestReminders(count: number): Promise<{ created: number; timeMs: number }> {
   console.log(`\n📝 Creating ${count} test reminders...`);
   const startTime = Date.now();
 
   // Generate test user IDs, booking IDs
   const testUserIds = Array.from(
     { length: Math.min(count / 10, 100) },
-    (_, i) => new mongoose.Types.ObjectId(),
+    (_, i) => new mongoose.Types.ObjectId()
   );
-  const testBookingIds = Array.from(
-    { length: count },
-    () => new mongoose.Types.ObjectId(),
-  );
+  const testBookingIds = Array.from({ length: count }, () => new mongoose.Types.ObjectId());
 
   // Create reminders in batches of 500 to avoid memory issues
   const CREATION_BATCH_SIZE = 500;
@@ -208,9 +203,7 @@ async function runProcessingLoadTest(batchSize: number): Promise<{
     delta: number;
   };
 }> {
-  console.log(
-    `\n🚀 Starting reminder processing (batch size: ${batchSize})...`,
-  );
+  console.log(`\n🚀 Starting reminder processing (batch size: ${batchSize})...`);
 
   // Track memory usage
   const memorySnapshots: number[] = [];
@@ -227,8 +220,7 @@ async function runProcessingLoadTest(batchSize: number): Promise<{
 
   try {
     // Process all pending reminders
-    const stats =
-      await ScheduledNotificationService.processPendingReminders(batchSize);
+    const stats = await ScheduledNotificationService.processPendingReminders(batchSize);
 
     const processingTimeMs = Date.now() - startTime;
 
@@ -237,8 +229,7 @@ async function runProcessingLoadTest(batchSize: number): Promise<{
     // Calculate memory stats
     const finalMemory = getMemoryUsage();
     const peakMemory = Math.max(...memorySnapshots);
-    const avgMemory =
-      memorySnapshots.reduce((a, b) => a + b, 0) / memorySnapshots.length;
+    const avgMemory = memorySnapshots.reduce((a, b) => a + b, 0) / memorySnapshots.length;
     const memoryDelta = finalMemory.heapUsedMB - initialMemory.heapUsedMB;
 
     console.log(`✅ Processing complete in ${processingTimeMs}ms`);
@@ -330,41 +321,27 @@ function printResults(results: LoadTestResults): void {
   console.log("\n📊 SETUP PHASE:");
   console.log(`  Reminders Created:    ${results.setup.remindersCreated}`);
   console.log(`  Creation Time:        ${results.setup.creationTimeMs}ms`);
-  console.log(
-    `  Creation Rate:        ${results.setup.creationRate.toFixed(2)} reminders/sec`,
-  );
+  console.log(`  Creation Rate:        ${results.setup.creationRate.toFixed(2)} reminders/sec`);
 
   console.log("\n⚡ PROCESSING PHASE:");
   console.log(`  Total Reminders:      ${results.processing.totalReminders}`);
   console.log(`  Batch Size:           ${results.processing.batchSize}`);
-  console.log(
-    `  Processing Time:      ${results.processing.processingTimeMs}ms`,
-  );
-  console.log(
-    `  Throughput:           ${results.processing.throughput.toFixed(2)} reminders/sec`,
-  );
+  console.log(`  Processing Time:      ${results.processing.processingTimeMs}ms`);
+  console.log(`  Throughput:           ${results.processing.throughput.toFixed(2)} reminders/sec`);
   console.log(`  Success Count:        ${results.processing.successCount}`);
   console.log(`  Failure Count:        ${results.processing.failureCount}`);
-  console.log(
-    `  Failure Rate:         ${results.processing.failureRate.toFixed(2)}%`,
-  );
+  console.log(`  Failure Rate:         ${results.processing.failureRate.toFixed(2)}%`);
 
   console.log("\n💾 PERFORMANCE METRICS:");
+  console.log(`  Peak Memory:          ${results.performance.peakMemoryMB.toFixed(2)} MB`);
+  console.log(`  Avg Memory:           ${results.performance.avgMemoryMB.toFixed(2)} MB`);
   console.log(
-    `  Peak Memory:          ${results.performance.peakMemoryMB.toFixed(2)} MB`,
-  );
-  console.log(
-    `  Avg Memory:           ${results.performance.avgMemoryMB.toFixed(2)} MB`,
-  );
-  console.log(
-    `  Memory Delta:         ${results.performance.memoryDeltaMB > 0 ? "+" : ""}${results.performance.memoryDeltaMB.toFixed(2)} MB`,
+    `  Memory Delta:         ${results.performance.memoryDeltaMB > 0 ? "+" : ""}${results.performance.memoryDeltaMB.toFixed(2)} MB`
   );
 
   console.log("\n🗄️  DATABASE PERFORMANCE:");
   console.log(`  Query Time:           ${results.database.queryTimeMs}ms`);
-  console.log(
-    `  Index Used:           ${results.database.indexUsed ? "✅ Yes" : "❌ No"}`,
-  );
+  console.log(`  Index Used:           ${results.database.indexUsed ? "✅ Yes" : "❌ No"}`);
 
   // Performance assessment
   console.log("\n📈 PERFORMANCE ASSESSMENT:");
@@ -387,15 +364,11 @@ function printResults(results: LoadTestResults): void {
   } else if (results.processing.failureRate < 5) {
     console.log("  ⚠️  Moderate failure rate - <5% failures");
   } else {
-    console.log(
-      `  ❌ High failure rate - ${results.processing.failureRate.toFixed(2)}% failures`,
-    );
+    console.log(`  ❌ High failure rate - ${results.processing.failureRate.toFixed(2)}% failures`);
   }
 
   if (!results.database.indexUsed) {
-    console.log(
-      "  ⚠️  WARNING: Database index not used - Performance may degrade!",
-    );
+    console.log("  ⚠️  WARNING: Database index not used - Performance may degrade!");
   }
 
   console.log("\n");
@@ -416,8 +389,7 @@ async function main() {
 
   try {
     // Connect to database (use same env variable as main app)
-    const dbUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
+    const dbUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
     console.log(`\n🔌 Connecting to database...`);
     await mongoose.connect(dbUri);
     console.log(`✅ Connected to MongoDB`);
@@ -454,8 +426,7 @@ async function main() {
       const setupResult = await createTestReminders(config.reminderCount);
       results.setup.remindersCreated = setupResult.created;
       results.setup.creationTimeMs = setupResult.timeMs;
-      results.setup.creationRate =
-        (setupResult.created / setupResult.timeMs) * 1000;
+      results.setup.creationRate = (setupResult.created / setupResult.timeMs) * 1000;
     } else {
       console.log(`\n⏭️  Skipping reminder creation (--skip-create)`);
       const count = await ScheduledNotification.countDocuments({
@@ -476,14 +447,10 @@ async function main() {
     results.processing.successCount = processingResult.successCount;
     results.processing.failureCount = processingResult.failureCount;
     results.processing.throughput =
-      (results.processing.totalReminders /
-        results.processing.processingTimeMs) *
-      1000;
+      (results.processing.totalReminders / results.processing.processingTimeMs) * 1000;
     results.processing.failureRate =
       results.processing.totalReminders > 0
-        ? (results.processing.failureCount /
-            results.processing.totalReminders) *
-          100
+        ? (results.processing.failureCount / results.processing.totalReminders) * 100
         : 0;
 
     results.performance.peakMemoryMB = processingResult.memoryStats.peak;
@@ -495,19 +462,16 @@ async function main() {
 
     // Step 4: Get monitoring statistics
     console.log("📊 Fetching monitoring statistics...");
-    const monitoringStats =
-      await ReminderMonitoringService.getMonitoringStats();
+    const monitoringStats = await ReminderMonitoringService.getMonitoringStats();
     const healthStatus = await ReminderMonitoringService.checkSchedulerHealth();
 
     console.log("\n🔍 CURRENT SYSTEM STATUS:");
     console.log(`  Total Processed (24h):  ${monitoringStats.total}`);
     console.log(`  Sent (24h):             ${monitoringStats.sent}`);
     console.log(`  Failed (24h):           ${monitoringStats.failed}`);
+    console.log(`  Failure Rate (24h):     ${monitoringStats.failureRate.toFixed(2)}%`);
     console.log(
-      `  Failure Rate (24h):     ${monitoringStats.failureRate.toFixed(2)}%`,
-    );
-    console.log(
-      `  Health Status:          ${healthStatus.isHealthy ? "✅ Healthy" : "❌ Unhealthy"}`,
+      `  Health Status:          ${healthStatus.isHealthy ? "✅ Healthy" : "❌ Unhealthy"}`
     );
 
     if (!healthStatus.isHealthy && healthStatus.issues.length > 0) {
@@ -521,9 +485,7 @@ async function main() {
     if (config.cleanup) {
       await cleanupTestData();
     } else {
-      console.log(
-        `\n💡 Tip: Run with --cleanup flag to remove test data automatically`,
-      );
+      console.log(`\n💡 Tip: Run with --cleanup flag to remove test data automatically`);
     }
 
     console.log("\n✅ Load test completed successfully!");

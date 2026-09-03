@@ -9,9 +9,7 @@ const { after, before, beforeEach, describe, it } = require("node:test");
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
-const {
-  CommunityConversation,
-} = require("../community/models/CommunityConversation");
+const { CommunityConversation } = require("../community/models/CommunityConversation");
 const { CommunityMessage } = require("../community/models/CommunityMessage");
 const { CommunityProfile } = require("../community/models/CommunityProfile");
 const { CommunityService } = require("../community/services/CommunityService");
@@ -72,14 +70,11 @@ describe("replying to a message", () => {
     const original = await CommunityService.sendMessage(
       a,
       conversationId,
-      "Is practice still on at six?",
+      "Is practice still on at six?"
     );
-    const reply = await CommunityService.sendMessage(
-      b,
-      conversationId,
-      "Yes, courts are booked.",
-      { replyToId: original.id },
-    );
+    const reply = await CommunityService.sendMessage(b, conversationId, "Yes, courts are booked.", {
+      replyToId: original.id,
+    });
 
     assert.equal(reply.replyTo.id, original.id);
     assert.equal(reply.replyTo.content, "Is practice still on at six?");
@@ -95,7 +90,7 @@ describe("replying to a message", () => {
     const elsewhere = await CommunityService.sendMessage(
       a,
       theirs,
-      "Something private in the other chat.",
+      "Something private in the other chat."
     );
 
     // Without this check the quote preview would carry that message's text
@@ -105,7 +100,7 @@ describe("replying to a message", () => {
         CommunityService.sendMessage(b, ours, "Look at this", {
           replyToId: elsewhere.id,
         }),
-      /no longer available/,
+      /no longer available/
     );
   });
 
@@ -114,11 +109,7 @@ describe("replying to a message", () => {
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    const original = await CommunityService.sendMessage(
-      a,
-      conversationId,
-      "This will be removed.",
-    );
+    const original = await CommunityService.sendMessage(a, conversationId, "This will be removed.");
     await CommunityService.deleteMessage(a, original.id);
 
     await assert.rejects(
@@ -126,7 +117,7 @@ describe("replying to a message", () => {
         CommunityService.sendMessage(b, conversationId, "About that", {
           replyToId: original.id,
         }),
-      /no longer available/,
+      /no longer available/
     );
   });
 
@@ -135,20 +126,14 @@ describe("replying to a message", () => {
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    const original = await CommunityService.sendMessage(
-      a,
-      conversationId,
-      "The original text.",
-    );
+    const original = await CommunityService.sendMessage(a, conversationId, "The original text.");
     await CommunityService.sendMessage(b, conversationId, "Replying", {
       replyToId: original.id,
     });
     await CommunityService.deleteMessage(a, original.id);
 
     const page = await CommunityService.getMessages(b, conversationId);
-    const reply = page.messages.find(
-      (message: { replyTo?: { id: string } }) => message.replyTo,
-    );
+    const reply = page.messages.find((message: { replyTo?: { id: string } }) => message.replyTo);
     // Quotes resolve live, so the reply must not keep showing text the sender
     // has since removed.
     assert.equal(reply.replyTo.isDeleted, true);
@@ -160,20 +145,14 @@ describe("replying to a message", () => {
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    const original = await CommunityService.sendMessage(
-      a,
-      conversationId,
-      "Six o'clock.",
-    );
+    const original = await CommunityService.sendMessage(a, conversationId, "Six o'clock.");
     await CommunityService.sendMessage(b, conversationId, "Got it", {
       replyToId: original.id,
     });
     await CommunityService.editMessage(a, original.id, "Seven o'clock.");
 
     const page = await CommunityService.getMessages(b, conversationId);
-    const reply = page.messages.find(
-      (message: { replyTo?: { id: string } }) => message.replyTo,
-    );
+    const reply = page.messages.find((message: { replyTo?: { id: string } }) => message.replyTo);
     assert.equal(reply.replyTo.content, "Seven o'clock.");
   });
 
@@ -186,14 +165,11 @@ describe("replying to a message", () => {
       a,
       conversationId,
       "community/chat/secret-object-key.jpg",
-      { type: "IMAGE" },
+      { type: "IMAGE" }
     );
-    const reply = await CommunityService.sendMessage(
-      b,
-      conversationId,
-      "Nice shot",
-      { replyToId: image.id },
-    );
+    const reply = await CommunityService.sendMessage(b, conversationId, "Nice shot", {
+      replyToId: image.id,
+    });
 
     assert.equal(reply.replyTo.content, "Photo");
     assert.ok(!reply.replyTo.content.includes("secret-object-key"));
@@ -204,11 +180,7 @@ describe("replying to a message", () => {
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    const plain = await CommunityService.sendMessage(
-      a,
-      conversationId,
-      "No quote here.",
-    );
+    const plain = await CommunityService.sendMessage(a, conversationId, "No quote here.");
     assert.equal(plain.replyTo, null);
 
     const page = await CommunityService.getMessages(a, conversationId);

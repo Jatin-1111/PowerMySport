@@ -17,9 +17,7 @@ export default function CoachPhotoUpload({
   disabled = false,
   currentPhotoUrl,
 }: CoachPhotoUploadProps) {
-  const [photoUrl, setPhotoUrl] = useState<string | null>(
-    currentPhotoUrl || null,
-  );
+  const [photoUrl, setPhotoUrl] = useState<string | null>(currentPhotoUrl || null);
   const [photoKey, setPhotoKey] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -41,10 +39,7 @@ export default function CoachPhotoUpload({
 
     try {
       // Get presigned URL from server
-      const response = await adminApi.getCoachPhotoUploadUrl(
-        file.name,
-        file.type,
-      );
+      const response = await adminApi.getCoachPhotoUploadUrl(file.name, file.type);
 
       if (!response.success || !response.data) {
         throw new Error("Failed to get upload URL");
@@ -80,50 +75,44 @@ export default function CoachPhotoUpload({
   return (
     <div className="w-full">
       {photoUrl ? (
-        <div className="relative w-32 h-32 mx-auto">
+        <div className="relative mx-auto h-32 w-32">
           <img
             src={photoUrl}
             alt="Coach profile"
-            className="w-full h-full object-cover rounded-lg border-2 border-green-300"
+            className="h-full w-full rounded-lg border-2 border-green-300 object-cover"
           />
           <button
             type="button"
             onClick={handleRemovePhoto}
             disabled={disabled}
-            className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors"
+            className="absolute -top-2 -right-2 rounded-full bg-red-500 p-2 text-white transition-colors hover:bg-red-600"
           >
             <Trash2 size={16} />
           </button>
         </div>
       ) : (
-        <label className="flex flex-col items-center justify-center w-32 h-32 mx-auto border-2 border-dashed border-slate-300 rounded-lg hover:border-power-orange hover:bg-power-orange/5 transition-all cursor-pointer">
+        <label className="hover:border-power-orange hover:bg-power-orange/5 mx-auto flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 transition-all">
           {uploading ? (
-            <Loader className="animate-spin text-power-orange" size={32} />
+            <Loader className="text-power-orange animate-spin" size={32} />
           ) : (
             <>
-              <Camera className="text-slate-400 mb-2" size={32} />
-              <span className="text-xs text-slate-600 text-center">
-                Upload Photo
-              </span>
+              <Camera className="mb-2 text-slate-400" size={32} />
+              <span className="text-center text-xs text-slate-600">Upload Photo</span>
             </>
           )}
           <input
             type="file"
             accept="image/*"
-            onChange={(e) =>
-              e.target.files?.[0] && handlePhotoSelect(e.target.files[0])
-            }
+            onChange={(e) => e.target.files?.[0] && handlePhotoSelect(e.target.files[0])}
             className="hidden"
             disabled={disabled || uploading}
           />
         </label>
       )}
 
-      {error && (
-        <p className="text-red-500 text-xs mt-2 text-center">{error}</p>
-      )}
+      {error && <p className="mt-2 text-center text-xs text-red-500">{error}</p>}
 
-      <p className="text-xs text-slate-600 mt-3 text-center">
+      <p className="mt-3 text-center text-xs text-slate-600">
         Square image recommended (min 200x200px, max 5MB)
       </p>
     </div>

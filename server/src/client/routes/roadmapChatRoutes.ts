@@ -32,7 +32,12 @@ const chatBurstLimiter = rateLimit({
 roadmapChatRouter.get("/sessions", authMiddleware, listRoadmapChatSessions);
 roadmapChatRouter.post("/sessions", authMiddleware, createRoadmapChatSession);
 roadmapChatRouter.get("/sessions/:sessionId", authMiddleware, getRoadmapChatSession);
-roadmapChatRouter.post("/sessions/:sessionId", authMiddleware, chatBurstLimiter, sendRoadmapChatSessionMessage);
+roadmapChatRouter.post(
+  "/sessions/:sessionId",
+  authMiddleware,
+  chatBurstLimiter,
+  sendRoadmapChatSessionMessage
+);
 
 // ── Legacy sport-slug routes (backward compat) ────────────────────────────────
 roadmapChatRouter.get("/:sportSlug", authMiddleware, getRoadmapChat);

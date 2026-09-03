@@ -1,27 +1,13 @@
 "use client";
 
-import {
-    expertApi,
-    type Expert,
-    type ExpertSession,
-} from "@/modules/expert/services/expert";
+import { expertApi, type Expert, type ExpertSession } from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
-import {
-    StaggerContainer,
-    StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { cn } from "@/utils/cn";
-import {
-    ArrowLeft,
-    ArrowRight,
-    CalendarClock,
-    Clock,
-    ServerCrash,
-    Star,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarClock, Clock, ServerCrash, Star } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -109,12 +95,12 @@ export default function MyExpertSessionsPage() {
         <div className="mx-auto max-w-3xl px-6 py-10">
           <Link
             href="/booking?tab=experts"
-            className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-power-orange"
+            className="hover:text-power-orange mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" /> Browse experts
           </Link>
           <FadeIn>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-700">
+            <p className="mb-2 text-[11px] font-bold tracking-[0.22em] text-orange-700 uppercase">
               Your Bookings
             </p>
             <h1 className="font-title text-3xl font-black tracking-tight text-slate-900">
@@ -185,9 +171,9 @@ export default function MyExpertSessionsPage() {
                           </p>
                           <span
                             className={cn(
-                              "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset",
+                              "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase ring-1 ring-inset",
                               STATUS_STYLES[s.status] ||
-                                "bg-slate-100 text-slate-600 ring-slate-200",
+                                "bg-slate-100 text-slate-600 ring-slate-200"
                             )}
                           >
                             {s.status.replace(/_/g, " ")}
@@ -198,22 +184,16 @@ export default function MyExpertSessionsPage() {
                             <>
                               <CalendarClock className="h-3.5 w-3.5 shrink-0" />
                               <span className="truncate">
-                                {formatSessionTimeWithZone(
-                                  s.scheduledAt,
-                                  s.expertTimezone,
-                                )}
+                                {formatSessionTimeWithZone(s.scheduledAt, s.expertTimezone)}
                               </span>
                             </>
                           ) : (
                             <>
                               <Clock className="h-3.5 w-3.5 shrink-0" />
-                              Booked{" "}
-                              {new Date(s.createdAt).toLocaleDateString()}
+                              Booked {new Date(s.createdAt).toLocaleDateString()}
                             </>
                           )}
-                          {s.mode
-                            ? ` · ${s.mode === "ONLINE" ? "Online" : "In-person"}`
-                            : ""}
+                          {s.mode ? ` · ${s.mode === "ONLINE" ? "Online" : "In-person"}` : ""}
                         </p>
                         {s.reviewed && s.rating && (
                           <p className="mt-1 flex items-center gap-1 text-sm font-medium text-amber-600">
@@ -227,12 +207,10 @@ export default function MyExpertSessionsPage() {
                       <span className="font-bold text-slate-900">
                         {formatInr(s.amount)}
                         {!paid && (
-                          <span className="ml-1 text-xs font-medium text-amber-600">
-                            (unpaid)
-                          </span>
+                          <span className="ml-1 text-xs font-medium text-amber-600">(unpaid)</span>
                         )}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-power-orange">
+                      <span className="text-power-orange inline-flex items-center gap-1 text-sm font-semibold">
                         {actionHint(s)}
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </span>

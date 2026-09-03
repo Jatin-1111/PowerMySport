@@ -135,7 +135,7 @@ const nameFor = (spec: IndexKeySpec): string =>
 export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Starting migration 34: add client-domain indexes (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 34: add client-domain indexes (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   for (const target of TARGETS) {
@@ -163,7 +163,7 @@ export const up = async (options: Options = {}) => {
 export const down = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Reverting migration 34 (${apply ? "APPLY" : "DRY RUN"}) — dropping these indexes...`,
+    `Reverting migration 34 (${apply ? "APPLY" : "DRY RUN"}) — dropping these indexes...`
   );
 
   for (const target of TARGETS) {

@@ -9,9 +9,7 @@ const { after, before, beforeEach, describe, it } = require("node:test");
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
-const {
-  CommunityConversation,
-} = require("../community/models/CommunityConversation");
+const { CommunityConversation } = require("../community/models/CommunityConversation");
 const { CommunityMessage } = require("../community/models/CommunityMessage");
 const { CommunityProfile } = require("../community/models/CommunityProfile");
 const { CommunityService } = require("../community/services/CommunityService");
@@ -80,7 +78,7 @@ describe("file and voice messages", () => {
           fileSize: 24_000,
           mimeType: "application/pdf",
         },
-      },
+      }
     );
 
     assert.equal(sent.type, "FILE");
@@ -102,7 +100,7 @@ describe("file and voice messages", () => {
       {
         type: "VOICE",
         metadata: { durationMs: 4200, mimeType: "audio/webm" },
-      },
+      }
     );
 
     assert.equal(sent.type, "VOICE");
@@ -114,15 +112,10 @@ describe("file and voice messages", () => {
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    await CommunityService.sendMessage(
-      a,
-      conversationId,
-      "chats/abc/files/generated-uuid.pdf",
-      {
-        type: "FILE",
-        metadata: { fileName: "form.pdf", fileSize: 100, mimeType: "application/pdf" },
-      },
-    );
+    await CommunityService.sendMessage(a, conversationId, "chats/abc/files/generated-uuid.pdf", {
+      type: "FILE",
+      metadata: { fileName: "form.pdf", fileSize: 100, mimeType: "application/pdf" },
+    });
 
     const page = await CommunityService.getMessages(b, conversationId);
     assert.equal(page.messages[0].type, "FILE");
@@ -138,27 +131,21 @@ describe("file and voice messages", () => {
       a,
       conversationId,
       "chats/abc/files/secret-object-key.pdf",
-      { type: "FILE", metadata: { fileName: "roster.pdf" } },
+      { type: "FILE", metadata: { fileName: "roster.pdf" } }
     );
     const voice = await CommunityService.sendMessage(
       a,
       conversationId,
       "chats/abc/voice/secret-voice-key.webm",
-      { type: "VOICE", metadata: { durationMs: 3000 } },
+      { type: "VOICE", metadata: { durationMs: 3000 } }
     );
 
-    const replyToFile = await CommunityService.sendMessage(
-      b,
-      conversationId,
-      "Got it",
-      { replyToId: file.id },
-    );
-    const replyToVoice = await CommunityService.sendMessage(
-      b,
-      conversationId,
-      "Listened",
-      { replyToId: voice.id },
-    );
+    const replyToFile = await CommunityService.sendMessage(b, conversationId, "Got it", {
+      replyToId: file.id,
+    });
+    const replyToVoice = await CommunityService.sendMessage(b, conversationId, "Listened", {
+      replyToId: voice.id,
+    });
 
     assert.equal(replyToFile.replyTo.content, "roster.pdf");
     assert.equal(replyToVoice.replyTo.content, "Voice message (3s)");
@@ -175,7 +162,7 @@ describe("file and voice messages", () => {
       a,
       conversationId,
       "chats/abc/files/secret-object-key.pdf",
-      { type: "FILE", metadata: { fileName: "roster.pdf" } },
+      { type: "FILE", metadata: { fileName: "roster.pdf" } }
     );
     await CommunityService.sendMessage(b, conversationId, "Got it", {
       replyToId: file.id,
@@ -185,7 +172,7 @@ describe("file and voice messages", () => {
     // need covering — a regression in one is invisible to a test of the other.
     const page = await CommunityService.getMessages(b, conversationId);
     const reply = page.messages.find(
-      (message: { replyTo?: { content: string } }) => message.replyTo,
+      (message: { replyTo?: { content: string } }) => message.replyTo
     );
     assert.equal(reply.replyTo.content, "roster.pdf");
     assert.ok(!reply.replyTo.content.includes("secret-object-key"));
@@ -196,17 +183,13 @@ describe("file and voice messages", () => {
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    await CommunityService.sendMessage(
-      a,
-      conversationId,
-      "chats/abc/files/secret-object-key.pdf",
-      { type: "FILE", metadata: { fileName: "roster.pdf" } },
-    );
+    await CommunityService.sendMessage(a, conversationId, "chats/abc/files/secret-object-key.pdf", {
+      type: "FILE",
+      metadata: { fileName: "roster.pdf" },
+    });
 
     const list = await CommunityService.listConversations(b, 1, 10);
-    const row = list.items.find(
-      (item: { id: string }) => item.id === conversationId,
-    );
+    const row = list.items.find((item: { id: string }) => item.id === conversationId);
     // Falling through to `content` here would print an S3 key in the sidebar.
     assert.equal(row.latestMessage.content, "roster.pdf");
     assert.ok(!row.latestMessage.content.includes("secret-object-key"));
@@ -217,11 +200,7 @@ describe("file and voice messages", () => {
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    const sent = await CommunityService.sendMessage(
-      a,
-      conversationId,
-      "Just a message.",
-    );
+    const sent = await CommunityService.sendMessage(a, conversationId, "Just a message.");
     assert.equal(sent.type, "TEXT");
     assert.equal(sent.metadata, null);
   });
@@ -231,8 +210,7 @@ describe("the chat attachment allowlist", () => {
   const { S3Service } = require("../shared/services/S3Service");
 
   it("rejects a content type that is not on the list", async () => {
-    process.env.AWS_S3_CHAT_BUCKET =
-      process.env.AWS_S3_CHAT_BUCKET || "test-chat-bucket";
+    process.env.AWS_S3_CHAT_BUCKET = process.env.AWS_S3_CHAT_BUCKET || "test-chat-bucket";
     const service = new S3Service();
 
     // An open allowlist here is how a chat becomes a malware channel.
@@ -241,15 +219,14 @@ describe("the chat attachment allowlist", () => {
         service.generateChatAttachmentPresignedPost(
           "conversation-1",
           "application/x-msdownload",
-          "FILE",
+          "FILE"
         ),
-      /not supported/,
+      /not supported/
     );
   });
 
   it("rejects a disguised executable even with a plausible kind", async () => {
-    process.env.AWS_S3_CHAT_BUCKET =
-      process.env.AWS_S3_CHAT_BUCKET || "test-chat-bucket";
+    process.env.AWS_S3_CHAT_BUCKET = process.env.AWS_S3_CHAT_BUCKET || "test-chat-bucket";
     const service = new S3Service();
 
     await assert.rejects(
@@ -257,9 +234,9 @@ describe("the chat attachment allowlist", () => {
         service.generateChatAttachmentPresignedPost(
           "conversation-1",
           "application/octet-stream",
-          "VOICE",
+          "VOICE"
         ),
-      /not supported/,
+      /not supported/
     );
   });
 });

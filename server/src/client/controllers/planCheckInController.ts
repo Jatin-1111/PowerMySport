@@ -13,10 +13,7 @@ const TRIAL_WEEKS = 4;
  * scorer runs in the browser), so this is the one check-in type the client
  * initiates directly rather than the server creating it as a side effect.
  */
-export const createFindSportTrialCheckIn = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createFindSportTrialCheckIn = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -36,7 +33,10 @@ export const createFindSportTrialCheckIn = async (
     }
 
     const cleanSignals = Array.isArray(signals)
-      ? signals.filter((s) => typeof s === "string").slice(0, 4).map((s) => s.slice(0, 300))
+      ? signals
+          .filter((s) => typeof s === "string")
+          .slice(0, 4)
+          .map((s) => s.slice(0, 300))
       : [];
 
     const checkInDueAt = new Date(Date.now() + TRIAL_WEEKS * 7 * 24 * 60 * 60 * 1000);
@@ -69,10 +69,7 @@ export const createFindSportTrialCheckIn = async (
  *   1. `chosenSport` on the dependent — the durable record of the decision.
  *   2. The already-scheduled trial check-in, repointed at that sport.
  */
-export const recordFindSportChoice = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const recordFindSportChoice = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -90,13 +87,16 @@ export const recordFindSportChoice = async (
     if (dependentId && mongoose.isValidObjectId(dependentId)) {
       const updated = await Player.findOneAndUpdate(
         { _id: dependentId, userId: req.user.id, type: "DEPENDENT" },
-        { $set: { chosenSport: sportName, chosenSportAt: new Date() } },
+        { $set: { chosenSport: sportName, chosenSportAt: new Date() } }
       ).lean();
       if (updated) validDependentId = dependentId;
     }
 
     const cleanSignals = Array.isArray(signals)
-      ? signals.filter((s) => typeof s === "string").slice(0, 4).map((s) => s.slice(0, 300))
+      ? signals
+          .filter((s) => typeof s === "string")
+          .slice(0, 4)
+          .map((s) => s.slice(0, 300))
       : [];
     const title = `You picked ${sportName} about ${TRIAL_WEEKS} weeks ago — how did the trial go?`;
 
@@ -132,10 +132,7 @@ export const recordFindSportChoice = async (
  * GET /plan-checkins/:id
  * Fetch a single check-in — this is what the emailed link lands on.
  */
-export const getPlanCheckIn = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPlanCheckIn = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -168,10 +165,7 @@ export const getPlanCheckIn = async (
  * GET /plan-checkins
  * Active/due check-ins for the logged-in parent (e.g. an "active plans" list).
  */
-export const listPlanCheckIns = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listPlanCheckIns = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -198,10 +192,7 @@ const RESPOND_STATUSES = ["progressing", "not_progressing", "ambiguous", "abando
  * The parent's answer to "how's it going?" — returns what the client should
  * offer next (re-diagnose, escalate to the team, try another sport, or done).
  */
-export const respondToPlanCheckIn = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const respondToPlanCheckIn = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });

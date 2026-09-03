@@ -20,36 +20,35 @@ export interface CommunityMessageReactionDocument extends Document {
  * at the same moment could lose one of the two. A row per (message, user)
  * makes the unique index the arbiter instead.
  */
-const communityMessageReactionSchema =
-  new Schema<CommunityMessageReactionDocument>(
-    {
-      messageId: {
-        type: Schema.Types.ObjectId,
-        ref: "CommunityMessage",
-        required: true,
-      },
-      conversationId: {
-        type: Schema.Types.ObjectId,
-        ref: "CommunityConversation",
-        required: true,
-        index: true,
-      },
-      userId: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-      },
-      emoji: {
-        type: String,
-        required: true,
-        trim: true,
-        // Long enough for a multi-codepoint emoji (skin tone, ZWJ sequences),
-        // short enough that this cannot become a second message body.
-        maxlength: 16,
-      },
+const communityMessageReactionSchema = new Schema<CommunityMessageReactionDocument>(
+  {
+    messageId: {
+      type: Schema.Types.ObjectId,
+      ref: "CommunityMessage",
+      required: true,
     },
-    { timestamps: true },
-  );
+    conversationId: {
+      type: Schema.Types.ObjectId,
+      ref: "CommunityConversation",
+      required: true,
+      index: true,
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    emoji: {
+      type: String,
+      required: true,
+      trim: true,
+      // Long enough for a multi-codepoint emoji (skin tone, ZWJ sequences),
+      // short enough that this cannot become a second message body.
+      maxlength: 16,
+    },
+  },
+  { timestamps: true }
+);
 
 // One reaction per person per message: reacting again replaces, never stacks.
 // Also serves the read path (every reaction on the messages of one page) —
@@ -57,13 +56,9 @@ const communityMessageReactionSchema =
 // a separate single-field index on `messageId` would be pure write overhead
 // with no read it serves that this doesn't already. Dropped in production by
 // migration 33.
-communityMessageReactionSchema.index(
-  { messageId: 1, userId: 1 },
-  { unique: true },
-);
+communityMessageReactionSchema.index({ messageId: 1, userId: 1 }, { unique: true });
 
-export const CommunityMessageReaction =
-  mongoose.model<CommunityMessageReactionDocument>(
-    "CommunityMessageReaction",
-    communityMessageReactionSchema,
-  );
+export const CommunityMessageReaction = mongoose.model<CommunityMessageReactionDocument>(
+  "CommunityMessageReaction",
+  communityMessageReactionSchema
+);

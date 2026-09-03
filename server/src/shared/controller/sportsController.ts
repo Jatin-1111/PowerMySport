@@ -7,10 +7,7 @@ const log = __rootLog.child("sports");
  * GET /api/sports
  * Get all verified sports
  */
-export const getAllSports = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAllSports = async (req: Request, res: Response): Promise<void> => {
   try {
     const sports = await sportsService.getAllSports();
     res.json({
@@ -30,10 +27,7 @@ export const getAllSports = async (
  * GET /api/sports/search?q=cricket
  * Search sports by name
  */
-export const searchSports = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const searchSports = async (req: Request, res: Response): Promise<void> => {
   try {
     const { q } = req.query;
 
@@ -66,10 +60,7 @@ export const searchSports = async (
  * Verify a custom sport using Gemini
  * Body: { sportName: string }
  */
-export const verifySport = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const verifySport = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sportName } = req.body;
 
@@ -81,9 +72,7 @@ export const verifySport = async (
       return;
     }
 
-    const verification = await sportsService.verifySportWithGemini(
-      sportName.trim(),
-    );
+    const verification = await sportsService.verifySportWithGemini(sportName.trim());
 
     res.json({
       success: true,
@@ -104,10 +93,7 @@ export const verifySport = async (
  * Body: { sportName: string }
  * Requires authentication
  */
-export const addCustomSport = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const addCustomSport = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sportName } = req.body;
     const userId = (req as any).user?.id;
@@ -129,9 +115,7 @@ export const addCustomSport = async (
     }
 
     // First verify the sport
-    const verification = await sportsService.verifySportWithGemini(
-      sportName.trim(),
-    );
+    const verification = await sportsService.verifySportWithGemini(sportName.trim());
 
     if (!verification.isValid) {
       res.status(400).json({
@@ -142,11 +126,7 @@ export const addCustomSport = async (
     }
 
     // Add the sport
-    const sport = await sportsService.addCustomSport(
-      sportName.trim(),
-      userId,
-      true,
-    );
+    const sport = await sportsService.addCustomSport(sportName.trim(), userId, true);
 
     res.json({
       success: true,

@@ -8,13 +8,7 @@ import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
 import { ChevronLeft, ChevronRight, Mail, Pencil } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { RoleTemplate } from "@/types";
 
 const formatLastLogin = (value?: string) => {
@@ -92,9 +86,7 @@ export default function AdminsManagementPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastInvitationEmail, setLastInvitationEmail] = useState<string | null>(
-    null,
-  );
+  const [lastInvitationEmail, setLastInvitationEmail] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -127,9 +119,8 @@ export default function AdminsManagementPage() {
       window.addEventListener("storage", onStoreChange);
       return () => window.removeEventListener("storage", onStoreChange);
     },
-    () =>
-      typeof window === "undefined" ? null : localStorage.getItem("admin"),
-    () => null,
+    () => (typeof window === "undefined" ? null : localStorage.getItem("admin")),
+    () => null
   );
 
   const storedAdmin = useMemo(() => {
@@ -212,9 +203,7 @@ export default function AdminsManagementPage() {
         return;
       }
 
-      toast.success(
-        "Admin created successfully. Temporary password sent to email.",
-      );
+      toast.success("Admin created successfully. Temporary password sent to email.");
       setLastInvitationEmail(form.email.trim().toLowerCase());
       setForm({
         name: "",
@@ -224,9 +213,7 @@ export default function AdminsManagementPage() {
       });
       await loadAdmins();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create admin.",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to create admin.");
     } finally {
       setSubmitting(false);
     }
@@ -259,26 +246,18 @@ export default function AdminsManagementPage() {
     setEditSaving(true);
     try {
       if (editForm.name.trim() !== editingAdmin.name) {
-        await adminApi.updateAdminProfile(
-          editingAdmin.id,
-          editForm.name.trim(),
-        );
+        await adminApi.updateAdminProfile(editingAdmin.id, editForm.name.trim());
       }
       if (editForm.role !== editingAdmin.role) {
         await adminApi.updateAdminRole(editingAdmin.id, editForm.role);
       }
-      await adminApi.updateAdminPermissions(
-        editingAdmin.id,
-        editForm.permissions,
-      );
+      await adminApi.updateAdminPermissions(editingAdmin.id, editForm.permissions);
 
       toast.success("Admin updated successfully.");
       closeEdit();
       await loadAdmins();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to update admin.",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to update admin.");
     } finally {
       setEditSaving(false);
     }
@@ -289,24 +268,17 @@ export default function AdminsManagementPage() {
 
     setStatusBusy(true);
     try {
-      const response = await adminApi.updateAdminStatus(
-        statusTarget.id,
-        !statusTarget.isActive,
-      );
+      const response = await adminApi.updateAdminStatus(statusTarget.id, !statusTarget.isActive);
       if (!response.success) {
         toast.error(response.message || "Failed to update admin status.");
         return;
       }
 
-      toast.success(
-        `Admin ${statusTarget.isActive ? "deactivated" : "activated"} successfully.`,
-      );
+      toast.success(`Admin ${statusTarget.isActive ? "deactivated" : "activated"} successfully.`);
       setStatusTarget(null);
       await loadAdmins();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to update admin status.",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to update admin status.");
     } finally {
       setStatusBusy(false);
     }
@@ -316,10 +288,7 @@ export default function AdminsManagementPage() {
     .filter((admin) => {
       const query = searchQuery.trim().toLowerCase();
       if (!query) return true;
-      return (
-        admin.name.toLowerCase().includes(query) ||
-        admin.email.toLowerCase().includes(query)
-      );
+      return admin.name.toLowerCase().includes(query) || admin.email.toLowerCase().includes(query);
     })
     .sort((left, right) => {
       if (sortBy === "name") {
@@ -341,7 +310,7 @@ export default function AdminsManagementPage() {
   const totalPages = Math.max(1, Math.ceil(visibleAdmins.length / PAGE_SIZE));
   const paginatedAdmins = visibleAdmins.slice(
     (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    currentPage * PAGE_SIZE
   );
 
   useEffect(() => {
@@ -385,11 +354,11 @@ export default function AdminsManagementPage() {
 
       {error && (
         <Card className="bg-white">
-          <div className="py-6 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
+          <div className="space-y-3 py-6 text-center">
+            <p className="font-semibold text-red-600">{error}</p>
             <button
               onClick={loadAdmins}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
             >
               Retry
             </button>
@@ -398,21 +367,18 @@ export default function AdminsManagementPage() {
       )}
 
       <Card className="bg-white">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Create Admin
-        </h2>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Create Admin</h2>
         <p className="mb-5 text-sm text-slate-600">
-          Enter name, email, and select a role with permissions. A temporary
-          password is auto-generated and sent via email. Admin must change it on
-          first login.
+          Enter name, email, and select a role with permissions. A temporary password is
+          auto-generated and sent via email. Admin must change it on first login.
         </p>
 
         <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
           <div className="flex items-start gap-2">
             <Mail className="mt-0.5 h-4 w-4 text-slate-500" />
             <p>
-              Use an active inbox. The admin receives temporary credentials at
-              this address and must reset password on first login.
+              Use an active inbox. The admin receives temporary credentials at this address and must
+              reset password on first login.
             </p>
           </div>
         </div>
@@ -420,16 +386,12 @@ export default function AdminsManagementPage() {
         <form onSubmit={handleCreateAdmin} className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Full name
-              </label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Full name</label>
               <input
                 value={form.name}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, name: event.target.value }))
-                }
+                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="Enter full name"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+                className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 transition outline-none focus:ring-2"
               />
             </div>
 
@@ -439,12 +401,10 @@ export default function AdminsManagementPage() {
               </label>
               <input
                 value={form.email}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, email: event.target.value }))
-                }
+                onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
                 placeholder="name@company.com"
                 type="email"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+                className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 transition outline-none focus:ring-2"
               />
               <p className="mt-1.5 text-xs text-slate-500">
                 Temporary credentials will be sent to this email.
@@ -457,9 +417,7 @@ export default function AdminsManagementPage() {
             selectedRole={form.role}
             selectedPermissions={form.permissions}
             onRoleChange={(role) => setForm((prev) => ({ ...prev, role }))}
-            onPermissionsChange={(permissions) =>
-              setForm((prev) => ({ ...prev, permissions }))
-            }
+            onPermissionsChange={(permissions) => setForm((prev) => ({ ...prev, permissions }))}
             disabled={submitting}
           />
 
@@ -467,7 +425,7 @@ export default function AdminsManagementPage() {
             <button
               type="submit"
               disabled={submitting || !form.role}
-              className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Creating..." : "Create Admin"}
             </button>
@@ -476,16 +434,13 @@ export default function AdminsManagementPage() {
 
         {lastInvitationEmail && (
           <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-            Invitation email sent to{" "}
-            <span className="font-semibold">{lastInvitationEmail}</span>.
+            Invitation email sent to <span className="font-semibold">{lastInvitationEmail}</span>.
           </div>
         )}
       </Card>
 
       <Card className="bg-white">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Admin Accounts
-        </h2>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Admin Accounts</h2>
         <div className="mb-4 grid gap-3 md:grid-cols-2">
           <input
             value={searchQuery}
@@ -495,9 +450,7 @@ export default function AdminsManagementPage() {
           />
           <select
             value={sortBy}
-            onChange={(event) =>
-              setSortBy(event.target.value as "role" | "name" | "email")
-            }
+            onChange={(event) => setSortBy(event.target.value as "role" | "name" | "email")}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="role">Role priority</option>
@@ -535,17 +488,13 @@ export default function AdminsManagementPage() {
               <div
                 key={admin.id}
                 className={`rounded-lg border p-4 ${
-                  admin.isActive
-                    ? "border-slate-200"
-                    : "border-red-200 bg-red-50/40"
+                  admin.isActive ? "border-slate-200" : "border-red-200 bg-red-50/40"
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-900">
-                        {admin.name}
-                      </p>
+                      <p className="font-semibold text-slate-900">{admin.name}</p>
                       {!admin.isActive && (
                         <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
                           Inactive
@@ -563,7 +512,7 @@ export default function AdminsManagementPage() {
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange">
+                    <span className="bg-power-orange/10 text-power-orange rounded-full px-3 py-1 text-xs font-semibold">
                       {admin.role}
                     </span>
                     <div className="flex items-center gap-2">
@@ -605,23 +554,21 @@ export default function AdminsManagementPage() {
                           permission.includes(":verify") ||
                           permission.includes(":approve") ||
                           permission.includes(":resolve")
-                            ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                            : "bg-slate-100 text-slate-700 border border-slate-200"
+                            ? "border border-indigo-200 bg-indigo-50 text-indigo-700"
+                            : "border border-slate-200 bg-slate-100 text-slate-700"
                         }`}
                       >
                         {formatPermissionLabel(permission)}
                       </span>
                     ))}
                     {admin.permissions.length > 8 && (
-                      <span className="rounded-full px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600">
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
                         +{admin.permissions.length - 8} more
                       </span>
                     )}
                   </div>
                 ) : (
-                  <p className="mt-3 text-xs text-slate-500">
-                    No explicit permissions assigned.
-                  </p>
+                  <p className="mt-3 text-xs text-slate-500">No explicit permissions assigned.</p>
                 )}
               </div>
             ))}
@@ -643,10 +590,7 @@ export default function AdminsManagementPage() {
                   </button>
 
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .slice(
-                      Math.max(0, currentPage - 2),
-                      Math.min(totalPages, currentPage + 1),
-                    )
+                    .slice(Math.max(0, currentPage - 2), Math.min(totalPages, currentPage + 1))
                     .map((page) => (
                       <button
                         key={page}
@@ -662,9 +606,7 @@ export default function AdminsManagementPage() {
                     ))}
 
                   <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
-                    }
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                     className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -680,16 +622,12 @@ export default function AdminsManagementPage() {
       {editingAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900">
-              Edit {editingAdmin.name}
-            </h3>
+            <h3 className="text-lg font-semibold text-slate-900">Edit {editingAdmin.name}</h3>
             <p className="mt-1 text-sm text-slate-500">{editingAdmin.email}</p>
 
             <div className="mt-4 space-y-5">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Full name
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Full name</label>
                 <input
                   value={editForm.name}
                   onChange={(event) =>
@@ -698,7 +636,7 @@ export default function AdminsManagementPage() {
                       name: event.target.value,
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
+                  className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 transition outline-none focus:ring-2"
                 />
               </div>
 
@@ -706,9 +644,7 @@ export default function AdminsManagementPage() {
                 roleTemplates={roleTemplates}
                 selectedRole={editForm.role}
                 selectedPermissions={editForm.permissions}
-                onRoleChange={(role) =>
-                  setEditForm((prev) => ({ ...prev, role }))
-                }
+                onRoleChange={(role) => setEditForm((prev) => ({ ...prev, role }))}
                 onPermissionsChange={(permissions) =>
                   setEditForm((prev) => ({ ...prev, permissions }))
                 }

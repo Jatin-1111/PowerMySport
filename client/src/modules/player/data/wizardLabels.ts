@@ -129,7 +129,7 @@ export const TEAM_INDIVIDUAL_LABELS: Record<number, string> = {
 /** Looks up a label for a possibly-undefined categorical value. Returns null if unset or unmapped. */
 export function wizardChip(
   val: string | number | undefined | null,
-  map: Record<string | number, string>,
+  map: Record<string | number, string>
 ): string | null {
   if (val === undefined || val === null) return null;
   return map[val] ?? null;

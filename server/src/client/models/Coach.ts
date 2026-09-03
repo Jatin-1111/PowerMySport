@@ -1,14 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
-import {
-  IAvailability,
-  IOwnVenueDetails,
-  ServiceMode,
-} from "../../types/index";
-import {
-  isEncryptedValue,
-  encryptValue,
-  decryptValue,
-} from "../../shared/utils/encryption";
+import { IAvailability, IOwnVenueDetails, ServiceMode } from "../../types/index";
+import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
 
 export type PayoutMethodType = "BANK_TRANSFER" | "UPI";
 
@@ -90,21 +82,14 @@ export interface CoachDocument extends Document {
 
 export interface CoachDocumentFile {
   id?: string;
-  type:
-    | "CERTIFICATION"
-    | "ID_PROOF"
-    | "ADDRESS_PROOF"
-    | "BACKGROUND_CHECK"
-    | "INSURANCE"
-    | "OTHER";
+  type: "CERTIFICATION" | "ID_PROOF" | "ADDRESS_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
   url: string;
   s3Key?: string; // S3 key for document
   fileName: string;
   uploadedAt: Date;
 }
 
-export type CoachVerificationStatus =
-  "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
+export type CoachVerificationStatus = "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
 const coachSchema = new Schema<CoachDocument>(
   {
@@ -165,9 +150,7 @@ const coachSchema = new Schema<CoachDocument>(
               // Must be an array with exactly 2 numbers
               if (!Array.isArray(v) || v.length !== 2) return false;
               // Both elements must be numbers
-              return v.every(
-                (coord) => typeof coord === "number" && !isNaN(coord),
-              );
+              return v.every((coord) => typeof coord === "number" && !isNaN(coord));
             },
             message: "Coordinates must be [longitude, latitude]",
           },
@@ -192,9 +175,7 @@ const coachSchema = new Schema<CoachDocument>(
           validator(v: any) {
             // baseLocation coordinates should always be present and valid
             if (!Array.isArray(v) || v.length !== 2) return false;
-            return v.every(
-              (coord) => typeof coord === "number" && !isNaN(coord),
-            );
+            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
           },
           message: "Coordinates must be [longitude, latitude]",
         },
@@ -220,18 +201,12 @@ const coachSchema = new Schema<CoachDocument>(
           startTime: {
             type: String,
             required: true,
-            match: [
-              /^([01]\d|2[0-3]):([0-5]\d)$/,
-              "Start time must be in HH:mm format",
-            ],
+            match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "Start time must be in HH:mm format"],
           },
           endTime: {
             type: String,
             required: true,
-            match: [
-              /^([01]\d|2[0-3]):([0-5]\d)$/,
-              "End time must be in HH:mm format",
-            ],
+            match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "End time must be in HH:mm format"],
           },
         },
       ],
@@ -250,18 +225,12 @@ const coachSchema = new Schema<CoachDocument>(
           startTime: {
             type: String,
             required: true,
-            match: [
-              /^([01]\d|2[0-3]):([0-5]\d)$/,
-              "Start time must be in HH:mm format",
-            ],
+            match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "Start time must be in HH:mm format"],
           },
           endTime: {
             type: String,
             required: true,
-            match: [
-              /^([01]\d|2[0-3]):([0-5]\d)$/,
-              "End time must be in HH:mm format",
-            ],
+            match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "End time must be in HH:mm format"],
           },
         },
       ],
@@ -439,7 +408,7 @@ const coachSchema = new Schema<CoachDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 coachSchema.pre("save", function () {

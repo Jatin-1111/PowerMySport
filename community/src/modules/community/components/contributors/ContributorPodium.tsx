@@ -6,10 +6,7 @@ import { LeaderboardItem } from "./types";
 
 const ORDINALS: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd" };
 
-const PODIUM_STYLES: Record<
-  number,
-  { height: string; bar: string; ring: string; glow: string }
-> = {
+const PODIUM_STYLES: Record<number, { height: string; bar: string; ring: string; glow: string }> = {
   1: {
     height: "h-52 sm:h-72",
     bar: "bg-gradient-to-b from-[#FDF3DC] to-[#F9E2A7]",
@@ -51,7 +48,7 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
             initial={{ opacity: 0, y: -6, rotate: -8, scale: 0.6 }}
             animate={{ opacity: 1, y: 0, rotate: -8, scale: 1 }}
             transition={{ delay: 0.35, duration: 0.35, type: "spring" }}
-            className="absolute -left-2 -top-4 text-amber-400"
+            className="absolute -top-4 -left-2 text-amber-400"
           >
             <Crown size={18} fill="currentColor" />
           </motion.div>
@@ -61,11 +58,7 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
           className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-2 sm:h-12 sm:w-12 ${style.ring}`}
         >
           {item.photoUrl ? (
-            <img
-              src={item.photoUrl}
-              alt={item.name}
-              className="h-full w-full object-cover"
-            />
+            <img src={item.photoUrl} alt={item.name} className="h-full w-full object-cover" />
           ) : (
             <span className="text-sm font-bold text-slate-400 sm:text-base">
               {item.name.charAt(0).toUpperCase()}
@@ -88,7 +81,7 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
         style={{ transformOrigin: "bottom" }}
         className={`relative mt-2 flex w-full flex-col items-center justify-end gap-2 overflow-hidden rounded-t-xl pb-4 shadow-md ${style.bar} ${style.height}`}
       >
-        <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+        <span className="text-xs font-bold tracking-wide text-slate-600 uppercase">
           {ORDINALS[item.rank] || `#${item.rank}`}
         </span>
         <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm">

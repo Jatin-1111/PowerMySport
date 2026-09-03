@@ -23,10 +23,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import type {
-  CoachEarningsSummary,
-  CoachSessionOccurrence,
-} from "@/types/coachPrograms";
+import type { CoachEarningsSummary, CoachSessionOccurrence } from "@/types/coachPrograms";
 import { CalendarPlus, Link2, Plus, Users } from "lucide-react";
 import { useState } from "react";
 
@@ -55,8 +52,8 @@ export const CoachProgrammesClient = () => {
       await refresh();
     } catch (error) {
       const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Something went wrong";
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Something went wrong";
       toast.error(message);
     } finally {
       setBusyId(null);
@@ -91,9 +88,7 @@ export const CoachProgrammesClient = () => {
   };
 
   const scheduleMakeup = (session: CoachSessionOccurrence) => {
-    const when = window.prompt(
-      "When is the makeup class? (YYYY-MM-DD HH:mm, your local time)",
-    );
+    const when = window.prompt("When is the makeup class? (YYYY-MM-DD HH:mm, your local time)");
     if (!when) return;
     const parsed = new Date(when.replace(" ", "T"));
     if (Number.isNaN(parsed.getTime())) {
@@ -121,9 +116,8 @@ export const CoachProgrammesClient = () => {
     <main className="mx-auto w-full max-w-4xl px-4 py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">My programmes</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Regular classes you run every week — one-to-one or as a batch, in
-          person or online.
+        <p className="text-muted-foreground mt-1 text-sm">
+          Regular classes you run every week — one-to-one or as a batch, in person or online.
         </p>
       </header>
 
@@ -134,9 +128,9 @@ export const CoachProgrammesClient = () => {
           <h2 id="makeups-heading" className="mb-2 font-semibold">
             Makeups you owe ({makeupsOwed.length})
           </h2>
-          <p className="mb-3 text-sm text-muted-foreground">
-            You cancelled these, so your students were not charged. Schedule a
-            replacement and their class is used then.
+          <p className="text-muted-foreground mb-3 text-sm">
+            You cancelled these, so your students were not charged. Schedule a replacement and their
+            class is used then.
           </p>
           <ul className="space-y-2">
             {makeupsOwed.map((session) => (
@@ -147,9 +141,7 @@ export const CoachProgrammesClient = () => {
                       {session.sport} · {formatSessionTime(session.scheduledAt)}
                     </p>
                     {session.cancelReason ? (
-                      <p className="text-sm text-muted-foreground">
-                        {session.cancelReason}
-                      </p>
+                      <p className="text-muted-foreground text-sm">{session.cancelReason}</p>
                     ) : null}
                   </div>
                   <Button
@@ -183,33 +175,22 @@ export const CoachProgrammesClient = () => {
                 <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium">
-                        {formatSessionTime(session.scheduledAt)}
-                      </p>
+                      <p className="font-medium">{formatSessionTime(session.scheduledAt)}</p>
                       <StatusBadge status={session.status} />
                       {session.isMakeup ? (
-                        <span className="text-xs text-muted-foreground">
-                          makeup
-                        </span>
+                        <span className="text-muted-foreground text-xs">makeup</span>
                       ) : null}
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {session.sport} · {session.roster.length} student
                       {session.roster.length === 1 ? "" : "s"}
                     </p>
-                    <ConnectionDetail
-                      delivery={session.delivery}
-                      status={session.status}
-                    />
+                    <ConnectionDetail delivery={session.delivery} status={session.status} />
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     {session.delivery?.kind === "ONLINE" ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setLink(session)}
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => setLink(session)}>
                         <Link2 className="mr-1 h-4 w-4" aria-hidden="true" />
                         {session.delivery.meetingLink ? "Change link" : "Add link"}
                       </Button>
@@ -281,15 +262,13 @@ export const CoachProgrammesClient = () => {
                       <p className="font-medium">{offering.title}</p>
                       <DeliveryBadge
                         kind={offering.deliveryKind}
-                        {...(offering.onlinePlatform
-                          ? { platform: offering.onlinePlatform }
-                          : {})}
+                        {...(offering.onlinePlatform ? { platform: offering.onlinePlatform } : {})}
                       />
-                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                      <span className="text-muted-foreground text-xs tracking-wide uppercase">
                         {offering.status}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {formatSchedule(offering.schedule, offering.timezone)}
                     </p>
                     <SeatsLabel offering={offering} />
@@ -316,9 +295,7 @@ export const CoachProgrammesClient = () => {
                         loading={busyId === offering.id}
                         onClick={() =>
                           run(offering.id, async () => {
-                            const response = await coachProgramsApi.activate(
-                              offering.id,
-                            );
+                            const response = await coachProgramsApi.activate(offering.id);
                             return `Published — ${response.data?.sessionsCreated ?? 0} classes scheduled`;
                           })
                         }
@@ -349,16 +326,11 @@ const EarningsStrip = ({ earnings }: { earnings: CoachEarningsSummary }) => {
     ["PAID", "Paid out"],
   ];
 
-  const totalGross = buckets.reduce(
-    (sum, [key]) => sum + (earnings[key]?.grossPaise ?? 0),
-    0,
-  );
+  const totalGross = buckets.reduce((sum, [key]) => sum + (earnings[key]?.grossPaise ?? 0), 0);
   const totalCommission = buckets.reduce(
     (sum, [key]) =>
-      sum +
-      (earnings[key]?.commissionPaise ?? 0) +
-      (earnings[key]?.commissionGstPaise ?? 0),
-    0,
+      sum + (earnings[key]?.commissionPaise ?? 0) + (earnings[key]?.commissionGstPaise ?? 0),
+    0
   );
 
   return (
@@ -366,13 +338,11 @@ const EarningsStrip = ({ earnings }: { earnings: CoachEarningsSummary }) => {
       <dl className="grid grid-cols-3 gap-3">
         {buckets.map(([key, label]) => (
           <Card key={key} className="p-3">
-            <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-              {label}
-            </dt>
+            <dt className="text-muted-foreground text-xs tracking-wide uppercase">{label}</dt>
             <dd className="mt-1 text-lg font-semibold">
               {formatPaise(earnings[key]?.amountPaise ?? 0)}
             </dd>
-            <dd className="text-xs text-muted-foreground">
+            <dd className="text-muted-foreground text-xs">
               {earnings[key]?.sessions ?? 0} class
               {(earnings[key]?.sessions ?? 0) === 1 ? "" : "es"}
             </dd>
@@ -389,9 +359,7 @@ const EarningsStrip = ({ earnings }: { earnings: CoachEarningsSummary }) => {
             <span>{formatPaise(totalGross)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">
-              Platform commission + GST
-            </span>
+            <span className="text-muted-foreground">Platform commission + GST</span>
             <span>− {formatPaise(totalCommission)}</span>
           </div>
           <div className="mt-1 flex items-center justify-between border-t pt-1 font-medium">

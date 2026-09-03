@@ -63,9 +63,7 @@ async function main(): Promise<void> {
   await mongoose.connect(uri);
   try {
     const collection = mongoose.connection.collection("pathwayguides");
-    const guides = await collection
-      .find({}, { projection: { sportSlug: 1, stages: 1 } })
-      .toArray();
+    const guides = await collection.find({}, { projection: { sportSlug: 1, stages: 1 } }).toArray();
 
     let changedGuides = 0;
 
@@ -90,8 +88,7 @@ async function main(): Promise<void> {
         });
 
         const primaryHref = repoint(stage.primaryAction?.href);
-        const primaryChanged =
-          stage.primaryAction && primaryHref !== stage.primaryAction.href;
+        const primaryChanged = stage.primaryAction && primaryHref !== stage.primaryAction.href;
         if (primaryChanged) repointed += 1;
 
         return {
@@ -106,15 +103,12 @@ async function main(): Promise<void> {
       if (dropped === 0 && repointed === 0) continue;
 
       console.log(
-        `  ${guide.sportSlug}: dropped ${dropped} chip(s), repointed ${repointed} link(s)`,
+        `  ${guide.sportSlug}: dropped ${dropped} chip(s), repointed ${repointed} link(s)`
       );
       changedGuides += 1;
 
       if (!dryRun) {
-        await collection.updateOne(
-          { _id: guide._id },
-          { $set: { stages: patched } },
-        );
+        await collection.updateOne({ _id: guide._id }, { $set: { stages: patched } });
       }
     }
 
@@ -124,7 +118,7 @@ async function main(): Promise<void> {
       console.log(
         dryRun
           ? `\n--dry: ${changedGuides} guide(s) would be updated, nothing written.`
-          : `\nUpdated ${changedGuides} guide(s).`,
+          : `\nUpdated ${changedGuides} guide(s).`
       );
     }
   } finally {

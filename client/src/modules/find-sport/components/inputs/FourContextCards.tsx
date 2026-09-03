@@ -16,7 +16,7 @@ export function FourContextCards({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {options.map((opt) => {
         const selected = value === opt.value;
         return (
@@ -24,26 +24,26 @@ export function FourContextCards({
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`w-full text-left rounded-2xl border-2 p-5 transition-all duration-150 active:scale-[0.98] flex flex-col ${
+            className={`flex w-full flex-col rounded-2xl border-2 p-5 text-left transition-all duration-150 active:scale-[0.98] ${
               selected
                 ? "border-power-orange bg-power-orange/5 shadow-sm"
                 : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
             }`}
           >
             <div
-              className={`w-2 h-2 rounded-full mb-3 transition-colors ${
+              className={`mb-3 h-2 w-2 rounded-full transition-colors ${
                 selected ? "bg-power-orange" : "bg-slate-300"
               }`}
             />
             <p
-              className={`font-semibold text-[15px] mb-1 leading-snug ${
+              className={`mb-1 text-[15px] leading-snug font-semibold ${
                 selected ? "text-power-orange" : "text-slate-900"
               }`}
             >
               {opt.label}
             </p>
             <p
-              className={`text-xs leading-relaxed mt-0.5 ${
+              className={`mt-0.5 text-xs leading-relaxed ${
                 selected ? "text-power-orange/70" : "text-slate-400"
               }`}
             >

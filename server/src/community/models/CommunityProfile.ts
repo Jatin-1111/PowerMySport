@@ -94,10 +94,10 @@ const communityProfileSchema = new Schema<CommunityProfileDocument>(
       website: { type: String, trim: true, maxlength: 200, default: "" },
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 export const CommunityProfile = mongoose.model<CommunityProfileDocument>(
   "CommunityProfile",
-  communityProfileSchema,
+  communityProfileSchema
 );

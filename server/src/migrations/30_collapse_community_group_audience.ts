@@ -21,7 +21,7 @@ export const up = async () => {
 
   const res = await groups.updateMany(
     { audience: { $in: ["PLAYERS_ONLY", "COACHES_ONLY"] } },
-    { $set: { audience: "ALL" } },
+    { $set: { audience: "ALL" } }
   );
   console.log(`Collapsed ${res.modifiedCount} groups' audience to ALL.`);
 
@@ -31,16 +31,14 @@ export const up = async () => {
 export const down = async () => {
   console.log("Rolling back migration: Collapse community group audience to ALL...");
   console.log(
-    "No-op: which groups were originally PLAYERS_ONLY vs COACHES_ONLY was not recorded, so this cannot be un-collapsed. A full rollback also requires reverting the accompanying code changes (the narrowed CommunityGroupAudience type/schema enum).",
+    "No-op: which groups were originally PLAYERS_ONLY vs COACHES_ONLY was not recorded, so this cannot be un-collapsed. A full rollback also requires reverting the accompanying code changes (the narrowed CommunityGroupAudience type/schema enum)."
   );
 };
 
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const rollback = process.argv.includes("--down");
 

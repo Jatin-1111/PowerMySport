@@ -9,10 +9,7 @@ import {
   recommendSport,
   diagnoseGuidance,
 } from "../controllers/guidanceController";
-import {
-  getGuidanceChat,
-  sendGuidanceChatMessage,
-} from "../controllers/guidanceChatController";
+import { getGuidanceChat, sendGuidanceChatMessage } from "../controllers/guidanceChatController";
 import { authMiddleware, optionalAuthMiddleware } from "../../middleware/auth";
 import { createRedisRateLimitStore } from "../../middleware/rateLimit";
 
@@ -24,11 +21,7 @@ const guidanceRouter = Router();
 guidanceRouter.post("/", optionalAuthMiddleware, submitGuidance);
 guidanceRouter.get("/", authMiddleware, getGuidanceHistory);
 guidanceRouter.delete("/:id", authMiddleware, deleteGuidance);
-guidanceRouter.get(
-  "/:id/report/pdf",
-  optionalAuthMiddleware,
-  downloadGuidanceReportPdf,
-);
+guidanceRouter.get("/:id/report/pdf", optionalAuthMiddleware, downloadGuidanceReportPdf);
 guidanceRouter.get("/:id/whatsapp", optionalAuthMiddleware, redirectToWhatsApp);
 
 // ── Recommend Sport ───────────────────────────────────────────────────────────
@@ -49,12 +42,7 @@ const diagnoseBurstLimiter = rateLimit({
     code: "BURST_LIMIT_REACHED",
   },
 });
-guidanceRouter.post(
-  "/diagnose",
-  optionalAuthMiddleware,
-  diagnoseBurstLimiter,
-  diagnoseGuidance,
-);
+guidanceRouter.post("/diagnose", optionalAuthMiddleware, diagnoseBurstLimiter, diagnoseGuidance);
 
 // ── Chat routes ───────────────────────────────────────────────────────────────
 // Burst limiter: 10 requests/minute per user (§10)
@@ -78,7 +66,7 @@ guidanceRouter.post(
   "/:submissionId/chat",
   authMiddleware,
   chatBurstLimiter,
-  sendGuidanceChatMessage,
+  sendGuidanceChatMessage
 );
 
 export default guidanceRouter;

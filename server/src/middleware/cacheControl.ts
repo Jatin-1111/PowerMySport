@@ -21,7 +21,7 @@ import { Request, Response, NextFunction } from "express";
  */
 export const cacheControl = (
   maxAgeSeconds: number,
-  visibility: "private" | "public" = "private",
+  visibility: "private" | "public" = "private"
 ) => {
   const header = `${visibility}, max-age=${maxAgeSeconds}`;
   return (_req: Request, res: Response, next: NextFunction) => {

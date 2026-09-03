@@ -1,10 +1,4 @@
-import {
-  COMMUNITY_BASE_URL,
-  communityUrl,
-  LOGO_URL,
-  SITE_NAME,
-  SITE_URL,
-} from "@/lib/seo";
+import { COMMUNITY_BASE_URL, communityUrl, LOGO_URL, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 type JsonLdData = Record<string, unknown>;
 
@@ -101,9 +95,7 @@ export const websiteSchema: JsonLdData = {
  * the community base; `communityUrl` builds the absolute form so no caller can
  * hardcode an origin.
  */
-export function breadcrumbSchema(
-  trail: { name: string; path: string }[],
-): JsonLdData {
+export function breadcrumbSchema(trail: { name: string; path: string }[]): JsonLdData {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",

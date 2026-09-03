@@ -28,8 +28,7 @@ export interface Product {
   isActive: boolean;
   seller?: string;
   sellerName?: string;
-  sellerType?:
-    "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
+  sellerType?: "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
   condition?: "NEW" | "USED";
   createdAt: string;
 }
@@ -104,11 +103,11 @@ export interface OrdersResponse {
   pages: number;
 }
 
-const serverBase =
-  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
-const apiBase = (
-  process.env.NEXT_PUBLIC_API_URL || `${serverBase.replace(/\/$/, "")}/api`
-).replace(/\/$/, "");
+const serverBase = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:5000";
+const apiBase = (process.env.NEXT_PUBLIC_API_URL || `${serverBase.replace(/\/$/, "")}/api`).replace(
+  /\/$/,
+  ""
+);
 
 interface ApiEnvelope<T> {
   ok: boolean;
@@ -190,8 +189,7 @@ const DEMO_PRODUCTS: Product[] = [
     id: "prod_3",
     sku: "YOGA-MAT-001",
     name: "Zenith Pro Yoga Mat",
-    description:
-      "Extra thick, non-slip premium yoga mat for serious practitioners.",
+    description: "Extra thick, non-slip premium yoga mat for serious practitioners.",
     category: "Yoga",
     images: [
       "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=800&q=80",
@@ -297,7 +295,7 @@ export async function listProducts(params?: {
     }
     if (params?.search) {
       filtered = filtered.filter((p) =>
-        p.name.toLowerCase().includes(params.search!.toLowerCase()),
+        p.name.toLowerCase().includes(params.search!.toLowerCase())
       );
     }
 
@@ -320,22 +318,19 @@ export async function getProductById(id: string): Promise<Product> {
   return apiFetch<Product>(`/v1/products/${id}`);
 }
 
-export async function getRelatedProducts(
-  id: string,
-  limit?: number,
-): Promise<Product[]> {
+export async function getRelatedProducts(id: string, limit?: number): Promise<Product[]> {
   const query = limit ? `?limit=${limit}` : "";
   return apiFetch<Product[]>(`/v1/products/${id}/related${query}`);
 }
 
 export async function addBackendCartItem(
   productVariantId: string,
-  quantity: number,
+  quantity: number
 ): Promise<Cart> {
   const response = await axios.post<ApiEnvelope<Cart>>(
     "/v1/cart/add-item",
     { productVariantId, quantity },
-    { headers: { "Idempotency-Key": crypto.randomUUID() } },
+    { headers: { "Idempotency-Key": crypto.randomUUID() } }
   );
   return response.data.data;
 }
@@ -360,9 +355,7 @@ export async function listOrders(params?: {
   limit?: number;
   status?: string;
 }): Promise<OrdersResponse> {
-  const response = await axios.get<ApiEnvelope<OrdersResponse>>(
-    `/v1/orders${toQuery(params)}`,
-  );
+  const response = await axios.get<ApiEnvelope<OrdersResponse>>(`/v1/orders${toQuery(params)}`);
   return response.data.data;
 }
 
@@ -372,9 +365,7 @@ export async function getOrderById(id: string): Promise<Order> {
 }
 
 export async function syncOrderPayment(orderId: string): Promise<Order> {
-  const response = await axios.post<ApiEnvelope<Order>>(
-    `/v1/orders/${orderId}/sync-payment`,
-  );
+  const response = await axios.post<ApiEnvelope<Order>>(`/v1/orders/${orderId}/sync-payment`);
   return response.data.data;
 }
 
@@ -390,8 +381,7 @@ export async function downloadOrderInvoice(orderId: string): Promise<Blob> {
     const data = (err as { response?: { data?: unknown } })?.response?.data;
     if (data instanceof Blob) {
       const text = await data.text().catch(() => "");
-      let message =
-        "Unable to download invoice. Please ensure the order is paid.";
+      let message = "Unable to download invoice. Please ensure the order is paid.";
       try {
         const json = JSON.parse(text) as { error?: { message?: string } };
         if (json?.error?.message) message = json.error.message;
@@ -400,36 +390,29 @@ export async function downloadOrderInvoice(orderId: string): Promise<Blob> {
       }
       throw new Error(message);
     }
-    throw new Error(
-      err instanceof Error ? err.message : "Unable to download invoice",
-    );
+    throw new Error(err instanceof Error ? err.message : "Unable to download invoice");
   }
 }
 
 export async function listSellerProducts(): Promise<Product[]> {
-  const response = await axios.get<ApiEnvelope<Product[]>>(
-    "/v1/seller/products",
-  );
+  const response = await axios.get<ApiEnvelope<Product[]>>("/v1/seller/products");
   return response.data.data;
 }
 
 export async function createSellerProduct(
-  data: Partial<Product> & { stock?: number; condition?: string },
+  data: Partial<Product> & { stock?: number; condition?: string }
 ): Promise<Product> {
-  const response = await axios.post<ApiEnvelope<Product>>(
-    "/v1/seller/products",
-    data,
-  );
+  const response = await axios.post<ApiEnvelope<Product>>("/v1/seller/products", data);
   return response.data.data;
 }
 
 export async function updateSellerProduct(
   productId: string,
-  data: Partial<Product> & { stock?: number },
+  data: Partial<Product> & { stock?: number }
 ): Promise<Product> {
   const response = await axios.patch<ApiEnvelope<Product>>(
     `/v1/seller/products/${productId}`,
-    data,
+    data
   );
   return response.data.data;
 }
@@ -447,11 +430,11 @@ export async function updateSellerOrderItemFulfillment(
   orderId: string,
   productVariantId: string,
   fulfillmentStatus: string,
-  trackingNumber?: string,
+  trackingNumber?: string
 ): Promise<Order> {
   const response = await axios.patch<ApiEnvelope<Order>>(
     `/v1/seller/orders/${orderId}/items/${productVariantId}/fulfillment`,
-    { fulfillmentStatus, trackingNumber },
+    { fulfillmentStatus, trackingNumber }
   );
   return response.data.data;
 }
@@ -485,9 +468,7 @@ export interface PincodeLocation {
  * server-cached). Returns null if it can't be resolved — callers should treat
  * that as "leave the fields for manual entry".
  */
-export async function lookupPincode(
-  pincode: string,
-): Promise<PincodeLocation | null> {
+export async function lookupPincode(pincode: string): Promise<PincodeLocation | null> {
   try {
     const response = await axios.get<{
       success: boolean;
@@ -500,13 +481,12 @@ export async function lookupPincode(
 }
 
 export async function getUserAddresses(): Promise<UserAddress[]> {
-  const response =
-    await axios.get<ApiEnvelope<UserAddress[]>>("/auth/addresses");
+  const response = await axios.get<ApiEnvelope<UserAddress[]>>("/auth/addresses");
   return response.data.data;
 }
 
 export async function addUserAddress(
-  address: Omit<UserAddress, "_id" | "createdAt" | "updatedAt">,
+  address: Omit<UserAddress, "_id" | "createdAt" | "updatedAt">
 ): Promise<{ addresses: UserAddress[]; defaultAddressId?: string }> {
   const response = await axios.post<
     ApiEnvelope<{ addresses: UserAddress[]; defaultAddressId?: string }>
@@ -516,7 +496,7 @@ export async function addUserAddress(
 
 export async function updateUserAddress(
   addressId: string,
-  address: Partial<Omit<UserAddress, "_id" | "createdAt" | "updatedAt">>,
+  address: Partial<Omit<UserAddress, "_id" | "createdAt" | "updatedAt">>
 ): Promise<{ addresses: UserAddress[]; defaultAddressId?: string }> {
   const response = await axios.put<
     ApiEnvelope<{ addresses: UserAddress[]; defaultAddressId?: string }>
@@ -525,7 +505,7 @@ export async function updateUserAddress(
 }
 
 export async function deleteUserAddress(
-  addressId: string,
+  addressId: string
 ): Promise<{ addresses: UserAddress[]; defaultAddressId?: string }> {
   const response = await axios.delete<
     ApiEnvelope<{ addresses: UserAddress[]; defaultAddressId?: string }>
@@ -534,7 +514,7 @@ export async function deleteUserAddress(
 }
 
 export async function setDefaultUserAddress(
-  addressId: string,
+  addressId: string
 ): Promise<{ addresses: UserAddress[]; defaultAddressId?: string }> {
   const response = await axios.patch<
     ApiEnvelope<{ addresses: UserAddress[]; defaultAddressId?: string }>

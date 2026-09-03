@@ -55,16 +55,16 @@ export default function FeatureWaitlist({
   };
 
   return (
-    <div className="relative flex-1 w-full overflow-hidden bg-slate-50 flex flex-col items-center justify-center font-sans py-12 -mb-12 min-h-[80vh]">
+    <div className="relative -mb-12 flex min-h-[80vh] w-full flex-1 flex-col items-center justify-center overflow-hidden bg-slate-50 py-12 font-sans">
       {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-power-orange/20 blur-[120px] mix-blend-multiply pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400/20 blur-[120px] mix-blend-multiply pointer-events-none" />
+      <div className="bg-power-orange/20 pointer-events-none absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full mix-blend-multiply blur-[120px]" />
+      <div className="pointer-events-none absolute right-[-10%] bottom-[-10%] h-[500px] w-[500px] rounded-full bg-blue-400/20 mix-blend-multiply blur-[120px]" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-3xl px-6 py-12 flex flex-col items-center text-center"
+        className="relative z-10 flex w-full max-w-3xl flex-col items-center px-6 py-12 text-center"
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
@@ -83,14 +83,9 @@ export default function FeatureWaitlist({
           {subtitle}
         </h1>
 
-        <p className="mb-10 max-w-xl text-lg text-slate-600 sm:text-xl">
-          {description}
-        </p>
+        <p className="mb-10 max-w-xl text-lg text-slate-600 sm:text-xl">{description}</p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="w-full max-w-md relative mb-12"
-        >
+        <form onSubmit={handleSubmit} className="relative mb-12 w-full max-w-md">
           <div className="relative flex items-center">
             <BellRing className="absolute left-4 text-slate-400" size={20} />
             <input
@@ -99,7 +94,7 @@ export default function FeatureWaitlist({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Get notified when we launch"
               required
-              className="w-full rounded-full border border-slate-200 bg-white/80 py-4 pl-12 pr-36 text-sm text-slate-900 shadow-sm outline-none backdrop-blur-xl transition-all focus:ring-4"
+              className="w-full rounded-full border border-slate-200 bg-white/80 py-4 pr-36 pl-12 text-sm text-slate-900 shadow-sm backdrop-blur-xl transition-all outline-none focus:ring-4"
               style={{
                 outlineColor: gradientFrom,
               }}
@@ -107,7 +102,7 @@ export default function FeatureWaitlist({
             <button
               type="submit"
               disabled={loading}
-              className={`absolute right-2 top-2 bottom-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${buttonColorClass}`}
+              className={`absolute top-2 right-2 bottom-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${buttonColorClass}`}
             >
               {loading ? "Joining..." : submitted ? "Subscribed!" : "Notify Me"}
             </button>
@@ -122,13 +117,10 @@ export default function FeatureWaitlist({
         >
           <Link
             href={backHref}
-            className="group flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm border border-slate-200 transition-all hover:shadow-md"
+            className="group flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:shadow-md"
           >
             {backLabel}
-            <ArrowRight
-              size={16}
-              className="transition-transform group-hover:translate-x-1"
-            />
+            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
           </Link>
         </motion.div>
       </motion.div>

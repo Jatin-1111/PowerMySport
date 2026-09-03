@@ -1,41 +1,133 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const srcDir = path.join(__dirname, 'src');
+const srcDir = path.join(__dirname, "src");
 
 const domainMapping = {
   client: {
-    routes: ['bookingRoutes.ts', 'venueRoutes.ts', 'venueOnboardingRoutes.ts', 'venueInquiryRoutes.ts', 'coachRoutes.ts', 'reviewRoutes.ts', 'notificationRoutes.ts', 'reminderRoutes.ts', 'refundMethodRoutes.ts', 'friendRoutes.ts', 'supportTicketRoutes.ts'],
-    controllers: ['friendController.ts', 'reminderController.ts', 'promoCodeController.ts'],
-    models: ['Booking.ts', 'BookingInvitation.ts', 'BookingPayment.ts', 'BookingSlotLock.ts', 'BookingWaitlist.ts', 'Venue.ts', 'VenueInquiry.ts', 'Coach.ts', 'CoachPlan.ts', 'CoachSubscription.ts', 'CoachSubscriptionOverrideRequest.ts', 'CoachSubscriptionPackage.ts', 'CoachSubscriptionPayment.ts', 'Notification.ts', 'ScheduledNotification.ts', 'Review.ts', 'SessionPackage.ts', 'SubscriptionPlan.ts', 'SupportTicket.ts', 'User.ts', 'FriendConnection.ts'],
-    services: ['BookingService.ts', 'VenueService.ts', 'VenueOnboardingService.ts', 'VenueInquiryService.ts', 'CoachService.ts', 'CoachSubscriptionPackageService.ts', 'CoachSubscriptionPaymentService.ts', 'CoachSubscriptionService.ts', 'NotificationService.ts', 'ScheduledNotificationService.ts', 'pushNotificationService.ts', 'ReviewService.ts', 'FriendService.ts', 'ReminderMonitoringService.ts', 'PromoCodeService.ts', 'RefundService.ts', 'DisputeService.ts'],
-    sockets: ['friendSocket.ts', 'notificationSocket.ts']
+    routes: [
+      "bookingRoutes.ts",
+      "venueRoutes.ts",
+      "venueOnboardingRoutes.ts",
+      "venueInquiryRoutes.ts",
+      "coachRoutes.ts",
+      "reviewRoutes.ts",
+      "notificationRoutes.ts",
+      "reminderRoutes.ts",
+      "refundMethodRoutes.ts",
+      "friendRoutes.ts",
+      "supportTicketRoutes.ts",
+    ],
+    controllers: ["friendController.ts", "reminderController.ts", "promoCodeController.ts"],
+    models: [
+      "Booking.ts",
+      "BookingInvitation.ts",
+      "BookingPayment.ts",
+      "BookingSlotLock.ts",
+      "BookingWaitlist.ts",
+      "Venue.ts",
+      "VenueInquiry.ts",
+      "Coach.ts",
+      "CoachPlan.ts",
+      "CoachSubscription.ts",
+      "CoachSubscriptionOverrideRequest.ts",
+      "CoachSubscriptionPackage.ts",
+      "CoachSubscriptionPayment.ts",
+      "Notification.ts",
+      "ScheduledNotification.ts",
+      "Review.ts",
+      "SessionPackage.ts",
+      "SubscriptionPlan.ts",
+      "SupportTicket.ts",
+      "User.ts",
+      "FriendConnection.ts",
+    ],
+    services: [
+      "BookingService.ts",
+      "VenueService.ts",
+      "VenueOnboardingService.ts",
+      "VenueInquiryService.ts",
+      "CoachService.ts",
+      "CoachSubscriptionPackageService.ts",
+      "CoachSubscriptionPaymentService.ts",
+      "CoachSubscriptionService.ts",
+      "NotificationService.ts",
+      "ScheduledNotificationService.ts",
+      "pushNotificationService.ts",
+      "ReviewService.ts",
+      "FriendService.ts",
+      "ReminderMonitoringService.ts",
+      "PromoCodeService.ts",
+      "RefundService.ts",
+      "DisputeService.ts",
+    ],
+    sockets: ["friendSocket.ts", "notificationSocket.ts"],
   },
   community: {
-    routes: ['communityRoutes.ts'],
-    controllers: ['communityController.ts'],
-    models: ['CommunityAnswer.ts', 'CommunityConversation.ts', 'CommunityGroup.ts', 'CommunityMessage.ts', 'CommunityPost.ts', 'CommunityProfile.ts', 'CommunityReport.ts', 'CommunityReputation.ts', 'CommunityVote.ts'],
-    services: ['CommunityService.ts', 'CommunityRealtimeService.ts', 'communityPolicy.ts', 'communityQnaUtils.ts'],
-    sockets: ['communitySocket.ts']
+    routes: ["communityRoutes.ts"],
+    controllers: ["communityController.ts"],
+    models: [
+      "CommunityAnswer.ts",
+      "CommunityConversation.ts",
+      "CommunityGroup.ts",
+      "CommunityMessage.ts",
+      "CommunityPost.ts",
+      "CommunityProfile.ts",
+      "CommunityReport.ts",
+      "CommunityReputation.ts",
+      "CommunityVote.ts",
+    ],
+    services: [
+      "CommunityService.ts",
+      "CommunityRealtimeService.ts",
+      "communityPolicy.ts",
+      "communityQnaUtils.ts",
+    ],
+    sockets: ["communitySocket.ts"],
   },
   admin: {
-    routes: ['adminRoutes.ts', 'statsRoutes.ts', 'payoutRoutes.ts', 'payoutMethodsRoutes.ts', 'academyOnboardingRoutes.ts'],
-    controllers: ['adminController.ts', 'adminPayoutController.ts', 'payoutController.ts', 'payoutMethodsController.ts', 'statsController.ts'],
-    models: ['Admin.ts', 'Academy.ts', 'AnalyticsEvent.ts'],
-    services: ['AdminService.ts', 'AcademyOnboardingService.ts', 'AnalyticsService.ts']
+    routes: [
+      "adminRoutes.ts",
+      "statsRoutes.ts",
+      "payoutRoutes.ts",
+      "payoutMethodsRoutes.ts",
+      "academyOnboardingRoutes.ts",
+    ],
+    controllers: [
+      "adminController.ts",
+      "adminPayoutController.ts",
+      "payoutController.ts",
+      "payoutMethodsController.ts",
+      "statsController.ts",
+    ],
+    models: ["Admin.ts", "Academy.ts", "AnalyticsEvent.ts"],
+    services: ["AdminService.ts", "AcademyOnboardingService.ts", "AnalyticsService.ts"],
   },
   shop: {
-    routes: ['ecommerceRoutes.ts'],
-    controllers: ['EcommerceController.ts'],
-    models: ['Ecommerce.ts'],
-    services: ['EcommerceService.ts']
+    routes: ["ecommerceRoutes.ts"],
+    controllers: ["EcommerceController.ts"],
+    models: ["Ecommerce.ts"],
+    services: ["EcommerceService.ts"],
   },
   shared: {
-    routes: ['phonepeWebhook.ts'], 
-    controllers: ['WebhookController.ts', 'emailVerificationController.ts'],
-    models: ['OutboxMessage.ts', 'PaymentWebhookEvent.ts', 'RateLimit.ts', 'Sport.ts', 'EmailVerification.ts'],
-    services: ['OutboxService.ts', 'PaymentService.ts', 'PhonePeService.ts', 'S3Service.ts', 'UserPresenceService.ts', 'EmailVerificationService.ts']
-  }
+    routes: ["phonepeWebhook.ts"],
+    controllers: ["WebhookController.ts", "emailVerificationController.ts"],
+    models: [
+      "OutboxMessage.ts",
+      "PaymentWebhookEvent.ts",
+      "RateLimit.ts",
+      "Sport.ts",
+      "EmailVerification.ts",
+    ],
+    services: [
+      "OutboxService.ts",
+      "PaymentService.ts",
+      "PhonePeService.ts",
+      "S3Service.ts",
+      "UserPresenceService.ts",
+      "EmailVerificationService.ts",
+    ],
+  },
 };
 
 // Phase 1: Determine new paths without moving them yet
@@ -43,7 +135,7 @@ const domainMapping = {
 const fileDestinations = {}; // oldAbsolutePath -> newAbsolutePath
 
 function walkDir(dir, callback) {
-  fs.readdirSync(dir).forEach(f => {
+  fs.readdirSync(dir).forEach((f) => {
     let dirPath = path.join(dir, f);
     let isDirectory = fs.statSync(dirPath).isDirectory();
     isDirectory ? walkDir(dirPath, callback) : callback(dirPath);
@@ -52,7 +144,7 @@ function walkDir(dir, callback) {
 
 const allFiles = [];
 walkDir(srcDir, (filePath) => {
-  if (filePath.endsWith('.ts')) {
+  if (filePath.endsWith(".ts")) {
     allFiles.push(filePath);
     fileDestinations[filePath] = filePath; // Default: no move
   }
@@ -77,30 +169,30 @@ for (const [domain, folders] of Object.entries(domainMapping)) {
 console.log("Analyzing and updating files...");
 
 function resolveImport(currentFileOldPath, currentFileNewPath, importPath) {
-  if (!importPath.startsWith('.')) return importPath; // Not a relative import
+  if (!importPath.startsWith(".")) return importPath; // Not a relative import
 
   const oldTargetAbsDir = path.dirname(currentFileOldPath);
   let targetOldPathBase = path.resolve(oldTargetAbsDir, importPath);
-  
+
   // The import might not have an extension. Let's find the matching file.
   let targetFileOldPath = targetOldPathBase;
-  if (fs.existsSync(targetOldPathBase + '.ts')) {
-    targetFileOldPath = targetOldPathBase + '.ts';
-  } else if (fs.existsSync(path.join(targetOldPathBase, 'index.ts'))) {
-    targetFileOldPath = path.join(targetOldPathBase, 'index.ts');
+  if (fs.existsSync(targetOldPathBase + ".ts")) {
+    targetFileOldPath = targetOldPathBase + ".ts";
+  } else if (fs.existsSync(path.join(targetOldPathBase, "index.ts"))) {
+    targetFileOldPath = path.join(targetOldPathBase, "index.ts");
   } else {
     // maybe it's a directory or a missing file, just try to map it using the base
     // If we can't find it exactly, we assume it moved based on its prefix? No, it's safer to just check if the .ts exists.
-    // What if it's a type import like `../types/User`? 
+    // What if it's a type import like `../types/User`?
     // We can just iterate fileDestinations keys and see if they match the base without extension.
   }
 
   // Find the exact old path key in our mapping
   const possibleKeys = [
-    targetOldPathBase + '.ts',
-    targetOldPathBase + '.d.ts',
-    path.join(targetOldPathBase, 'index.ts'),
-    targetOldPathBase // maybe it's a directory import that wasn't moved, or we'll just handle it as a prefix
+    targetOldPathBase + ".ts",
+    targetOldPathBase + ".d.ts",
+    path.join(targetOldPathBase, "index.ts"),
+    targetOldPathBase, // maybe it's a directory import that wasn't moved, or we'll just handle it as a prefix
   ];
 
   let targetNewPath = null;
@@ -113,24 +205,24 @@ function resolveImport(currentFileOldPath, currentFileNewPath, importPath) {
 
   // If we couldn't find an exact file, maybe it's a directory that didn't move
   if (!targetNewPath) {
-    targetNewPath = targetOldPathBase; 
+    targetNewPath = targetOldPathBase;
   } else {
     // targetNewPath is the new absolute path of the file.
     // We need to strip the extension if the original didn't have one
-    targetNewPath = targetNewPath.replace(/\.d\.ts$/, '').replace(/\.ts$/, '');
-    if (importPath.endsWith('/index')) {
-      targetNewPath = targetNewPath.replace(/[\\/]index$/, '');
+    targetNewPath = targetNewPath.replace(/\.d\.ts$/, "").replace(/\.ts$/, "");
+    if (importPath.endsWith("/index")) {
+      targetNewPath = targetNewPath.replace(/[\\/]index$/, "");
     }
   }
 
   // Calculate new relative path
   const newCurrentDir = path.dirname(currentFileNewPath);
-  let newRelativePath = path.relative(newCurrentDir, targetNewPath).replace(/\\/g, '/');
-  
-  if (!newRelativePath.startsWith('.')) {
-    newRelativePath = './' + newRelativePath;
+  let newRelativePath = path.relative(newCurrentDir, targetNewPath).replace(/\\/g, "/");
+
+  if (!newRelativePath.startsWith(".")) {
+    newRelativePath = "./" + newRelativePath;
   }
-  
+
   return newRelativePath;
 }
 
@@ -138,13 +230,13 @@ const fileContents = {};
 
 // Phase 2: Read and replace in memory
 for (const [oldPath, newPath] of Object.entries(fileDestinations)) {
-  let content = fs.readFileSync(oldPath, 'utf-8');
-  
+  let content = fs.readFileSync(oldPath, "utf-8");
+
   // Replace imports: import { X } from '../y';
   content = content.replace(/(from\s+['"])(.*?)(['"])/g, (match, p1, p2, p3) => {
     return p1 + resolveImport(oldPath, newPath, p2) + p3;
   });
-  
+
   // Replace imports: import '../y';
   content = content.replace(/(import\s+['"])(.*?)(['"])/g, (match, p1, p2, p3) => {
     return p1 + resolveImport(oldPath, newPath, p2) + p3;
@@ -183,7 +275,7 @@ for (const [oldPath, newPath] of Object.entries(fileDestinations)) {
     fs.mkdirSync(dir, { recursive: true });
   }
   fs.writeFileSync(newPath, fileContents[newPath]);
-  
+
   // delete old file if it was moved
   if (oldPath !== newPath && fs.existsSync(oldPath)) {
     fs.unlinkSync(oldPath);

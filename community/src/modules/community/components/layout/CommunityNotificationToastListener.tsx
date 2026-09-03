@@ -53,10 +53,7 @@ export default function CommunityNotificationToastListener() {
 
       // Suppress toast if we are already viewing this conversation/group in the UI
       const activeConversation = searchParams?.get("conversation");
-      if (
-        activeConversation &&
-        payload.data?.conversationId === activeConversation
-      ) {
+      if (activeConversation && payload.data?.conversationId === activeConversation) {
         return;
       }
 

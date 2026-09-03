@@ -1,32 +1,29 @@
 "use client";
 
 import { getCommunityAppUrl } from "@/lib/community/url";
-import {
-    ActiveFilter,
-    FilterBar,
-} from "@/modules/discovery/components/FilterBar";
+import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBar";
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import { OnboardingAcademy } from "@/modules/onboarding/types/academy";
 import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
 import {
-    ArrowRight,
-    BadgeCheck,
-    Bath,
-    Bookmark,
-    Building2,
-    Car,
-    ChevronLeft,
-    ChevronRight,
-    Coffee,
-    Droplets,
-    Dumbbell,
-    HeartPulse,
-    MapPin,
-    MessageCircle,
-    Star,
-    Users,
+  ArrowRight,
+  BadgeCheck,
+  Bath,
+  Bookmark,
+  Building2,
+  Car,
+  ChevronLeft,
+  ChevronRight,
+  Coffee,
+  Droplets,
+  Dumbbell,
+  HeartPulse,
+  MapPin,
+  MessageCircle,
+  Star,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -101,9 +98,7 @@ const isVerifiedAcademy = (academy: AcademyCard) => {
 const academyMatchesAgeGroup = (academy: AcademyCard, ageGroup: string) => {
   if (!ageGroup) return true;
   if (!academy.ageGroups || academy.ageGroups.length === 0) return true;
-  return academy.ageGroups.includes(
-    ageGroup as "kids" | "teens" | "adults" | "all",
-  );
+  return academy.ageGroups.includes(ageGroup as "kids" | "teens" | "adults" | "all");
 };
 
 export default function AcademiesTab() {
@@ -134,13 +129,11 @@ export default function AcademiesTab() {
           q: cityFilter || sportFilter || undefined,
         },
       }),
-    [cityFilter, sportFilter],
+    [cityFilter, sportFilter]
   );
 
   useEffect(() => {
-    const followed = clientFollowStore
-      .getByKind("academy")
-      .map((item) => item.id);
+    const followed = clientFollowStore.getByKind("academy").map((item) => item.id);
     setFollowedAcademyIds(followed);
   }, []);
 
@@ -151,14 +144,10 @@ export default function AcademiesTab() {
   const loadAcademies = async (page: number) => {
     setLoading(true);
     try {
-      const response = await academyOnboardingApi.listApprovedAcademies(
-        page,
-        12,
-        {
-          city: cityFilter || undefined,
-          sport: sportFilter || undefined,
-        },
-      );
+      const response = await academyOnboardingApi.listApprovedAcademies(page, 12, {
+        city: cityFilter || undefined,
+        sport: sportFilter || undefined,
+      });
       const payload = response.data;
       const apiAcademies = (payload?.academies || []) as AcademyCard[];
       const pagination = payload?.pagination;
@@ -181,40 +170,20 @@ export default function AcademiesTab() {
       const rupees = toRupees(academy.sessionRatePerHour);
       if (verifiedOnly && !isVerifiedAcademy(academy)) return false;
       if (!academyMatchesAgeGroup(academy, ageGroupFilter)) return false;
-      if (
-        parsedMin !== undefined &&
-        !isNaN(parsedMin) &&
-        (rupees ?? 0) < parsedMin
-      )
-        return false;
-      if (
-        parsedMax !== undefined &&
-        !isNaN(parsedMax) &&
-        (rupees ?? 0) > parsedMax
-      )
-        return false;
+      if (parsedMin !== undefined && !isNaN(parsedMin) && (rupees ?? 0) < parsedMin) return false;
+      if (parsedMax !== undefined && !isNaN(parsedMax) && (rupees ?? 0) > parsedMax) return false;
 
       if (selectedAmenities.length > 0) {
         const acAmenities = (academy as any).amenities || [];
         const hasAllAmenities = selectedAmenities.every((a) =>
-          acAmenities.some((va: string) =>
-            va.toLowerCase().includes(a.toLowerCase()),
-          ),
+          acAmenities.some((va: string) => va.toLowerCase().includes(a.toLowerCase()))
         );
         if (!hasAllAmenities) return false;
       }
 
       return true;
     });
-  }, [
-    academies,
-    ageGroupFilter,
-    minPrice,
-    maxPrice,
-    verifiedOnly,
-    selectedAmenities,
-  ]);
-
+  }, [academies, ageGroupFilter, minPrice, maxPrice, verifiedOnly, selectedAmenities]);
 
   const handleApplySearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,8 +243,7 @@ export default function AcademiesTab() {
     activeFilters.push({
       id: `amenity-${am}`,
       label: am,
-      onRemove: () =>
-        setSelectedAmenities((prev) => prev.filter((a) => a !== am)),
+      onRemove: () => setSelectedAmenities((prev) => prev.filter((a) => a !== am)),
       badgeClassName: "bg-indigo-50 border-indigo-100 text-indigo-700",
       iconClassName: "hover:text-blue-900",
     });
@@ -299,16 +267,14 @@ export default function AcademiesTab() {
       >
         {/* Sport */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Sport
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Sport</label>
           <select
             value={sportFilter}
             onChange={(e) => {
               setSportFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+            className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
           >
             <option value="">All Sports</option>
             {SPORT_OPTIONS.map((sport) => (
@@ -321,9 +287,7 @@ export default function AcademiesTab() {
 
         {/* Age Group */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Age Group
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Age Group</label>
           <div className="grid grid-cols-2 gap-2">
             {AGE_GROUP_OPTIONS.slice(1).map((opt) => (
               <button
@@ -333,8 +297,8 @@ export default function AcademiesTab() {
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   ageGroupFilter === opt.value
-                    ? "border-power-orange bg-orange-50 text-power-orange"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-power-orange text-power-orange bg-orange-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -345,12 +309,10 @@ export default function AcademiesTab() {
 
         {/* Price range */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Price Range (₹/hr)
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Price Range (₹/hr)</label>
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+              <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
                 ₹
               </span>
               <input
@@ -359,12 +321,12 @@ export default function AcademiesTab() {
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
                 placeholder="Min"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
               />
             </div>
-            <div className="h-0.5 w-4 bg-slate-300 rounded-full" />
+            <div className="h-0.5 w-4 rounded-full bg-slate-300" />
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+              <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
                 ₹
               </span>
               <input
@@ -373,7 +335,7 @@ export default function AcademiesTab() {
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 placeholder="Max"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
               />
             </div>
           </div>
@@ -381,9 +343,7 @@ export default function AcademiesTab() {
 
         {/* Amenities */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Facilities
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Facilities</label>
           <div className="grid grid-cols-2 gap-2">
             {AMENITIES_OPTIONS.map((amenity) => {
               const isSelected = selectedAmenities.includes(amenity.id);
@@ -393,16 +353,14 @@ export default function AcademiesTab() {
                   type="button"
                   onClick={() => {
                     setSelectedAmenities((prev) =>
-                      isSelected
-                        ? prev.filter((a) => a !== amenity.id)
-                        : [...prev, amenity.id],
+                      isSelected ? prev.filter((a) => a !== amenity.id) : [...prev, amenity.id]
                     );
                   }}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border py-2.5 px-3 text-left text-sm font-semibold transition-all",
+                    "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-all",
                     isSelected
                       ? "border-indigo-300 bg-indigo-50 text-indigo-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                   )}
                 >
                   <amenity.icon size={16} />
@@ -415,42 +373,34 @@ export default function AcademiesTab() {
 
         {/* Verified toggle */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Trust
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Trust</label>
           <button
             type="button"
             onClick={() => setVerifiedOnly((v) => !v)}
             className={cn(
-              "w-full flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
+              "flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
               verifiedOnly
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
             )}
           >
-            {verifiedOnly && (
-              <BadgeCheck size={18} className="text-emerald-600" />
-            )}
+            {verifiedOnly && <BadgeCheck size={18} className="text-emerald-600" />}
             {verifiedOnly ? "Verified Academies Only" : "Show All Academies"}
           </button>
         </div>
       </FilterBar>
 
       {/* ── Content ─────────────────────────────────────────────── */}
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-8xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
-            <p className="text-sm font-medium text-slate-500">
-              Loading academies…
-            </p>
+          <div className="flex flex-col items-center justify-center gap-3 py-24">
+            <div className="border-t-power-orange h-10 w-10 animate-spin rounded-full border-2 border-slate-100" />
+            <p className="text-sm font-medium text-slate-500">Loading academies…</p>
           </div>
         ) : displayedAcademies.length === 0 ? (
           <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center">
             <Users size={40} className="mx-auto mb-3 text-slate-200" />
-            <h3 className="text-lg font-bold text-slate-900">
-              No academies match this filter
-            </h3>
+            <h3 className="text-lg font-bold text-slate-900">No academies match this filter</h3>
             <p className="mt-1 text-sm text-slate-500">
               Try changing city, sport, or pricing filters.
             </p>
@@ -477,8 +427,7 @@ export default function AcademiesTab() {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {displayedAcademies.map((academy) => {
                 const coverImage =
-                  normalizeImageUrl(academy.coverPhotoUrl) ||
-                  normalizeImageUrl(academy.logoUrl);
+                  normalizeImageUrl(academy.coverPhotoUrl) || normalizeImageUrl(academy.logoUrl);
                 const rupees = toRupees(academy.sessionRatePerHour);
                 const detailsHref = academy.slug
                   ? `/academies/${academy.slug}`
@@ -498,9 +447,7 @@ export default function AcademiesTab() {
                     href: detailsHref,
                   });
                   setFollowedAcademyIds(
-                    clientFollowStore
-                      .getByKind("academy")
-                      .map((item) => item.id),
+                    clientFollowStore.getByKind("academy").map((item) => item.id)
                   );
                 };
 
@@ -528,19 +475,14 @@ export default function AcademiesTab() {
                         type="button"
                         onClick={onToggleFollow}
                         className={cn(
-                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
+                          "absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
                           isFollowed
-                            ? "border-white bg-white text-power-orange"
-                            : "border-white/20 bg-black/20 text-white hover:bg-black/40",
+                            ? "text-power-orange border-white bg-white"
+                            : "border-white/20 bg-black/20 text-white hover:bg-black/40"
                         )}
-                        aria-label={
-                          isFollowed ? "Unsave academy" : "Save academy"
-                        }
+                        aria-label={isFollowed ? "Unsave academy" : "Save academy"}
                       >
-                        <Bookmark
-                          size={14}
-                          className={isFollowed ? "fill-current" : ""}
-                        />
+                        <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
                       </button>
                     </div>
 
@@ -551,10 +493,7 @@ export default function AcademiesTab() {
                       </h3>
 
                       <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-                        <MapPin
-                          size={14}
-                          className="mt-0.5 shrink-0 text-slate-400"
-                        />
+                        <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
                         <span className="line-clamp-1">
                           {academy.city || "Location unavailable"}
                         </span>
@@ -564,15 +503,12 @@ export default function AcademiesTab() {
                       <div className="mt-4 flex flex-wrap items-center gap-1.5">
                         {typeof academy.rating === "number" && (
                           <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
-                            <Star
-                              size={12}
-                              className="fill-yellow-400 text-yellow-400"
-                            />
+                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
                             {academy.rating.toFixed(1)}
                           </span>
                         )}
                         {verified && (
-                          <span className="flex items-center gap-1 rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-100/50">
+                          <span className="flex items-center gap-1 rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-emerald-100/50 ring-inset">
                             <BadgeCheck size={12} />
                             Verified
                           </span>
@@ -589,12 +525,8 @@ export default function AcademiesTab() {
                         <div>
                           {typeof rupees === "number" ? (
                             <>
-                              <span className="text-xl font-black text-slate-900">
-                                ₹{rupees}
-                              </span>
-                              <span className="ml-1 text-sm font-medium text-slate-500">
-                                /hr
-                              </span>
+                              <span className="text-xl font-black text-slate-900">₹{rupees}</span>
+                              <span className="ml-1 text-sm font-medium text-slate-500">/hr</span>
                             </>
                           ) : (
                             <span className="text-sm font-bold text-slate-500">
@@ -608,7 +540,7 @@ export default function AcademiesTab() {
                             e.stopPropagation();
                             router.push(detailsHref);
                           }}
-                          className="flex items-center gap-1.5 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
+                          className="bg-power-orange flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
                         >
                           View <ArrowRight size={14} />
                         </button>
@@ -635,8 +567,7 @@ export default function AcademiesTab() {
                     let pageNum: number;
                     if (totalPages <= 5) pageNum = i + 1;
                     else if (currentPage <= 3) pageNum = i + 1;
-                    else if (currentPage >= totalPages - 2)
-                      pageNum = totalPages - 4 + i;
+                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
                     else pageNum = currentPage - 2 + i;
                     return (
                       <button
@@ -647,8 +578,8 @@ export default function AcademiesTab() {
                           "h-9 min-w-9 rounded-lg px-3 text-sm font-medium transition-all",
                           currentPage === pageNum
                             ? "bg-power-orange text-white shadow"
-                            : "border border-slate-200 bg-white text-slate-700 hover:border-power-orange hover:text-power-orange",
-                          loading ? "opacity-50 cursor-not-allowed" : "",
+                            : "hover:border-power-orange hover:text-power-orange border border-slate-200 bg-white text-slate-700",
+                          loading ? "cursor-not-allowed opacity-50" : ""
                         )}
                       >
                         {pageNum}
@@ -659,9 +590,7 @@ export default function AcademiesTab() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages || loading}
                 >
                   Next
@@ -672,9 +601,8 @@ export default function AcademiesTab() {
 
             {totalAcademies > 0 && (
               <p className="mt-4 text-center text-xs text-slate-500">
-                Showing {(currentPage - 1) * 12 + 1}–
-                {Math.min(currentPage * 12, totalAcademies)} of {totalAcademies}{" "}
-                academies
+                Showing {(currentPage - 1) * 12 + 1}–{Math.min(currentPage * 12, totalAcademies)} of{" "}
+                {totalAcademies} academies
               </p>
             )}
           </>

@@ -50,7 +50,7 @@ export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
 
   console.log(
-    `Starting migration 24: backfill ranking insights (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 24: backfill ranking insights (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   const filter: Record<string, unknown> = { status: "published" };
@@ -104,7 +104,7 @@ export const up = async (options: Options = {}) => {
       `    ${result.asOnDate}  ${String(result.rowCount).padStart(5)} rows  ` +
         `${String(result.entriesChanged).padStart(5)} changed  ` +
         `vs ${result.comparedTo ?? "—".padEnd(10)}  ` +
-        `${result.benchmarkCount} tiers, ${result.stateCount} states, ${result.bandCount} bands`,
+        `${result.benchmarkCount} tiers, ${result.stateCount} states, ${result.bandCount} bands`
     );
   }
 
@@ -112,11 +112,13 @@ export const up = async (options: Options = {}) => {
   console.log("-".repeat(72));
   console.log(`Snapshots processed : ${processed}`);
   console.log(`Rows examined       : ${rows.toLocaleString("en-IN")}`);
-  console.log(`Rows ${apply ? "written       " : "needing a write"}: ${changed.toLocaleString("en-IN")}`);
+  console.log(
+    `Rows ${apply ? "written       " : "needing a write"}: ${changed.toLocaleString("en-IN")}`
+  );
   for (const [combo, tally] of [...perCombo.entries()].sort()) {
     console.log(
       `  ${combo.padEnd(16)} ${String(tally.snapshots).padStart(4)} snapshots, ` +
-        `${tally.changed.toLocaleString("en-IN")} rows`,
+        `${tally.changed.toLocaleString("en-IN")} rows`
     );
   }
   console.log("-".repeat(72));
@@ -154,7 +156,9 @@ export const down = async (options: Options = {}) => {
 
   const entries = await RankingEntry.countDocuments(entryFilter);
   const snapshots = await RankingSnapshot.countDocuments(snapshotFilter);
-  console.log(`${entries.toLocaleString("en-IN")} entr(ies) and ${snapshots} snapshot(s) carry derived fields.`);
+  console.log(
+    `${entries.toLocaleString("en-IN")} entr(ies) and ${snapshots} snapshot(s) carry derived fields.`
+  );
 
   if (apply) {
     const entryResult = await RankingEntry.collection.updateMany(entryFilter, {
@@ -165,11 +169,11 @@ export const down = async (options: Options = {}) => {
     });
     console.log(
       `Cleared ${entryResult.modifiedCount.toLocaleString("en-IN")} entr(ies) and ` +
-        `${snapshotResult.modifiedCount} snapshot(s).`,
+        `${snapshotResult.modifiedCount} snapshot(s).`
     );
     console.log(
       "Note: the ingest pipeline recomputes these on every publish, so new lists " +
-        "will carry them again. A full rollback also means reverting the service.",
+        "will carry them again. A full rollback also means reverting the service."
     );
   } else {
     console.log("Dry run — nothing was written.");
@@ -185,9 +189,7 @@ function toIsoDate(value: Date | string): string {
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const argOf = (name: string): string | undefined =>
     process.argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];

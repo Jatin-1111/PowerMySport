@@ -41,7 +41,7 @@ export function CommunityInsightsCard({
   return (
     <Card className="premium-shadow rounded-3xl border border-slate-200/70 bg-white/92 p-5 backdrop-blur-sm">
       <div className="flex items-start gap-3">
-        <span className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 shrink-0 text-power-orange">
+        <span className="text-power-orange mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100">
           <MessageCircle size={18} />
         </span>
         <div className="min-w-0 flex-1">
@@ -58,7 +58,7 @@ export function CommunityInsightsCard({
             target="_blank"
             rel="noreferrer"
             onClick={handleOpenCommunity}
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-power-orange hover:text-orange-700"
+            className="text-power-orange mt-3 inline-flex items-center gap-1.5 text-sm font-semibold hover:text-orange-700"
           >
             Open Community
             <ArrowRight size={16} />

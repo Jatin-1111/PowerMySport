@@ -4,11 +4,7 @@ import api from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { useEffect, useRef, useState } from "react";
 import { buildLevelPlanQuestion, initialForm } from "../constants";
-import type {
-    GuidanceFormState,
-    GuidanceSubmission,
-    PlayerProfile,
-} from "../types";
+import type { GuidanceFormState, GuidanceSubmission, PlayerProfile } from "../types";
 
 export function useGuidanceForm({
   initialSport,
@@ -22,8 +18,7 @@ export function useGuidanceForm({
   initialState?: string;
 } = {}) {
   const isLevelPlan = !!initialSport && !!initialLevel;
-  const levelLabel =
-    initialLevelLabel || (initialLevel ? `Level ${initialLevel}` : "");
+  const levelLabel = initialLevelLabel || (initialLevel ? `Level ${initialLevel}` : "");
 
   // NOTE: current_pathway_level intentionally does NOT default to initialLevel
   // here. initialLevel is "which level's plan/roadmap page the parent is
@@ -41,11 +36,7 @@ export function useGuidanceForm({
       ...(initialState ? { location: initialState } : {}),
     };
     if (isLevelPlan) {
-      base.parent_specific_question = buildLevelPlanQuestion(
-        initialSport!,
-        levelLabel,
-        false,
-      );
+      base.parent_specific_question = buildLevelPlanQuestion(initialSport!, levelLabel, false);
     }
     return base;
   };
@@ -55,19 +46,13 @@ export function useGuidanceForm({
   // Tracks the last auto-generated level-plan question so the toggle-driven
   // regeneration below never clobbers text the parent has since hand-edited.
   const lastAutoQuestion = useRef<string | null>(
-    isLevelPlan
-      ? buildLevelPlanQuestion(initialSport!, levelLabel, false)
-      : null,
+    isLevelPlan ? buildLevelPlanQuestion(initialSport!, levelLabel, false) : null
   );
 
   useEffect(() => {
     if (!isLevelPlan) return;
     const alreadyAtLevel = form.current_pathway_level === initialLevel;
-    const next = buildLevelPlanQuestion(
-      initialSport!,
-      levelLabel,
-      alreadyAtLevel,
-    );
+    const next = buildLevelPlanQuestion(initialSport!, levelLabel, alreadyAtLevel);
     // The comparison + ref mutation happen here, outside the setForm updater —
     // mutating a ref inside a functional updater is impure and breaks under
     // React Strict Mode's double-invocation of updaters (the second, discarded
@@ -97,27 +82,18 @@ export function useGuidanceForm({
     if (player.age) age = player.age;
     else if (player.dob) {
       const bd = new Date(player.dob);
-      age = Math.abs(
-        new Date(Date.now() - bd.getTime()).getUTCFullYear() - 1970,
-      );
+      age = Math.abs(new Date(Date.now() - bd.getTime()).getUTCFullYear() - 1970);
     }
 
-    let fitness: GuidanceFormState["current_fitness_level"] =
-      form.current_fitness_level;
+    let fitness: GuidanceFormState["current_fitness_level"] = form.current_fitness_level;
     if (player.skillLevel?.toLowerCase().includes("beginner")) fitness = "Low";
-    else if (player.skillLevel?.toLowerCase().includes("intermediate"))
-      fitness = "Moderate";
-    else if (player.skillLevel?.toLowerCase().includes("advanced"))
-      fitness = "High";
+    else if (player.skillLevel?.toLowerCase().includes("intermediate")) fitness = "Moderate";
+    else if (player.skillLevel?.toLowerCase().includes("advanced")) fitness = "High";
 
     // GuidanceFormState only models male/female — "OTHER" has no equivalent
     // slot, so leave the existing selection untouched rather than guess.
     const gender: GuidanceFormState["child_gender"] | undefined =
-      player.gender === "MALE"
-        ? "male"
-        : player.gender === "FEMALE"
-          ? "female"
-          : undefined;
+      player.gender === "MALE" ? "male" : player.gender === "FEMALE" ? "female" : undefined;
 
     const filled = new Set<string>();
     setForm((f) => {
@@ -202,18 +178,14 @@ export function useGuidanceForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const update = <K extends keyof GuidanceFormState>(
-    k: K,
-    v: GuidanceFormState[K],
-  ) => setForm((c) => ({ ...c, [k]: v }));
+  const update = <K extends keyof GuidanceFormState>(k: K, v: GuidanceFormState[K]) =>
+    setForm((c) => ({ ...c, [k]: v }));
 
   const handleProfileSelect = (id: string) => {
     setSelectedProfileId(id);
     if (!id) {
       const next = buildInitialForm();
-      lastAutoQuestion.current = isLevelPlan
-        ? next.parent_specific_question
-        : null;
+      lastAutoQuestion.current = isLevelPlan ? next.parent_specific_question : null;
       setForm(next);
       setAutofillFields(new Set());
       return;
@@ -224,12 +196,7 @@ export function useGuidanceForm({
   };
 
   const nextStep = () => {
-    const messages = [
-      "Great start! ✨",
-      "Keep Going! ⚡",
-      "Almost There! 🔥",
-      "Final Step! 🏆",
-    ];
+    const messages = ["Great start! ✨", "Keep Going! ⚡", "Almost There! 🔥", "Final Step! 🏆"];
     setAchievement(messages[step - 1] || "Progress!");
     setTimeout(() => setAchievement(null), 2000);
     setStep((s) => Math.min(s + 1, 4));
@@ -255,10 +222,9 @@ export function useGuidanceForm({
 
       if (response.data.status === "not_supported") {
         const sport = response.data.sport ?? form.sport ?? "that sport";
-        toast.error(
-          `${sport} is not yet supported. Try Cricket, Tennis, or Football.`,
-          { duration: 6000 } as any,
-        );
+        toast.error(`${sport} is not yet supported. Try Cricket, Tennis, or Football.`, {
+          duration: 6000,
+        } as any);
         return;
       }
 
@@ -275,8 +241,7 @@ export function useGuidanceForm({
       toast.success("Guidance generated");
       onSuccess(response.data.data);
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Unable to generate guidance.";
+      const msg = err instanceof Error ? err.message : "Unable to generate guidance.";
       toast.error(msg);
       throw err;
     } finally {
@@ -286,9 +251,7 @@ export function useGuidanceForm({
 
   const resetForm = () => {
     const next = buildInitialForm();
-    lastAutoQuestion.current = isLevelPlan
-      ? next.parent_specific_question
-      : null;
+    lastAutoQuestion.current = isLevelPlan ? next.parent_specific_question : null;
     setForm(next);
     setStep(1);
     setShowResults(false);
@@ -299,8 +262,7 @@ export function useGuidanceForm({
 
   const editInputs = () => {
     setShowResults(false);
-    if (typeof window !== "undefined")
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return {

@@ -91,7 +91,7 @@ describe("community follows", () => {
           kind: "GROUP",
           targetId: "not-an-id",
         }),
-      /Invalid group id/,
+      /Invalid group id/
     );
   });
 
@@ -102,7 +102,7 @@ describe("community follows", () => {
           kind: "TOPIC",
           targetId: "x".repeat(41),
         }),
-      /Invalid topic/,
+      /Invalid topic/
     );
   });
 
@@ -113,10 +113,7 @@ describe("community follows", () => {
       targetId: groupId,
     });
 
-    await CommunityGroup.updateOne(
-      { _id: groupId },
-      { $set: { name: "Delhi Tennis Families" } },
-    );
+    await CommunityGroup.updateOne({ _id: groupId }, { $set: { name: "Delhi Tennis Families" } });
 
     const { items } = await CommunityService.listFollows(USER_ID);
     assert.equal(items.length, 1);
@@ -140,7 +137,7 @@ describe("community follows", () => {
     const { items } = await CommunityService.listFollows(USER_ID);
     assert.deepEqual(
       items.map((item: { targetId: string }) => item.targetId),
-      ["cricket"],
+      ["cricket"]
     );
   });
 
@@ -176,7 +173,7 @@ describe("community follows", () => {
           kind: "TOPIC",
           targetId: "one-too-many",
         }),
-      /at most 200/,
+      /at most 200/
     );
 
     // Unfollowing still works at the cap — otherwise a user who hits it would

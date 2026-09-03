@@ -5,16 +5,11 @@ import { buildMetadata } from "@/lib/seo";
 // and stories those results point at.
 export const metadata = buildMetadata({
   title: "Search",
-  description:
-    "Search questions and stories across the PowerMySport community.",
+  description: "Search questions and stories across the PowerMySport community.",
   path: "/search",
   noindex: true,
 });
 
-export default function SearchLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function SearchLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

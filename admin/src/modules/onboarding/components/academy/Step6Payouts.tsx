@@ -28,8 +28,7 @@ export default function Step6Payouts({
     bankAccountNumber: previousData?.bankAccountNumber || "",
     bankIfsc: previousData?.bankIfsc || "",
     upiId: previousData?.upiId || "",
-    payoutFrequency: (previousData?.payoutFrequency ||
-      "monthly") as AcademyPayoutFrequency,
+    payoutFrequency: (previousData?.payoutFrequency || "monthly") as AcademyPayoutFrequency,
     cancellationPolicy: previousData?.cancellationPolicy || "",
     refundPolicy: previousData?.refundPolicy || "",
     agreedToTerms: false,
@@ -42,20 +41,16 @@ export default function Step6Payouts({
     const errors: Record<string, string> = {};
 
     const hasBankDetails =
-      formData.bankAccountNumber ||
-      formData.bankIfsc ||
-      formData.bankAccountName;
+      formData.bankAccountNumber || formData.bankIfsc || formData.bankAccountName;
     const hasUpi = formData.upiId.trim();
 
     if (!hasBankDetails && !hasUpi) {
-      errors.paymentMethod =
-        "Please provide either a bank account or UPI ID for payouts";
+      errors.paymentMethod = "Please provide either a bank account or UPI ID for payouts";
     }
 
     if (hasBankDetails) {
       if (formData.bankAccountName.trim().length < 3) {
-        errors.bankAccountName =
-          "Account holder name is required (min 3 characters)";
+        errors.bankAccountName = "Account holder name is required (min 3 characters)";
       }
       if (!/^\d{9,18}$/.test(formData.bankAccountNumber)) {
         errors.bankAccountNumber = "Invalid account number (9-18 digits)";
@@ -65,20 +60,15 @@ export default function Step6Payouts({
       }
     }
 
-    if (
-      hasUpi &&
-      !/^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(formData.upiId.trim())
-    ) {
+    if (hasUpi && !/^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(formData.upiId.trim())) {
       errors.upiId = "Invalid UPI ID format (e.g., name@upi)";
     }
 
     if (formData.cancellationPolicy.trim().length < 10) {
-      errors.cancellationPolicy =
-        "Please provide a clear cancellation policy (min 10 characters)";
+      errors.cancellationPolicy = "Please provide a clear cancellation policy (min 10 characters)";
     }
     if (formData.refundPolicy.trim().length < 10) {
-      errors.refundPolicy =
-        "Please provide a clear refund policy (min 10 characters)";
+      errors.refundPolicy = "Please provide a clear refund policy (min 10 characters)";
     }
     if (!formData.agreedToTerms) {
       errors.agreedToTerms = "You must agree to the terms and conditions";
@@ -111,9 +101,7 @@ export default function Step6Payouts({
       };
       await onSubmit(payload);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save payouts",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save payouts");
     } finally {
       setIsSubmitting(false);
     }
@@ -122,12 +110,8 @@ export default function Step6Payouts({
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-3xl font-bold text-slate-900">
-          Step 7: Payouts & Policies
-        </h2>
-        <p className="text-slate-600">
-          Final step - Set up your payment details
-        </p>
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 7: Payouts & Policies</h2>
+        <p className="text-slate-600">Final step - Set up your payment details</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -139,8 +123,8 @@ export default function Step6Payouts({
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
           <p className="text-sm text-amber-800">
-            💡 Provide either a <strong>bank account</strong> or{" "}
-            <strong>UPI ID</strong> (or both) for receiving payouts.
+            💡 Provide either a <strong>bank account</strong> or <strong>UPI ID</strong> (or both)
+            for receiving payouts.
           </p>
         </div>
 
@@ -161,7 +145,7 @@ export default function Step6Payouts({
                     bankAccountName: e.target.value,
                   }))
                 }
-                className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                   fieldErrors.bankAccountName
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -169,9 +153,7 @@ export default function Step6Payouts({
                 disabled={isSubmitting}
               />
               {fieldErrors.bankAccountName && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.bankAccountName}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.bankAccountName}</p>
               )}
             </div>
 
@@ -189,7 +171,7 @@ export default function Step6Payouts({
                   }))
                 }
                 placeholder="1234567890123456"
-                className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                   fieldErrors.bankAccountNumber
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -197,9 +179,7 @@ export default function Step6Payouts({
                 disabled={isSubmitting}
               />
               {fieldErrors.bankAccountNumber && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.bankAccountNumber}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.bankAccountNumber}</p>
               )}
             </div>
 
@@ -217,17 +197,13 @@ export default function Step6Payouts({
                   }))
                 }
                 placeholder="SBIN0001234"
-                className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                  fieldErrors.bankIfsc
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 bg-white"
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  fieldErrors.bankIfsc ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
               />
               {fieldErrors.bankIfsc && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.bankIfsc}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.bankIfsc}</p>
               )}
             </div>
           </div>
@@ -255,16 +231,12 @@ export default function Step6Payouts({
                 }));
             }}
             placeholder="username@upi"
-            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-              fieldErrors.upiId
-                ? "border-red-300 bg-red-50"
-                : "border-slate-300 bg-white"
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              fieldErrors.upiId ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
             disabled={isSubmitting}
           />
-          {fieldErrors.upiId && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.upiId}</p>
-          )}
+          {fieldErrors.upiId && <p className="mt-1 text-xs text-red-600">{fieldErrors.upiId}</p>}
         </div>
 
         <div>
@@ -279,7 +251,7 @@ export default function Step6Payouts({
                 payoutFrequency: e.target.value as AcademyPayoutFrequency,
               }))
             }
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange"
+            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
             disabled={isSubmitting}
           >
             <option value="weekly">Weekly</option>
@@ -302,7 +274,7 @@ export default function Step6Payouts({
             }
             placeholder="Describe your cancellation policy (e.g., 24 hours before session)"
             rows={3}
-            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
               fieldErrors.cancellationPolicy
                 ? "border-red-300 bg-red-50"
                 : "border-slate-300 bg-white"
@@ -310,9 +282,7 @@ export default function Step6Payouts({
             disabled={isSubmitting}
           />
           {fieldErrors.cancellationPolicy && (
-            <p className="mt-1 text-xs text-red-600">
-              {fieldErrors.cancellationPolicy}
-            </p>
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.cancellationPolicy}</p>
           )}
         </div>
 
@@ -330,17 +300,13 @@ export default function Step6Payouts({
             }
             placeholder="Describe your refund policy"
             rows={3}
-            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-              fieldErrors.refundPolicy
-                ? "border-red-300 bg-red-50"
-                : "border-slate-300 bg-white"
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              fieldErrors.refundPolicy ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
             disabled={isSubmitting}
           />
           {fieldErrors.refundPolicy && (
-            <p className="mt-1 text-xs text-red-600">
-              {fieldErrors.refundPolicy}
-            </p>
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.refundPolicy}</p>
           )}
         </div>
 
@@ -355,37 +321,25 @@ export default function Step6Payouts({
                   agreedToTerms: e.target.checked,
                 }))
               }
-              className="mt-0.5 w-4 h-4 shrink-0 rounded"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded"
               disabled={isSubmitting}
             />
             <span className="text-sm text-blue-900">
-              I agree to PowerMySport Terms & Conditions and confirm all
-              information is accurate
+              I agree to PowerMySport Terms & Conditions and confirm all information is accurate
             </span>
           </label>
           {fieldErrors.agreedToTerms && (
-            <p className="mt-2 text-xs text-red-600">
-              {fieldErrors.agreedToTerms}
-            </p>
+            <p className="mt-2 text-xs text-red-600">{fieldErrors.agreedToTerms}</p>
           )}
         </div>
 
         <div className="flex gap-3 pt-4">
           {onBack && (
-            <Button
-              type="button"
-              onClick={onBack}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button type="button" onClick={onBack} variant="outline" disabled={isSubmitting}>
               Back
             </Button>
           )}
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Submitting..." : "Submit for Approval"}
           </Button>
         </div>

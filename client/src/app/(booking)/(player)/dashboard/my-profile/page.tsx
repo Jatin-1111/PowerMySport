@@ -8,10 +8,7 @@ import { Input } from "@/modules/shared/ui/Input";
 import { toast } from "@/lib/toast";
 import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
-import {
-  normalizeStoredState,
-  stateSelectOptions,
-} from "@/lib/indianStates";
+import { normalizeStoredState, stateSelectOptions } from "@/lib/indianStates";
 import DependentManagementModal, {
   type DependentModalStepId,
 } from "@/modules/player/components/DependentManagementModal";
@@ -37,16 +34,16 @@ import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { User } from "@/types";
 import { cn } from "@/utils/cn";
 import {
-    ArrowRight,
-    Calendar,
-    Info,
-    Mail,
-    Phone,
-    Plus,
-    Trash2,
-    Trophy,
-    UserRound,
-    Users,
+  ArrowRight,
+  Calendar,
+  Info,
+  Mail,
+  Phone,
+  Plus,
+  Trash2,
+  Trophy,
+  UserRound,
+  Users,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -96,24 +93,14 @@ function ProfilePageContent() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDependentModal, setShowDependentModal] = useState(false);
-  const [dependentModalMode, setDependentModalMode] = useState<"add" | "edit">(
-    "add",
-  );
+  const [dependentModalMode, setDependentModalMode] = useState<"add" | "edit">("add");
   const [dependentModalStepId, setDependentModalStepId] = useState<
     DependentModalStepId | undefined
   >(undefined);
-  const [selectedDependent, setSelectedDependent] = useState<Dependent | null>(
-    null,
-  );
-  const [savingDependentId, setSavingDependentId] = useState<string | null>(
-    null,
-  );
-  const [isDeletingDependentId, setDeletingDependentId] = useState<
-    string | null
-  >(null);
-  const [dependentToDelete, setDependentToDelete] = useState<Dependent | null>(
-    null,
-  );
+  const [selectedDependent, setSelectedDependent] = useState<Dependent | null>(null);
+  const [savingDependentId, setSavingDependentId] = useState<string | null>(null);
+  const [isDeletingDependentId, setDeletingDependentId] = useState<string | null>(null);
+  const [dependentToDelete, setDependentToDelete] = useState<Dependent | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -161,15 +148,11 @@ function ProfilePageContent() {
     if (!user) return;
     const editDependentId = searchParams.get("editDependent");
     if (!editDependentId) return;
-    const dependent = user.dependents?.find(
-      (d) => d._id?.toString() === editDependentId,
-    );
+    const dependent = user.dependents?.find((d) => d._id?.toString() === editDependentId);
     if (!dependent) return;
     setSelectedDependent(dependent);
     setDependentModalMode("edit");
-    setDependentModalStepId(
-      (searchParams.get("step") as DependentModalStepId | null) ?? undefined,
-    );
+    setDependentModalStepId((searchParams.get("step") as DependentModalStepId | null) ?? undefined);
     setShowDependentModal(true);
     router.replace("/dashboard/my-profile", { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -340,10 +323,7 @@ function ProfilePageContent() {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "My Profile" },
-          ]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Profile" }]}
         />
         <ProfilePageSkeleton />
       </div>
@@ -354,10 +334,7 @@ function ProfilePageContent() {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "My Profile" },
-          ]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Profile" }]}
         />
         <Card className="shop-surface premium-shadow">
           <EmptyState
@@ -377,12 +354,7 @@ function ProfilePageContent() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "My Profile" },
-        ]}
-      />
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Profile" }]} />
 
       <PlayerPageHeader
         badge={isParent ? "Parent" : "Player"}
@@ -391,27 +363,17 @@ function ProfilePageContent() {
       />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Sports
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {sportsCount}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Sports</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{sportsCount}</p>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Dependents
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {dependentsCount}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Dependents</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{dependentsCount}</p>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Account
-          </p>
-          <p className="mt-1 text-lg font-bold capitalize text-slate-900">
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Account</p>
+          <p className="mt-1 text-lg font-bold text-slate-900 capitalize">
             {user.role.toLowerCase().replace("_", " ")}
           </p>
         </div>
@@ -420,7 +382,7 @@ function ProfilePageContent() {
       <Card
         className={cn(
           "shop-surface premium-shadow overflow-hidden p-0 transition-shadow",
-          isEditingProfile && "ring-2 ring-power-orange/20",
+          isEditingProfile && "ring-power-orange/20 ring-2"
         )}
       >
         <ProfileSectionHeader
@@ -458,12 +420,7 @@ function ProfilePageContent() {
               {isEditingProfile ? (
                 <ProfileEditPanel description="Update your contact details. Name and email are required.">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <ProfileEditField
-                      label="Name"
-                      htmlFor="profile-name"
-                      required
-                      icon={UserRound}
-                    >
+                    <ProfileEditField label="Name" htmlFor="profile-name" required icon={UserRound}>
                       <Input
                         id="profile-name"
                         value={profileForm.name}
@@ -545,9 +502,7 @@ function ProfilePageContent() {
                     <div className="sm:col-span-2">
                       <ProfileInfoField label="Account Type">
                         <span className="capitalize">
-                          {isParent
-                            ? "Parent"
-                            : user.role.toLowerCase().replace("_", " ")}
+                          {isParent ? "Parent" : user.role.toLowerCase().replace("_", " ")}
                         </span>
                       </ProfileInfoField>
                     </div>
@@ -584,7 +539,7 @@ function ProfilePageContent() {
       <Card
         className={cn(
           "shop-surface premium-shadow overflow-hidden p-0 transition-shadow",
-          isEditingSports && "ring-2 ring-power-orange/20",
+          isEditingSports && "ring-power-orange/20 ring-2"
         )}
       >
         <ProfileSectionHeader
@@ -601,9 +556,7 @@ function ProfilePageContent() {
           onSave={handleSaveSports}
           saving={isSavingSports}
           saveLabel="Save Profile"
-          completionPercent={
-            calculateProfileCompletion(user.playerProfile).percent
-          }
+          completionPercent={calculateProfileCompletion(user.playerProfile).percent}
         />
 
         <CardContent className="px-6 py-6">
@@ -624,11 +577,9 @@ function ProfilePageContent() {
                       rows={3}
                       maxLength={300}
                       value={playerProfileForm.bio}
-                      onChange={(e) =>
-                        setPlayerProfileForm((f) => ({ ...f, bio: e.target.value }))
-                      }
+                      onChange={(e) => setPlayerProfileForm((f) => ({ ...f, bio: e.target.value }))}
                       placeholder="e.g., Former club cricketer, now focused on my daughter's tennis journey."
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 resize-none"
+                      className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
                     />
                   </ProfileEditField>
 
@@ -638,9 +589,7 @@ function ProfilePageContent() {
                   >
                     <SportsMultiSelect
                       value={playerProfileForm.sportInterests}
-                      onChange={(s) =>
-                        setPlayerProfileForm((f) => ({ ...f, sportInterests: s }))
-                      }
+                      onChange={(s) => setPlayerProfileForm((f) => ({ ...f, sportInterests: s }))}
                     />
                   </ProfileEditField>
 
@@ -678,10 +627,7 @@ function ProfilePageContent() {
                     label="Your sports"
                     hint={`${selectedSports.length} sport${selectedSports.length === 1 ? "" : "s"} selected`}
                   >
-                    <SportsMultiSelect
-                      value={selectedSports}
-                      onChange={setSelectedSports}
-                    />
+                    <SportsMultiSelect value={selectedSports} onChange={setSelectedSports} />
                   </ProfileEditField>
 
                   <ProfileEditField
@@ -700,9 +646,7 @@ function ProfilePageContent() {
                         setPlayerProfileForm((f) => ({
                           ...f,
                           yearsPlaying:
-                            e.target.value === ""
-                              ? undefined
-                              : parseInt(e.target.value, 10),
+                            e.target.value === "" ? undefined : parseInt(e.target.value, 10),
                         }))
                       }
                     />
@@ -710,7 +654,7 @@ function ProfilePageContent() {
 
                   {selectedSports.length > 0 ? (
                     <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                         Selected
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -741,10 +685,7 @@ function ProfilePageContent() {
               >
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <ProfileEditField
-                      label="Primary Objective"
-                      htmlFor="primary-objective"
-                    >
+                    <ProfileEditField label="Primary Objective" htmlFor="primary-objective">
                       <ProfileFormSelect
                         id="primary-objective"
                         value={playerProfileForm.primaryObjective}
@@ -799,10 +740,7 @@ function ProfilePageContent() {
                     />
                   </ProfileEditField>
 
-                  <ProfileEditField
-                    label="Weekly Time Commitment (Hours)"
-                    htmlFor="weekly-time"
-                  >
+                  <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
                     <Input
                       id="weekly-time"
                       type="number"
@@ -830,8 +768,7 @@ function ProfilePageContent() {
                         "Patient",
                         "Team-oriented",
                       ].map((tag) => {
-                        const isSelected =
-                          playerProfileForm.personalityTags.includes(tag);
+                        const isSelected = playerProfileForm.personalityTags.includes(tag);
                         return (
                           <button
                             key={tag}
@@ -865,28 +802,30 @@ function ProfilePageContent() {
             <div className="space-y-8">
               {isParent ? (
                 <div>
-                  <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <h4 className="mb-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                     About You
                   </h4>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <ProfileInfoField label="Background">
                       {user.parentProfile?.bio ? (
-                        <p className="text-sm text-slate-700 leading-relaxed">
+                        <p className="text-sm leading-relaxed text-slate-700">
                           {user.parentProfile.bio}
                         </p>
                       ) : (
-                        <span className="text-slate-400 italic text-sm">Not provided</span>
+                        <span className="text-sm text-slate-400 italic">Not provided</span>
                       )}
                     </ProfileInfoField>
                     <ProfileInfoField label="Years Involved in Sport">
-                      {user.parentProfile?.involvementYears !== undefined
-                        ? `${user.parentProfile.involvementYears} year${user.parentProfile.involvementYears === 1 ? "" : "s"}`
-                        : <span className="text-slate-400 italic text-sm">Not provided</span>}
+                      {user.parentProfile?.involvementYears !== undefined ? (
+                        `${user.parentProfile.involvementYears} year${user.parentProfile.involvementYears === 1 ? "" : "s"}`
+                      ) : (
+                        <span className="text-sm text-slate-400 italic">Not provided</span>
+                      )}
                     </ProfileInfoField>
                     <ProfileInfoField label="Sports Followed">
                       {user.parentProfile?.sportInterests &&
                       user.parentProfile.sportInterests.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5 mt-1">
+                        <div className="mt-1 flex flex-wrap gap-1.5">
                           {user.parentProfile.sportInterests.map((sport) => (
                             <Badge
                               key={sport}
@@ -897,18 +836,17 @@ function ProfilePageContent() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-slate-400 italic text-sm">Not provided</span>
+                        <span className="text-sm text-slate-400 italic">Not provided</span>
                       )}
                     </ProfileInfoField>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <h4 className="mb-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                     My Sports
                   </h4>
-                  {user.playerProfile?.sportsFocus &&
-                  user.playerProfile.sportsFocus.length > 0 ? (
+                  {user.playerProfile?.sportsFocus && user.playerProfile.sportsFocus.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {user.playerProfile.sportsFocus.map((sport: string) => (
                         <Badge
@@ -920,11 +858,9 @@ function ProfilePageContent() {
                       ))}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center max-w-lg">
+                    <div className="max-w-lg rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center">
                       <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
-                      <p className="text-sm font-medium text-slate-700">
-                        No sports added yet
-                      </p>
+                      <p className="text-sm font-medium text-slate-700">No sports added yet</p>
                       <p className="mt-1 text-sm text-slate-500">
                         Add the sports you play to get better recommendations.
                       </p>
@@ -949,7 +885,7 @@ function ProfilePageContent() {
               )}
 
               <div className="border-t border-slate-100 pt-6">
-                <h4 className="mb-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <h4 className="mb-4 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                   AI Guidance Preferences
                 </h4>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -960,8 +896,7 @@ function ProfilePageContent() {
                     {user.playerProfile?.budgetTier || "Not specified"}
                   </ProfileInfoField>
                   <ProfileInfoField label="State">
-                    {normalizeStoredState(user.playerProfile?.location) ||
-                      "Not specified"}
+                    {normalizeStoredState(user.playerProfile?.location) || "Not specified"}
                   </ProfileInfoField>
                   <ProfileInfoField label="Weekly Time">
                     {user.playerProfile?.weeklyTimeCommitment
@@ -971,13 +906,9 @@ function ProfilePageContent() {
                   <ProfileInfoField label="Personality">
                     {user.playerProfile?.personalityTags &&
                     user.playerProfile.personalityTags.length > 0 ? (
-                      <div className="flex flex-wrap gap-1 mt-1">
+                      <div className="mt-1 flex flex-wrap gap-1">
                         {user.playerProfile.personalityTags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs"
-                          >
+                          <Badge key={tag} variant="secondary" className="text-xs">
                             {tag}
                           </Badge>
                         ))}
@@ -993,8 +924,7 @@ function ProfilePageContent() {
         </CardContent>
       </Card>
 
-      {(isParent ||
-        (user.dependents && user.dependents.length > 0)) && (
+      {(isParent || (user.dependents && user.dependents.length > 0)) && (
         <Card className="shop-surface premium-shadow overflow-hidden p-0">
           <ProfileSectionHeader
             icon={Users}
@@ -1018,11 +948,11 @@ function ProfilePageContent() {
             {user.dependents && user.dependents.length > 0 ? (
               <div className="grid gap-4">
                 {user.dependents.map((dependent) => {
-                  const age =
-                    getDependentAge(dependent.dob) ?? dependent.age ?? null;
+                  const age = getDependentAge(dependent.dob) ?? dependent.age ?? null;
                   const genderLabel = formatGender(dependent.gender);
-                  const dependentCompletion =
-                    calculateDependentCompletion(denormalizeDependent(dependent));
+                  const dependentCompletion = calculateDependentCompletion(
+                    denormalizeDependent(dependent)
+                  );
 
                   return (
                     <div
@@ -1038,7 +968,7 @@ function ProfilePageContent() {
                             title={`${dependent.name}'s profile is ${dependentCompletion.percent}% complete`}
                           >
                             <Avatar className="h-12 w-12 border border-white shadow-sm">
-                              <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
+                              <AvatarFallback className="bg-power-orange/10 text-power-orange text-sm font-bold">
                                 {getInitials(dependent.name)}
                               </AvatarFallback>
                             </Avatar>
@@ -1075,22 +1005,21 @@ function ProfilePageContent() {
                             {dependent.dob && (
                               <p className="mt-2 text-sm text-slate-500">
                                 Born{" "}
-                                {new Date(dependent.dob).toLocaleDateString(
-                                  undefined,
-                                  {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  },
-                                )}
+                                {new Date(dependent.dob).toLocaleDateString(undefined, {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
                               </p>
                             )}
 
                             {/* Sport, at a glance — full detail lives on the profile page */}
-                            {(dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0]) && (
+                            {(dependent.sport?.chosenSport ||
+                              dependent.sport?.sportsFocus?.[0]) && (
                               <div className="mt-3">
                                 <Badge className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50">
-                                  {dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0]}
+                                  {dependent.sport?.chosenSport ||
+                                    dependent.sport?.sportsFocus?.[0]}
                                 </Badge>
                               </div>
                             )}
@@ -1099,9 +1028,7 @@ function ProfilePageContent() {
 
                         <div className="flex flex-wrap gap-2 sm:justify-end">
                           <Button
-                            onClick={() =>
-                              router.push(`/dashboard/dependents/${dependent._id}`)
-                            }
+                            onClick={() => router.push(`/dashboard/dependents/${dependent._id}`)}
                             variant="outline"
                             size="sm"
                             disabled={!dependent._id}
@@ -1117,9 +1044,7 @@ function ProfilePageContent() {
                             className="border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                             icon={<Trash2 size={14} />}
                           >
-                            {isDeletingDependentId === dependent._id
-                              ? "Deleting..."
-                              : "Delete"}
+                            {isDeletingDependentId === dependent._id ? "Deleting..." : "Delete"}
                           </Button>
                         </div>
                       </div>
@@ -1144,13 +1069,11 @@ function ProfilePageContent() {
                 <Info className="h-4 w-4" />
               </div>
               <div className="text-sm text-slate-700">
-                <p className="font-semibold text-slate-900">
-                  What is a dependent?
-                </p>
+                <p className="font-semibold text-slate-900">What is a dependent?</p>
                 <p className="mt-1">
-                  A dependent is someone whose bookings you manage. You can book
-                  venues and coaches for them, track their sports, and graduate
-                  them to an independent account once they turn 18.
+                  A dependent is someone whose bookings you manage. You can book venues and coaches
+                  for them, track their sports, and graduate them to an independent account once
+                  they turn 18.
                 </p>
               </div>
             </div>
@@ -1194,11 +1117,8 @@ function ProfilePageContent() {
       >
         <p className="text-sm text-slate-600">
           Are you sure you want to delete
-          <span className="font-semibold text-slate-900">
-            {" "}
-            {dependentToDelete?.name}
-          </span>
-          ? This action cannot be undone.
+          <span className="font-semibold text-slate-900"> {dependentToDelete?.name}</span>? This
+          action cannot be undone.
         </p>
       </Modal>
     </div>

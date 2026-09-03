@@ -8,10 +8,7 @@ import { UserPathwayProfile } from "../../shared/models/UserPathwayProfile";
 const parseDependentId = (raw: unknown): string | null =>
   typeof raw === "string" && mongoose.isValidObjectId(raw) ? raw : null;
 
-export const getRoadmapProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getRoadmapProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -37,16 +34,11 @@ export const getRoadmapProfile = async (
       data: profile,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch roadmap profile" });
+    res.status(500).json({ success: false, message: "Failed to fetch roadmap profile" });
   }
 };
 
-export const updateRoadmapProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateRoadmapProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -65,7 +57,7 @@ export const updateRoadmapProfile = async (
     const profile = await UserPathwayProfile.findOneAndUpdate(
       { userId: req.user.id, dependentId },
       { $set: updateData },
-      { new: true, upsert: true },
+      { new: true, upsert: true }
     ).lean();
 
     res.status(200).json({
@@ -73,8 +65,6 @@ export const updateRoadmapProfile = async (
       data: profile,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update roadmap profile" });
+    res.status(500).json({ success: false, message: "Failed to update roadmap profile" });
   }
 };

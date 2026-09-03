@@ -18,15 +18,7 @@ import { baseFields, colours, isJsonFormat, logRaw } from "./logger";
 const startedAt = process.hrtime.bigint();
 
 /** Fixed display order; anything unrecognised is appended in arrival order. */
-const SECTION_ORDER = [
-  "http",
-  "mongo",
-  "redis",
-  "s3",
-  "ai",
-  "sockets",
-  "jobs",
-];
+const SECTION_ORDER = ["http", "mongo", "redis", "s3", "ai", "sockets", "jobs"];
 
 const facts = new Map<string, string[]>();
 const warnings: string[] = [];
@@ -56,9 +48,7 @@ export const bootWarn = (message: string): void => {
 
 const orderedSections = (): string[] => {
   const known = SECTION_ORDER.filter((section) => facts.has(section));
-  const extra = Array.from(facts.keys()).filter(
-    (section) => !SECTION_ORDER.includes(section),
-  );
+  const extra = Array.from(facts.keys()).filter((section) => !SECTION_ORDER.includes(section));
   return [...known, ...extra];
 };
 
@@ -80,11 +70,9 @@ export const bootReady = (): void => {
         bootMs: Math.round(elapsedMs),
         node: process.version,
         pid: process.pid,
-        ...Object.fromEntries(
-          sections.map((section) => [section, facts.get(section)!.join(" ")]),
-        ),
+        ...Object.fromEntries(sections.map((section) => [section, facts.get(section)!.join(" ")])),
         ...(warnings.length ? { warnings } : {}),
-      }),
+      })
     );
     facts.clear();
     warnings.length = 0;
@@ -96,14 +84,14 @@ export const bootReady = (): void => {
   logRaw("");
   logRaw(
     `  ${colours.bold("PowerMySport")}  ${colours.grey(
-      `${process.env.NODE_ENV || "development"} · node ${process.version} · pid ${process.pid}`,
-    )}`,
+      `${process.env.NODE_ENV || "development"} · node ${process.version} · pid ${process.pid}`
+    )}`
   );
   logRaw("");
 
   for (const section of sections) {
     logRaw(
-      `  ${colours.cyan(section.padEnd(width))}  ${facts.get(section)!.join(colours.grey(" · "))}`,
+      `  ${colours.cyan(section.padEnd(width))}  ${facts.get(section)!.join(colours.grey(" · "))}`
     );
   }
 
@@ -112,9 +100,7 @@ export const bootReady = (): void => {
   }
 
   logRaw("");
-  logRaw(
-    `  ${colours.green("ready")} ${colours.grey(`in ${(elapsedMs / 1000).toFixed(1)}s`)}`,
-  );
+  logRaw(`  ${colours.green("ready")} ${colours.grey(`in ${(elapsedMs / 1000).toFixed(1)}s`)}`);
   logRaw("");
 
   // Boot facts are a startup-only concern; holding them wastes nothing but

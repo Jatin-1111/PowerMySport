@@ -20,9 +20,7 @@ const migrateVenueLocations = async () => {
 
     // Connect to database
     const mongoUri =
-      process.env.MONGO_URI ||
-      process.env.MONGODB_URI ||
-      "mongodb://localhost:27017/powermysport";
+      process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
     await mongoose.connect(mongoUri);
     console.log("Connected to database");
 
@@ -41,9 +39,7 @@ const migrateVenueLocations = async () => {
           venue.location.type === "Point" &&
           Array.isArray(venue.location.coordinates)
         ) {
-          console.log(
-            `Venue ${venue.name} already has GeoJSON location, skipping`,
-          );
+          console.log(`Venue ${venue.name} already has GeoJSON location, skipping`);
           continue;
         }
 
@@ -59,9 +55,7 @@ const migrateVenueLocations = async () => {
         migratedCount++;
         flaggedCount++;
 
-        console.log(
-          `✅ Migrated venue: ${venue.name} (flagged for location update)`,
-        );
+        console.log(`✅ Migrated venue: ${venue.name} (flagged for location update)`);
       } catch (error) {
         console.error(`❌ Failed to migrate venue ${venue.name}:`, error);
       }
@@ -70,9 +64,7 @@ const migrateVenueLocations = async () => {
     console.log("\n✅ Venue Location Migration Complete!");
     console.log(`Total venues migrated: ${migratedCount}`);
     console.log(`Venues flagged for manual location update: ${flaggedCount}`);
-    console.log(
-      "\n⚠️  IMPORTANT: Venue owners should update their locations via the dashboard",
-    );
+    console.log("\n⚠️  IMPORTANT: Venue owners should update their locations via the dashboard");
   } catch (error) {
     console.error("❌ Migration failed:", error);
     throw error;

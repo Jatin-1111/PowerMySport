@@ -52,8 +52,7 @@ const isSubscribableRoom = (room: string): boolean =>
   /^qna:post:[a-f\d]{24}$/i.test(room) ||
   /^blog:[a-f\d]{24}$/i.test(room);
 
-export const assertSubscribableRoom = (room: string): boolean =>
-  isSubscribableRoom(room);
+export const assertSubscribableRoom = (room: string): boolean => isSubscribableRoom(room);
 
 export const setCommunityRealtimeSocketInstance = (io: Server) => {
   socketInstance = io;
@@ -65,7 +64,7 @@ export const setCommunityRealtimeSocketInstance = (io: Server) => {
 const emitToRooms = (
   rooms: string[],
   eventName: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ): void => {
   if (!socketInstance) {
     return;
@@ -88,7 +87,7 @@ const emitToRooms = (
 export const emitCommunityQnaEvent = (
   eventName: CommunityQnaEventName,
   payload: Record<string, unknown>,
-  rooms: string[],
+  rooms: string[]
 ): void => {
   emitToRooms(rooms, eventName, payload);
 };
@@ -96,7 +95,7 @@ export const emitCommunityQnaEvent = (
 export const emitCommunityBlogEvent = (
   eventName: CommunityBlogEventName,
   payload: Record<string, unknown>,
-  rooms: string[],
+  rooms: string[]
 ): void => {
   emitToRooms(rooms, eventName, payload);
 };
@@ -104,7 +103,7 @@ export const emitCommunityBlogEvent = (
 export const emitCommunityGroupEvent = (
   groupId: string,
   eventName: CommunityGroupEventName,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ): void => {
   emitToRooms([`group:${groupId}`], eventName, payload);
 };
@@ -112,7 +111,7 @@ export const emitCommunityGroupEvent = (
 export const emitCommunityUserEvent = (
   userId: string,
   eventName: CommunityUserEventName,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ): void => {
   emitToRooms([`user:${userId}`], eventName, payload);
 };

@@ -20,11 +20,7 @@ const routeMetrics = new Map<string, RouteMetric>();
 const normalizeSegment = (segment: string): string => {
   if (!segment) return segment;
   if (/^[0-9a-fA-F]{24}$/.test(segment)) return ":id";
-  if (
-    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-      segment,
-    )
-  )
+  if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(segment))
     return ":id";
   if (/^\d+$/.test(segment)) return ":id";
   return segment;
@@ -131,10 +127,7 @@ const pushLatency = (bucket: number[], latencyMs: number): void => {
 
 const percentile = (sorted: number[], p: number): number => {
   if (sorted.length === 0) return 0;
-  const index = Math.min(
-    sorted.length - 1,
-    Math.max(0, Math.ceil((p / 100) * sorted.length) - 1),
-  );
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
   return sorted[index] ?? 0;
 };
 
@@ -172,7 +165,7 @@ export const takeWindowSnapshot = (): WindowSnapshot => {
     .map(([routeKey, entry]) => {
       const p95 = percentile(
         [...entry.latencies].sort((a, b) => a - b),
-        95,
+        95
       );
       const budgetMs = getBudgetMs(routeKey);
       return {
@@ -238,11 +231,7 @@ export const getLatencyProfiles = (): LatencyProfile[] =>
 
 /* ----------------------------------------------------------- middleware */
 
-export const observabilityMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
+export const observabilityMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const start = Date.now();
   // Captured here, not inside `finish`: the finish event is emitted from the
   // socket's async context, where the request's AsyncLocalStorage store is not
@@ -337,17 +326,14 @@ export const getObservabilitySnapshot = () => {
       acc.errors += metric.totalErrors;
       return acc;
     },
-    { requests: 0, errors: 0 },
+    { requests: 0, errors: 0 }
   );
 
   return {
     totals: {
       requests: totals.requests,
       errors: totals.errors,
-      errorRate:
-        totals.requests > 0
-          ? Number((totals.errors / totals.requests).toFixed(4))
-          : 0,
+      errorRate: totals.requests > 0 ? Number((totals.errors / totals.requests).toFixed(4)) : 0,
     },
     routes: metrics,
     generatedAt: new Date().toISOString(),

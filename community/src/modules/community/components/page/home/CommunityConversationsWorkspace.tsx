@@ -16,7 +16,7 @@ export default function CommunityConversationsWorkspace({ page }: Props) {
     <div className="contents">
       <motion.main
         variants={panelVariants}
-        className="relative grid flex-1 min-h-0 min-w-0 grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[340px_minmax(0,1fr)]"
+        className="relative grid min-h-0 min-w-0 flex-1 grid-cols-1 md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[340px_minmax(0,1fr)]"
       >
         <CommunityDirectoryPanel page={page} />
         <CommunityChatPanel page={page} />

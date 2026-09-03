@@ -25,7 +25,7 @@ import { ADMIN_ROLES } from "../../constants/adminPermissions";
 // Helper to check if role is admin
 const isAdminRole = (role: string): boolean => {
   return Object.values(ADMIN_ROLES).includes(
-    role as (typeof ADMIN_ROLES)[keyof typeof ADMIN_ROLES],
+    role as (typeof ADMIN_ROLES)[keyof typeof ADMIN_ROLES]
   );
 };
 
@@ -40,10 +40,7 @@ const isAdminRole = (role: string): boolean => {
  * POST /api/academies/onboarding/start
  * Body: { ownerEmail, ownerName, ownerPhone, name, legalName, sports[], ageGroups[], ... }
  */
-export const startAcademyOnboardingHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const startAcademyOnboardingHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const academy = await startAcademyOnboarding(req.body);
 
@@ -61,8 +58,7 @@ export const startAcademyOnboardingHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to start onboarding",
+      message: error instanceof Error ? error.message : "Failed to start onboarding",
     });
   }
 };
@@ -71,13 +67,9 @@ export const startAcademyOnboardingHandler = async (
  * GET: Academy onboarding progress
  * GET /api/academies/onboarding/:academyId/progress
  */
-export const getAcademyProgressHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAcademyProgressHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const progress = await getAcademyOnboardingProgress(academyId);
 
     res.status(200).json({
@@ -88,8 +80,7 @@ export const getAcademyProgressHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get progress",
+      message: error instanceof Error ? error.message : "Failed to get progress",
     });
   }
 };
@@ -99,16 +90,10 @@ export const getAcademyProgressHandler = async (
  * PUT /api/academies/onboarding/:academyId/step/:stepNumber
  * Body: { stepData: {...} }
  */
-export const saveAcademyStepHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const saveAcademyStepHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
-    const stepNumber = parseInt(
-      (req.params as Record<string, unknown>).stepNumber as string,
-    );
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
+    const stepNumber = parseInt((req.params as Record<string, unknown>).stepNumber as string);
 
     if (stepNumber < 2 || stepNumber > 7) {
       res.status(400).json({
@@ -126,8 +111,7 @@ export const saveAcademyStepHandler = async (
       data: {
         academyId: academy._id,
         currentStep: academy.onboardingStep,
-        nextStep:
-          stepNumber < 7 ? `Step ${stepNumber + 1}` : "Submit for review",
+        nextStep: stepNumber < 7 ? `Step ${stepNumber + 1}` : "Submit for review",
       },
     });
   } catch (error) {
@@ -143,13 +127,9 @@ export const saveAcademyStepHandler = async (
  * POST /api/academies/onboarding/:academyId/image-upload-urls
  * Body: { imageTypes: ['logo', 'coverPhoto', 'galleryPhotos'] }
  */
-export const getImageUploadUrlsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getImageUploadUrlsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const { imageTypes } = req.body;
 
     if (!imageTypes || imageTypes.length === 0) {
@@ -183,8 +163,7 @@ export const getImageUploadUrlsHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get upload URLs",
+      message: error instanceof Error ? error.message : "Failed to get upload URLs",
     });
   }
 };
@@ -194,13 +173,9 @@ export const getImageUploadUrlsHandler = async (
  * POST /api/academies/onboarding/:academyId/confirm-images
  * Body: { logoUrl, logoKey, coverPhotoUrl, coverPhotoKey, galleryPhotoUrls[], galleryPhotoKeys[] }
  */
-export const confirmImagesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const confirmImagesHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     // Verify academy exists
     const academy = await Academy.findById(academyId);
@@ -227,8 +202,7 @@ export const confirmImagesHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to confirm images",
+      message: error instanceof Error ? error.message : "Failed to confirm images",
     });
   }
 };
@@ -238,13 +212,9 @@ export const confirmImagesHandler = async (
  * POST /api/academies/onboarding/:academyId/document-upload-urls
  * Body: { docTypes: ['panDocument', 'gstDocument'] }
  */
-export const getDocumentUploadUrlsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getDocumentUploadUrlsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const { docTypes } = req.body;
 
     if (!docTypes || docTypes.length === 0) {
@@ -278,8 +248,7 @@ export const getDocumentUploadUrlsHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get upload URLs",
+      message: error instanceof Error ? error.message : "Failed to get upload URLs",
     });
   }
 };
@@ -289,13 +258,9 @@ export const getDocumentUploadUrlsHandler = async (
  * POST /api/academies/onboarding/:academyId/confirm-documents
  * Body: { panDocumentUrl, panDocumentKey, gstDocumentUrl, gstDocumentKey }
  */
-export const confirmDocumentsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const confirmDocumentsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     // Verify academy exists
     const academy = await Academy.findById(academyId);
@@ -321,8 +286,7 @@ export const confirmDocumentsHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to confirm documents",
+      message: error instanceof Error ? error.message : "Failed to confirm documents",
     });
   }
 };
@@ -331,20 +295,15 @@ export const confirmDocumentsHandler = async (
  * POST: Submit academy for approval
  * POST /api/academies/onboarding/:academyId/submit
  */
-export const submitAcademyHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const submitAcademyHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     const academy = await submitAcademyForApproval(academyId);
 
     res.status(200).json({
       success: true,
-      message:
-        "Academy submitted for review. You will be notified once approved.",
+      message: "Academy submitted for review. You will be notified once approved.",
       data: {
         academyId: academy._id,
         name: academy.name,
@@ -359,8 +318,7 @@ export const submitAcademyHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to submit academy",
+      message: error instanceof Error ? error.message : "Failed to submit academy",
     });
   }
 };
@@ -369,17 +327,9 @@ export const submitAcademyHandler = async (
  * GET: List approved academies (public discovery)
  * GET /api/academies?city=Mumbai&sport=Basketball&page=1&limit=20
  */
-export const listApprovedAcademiesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listApprovedAcademiesHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
     const city = (req.query.city as string) || undefined;
     const sport = (req.query.sport as string) || undefined;
 
@@ -432,8 +382,7 @@ export const listApprovedAcademiesHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch academies",
+      message: error instanceof Error ? error.message : "Failed to fetch academies",
     });
   }
 };
@@ -442,10 +391,7 @@ export const listApprovedAcademiesHandler = async (
  * GET: Single academy profile
  * GET /api/academies/:slug
  */
-export const getAcademyProfileHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAcademyProfileHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const slug = (req.params as Record<string, unknown>).slug as string;
 
@@ -475,8 +421,7 @@ export const getAcademyProfileHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch academy",
+      message: error instanceof Error ? error.message : "Failed to fetch academy",
     });
   }
 };
@@ -491,10 +436,7 @@ export const getAcademyProfileHandler = async (
  * GET: List all pending academies
  * GET /api/academies/admin/pending?page=1&limit=20&filter=pending
  */
-export const listPendingAcademiesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listPendingAcademiesHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -504,18 +446,13 @@ export const listPendingAcademiesHandler = async (
       return;
     }
 
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
     const filter = (req.query.filter as string) || undefined;
 
     const result = await getPendingAcademies(
       page,
       limit,
-      filter as "pending" | "approved" | "rejected" | undefined,
+      filter as "pending" | "approved" | "rejected" | undefined
     );
 
     res.status(200).json({
@@ -526,10 +463,7 @@ export const listPendingAcademiesHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch pending academies",
+      message: error instanceof Error ? error.message : "Failed to fetch pending academies",
     });
   }
 };
@@ -540,7 +474,7 @@ export const listPendingAcademiesHandler = async (
  */
 export const getAcademyReviewDetailsHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
@@ -551,8 +485,7 @@ export const getAcademyReviewDetailsHandler = async (
       return;
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const academy = await getAcademyOnboardingDetails(academyId);
 
     if (!academy) {
@@ -571,8 +504,7 @@ export const getAcademyReviewDetailsHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch details",
+      message: error instanceof Error ? error.message : "Failed to fetch details",
     });
   }
 };
@@ -581,10 +513,7 @@ export const getAcademyReviewDetailsHandler = async (
  * PUT: Approve academy
  * PUT /api/academies/admin/:academyId/approve
  */
-export const approveAcademyHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const approveAcademyHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -594,8 +523,7 @@ export const approveAcademyHandler = async (
       return;
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const academy = await approveAcademy(academyId);
 
     res.status(200).json({
@@ -611,8 +539,7 @@ export const approveAcademyHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to approve academy",
+      message: error instanceof Error ? error.message : "Failed to approve academy",
     });
   }
 };
@@ -622,10 +549,7 @@ export const approveAcademyHandler = async (
  * PUT /api/academies/admin/:academyId/reject
  * Body: { rejectionReason: string }
  */
-export const rejectAcademyHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const rejectAcademyHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -635,8 +559,7 @@ export const rejectAcademyHandler = async (
       return;
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const { rejectionReason } = req.body;
 
     if (!rejectionReason) {
@@ -662,8 +585,7 @@ export const rejectAcademyHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reject academy",
+      message: error instanceof Error ? error.message : "Failed to reject academy",
     });
   }
 };
@@ -672,10 +594,7 @@ export const rejectAcademyHandler = async (
  * PUT: Mark academy as KYC verified
  * PUT /api/academies/admin/:academyId/kyc-verify
  */
-export const markKycVerifiedHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const markKycVerifiedHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -685,8 +604,7 @@ export const markKycVerifiedHandler = async (
       return;
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const academy = await markAcademyKycVerified(academyId);
 
     res.status(200).json({
@@ -702,8 +620,7 @@ export const markKycVerifiedHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to mark KYC verified",
+      message: error instanceof Error ? error.message : "Failed to mark KYC verified",
     });
   }
 };
@@ -713,10 +630,7 @@ export const markKycVerifiedHandler = async (
  * PUT /api/academies/admin/:academyId/suspend
  * Body: { reason?: string }
  */
-export const suspendAcademyHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const suspendAcademyHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
       res.status(403).json({
@@ -726,8 +640,7 @@ export const suspendAcademyHandler = async (
       return;
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const { reason } = req.body;
 
     const academy = await suspendAcademy(academyId, reason);
@@ -745,8 +658,7 @@ export const suspendAcademyHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to suspend academy",
+      message: error instanceof Error ? error.message : "Failed to suspend academy",
     });
   }
 };
@@ -761,13 +673,9 @@ export const suspendAcademyHandler = async (
  * POST: Create subscription plan
  * POST /api/academies/:academyId/subscriptions
  */
-export const createSubscriptionPlanHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createSubscriptionPlanHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     const plan = await createSubscriptionPlan({
       ...req.body,
@@ -791,13 +699,9 @@ export const createSubscriptionPlanHandler = async (
  * POST: Create session package
  * POST /api/academies/:academyId/packages
  */
-export const createSessionPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createSessionPackageHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     const pkg = await createSessionPackage({
       ...req.body,
@@ -812,8 +716,7 @@ export const createSessionPackageHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create package",
+      message: error instanceof Error ? error.message : "Failed to create package",
     });
   }
 };

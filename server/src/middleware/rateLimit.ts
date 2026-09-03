@@ -29,10 +29,7 @@ export const createRedisRateLimitStore = (prefix: string): Store => {
         const ttl = await redis.pttl(redisKey);
         return {
           totalHits,
-          resetTime:
-            ttl > 0
-              ? new Date(Date.now() + ttl)
-              : new Date(Date.now() + windowMs),
+          resetTime: ttl > 0 ? new Date(Date.now() + ttl) : new Date(Date.now() + windowMs),
         };
       } catch {
         return {

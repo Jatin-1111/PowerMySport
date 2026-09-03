@@ -3,10 +3,10 @@
 import { toast } from "@/lib/toast";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
 import {
-    OnboardingStep1Payload,
-    OnboardingStep2Payload,
-    PresignedUrl,
-    VenueCoach,
+  OnboardingStep1Payload,
+  OnboardingStep2Payload,
+  PresignedUrl,
+  VenueCoach,
 } from "@/modules/onboarding/types/onboarding";
 import { ArrowLeft, Check, CircleDot } from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
@@ -22,14 +22,13 @@ import Step5CoachList from "./Step5CoachList";
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
-const STEP_META: Array<{ step: OnboardingStep; label: string; hint: string }> =
-  [
-    { step: 1, label: "Your Info", hint: "Contact details and verification" },
-    { step: 2, label: "Venue Details", hint: "Address, sports, and pricing" },
-    { step: 3, label: "Photos", hint: "Upload high-quality venue visuals" },
-    { step: 4, label: "Documents", hint: "Business and compliance documents" },
-    { step: 5, label: "Coaches", hint: "Optional in-house team setup" },
-  ];
+const STEP_META: Array<{ step: OnboardingStep; label: string; hint: string }> = [
+  { step: 1, label: "Your Info", hint: "Contact details and verification" },
+  { step: 2, label: "Venue Details", hint: "Address, sports, and pricing" },
+  { step: 3, label: "Photos", hint: "Upload high-quality venue visuals" },
+  { step: 4, label: "Documents", hint: "Business and compliance documents" },
+  { step: 5, label: "Coaches", hint: "Optional in-house team setup" },
+];
 
 function OnboardingContainerSkeleton() {
   return (
@@ -42,7 +41,7 @@ function OnboardingContainerSkeleton() {
         <div className="mx-auto mb-8 max-w-4xl rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-xs">
           <div className="relative mb-4 overflow-x-auto">
             <div className="relative min-w-180">
-              <div className="absolute left-6 right-6 top-6 h-0.5 rounded-full bg-slate-100" />
+              <div className="absolute top-6 right-6 left-6 h-0.5 rounded-full bg-slate-100" />
               <div className="grid grid-cols-5 gap-3">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <div key={`step-skeleton-${index}`} className="text-center">
@@ -63,7 +62,7 @@ function OnboardingContainerSkeleton() {
             <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
             <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
           </div>
-          <div className="mt-6 h-12 w-full animate-pulse rounded-xl bg-power-orange/25" />
+          <div className="bg-power-orange/25 mt-6 h-12 w-full animate-pulse rounded-xl" />
         </div>
       </div>
     </div>
@@ -91,7 +90,7 @@ interface UploadedDoc {
 const VENUE_ONBOARDING_FLOW = buildStepGateFlow<{ venueId: string }>(
   "venue-onboarding",
   5,
-  (_i, ctx) => Boolean(ctx.venueId),
+  (_i, ctx) => Boolean(ctx.venueId)
 );
 
 function OnboardingFlow() {
@@ -110,25 +109,18 @@ function OnboardingFlow() {
   const [emailToVerify, setEmailToVerify] = useState<string>("");
 
   // Step 1: Contact Info
-  const [contactInfo, setContactInfo] = useState<OnboardingStep1Payload | null>(
-    null,
-  );
+  const [contactInfo, setContactInfo] = useState<OnboardingStep1Payload | null>(null);
 
   // Step 2: Venue Details
-  const [venueDetails, setVenueDetails] =
-    useState<OnboardingStep2Payload | null>(null);
+  const [venueDetails, setVenueDetails] = useState<OnboardingStep2Payload | null>(null);
   const [hasCoaches, setHasCoaches] = useState(false);
 
   // Step 3: Images
-  const [imagePresignedUrls, setImagePresignedUrls] = useState<PresignedUrl[]>(
-    [],
-  );
+  const [imagePresignedUrls, setImagePresignedUrls] = useState<PresignedUrl[]>([]);
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 
   // Step 4: Documents
-  const [documentPresignedUrls, setDocumentPresignedUrls] = useState<
-    PresignedUrl[]
-  >([]);
+  const [documentPresignedUrls, setDocumentPresignedUrls] = useState<PresignedUrl[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDoc[]>([]);
 
   const resetOnboardingFlow = useCallback(() => {
@@ -197,7 +189,7 @@ function OnboardingFlow() {
         setLoading(false);
       }
     },
-    [],
+    []
   );
 
   // ============ Email Verification ============
@@ -234,7 +226,7 @@ function OnboardingFlow() {
         // Get image presigned URLs for step 3
         const imageUrlsResponse = await onboardingApi.getImageUploadUrls(
           venueId,
-          data.sports, // Pass sports array for categorized image upload
+          data.sports // Pass sports array for categorized image upload
         );
 
         if (!imageUrlsResponse.success || !imageUrlsResponse.data) {
@@ -249,7 +241,7 @@ function OnboardingFlow() {
         setLoading(false);
       }
     },
-    [venueId, goToStep],
+    [venueId, goToStep]
   );
 
   // ============ STEP 3: Confirm images and get document URLs ============
@@ -260,7 +252,7 @@ function OnboardingFlow() {
       sportImages: Record<string, string[]>,
       sportImageKeys: Record<string, string[]>,
       coverPhotoUrl: string,
-      coverPhotoKey: string,
+      coverPhotoKey: string
     ) => {
       setLoading(true);
 
@@ -268,20 +260,12 @@ function OnboardingFlow() {
         if (!venueId) throw new Error("Venue ID not found");
 
         // Store uploaded images (flatten for legacy compatibility)
-        const allImages = [
-          ...generalImages,
-          ...Object.values(sportImages).flat(),
-        ];
-        const allKeys = [
-          ...generalImageKeys,
-          ...Object.values(sportImageKeys).flat(),
-        ];
-        const uploadedImagesData: UploadedImage[] = allImages.map(
-          (url, index) => ({
-            key: allKeys[index],
-            url,
-          }),
-        );
+        const allImages = [...generalImages, ...Object.values(sportImages).flat()];
+        const allKeys = [...generalImageKeys, ...Object.values(sportImageKeys).flat()];
+        const uploadedImagesData: UploadedImage[] = allImages.map((url, index) => ({
+          key: allKeys[index],
+          url,
+        }));
         setUploadedImages(uploadedImagesData);
 
         // Confirm images with server (sport-specific structure)
@@ -298,9 +282,7 @@ function OnboardingFlow() {
         });
 
         if (!confirmResponse.success) {
-          throw new Error(
-            confirmResponse.message || "Failed to confirm images",
-          );
+          throw new Error(confirmResponse.message || "Failed to confirm images");
         }
 
         // Get document presigned URLs for step 4
@@ -332,10 +314,7 @@ function OnboardingFlow() {
           },
         ];
 
-        const docUrlsResponse = await onboardingApi.getDocumentUploadUrls(
-          venueId,
-          docTypes,
-        );
+        const docUrlsResponse = await onboardingApi.getDocumentUploadUrls(venueId, docTypes);
 
         if (!docUrlsResponse.success || !docUrlsResponse.data) {
           throw new Error("Failed to generate document upload URLs");
@@ -344,14 +323,12 @@ function OnboardingFlow() {
         setDocumentPresignedUrls(docUrlsResponse.data.uploadUrls || []);
         goToStep(4);
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to proceed to next step",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to proceed to next step");
       } finally {
         setLoading(false);
       }
     },
-    [venueId, goToStep],
+    [venueId, goToStep]
   );
 
   // ============ STEP 4: Finalize with documents ============
@@ -380,9 +357,7 @@ function OnboardingFlow() {
         });
 
         if (!finalizeResponse.success) {
-          throw new Error(
-            finalizeResponse.message || "Failed to finalize onboarding",
-          );
+          throw new Error(finalizeResponse.message || "Failed to finalize onboarding");
         }
 
         // If venue has coaches, go to Step 5, otherwise finalize
@@ -390,9 +365,7 @@ function OnboardingFlow() {
           goToStep(5);
         } else {
           toast.success(
-            "Venue submitted for approval. Details sent to " +
-              contactInfo?.ownerEmail +
-              ".",
+            "Venue submitted for approval. Details sent to " + contactInfo?.ownerEmail + "."
           );
 
           // Reset for next submission
@@ -401,21 +374,12 @@ function OnboardingFlow() {
           }, 3000);
         }
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to finalize onboarding",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to finalize onboarding");
       } finally {
         setLoading(false);
       }
     },
-    [
-      venueId,
-      uploadedImages,
-      contactInfo?.ownerEmail,
-      hasCoaches,
-      resetOnboardingFlow,
-      goToStep,
-    ],
+    [venueId, uploadedImages, contactInfo?.ownerEmail, hasCoaches, resetOnboardingFlow, goToStep]
   );
 
   // ============ STEP 5: Finalize with coaches (optional) ============
@@ -437,9 +401,7 @@ function OnboardingFlow() {
         }
 
         toast.success(
-          "Venue submitted for approval. Details sent to " +
-            contactInfo?.ownerEmail +
-            ".",
+          "Venue submitted for approval. Details sent to " + contactInfo?.ownerEmail + "."
         );
 
         // Reset for next submission
@@ -447,14 +409,12 @@ function OnboardingFlow() {
           resetOnboardingFlow();
         }, 3000);
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to finalize onboarding",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to finalize onboarding");
       } finally {
         setLoading(false);
       }
     },
-    [venueId, contactInfo?.ownerEmail, resetOnboardingFlow],
+    [venueId, contactInfo?.ownerEmail, resetOnboardingFlow]
   );
 
   // ============ SKIP HANDLERS (Dev Mode) ============
@@ -512,14 +472,12 @@ function OnboardingFlow() {
         await handleStep2SubmitVenueDetails(dummyData);
       } catch (err) {
         console.error("Skip step 2 error:", err);
-        toast.error(
-          err instanceof Error ? err.message : "Failed to skip step 2",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to skip step 2");
       } finally {
         setLoading(false);
       }
     },
-    [venueId, handleStep2SubmitVenueDetails],
+    [venueId, handleStep2SubmitVenueDetails]
   );
 
   const handleSkipStep3 = useCallback(async () => {
@@ -527,8 +485,7 @@ function OnboardingFlow() {
     try {
       if (!venueId) throw new Error("Venue ID not found");
 
-      const dummyImageUrl =
-        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800";
+      const dummyImageUrl = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800";
 
       // Generate structured dummy images (to match validation)
       const generalImages = [dummyImageUrl, dummyImageUrl, dummyImageUrl];
@@ -544,9 +501,7 @@ function OnboardingFlow() {
       // Generate 5 images per sport
       // Use sports from venue details or fallback to Cricket (for robustness)
       const sportsToUse =
-        venueDetails?.sports && venueDetails.sports.length > 0
-          ? venueDetails.sports
-          : ["Cricket"];
+        venueDetails?.sports && venueDetails.sports.length > 0 ? venueDetails.sports : ["Cricket"];
 
       sportsToUse.forEach((sport) => {
         sportImages[sport] = Array(5).fill(dummyImageUrl);
@@ -554,14 +509,8 @@ function OnboardingFlow() {
       });
 
       // Flatten for legacy state compatibility
-      const dummyImages = [
-        ...generalImages,
-        ...Object.values(sportImages).flat(),
-      ];
-      const dummyImageKeys = [
-        ...generalImageKeys,
-        ...Object.values(sportImageKeys).flat(),
-      ];
+      const dummyImages = [...generalImages, ...Object.values(sportImages).flat()];
+      const dummyImageKeys = [...generalImageKeys, ...Object.values(sportImageKeys).flat()];
 
       // Confirm images
       const confirmResponse = await onboardingApi.confirmImagesStep3({
@@ -580,41 +529,36 @@ function OnboardingFlow() {
         throw new Error("Failed to confirm images");
       }
 
-      setUploadedImages(
-        dummyImages.map((url, i) => ({ key: dummyImageKeys[i], url })),
-      );
+      setUploadedImages(dummyImages.map((url, i) => ({ key: dummyImageKeys[i], url })));
 
       // Get document presigned URLs for step 4
-      const docUrlsResponse = await onboardingApi.getDocumentUploadUrls(
-        venueId,
-        [
-          {
-            type: "OWNERSHIP_PROOF",
-            fileName: "ownership.pdf",
-            contentType: "application/pdf",
-          },
-          {
-            type: "BUSINESS_REGISTRATION",
-            fileName: "registration.pdf",
-            contentType: "application/pdf",
-          },
-          {
-            type: "TAX_DOCUMENT",
-            fileName: "tax.pdf",
-            contentType: "application/pdf",
-          },
-          {
-            type: "INSURANCE",
-            fileName: "insurance.pdf",
-            contentType: "application/pdf",
-          },
-          {
-            type: "CERTIFICATE",
-            fileName: "certificate.pdf",
-            contentType: "application/pdf",
-          },
-        ],
-      );
+      const docUrlsResponse = await onboardingApi.getDocumentUploadUrls(venueId, [
+        {
+          type: "OWNERSHIP_PROOF",
+          fileName: "ownership.pdf",
+          contentType: "application/pdf",
+        },
+        {
+          type: "BUSINESS_REGISTRATION",
+          fileName: "registration.pdf",
+          contentType: "application/pdf",
+        },
+        {
+          type: "TAX_DOCUMENT",
+          fileName: "tax.pdf",
+          contentType: "application/pdf",
+        },
+        {
+          type: "INSURANCE",
+          fileName: "insurance.pdf",
+          contentType: "application/pdf",
+        },
+        {
+          type: "CERTIFICATE",
+          fileName: "certificate.pdf",
+          contentType: "application/pdf",
+        },
+      ]);
 
       if (!docUrlsResponse.success || !docUrlsResponse.data) {
         throw new Error("Failed to generate document upload URLs");
@@ -636,18 +580,11 @@ function OnboardingFlow() {
       if (!venueId) throw new Error("Venue ID not found");
 
       // Use dummy images if none uploaded (for skip case)
-      const dummyImageUrl =
-        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800";
+      const dummyImageUrl = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800";
       const imagesToSubmit =
         uploadedImages.length > 0
           ? uploadedImages.map((img) => img.url)
-          : [
-              dummyImageUrl,
-              dummyImageUrl,
-              dummyImageUrl,
-              dummyImageUrl,
-              dummyImageUrl,
-            ];
+          : [dummyImageUrl, dummyImageUrl, dummyImageUrl, dummyImageUrl, dummyImageUrl];
 
       const coverPhotoUrl = uploadedImages[0]?.url || dummyImageUrl;
 
@@ -687,9 +624,7 @@ function OnboardingFlow() {
       });
 
       if (!finalizeResponse.success) {
-        throw new Error(
-          finalizeResponse.message || "Failed to finalize onboarding",
-        );
+        throw new Error(finalizeResponse.message || "Failed to finalize onboarding");
       }
 
       // If venue has coaches, go to Step 5, otherwise finalize
@@ -700,9 +635,7 @@ function OnboardingFlow() {
       } else {
         console.log("Showing success message (no coaches)");
         toast.success(
-          "Dev Mode: Venue skipped to approval. Details sent to " +
-            contactInfo?.ownerEmail +
-            ".",
+          "Dev Mode: Venue skipped to approval. Details sent to " + contactInfo?.ownerEmail + "."
         );
 
         // Reset for next submission
@@ -716,14 +649,7 @@ function OnboardingFlow() {
     } finally {
       setLoading(false);
     }
-  }, [
-    venueId,
-    uploadedImages,
-    contactInfo?.ownerEmail,
-    hasCoaches,
-    resetOnboardingFlow,
-    goToStep,
-  ]);
+  }, [venueId, uploadedImages, contactInfo?.ownerEmail, hasCoaches, resetOnboardingFlow, goToStep]);
   const handleBack = useCallback(() => {
     if (currentStep > 1) {
       flowBack();
@@ -733,9 +659,7 @@ function OnboardingFlow() {
   const handleCancel = useCallback(async () => {
     if (!venueId) return;
 
-    const confirmed = confirm(
-      "Are you sure you want to cancel? Your progress will be lost.",
-    );
+    const confirmed = confirm("Are you sure you want to cancel? Your progress will be lost.");
     if (!confirmed) return;
 
     setLoading(true);
@@ -755,7 +679,7 @@ function OnboardingFlow() {
       if (targetStep >= currentStep) return;
       goToStep(targetStep);
     },
-    [loading, currentStep, goToStep],
+    [loading, currentStep, goToStep]
   );
 
   if (isBooting) {
@@ -774,15 +698,15 @@ function OnboardingFlow() {
       <button
         onClick={handleBack}
         disabled={loading}
-        className="flex-1 py-3 bg-slate-100 text-slate-800 font-medium rounded-xl hover:bg-slate-200 disabled:opacity-50 flex items-center justify-center gap-2 transition"
+        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-100 py-3 font-medium text-slate-800 transition hover:bg-slate-200 disabled:opacity-50"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="h-4 w-4" />
         Back
       </button>
       <button
         onClick={handleCancel}
         disabled={loading}
-        className="flex-1 py-3 bg-red-50 text-red-700 font-medium rounded-xl hover:bg-red-100 disabled:opacity-50 transition"
+        className="flex-1 rounded-xl bg-red-50 py-3 font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-50"
       >
         Cancel
       </button>
@@ -794,17 +718,14 @@ function OnboardingFlow() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            List Your Venue
-          </h1>
-          <p className="text-slate-600">
-            Complete these 5 steps to get your venue on PowerMySport
-          </p>
+          <h1 className="mb-2 text-4xl font-bold text-slate-900">List Your Venue</h1>
+          <p className="text-slate-600">Complete these 5 steps to get your venue on PowerMySport</p>
           <p className="mx-auto mt-3 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
-            Early access — bookings aren&apos;t open yet. Submit your details now and our team will review and activate your listing once venue bookings launch.
+            Early access — bookings aren&apos;t open yet. Submit your details now and our team will
+            review and activate your listing once venue bookings launch.
           </p>
           {activeStepMeta && (
-            <p className="mt-3 inline-flex items-center rounded-full border border-power-orange/20 bg-power-orange/10 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-power-orange">
+            <p className="border-power-orange/20 bg-power-orange/10 text-power-orange mt-3 inline-flex items-center rounded-full border px-4 py-1 text-xs font-semibold tracking-wide uppercase">
               Step {currentStep} of 5
             </p>
           )}
@@ -815,12 +736,12 @@ function OnboardingFlow() {
         </div>
 
         {/* Progress Bar */}
-        <div className="sticky top-4 z-20 max-w-4xl mx-auto mb-8 rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-xs backdrop-blur-sm">
+        <div className="sticky top-4 z-20 mx-auto mb-8 max-w-4xl rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-xs backdrop-blur-sm">
           <div className="relative mb-4 overflow-x-auto">
             <div className="relative min-w-180 pb-2">
-              <div className="absolute left-6 right-6 top-6 h-0.5 rounded-full bg-slate-200" />
+              <div className="absolute top-6 right-6 left-6 h-0.5 rounded-full bg-slate-200" />
               <div
-                className="absolute left-6 top-6 h-0.5 rounded-full bg-power-orange transition-all duration-500"
+                className="bg-power-orange absolute top-6 left-6 h-0.5 rounded-full transition-all duration-500"
                 style={{
                   width: `max(0px, calc(${progressPercent}% - 0.5rem))`,
                 }}
@@ -831,17 +752,10 @@ function OnboardingFlow() {
                   const isCompleted = item.step < currentStep;
                   const isActive = item.step === currentStep;
                   const isFuture = item.step > currentStep;
-                  const stepStateLabel = isCompleted
-                    ? "Done"
-                    : isActive
-                      ? "Current"
-                      : "Upcoming";
+                  const stepStateLabel = isCompleted ? "Done" : isActive ? "Current" : "Upcoming";
 
                   return (
-                    <div
-                      key={`step-${item.step}`}
-                      className="relative text-center"
-                    >
+                    <div key={`step-${item.step}`} className="relative text-center">
                       <button
                         type="button"
                         onClick={() => handleStepJump(item.step)}
@@ -855,10 +769,10 @@ function OnboardingFlow() {
                         }
                         className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold ring-4 ring-white transition-all duration-300 ${
                           isCompleted
-                            ? "bg-turf-green text-white shadow-md hover:scale-105 cursor-pointer"
+                            ? "bg-turf-green cursor-pointer text-white shadow-md hover:scale-105"
                             : isActive
-                              ? "bg-linear-to-br from-power-orange to-orange-500 text-white shadow-lg scale-110"
-                              : "bg-slate-200 text-slate-600 cursor-not-allowed"
+                              ? "from-power-orange scale-110 bg-linear-to-br to-orange-500 text-white shadow-lg"
+                              : "cursor-not-allowed bg-slate-200 text-slate-600"
                         }`}
                       >
                         {isCompleted ? (
@@ -872,7 +786,7 @@ function OnboardingFlow() {
                       <div
                         className={`mt-3 rounded-2xl border px-3 py-3 transition-all duration-300 ${
                           isActive
-                            ? "border-power-orange/25 bg-linear-to-b from-power-orange/10 to-white shadow-sm"
+                            ? "border-power-orange/25 from-power-orange/10 bg-linear-to-b to-white shadow-sm"
                             : isCompleted
                               ? "border-emerald-200 bg-emerald-50/70"
                               : "border-slate-200 bg-slate-50/80"
@@ -880,7 +794,7 @@ function OnboardingFlow() {
                       >
                         <div className="flex items-center justify-center gap-2">
                           <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
                               isActive
                                 ? "bg-power-orange/15 text-power-orange"
                                 : isCompleted
@@ -892,7 +806,7 @@ function OnboardingFlow() {
                           </span>
                         </div>
                         <p
-                          className={`mt-2 text-[11px] md:text-xs font-semibold leading-tight ${
+                          className={`mt-2 text-[11px] leading-tight font-semibold md:text-xs ${
                             isActive ? "text-power-orange" : "text-slate-800"
                           }`}
                         >
@@ -906,9 +820,9 @@ function OnboardingFlow() {
             </div>
           </div>
 
-          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full bg-power-orange transition-all duration-500"
+              className="bg-power-orange h-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             ></div>
           </div>
@@ -923,10 +837,8 @@ function OnboardingFlow() {
 
         {/* Step Content */}
         <div
-          className={`max-w-3xl mx-auto transition-all duration-300 ${
-            isStepVisible
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-2"
+          className={`mx-auto max-w-3xl transition-all duration-300 ${
+            isStepVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
           }`}
         >
           {currentStep === 1 && (
@@ -1000,15 +912,12 @@ function OnboardingFlow() {
 
         {/* Footer */}
         <div
-          className="max-w-3xl mx-auto mt-12 text-center text-sm text-slate-600"
+          className="mx-auto mt-12 max-w-3xl text-center text-sm text-slate-600"
           aria-live="polite"
         >
           <p>
             Need help? Contact us at{" "}
-            <a
-              href="mailto:teams@powermysport.com"
-              className="text-power-orange hover:underline"
-            >
+            <a href="mailto:teams@powermysport.com" className="text-power-orange hover:underline">
               teams@powermysport.com
             </a>
           </p>

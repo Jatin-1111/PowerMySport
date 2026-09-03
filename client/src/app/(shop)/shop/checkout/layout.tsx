@@ -4,13 +4,9 @@ import React from "react";
 
 export const metadata: Metadata = noindexMetadata(
   "Shop Checkout",
-  "Complete your PowerMySport shop order.",
+  "Complete your PowerMySport shop order."
 );
 
-export default function ShopCheckoutLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ShopCheckoutLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

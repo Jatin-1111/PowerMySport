@@ -65,10 +65,7 @@ const layer = (name, files, ...banned) => ({
   name: `boundaries/${name}`,
   files,
   rules: {
-    "no-restricted-imports": [
-      "error",
-      { patterns: banned.map((key) => bans[key]) },
-    ],
+    "no-restricted-imports": ["error", { patterns: banned.map((key) => bans[key]) }],
   },
 });
 
@@ -80,7 +77,13 @@ const eslintConfig = defineConfig([
   layer("app-shell", ["src/components/**/*.{ts,tsx}"], "app"),
 
   // Infrastructure: framework-free, owns no UI.
-  layer("infrastructure", ["src/utils/**/*.{ts,tsx}", "src/types/**/*.{ts,tsx}"], "app", "components", "modules"),
+  layer(
+    "infrastructure",
+    ["src/utils/**/*.{ts,tsx}", "src/types/**/*.{ts,tsx}"],
+    "app",
+    "components",
+    "modules"
+  ),
 
   // src/lib is infrastructure with one intentional exception: QueryProvider owns
   // cache identity and so must read the auth store. Documented there.
@@ -96,7 +99,14 @@ const eslintConfig = defineConfig([
   layer("features", ["src/modules/**/*.{ts,tsx}"], "app", "components"),
 
   // Bottom of the UI graph. Listed last so it wins over "features" above.
-  layer("primitives", ["src/modules/shared/ui/**/*.{ts,tsx}"], "app", "components", "modules", "lib"),
+  layer(
+    "primitives",
+    ["src/modules/shared/ui/**/*.{ts,tsx}"],
+    "app",
+    "components",
+    "modules",
+    "lib"
+  ),
 
   // Override default ignores of eslint-config-next.
   globalIgnores([

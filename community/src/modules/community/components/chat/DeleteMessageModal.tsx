@@ -7,11 +7,7 @@ interface DeleteMessageModalProps {
   onConfirm: () => void;
 }
 
-export function DeleteMessageModal({
-  isDeleting,
-  onClose,
-  onConfirm,
-}: DeleteMessageModalProps) {
+export function DeleteMessageModal({ isDeleting, onClose, onConfirm }: DeleteMessageModalProps) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -34,21 +30,19 @@ export function DeleteMessageModal({
               <Trash2 size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
-                Delete Message
-              </h3>
+              <h3 className="text-lg font-bold text-slate-900">Delete Message</h3>
             </div>
           </div>
           <button
             onClick={onClose}
             disabled={isDeleting}
-            className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition disabled:opacity-50"
+            className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
           >
             <X size={18} />
           </button>
         </div>
-        
-        <p className="mt-4 text-sm text-slate-500 leading-relaxed">
+
+        <p className="mt-4 text-sm leading-relaxed text-slate-500">
           Are you sure you want to delete this message? This action cannot be undone.
         </p>
 

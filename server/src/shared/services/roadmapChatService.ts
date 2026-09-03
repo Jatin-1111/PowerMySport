@@ -37,7 +37,7 @@ function formatDate(d: Date): string {
 
 function buildUpcomingTournamentsBlock(
   sportName: string,
-  upcoming: UpcomingTournamentContext[],
+  upcoming: UpcomingTournamentContext[]
 ): string {
   if (upcoming.length === 0) {
     return `## Upcoming tournament dates
@@ -47,8 +47,8 @@ We do not currently have any upcoming ${sportName} tournament dates in our calen
   const asOf = formatDate(
     upcoming.reduce(
       (latest, t) => (t.lastCheckedAt > latest ? t.lastCheckedAt : latest),
-      upcoming[0]!.lastCheckedAt,
-    ),
+      upcoming[0]!.lastCheckedAt
+    )
   );
 
   const rows = upcoming
@@ -56,9 +56,7 @@ We do not currently have any upcoming ${sportName} tournament dates in our calen
       const parts = [
         `- ${t.name}: starts ${formatDate(t.startDate)}`,
         t.endDate ? `ends ${formatDate(t.endDate)}` : "",
-        t.city || t.venue
-          ? `at ${[t.venue, t.city].filter(Boolean).join(", ")}`
-          : "",
+        t.city || t.venue ? `at ${[t.venue, t.city].filter(Boolean).join(", ")}` : "",
         t.ageGroups?.length ? `age groups: ${t.ageGroups.join("/")}` : "",
         t.registrationDeadlineDate
           ? `registration closes ${formatDate(t.registrationDeadlineDate)}`
@@ -77,10 +75,9 @@ When the parent asks about tournament dates or "what's next", answer DIRECTLY fr
 export function buildRoadmapChatSystemPrompt(
   pathway: PathwayContext,
   currentStageKey?: string,
-  upcomingTournaments: UpcomingTournamentContext[] = [],
+  upcomingTournaments: UpcomingTournamentContext[] = []
 ): string {
-  const stage =
-    pathway.stages.find((s) => s.key === currentStageKey) || pathway.stages[0];
+  const stage = pathway.stages.find((s) => s.key === currentStageKey) || pathway.stages[0];
 
   // The stage's own five buckets, verbatim. Only the headlines go in — the
   // written answers can run to a page each and would crowd out everything else.
@@ -89,25 +86,23 @@ export function buildRoadmapChatSystemPrompt(
 
   const questionsBlock = block(
     "Questions parents typically have at this stage:",
-    (stage?.questions ?? []).map((q) => q.question),
+    (stage?.questions ?? []).map((q) => q.question)
   );
   const signalsBlock = block(
     "What a parent should be watching for at this stage:",
-    (stage?.signals ?? []).map((s) => s.title),
+    (stage?.signals ?? []).map((s) => s.title)
   );
   const decisionsBlock = block(
     "Decisions this stage may put in front of them:",
-    (stage?.decisions ?? []).map((d) => d.title),
+    (stage?.decisions ?? []).map((d) => d.title)
   );
   const nextStepsBlock = block(
     "The next steps this stage recommends:",
-    (stage?.nextSteps ?? []).map((n) => `${n.when} → ${n.action}`),
+    (stage?.nextSteps ?? []).map((n) => `${n.when} → ${n.action}`)
   );
   const stageListBlock = block(
     `The full ${pathway.sportName} pathway, in order:`,
-    pathway.stages.map(
-      (s) => `Stage ${s.order} — ${s.name} (${s.ageRange}): ${s.coreQuestion}`,
-    ),
+    pathway.stages.map((s) => `Stage ${s.order} — ${s.name} (${s.ageRange}): ${s.coreQuestion}`)
   );
 
   return `You are a friendly Youth Sports Coach on the PowerMySport platform. A parent is browsing the development pathway for "${pathway.sportName}" in the app right now and has a quick question.

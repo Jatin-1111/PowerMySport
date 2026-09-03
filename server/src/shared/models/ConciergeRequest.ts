@@ -47,7 +47,7 @@ const ConciergeRequestSchema = new Schema<IConciergeRequest>(
     },
     adminNotes: { type: String },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // getAllConciergeRequests (admin) sorts {createdAt:-1} unfiltered;
@@ -57,5 +57,5 @@ ConciergeRequestSchema.index({ createdAt: -1 });
 
 export const ConciergeRequest = mongoose.model<IConciergeRequest>(
   "ConciergeRequest",
-  ConciergeRequestSchema,
+  ConciergeRequestSchema
 );

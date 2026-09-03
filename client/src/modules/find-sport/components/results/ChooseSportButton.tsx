@@ -37,7 +37,7 @@ export function ChooseSportButton({
   if (chosen) {
     return (
       <span
-        className={`inline-flex items-center justify-center gap-2 rounded-xl bg-turf-green/10 px-4 py-2.5 text-sm font-bold text-turf-green ${width}`}
+        className={`bg-turf-green/10 text-turf-green inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold ${width}`}
       >
         <Check className="h-4 w-4 shrink-0" />
         You&apos;re starting here
@@ -52,8 +52,8 @@ export function ChooseSportButton({
       disabled={saving}
       className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${width} ${
         tone === "subtle"
-          ? "border border-slate-200 bg-white text-slate-600 hover:border-power-orange hover:text-power-orange"
-          : "border border-slate-200 text-slate-600 hover:border-power-orange hover:bg-power-orange/5 hover:text-power-orange"
+          ? "hover:border-power-orange hover:text-power-orange border border-slate-200 bg-white text-slate-600"
+          : "hover:border-power-orange hover:bg-power-orange/5 hover:text-power-orange border border-slate-200 text-slate-600"
       }`}
     >
       Start with {sportName}

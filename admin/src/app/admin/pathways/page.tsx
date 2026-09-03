@@ -9,14 +9,8 @@
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { slugify } from "@/modules/admin/components/pathway/StageEditor";
-import {
-  Field,
-  TextInput,
-} from "@/modules/admin/components/pathway/fields";
-import {
-  adminApi,
-  type AdminPathwayGuideRow,
-} from "@/modules/admin/services/admin";
+import { Field, TextInput } from "@/modules/admin/components/pathway/fields";
+import { adminApi, type AdminPathwayGuideRow } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
 import axios from "axios";
 import { Loader2, Plus, Trash2 } from "lucide-react";
@@ -27,9 +21,7 @@ import { useCallback, useEffect, useState } from "react";
 /** Pull the server's message (and pathed errors) out of an axios failure. */
 export function readApiErrors(error: unknown): string[] {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as
-      | { message?: string; errors?: string[] }
-      | undefined;
+    const data = error.response?.data as { message?: string; errors?: string[] } | undefined;
     if (data?.errors?.length) return data.errors;
     if (data?.message) return [data.message];
   }
@@ -81,7 +73,7 @@ export default function AdminPathwaysPage() {
   const remove = async (row: AdminPathwayGuideRow) => {
     if (
       !window.confirm(
-        `Delete the ${row.sportName} pathway and all ${row.stageCount} of its stages? This cannot be undone.`,
+        `Delete the ${row.sportName} pathway and all ${row.stageCount} of its stages? This cannot be undone.`
       )
     )
       return;
@@ -107,11 +99,7 @@ export default function AdminPathwaysPage() {
         <h2 className="text-lg font-bold text-slate-900">Start a new pathway</h2>
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <Field label="Sport" hint="The display name — the slug is derived from it.">
-            <TextInput
-              value={sportName}
-              onChange={setSportName}
-              placeholder="Tennis"
-            />
+            <TextInput value={sportName} onChange={setSportName} placeholder="Tennis" />
           </Field>
           <button
             type="button"
@@ -119,11 +107,7 @@ export default function AdminPathwaysPage() {
             disabled={creating || !sportName.trim()}
             className="inline-flex h-[38px] items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-40"
           >
-            {creating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
+            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             Create draft
           </button>
         </div>
@@ -141,7 +125,7 @@ export default function AdminPathwaysPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
+              <thead className="border-b border-slate-200 text-xs tracking-wide text-slate-400 uppercase">
                 <tr>
                   <th className="py-2">Sport</th>
                   <th className="py-2">Stages</th>
@@ -156,7 +140,7 @@ export default function AdminPathwaysPage() {
                     <td className="py-2.5">
                       <Link
                         href={`/admin/pathways/${row._id}`}
-                        className="font-semibold text-slate-800 hover:text-power-orange"
+                        className="hover:text-power-orange font-semibold text-slate-800"
                       >
                         {row.sportName}
                       </Link>
@@ -174,9 +158,7 @@ export default function AdminPathwaysPage() {
                       </span>
                     </td>
                     <td className="py-2.5 text-slate-500">
-                      {row.updatedAt
-                        ? new Date(row.updatedAt).toLocaleDateString("en-IN")
-                        : "—"}
+                      {row.updatedAt ? new Date(row.updatedAt).toLocaleDateString("en-IN") : "—"}
                     </td>
                     <td className="py-2.5">
                       <div className="flex justify-end">

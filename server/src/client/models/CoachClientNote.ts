@@ -36,12 +36,12 @@ const coachClientNoteSchema = new Schema<CoachClientNoteDocument>(
     sessionDate: { type: Date },
     bookingId: { type: Schema.Types.ObjectId, ref: "Booking" },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 coachClientNoteSchema.index({ coachId: 1, clientId: 1, createdAt: -1 });
 
 export const CoachClientNote = mongoose.model<CoachClientNoteDocument>(
   "CoachClientNote",
-  coachClientNoteSchema,
+  coachClientNoteSchema
 );

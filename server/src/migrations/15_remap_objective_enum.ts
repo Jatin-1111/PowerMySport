@@ -21,9 +21,7 @@ const REMAP: Record<string, string> = {
 };
 
 export async function up(): Promise<void> {
-  console.log(
-    "Starting migration: Remap primaryObjective enum to Recreational/Fitness/Compete...",
-  );
+  console.log("Starting migration: Remap primaryObjective enum to Recreational/Fitness/Compete...");
 
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -38,18 +36,18 @@ export async function up(): Promise<void> {
     for (const [oldValue, newValue] of Object.entries(REMAP)) {
       const playerResult = await Player.updateMany(
         { primaryObjective: oldValue },
-        { $set: { primaryObjective: newValue } },
+        { $set: { primaryObjective: newValue } }
       );
       console.log(
-        `- Player.primaryObjective: ${oldValue} -> ${newValue} (${playerResult.modifiedCount} updated)`,
+        `- Player.primaryObjective: ${oldValue} -> ${newValue} (${playerResult.modifiedCount} updated)`
       );
 
       const guidanceResult = await GuidanceSubmission.updateMany(
         { "request.primary_objective": oldValue },
-        { $set: { "request.primary_objective": newValue } },
+        { $set: { "request.primary_objective": newValue } }
       );
       console.log(
-        `- GuidanceSubmission.request.primary_objective: ${oldValue} -> ${newValue} (${guidanceResult.modifiedCount} updated)`,
+        `- GuidanceSubmission.request.primary_objective: ${oldValue} -> ${newValue} (${guidanceResult.modifiedCount} updated)`
       );
     }
 
@@ -72,23 +70,23 @@ export async function down(): Promise<void> {
   try {
     const playerResult = await Player.updateMany(
       { primaryObjective: "Fitness" },
-      { $set: { primaryObjective: "Health" } },
+      { $set: { primaryObjective: "Health" } }
     );
     const playerResult2 = await Player.updateMany(
       { primaryObjective: "Compete" },
-      { $set: { primaryObjective: "Competitive" } },
+      { $set: { primaryObjective: "Competitive" } }
     );
     const guidanceResult = await GuidanceSubmission.updateMany(
       { "request.primary_objective": "Fitness" },
-      { $set: { "request.primary_objective": "Health" } },
+      { $set: { "request.primary_objective": "Health" } }
     );
     const guidanceResult2 = await GuidanceSubmission.updateMany(
       { "request.primary_objective": "Compete" },
-      { $set: { "request.primary_objective": "Competitive" } },
+      { $set: { "request.primary_objective": "Competitive" } }
     );
 
     console.log(
-      `Rollback completed: Player Fitness->Health (${playerResult.modifiedCount}), Player Compete->Competitive (${playerResult2.modifiedCount}), GuidanceSubmission Fitness->Health (${guidanceResult.modifiedCount}), GuidanceSubmission Compete->Competitive (${guidanceResult2.modifiedCount}). Social->Recreational is not reversible.`,
+      `Rollback completed: Player Fitness->Health (${playerResult.modifiedCount}), Player Compete->Competitive (${playerResult2.modifiedCount}), GuidanceSubmission Fitness->Health (${guidanceResult.modifiedCount}), GuidanceSubmission Compete->Competitive (${guidanceResult2.modifiedCount}). Social->Recreational is not reversible.`
     );
   } catch (error) {
     console.error("Rollback failed:", error);

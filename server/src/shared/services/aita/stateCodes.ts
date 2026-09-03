@@ -92,13 +92,45 @@ export const AITA_ZONES = { NORTH: 1, SOUTH: 2, EAST: 3, WEST: 4 } as const;
 
 const ZONE_BY_CODE: Record<string, number> = {
   // North
-  CH: 1, DL: 1, HR: 1, HP: 1, JK: 1, LA: 1, PB: 1, UP: 1, UK: 1,
+  CH: 1,
+  DL: 1,
+  HR: 1,
+  HP: 1,
+  JK: 1,
+  LA: 1,
+  PB: 1,
+  UP: 1,
+  UK: 1,
   // South
-  AN: 2, AP: 2, KA: 2, KL: 2, LD: 2, PY: 2, TN: 2, TG: 2,
+  AN: 2,
+  AP: 2,
+  KA: 2,
+  KL: 2,
+  LD: 2,
+  PY: 2,
+  TN: 2,
+  TG: 2,
   // East
-  AR: 3, AS: 3, BR: 3, JH: 3, MN: 3, ML: 3, MZ: 3, NL: 3, OD: 3, SK: 3, TR: 3, WB: 3,
+  AR: 3,
+  AS: 3,
+  BR: 3,
+  JH: 3,
+  MN: 3,
+  ML: 3,
+  MZ: 3,
+  NL: 3,
+  OD: 3,
+  SK: 3,
+  TR: 3,
+  WB: 3,
   // West
-  CG: 4, DH: 4, GA: 4, GJ: 4, MP: 4, MH: 4, RJ: 4,
+  CG: 4,
+  DH: 4,
+  GA: 4,
+  GJ: 4,
+  MP: 4,
+  MH: 4,
+  RJ: 4,
 };
 
 /** AITA zone id for a state code, or null when the code is an alias or unknown. */
@@ -117,7 +149,7 @@ export function resolveZoneId(code: string): number | null {
  * whole-page 404.
  */
 export function reconcileStates(
-  published: ReadonlyArray<{ code: string; name: string }>,
+  published: ReadonlyArray<{ code: string; name: string }>
 ): string[] {
   const problems: string[] = [];
   for (const { code, name } of published) {
@@ -127,9 +159,7 @@ export function reconcileStates(
       continue;
     }
     if (resolved !== name) {
-      problems.push(
-        `State "${code}": AITA calls it "${name}", we call it "${resolved}"`,
-      );
+      problems.push(`State "${code}": AITA calls it "${name}", we call it "${resolved}"`);
     }
     if (resolveZoneId(code) === null) {
       problems.push(`State "${code}" (${name}) has no zone assigned`);

@@ -71,7 +71,9 @@ const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$
  * the mirror was built, but nothing sent it until the URLs grew a sport segment.
  */
 const sportOf = (req: Request): string =>
-  String(req.query.sport ?? "tennis").trim().toLowerCase() || "tennis";
+  String(req.query.sport ?? "tennis")
+    .trim()
+    .toLowerCase() || "tennis";
 
 export const listRankings = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -89,7 +91,7 @@ export const listRankings = async (req: Request, res: Response): Promise<void> =
     const page = Math.max(1, Number.parseInt(String(req.query.page ?? "1"), 10) || 1);
     const limit = Math.min(
       MAX_PAGE_SIZE,
-      Math.max(1, Number.parseInt(String(req.query.limit ?? "") , 10) || DEFAULT_PAGE_SIZE),
+      Math.max(1, Number.parseInt(String(req.query.limit ?? ""), 10) || DEFAULT_PAGE_SIZE)
     );
 
     const filter: Record<string, unknown> = { sportSlug, category, subcategory };
@@ -144,9 +146,10 @@ export const listRankings = async (req: Request, res: Response): Promise<void> =
     // snapshot aggregate — the alternative is a count query per distinct state
     // on the page.
     const stateSizes = new Map<string, number>(
-      ((snapshot?.stateCounts ?? []) as Array<{ state: string; count: number }>).map(
-        (bucket) => [bucket.state, bucket.count],
-      ),
+      ((snapshot?.stateCounts ?? []) as Array<{ state: string; count: number }>).map((bucket) => [
+        bucket.state,
+        bucket.count,
+      ])
     );
 
     const benchmarks = (snapshot?.benchmarks ?? []) as Benchmark[];
@@ -156,13 +159,11 @@ export const listRankings = async (req: Request, res: Response): Promise<void> =
       data: {
         entries: entries.map((entry) => ({
           ...withMovement(entry),
-          stateSize: entry.state ? stateSizes.get(entry.state) ?? null : null,
+          stateSize: entry.state ? (stateSizes.get(entry.state) ?? null) : null,
           // Computed here rather than in the browser so the rule for "which
           // rung is next" lives in exactly one place.
           nextTier:
-            benchmarks.length > 0
-              ? nextTierFor(entry.rank, entry.totalPoints, benchmarks)
-              : null,
+            benchmarks.length > 0 ? nextTierFor(entry.rank, entry.totalPoints, benchmarks) : null,
         })),
         // The source page this list came from, so a parent can check us against
         // AITA rather than taking our word for it.
@@ -192,7 +193,7 @@ export const getRankingMeta = async (req: Request, res: Response): Promise<void>
 
     const combos = LIVE_COMBOS.map(({ category, subcategory }) => {
       const snapshot = snapshots.find(
-        (s) => s.category === category && s.subcategory === subcategory,
+        (s) => s.category === category && s.subcategory === subcategory
       );
       return {
         category,
@@ -280,10 +281,7 @@ export const listRankingDates = async (req: Request, res: Response): Promise<voi
  * on the RankingEntry model). The API is safe; a crawlable page keyed on a
  * child's name is a separate call that has not been made.
  */
-export const getPlayerRankingHistory = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPlayerRankingHistory = async (req: Request, res: Response): Promise<void> => {
   try {
     const regNo = String(req.params.regNo ?? "").trim();
     if (!/^\d{4,8}$/.test(regNo)) {
@@ -326,9 +324,7 @@ export const getPlayerRankingHistory = async (
               subcategory: entry.subcategory,
             })),
           })
-            .select(
-              "category subcategory rowCount benchmarks stateCounts bandProfiles comparedTo",
-            )
+            .select("category subcategory rowCount benchmarks stateCounts bandProfiles comparedTo")
             .lean()
         : [];
 
@@ -382,10 +378,10 @@ function buildPlayerInsight(
     stateCounts?: Array<{ state: string; count: number }>;
     bandProfiles?: unknown[];
   }>,
-  history: Array<{ category: string; subcategory: string; asOnDate: Date; rank: number }>,
+  history: Array<{ category: string; subcategory: string; asOnDate: Date; rank: number }>
 ) {
   const snapshot = snapshots.find(
-    (s) => s.category === entry.category && s.subcategory === entry.subcategory,
+    (s) => s.category === entry.category && s.subcategory === entry.subcategory
   );
   const listSize = typeof snapshot?.rowCount === "number" ? snapshot.rowCount : null;
 
@@ -393,7 +389,7 @@ function buildPlayerInsight(
   // mirror goes back twelve months, and a number that looks like a career and
   // is not would be the wrong kind of wrong.
   const own = history.filter(
-    (point) => point.category === entry.category && point.subcategory === entry.subcategory,
+    (point) => point.category === entry.category && point.subcategory === entry.subcategory
   );
 
   let careerHigh: { rank: number; asOnDate: Date } | null = null;
@@ -406,15 +402,13 @@ function buildPlayerInsight(
   return {
     listSize,
     stateSize: entry.state
-      ? (snapshot?.stateCounts ?? []).find((b) => b.state === entry.state)?.count ?? null
+      ? ((snapshot?.stateCounts ?? []).find((b) => b.state === entry.state)?.count ?? null)
       : null,
     // "Top 25%" rather than "#412 of 1,648" — the same fact, in the form a
     // reader can actually hold. Rounded up so a player is never told they are
     // in a better band than they are.
     percentile:
-      listSize && listSize > 0
-        ? Math.max(1, Math.ceil((entry.rank / listSize) * 100))
-        : null,
+      listSize && listSize > 0 ? Math.max(1, Math.ceil((entry.rank / listSize) * 100)) : null,
     nextTier:
       snapshot?.benchmarks && snapshot.benchmarks.length > 0
         ? nextTierFor(entry.rank, entry.totalPoints, snapshot.benchmarks)

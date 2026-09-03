@@ -66,11 +66,8 @@ export default function AdminAcademiesPage() {
     page: 1,
     totalPages: 1,
   });
-  const [selectedAcademyId, setSelectedAcademyId] = useState<string | null>(
-    null,
-  );
-  const [selectedAcademy, setSelectedAcademy] =
-    useState<AcademyAdminReviewDetails | null>(null);
+  const [selectedAcademyId, setSelectedAcademyId] = useState<string | null>(null);
+  const [selectedAcademy, setSelectedAcademy] = useState<AcademyAdminReviewDetails | null>(null);
   const [selectedLoading, setSelectedLoading] = useState(false);
   const [actionMode, setActionMode] = useState<ActionMode | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -142,9 +139,7 @@ export default function AdminAcademiesPage() {
 
   const currentSelection = useMemo(() => {
     if (!selectedAcademyId) return null;
-    return (
-      academies.find((academy) => academy.id === selectedAcademyId) || null
-    );
+    return academies.find((academy) => academy.id === selectedAcademyId) || null;
   }, [academies, selectedAcademyId]);
 
   const openAction = (mode: ActionMode) => {
@@ -175,18 +170,12 @@ export default function AdminAcademiesPage() {
         await adminApi.rejectAcademy(selectedAcademyId, rejectionReason.trim());
         toast.success("Academy rejected successfully.");
       } else if (actionMode === "SUSPEND") {
-        await adminApi.suspendAcademy(
-          selectedAcademyId,
-          suspendReason.trim() || undefined,
-        );
+        await adminApi.suspendAcademy(selectedAcademyId, suspendReason.trim() || undefined);
         toast.success("Academy suspended successfully.");
       }
 
       closeAction();
-      await Promise.all([
-        loadAcademies(),
-        loadSelectedAcademy(selectedAcademyId),
-      ]);
+      await Promise.all([loadAcademies(), loadSelectedAcademy(selectedAcademyId)]);
     } catch (err) {
       console.error("Failed to process academy action:", err);
       toast.error("Failed to process academy action.");
@@ -209,9 +198,7 @@ export default function AdminAcademiesPage() {
 
   const toggleSelectAll = () => {
     setSelectedIds((prev) =>
-      prev.size === academies.length
-        ? new Set()
-        : new Set(academies.map((a) => a.id)),
+      prev.size === academies.length ? new Set() : new Set(academies.map((a) => a.id))
     );
   };
 
@@ -229,21 +216,19 @@ export default function AdminAcademiesPage() {
         ids.map((id) =>
           mode === "APPROVE"
             ? adminApi.approveAcademy(id)
-            : adminApi.rejectAcademy(id, bulkRejectReason.trim()),
-        ),
+            : adminApi.rejectAcademy(id, bulkRejectReason.trim())
+        )
       );
       const failed = results.filter((r) => r.status === "rejected").length;
       const succeeded = ids.length - failed;
 
       if (succeeded > 0) {
         toast.success(
-          `${mode === "APPROVE" ? "Approved" : "Rejected"} ${succeeded} ${succeeded === 1 ? "academy" : "academies"}.`,
+          `${mode === "APPROVE" ? "Approved" : "Rejected"} ${succeeded} ${succeeded === 1 ? "academy" : "academies"}.`
         );
       }
       if (failed > 0) {
-        toast.error(
-          `Failed to process ${failed} ${failed === 1 ? "academy" : "academies"}.`,
-        );
+        toast.error(`Failed to process ${failed} ${failed === 1 ? "academy" : "academies"}.`);
       }
 
       setShowBulkRejectInput(false);
@@ -267,7 +252,7 @@ export default function AdminAcademiesPage() {
         />
         <Link
           href="/admin/academies/add"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          className="bg-power-orange inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
         >
           <Plus size={16} />
           Create Academy
@@ -276,8 +261,7 @@ export default function AdminAcademiesPage() {
 
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-slate-600">
-          {pagination.total} academy{submissionCountLabel(pagination.total)} in
-          queue
+          {pagination.total} academy{submissionCountLabel(pagination.total)} in queue
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
@@ -346,7 +330,7 @@ export default function AdminAcademiesPage() {
                 value={bulkRejectReason}
                 onChange={(event) => setBulkRejectReason(event.target.value)}
                 placeholder="Rejection reason applied to all selected academies..."
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                className="focus:border-power-orange focus:ring-power-orange/40 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
               />
               <button
                 disabled={bulkBusy}
@@ -362,8 +346,8 @@ export default function AdminAcademiesPage() {
 
       {error ? (
         <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
+          <div className="space-y-3 py-10 text-center">
+            <p className="font-semibold text-red-600">{error}</p>
             <button
               onClick={loadAcademies}
               className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
@@ -389,10 +373,7 @@ export default function AdminAcademiesPage() {
                   <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
                     <input
                       type="checkbox"
-                      checked={
-                        selectedIds.size > 0 &&
-                        selectedIds.size === academies.length
-                      }
+                      checked={selectedIds.size > 0 && selectedIds.size === academies.length}
                       onChange={toggleSelectAll}
                       className="h-4 w-4 rounded border-slate-300"
                     />
@@ -407,12 +388,10 @@ export default function AdminAcademiesPage() {
 
             {academies.length === 0 ? (
               <div className="flex flex-col items-center gap-4 py-10 text-center text-slate-600">
-                <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
+                <div className="bg-power-orange/10 text-power-orange rounded-full px-4 py-2 text-sm font-semibold">
                   No academies found
                 </div>
-                <p className="max-w-md">
-                  There are no records for the selected filter right now.
-                </p>
+                <p className="max-w-md">There are no records for the selected filter right now.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -482,8 +461,7 @@ export default function AdminAcademiesPage() {
               <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-center text-sm text-slate-600 sm:text-left">
                   Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                  {Math.min(currentPage * PAGE_SIZE, pagination.total)} of{" "}
-                  {pagination.total}
+                  {Math.min(currentPage * PAGE_SIZE, pagination.total)} of {pagination.total}
                 </p>
                 <div className="flex items-center justify-center gap-2">
                   <button
@@ -494,11 +472,7 @@ export default function AdminAcademiesPage() {
                     <ChevronLeft size={18} />
                   </button>
                   <button
-                    onClick={() =>
-                      setCurrentPage(
-                        Math.min(pagination.totalPages, currentPage + 1),
-                      )
-                    }
+                    onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
                     disabled={currentPage === pagination.totalPages}
                     className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -513,12 +487,9 @@ export default function AdminAcademiesPage() {
             {!selectedAcademyId ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 py-14 text-center text-slate-600">
                 <ShieldAlert size={28} className="text-slate-400" />
-                <p className="font-semibold text-slate-900">
-                  Select an academy
-                </p>
+                <p className="font-semibold text-slate-900">Select an academy</p>
                 <p className="max-w-sm text-sm">
-                  Review details, verify KYC, and approve or reject the
-                  submission.
+                  Review details, verify KYC, and approve or reject the submission.
                 </p>
               </div>
             ) : selectedLoading ? (
@@ -526,9 +497,7 @@ export default function AdminAcademiesPage() {
             ) : selectedAcademy ? (
               <div className="space-y-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">
-                    {selectedAcademy.name}
-                  </h2>
+                  <h2 className="text-xl font-bold text-slate-900">{selectedAcademy.name}</h2>
                   <p className="mt-1 text-sm text-slate-600">
                     {selectedAcademy.legalName || selectedAcademy.name}
                   </p>
@@ -556,54 +525,41 @@ export default function AdminAcademiesPage() {
                 <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                   <div>
                     <span className="font-semibold text-slate-900">Owner:</span>{" "}
-                    {selectedAcademy.ownerId?.name ||
-                      selectedAcademy.ownerEmail ||
-                      "N/A"}
+                    {selectedAcademy.ownerId?.name || selectedAcademy.ownerEmail || "N/A"}
                   </div>
                   <div>
                     <span className="font-semibold text-slate-900">Phone:</span>{" "}
-                    {selectedAcademy.ownerId?.phone ||
-                      selectedAcademy.ownerPhone ||
-                      "N/A"}
+                    {selectedAcademy.ownerId?.phone || selectedAcademy.ownerPhone || "N/A"}
                   </div>
                   <div>
-                    <span className="font-semibold text-slate-900">
-                      Submitted:
-                    </span>{" "}
+                    <span className="font-semibold text-slate-900">Submitted:</span>{" "}
                     {formatDate(selectedAcademy.submittedAt || "N/A")}
                   </div>
                   <div>
-                    <span className="font-semibold text-slate-900">
-                      Last reviewed:
-                    </span>{" "}
+                    <span className="font-semibold text-slate-900">Last reviewed:</span>{" "}
                     {formatDate(
-                      selectedAcademy.lastReviewedAt ||
-                        selectedAcademy.submittedAt ||
-                        "N/A",
+                      selectedAcademy.lastReviewedAt || selectedAcademy.submittedAt || "N/A"
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-3 text-sm text-slate-700">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Sports
                     </p>
-                    <p className="mt-1">
-                      {selectedAcademy.sports?.join(", ") || "N/A"}
-                    </p>
+                    <p className="mt-1">{selectedAcademy.sports?.join(", ") || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Description
                     </p>
                     <p className="mt-1 leading-relaxed">
-                      {selectedAcademy.description ||
-                        "No description provided."}
+                      {selectedAcademy.description || "No description provided."}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Compliance
                     </p>
                     <p className="mt-1">
@@ -620,14 +576,14 @@ export default function AdminAcademiesPage() {
                     onChange={(event) => setRejectionReason(event.target.value)}
                     rows={4}
                     placeholder="Use this field for rejection reasons or review notes."
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                    className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                   />
                   <textarea
                     value={suspendReason}
                     onChange={(event) => setSuspendReason(event.target.value)}
                     rows={3}
                     placeholder="Optional suspend reason."
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                    className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                   />
                 </div>
 
@@ -695,11 +651,7 @@ export default function AdminAcademiesPage() {
                 : "Suspend"
         }
         cancelLabel="Cancel"
-        variant={
-          actionMode === "REJECT" || actionMode === "SUSPEND"
-            ? "danger"
-            : "default"
-        }
+        variant={actionMode === "REJECT" || actionMode === "SUSPEND" ? "danger" : "default"}
         loading={actionLoading}
         onConfirm={runAction}
         onCancel={closeAction}

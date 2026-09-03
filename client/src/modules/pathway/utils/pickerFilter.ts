@@ -40,8 +40,7 @@ export function indexSports(entries: PathwayIndexEntry[]): PickerSport[] {
   return entries
     .map((entry, position) => ({ entry, position }))
     .sort((a, b) => {
-      const rank =
-        pathwaySportRank(a.entry.sportSlug) - pathwaySportRank(b.entry.sportSlug);
+      const rank = pathwaySportRank(a.entry.sportSlug) - pathwaySportRank(b.entry.sportSlug);
       // Ties are every unregistered sport at once, so fall back to the order the
       // API gave us rather than letting sort() decide.
       return rank !== 0 ? rank : a.position - b.position;
@@ -54,9 +53,7 @@ export function indexSports(entries: PathwayIndexEntry[]): PickerSport[] {
 }
 
 /** Groups that actually have a sport in them, most populated first. */
-export function groupCounts(
-  sports: PickerSport[],
-): Array<[SportGroup, number]> {
+export function groupCounts(sports: PickerSport[]): Array<[SportGroup, number]> {
   const counts = new Map<SportGroup, number>();
   for (const sport of sports) {
     counts.set(sport.group, (counts.get(sport.group) ?? 0) + 1);
@@ -75,13 +72,11 @@ export function groupCounts(
  */
 export function filterSports(
   sports: PickerSport[],
-  { group, query }: PickerFilters,
+  { group, query }: PickerFilters
 ): PathwayIndexEntry[] {
   const needle = query.trim().toLowerCase();
   return sports
     .filter((sport) => group === "All" || sport.group === group)
-    .filter(
-      (sport) => !needle || sport.terms.some((term) => term.includes(needle)),
-    )
+    .filter((sport) => !needle || sport.terms.some((term) => term.includes(needle)))
     .map((sport) => sport.entry);
 }

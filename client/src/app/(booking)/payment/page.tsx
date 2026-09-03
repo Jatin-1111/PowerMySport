@@ -68,12 +68,12 @@ function PaymentPageContent() {
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [coach, setCoach] = useState<any | null>(null);
-  const [subscriptionPackage, setSubscriptionPackage] =
-    useState<CoachSubscriptionPackage | null>(null);
+  const [subscriptionPackage, setSubscriptionPackage] = useState<CoachSubscriptionPackage | null>(
+    null
+  );
   const [loading, setLoading] = useState(!!bookingId || isSubscriptionPayment);
   const [resolvedStatus, setResolvedStatus] = useState(status);
-  const providerTypeLabel =
-    type === "coach" ? "coach" : type === "academy" ? "academy" : "venue";
+  const providerTypeLabel = type === "coach" ? "coach" : type === "academy" ? "academy" : "venue";
   const providerTypeLabelPlural =
     type === "coach" ? "coaches" : type === "academy" ? "academies" : "venues";
   const communityUrl = getCommunityAppUrl({
@@ -93,12 +93,11 @@ function PaymentPageContent() {
         }
 
         try {
-          const [coachResponse, packagesResponse, profileResponse] =
-            await Promise.all([
-              coachApi.getCoachById(coachId),
-              coachApi.getCoachPackages(coachId),
-              fetchProfile().catch(() => null),
-            ]);
+          const [coachResponse, packagesResponse, profileResponse] = await Promise.all([
+            coachApi.getCoachById(coachId),
+            coachApi.getCoachPackages(coachId),
+            fetchProfile().catch(() => null),
+          ]);
 
           if (coachResponse.success && coachResponse.data) {
             setCoach(coachResponse.data);
@@ -106,7 +105,7 @@ function PaymentPageContent() {
 
           if (packagesResponse.success && packagesResponse.data) {
             const selectedPackage = packagesResponse.data.packages.find(
-              (item) => (item._id || item.id) === packageId,
+              (item) => (item._id || item.id) === packageId
             );
             setSubscriptionPackage(selectedPackage || null);
           }
@@ -171,8 +170,7 @@ function PaymentPageContent() {
     const verifyPayment = async () => {
       try {
         attempts += 1;
-        const result =
-          await bookingApi.verifyPhonePeOrderStatus(merchantOrderId);
+        const result = await bookingApi.verifyPhonePeOrderStatus(merchantOrderId);
         if (!isActive) return;
 
         if (result?.state === "COMPLETED") {
@@ -215,8 +213,7 @@ function PaymentPageContent() {
     const verifyPayment = async () => {
       try {
         attempts += 1;
-        const result =
-          await coachApi.verifySubscriptionPaymentStatus(merchantOrderId);
+        const result = await coachApi.verifySubscriptionPaymentStatus(merchantOrderId);
         if (!isActive) return;
 
         if (result?.state === "COMPLETED") {
@@ -270,7 +267,7 @@ function PaymentPageContent() {
   // Server-priced — see useSubscriptionQuote. The client no longer derives fees
   // from its own NEXT_PUBLIC_* rate copies.
   const { breakdown: subscriptionCharges } = useSubscriptionQuote(
-    Math.round(subscriptionPackage?.price || 0),
+    Math.round(subscriptionPackage?.price || 0)
   );
 
   if (isSubscriptionPayment) {
@@ -282,7 +279,7 @@ function PaymentPageContent() {
           : "Coach";
 
     return (
-      <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff8ee_100%)] flex flex-col">
+      <div className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff8ee_100%)]">
         <Navigation sticky />
         <div className="h-16" aria-hidden />
         <main className="flex-1 py-10">
@@ -306,25 +303,22 @@ function PaymentPageContent() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left space-y-3">
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Coach
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {coachName}
-                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{coachName}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Package
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">
                     {subscriptionPackage?.name || "Selected package"}
                   </p>
                   <p className="text-sm text-slate-600">
-                    {subscriptionPackage?.description ||
-                      "Your selected subscription package."}
+                    {subscriptionPackage?.description || "Your selected subscription package."}
                   </p>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm">
@@ -339,18 +333,14 @@ function PaymentPageContent() {
                   <span className="text-slate-600">Platform fee</span>
                   <span className="font-semibold text-slate-900">
                     {subscriptionPackage
-                      ? formatCurrency(
-                          subscriptionCharges.platformFeePaise / 100,
-                        )
+                      ? formatCurrency(subscriptionCharges.platformFeePaise / 100)
                       : "-"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm">
                   <span className="text-slate-600">Taxes</span>
                   <span className="font-semibold text-slate-900">
-                    {subscriptionPackage
-                      ? formatCurrency(subscriptionCharges.taxPaise / 100)
-                      : "-"}
+                    {subscriptionPackage ? formatCurrency(subscriptionCharges.taxPaise / 100) : "-"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm">
@@ -372,11 +362,7 @@ function PaymentPageContent() {
                 <Button
                   variant="primary"
                   className="w-full"
-                  onClick={() =>
-                    router.push(
-                      isProgrammeEnrolment ? "/my-classes" : "/dashboard",
-                    )
-                  }
+                  onClick={() => router.push(isProgrammeEnrolment ? "/my-classes" : "/dashboard")}
                 >
                   {isProgrammeEnrolment ? "Go to my classes" : "Go to dashboard"}
                 </Button>
@@ -385,9 +371,7 @@ function PaymentPageContent() {
                   className="w-full"
                   onClick={() =>
                     router.push(
-                      isProgrammeEnrolment
-                        ? `/programmes/${offeringId}`
-                        : `/coaches/${coachId}`,
+                      isProgrammeEnrolment ? `/programmes/${offeringId}` : `/coaches/${coachId}`
                     )
                   }
                 >
@@ -403,23 +387,21 @@ function PaymentPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff8ee_100%)] flex flex-col">
+    <div className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff8ee_100%)]">
       <Navigation sticky />
       <div className="h-16" aria-hidden />
       <main className="flex-1 py-10">
-        <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-xl px-4 sm:px-6 lg:px-8">
           <Card className="space-y-4 rounded-3xl border border-slate-200/70 bg-white/95 p-6 text-center shadow-sm backdrop-blur-sm sm:p-8">
             <div className="flex justify-center">{icon}</div>
             <div>
-              <h2 className="font-title text-2xl font-semibold text-slate-900">
-                {title}
-              </h2>
+              <h2 className="font-title text-2xl font-semibold text-slate-900">{title}</h2>
               <p className="mt-2 text-sm text-slate-600">{description}</p>
             </div>
 
             {/* Booking Details */}
             {isSuccess && booking && (
-              <div className="bg-slate-50 rounded-lg p-4 text-left space-y-3 border border-slate-200">
+              <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-left">
                 {/* Booking Type Badge */}
                 {booking.bookingType === "GROUP" && (
                   <div className="flex items-center gap-2">
@@ -452,28 +434,20 @@ function PaymentPageContent() {
                     ? academy.name || "Academy"
                     : coach
                       ? bookingCoachName(coach) ||
-                        (coach.sports?.[0]
-                          ? `${coach.sports[0]} Coach`
-                          : "Coach")
+                        (coach.sports?.[0] ? `${coach.sports[0]} Coach` : "Coach")
                       : venue?.name || label;
                   return (
                     <div>
-                      <p className="text-xs text-slate-500 uppercase font-semibold">
-                        {label}
-                      </p>
-                      <p className="text-sm font-semibold text-slate-900 mt-1">
-                        {value}
-                      </p>
+                      <p className="text-xs font-semibold text-slate-500 uppercase">{label}</p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
                     </div>
                   );
                 })()}
                 <div className="border-t border-slate-200"></div>
                 {booking.date && (
                   <div>
-                    <p className="text-xs text-slate-500 uppercase font-semibold">
-                      Date
-                    </p>
-                    <p className="text-sm text-slate-900 mt-1">
+                    <p className="text-xs font-semibold text-slate-500 uppercase">Date</p>
+                    <p className="mt-1 text-sm text-slate-900">
                       {new Date(booking.date).toLocaleDateString("en-IN", {
                         weekday: "long",
                         year: "numeric",
@@ -485,56 +459,40 @@ function PaymentPageContent() {
                 )}
                 {booking.startTime && booking.endTime && (
                   <div>
-                    <p className="text-xs text-slate-500 uppercase font-semibold">
-                      Time
-                    </p>
-                    <p className="text-sm text-slate-900 mt-1">
+                    <p className="text-xs font-semibold text-slate-500 uppercase">Time</p>
+                    <p className="mt-1 text-sm text-slate-900">
                       {booking.startTime} - {booking.endTime}
                     </p>
                   </div>
                 )}
                 {booking.sport && (
                   <div>
-                    <p className="text-xs text-slate-500 uppercase font-semibold">
-                      Sport
-                    </p>
-                    <p className="text-sm text-slate-900 mt-1">
-                      {booking.sport}
-                    </p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase">Sport</p>
+                    <p className="mt-1 text-sm text-slate-900">{booking.sport}</p>
                   </div>
                 )}
                 {/* Group Booking Participants */}
                 {booking.bookingType === "GROUP" && booking.participants && (
                   <div className="border-t border-slate-200">
-                    <p className="text-xs text-slate-500 uppercase font-semibold mb-2">
+                    <p className="mb-2 text-xs font-semibold text-slate-500 uppercase">
                       Participants (
-                      {booking.participants.filter(
-                        (p) => p.status === "ACCEPTED",
-                      ).length + 1}
-                      )
+                      {booking.participants.filter((p) => p.status === "ACCEPTED").length + 1})
                     </p>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-sm">
-                        <div className="w-6 h-6 rounded-full bg-power-orange text-white flex items-center justify-center text-xs font-semibold">
+                        <div className="bg-power-orange flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white">
                           O
                         </div>
-                        <span className="text-slate-900 font-medium">
-                          You (Organizer)
-                        </span>
+                        <span className="font-medium text-slate-900">You (Organizer)</span>
                       </div>
                       {booking.participants
                         .filter((p) => p.status === "ACCEPTED")
                         .map((participant, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <div className="w-6 h-6 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center text-xs font-semibold">
+                          <div key={idx} className="flex items-center gap-2 text-sm">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-300 text-xs font-semibold text-slate-700">
                               {participant.name.charAt(0).toUpperCase()}
                             </div>
-                            <span className="text-slate-700">
-                              {participant.name}
-                            </span>
+                            <span className="text-slate-700">{participant.name}</span>
                           </div>
                         ))}
                     </div>
@@ -545,7 +503,7 @@ function PaymentPageContent() {
                   booking.paymentType === "SPLIT" &&
                   booking.payments && (
                     <div className="border-t border-slate-200">
-                      <p className="text-xs text-slate-500 uppercase font-semibold mb-2">
+                      <p className="mb-2 text-xs font-semibold text-slate-500 uppercase">
                         Payment Split
                       </p>
                       <div className="space-y-1.5">
@@ -557,7 +515,7 @@ function PaymentPageContent() {
                               nameStr = "Your share";
                             } else if (booking.participants) {
                               const participant = booking.participants.find(
-                                (p) => p.userId === payment.userId,
+                                (p) => p.userId === payment.userId
                               );
                               if (participant) {
                                 nameStr = `${participant.name}'s share`;
@@ -565,13 +523,8 @@ function PaymentPageContent() {
                             }
 
                             return (
-                              <div
-                                key={idx}
-                                className="flex justify-between items-center text-sm"
-                              >
-                                <span className="text-slate-700">
-                                  {nameStr}
-                                </span>
+                              <div key={idx} className="flex items-center justify-between text-sm">
+                                <span className="text-slate-700">{nameStr}</span>
                                 <span className="font-semibold text-slate-900">
                                   ₹{payment.amount}
                                 </span>
@@ -583,13 +536,12 @@ function PaymentPageContent() {
                   )}
                 {booking.totalAmount && (
                   <div className="border-t border-slate-200">
-                    <p className="text-xs text-slate-500 uppercase font-semibold">
-                      {booking.bookingType === "GROUP" &&
-                      booking.paymentType === "SPLIT"
+                    <p className="text-xs font-semibold text-slate-500 uppercase">
+                      {booking.bookingType === "GROUP" && booking.paymentType === "SPLIT"
                         ? "Total Booking Amount"
                         : "Amount Paid"}
                     </p>
-                    <p className="text-lg font-bold text-power-orange mt-1">
+                    <p className="text-power-orange mt-1 text-lg font-bold">
                       ₹{booking.totalAmount}
                     </p>
                   </div>
@@ -602,22 +554,18 @@ function PaymentPageContent() {
               <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-left text-xs text-blue-800">
                 {booking.paymentType === "SPLIT" ? (
                   <div className="space-y-1">
-                    <p className="font-semibold">
-                      ℹ️ Group Booking - Split Payment
-                    </p>
+                    <p className="font-semibold">ℹ️ Group Booking - Split Payment</p>
                     <p>
-                      Your payment share has been confirmed. The booking will be
-                      finalized once all participants complete their payments.
+                      Your payment share has been confirmed. The booking will be finalized once all
+                      participants complete their payments.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    <p className="font-semibold">
-                      ℹ️ Group Booking - Single Payment
-                    </p>
+                    <p className="font-semibold">ℹ️ Group Booking - Single Payment</p>
                     <p>
-                      You've paid the full amount for the group booking. All
-                      invited participants have been notified.
+                      You've paid the full amount for the group booking. All invited participants
+                      have been notified.
                     </p>
                   </div>
                 )}
@@ -643,17 +591,12 @@ function PaymentPageContent() {
               />
             )}
             <div className="flex flex-col gap-3">
-              <Button
-                variant="primary"
-                onClick={() => router.push("/dashboard/my-bookings")}
-              >
+              <Button variant="primary" onClick={() => router.push("/dashboard/my-bookings")}>
                 View my bookings
               </Button>
               <Button
                 variant="outline"
-                onClick={() =>
-                  router.push(`/booking?tab=${providerTypeLabelPlural}`)
-                }
+                onClick={() => router.push(`/booking?tab=${providerTypeLabelPlural}`)}
               >
                 Browse {providerTypeLabelPlural}
               </Button>
@@ -668,9 +611,7 @@ function PaymentPageContent() {
 
 export default function PaymentPage() {
   return (
-    <Suspense
-      fallback={<div className="text-center py-12">Loading payment...</div>}
-    >
+    <Suspense fallback={<div className="py-12 text-center">Loading payment...</div>}>
       <PaymentPageContent />
     </Suspense>
   );

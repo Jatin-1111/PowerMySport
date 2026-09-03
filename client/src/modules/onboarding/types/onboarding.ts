@@ -2,8 +2,7 @@
 // VENUE ONBOARDING TYPES
 // ============================================
 
-export type VenueApprovalStatus =
-  "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+export type VenueApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
 
 export interface VenueCoach {
   name: string;
@@ -14,12 +13,7 @@ export interface VenueCoach {
 }
 
 export interface VenueDocument {
-  type:
-    | "OWNERSHIP_PROOF"
-    | "BUSINESS_REGISTRATION"
-    | "TAX_DOCUMENT"
-    | "INSURANCE"
-    | "CERTIFICATE";
+  type: "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
   url: string;
   s3Key: string; // Permanent S3 key for regenerating presigned URLs
   fileName: string;
@@ -119,11 +113,7 @@ export interface OnboardingStep3Payload {
   coverPhotoKey: string; // S3 key for cover photo
   documents: Array<{
     type:
-      | "OWNERSHIP_PROOF"
-      | "BUSINESS_REGISTRATION"
-      | "TAX_DOCUMENT"
-      | "INSURANCE"
-      | "CERTIFICATE";
+      "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
     url: string;
     s3Key: string; // S3 key for document
     fileName: string;
@@ -149,12 +139,7 @@ export interface UploadedImage {
 }
 
 export interface UploadedDocument {
-  type:
-    | "OWNERSHIP_PROOF"
-    | "BUSINESS_REGISTRATION"
-    | "TAX_DOCUMENT"
-    | "INSURANCE"
-    | "CERTIFICATE";
+  type: "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
   file: File;
   fileName: string;
 }

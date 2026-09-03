@@ -25,8 +25,7 @@ export function useGuidanceHistory({
     api
       .get<{ success: boolean; data: GuidanceSubmission[] }>("/guidance")
       .then((res) => {
-        if (res.data.success && Array.isArray(res.data.data))
-          setHistory(res.data.data);
+        if (res.data.success && Array.isArray(res.data.data)) setHistory(res.data.data);
       })
       .catch(() => {});
   }, []);
@@ -42,8 +41,7 @@ export function useGuidanceHistory({
       }
       toast.success("Roadmap deleted");
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Unable to delete roadmap.";
+      const msg = err instanceof Error ? err.message : "Unable to delete roadmap.";
       toast.error(msg);
     } finally {
       setDeletingId(null);
@@ -61,7 +59,7 @@ export function useGuidanceHistory({
           behavior: "smooth",
           block: "start",
         }),
-      350,
+      350
     );
   };
 

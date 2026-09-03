@@ -77,9 +77,7 @@ export const linkVenuesToOwners = async () => {
 
           await user.save();
           console.log(`   ✓ Created new user account`);
-          console.log(
-            `   ℹ️  Temp password: ${tempPassword} (user should reset this)`,
-          );
+          console.log(`   ℹ️  Temp password: ${tempPassword} (user should reset this)`);
           created++;
         }
 

@@ -59,18 +59,17 @@ export function RankingTable({
     <div className="mt-5 overflow-x-auto rounded-xl border">
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">
-          {listLabel} ranking{stateFiltered ? `, ${stateFiltered}` : ""}, as on{" "}
-          {asOnLabel}
+          {listLabel} ranking{stateFiltered ? `, ${stateFiltered}` : ""}, as on {asOnLabel}
         </caption>
         <thead>
-          <tr className="border-b bg-muted/40 text-left align-bottom">
+          <tr className="bg-muted/40 border-b text-left align-bottom">
             <th scope="col" className="px-3 py-2.5 font-semibold sm:px-4">
               Rank
             </th>
             <th scope="col" className="px-3 py-2.5 font-semibold sm:px-4">
               Player
             </th>
-            <th scope="col" className="hidden px-3 py-2.5 font-semibold md:table-cell sm:px-4">
+            <th scope="col" className="hidden px-3 py-2.5 font-semibold sm:px-4 md:table-cell">
               State
             </th>
             <th scope="col" className="px-3 py-2.5 text-right font-semibold sm:px-4">
@@ -82,7 +81,7 @@ export function RankingTable({
           {entries.map((entry) => (
             <tr
               key={entry._id}
-              className="border-b align-top transition-colors last:border-0 hover:bg-muted/30"
+              className="hover:bg-muted/30 border-b align-top transition-colors last:border-0"
             >
               <td className="px-3 py-3 sm:px-4">
                 <span className="flex items-center gap-1.5">
@@ -90,7 +89,7 @@ export function RankingTable({
                   <RankDelta delta={entry.rankDelta} hasBaseline={hasBaseline} />
                 </span>
                 {showPercentile && (
-                  <span className="mt-1 block text-xs text-muted-foreground">
+                  <span className="text-muted-foreground mt-1 block text-xs">
                     {percentileLabel(entry.rank, listSize)}
                   </span>
                 )}
@@ -99,11 +98,11 @@ export function RankingTable({
               <td className="px-3 py-3 sm:px-4">
                 <Link
                   href={playerHref(sportSlug, entry.regNo)}
-                  className="font-medium leading-snug hover:text-power-orange hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 rounded"
+                  className="hover:text-power-orange focus-visible:ring-power-orange rounded leading-snug font-medium hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                   {entry.fullName}
                 </Link>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
+                <span className="text-muted-foreground mt-0.5 block text-xs">
                   {entry.regNo}
                   {/* "b. 2010" is an abbreviation a reader has to stop and
                       decode; the row has room for the word. */}
@@ -111,16 +110,14 @@ export function RankingTable({
                 </span>
                 {/* Below `md` there is no State column, so the same fact rides
                     along here instead of being dropped. */}
-                <span className="mt-0.5 block text-xs text-muted-foreground md:hidden">
+                <span className="text-muted-foreground mt-0.5 block text-xs md:hidden">
                   {entry.state ?? entry.stateCode ?? "—"}
                   {entry.stateRank ? ` · #${entry.stateRank} in state` : ""}
                 </span>
               </td>
 
-              <td className="hidden px-3 py-3 text-muted-foreground md:table-cell sm:px-4">
-                <span className="block leading-snug">
-                  {entry.state ?? entry.stateCode ?? "—"}
-                </span>
+              <td className="text-muted-foreground hidden px-3 py-3 sm:px-4 md:table-cell">
+                <span className="block leading-snug">{entry.state ?? entry.stateCode ?? "—"}</span>
                 {entry.stateRank && (
                   <span className="mt-0.5 block text-xs tabular-nums">
                     #{entry.stateRank}
@@ -136,11 +133,11 @@ export function RankingTable({
                 {/* Left-anchored inside a fixed-width cell, so every bar in the
                     column shares one baseline and lengths compare honestly. */}
                 <span
-                  className="mt-1.5 block h-1 w-full overflow-hidden rounded-full bg-rank-track"
+                  className="bg-rank-track mt-1.5 block h-1 w-full overflow-hidden rounded-full"
                   aria-hidden
                 >
                   <span
-                    className="block h-full rounded-full bg-rank-accent"
+                    className="bg-rank-accent block h-full rounded-full"
                     style={{ width: `${Math.max((entry.totalPoints / peak) * 100, 1)}%` }}
                   />
                 </span>

@@ -33,10 +33,7 @@ import {
   BookingTabBar,
   bookingTabConfig,
 } from "@/modules/booking/components/myBookingsTabs";
-import {
-  bucketBookings,
-  type BookingTabId,
-} from "@/modules/booking/utils/bookingBuckets";
+import { bucketBookings, type BookingTabId } from "@/modules/booking/utils/bookingBuckets";
 
 interface PaginationInfo {
   total: number;
@@ -65,10 +62,7 @@ function getStatusStyle(status: string) {
 }
 
 function formatBookingStatus(status: string) {
-  return status
-    .charAt(0)
-    .toUpperCase()
-    .concat(status.slice(1).toLowerCase().replace(/_/g, " "));
+  return status.charAt(0).toUpperCase().concat(status.slice(1).toLowerCase().replace(/_/g, " "));
 }
 
 // Compute expected refund percentage client-side based on the same policy the
@@ -81,13 +75,12 @@ function getRefundPreview(booking: Booking): {
   const dateStr = booking.date.split("T")[0]; // "YYYY-MM-DD"
   const [h, m] = booking.startTime.split(":").map(Number);
   const bookingStart = new Date(
-    `${dateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`,
+    `${dateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`
   );
   const hoursUntil = (bookingStart.getTime() - Date.now()) / (1000 * 60 * 60);
 
   if (hoursUntil > 48) return { percentage: 100, amount: booking.totalAmount };
-  if (hoursUntil > 24)
-    return { percentage: 50, amount: Math.round(booking.totalAmount * 0.5) };
+  if (hoursUntil > 24) return { percentage: 50, amount: Math.round(booking.totalAmount * 0.5) };
   return { percentage: 0, amount: 0 };
 }
 
@@ -111,9 +104,7 @@ export default function BookingsPage() {
   } | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [retryingRefundId, setRetryingRefundId] = useState<string | null>(null);
-  const [isCoveringPaymentId, setIsCoveringPaymentId] = useState<string | null>(
-    null,
-  );
+  const [isCoveringPaymentId, setIsCoveringPaymentId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -182,17 +173,16 @@ export default function BookingsPage() {
             ? {
                 ...b,
                 status: "CANCELLED" as const,
-                refundStatus:
-                  refundAmount > 0 ? ("PENDING" as const) : undefined,
+                refundStatus: refundAmount > 0 ? ("PENDING" as const) : undefined,
                 refundAmount: refundAmount > 0 ? refundAmount : undefined,
               }
-            : b,
-        ),
+            : b
+        )
       );
       if (refundAmount > 0) {
         toast.success(
           `Booking cancelled — ₹${refundAmount.toLocaleString("en-IN")} refund initiated`,
-          { duration: 6000 },
+          { duration: 6000 }
         );
       } else {
         toast.success("Booking cancelled");
@@ -218,25 +208,19 @@ export default function BookingsPage() {
             b.id === bookingId
               ? {
                   ...b,
-                  refundStatus: result.data!
-                    .refundStatus as Booking["refundStatus"],
+                  refundStatus: result.data!.refundStatus as Booking["refundStatus"],
                   refundAmount:
-                    result.data!.refundAmount > 0
-                      ? result.data!.refundAmount
-                      : b.refundAmount,
+                    result.data!.refundAmount > 0 ? result.data!.refundAmount : b.refundAmount,
                 }
-              : b,
-          ),
+              : b
+          )
         );
         toast.success("Refund retry initiated.");
       } else {
         toast.error(result.message || "Failed to retry refund.");
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message ||
-          "Failed to retry refund. Please try again.",
-      );
+      toast.error(error?.response?.data?.message || "Failed to retry refund. Please try again.");
     } finally {
       setRetryingRefundId(null);
     }
@@ -250,9 +234,7 @@ export default function BookingsPage() {
         toast.success("Unpaid shares covered successfully");
         if (response.data) {
           setBookings((prev) =>
-            prev.map((b) =>
-              b.id === bookingId ? { ...b, ...response.data } : b,
-            ),
+            prev.map((b) => (b.id === bookingId ? { ...b, ...response.data } : b))
           );
         }
       }
@@ -275,21 +257,14 @@ export default function BookingsPage() {
   const activeTabConfig = bookingTabConfig(activeTab);
 
   // Stats
-  const confirmedCount = bookings.filter(
-    (b) => b.status === "CONFIRMED",
-  ).length;
-  const upcomingCount = bookings.filter(
-    (b) => new Date(b.date) >= new Date(),
-  ).length;
+  const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length;
+  const upcomingCount = bookings.filter((b) => new Date(b.date) >= new Date()).length;
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "My Bookings" },
-          ]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Bookings" }]}
         />
 
         <PlayerPageHeader
@@ -304,12 +279,7 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "My Bookings" },
-        ]}
-      />
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Bookings" }]} />
 
       <PlayerPageHeader
         badge="Player"
@@ -329,29 +299,17 @@ export default function BookingsPage() {
 
       {/* Stats strip */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Total
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {bookings.length}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Total</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{bookings.length}</p>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Upcoming
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {upcomingCount}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Upcoming</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{upcomingCount}</p>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Confirmed
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {confirmedCount}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Confirmed</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{confirmedCount}</p>
         </div>
       </div>
 
@@ -364,9 +322,7 @@ export default function BookingsPage() {
             actionLabel="Book Venue"
             onAction={() => (window.location.href = "/booking")}
             secondaryActionLabel="Find a Coach"
-            onSecondaryAction={() =>
-              (window.location.href = "/booking?tab=coaches")
-            }
+            onSecondaryAction={() => (window.location.href = "/booking?tab=coaches")}
           />
         </Card>
       ) : (
@@ -391,9 +347,7 @@ export default function BookingsPage() {
                 title={activeTabConfig.emptyTitle}
                 description={activeTabConfig.emptyDescription}
                 actionLabel={activeTabConfig.emptyActionLabel}
-                onAction={() =>
-                  (window.location.href = activeTabConfig.browseHref)
-                }
+                onAction={() => (window.location.href = activeTabConfig.browseHref)}
               />
             </Card>
           ) : (
@@ -420,10 +374,7 @@ export default function BookingsPage() {
                     />
                     <div className="flex flex-1 flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                       <div className="flex-1">
-                        <BookingProviderHeading
-                          booking={booking}
-                          tab={activeTab}
-                        />
+                        <BookingProviderHeading booking={booking} tab={activeTab} />
 
                         {/* Common Details */}
                         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
@@ -433,38 +384,33 @@ export default function BookingsPage() {
                           </span>
                           <span className="inline-flex items-center gap-1.5">
                             <Clock className="h-3.5 w-3.5 text-slate-400" />
-                            {formatTime(booking.startTime)} –{" "}
-                            {formatTime(booking.endTime)}
+                            {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
                           </span>
                         </div>
 
                         {booking.sport && (
                           <p className="mt-2 text-sm text-slate-600">
-                            Sport:{" "}
-                            <span className="font-medium">{booking.sport}</span>
+                            Sport: <span className="font-medium">{booking.sport}</span>
                           </p>
                         )}
 
                         {booking.participantName && (
                           <p className="mt-1 text-sm text-slate-600">
                             Participant:{" "}
-                            <span className="font-medium">
-                              {booking.participantName}
-                            </span>
+                            <span className="font-medium">{booking.participantName}</span>
                           </p>
                         )}
 
-                        {booking.status === "CONFIRMED" &&
-                          booking.checkInCode && (
-                            <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                                Check-in Code
-                              </span>
-                              <span className="font-mono text-sm font-bold text-emerald-900">
-                                {booking.checkInCode}
-                              </span>
-                            </div>
-                          )}
+                        {booking.status === "CONFIRMED" && booking.checkInCode && (
+                          <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                            <span className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
+                              Check-in Code
+                            </span>
+                            <span className="font-mono text-sm font-bold text-emerald-900">
+                              {booking.checkInCode}
+                            </span>
+                          </div>
+                        )}
 
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                           <span className="inline-flex items-center gap-1 font-semibold text-slate-900">
@@ -479,8 +425,7 @@ export default function BookingsPage() {
                         </div>
 
                         {/* Refund status strip — only for cancelled / expired bookings */}
-                        {(booking.status === "CANCELLED" ||
-                          booking.status === "EXPIRED") &&
+                        {(booking.status === "CANCELLED" || booking.status === "EXPIRED") &&
                           booking.refundStatus && (
                             <div
                               className={`mt-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
@@ -514,21 +459,19 @@ export default function BookingsPage() {
                                 <button
                                   onClick={() => handleRetryRefund(booking.id)}
                                   disabled={retryingRefundId === booking.id}
-                                  className="ml-auto flex items-center gap-1 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50 transition-colors"
+                                  className="ml-auto flex items-center gap-1 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-200 disabled:opacity-50"
                                 >
                                   <RefreshCw
                                     className={`h-3 w-3 ${retryingRefundId === booking.id ? "animate-spin" : ""}`}
                                   />
-                                  {retryingRefundId === booking.id
-                                    ? "Retrying…"
-                                    : "Retry"}
+                                  {retryingRefundId === booking.id ? "Retrying…" : "Retry"}
                                 </button>
                               )}
                             </div>
                           )}
 
                         {booking.createdAt && (
-                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-xs text-slate-400">
+                          <div className="mt-4 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400">
                             <Clock className="h-3 w-3" />
                             Booked on {formatDate(booking.createdAt)} at{" "}
                             {formatTimestampTime(booking.createdAt)}
@@ -538,14 +481,8 @@ export default function BookingsPage() {
 
                       <div className="flex flex-col gap-2 sm:w-auto">
                         {canViewInvoice(booking.status) && (
-                          <Link
-                            href={`/dashboard/my-bookings/${booking.id}/invoice`}
-                          >
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              icon={<FileText size={14} />}
-                            >
+                          <Link href={`/dashboard/my-bookings/${booking.id}/invoice`}>
+                            <Button variant="secondary" size="sm" icon={<FileText size={14} />}>
                               Invoice
                             </Button>
                           </Link>
@@ -590,8 +527,8 @@ export default function BookingsPage() {
             <Card className="shop-surface premium-shadow">
               <div className="flex items-center justify-between gap-4">
                 <div className="text-sm text-slate-600">
-                  Page {currentPage} of {pagination.totalPages} •{" "}
-                  {filteredBookings.length} {activeTab} bookings
+                  Page {currentPage} of {pagination.totalPages} • {filteredBookings.length}{" "}
+                  {activeTab} bookings
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -606,14 +543,8 @@ export default function BookingsPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() =>
-                      setCurrentPage((p) =>
-                        Math.min(pagination.totalPages, p + 1),
-                      )
-                    }
-                    disabled={
-                      currentPage === pagination.totalPages || isLoading
-                    }
+                    onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    disabled={currentPage === pagination.totalPages || isLoading}
                   >
                     Next
                     <ChevronRight className="ml-1 h-4 w-4" />

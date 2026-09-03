@@ -32,7 +32,10 @@ const wizardAnswersSchema = z.object({
   environment: z.enum(["outdoor", "indoor", "no-preference"]).nullable().default(null),
   waterComfort: z.enum(["comfortable", "neutral", "uncomfortable"]).nullable().default(null),
   budget: z.enum(["under-3k", "3k-7k", "7k-15k", "15k-plus"]).nullable().default(null),
-  ambition: z.enum(["fun", "competitive", "national", "career", "professional"]).nullable().default(null),
+  ambition: z
+    .enum(["fun", "competitive", "national", "career", "professional"])
+    .nullable()
+    .default(null),
   weeklyHours: z.enum(["1-3", "4-7", "8-12", "13-plus"]).nullable().default(null),
 });
 

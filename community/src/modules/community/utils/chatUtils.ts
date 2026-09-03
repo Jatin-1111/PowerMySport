@@ -101,9 +101,7 @@ export const formatUserMeta = (user: CommunityUserSearchResult): string => {
   return parts.join(" • ");
 };
 
-export const isWithinMessageEditWindow = (
-  createdAt?: string | null,
-): boolean => {
+export const isWithinMessageEditWindow = (createdAt?: string | null): boolean => {
   if (!createdAt) return false;
   const created = new Date(createdAt).getTime();
   if (Number.isNaN(created)) return false;

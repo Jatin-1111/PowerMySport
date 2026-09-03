@@ -29,21 +29,15 @@ export default async function ShopPage({
   const params = await searchParams;
 
   const page = typeof params.page === "string" ? parseInt(params.page) : 1;
-  const category =
-    typeof params.category === "string" ? params.category : undefined;
+  const category = typeof params.category === "string" ? params.category : undefined;
   const search = typeof params.search === "string" ? params.search : undefined;
   const sortBy = typeof params.sortBy === "string" ? params.sortBy : "newest";
   const brand = typeof params.brand === "string" ? params.brand : undefined;
-  const rating =
-    typeof params.rating === "string" ? parseInt(params.rating) : undefined;
-  const minPrice =
-    typeof params.minPrice === "string" ? parseInt(params.minPrice) : undefined;
-  const maxPrice =
-    typeof params.maxPrice === "string" ? parseInt(params.maxPrice) : undefined;
-  const condition =
-    typeof params.condition === "string" ? params.condition : undefined;
-  const sellerType =
-    typeof params.sellerType === "string" ? params.sellerType : undefined;
+  const rating = typeof params.rating === "string" ? parseInt(params.rating) : undefined;
+  const minPrice = typeof params.minPrice === "string" ? parseInt(params.minPrice) : undefined;
+  const maxPrice = typeof params.maxPrice === "string" ? parseInt(params.maxPrice) : undefined;
+  const condition = typeof params.condition === "string" ? params.condition : undefined;
+  const sellerType = typeof params.sellerType === "string" ? params.sellerType : undefined;
 
   const data = await listProducts({
     page,
@@ -68,13 +62,10 @@ export default async function ShopPage({
   // Every filtered/paginated view canonicalises back to bare `/shop`, so the
   // ItemList is only emitted on that view — describing page 3 of a brand filter
   // as the contents of `/shop` would be a lie in schema.
-  const isCanonicalView =
-    Object.keys(params).length === 0 && data.products.length > 0;
+  const isCanonicalView = Object.keys(params).length === 0 && data.products.length > 0;
 
   return (
-    <Suspense
-      fallback={<div className="h-screen w-full animate-pulse bg-slate-50" />}
-    >
+    <Suspense fallback={<div className="h-screen w-full animate-pulse bg-slate-50" />}>
       {isCanonicalView && (
         <JsonLd
           data={itemListJsonLd({

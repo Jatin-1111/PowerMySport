@@ -55,7 +55,7 @@ const actionSchema = new Schema<PathwayAction>(
     label: { type: String, required: true, trim: true },
     href: { type: String, trim: true },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const questionSchema = new Schema<PathwayQuestion>(
@@ -63,7 +63,7 @@ const questionSchema = new Schema<PathwayQuestion>(
     question: { type: String, required: true, trim: true },
     answer: { type: String, trim: true },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const pointSchema = new Schema<PathwayPoint>(
@@ -71,7 +71,7 @@ const pointSchema = new Schema<PathwayPoint>(
     title: { type: String, required: true, trim: true },
     detail: { type: String, trim: true },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const nextStepSchema = new Schema<PathwayNextStep>(
@@ -79,7 +79,7 @@ const nextStepSchema = new Schema<PathwayNextStep>(
     when: { type: String, required: true, trim: true },
     action: { type: String, required: true, trim: true },
   },
-  { _id: false },
+  { _id: false }
 );
 
 // `_id: false` throughout: every one of these is addressed by its parent stage's
@@ -101,7 +101,7 @@ const stageSchema = new Schema<PathwayStageDocument>(
     primaryAction: { type: actionSchema, default: undefined },
     helpLinks: { type: [actionSchema], default: [] },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const pathwayGuideSchema = new Schema<PathwayGuideDocument>(
@@ -126,7 +126,7 @@ const pathwayGuideSchema = new Schema<PathwayGuideDocument>(
     updatedBy: { type: Schema.Types.ObjectId, ref: "Admin", default: null },
     publishedAt: { type: Date, default: null },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 pathwayGuideSchema.index({ sportSlug: 1 }, { unique: true });

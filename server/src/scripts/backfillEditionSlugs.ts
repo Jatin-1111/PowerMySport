@@ -70,7 +70,7 @@ async function main(): Promise<void> {
   console.log(
     APPLY
       ? `\nDone. ${written} edition(s) updated.`
-      : `\nReport only — nothing written. Re-run with --apply to write ${rows.length} slug(s).`,
+      : `\nReport only — nothing written. Re-run with --apply to write ${rows.length} slug(s).`
   );
   await mongoose.disconnect();
 }

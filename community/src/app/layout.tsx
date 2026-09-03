@@ -33,22 +33,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${spaceGrotesk.variable} ${geistMono.variable} antialiased bg-app text-slate-900 overflow-hidden`}
+        className={`${spaceGrotesk.variable} ${geistMono.variable} bg-app overflow-hidden text-slate-900 antialiased`}
       >
         <div className="flex h-dvh flex-col">
-          <Suspense
-            fallback={
-              <div className="h-16 w-full bg-white/90 border-b border-white/70" />
-            }
-          >
+          <Suspense fallback={<div className="h-16 w-full border-b border-white/70 bg-white/90" />}>
             <CommunityTopNav />
           </Suspense>
           <Suspense fallback={null}>
             <CommunityNotificationToastListener />
           </Suspense>
-          <main className="min-h-0 flex-1 relative overflow-y-auto">
-            {children}
-          </main>
+          <main className="relative min-h-0 flex-1 overflow-y-auto">{children}</main>
         </div>
         <Toaster
           richColors

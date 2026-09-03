@@ -50,9 +50,7 @@ async function main(): Promise<void> {
   await mongoose.connect(uri);
   try {
     const collection = mongoose.connection.collection("pathwayguides");
-    const guides = await collection
-      .find({}, { projection: { sportSlug: 1, stages: 1 } })
-      .toArray();
+    const guides = await collection.find({}, { projection: { sportSlug: 1, stages: 1 } }).toArray();
 
     let changedGuides = 0;
 
@@ -65,16 +63,14 @@ async function main(): Promise<void> {
           count +
           (stage.helpLinks ?? []).filter((l) => l.href === DEAD_HREF).length +
           (stage.primaryAction?.href === DEAD_HREF ? 1 : 0),
-        0,
+        0
       );
 
       if (hits === 0) continue;
 
       const replacement = CALENDAR_BY_SPORT[sportSlug];
       if (!replacement) {
-        console.warn(
-          `  ${sportSlug}: ${hits} dead link(s) but no calendar mapped — skipped.`,
-        );
+        console.warn(`  ${sportSlug}: ${hits} dead link(s) but no calendar mapped — skipped.`);
         continue;
       }
 
@@ -83,7 +79,7 @@ async function main(): Promise<void> {
         ...(stage.helpLinks
           ? {
               helpLinks: stage.helpLinks.map((link) =>
-                link.href === DEAD_HREF ? { ...link, href: replacement } : link,
+                link.href === DEAD_HREF ? { ...link, href: replacement } : link
               ),
             }
           : {}),
@@ -96,10 +92,7 @@ async function main(): Promise<void> {
       changedGuides += 1;
 
       if (!dryRun) {
-        await collection.updateOne(
-          { _id: guide._id },
-          { $set: { stages: patched } },
-        );
+        await collection.updateOne({ _id: guide._id }, { $set: { stages: patched } });
       }
     }
 
@@ -109,7 +102,7 @@ async function main(): Promise<void> {
       console.log(
         dryRun
           ? `\n--dry: ${changedGuides} guide(s) would be updated, nothing written.`
-          : `\nUpdated ${changedGuides} guide(s).`,
+          : `\nUpdated ${changedGuides} guide(s).`
       );
     }
   } finally {

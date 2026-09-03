@@ -27,8 +27,7 @@ const STATUS_STYLES: Record<string, string> = {
   EXPIRED: "bg-rose-50 text-rose-700 border-rose-200",
 };
 
-const isLiveStatus = (status: string) =>
-  status === "ACTIVE" || status === "PAST_DUE";
+const isLiveStatus = (status: string) => status === "ACTIVE" || status === "PAST_DUE";
 
 const getStatusStyle = (status: string) =>
   STATUS_STYLES[status] || "bg-slate-100 text-slate-700 border-slate-200";
@@ -72,10 +71,7 @@ export default function SubscriptionsPage() {
 
     setIsCancelling(true);
     try {
-      const response = await coachApi.cancelCoachSubscription(
-        selectedSubId,
-        reason,
-      );
+      const response = await coachApi.cancelCoachSubscription(selectedSubId, reason);
       if (!response.success) throw new Error(response.message);
 
       toast.success("Subscription cancelled successfully");
@@ -126,9 +122,7 @@ export default function SubscriptionsPage() {
   }, [socket]);
 
   const counts = useMemo(() => {
-    const live = subscriptions.filter((subscription) =>
-      isLiveStatus(subscription.status),
-    ).length;
+    const live = subscriptions.filter((subscription) => isLiveStatus(subscription.status)).length;
     return {
       all: subscriptions.length,
       live,
@@ -138,15 +132,11 @@ export default function SubscriptionsPage() {
 
   const filteredSubscriptions = useMemo(() => {
     if (filter === "LIVE") {
-      return subscriptions.filter((subscription) =>
-        isLiveStatus(subscription.status),
-      );
+      return subscriptions.filter((subscription) => isLiveStatus(subscription.status));
     }
 
     if (filter === "ENDED") {
-      return subscriptions.filter(
-        (subscription) => !isLiveStatus(subscription.status),
-      );
+      return subscriptions.filter((subscription) => !isLiveStatus(subscription.status));
     }
 
     return subscriptions;
@@ -160,10 +150,7 @@ export default function SubscriptionsPage() {
       className="space-y-6"
     >
       <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "My Subscriptions" },
-        ]}
+        items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Subscriptions" }]}
       />
 
       <PlayerPageHeader
@@ -180,33 +167,23 @@ export default function SubscriptionsPage() {
         className="grid gap-3 sm:grid-cols-3"
       >
         <motion.div variants={itemVariants}>
-          <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Total
-            </p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
-              {counts.all}
-            </p>
+          <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Total</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{counts.all}</p>
           </div>
         </motion.div>
         <motion.div variants={itemVariants}>
-          <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Active / Past Due
             </p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
-              {counts.live}
-            </p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{counts.live}</p>
           </div>
         </motion.div>
         <motion.div variants={itemVariants}>
-          <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Ended
-            </p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
-              {counts.ended}
-            </p>
+          <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Ended</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{counts.ended}</p>
           </div>
         </motion.div>
       </motion.div>
@@ -217,7 +194,7 @@ export default function SubscriptionsPage() {
           title="Manage Subscriptions"
           description="Use filters to focus on live plans or completed ones."
         />
-        <CardContent className="px-6 py-5 space-y-4">
+        <CardContent className="space-y-4 px-6 py-5">
           {/* Filter buttons */}
           <div className="flex flex-wrap gap-2">
             {[
@@ -237,9 +214,7 @@ export default function SubscriptionsPage() {
                 {item.label}
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
-                    filter === item.value
-                      ? "bg-white/20 text-white"
-                      : "bg-slate-100 text-slate-600"
+                    filter === item.value ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
                   }`}
                 >
                   {item.count}
@@ -305,21 +280,17 @@ export default function SubscriptionsPage() {
                       : packageInfo?.name || "Subscription package";
 
                   const coachId =
-                    typeof coachInfo === "string"
-                      ? coachInfo
-                      : coachInfo?._id || coachInfo?.id;
+                    typeof coachInfo === "string" ? coachInfo : coachInfo?._id || coachInfo?.id;
                   const coachName =
                     typeof coachInfo === "string"
                       ? "Coach"
-                      : typeof coachInfo?.userId === "object" &&
-                          coachInfo.userId?.name
+                      : typeof coachInfo?.userId === "object" && coachInfo.userId?.name
                         ? coachInfo.userId.name
                         : coachInfo?.sports?.[0]
                           ? `${coachInfo.sports[0]} Coach`
                           : "Coach";
 
-                  const canManage =
-                    subscriptionId && isLiveStatus(subscription.status);
+                  const canManage = subscriptionId && isLiveStatus(subscription.status);
                   const isLive = isLiveStatus(subscription.status);
 
                   return (
@@ -332,37 +303,32 @@ export default function SubscriptionsPage() {
                         transition: { duration: 0.2 },
                       }}
                       key={
-                        subscriptionId ||
-                        `${coachName}-${packageName}-${subscription.createdAt}`
+                        subscriptionId || `${coachName}-${packageName}-${subscription.createdAt}`
                       }
                     >
-                      <div className="flex rounded-xl border border-slate-200/70 bg-slate-50/40 overflow-hidden">
+                      <div className="flex overflow-hidden rounded-xl border border-slate-200/70 bg-slate-50/40">
                         {/* Status accent stripe */}
                         <div
                           className={`w-1 shrink-0 ${isLive ? "bg-turf-green" : "bg-slate-300"}`}
                         />
                         <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="space-y-2">
-                            <p className="text-base font-semibold text-slate-900">
-                              {packageName}
-                            </p>
-                            <p className="text-sm text-slate-600">
-                              {coachName}
-                            </p>
+                            <p className="text-base font-semibold text-slate-900">{packageName}</p>
+                            <p className="text-sm text-slate-600">{coachName}</p>
                             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                               <span className="inline-flex items-center gap-1">
                                 <CalendarRange size={13} />
                                 Started{" "}
-                                {new Date(
-                                  subscription.currentPeriodStart,
-                                ).toLocaleDateString("en-IN")}
+                                {new Date(subscription.currentPeriodStart).toLocaleDateString(
+                                  "en-IN"
+                                )}
                               </span>
                               <span className="inline-flex items-center gap-1">
                                 <RotateCcw size={13} />
                                 Expires{" "}
-                                {new Date(
-                                  subscription.currentPeriodEnd,
-                                ).toLocaleDateString("en-IN")}
+                                {new Date(subscription.currentPeriodEnd).toLocaleDateString(
+                                  "en-IN"
+                                )}
                               </span>
                             </div>
                           </div>
@@ -382,7 +348,7 @@ export default function SubscriptionsPage() {
                                   className="text-sm text-slate-800"
                                   onClick={() =>
                                     router.push(
-                                      `/dashboard/subscription-checkout?coachId=${encodeURIComponent(coachId)}&packageId=${encodeURIComponent(packageId)}`,
+                                      `/dashboard/subscription-checkout?coachId=${encodeURIComponent(coachId)}&packageId=${encodeURIComponent(packageId)}`
                                     )
                                   }
                                 >
@@ -395,18 +361,14 @@ export default function SubscriptionsPage() {
                                   variant="secondary"
                                   size="sm"
                                   className="text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
-                                  disabled={
-                                    isCancelling &&
-                                    selectedSubId === subscriptionId
-                                  }
+                                  disabled={isCancelling && selectedSubId === subscriptionId}
                                   onClick={() => {
                                     if (subscriptionId) {
                                       openCancelModal(subscriptionId);
                                     }
                                   }}
                                 >
-                                  {isCancelling &&
-                                  selectedSubId === subscriptionId
+                                  {isCancelling && selectedSubId === subscriptionId
                                     ? "Cancelling..."
                                     : "Cancel"}
                                 </Button>

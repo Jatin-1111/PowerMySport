@@ -2,17 +2,10 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { AdminAuditLogEntry, adminApi } from "@/modules/admin/services/admin";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
 import { StatusBadge, StatusTone } from "@/modules/shared/ui/StatusBadge";
-import {
-  DetailDrawer,
-  DetailRow,
-  DetailSection,
-} from "@/modules/shared/ui/DetailDrawer";
+import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -27,7 +20,7 @@ const formatAction = (action: string): string =>
         .replace(/([a-z])([A-Z])/g, "$1 $2")
         .split(" ")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" "),
+        .join(" ")
     )
     .join(" · ");
 
@@ -37,10 +30,8 @@ const formatAction = (action: string): string =>
  */
 const actionTone = (action: string): StatusTone => {
   const a = action.toLowerCase();
-  if (/(ban|delete|remove|reject|revoke|suspend|disable|deactivat)/.test(a))
-    return "red";
-  if (/(approve|verify|activat|enable|create|add|grant|resolve)/.test(a))
-    return "green";
+  if (/(ban|delete|remove|reject|revoke|suspend|disable|deactivat)/.test(a)) return "red";
+  if (/(approve|verify|activat|enable|create|add|grant|resolve)/.test(a)) return "green";
   if (/refund/.test(a)) return "purple";
   if (/(update|edit|change|assign|reset)/.test(a)) return "blue";
   return "orange";
@@ -64,9 +55,7 @@ export default function AdminAuditLogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortColumn, setSortColumn] = useState<SortColumn>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [selectedLog, setSelectedLog] = useState<AdminAuditLogEntry | null>(
-    null,
-  );
+  const [selectedLog, setSelectedLog] = useState<AdminAuditLogEntry | null>(null);
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
@@ -112,19 +101,12 @@ export default function AdminAuditLogPage() {
     const factor = sortDirection === "asc" ? 1 : -1;
     return [...filtered].sort((left, right) => {
       if (sortColumn === "admin") {
-        return (
-          factor *
-          (left.admin?.name || "").localeCompare(right.admin?.name || "")
-        );
+        return factor * (left.admin?.name || "").localeCompare(right.admin?.name || "");
       }
       if (sortColumn === "action") {
         return factor * left.action.localeCompare(right.action);
       }
-      return (
-        factor *
-        (new Date(left.createdAt).getTime() -
-          new Date(right.createdAt).getTime())
-      );
+      return factor * (new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
     });
   }, [logs, searchQuery, sortColumn, sortDirection]);
 
@@ -156,11 +138,7 @@ export default function AdminAuditLogPage() {
       header: "Action",
       sortable: true,
       render: (log) => (
-        <StatusBadge
-          status={formatAction(log.action)}
-          tone={actionTone(log.action)}
-          dot={false}
-        />
+        <StatusBadge status={formatAction(log.action)} tone={actionTone(log.action)} dot={false} />
       ),
     },
     {
@@ -180,7 +158,7 @@ export default function AdminAuditLogPage() {
       render: (log) => {
         const count = metadataFieldCount(log.metadata);
         return count > 0 ? (
-          <span className="text-xs font-medium text-power-orange">
+          <span className="text-power-orange text-xs font-medium">
             {count} field{count === 1 ? "" : "s"}
           </span>
         ) : (
@@ -245,11 +223,7 @@ export default function AdminAuditLogPage() {
         open={Boolean(selectedLog)}
         onClose={() => setSelectedLog(null)}
         title={selectedLog ? formatAction(selectedLog.action) : "Audit entry"}
-        subtitle={
-          selectedLog
-            ? new Date(selectedLog.createdAt).toLocaleString()
-            : undefined
-        }
+        subtitle={selectedLog ? new Date(selectedLog.createdAt).toLocaleString() : undefined}
         headerExtra={
           selectedLog ? (
             <StatusBadge
@@ -277,9 +251,7 @@ export default function AdminAuditLogPage() {
                 label="Target ID"
                 value={
                   selectedLog.targetId ? (
-                    <span className="font-mono text-xs">
-                      {selectedLog.targetId}
-                    </span>
+                    <span className="font-mono text-xs">{selectedLog.targetId}</span>
                   ) : (
                     "—"
                   )
@@ -294,28 +266,26 @@ export default function AdminAuditLogPage() {
             <DetailSection title="Metadata">
               {metadataFieldCount(selectedLog.metadata) > 0 ? (
                 <div className="space-y-2">
-                  {Object.entries(
-                    selectedLog.metadata as Record<string, unknown>,
-                  ).map(([key, value]) => (
-                    <DetailRow
-                      key={key}
-                      label={key}
-                      value={
-                        typeof value === "object" && value !== null ? (
-                          <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded bg-slate-50 p-2 text-left text-xs text-slate-700">
-                            {JSON.stringify(value, null, 2)}
-                          </pre>
-                        ) : (
-                          renderMetadataValue(value)
-                        )
-                      }
-                    />
-                  ))}
+                  {Object.entries(selectedLog.metadata as Record<string, unknown>).map(
+                    ([key, value]) => (
+                      <DetailRow
+                        key={key}
+                        label={key}
+                        value={
+                          typeof value === "object" && value !== null ? (
+                            <pre className="max-w-full overflow-x-auto rounded bg-slate-50 p-2 text-left text-xs break-words whitespace-pre-wrap text-slate-700">
+                              {JSON.stringify(value, null, 2)}
+                            </pre>
+                          ) : (
+                            renderMetadataValue(value)
+                          )
+                        }
+                      />
+                    )
+                  )}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500">
-                  No additional metadata recorded.
-                </p>
+                <p className="text-sm text-slate-500">No additional metadata recorded.</p>
               )}
             </DetailSection>
           </>

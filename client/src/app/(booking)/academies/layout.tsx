@@ -8,13 +8,9 @@ import React from "react";
  * the metadata that pointed every academy profile's canonical at that waitlist
  * went with it.
  */
-export default function AcademiesLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AcademiesLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <Navigation sticky />
       <div className="h-16" aria-hidden />
       <main className="flex-1">{children}</main>

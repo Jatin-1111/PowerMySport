@@ -44,11 +44,7 @@ const log = {
  * supports generateContent, but rejects both JSON mode and urlContext), and
  * gemini-3.5-flash / 3.5-flash-lite (urlContext browsing is restricted).
  */
-const modelCandidates = [
-  "gemini-3.1-flash-lite",
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-];
+const modelCandidates = ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
 function getClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -108,7 +104,12 @@ function humanizeGeminiError(raw: string): string {
   if (lower.includes("404") || lower.includes("not found")) {
     return "The configured AI model is unavailable. This needs a config fix, not a retry.";
   }
-  if (lower.includes("api key") || lower.includes("permission") || lower.includes("401") || lower.includes("403")) {
+  if (
+    lower.includes("api key") ||
+    lower.includes("permission") ||
+    lower.includes("401") ||
+    lower.includes("403")
+  ) {
     return "The AI provider rejected our credentials. This needs a config fix, not a retry.";
   }
   if (lower.includes("unparseable")) {
@@ -217,7 +218,10 @@ function inlineAnchorUrls(html: string, baseUrl: string): string {
     /<a\b[^>]*\bhref\s*=\s*("([^"]*)"|'([^']*)')[^>]*>([\s\S]*?)<\/a>/gi,
     (_match, _quoted, doubleQuoted, singleQuoted, inner) => {
       const href = decodeAttributeEntities(((doubleQuoted ?? singleQuoted ?? "") as string).trim());
-      const label = (inner as string).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const label = (inner as string)
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
       // Fragment/script/contact links carry no page to follow; empty-label
       // anchors are icons and image wrappers, which only add noise.
       if (!href || !label || href.startsWith("#") || /^(javascript|mailto|tel):/i.test(href)) {
@@ -230,7 +234,7 @@ function inlineAnchorUrls(html: string, baseUrl: string): string {
         // Unparseable href — keep the raw value rather than dropping the link.
       }
       return `${label} (${absolute})`;
-    },
+    }
   );
 }
 
@@ -244,31 +248,33 @@ function htmlToText(html: string, baseUrl?: string): string {
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ");
 
-  return (baseUrl ? inlineAnchorUrls(withoutInertMarkup, baseUrl) : withoutInertMarkup)
-    // AITA renders date cells as "04,<br>May" — the break must become a space,
-    // not vanish, or the day and month fuse into "04,May".
-    .replace(/<br\s*\/?>/gi, " ")
-    .replace(/<\/t[dh]>/gi, " | ")
-    .replace(/<\/(tr|div|p|li|h[1-6]|table|section)>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#0?39;|&apos;/gi, "'")
-    // Numeric entities are everywhere in WordPress-rendered federation pages
-    // (&#8211; for en-dashes in titles, &#038; in query strings); left raw they
-    // end up inside extracted names and URLs.
-    .replace(/&#x([0-9a-f]+);/gi, (m, hex: string) => codePointOr(parseInt(hex, 16), m))
-    .replace(/&#(\d+);/g, (m, dec: string) => codePointOr(Number(dec), m))
-    .replace(/[ \t]+/g, " ")
-    // Deliberately NOT collapsing runs of empty cells: calendar tables encode
-    // the age group by column position ("WEEK | Under 10 | Under 12 | ..."), so
-    // "| | | CS7 (Jind) |" is the only thing distinguishing an Under-14 entry
-    // from an Under-10 one. Collapsing the pipes discards that.
-    .replace(/\n[ ]*\n+/g, "\n")
-    .trim();
+  return (
+    (baseUrl ? inlineAnchorUrls(withoutInertMarkup, baseUrl) : withoutInertMarkup)
+      // AITA renders date cells as "04,<br>May" — the break must become a space,
+      // not vanish, or the day and month fuse into "04,May".
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<\/t[dh]>/gi, " | ")
+      .replace(/<\/(tr|div|p|li|h[1-6]|table|section)>/gi, "\n")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#0?39;|&apos;/gi, "'")
+      // Numeric entities are everywhere in WordPress-rendered federation pages
+      // (&#8211; for en-dashes in titles, &#038; in query strings); left raw they
+      // end up inside extracted names and URLs.
+      .replace(/&#x([0-9a-f]+);/gi, (m, hex: string) => codePointOr(parseInt(hex, 16), m))
+      .replace(/&#(\d+);/g, (m, dec: string) => codePointOr(Number(dec), m))
+      .replace(/[ \t]+/g, " ")
+      // Deliberately NOT collapsing runs of empty cells: calendar tables encode
+      // the age group by column position ("WEEK | Under 10 | Under 12 | ..."), so
+      // "| | | CS7 (Jind) |" is the only thing distinguishing an Under-14 entry
+      // from an Under-10 one. Collapsing the pipes discards that.
+      .replace(/\n[ ]*\n+/g, "\n")
+      .trim()
+  );
 }
 
 const MAX_PAGE_TEXT_CHARS = 300_000;
@@ -295,12 +301,25 @@ export function stripSiteChrome(html: string): string {
       // than a semantic element — AITA's news rail is a div.widget_boc_latest.
       .replace(
         /<(div|section|ul|ins)\b[^>]*\bclass\s*=\s*["'][^"']*\b(widget|sidebar|side-bar|menu|navbar|breadcrumb|footer|header|social|share|advert|adsbygoogle|related|more-?news|latest|comment)\b[^"']*["'][\s\S]*?<\/\1>/gi,
-        " ",
+        " "
       )
   );
 }
 
-const MONTH_ABBREVS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const MONTH_ABBREVS = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec",
+];
 
 /**
  * Cuts a chronological full-year calendar down to its upcoming portion.
@@ -364,7 +383,8 @@ function trimPageTextToUpcoming(text: string): string {
 function chunkCalendarText(text: string, maxChars = 2_500): string[] {
   const headerEnd = text.indexOf("[...earlier months omitted...]");
   const header = (headerEnd > 0 ? text.slice(0, headerEnd) : text.slice(0, 400)).trim();
-  const body = headerEnd > 0 ? text.slice(headerEnd + "[...earlier months omitted...]".length) : text;
+  const body =
+    headerEnd > 0 ? text.slice(headerEnd + "[...earlier months omitted...]".length) : text;
 
   const chunks: string[] = [];
   let current = "";
@@ -430,7 +450,7 @@ async function fetchPageHtml(url: string): Promise<{ html: string; finalUrl: str
 
 async function fetchPageText(
   url: string,
-  { stripChrome = false }: { stripChrome?: boolean } = {},
+  { stripChrome = false }: { stripChrome?: boolean } = {}
 ): Promise<string | null> {
   const page = await fetchPageHtml(url);
   if (!page) return null;
@@ -442,7 +462,7 @@ async function fetchPageText(
 async function jsonExtractionCall(
   genAI: GoogleGenAI,
   contents: string | Array<{ role: string; parts: Array<Record<string, unknown>> }>,
-  kind: "array" | "object",
+  kind: "array" | "object"
 ): Promise<ExtractionOutcome> {
   let lastError = "";
   for (const model of modelCandidates) {
@@ -470,7 +490,12 @@ async function jsonExtractionCall(
       lastError = msg;
       log.warn(`[DataSourceExtraction] ${model} failed:`, msg.slice(0, 200));
       const lower = msg.toLowerCase();
-      if (!lower.includes("404") && !lower.includes("not found") && !lower.includes("429") && !lower.includes("quota")) {
+      if (
+        !lower.includes("404") &&
+        !lower.includes("not found") &&
+        !lower.includes("429") &&
+        !lower.includes("quota")
+      ) {
         break; // unexpected error — don't burn remaining candidates
       }
     }
@@ -484,7 +509,7 @@ async function urlContextExtraction(
   url: string,
   formatPrompt: (findings: string) => string,
   kind: "array" | "object",
-  focusHint?: string,
+  focusHint?: string
 ): Promise<ExtractionOutcome> {
   let lastError = "";
   for (const model of modelCandidates) {
@@ -627,7 +652,10 @@ function buildCalendarLinkFormatPrompt(sportName: string, url: string, findings:
   return `Below are findings read from the official ${sportName} tournament calendar page (${url}). Convert ONLY the tournaments explicitly mentioned into a JSON array — do not add, invent, or infer anything not present.\n\n${calendarPromptRules(sportName, url, today)}\n\nFindings:\n"""\n${findings}\n"""`;
 }
 
-function buildPdfPrompt(kind: "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR", sportName: string): string {
+function buildPdfPrompt(
+  kind: "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR",
+  sportName: string
+): string {
   if (kind === "FEDERATION") {
     return `You are a precise data-extraction engine. The attached PDF is an official document about a sports federation (sport: ${sportName}). Extract its information.\n\n${federationPromptRules()}`;
   }
@@ -668,12 +696,7 @@ export interface EditionDocument {
 }
 
 export type EditionDocumentKind =
-  | "factSheet"
-  | "acceptanceList"
-  | "entryForm"
-  | "draw"
-  | "results"
-  | "other";
+  "factSheet" | "acceptanceList" | "entryForm" | "draw" | "results" | "other";
 
 export interface ValidEdition {
   name: string;
@@ -789,7 +812,10 @@ export function cleanEditionName(name: string): string {
 
 /** Case/punctuation/whitespace-insensitive form — "AITA CS7(Sonipat)" and "AITA CS7 (Sonipat)" collapse to one string. */
 function normalizeEditionName(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 /** "aita aita rs 1 lakh" -> "aita rs 1 lakh" — the extraction prompt asks for an organiser prefix and sometimes applies it twice. */
@@ -899,7 +925,8 @@ export function validateEditions(raw: unknown): { valid: ValidEdition[]; errors:
         ? item.ageGroups.filter((a): a is string => typeof a === "string" && a.trim().length > 0)
         : [],
       detailUrl: sanitizeHttpUrl(item?.detailUrl),
-      sourceQuote: typeof item?.sourceQuote === "string" ? item.sourceQuote.trim() || undefined : undefined,
+      sourceQuote:
+        typeof item?.sourceQuote === "string" ? item.sourceQuote.trim() || undefined : undefined,
       // Detail-page fields must be carried through, not rebuilt from scratch.
       // This function is a whitelist, and it runs again on the saved draft at
       // approval time — anything it omits is silently discarded, so dropping
@@ -920,7 +947,8 @@ export function validateEditions(raw: unknown): { valid: ValidEdition[]; errors:
     if (drops.outOfWindow) parts.push(`${drops.outOfWindow} dated outside the accepted window`);
     if (drops.badDate) parts.push(`${drops.badDate} with an unusable start date`);
     if (drops.badName) parts.push(`${drops.badName} with a missing/too-short name`);
-    if (drops.endBeforeStart) parts.push(`${drops.endBeforeStart} whose end date precedes its start`);
+    if (drops.endBeforeStart)
+      parts.push(`${drops.endBeforeStart} whose end date precedes its start`);
     if (drops.duplicate) parts.push(`${drops.duplicate} duplicates`);
     errors.push(`${totalDropped} of ${raw.length} entries were dropped: ${parts.join(", ")}.`);
 
@@ -930,7 +958,7 @@ export function validateEditions(raw: unknown): { valid: ValidEdition[]; errors:
       const sorted = [...observedDates].sort();
       errors.push(
         `Extracted dates span ${sorted[0]} to ${sorted[sorted.length - 1]}; accepted window is ` +
-          `${new Date(minStart).toISOString().slice(0, 10)} to ${new Date(maxStart).toISOString().slice(0, 10)}.`,
+          `${new Date(minStart).toISOString().slice(0, 10)} to ${new Date(maxStart).toISOString().slice(0, 10)}.`
       );
     }
   }
@@ -1003,7 +1031,10 @@ export function harvestDocuments(html: string, baseUrl: string): EditionDocument
   while ((match = anchor.exec(html)) !== null) {
     const href = decodeAttributeEntities((match[2] ?? match[3] ?? "").trim());
     const label = decodeAttributeEntities(
-      (match[4] ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+      (match[4] ?? "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
     );
     if (!href || !label) continue;
 
@@ -1064,11 +1095,7 @@ export function detailPageDateAgrees(text: string, startDate: string): boolean {
   for (const [, a, b, c] of text.matchAll(/\b(\d{1,4})[-/.](\d{1,2})[-/.](\d{2,4})\b/g)) {
     const [x, y, z] = [Number(a), Number(b), Number(c)];
     // DD-MM-YYYY, MM-DD-YYYY, YYYY-MM-DD — whichever the source meant.
-    candidates.push(
-      Date.UTC(z, y - 1, x),
-      Date.UTC(z, x - 1, y),
-      Date.UTC(x, y - 1, z),
-    );
+    candidates.push(Date.UTC(z, y - 1, x), Date.UTC(z, x - 1, y), Date.UTC(x, y - 1, z));
   }
   if (candidates.length === 0) return true;
   return candidates.some((t) => !Number.isNaN(t) && Math.abs(t - expected) <= weekMs);
@@ -1092,7 +1119,10 @@ Rules:
 - Return ONLY the JSON array. No markdown fences, no commentary.`;
 }
 
-function buildDetailBatchPrompt(sportName: string, pages: Array<{ page: number; text: string }>): string {
+function buildDetailBatchPrompt(
+  sportName: string,
+  pages: Array<{ page: number; text: string }>
+): string {
   const body = pages.map((p) => `### PAGE ${p.page}\n${p.text}`).join("\n\n");
   return `Below are individual tournament pages from the official ${sportName} federation website in India. Extract each one's details.\n\n${detailPromptRules()}\n\n${body}`;
 }
@@ -1101,7 +1131,7 @@ function buildDetailBatchPrompt(sportName: string, pages: Array<{ page: number; 
 async function mapWithConcurrency<T, R>(
   items: T[],
   limit: number,
-  worker: (item: T, index: number) => Promise<R>,
+  worker: (item: T, index: number) => Promise<R>
 ): Promise<R[]> {
   const results = new Array<R>(items.length);
   let cursor = 0;
@@ -1134,7 +1164,7 @@ export interface DetailEnrichmentResult {
 export async function enrichEditionsWithDetailPages(
   editions: ValidEdition[],
   sportSlug: string,
-  { refresh = false }: { refresh?: boolean } = {},
+  { refresh = false }: { refresh?: boolean } = {}
 ): Promise<DetailEnrichmentResult> {
   const warnings: string[] = [];
   // Editions already read are skipped, so a second run costs only the ones a
@@ -1151,7 +1181,12 @@ export async function enrichEditionsWithDetailPages(
     warnings.push(`${alreadyRead} entry(s) already had their details and were skipped.`);
   }
   if (linked.length === 0 && alreadyRead > 0) {
-    return { editions, documentsFound: editions.filter((e) => e.documents?.length).length, enriched: 0, warnings };
+    return {
+      editions,
+      documentsFound: editions.filter((e) => e.documents?.length).length,
+      enriched: 0,
+      warnings,
+    };
   }
   if (linked.length === 0) {
     return {
@@ -1167,7 +1202,7 @@ export async function enrichEditionsWithDetailPages(
   const targets = linked.slice(0, MAX_DETAIL_PAGES);
   if (linked.length > targets.length) {
     warnings.push(
-      `Only the first ${targets.length} of ${linked.length} linked entries were followed this run. Run it again to continue with the rest.`,
+      `Only the first ${targets.length} of ${linked.length} linked entries were followed this run. Run it again to continue with the rest.`
     );
   }
 
@@ -1194,15 +1229,16 @@ export async function enrichEditionsWithDetailPages(
       const documents = harvestDocuments(stripped, page.finalUrl);
       if (documents.length) edition.documents = documents;
       return { edition, text, mismatched: false };
-    },
+    }
   );
 
   const unreachable = fetched.filter((f) => !f.text && !f.mismatched).length;
   const mismatched = fetched.filter((f) => f.mismatched).length;
-  if (unreachable) warnings.push(`${unreachable} detail page(s) could not be fetched and were left as-is.`);
+  if (unreachable)
+    warnings.push(`${unreachable} detail page(s) could not be fetched and were left as-is.`);
   if (mismatched) {
     warnings.push(
-      `${mismatched} detail page(s) named a date more than a week from the calendar entry and were skipped as probable mis-links.`,
+      `${mismatched} detail page(s) named a date more than a week from the calendar entry and were skipped as probable mis-links.`
     );
   }
 
@@ -1230,13 +1266,17 @@ export async function enrichEditionsWithDetailPages(
   let enriched = 0;
   let failedBatches = 0;
 
-  const batchResults = await mapWithConcurrency(batches, DETAIL_BATCH_CONCURRENCY, async (batch) => {
-    const prompt = buildDetailBatchPrompt(
-      sportName,
-      batch.map((b) => ({ page: b.index, text: b.text })),
-    );
-    return { batch, outcome: await jsonExtractionCall(genAI, prompt, "array") };
-  });
+  const batchResults = await mapWithConcurrency(
+    batches,
+    DETAIL_BATCH_CONCURRENCY,
+    async (batch) => {
+      const prompt = buildDetailBatchPrompt(
+        sportName,
+        batch.map((b) => ({ page: b.index, text: b.text }))
+      );
+      return { batch, outcome: await jsonExtractionCall(genAI, prompt, "array") };
+    }
+  );
 
   for (const { batch, outcome } of batchResults) {
     if (!Array.isArray(outcome.data)) {
@@ -1264,7 +1304,7 @@ export async function enrichEditionsWithDetailPages(
 
   if (failedBatches) {
     warnings.push(
-      `${failedBatches} of ${batches.length} detail batches failed to read (usually AI quota) — their document links were still saved. Run it again to fill in the rest.`,
+      `${failedBatches} of ${batches.length} detail batches failed to read (usually AI quota) — their document links were still saved. Run it again to fill in the rest.`
     );
   }
 
@@ -1292,7 +1332,9 @@ function asString(v: unknown): string | undefined {
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
 function asStringArray(v: unknown): string[] {
-  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0) : [];
+  return Array.isArray(v)
+    ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    : [];
 }
 /** Pulls Gemini's optional "_citations" map — only string values survive. */
 function asCitations(v: unknown): Record<string, string> {
@@ -1324,7 +1366,8 @@ export function validateFederationPayload(raw: unknown): FieldPayloadResult {
   if (!name) errors.push("Missing federation name.");
   if (!acronym) errors.push("Missing acronym.");
   if (!about) errors.push("Missing about/overview text.");
-  if (!type || !["govt", "national", "hybrid"].includes(type)) errors.push('Missing/invalid type (must be "govt", "national", or "hybrid").');
+  if (!type || !["govt", "national", "hybrid"].includes(type))
+    errors.push('Missing/invalid type (must be "govt", "national", or "hybrid").');
   if (errors.length) return { valid: null, errors, citations };
 
   const eligibility = r.eligibilityCriteria as Record<string, unknown> | undefined;
@@ -1341,7 +1384,11 @@ export function validateFederationPayload(raw: unknown): FieldPayloadResult {
     stateAssociations: Array.isArray(r.stateAssociations)
       ? r.stateAssociations
           .filter((s): s is Record<string, unknown> => !!s && typeof s === "object")
-          .map((s) => ({ name: asString(s.name) || "", state: asString(s.state) || "", website: asString(s.website) }))
+          .map((s) => ({
+            name: asString(s.name) || "",
+            state: asString(s.state) || "",
+            website: asString(s.website),
+          }))
           .filter((s) => s.name && s.state)
       : [],
     keyFacts: asStringArray(r.keyFacts),
@@ -1360,8 +1407,14 @@ export function validateFederationPayload(raw: unknown): FieldPayloadResult {
                 }))
                 .filter((c) => c.name)
             : [],
-          registrationRequired: typeof eligibility.registrationRequired === "boolean" ? eligibility.registrationRequired : true,
-          stateAssociationFirst: typeof eligibility.stateAssociationFirst === "boolean" ? eligibility.stateAssociationFirst : true,
+          registrationRequired:
+            typeof eligibility.registrationRequired === "boolean"
+              ? eligibility.registrationRequired
+              : true,
+          stateAssociationFirst:
+            typeof eligibility.stateAssociationFirst === "boolean"
+              ? eligibility.stateAssociationFirst
+              : true,
           notes: asString(eligibility.notes),
         }
       : undefined,
@@ -1408,7 +1461,10 @@ export function validateCuratedTournamentPayload(raw: unknown): FieldPayloadResu
     qualificationPath: asString(r.qualificationPath),
     circuitContext: asString(r.circuitContext),
     format: asString(r.format),
-    prestige: prestige && ["flagship", "ranking", "developmental"].includes(prestige) ? prestige : undefined,
+    prestige:
+      prestige && ["flagship", "ranking", "developmental"].includes(prestige)
+        ? prestige
+        : undefined,
     prizePool: asString(r.prizePool),
     registrationUrl: asString(r.registrationUrl),
   };
@@ -1441,11 +1497,14 @@ export interface ExtractionResult {
  * happens on admin approval.
  */
 export async function extractForSubmission(
-  submission: DataSourceSubmissionDocument,
+  submission: DataSourceSubmissionDocument
 ): Promise<ExtractionResult> {
   const genAI = getClient();
   if (!genAI) {
-    return { status: "EXTRACTION_FAILED", extractionError: "No GEMINI_API_KEY/GOOGLE_API_KEY configured." };
+    return {
+      status: "EXTRACTION_FAILED",
+      extractionError: "No GEMINI_API_KEY/GOOGLE_API_KEY configured.",
+    };
   }
 
   const sportName = sportNameFromSlug(submission.sportSlug);
@@ -1475,7 +1534,7 @@ export async function extractForSubmission(
         const trimmed = trimPageTextToUpcoming(rawPageText);
         const chunks = chunkCalendarText(trimmed);
         log.info(
-          `[DataSourceExtraction] direct fetch OK (${rawPageText.length} chars -> ${trimmed.length} trimmed -> ${chunks.length} chunks)`,
+          `[DataSourceExtraction] direct fetch OK (${rawPageText.length} chars -> ${trimmed.length} trimmed -> ${chunks.length} chunks)`
         );
         const merged: unknown[] = [];
         let usedModel: string | undefined;
@@ -1485,10 +1544,14 @@ export async function extractForSubmission(
           if (Array.isArray(part.data)) {
             merged.push(...part.data);
             usedModel ??= part.model;
-            log.info(`[DataSourceExtraction]   chunk ${i + 1}/${chunks.length}: ${part.data.length} entries`);
+            log.info(
+              `[DataSourceExtraction]   chunk ${i + 1}/${chunks.length}: ${part.data.length} entries`
+            );
           } else {
             lastChunkError = part.error;
-            log.warn(`[DataSourceExtraction]   chunk ${i + 1}/${chunks.length} failed: ${part.error?.slice(0, 100)}`);
+            log.warn(
+              `[DataSourceExtraction]   chunk ${i + 1}/${chunks.length} failed: ${part.error?.slice(0, 100)}`
+            );
           }
         }
         // Partial success is still success — validateEditions dedupes across
@@ -1497,7 +1560,9 @@ export async function extractForSubmission(
           ? { data: merged, ...(usedModel ? { model: usedModel } : {}) }
           : { data: null, ...(lastChunkError ? { error: lastChunkError } : {}) };
       } else {
-        log.info(`[DataSourceExtraction] direct fetch OK (${rawPageText.length} chars) — extracting from page text`);
+        log.info(
+          `[DataSourceExtraction] direct fetch OK (${rawPageText.length} chars) — extracting from page text`
+        );
         outcome = await jsonExtractionCall(genAI, formatPrompt(rawPageText), shape);
       }
     }
@@ -1511,7 +1576,7 @@ export async function extractForSubmission(
         url,
         formatPrompt,
         shape,
-        kind === "TOURNAMENT_CALENDAR" ? buildCalendarStep1FocusHint() : undefined,
+        kind === "TOURNAMENT_CALENDAR" ? buildCalendarStep1FocusHint() : undefined
       );
       // Keep the direct-fetch error only if the fallback produced nothing either.
       const carriedError = fallback.error ?? outcome.error;
@@ -1521,7 +1586,10 @@ export async function extractForSubmission(
     }
   } else {
     if (!submission.s3Key) {
-      return { status: "EXTRACTION_FAILED", extractionError: "No uploaded file on this submission." };
+      return {
+        status: "EXTRACTION_FAILED",
+        extractionError: "No uploaded file on this submission.",
+      };
     }
     let buffer: Buffer;
     try {
@@ -1529,17 +1597,25 @@ export async function extractForSubmission(
     } catch (err) {
       return {
         status: "EXTRACTION_FAILED",
-        extractionError: err instanceof Error ? err.message : "Failed to fetch the uploaded PDF from storage.",
+        extractionError:
+          err instanceof Error ? err.message : "Failed to fetch the uploaded PDF from storage.",
       };
     }
     const prompt = buildPdfPrompt(kind, sportName);
     const contents = [
       {
         role: "user",
-        parts: [{ text: prompt }, { inlineData: { mimeType: "application/pdf", data: buffer.toString("base64") } }],
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: "application/pdf", data: buffer.toString("base64") } },
+        ],
       },
     ];
-    outcome = await jsonExtractionCall(genAI, contents, kind === "TOURNAMENT_CALENDAR" ? "array" : "object");
+    outcome = await jsonExtractionCall(
+      genAI,
+      contents,
+      kind === "TOURNAMENT_CALENDAR" ? "array" : "object"
+    );
   }
 
   if (!outcome.data) {
@@ -1556,7 +1632,10 @@ export async function extractForSubmission(
         ? validateCuratedTournamentPayload(outcome.data)
         : validateEditions(outcome.data);
 
-  if ("valid" in validated && (validated.valid === null || (Array.isArray(validated.valid) && validated.valid.length === 0))) {
+  if (
+    "valid" in validated &&
+    (validated.valid === null || (Array.isArray(validated.valid) && validated.valid.length === 0))
+  ) {
     return {
       status: "EXTRACTION_FAILED",
       extractionError: validated.errors.join(" ") || "Extraction failed validation.",

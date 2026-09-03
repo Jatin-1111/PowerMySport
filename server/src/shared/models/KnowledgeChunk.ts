@@ -18,7 +18,7 @@ const knowledgeChunkSchema = new Schema<KnowledgeChunkDocument>(
     content: { type: String, required: true },
     embedding: { type: [Number], required: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // One chunk per (sourceType, sourceId) — re-ingesting the same source updates it in place.
@@ -26,5 +26,5 @@ knowledgeChunkSchema.index({ sourceType: 1, sourceId: 1 }, { unique: true });
 
 export const KnowledgeChunk = mongoose.model<KnowledgeChunkDocument>(
   "KnowledgeChunk",
-  knowledgeChunkSchema,
+  knowledgeChunkSchema
 );

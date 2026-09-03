@@ -29,8 +29,7 @@ const INITIAL_SPORTS = [
   {
     name: "Basketball",
     category: "Ball Sports",
-    description:
-      "Basketball: rapid transitions and explosive vertical jumping in tight spaces.",
+    description: "Basketball: rapid transitions and explosive vertical jumping in tight spaces.",
     attributes: {
       interactionType: "team",
       demand: "power",
@@ -86,8 +85,7 @@ const INITIAL_SPORTS = [
   {
     name: "Tennis",
     category: "Racquet Sports",
-    description:
-      "Tennis: sustained lateral agility and heavy groundstrokes across a large court.",
+    description: "Tennis: sustained lateral agility and heavy groundstrokes across a large court.",
     attributes: {
       interactionType: "head-to-head",
       demand: "endurance",
@@ -108,8 +106,7 @@ const INITIAL_SPORTS = [
   {
     name: "Squash",
     category: "Racquet Sports",
-    description:
-      "Squash: highly strategic rebounding off walls in a very confined space.",
+    description: "Squash: highly strategic rebounding off walls in a very confined space.",
     attributes: {
       interactionType: "head-to-head",
       demand: "strategy",
@@ -119,8 +116,7 @@ const INITIAL_SPORTS = [
   {
     name: "Table Tennis",
     category: "Racquet Sports",
-    description:
-      "Table Tennis: intense micro-movements and spin calculation at point-blank range.",
+    description: "Table Tennis: intense micro-movements and spin calculation at point-blank range.",
     attributes: {
       interactionType: "head-to-head",
       demand: "reflex",
@@ -165,8 +161,7 @@ const INITIAL_SPORTS = [
   {
     name: "Taekwondo",
     category: "Combat Sports",
-    description:
-      "Taekwondo: high, rapid kicking combinations relying heavily on leg dexterity.",
+    description: "Taekwondo: high, rapid kicking combinations relying heavily on leg dexterity.",
     attributes: {
       interactionType: "head-to-head",
       demand: "flexibility",
@@ -176,8 +171,7 @@ const INITIAL_SPORTS = [
   {
     name: "Judo",
     category: "Combat Sports",
-    description:
-      "Judo: throwing and grappling to off-balance an opponent using leverage.",
+    description: "Judo: throwing and grappling to off-balance an opponent using leverage.",
     attributes: {
       interactionType: "head-to-head",
       demand: "strategy",
@@ -255,8 +249,7 @@ const INITIAL_SPORTS = [
   {
     name: "Surfing",
     category: "Water Sports",
-    description:
-      "Surfing: maintaining balance and flow while reading unpredictable ocean swells.",
+    description: "Surfing: maintaining balance and flow while reading unpredictable ocean swells.",
     attributes: {
       interactionType: "individual",
       demand: "reflex",
@@ -277,8 +270,7 @@ const INITIAL_SPORTS = [
   {
     name: "Kayaking",
     category: "Water Sports",
-    description:
-      "Kayaking: seated paddle navigation through calm waters or turbulent rapids.",
+    description: "Kayaking: seated paddle navigation through calm waters or turbulent rapids.",
     attributes: {
       interactionType: "individual",
       demand: "power",
@@ -288,8 +280,7 @@ const INITIAL_SPORTS = [
   {
     name: "Canoeing",
     category: "Water Sports",
-    description:
-      "Canoeing: kneeling paddle strokes requiring synchronized upper body strength.",
+    description: "Canoeing: kneeling paddle strokes requiring synchronized upper body strength.",
     attributes: {
       interactionType: "individual",
       demand: "power",
@@ -299,8 +290,7 @@ const INITIAL_SPORTS = [
   {
     name: "Sailing",
     category: "Water Sports",
-    description:
-      "Sailing: tactical harnessing of wind power and currents using rigging.",
+    description: "Sailing: tactical harnessing of wind power and currents using rigging.",
     attributes: {
       interactionType: "individual",
       demand: "strategy",
@@ -323,8 +313,7 @@ const INITIAL_SPORTS = [
   {
     name: "Skiing",
     category: "Winter Sports",
-    description:
-      "Skiing: high-speed descents down snowy slopes demanding precise edge control.",
+    description: "Skiing: high-speed descents down snowy slopes demanding precise edge control.",
     attributes: {
       interactionType: "individual",
       demand: "reflex",
@@ -334,8 +323,7 @@ const INITIAL_SPORTS = [
   {
     name: "Snowboarding",
     category: "Winter Sports",
-    description:
-      "Snowboarding: carving snow on a single board utilizing deep core balance.",
+    description: "Snowboarding: carving snow on a single board utilizing deep core balance.",
     attributes: {
       interactionType: "individual",
       demand: "flexibility",
@@ -356,8 +344,7 @@ const INITIAL_SPORTS = [
   {
     name: "Ice Hockey",
     category: "Winter Sports",
-    description:
-      "Ice Hockey: violent collisions and rapid puck handling on slippery ice.",
+    description: "Ice Hockey: violent collisions and rapid puck handling on slippery ice.",
     attributes: {
       interactionType: "team",
       demand: "reflex",
@@ -369,8 +356,7 @@ const INITIAL_SPORTS = [
   {
     name: "Kabaddi",
     category: "Team Sports",
-    description:
-      "Kabaddi: breath-holding raids into enemy territory to tag and escape grapplers.",
+    description: "Kabaddi: breath-holding raids into enemy territory to tag and escape grapplers.",
     attributes: {
       interactionType: "team",
       demand: "reflex",
@@ -380,8 +366,7 @@ const INITIAL_SPORTS = [
   {
     name: "Hockey",
     category: "Team Sports",
-    description:
-      "Hockey: bent-over running while manipulating a hard ball with a curved stick.",
+    description: "Hockey: bent-over running while manipulating a hard ball with a curved stick.",
     attributes: {
       interactionType: "team",
       demand: "endurance",
@@ -391,8 +376,7 @@ const INITIAL_SPORTS = [
   {
     name: "Lacrosse",
     category: "Team Sports",
-    description:
-      "Lacrosse: catching and hurling a rubber ball using a netted stick on the run.",
+    description: "Lacrosse: catching and hurling a rubber ball using a netted stick on the run.",
     attributes: {
       interactionType: "team",
       demand: "precision",
@@ -571,8 +555,7 @@ const INITIAL_SPORTS = [
   {
     name: "Aerobics",
     category: "Fitness",
-    description:
-      "Aerobics: continuous, choreographed cardiovascular routines performed to music.",
+    description: "Aerobics: continuous, choreographed cardiovascular routines performed to music.",
     attributes: {
       interactionType: "individual",
       demand: "endurance",
@@ -626,8 +609,7 @@ const INITIAL_SPORTS = [
   {
     name: "Stretching",
     category: "Fitness",
-    description:
-      "Stretching: deliberate elongation of muscle fibers to increase range of motion.",
+    description: "Stretching: deliberate elongation of muscle fibers to increase range of motion.",
     attributes: {
       interactionType: "individual",
       demand: "flexibility",
@@ -650,8 +632,7 @@ const INITIAL_SPORTS = [
   {
     name: "Billiards",
     category: "Other",
-    description:
-      "Billiards: mathematical angle calculation and soft-touch cue ball control.",
+    description: "Billiards: mathematical angle calculation and soft-touch cue ball control.",
     attributes: {
       interactionType: "head-to-head",
       demand: "precision",
@@ -661,8 +642,7 @@ const INITIAL_SPORTS = [
   {
     name: "Darts",
     category: "Other",
-    description:
-      "Darts: throwing small projectiles at a board requiring absolute hand steadiness.",
+    description: "Darts: throwing small projectiles at a board requiring absolute hand steadiness.",
     attributes: {
       interactionType: "head-to-head",
       demand: "precision",
@@ -672,8 +652,7 @@ const INITIAL_SPORTS = [
   {
     name: "Bowling",
     category: "Other",
-    description:
-      "Bowling: hurling a heavy ball down a slick lane aiming for distant pins.",
+    description: "Bowling: hurling a heavy ball down a slick lane aiming for distant pins.",
     attributes: {
       interactionType: "individual",
       demand: "precision",
@@ -694,8 +673,7 @@ const INITIAL_SPORTS = [
   {
     name: "Lawn Bowls",
     category: "Other",
-    description:
-      "Lawn Bowls: rolling biased balls on grass to gently approach a smaller target.",
+    description: "Lawn Bowls: rolling biased balls on grass to gently approach a smaller target.",
     attributes: {
       interactionType: "head-to-head",
       demand: "precision",
@@ -751,25 +729,19 @@ const seedSports = async () => {
             verifiedAt: new Date(),
           },
         },
-        { upsert: true },
+        { upsert: true }
       );
       if (result.upsertedCount > 0) createdCount++;
       else if (result.modifiedCount > 0) updatedCount++;
     }
 
-    console.log(
-      `✅ Seeded successfully! Created ${createdCount}, Updated ${updatedCount} sports.`,
-    );
+    console.log(`✅ Seeded successfully! Created ${createdCount}, Updated ${updatedCount} sports.`);
 
     // Show summary by category
-    const categories = Array.from(
-      new Set(INITIAL_SPORTS.map((s) => s.category)),
-    );
+    const categories = Array.from(new Set(INITIAL_SPORTS.map((s) => s.category)));
     console.log("\n📊 Sports by category:");
     categories.forEach((category) => {
-      const count = INITIAL_SPORTS.filter(
-        (s) => s.category === category,
-      ).length;
+      const count = INITIAL_SPORTS.filter((s) => s.category === category).length;
       console.log(`   ${category}: ${count}`);
     });
 

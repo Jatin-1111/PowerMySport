@@ -6,9 +6,7 @@ const buildKey = (conversationId: string) => `chat_messages_${conversationId}`;
 /**
  * Retrieves the cached messages for a given conversation.
  */
-export async function getCachedMessages(
-  conversationId: string,
-): Promise<ConversationMessage[]> {
+export async function getCachedMessages(conversationId: string): Promise<ConversationMessage[]> {
   try {
     if (typeof window === "undefined") return [];
     const data = await get<ConversationMessage[]>(buildKey(conversationId));
@@ -24,7 +22,7 @@ export async function getCachedMessages(
  */
 export async function setCachedMessages(
   conversationId: string,
-  messages: ConversationMessage[],
+  messages: ConversationMessage[]
 ): Promise<void> {
   try {
     if (typeof window === "undefined") return;
@@ -39,7 +37,7 @@ export async function setCachedMessages(
  */
 export async function upsertCachedMessage(
   conversationId: string,
-  message: ConversationMessage,
+  message: ConversationMessage
 ): Promise<void> {
   try {
     if (typeof window === "undefined") return;
@@ -60,14 +58,14 @@ export async function upsertCachedMessage(
 
 export async function deleteCachedMessage(
   conversationId: string,
-  messageId: string,
+  messageId: string
 ): Promise<void> {
   try {
     if (typeof window === "undefined") return;
     const messages = await getCachedMessages(conversationId);
     await setCachedMessages(
       conversationId,
-      messages.filter((m) => m.id !== messageId),
+      messages.filter((m) => m.id !== messageId)
     );
   } catch (error) {
     console.error("[chatDB] Failed to delete message", error);

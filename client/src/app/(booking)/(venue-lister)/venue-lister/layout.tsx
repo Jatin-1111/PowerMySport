@@ -7,13 +7,9 @@ import VendorLayoutShell from "./LayoutShell";
 /** Partner-only console. See the note in (player)/dashboard/layout.tsx. */
 export const metadata: Metadata = noindexMetadata(
   "Venue Partner Console",
-  "Manage your venue listings, inventory, bookings and payouts.",
+  "Manage your venue listings, inventory, bookings and payouts."
 );
 
-export default function VenueListerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function VenueListerLayout({ children }: { children: React.ReactNode }) {
   return <VendorLayoutShell>{children}</VendorLayoutShell>;
 }

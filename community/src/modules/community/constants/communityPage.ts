@@ -1,8 +1,7 @@
 export const COMMUNITY_ACTIVE_TAB_KEY = "community:activeSidebarTab";
 export const COMMUNITY_WORKSPACE_VIEW_KEY = "community:workspaceView";
 export const COMMUNITY_DIRECTORY_VIEW_KEY = "community:directoryView";
-export const COMMUNITY_SELECTED_CONVERSATION_KEY =
-  "community:selectedConversationId";
+export const COMMUNITY_SELECTED_CONVERSATION_KEY = "community:selectedConversationId";
 export const COMMUNITY_SIDEBAR_MODE_KEY = "community:sidebarMode";
 export const COMMUNITY_PINNED_KEY = "community:pinnedConversationIds";
 export const COMMUNITY_MUTED_KEY = "community:mutedConversationIds";
@@ -33,18 +32,13 @@ export type SidebarMode = "INBOX" | "TOOLS";
 export const isValidSidebarTab = (value: string | null): value is SidebarTab =>
   value === "community-overview" || value === "conversations";
 
-export const isValidWorkspaceView = (
-  value: string | null,
-): value is WorkspaceView =>
+export const isValidWorkspaceView = (value: string | null): value is WorkspaceView =>
   value === "CHAT" || value === "DIRECTORY" || value === "PRIVACY";
 
-export const isValidDirectoryView = (
-  value: string | null,
-): value is DirectoryView => value === "CONTACTS" || value === "GROUPS";
+export const isValidDirectoryView = (value: string | null): value is DirectoryView =>
+  value === "CONTACTS" || value === "GROUPS";
 
-export const isValidGroupToolsMode = (
-  value: string | null,
-): value is GroupToolsMode =>
+export const isValidGroupToolsMode = (value: string | null): value is GroupToolsMode =>
   value === "DISCOVER" || value === "MANAGE" || value === "INVITE";
 
 export const resolveSidebarQueryState = (value: string | null) => {

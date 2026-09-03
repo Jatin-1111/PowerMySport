@@ -9,14 +9,11 @@ import { useEffect, useState } from "react";
 
 export function OrdersClient() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [status, setStatus] = useState<
-    "loading" | "ready" | "signed-out" | "error"
-  >("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "signed-out" | "error">("loading");
   const [message, setMessage] = useState("");
 
   async function loadOrders() {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     if (!token) {
       setStatus("signed-out");
@@ -29,9 +26,7 @@ export function OrdersClient() {
       setOrders(data.orders);
       setStatus("ready");
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Unable to load orders.",
-      );
+      setMessage(error instanceof Error ? error.message : "Unable to load orders.");
       setStatus("error");
     }
   }
@@ -48,12 +43,10 @@ export function OrdersClient() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
+          <p className="text-sm font-bold tracking-[0.16em] text-orange-600 uppercase">
             Order History
           </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
-            Your orders
-          </h1>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Your orders</h1>
         </div>
         <button
           type="button"
@@ -79,12 +72,10 @@ export function OrdersClient() {
       {status === "signed-out" ? (
         <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
           <PackageCheck className="mx-auto h-10 w-10 text-slate-400" />
-          <h2 className="mt-4 text-xl font-black text-slate-950">
-            Sign in to view backend orders
-          </h2>
+          <h2 className="mt-4 text-xl font-black text-slate-950">Sign in to view backend orders</h2>
           <p className="mx-auto mt-2 max-w-xl text-slate-600">
-            Local demo checkout clears the cart immediately. Authenticated
-            checkout creates server orders that appear here.
+            Local demo checkout clears the cart immediately. Authenticated checkout creates server
+            orders that appear here.
           </p>
           <Link
             href="/login"
@@ -104,12 +95,8 @@ export function OrdersClient() {
       {status === "ready" && orders.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
           <PackageCheck className="mx-auto h-10 w-10 text-slate-400" />
-          <h2 className="mt-4 text-xl font-black text-slate-950">
-            No orders yet
-          </h2>
-          <p className="mt-2 text-slate-600">
-            Your completed shop orders will appear here.
-          </p>
+          <h2 className="mt-4 text-xl font-black text-slate-950">No orders yet</h2>
+          <p className="mt-2 text-slate-600">Your completed shop orders will appear here.</p>
           <Link
             href="/shop"
             className="mt-6 inline-flex h-11 items-center justify-center rounded-lg bg-slate-950 px-5 text-sm font-bold text-white"
@@ -130,9 +117,7 @@ export function OrdersClient() {
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-bold text-slate-500">
-                    {order.orderNumber}
-                  </p>
+                  <p className="text-sm font-bold text-slate-500">{order.orderNumber}</p>
                   <h2 className="mt-1 text-xl font-black text-slate-950">
                     {formatInr(order.totalAmount)}
                   </h2>

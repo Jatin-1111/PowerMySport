@@ -42,29 +42,29 @@ export function StateDistribution({
   const totalRanked = stateCounts.reduce((sum, s) => sum + s.count, 0);
 
   return (
-    <details className="group rounded-xl border bg-card">
+    <details className="group bg-card rounded-xl border">
       <summary className="cursor-pointer list-none px-5 py-4 sm:px-6">
         <span className="flex items-center justify-between gap-3">
           <span className="text-base font-semibold tracking-tight">
             Which states these players come from
           </span>
           <span
-            className="shrink-0 text-sm font-medium text-muted-foreground transition-transform group-open:rotate-180"
+            className="text-muted-foreground shrink-0 text-sm font-medium transition-transform group-open:rotate-180"
             aria-hidden
           >
             ▾
           </span>
         </span>
-        <span className="mt-1 block text-sm text-muted-foreground">
-          {stateCounts.length} states and union territories, {" "}
-          {totalRanked.toLocaleString("en-IN")} ranked players in all.
+        <span className="text-muted-foreground mt-1 block text-sm">
+          {stateCounts.length} states and union territories, {totalRanked.toLocaleString("en-IN")}{" "}
+          ranked players in all.
         </span>
       </summary>
 
       <div className="border-t px-5 py-5 sm:px-6">
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          The state that ranks the most players is not always the state that
-          produces the best ones. Compare the two lists below.
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          The state that ranks the most players is not always the state that produces the best ones.
+          Compare the two lists below.
         </p>
         <div className="mt-4 grid gap-6 sm:grid-cols-2">
           <BarList
@@ -107,12 +107,12 @@ function BarList({
       <ol className="mt-3 space-y-2">
         {rows.map((row) => (
           <li key={row.label} className="grid grid-cols-[7.5rem_1fr_2.5rem] items-center gap-2">
-            <span className="truncate text-xs text-muted-foreground" title={row.label}>
+            <span className="text-muted-foreground truncate text-xs" title={row.label}>
               {row.label}
             </span>
-            <span className="h-2 overflow-hidden rounded-full bg-rank-track" aria-hidden>
+            <span className="bg-rank-track h-2 overflow-hidden rounded-full" aria-hidden>
               <span
-                className="block h-full rounded-full bg-rank-accent"
+                className="bg-rank-accent block h-full rounded-full"
                 style={{ width: `${Math.max((row.value / peak) * 100, 2)}%` }}
               />
             </span>

@@ -36,10 +36,7 @@ export const Section: React.FC<SectionProps> = ({
   };
 
   return (
-    <section
-      className={cn(spacings[spacing], backgrounds[background], className)}
-      {...props}
-    >
+    <section className={cn(spacings[spacing], backgrounds[background], className)} {...props}>
       {children}
     </section>
   );

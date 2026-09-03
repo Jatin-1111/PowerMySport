@@ -50,7 +50,7 @@ export function JourneyPipeline({
     <div className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 shadow-sm">
       {/* ── Step 1: done ── */}
       <div className="flex items-center gap-2.5 border-b border-white/[0.07] px-5 py-3 sm:px-7">
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-turf-green" />
+        <CheckCircle2 className="text-turf-green h-4 w-4 shrink-0" />
         <p className="min-w-0 flex-1 text-xs font-semibold text-slate-400">
           <span className="text-turf-green">Step 1 complete</span> · Assessment
         </p>
@@ -70,14 +70,14 @@ export function JourneyPipeline({
           stretched the full card width and read as a footer rather than a step. */}
       <div className="grid items-center gap-5 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_auto] lg:gap-10">
         <div className="flex min-w-0 items-start gap-3.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white shadow-md shadow-power-orange/25">
+          <div className="bg-power-orange shadow-power-orange/25 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
             <CalendarCheck className="h-[18px] w-[18px]" />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-power-orange">
+            <p className="text-power-orange text-[10px] font-semibold tracking-wider uppercase">
               Step 2 · Next up
             </p>
-            <p className="font-title text-xl font-bold leading-tight text-white">
+            <p className="font-title text-xl leading-tight font-bold text-white">
               Book a trial class{topSport ? ` in ${topSport}` : ""}
             </p>
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-400">
@@ -98,8 +98,8 @@ export function JourneyPipeline({
             Book a Trial Class on WhatsApp
           </a>
           <p className="mt-2.5 text-center text-[11px] leading-relaxed text-white/40">
-            Usually answered the same day. Screening and expert sessions are optional add-ons —
-            see below.
+            Usually answered the same day. Screening and expert sessions are optional add-ons — see
+            below.
           </p>
         </div>
       </div>

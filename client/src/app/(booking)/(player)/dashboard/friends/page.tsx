@@ -4,10 +4,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/modules/shared/ui/Avatar"
 import { Badge } from "@/modules/shared/ui/Badge";
 import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/modules/shared/ui/DropdownMenu";
 import { Input } from "@/modules/shared/ui/Input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/modules/shared/ui/Tabs";
@@ -17,10 +17,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import {
-    Friend,
-    FriendRequest,
-    friendService,
-    SearchUserResult,
+  Friend,
+  FriendRequest,
+  friendService,
+  SearchUserResult,
 } from "@/modules/shared/services/friend";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
@@ -28,16 +28,16 @@ import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { motion } from "framer-motion";
 import {
-    Ban,
-    CheckCircle,
-    Clock,
-    MoreVertical,
-    Search,
-    Send,
-    UserPlus,
-    Users,
-    UserX,
-    XCircle,
+  Ban,
+  CheckCircle,
+  Clock,
+  MoreVertical,
+  Search,
+  Send,
+  UserPlus,
+  Users,
+  UserX,
+  XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -66,9 +66,7 @@ export default function FriendsPage() {
   const invalidateFriends = () =>
     void queryClient.invalidateQueries({ queryKey: queryKeys.friends.all });
   const latestSearchRequestIdRef = useRef(0);
-  const searchDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const searchDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     loadFriends();
@@ -150,7 +148,7 @@ export default function FriendsPage() {
   const handleBlockUser = async (userId: string, userName: string) => {
     if (
       !confirm(
-        `Are you sure you want to block ${userName}? They will be removed from your friends list and won't be able to send you friend requests.`,
+        `Are you sure you want to block ${userName}? They will be removed from your friends list and won't be able to send you friend requests.`
       )
     ) {
       return;
@@ -172,16 +170,14 @@ export default function FriendsPage() {
       options?: {
         showValidationToast?: boolean;
         showEmptyToast?: boolean;
-      },
+      }
     ) => {
       const normalizedQuery = query.trim();
       if (normalizedQuery.length < MIN_SEARCH_LENGTH) {
         setSearchResults([]);
         setSearching(false);
         if (options?.showValidationToast) {
-          toast.error(
-            `Please enter at least ${MIN_SEARCH_LENGTH} characters to search`,
-          );
+          toast.error(`Please enter at least ${MIN_SEARCH_LENGTH} characters to search`);
         }
         return;
       }
@@ -211,7 +207,7 @@ export default function FriendsPage() {
         }
       }
     },
-    [],
+    []
   );
 
   useEffect(() => {
@@ -262,10 +258,9 @@ export default function FriendsPage() {
         typeof error === "object" &&
         error !== null &&
         "response" in error &&
-        typeof (error as { response?: { data?: { message?: string } } })
-          .response?.data?.message === "string"
-          ? (error as { response?: { data?: { message?: string } } }).response
-              ?.data?.message
+        typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message ===
+          "string"
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
 
       toast.error(errorMessage || "Failed to send friend request");
@@ -274,12 +269,7 @@ export default function FriendsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Friends" },
-        ]}
-      />
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Friends" }]} />
 
       <PlayerPageHeader
         badge="Player"
@@ -289,51 +279,37 @@ export default function FriendsPage() {
 
       {/* Stats strip */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Friends
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {friends.length}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Friends</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{friends.length}</p>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
             Pending Requests
           </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {pendingRequests.length}
-          </p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{pendingRequests.length}</p>
         </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Sent
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {sentRequests.length}
-          </p>
+        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
+          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Sent</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">{sentRequests.length}</p>
         </div>
       </div>
 
       {loading ? (
         <ListSkeleton count={5} />
       ) : (
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="space-y-6"
-        >
-          <TabsList className="grid w-full grid-cols-3 shop-surface border border-slate-200/60 h-auto p-1 premium-shadow">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="shop-surface premium-shadow grid h-auto w-full grid-cols-3 border border-slate-200/60 p-1">
             <TabsTrigger
               value="friends"
-              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-2.5 text-sm"
+              className="data-[state=active]:bg-power-orange flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
             >
               <Users className="h-4 w-4" />
               Friends
               {friends.length > 0 && (
                 <Badge
                   variant="secondary"
-                  className="ml-1 bg-indigo-100/70 text-indigo-700 text-xs"
+                  className="ml-1 bg-indigo-100/70 text-xs text-indigo-700"
                 >
                   {friends.length}
                 </Badge>
@@ -341,7 +317,7 @@ export default function FriendsPage() {
             </TabsTrigger>
             <TabsTrigger
               value="requests"
-              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-2.5 text-sm"
+              className="data-[state=active]:bg-power-orange flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
             >
               <Clock className="h-4 w-4" />
               Requests
@@ -353,7 +329,7 @@ export default function FriendsPage() {
             </TabsTrigger>
             <TabsTrigger
               value="search"
-              className="flex items-center gap-2 data-[state=active]:bg-power-orange data-[state=active]:text-white text-slate-700 py-2.5 text-sm"
+              className="data-[state=active]:bg-power-orange flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
             >
               <Search className="h-4 w-4" />
               Search
@@ -381,7 +357,7 @@ export default function FriendsPage() {
                   >
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
+                        <div className="flex flex-1 items-center gap-3">
                           {(() => {
                             const isPublic = friend.isIdentityPublic !== false;
                             const displayName = isPublic
@@ -390,22 +366,18 @@ export default function FriendsPage() {
                             return (
                               <>
                                 <Avatar className="h-11 w-11 border border-white shadow-sm">
-                                  <AvatarImage
-                                    src={isPublic ? friend.photoUrl : undefined}
-                                  />
-                                  <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
+                                  <AvatarImage src={isPublic ? friend.photoUrl : undefined} />
+                                  <AvatarFallback className="bg-power-orange/10 text-power-orange text-sm font-bold">
                                     {displayName.charAt(0).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
-                                <div className="flex-1 min-w-0">
+                                <div className="min-w-0 flex-1">
                                   <h3 className="truncate font-semibold text-slate-900">
                                     {displayName}
                                   </h3>
                                   <p className="text-xs text-slate-500">
                                     Friends since{" "}
-                                    {new Date(
-                                      friend.friendsSince,
-                                    ).toLocaleDateString()}
+                                    {new Date(friend.friendsSince).toLocaleDateString()}
                                   </p>
                                 </div>
                               </>
@@ -427,9 +399,7 @@ export default function FriendsPage() {
                               Remove Friend
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() =>
-                                handleBlockUser(friend.id, friend.name)
-                              }
+                              onClick={() => handleBlockUser(friend.id, friend.name)}
                               className="cursor-pointer text-red-600"
                             >
                               <Ban className="mr-2 h-4 w-4" />
@@ -454,7 +424,7 @@ export default function FriendsPage() {
                 title="Received Requests"
                 description="Friend requests waiting for your response"
               />
-              <CardContent className="px-6 py-5 space-y-3">
+              <CardContent className="space-y-3 px-6 py-5">
                 {pendingRequests.length === 0 ? (
                   <EmptyState
                     icon={Clock}
@@ -471,33 +441,23 @@ export default function FriendsPage() {
                     >
                       <div className="flex items-center gap-3">
                         {(() => {
-                          const isPublic =
-                            request.requester.isIdentityPublic !== false;
+                          const isPublic = request.requester.isIdentityPublic !== false;
                           const displayName = isPublic
                             ? request.requester.name
-                            : request.requester.anonymousAlias ||
-                              "Anonymous Member";
+                            : request.requester.anonymousAlias || "Anonymous Member";
                           return (
                             <>
                               <Avatar className="h-10 w-10 border border-white shadow-sm">
                                 <AvatarImage
-                                  src={
-                                    isPublic
-                                      ? request.requester.photoUrl
-                                      : undefined
-                                  }
+                                  src={isPublic ? request.requester.photoUrl : undefined}
                                 />
-                                <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
+                                <AvatarFallback className="bg-power-orange/10 text-power-orange text-sm font-bold">
                                   {displayName.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <h4 className="font-semibold text-slate-900">
-                                  {displayName}
-                                </h4>
-                                <p className="text-xs text-slate-500">
-                                  Sent you a friend request
-                                </p>
+                                <h4 className="font-semibold text-slate-900">{displayName}</h4>
+                                <p className="text-xs text-slate-500">Sent you a friend request</p>
                               </div>
                             </>
                           );
@@ -534,7 +494,7 @@ export default function FriendsPage() {
                 title="Sent Requests"
                 description="Friend requests you've sent that are still pending"
               />
-              <CardContent className="px-6 py-5 space-y-3">
+              <CardContent className="space-y-3 px-6 py-5">
                 {sentRequests.length === 0 ? (
                   <EmptyState
                     icon={UserPlus}
@@ -559,12 +519,8 @@ export default function FriendsPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h4 className="font-semibold text-slate-900">
-                            {request.recipient.name}
-                          </h4>
-                          <p className="text-xs text-slate-500">
-                            Request pending...
-                          </p>
+                          <h4 className="font-semibold text-slate-900">{request.recipient.name}</h4>
+                          <p className="text-xs text-slate-500">Request pending...</p>
                         </div>
                       </div>
                       <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
@@ -585,7 +541,7 @@ export default function FriendsPage() {
                 title="Find Friends"
                 description="Search for players by name or email to add as friends"
               />
-              <CardContent className="px-6 py-5 space-y-4">
+              <CardContent className="space-y-4 px-6 py-5">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Search by name or email (min 2 characters)..."
@@ -596,13 +552,11 @@ export default function FriendsPage() {
                   <Button
                     variant="primary"
                     onClick={handleSearch}
-                    disabled={
-                      searching || searchQuery.trim().length < MIN_SEARCH_LENGTH
-                    }
+                    disabled={searching || searchQuery.trim().length < MIN_SEARCH_LENGTH}
                   >
                     {searching ? (
                       <>
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                        <div className="border-primary-foreground mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
                         Searching...
                       </>
                     ) : (
@@ -636,17 +590,13 @@ export default function FriendsPage() {
                             return (
                               <>
                                 <Avatar className="h-10 w-10 border border-white shadow-sm">
-                                  <AvatarImage
-                                    src={isPublic ? user.photoUrl : undefined}
-                                  />
-                                  <AvatarFallback className="bg-power-orange/10 text-sm font-bold text-power-orange">
+                                  <AvatarImage src={isPublic ? user.photoUrl : undefined} />
+                                  <AvatarFallback className="bg-power-orange/10 text-power-orange text-sm font-bold">
                                     {displayName.charAt(0).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <h4 className="font-semibold text-slate-900">
-                                    {displayName}
-                                  </h4>
+                                  <h4 className="font-semibold text-slate-900">{displayName}</h4>
                                 </div>
                               </>
                             );

@@ -20,12 +20,10 @@ const entry = (slug: string, name: string): PathwayIndexEntry => ({
 
 /** The ten registered sports plus forty-four the registry has never heard of. */
 const manySports = (): PathwayIndexEntry[] => {
-  const registered = PATHWAY_SPORTS.map((sport) =>
-    entry(sport.slug, sport.name),
-  );
+  const registered = PATHWAY_SPORTS.map((sport) => entry(sport.slug, sport.name));
   const unregistered = Array.from({ length: 44 }, (_, i) =>
     // Alphabetical, the order the API returns.
-    entry(`sport-${String(i).padStart(2, "0")}`, `Sport ${i}`),
+    entry(`sport-${String(i).padStart(2, "0")}`, `Sport ${i}`)
   );
   return [...registered, ...unregistered];
 };
@@ -101,17 +99,9 @@ describe("filterSports", () => {
   });
 
   it("combines the group filter with the search", () => {
-    expect(slugs("", "Racquet")).toEqual([
-      "tennis",
-      "badminton",
-      "table-tennis",
-    ]);
+    expect(slugs("", "Racquet")).toEqual(["tennis", "badminton", "table-tennis"]);
     // "ball" hits basketball, football and volleyball — but not in Racquet.
-    expect(slugs("ball", "Team")).toEqual([
-      "football",
-      "basketball",
-      "volleyball",
-    ]);
+    expect(slugs("ball", "Team")).toEqual(["football", "basketball", "volleyball"]);
     expect(slugs("ball", "Racquet")).toEqual([]);
   });
 
@@ -127,8 +117,6 @@ describe("filterSports", () => {
     const matches = slugs("n");
     expect(matches).toContain("tennis");
     expect(matches).toContain("badminton");
-    expect(matches.indexOf("tennis")).toBeLessThan(
-      matches.indexOf("badminton"),
-    );
+    expect(matches.indexOf("tennis")).toBeLessThan(matches.indexOf("badminton"));
   });
 });

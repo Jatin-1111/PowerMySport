@@ -24,11 +24,11 @@ export const TAX_RATE = readRate(process.env.TAX_RATE, 0.05);
 
 export const SUBSCRIPTION_PLATFORM_FEE_RATE = readRate(
   process.env.SUBSCRIPTION_PLATFORM_FEE_RATE ?? process.env.SERVICE_FEE_RATE,
-  0,
+  0
 );
 export const SUBSCRIPTION_TAX_RATE = readRate(
   process.env.SUBSCRIPTION_TAX_RATE ?? process.env.TAX_RATE,
-  0.05,
+  0.05
 );
 
 export type FeeBreakdown = {
@@ -45,10 +45,7 @@ export type FeeBreakdown = {
  * tax applies to the *service fee* rather than to the subtotal, and that a zero
  * service fee means zero tax.
  */
-export const computeBookingFees = (
-  subtotal: number,
-  discount = 0,
-): FeeBreakdown => {
+export const computeBookingFees = (subtotal: number, discount = 0): FeeBreakdown => {
   const serviceFee = Math.round(subtotal * SERVICE_FEE_RATE);
   const tax = serviceFee > 0 ? Math.round(serviceFee * TAX_RATE) : 0;
   const total = Math.max(0, subtotal + serviceFee + tax - discount);
@@ -56,12 +53,8 @@ export const computeBookingFees = (
 };
 
 /** The subscription equivalent, in paise. */
-export const computeSubscriptionFees = (
-  baseAmountInPaise: number,
-): FeeBreakdown => {
-  const serviceFee = Math.round(
-    baseAmountInPaise * SUBSCRIPTION_PLATFORM_FEE_RATE,
-  );
+export const computeSubscriptionFees = (baseAmountInPaise: number): FeeBreakdown => {
+  const serviceFee = Math.round(baseAmountInPaise * SUBSCRIPTION_PLATFORM_FEE_RATE);
   const tax = serviceFee > 0 ? Math.round(serviceFee * SUBSCRIPTION_TAX_RATE) : 0;
   return {
     subtotal: baseAmountInPaise,

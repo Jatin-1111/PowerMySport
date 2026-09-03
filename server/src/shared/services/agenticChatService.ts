@@ -22,16 +22,14 @@ export interface ChatHistoryMessage {
 
 async function executeToolCalls(
   calls: FunctionCall[],
-  toolsByName: Map<string, ChatToolDefinition>,
+  toolsByName: Map<string, ChatToolDefinition>
 ): Promise<Part[]> {
   const parts: Part[] = [];
   for (const call of calls) {
     const tool = call.name ? toolsByName.get(call.name) : undefined;
     let output: unknown;
     try {
-      output = tool
-        ? await tool.execute(call.args || {})
-        : { error: `Unknown tool: ${call.name}` };
+      output = tool ? await tool.execute(call.args || {}) : { error: `Unknown tool: ${call.name}` };
     } catch (toolError) {
       output = {
         error: toolError instanceof Error ? toolError.message : "Tool execution failed",
@@ -62,7 +60,7 @@ export async function* streamAgenticChatResponse(
   systemPrompt: string,
   history: ChatHistoryMessage[],
   userMessage: string,
-  tools: ChatToolDefinition[] = [],
+  tools: ChatToolDefinition[] = []
 ): AsyncGenerator<string> {
   if (!apiKey) {
     throw new Error("Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable");
@@ -102,7 +100,12 @@ export async function* streamAgenticChatResponse(
       const firstStream = await genAI.models.generateContentStream({
         model: modelName,
         contents,
-        config: { systemInstruction: systemPrompt, temperature: 0.6, maxOutputTokens: 1024, ...toolsConfig },
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.6,
+          maxOutputTokens: 1024,
+          ...toolsConfig,
+        },
       });
 
       let pendingCalls: FunctionCall[] | undefined;
@@ -161,6 +164,6 @@ export async function* streamAgenticChatResponse(
   throw new Error(
     `No supported Gemini chat model found. Tried: ${chatModelCandidates.join(", ")}. Last error: ${
       lastError instanceof Error ? lastError.message : String(lastError)
-    }`,
+    }`
   );
 }

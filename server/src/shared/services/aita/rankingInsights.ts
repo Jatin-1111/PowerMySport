@@ -160,7 +160,7 @@ export function nextBracketUp(subcategory: string | undefined): string | null {
  */
 export function computeBenchmarks(
   rows: InsightRow[],
-  tiers: readonly number[] = BENCHMARK_TIERS,
+  tiers: readonly number[] = BENCHMARK_TIERS
 ): Benchmark[] {
   if (rows.length === 0) return [];
 
@@ -276,10 +276,7 @@ export function assignStateRanks(rows: InsightRow[]): Map<string, number> {
  * moved here: the rounding happens once, at the end, instead of on every column
  * first.
  */
-export function computeBandProfiles(
-  rows: InsightRow[],
-  subcategory?: string,
-): BandProfile[] {
+export function computeBandProfiles(rows: InsightRow[], subcategory?: string): BandProfile[] {
   const components = componentColumns(rows);
   if (components.length === 0) return [];
 
@@ -289,7 +286,7 @@ export function computeBandProfiles(
   const profiles: BandProfile[] = [];
   for (const band of POINT_BANDS) {
     const members = rows.filter(
-      (row) => row.rank >= band.from && (band.to === null || row.rank <= band.to),
+      (row) => row.rank >= band.from && (band.to === null || row.rank <= band.to)
     );
     if (members.length === 0) continue;
 
@@ -299,7 +296,7 @@ export function computeBandProfiles(
         isDeduction,
         isInformational,
         average: round1(mean(members.map((m) => m.points[index]?.value ?? 0))),
-      }),
+      })
     );
 
     if (rolledDown && rolledDownLabel) {
@@ -425,8 +422,8 @@ function dropUnusedColumns(profiles: BandProfile[]): BandProfile[] {
   const labels = [...new Set(profiles.flatMap((p) => p.composition.map((s) => s.label)))];
   const used = new Set(
     labels.filter((label) =>
-      profiles.some((p) => (p.composition.find((s) => s.label === label)?.average ?? 0) !== 0),
-    ),
+      profiles.some((p) => (p.composition.find((s) => s.label === label)?.average ?? 0) !== 0)
+    )
   );
   return profiles.map((profile) => ({
     ...profile,
@@ -446,11 +443,9 @@ function dropUnusedColumns(profiles: BandProfile[]): BandProfile[] {
 export function nextTierFor(
   rank: number,
   totalPoints: number,
-  benchmarks: Benchmark[],
+  benchmarks: Benchmark[]
 ): { rank: number; points: number; gap: number } | null {
-  const above = benchmarks
-    .filter((b) => b.rank < rank)
-    .sort((a, b) => b.rank - a.rank);
+  const above = benchmarks.filter((b) => b.rank < rank).sort((a, b) => b.rank - a.rank);
 
   for (const tier of above) {
     const gap = round1(tier.points - totalPoints);
@@ -482,15 +477,14 @@ function componentColumns(rows: InsightRow[]): ComponentColumn[] {
   // raw doubles column alone would be scoring it, and blanking it would leave
   // the bars short of the total instead of over it.
   const hasQuarterDoubles = printed.some(
-    (point) => isDoubles(point.label) && isQuarter(point.label),
+    (point) => isDoubles(point.label) && isQuarter(point.label)
   );
 
   return printed.map((point, index) => ({
     index,
     label: point.label,
     isDeduction: DEDUCTION_PATTERN.test(point.label),
-    isInformational:
-      hasQuarterDoubles && isDoubles(point.label) && !isQuarter(point.label),
+    isInformational: hasQuarterDoubles && isDoubles(point.label) && !isQuarter(point.label),
   }));
 }
 
@@ -521,7 +515,7 @@ function componentColumns(rows: InsightRow[]): ComponentColumn[] {
  */
 function rolledDownPerPlayer(
   rows: InsightRow[],
-  components: ComponentColumn[],
+  components: ComponentColumn[]
 ): Map<string, number> | null {
   const scoring = components.filter((c) => !c.isDeduction && !c.isInformational);
   const deductions = components.filter((c) => c.isDeduction);
@@ -533,7 +527,7 @@ function rolledDownPerPlayer(
     const counted = scoring.reduce((sum, c) => sum + (row.points[c.index]?.value ?? 0), 0);
     const deducted = deductions.reduce(
       (sum, c) => sum + Math.abs(row.points[c.index]?.value ?? 0),
-      0,
+      0
     );
     const residual = row.totalPoints - counted + deducted;
 

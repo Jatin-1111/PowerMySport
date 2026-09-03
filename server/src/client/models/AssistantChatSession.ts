@@ -16,7 +16,7 @@ const chatMessageSchema = new Schema<ChatMessage>(
     content: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const assistantChatSessionSchema = new Schema<AssistantChatSessionDocument>(
@@ -30,7 +30,7 @@ const assistantChatSessionSchema = new Schema<AssistantChatSessionDocument>(
     messages: { type: [chatMessageSchema], default: [] },
     totalMessageCount: { type: Number, default: 0 },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Non-unique — multiple sessions per user are allowed (a new chat each time
@@ -40,5 +40,5 @@ assistantChatSessionSchema.index({ userId: 1, updatedAt: -1 });
 
 export const AssistantChatSession = mongoose.model<AssistantChatSessionDocument>(
   "AssistantChatSession",
-  assistantChatSessionSchema,
+  assistantChatSessionSchema
 );

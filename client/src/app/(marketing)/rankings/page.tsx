@@ -71,13 +71,11 @@ export default async function RankingsIndexPage() {
       <Breadcrumbs items={[{ label: "Rankings" }]} className="mb-6" />
 
       <header className="max-w-3xl">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Sports rankings in India
-        </h1>
-        <p className="mt-3 text-base text-muted-foreground sm:text-lg">
-          Official federation lists, made searchable. Filter by state, look up a
-          player by name or registration number, and see how a ranking has moved
-          week by week — something the source PDFs cannot show you.
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Sports rankings in India</h1>
+        <p className="text-muted-foreground mt-3 text-base sm:text-lg">
+          Official federation lists, made searchable. Filter by state, look up a player by name or
+          registration number, and see how a ranking has moved week by week — something the source
+          PDFs cannot show you.
         </p>
       </header>
 
@@ -88,13 +86,13 @@ export default async function RankingsIndexPage() {
             <li key={sport.slug}>
               <Link
                 href={rankingSportHref(sport.slug)}
-                className="group flex h-full flex-col justify-between rounded-lg border bg-card p-4 shadow-sm transition-colors hover:border-power-orange focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+                className="group bg-card hover:border-power-orange focus-visible:ring-power-orange flex h-full flex-col justify-between rounded-lg border p-4 shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className="font-medium">{sport.name}</span>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-power-orange" />
+                  <ArrowRight className="text-muted-foreground group-hover:text-power-orange h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
                 </span>
-                <span className="mt-3 block text-sm text-muted-foreground">
+                <span className="text-muted-foreground mt-3 block text-sm">
                   {sport.federation.acronym} lists
                   {asOn !== "—" && (
                     <>
@@ -115,7 +113,7 @@ export default async function RankingsIndexPage() {
         <section className="mt-10">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-xl font-semibold tracking-tight">Not mirrored yet</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               These sports have pathway guides, but no ranking lists here yet.
             </p>
           </div>
@@ -123,14 +121,14 @@ export default async function RankingsIndexPage() {
             {notYet.map((sport) => (
               <li
                 key={sport.slug}
-                className="flex h-full flex-col justify-between rounded-lg border border-dashed bg-muted/30 p-4"
+                className="bg-muted/30 flex h-full flex-col justify-between rounded-lg border border-dashed p-4"
               >
-                <span className="font-medium text-muted-foreground">{sport.name}</span>
-                <span className="mt-3 block text-sm text-muted-foreground">
+                <span className="text-muted-foreground font-medium">{sport.name}</span>
+                <span className="text-muted-foreground mt-3 block text-sm">
                   Not available yet ·{" "}
                   <Link
                     href={`/roadmap/${sport.slug}`}
-                    className="font-medium text-power-orange hover:underline"
+                    className="text-power-orange font-medium hover:underline"
                   >
                     pathway guide
                   </Link>
@@ -138,10 +136,9 @@ export default async function RankingsIndexPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Adding a sport depends on its federation publishing lists we can mirror
-            accurately. We would rather show nothing than show a rank we cannot
-            stand behind.
+          <p className="text-muted-foreground mt-4 text-sm">
+            Adding a sport depends on its federation publishing lists we can mirror accurately. We
+            would rather show nothing than show a rank we cannot stand behind.
           </p>
         </section>
       )}

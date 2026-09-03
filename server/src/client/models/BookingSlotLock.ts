@@ -38,21 +38,21 @@ const bookingSlotLockSchema = new Schema<BookingSlotLockDocument>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 bookingSlotLockSchema.index(
   { resourceType: 1, resourceId: 1, dateKey: 1 },
-  { unique: true, name: "unique_booking_slot_lock" },
+  { unique: true, name: "unique_booking_slot_lock" }
 );
 
 // TTL index to auto-delete locks after 7 days (stale locks from past bookings)
 bookingSlotLockSchema.index(
   { lastLockedAt: 1 },
-  { expireAfterSeconds: 7 * 24 * 60 * 60, name: "lock_ttl" },
+  { expireAfterSeconds: 7 * 24 * 60 * 60, name: "lock_ttl" }
 );
 
 export const BookingSlotLock = mongoose.model<BookingSlotLockDocument>(
   "BookingSlotLock",
-  bookingSlotLockSchema,
+  bookingSlotLockSchema
 );

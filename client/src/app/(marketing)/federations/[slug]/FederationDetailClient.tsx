@@ -64,9 +64,24 @@ const SPORT_LABEL: Record<string, string> = {
 };
 
 const TYPE_META = {
-  govt: { label: "Government Body", bg: "bg-blue-500/20", text: "text-blue-200", border: "border-blue-400/30" },
-  national: { label: "National Federation", bg: "bg-emerald-500/20", text: "text-emerald-200", border: "border-emerald-400/30" },
-  hybrid: { label: "Public-Private Body", bg: "bg-violet-500/20", text: "text-violet-200", border: "border-violet-400/30" },
+  govt: {
+    label: "Government Body",
+    bg: "bg-blue-500/20",
+    text: "text-blue-200",
+    border: "border-blue-400/30",
+  },
+  national: {
+    label: "National Federation",
+    bg: "bg-emerald-500/20",
+    text: "text-emerald-200",
+    border: "border-emerald-400/30",
+  },
+  hybrid: {
+    label: "Public-Private Body",
+    bg: "bg-violet-500/20",
+    text: "text-violet-200",
+    border: "border-violet-400/30",
+  },
 } as const;
 
 const TABS = [
@@ -86,7 +101,13 @@ type TabId = (typeof TABS)[number]["id"];
  * and for ranking/rating sports they don't exist as a concept at all (see
  * sportArchetypes.ts).
  */
-const LEVEL_FILTER_CANDIDATES = ["International", "National", "State", "District", "Zonal"] as const;
+const LEVEL_FILTER_CANDIDATES = [
+  "International",
+  "National",
+  "State",
+  "District",
+  "Zonal",
+] as const;
 
 /**
  * Word-boundary match, NOT substring: "International".includes("national") is
@@ -101,7 +122,7 @@ function levelMatches(level: string | undefined, candidate: string): boolean {
 
 function availableLevelFilters(list: Tournament[]): string[] {
   return LEVEL_FILTER_CANDIDATES.filter((candidate) =>
-    list.some((t) => levelMatches(t.level, candidate)),
+    list.some((t) => levelMatches(t.level, candidate))
   );
 }
 
@@ -249,16 +270,16 @@ export function FederationDetailClient({
     calendarApi
       .getEvents(
         new Date(Math.min(...dates)).toISOString().slice(0, 10),
-        new Date(Math.max(...dates)).toISOString().slice(0, 10),
+        new Date(Math.max(...dates)).toISOString().slice(0, 10)
       )
       .then((events) =>
         setSavedEventKeys(
           new Set(
             events
               .filter((ev) => ev.type === "COMPETITION")
-              .map((ev) => savedEventKey(ev.title, ev.date)),
-          ),
-        ),
+              .map((ev) => savedEventKey(ev.title, ev.date))
+          )
+        )
       )
       // A failed lookup only costs the saved-state badge, so leave the tab usable.
       .catch(() => undefined);
@@ -270,11 +291,11 @@ export function FederationDetailClient({
 
   // ── Calendar navigation (filters drive the month counts, so they stay honest) ──
   const editionAgeGroupOptions = Array.from(
-    new Set(editions.flatMap((e) => e.ageGroups ?? [])),
+    new Set(editions.flatMap((e) => e.ageGroups ?? []))
   ).sort((a, b) => ageGroupRank(a) - ageGroupRank(b) || a.localeCompare(b));
 
   const editionStateOptions = Array.from(
-    new Set(editions.map((e) => stateForCity(e.city)).filter((s): s is string => !!s)),
+    new Set(editions.map((e) => stateForCity(e.city)).filter((s): s is string => !!s))
   ).sort((a, b) => a.localeCompare(b));
 
   const filteredEditions = editions.filter((e) => {
@@ -322,30 +343,29 @@ export function FederationDetailClient({
 
   const filteredTournaments = tournaments.filter((t) => {
     if (activeLevelFilter !== "All" && !levelMatches(t.level, activeLevelFilter)) return false;
-    if (ageGroupFilter && !t.ageGroup?.toLowerCase().includes(ageGroupFilter.toLowerCase())) return false;
-    if (tournamentSearch && !t.name.toLowerCase().includes(tournamentSearch.toLowerCase())) return false;
+    if (ageGroupFilter && !t.ageGroup?.toLowerCase().includes(ageGroupFilter.toLowerCase()))
+      return false;
+    if (tournamentSearch && !t.name.toLowerCase().includes(tournamentSearch.toLowerCase()))
+      return false;
     return true;
   });
 
   return (
     <main className="min-h-screen">
-
       {/* ── Hero ── */}
       <div className="bg-slate-900">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-
           {/* Breadcrumb */}
-          <div className="pt-5 pb-4 border-b border-white/[0.07]">
-            <BackToRoadmapLink
-              sportSlug={fed.sportSlug}
-              hasPathway={hasPathway}
-            />
+          <div className="border-b border-white/[0.07] pt-5 pb-4">
+            <BackToRoadmapLink sportSlug={fed.sportSlug} hasPathway={hasPathway} />
           </div>
 
           {/* Header content */}
           <div className="pt-7 pb-9">
-            <div className="flex flex-wrap items-center gap-2 mb-5">
-              <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${typeMeta.bg} ${typeMeta.text} ${typeMeta.border}`}>
+            <div className="mb-5 flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${typeMeta.bg} ${typeMeta.text} ${typeMeta.border}`}
+              >
                 <Landmark className="h-3 w-3" />
                 {typeMeta.label}
               </span>
@@ -363,16 +383,14 @@ export function FederationDetailClient({
 
             <div className="flex items-start gap-5">
               {/* Monogram */}
-              <div className="hidden sm:flex shrink-0 h-[72px] w-[72px] items-center justify-center rounded-2xl bg-white/[0.08] text-2xl font-black text-white tracking-tight select-none">
+              <div className="hidden h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-white/[0.08] text-2xl font-black tracking-tight text-white select-none sm:flex">
                 {fed.acronym.slice(0, 2)}
               </div>
               <div>
-                <h1 className="font-title text-4xl sm:text-5xl font-bold text-white leading-[1.05] tracking-tight">
+                <h1 className="font-title text-4xl leading-[1.05] font-bold tracking-tight text-white sm:text-5xl">
                   {fed.acronym}
                 </h1>
-                <p className="mt-2 text-base text-white/50 font-medium">
-                  {fed.name}
-                </p>
+                <p className="mt-2 text-base font-medium text-white/50">{fed.name}</p>
                 {fed.headquarters && (
                   <p className="mt-1 flex items-center gap-1.5 text-sm text-white/30">
                     <MapPin className="h-3.5 w-3.5" />
@@ -390,7 +408,7 @@ export function FederationDetailClient({
                   href={fed.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl bg-white text-slate-900 px-5 py-2.5 text-sm font-bold shadow hover:bg-slate-50 transition"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-900 shadow transition hover:bg-slate-50"
                 >
                   <ExternalLink className="h-4 w-4" />
                   Official Website
@@ -401,7 +419,7 @@ export function FederationDetailClient({
                   href={fed.officialCalendarUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.07] text-white/75 px-5 py-2.5 text-sm font-bold hover:bg-white/[0.14] hover:text-white transition"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.07] px-5 py-2.5 text-sm font-bold text-white/75 transition hover:bg-white/[0.14] hover:text-white"
                 >
                   <Calendar className="h-4 w-4" />
                   Tournament Calendar
@@ -415,18 +433,18 @@ export function FederationDetailClient({
       {/* ── Sticky tab bar ── */}
       <div
         ref={tabBarRef}
-        className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm"
+        className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex overflow-x-auto scrollbar-none gap-0">
+          <div className="flex scrollbar-none gap-0 overflow-x-auto">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => switchTab(id)}
-                className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                className={`flex items-center gap-2 border-b-2 px-5 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors ${
                   activeTab === id
                     ? "border-power-orange text-power-orange"
-                    : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                    : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -439,29 +457,28 @@ export function FederationDetailClient({
 
       {/* ── Tab content ── */}
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-
         {/* ── Overview tab ── */}
         {activeTab === "overview" && (
-          <div className="grid lg:grid-cols-[1fr_300px] gap-8 items-start">
+          <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
             <div className="space-y-6">
-
               {/* About */}
-              <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 sm:p-8">
+              <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
                 <SectionHeading>About {fed.acronym}</SectionHeading>
-                <p className="text-[15px] text-slate-600 leading-[1.85]">
-                  {fed.about}
-                </p>
+                <p className="text-[15px] leading-[1.85] text-slate-600">{fed.about}</p>
               </section>
 
               {/* Key Facts */}
               {fed.keyFacts && fed.keyFacts.length > 0 && (
-                <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 sm:p-8">
+                <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
                   <SectionHeading>Key Facts</SectionHeading>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     {fed.keyFacts.map((fact, i) => (
-                      <div key={i} className="flex items-start gap-3 rounded-xl bg-slate-50 px-4 py-3.5">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <p className="text-sm text-slate-700 leading-snug">{fact}</p>
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 rounded-xl bg-slate-50 px-4 py-3.5"
+                      >
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                        <p className="text-sm leading-snug text-slate-700">{fact}</p>
                       </div>
                     ))}
                   </div>
@@ -470,7 +487,7 @@ export function FederationDetailClient({
 
               {/* Affiliations */}
               {fed.affiliations && fed.affiliations.length > 0 && (
-                <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 sm:p-8">
+                <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
                   <SectionHeading>International Affiliations</SectionHeading>
                   <div className="flex flex-wrap gap-2">
                     {fed.affiliations.map((aff, i) => (
@@ -487,24 +504,30 @@ export function FederationDetailClient({
 
               {/* State Associations */}
               {fed.stateAssociations && fed.stateAssociations.length > 0 && (
-                <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 sm:p-8">
+                <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
                   <SectionHeading>State Associations</SectionHeading>
-                  <p className="text-sm text-slate-500 mb-5">
-                    Your child must register with the state association for your state before participating in national events.
+                  <p className="mb-5 text-sm text-slate-500">
+                    Your child must register with the state association for your state before
+                    participating in national events.
                   </p>
-                  <div className="grid sm:grid-cols-2 gap-2.5">
+                  <div className="grid gap-2.5 sm:grid-cols-2">
                     {fed.stateAssociations.map((sa, i) => (
-                      <div key={i} className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-4 py-3">
+                      <div
+                        key={i}
+                        className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-4 py-3"
+                      >
                         <div>
-                          <p className="text-sm font-semibold text-slate-800 leading-tight">{sa.name}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{sa.state}</p>
+                          <p className="text-sm leading-tight font-semibold text-slate-800">
+                            {sa.name}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-400">{sa.state}</p>
                         </div>
                         {sa.website && (
                           <a
                             href={sa.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="shrink-0 text-slate-400 hover:text-power-orange transition"
+                            className="hover:text-power-orange shrink-0 text-slate-400 transition"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
                           </a>
@@ -517,17 +540,30 @@ export function FederationDetailClient({
 
               {/* Data source notice */}
               {isVerified && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-start gap-3">
-                  <BadgeCheck className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+                  <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                   <div>
-                    <p className="text-sm font-semibold text-emerald-800">Data verified by PowerMySport</p>
-                    <p className="text-xs text-emerald-700 mt-0.5 leading-relaxed">
+                    <p className="text-sm font-semibold text-emerald-800">
+                      Data verified by PowerMySport
+                    </p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-emerald-700">
                       This federation profile was manually cross-checked against official sources on{" "}
-                      {new Date(fed.dataVerifiedAt!).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
+                      {new Date(fed.dataVerifiedAt!).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                      .
                       {fed.sourceUrls?.[0] && (
                         <>
-                          {" "}Primary source:{" "}
-                          <a href={fed.sourceUrls[0]} target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                          {" "}
+                          Primary source:{" "}
+                          <a
+                            href={fed.sourceUrls[0]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium underline"
+                          >
                             {new URL(fed.sourceUrls[0]).hostname}
                           </a>
                         </>
@@ -541,8 +577,8 @@ export function FederationDetailClient({
             {/* Sidebar */}
             <aside className="space-y-4 lg:sticky lg:top-20">
               {/* Quick nav */}
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400 mb-3">
+              <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <p className="mb-3 text-[10px] font-bold tracking-[0.13em] text-slate-400 uppercase">
                   In this guide
                 </p>
                 <div className="space-y-1.5">
@@ -550,15 +586,15 @@ export function FederationDetailClient({
                     <button
                       key={id}
                       onClick={() => switchTab(id)}
-                      className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-left transition ${
+                      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
                         activeTab === id
-                          ? "bg-orange-50 text-power-orange"
+                          ? "text-power-orange bg-orange-50"
                           : "text-slate-600 hover:bg-slate-50"
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
                       {label}
-                      <ArrowRight className="h-3.5 w-3.5 ml-auto opacity-40" />
+                      <ArrowRight className="ml-auto h-3.5 w-3.5 opacity-40" />
                     </button>
                   ))}
                 </div>
@@ -566,11 +602,16 @@ export function FederationDetailClient({
 
               {/* Contact */}
               {(fed.contact?.email || fed.contact?.phone || fed.contact?.address) && (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">Contact</p>
+                <div className="space-y-3 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                  <p className="text-[10px] font-bold tracking-[0.13em] text-slate-400 uppercase">
+                    Contact
+                  </p>
                   {fed.contact.email && (
-                    <a href={`mailto:${fed.contact.email}`} className="flex items-start gap-2.5 text-sm text-slate-600 hover:text-power-orange transition">
-                      <Mail className="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
+                    <a
+                      href={`mailto:${fed.contact.email}`}
+                      className="hover:text-power-orange flex items-start gap-2.5 text-sm text-slate-600 transition"
+                    >
+                      <Mail className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                       {fed.contact.email}
                     </a>
                   )}
@@ -582,7 +623,7 @@ export function FederationDetailClient({
                   )}
                   {fed.contact.address && (
                     <div className="flex items-start gap-2.5 text-sm text-slate-600">
-                      <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-slate-400" />
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                       <span className="leading-snug">{fed.contact.address}</span>
                     </div>
                   )}
@@ -590,26 +631,29 @@ export function FederationDetailClient({
               )}
 
               {/* CTA */}
-              <div className="rounded-2xl bg-slate-900 p-5 relative overflow-hidden">
-                <div className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full bg-power-orange/[0.12] blur-2xl" />
+              <div className="relative overflow-hidden rounded-2xl bg-slate-900 p-5">
+                <div className="bg-power-orange/[0.12] pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full blur-2xl" />
                 <div className="relative z-10">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Sparkles className="h-3.5 w-3.5 text-power-orange" />
-                    <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-power-orange">Concierge</p>
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <Sparkles className="text-power-orange h-3.5 w-3.5" />
+                    <p className="text-power-orange text-[10px] font-bold tracking-[0.13em] uppercase">
+                      Concierge
+                    </p>
                   </div>
-                  <p className="text-[15px] font-bold text-white mb-1.5 leading-snug">
+                  <p className="mb-1.5 text-[15px] leading-snug font-bold text-white">
                     We handle registration for you
                   </p>
-                  <p className="text-xs text-white/45 leading-relaxed mb-4">
-                    Federation IDs, documents, form submissions — our team takes care of everything at no cost.
+                  <p className="mb-4 text-xs leading-relaxed text-white/45">
+                    Federation IDs, documents, form submissions — our team takes care of everything
+                    at no cost.
                   </p>
                   <a
                     href={buildWhatsAppUrl(
-                      `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel} — found via PowerMySport.`,
+                      `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel} — found via PowerMySport.`
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full rounded-xl bg-power-orange py-2.5 text-sm font-bold text-white hover:bg-orange-500 transition"
+                    className="bg-power-orange flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white transition hover:bg-orange-500"
                   >
                     <WhatsAppIcon className="h-4 w-4 text-white" />
                     Get Help via WhatsApp
@@ -624,16 +668,16 @@ export function FederationDetailClient({
         {activeTab === "tournaments" && (
           <div id="tournaments" className="space-y-5">
             {/* Filters */}
-            <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-wrap items-center gap-3">
               {/* Search */}
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <div className="relative min-w-[200px] flex-1">
+                <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search tournaments…"
                   value={tournamentSearch}
                   onChange={(e) => setTournamentSearch(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-power-orange/20 focus:border-power-orange"
+                  className="focus:ring-power-orange/20 focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-4 pl-10 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:outline-none"
                 />
               </div>
               {/* Age group */}
@@ -642,7 +686,7 @@ export function FederationDetailClient({
                 placeholder="Age group (e.g. U-14)…"
                 value={ageGroupFilter}
                 onChange={(e) => setAgeGroupFilter(e.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-power-orange/20 focus:border-power-orange w-48"
+                className="focus:ring-power-orange/20 focus:border-power-orange w-48 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:outline-none"
               />
               {/* Level pills — omitted entirely when the data offers no real choice */}
               {showLevelFilters && (
@@ -654,7 +698,7 @@ export function FederationDetailClient({
                       className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
                         activeLevelFilter === l
                           ? "bg-power-orange border-power-orange text-white"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-power-orange"
+                          : "hover:text-power-orange border-slate-200 bg-white text-slate-600 hover:border-orange-200"
                       }`}
                     >
                       {l}
@@ -676,7 +720,7 @@ export function FederationDetailClient({
                 </p>
                 <button
                   onClick={() => switchTab("calendar")}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-power-orange hover:text-orange-600 transition"
+                  className="text-power-orange inline-flex items-center gap-1.5 text-xs font-semibold transition hover:text-orange-600"
                 >
                   <CalendarDays className="h-3.5 w-3.5" />
                   {editionsLoaded && editions.length > 0
@@ -690,7 +734,7 @@ export function FederationDetailClient({
             {/* Loading */}
             {tournamentsLoading && (
               <div className="rounded-2xl border border-dashed border-slate-200 py-16 text-center">
-                <div className="inline-block h-5 w-5 rounded-full border-2 border-power-orange border-t-transparent animate-spin" />
+                <div className="border-power-orange inline-block h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
                 <p className="mt-3 text-sm text-slate-500">Loading tournaments…</p>
               </div>
             )}
@@ -706,21 +750,23 @@ export function FederationDetailClient({
                     // arrow would promise a destination that doesn't exist.
                     <div
                       key={i}
-                      className="relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm"
+                      className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                     >
-                      <div className="h-[3px] w-full bg-gradient-to-r from-power-orange to-amber-400" />
+                      <div className="from-power-orange h-[3px] w-full bg-gradient-to-r to-amber-400" />
                       <div className="flex flex-col p-4" style={{ minHeight: "130px" }}>
                         <div className="mb-3 flex items-center justify-between gap-2">
-                          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest ${lc.pill}`}>
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold tracking-widest uppercase ${lc.pill}`}
+                          >
                             <span className={`h-1.5 w-1.5 rounded-full ${lc.dot}`} />
                             {t.level}
                           </span>
                         </div>
-                        <p className="font-title font-bold text-slate-900 text-sm leading-snug line-clamp-2 flex-1">
+                        <p className="font-title line-clamp-2 flex-1 text-sm leading-snug font-bold text-slate-900">
                           {t.name}
                         </p>
                         {t.ageGroup && (
-                          <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400 min-w-0">
+                          <div className="mt-3 flex min-w-0 items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400">
                             <Users className="h-3 w-3 shrink-0" />
                             <span className="truncate">{t.ageGroup}</span>
                           </div>
@@ -734,9 +780,11 @@ export function FederationDetailClient({
 
             {!tournamentsLoading && tournamentsLoaded && filteredTournaments.length === 0 && (
               <div className="rounded-2xl border border-dashed border-slate-300 py-12 text-center">
-                <Trophy className="h-8 w-8 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-slate-600">No tournaments match these filters</p>
-                <p className="text-xs text-slate-400 mt-1">Try clearing the filters above</p>
+                <Trophy className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+                <p className="text-sm font-semibold text-slate-600">
+                  No tournaments match these filters
+                </p>
+                <p className="mt-1 text-xs text-slate-400">Try clearing the filters above</p>
               </div>
             )}
 
@@ -753,7 +801,7 @@ export function FederationDetailClient({
           <div className="space-y-5">
             {editionsLoading && (
               <div className="rounded-2xl border border-dashed border-slate-200 py-16 text-center">
-                <div className="inline-block h-5 w-5 rounded-full border-2 border-power-orange border-t-transparent animate-spin" />
+                <div className="border-power-orange inline-block h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
                 <p className="mt-3 text-sm text-slate-500">Loading upcoming dates…</p>
               </div>
             )}
@@ -769,49 +817,49 @@ export function FederationDetailClient({
                        (grid items stretch by default — no items-start here) with the
                        month centred in whatever room that leaves. ── */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:sticky lg:top-[63px]">
-                    <div className="mb-4 flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-0.5">
-                        <button
-                          onClick={() => {
-                            const i = editionMonths.findIndex((m) => m.key === activeMonthKey);
-                            const prev = editionMonths[i - 1];
-                            if (prev) {
-                              setEditionMonth(prev.key);
-                              setEditionDate(null);
-                            }
-                          }}
-                          disabled={editionMonths.findIndex((m) => m.key === activeMonthKey) <= 0}
-                          aria-label="Previous month"
-                          className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <h3 className="font-title min-w-0 flex-1 truncate text-center text-[15px] font-bold tracking-tight text-slate-900">
-                          {activeMonth?.fullLabel ?? "Upcoming"}
-                        </h3>
-                        <button
-                          onClick={() => {
-                            const i = editionMonths.findIndex((m) => m.key === activeMonthKey);
-                            const next = editionMonths[i + 1];
-                            if (next) {
-                              setEditionMonth(next.key);
-                              setEditionDate(null);
-                            }
-                          }}
-                          disabled={
-                            editionMonths.findIndex((m) => m.key === activeMonthKey) >=
-                            editionMonths.length - 1
+                  <div className="mb-4 flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-0.5">
+                      <button
+                        onClick={() => {
+                          const i = editionMonths.findIndex((m) => m.key === activeMonthKey);
+                          const prev = editionMonths[i - 1];
+                          if (prev) {
+                            setEditionMonth(prev.key);
+                            setEditionDate(null);
                           }
-                          aria-label="Next month"
-                          className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <span className="shrink-0 text-xs font-semibold text-slate-400">
-                        {monthEditions.length}
-                      </span>
+                        }}
+                        disabled={editionMonths.findIndex((m) => m.key === activeMonthKey) <= 0}
+                        aria-label="Previous month"
+                        className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <h3 className="font-title min-w-0 flex-1 truncate text-center text-[15px] font-bold tracking-tight text-slate-900">
+                        {activeMonth?.fullLabel ?? "Upcoming"}
+                      </h3>
+                      <button
+                        onClick={() => {
+                          const i = editionMonths.findIndex((m) => m.key === activeMonthKey);
+                          const next = editionMonths[i + 1];
+                          if (next) {
+                            setEditionMonth(next.key);
+                            setEditionDate(null);
+                          }
+                        }}
+                        disabled={
+                          editionMonths.findIndex((m) => m.key === activeMonthKey) >=
+                          editionMonths.length - 1
+                        }
+                        aria-label="Next month"
+                        className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
+                    <span className="shrink-0 text-xs font-semibold text-slate-400">
+                      {monthEditions.length}
+                    </span>
+                  </div>
 
                   <CalendarMonthGrid
                     monthKey={activeMonthKey}
@@ -826,7 +874,9 @@ export function FederationDetailClient({
                   {visibleSeries.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-300 py-12 text-center">
                       <p className="text-sm font-semibold text-slate-600">
-                        {editionFiltersActive ? "Nothing matches these filters" : "Pick a highlighted date"}
+                        {editionFiltersActive
+                          ? "Nothing matches these filters"
+                          : "Pick a highlighted date"}
                       </p>
                       <p className="mt-1 text-xs text-slate-400">
                         {editionFiltersActive
@@ -851,12 +901,13 @@ export function FederationDetailClient({
                           <span className="text-xs text-slate-400">
                             {visibleEditions.length} event{visibleEditions.length === 1 ? "" : "s"}
                           </span>
-                          {(editionAgeGroupOptions.length > 0 || editionStateOptions.length > 1) && (
+                          {(editionAgeGroupOptions.length > 0 ||
+                            editionStateOptions.length > 1) && (
                             <button
                               onClick={() => setShowEditionFilters((v) => !v)}
                               className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
                                 editionFiltersActive
-                                  ? "bg-orange-50 text-power-orange"
+                                  ? "text-power-orange bg-orange-50"
                                   : "text-slate-500 hover:bg-slate-100"
                               }`}
                             >
@@ -885,7 +936,7 @@ export function FederationDetailClient({
                                   className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
                                     editionAgeGroup === ag
                                       ? "bg-power-orange text-white"
-                                      : "bg-white text-slate-600 hover:text-power-orange"
+                                      : "hover:text-power-orange bg-white text-slate-600"
                                   }`}
                                 >
                                   {ag}
@@ -897,7 +948,7 @@ export function FederationDetailClient({
                             <select
                               value={editionState}
                               onChange={(e) => setEditionState(e.target.value)}
-                              className="rounded-xl border-0 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                              className="focus:ring-power-orange/20 rounded-xl border-0 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:ring-2 focus:outline-none"
                             >
                               <option value="All">All states</option>
                               {editionStateOptions.map((st) => (
@@ -913,7 +964,7 @@ export function FederationDetailClient({
                                 setEditionAgeGroup("All");
                                 setEditionState("All");
                               }}
-                              className="text-xs font-semibold text-slate-400 underline transition hover:text-power-orange"
+                              className="hover:text-power-orange text-xs font-semibold text-slate-400 underline transition"
                             >
                               Clear
                             </button>
@@ -959,7 +1010,7 @@ export function FederationDetailClient({
                             </button>
 
                             {isOpen && (
-                              <div className="divide-y divide-slate-50 bg-slate-50/40 py-2 pl-12 pr-5">
+                              <div className="divide-y divide-slate-50 bg-slate-50/40 py-2 pr-5 pl-12">
                                 {group.editions.map((e, i) => (
                                   <EditionRow
                                     key={i}
@@ -969,7 +1020,7 @@ export function FederationDetailClient({
                                       editionAgeGroup === "All" ? undefined : editionAgeGroup
                                     }
                                     savedInCalendar={savedEventKeys.has(
-                                      savedEventKey(e.name, e.startDate),
+                                      savedEventKey(e.name, e.startDate)
                                     )}
                                     onSavedToCalendar={markSavedToCalendar}
                                   />
@@ -986,7 +1037,7 @@ export function FederationDetailClient({
                     {archetypeNote.calendar}{" "}
                     <button
                       onClick={() => switchTab("tournaments")}
-                      className="font-semibold text-slate-500 underline transition hover:text-power-orange"
+                      className="hover:text-power-orange font-semibold text-slate-500 underline transition"
                     >
                       {archetypeNote.competitions}
                     </button>
@@ -996,7 +1047,8 @@ export function FederationDetailClient({
                     {filteredEditions.length} confirmed {sportLabel} date
                     {filteredEditions.length === 1 ? "" : "s"} through{" "}
                     {new Date(
-                      filteredEditions[filteredEditions.length - 1]?.startDate ?? new Date().toISOString(),
+                      filteredEditions[filteredEditions.length - 1]?.startDate ??
+                        new Date().toISOString()
                     ).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "short",
@@ -1004,11 +1056,14 @@ export function FederationDetailClient({
                       timeZone: CAL_TZ,
                     })}
                     {editionsLastChecked &&
-                      ` · last confirmed ${new Date(editionsLastChecked).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        timeZone: CAL_TZ,
-                      })}`}
+                      ` · last confirmed ${new Date(editionsLastChecked).toLocaleDateString(
+                        "en-IN",
+                        {
+                          day: "numeric",
+                          month: "short",
+                          timeZone: CAL_TZ,
+                        }
+                      )}`}
                     {fed.officialCalendarUrl && (
                       <>
                         {" · "}
@@ -1016,7 +1071,7 @@ export function FederationDetailClient({
                           href={fed.officialCalendarUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-semibold text-slate-500 underline transition hover:text-power-orange"
+                          className="hover:text-power-orange font-semibold text-slate-500 underline transition"
                         >
                           official calendar
                         </a>
@@ -1029,10 +1084,13 @@ export function FederationDetailClient({
 
             {!editionsLoading && editionsLoaded && editions.length === 0 && (
               <div className="rounded-2xl border border-dashed border-slate-300 py-16 text-center">
-                <CalendarDays className="h-8 w-8 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-slate-600">No confirmed dates published yet</p>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                  We haven&apos;t curated official {fed.acronym} tournament dates for this sport yet.
+                <CalendarDays className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+                <p className="text-sm font-semibold text-slate-600">
+                  No confirmed dates published yet
+                </p>
+                <p className="mx-auto mt-1 max-w-sm text-xs text-slate-400">
+                  We haven&apos;t curated official {fed.acronym} tournament dates for this sport
+                  yet.
                   {fed.officialCalendarUrl && " Check the official calendar in the meantime."}
                 </p>
                 {fed.officialCalendarUrl && (
@@ -1040,7 +1098,7 @@ export function FederationDetailClient({
                     href={fed.officialCalendarUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-power-orange hover:text-power-orange transition"
+                    className="hover:border-power-orange hover:text-power-orange mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition"
                   >
                     <ExternalLink className="h-4 w-4" />
                     View Official Calendar
@@ -1066,12 +1124,12 @@ export function FederationDetailClient({
                 {fed.eligibilityCriteria.ageCutoffRule && (
                   <section className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5">
                     <div className="flex items-start gap-3">
-                      <div className="shrink-0 h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center mt-0.5">
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100">
                         <Clock className="h-4 w-4 text-amber-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-amber-900 mb-1">Age Cut-off Rule</p>
-                        <p className="text-sm text-amber-800 leading-relaxed">
+                        <p className="mb-1 text-sm font-bold text-amber-900">Age Cut-off Rule</p>
+                        <p className="text-sm leading-relaxed text-amber-800">
                           {fed.eligibilityCriteria.ageCutoffRule}
                         </p>
                       </div>
@@ -1081,21 +1139,29 @@ export function FederationDetailClient({
 
                 {/* Category table */}
                 {fed.eligibilityCriteria.categories.length > 0 && (
-                  <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 sm:p-8">
+                  <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
                     <SectionHeading>Age Categories</SectionHeading>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-slate-100">
-                            <th className="text-left py-3 pr-4 text-xs font-bold uppercase tracking-wider text-slate-400">Category</th>
-                            <th className="text-left py-3 pr-4 text-xs font-bold uppercase tracking-wider text-slate-400">Max Age</th>
-                            <th className="text-left py-3 pr-4 text-xs font-bold uppercase tracking-wider text-slate-400">Genders</th>
-                            <th className="text-left py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Notes</th>
+                            <th className="py-3 pr-4 text-left text-xs font-bold tracking-wider text-slate-400 uppercase">
+                              Category
+                            </th>
+                            <th className="py-3 pr-4 text-left text-xs font-bold tracking-wider text-slate-400 uppercase">
+                              Max Age
+                            </th>
+                            <th className="py-3 pr-4 text-left text-xs font-bold tracking-wider text-slate-400 uppercase">
+                              Genders
+                            </th>
+                            <th className="py-3 text-left text-xs font-bold tracking-wider text-slate-400 uppercase">
+                              Notes
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                           {fed.eligibilityCriteria.categories.map((cat, i) => (
-                            <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                            <tr key={i} className="transition-colors hover:bg-slate-50/50">
                               <td className="py-3.5 pr-4 font-bold text-slate-900">{cat.name}</td>
                               <td className="py-3.5 pr-4 text-slate-600">
                                 {cat.maxAge === 99 ? "No limit" : `Under ${cat.maxAge}`}
@@ -1103,13 +1169,16 @@ export function FederationDetailClient({
                               <td className="py-3.5 pr-4">
                                 <div className="flex flex-wrap gap-1">
                                   {cat.genders.map((g) => (
-                                    <span key={g} className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                    <span
+                                      key={g}
+                                      className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
+                                    >
                                       {g}
                                     </span>
                                   ))}
                                 </div>
                               </td>
-                              <td className="py-3.5 text-xs text-slate-500 leading-relaxed max-w-[280px]">
+                              <td className="max-w-[280px] py-3.5 text-xs leading-relaxed text-slate-500">
                                 {cat.notes ?? "—"}
                               </td>
                             </tr>
@@ -1121,9 +1190,9 @@ export function FederationDetailClient({
                 )}
 
                 {/* Registration requirements */}
-                <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 sm:p-8">
+                <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
                   <SectionHeading>Registration Requirements</SectionHeading>
-                  <div className="grid sm:grid-cols-2 gap-3 mb-5">
+                  <div className="mb-5 grid gap-3 sm:grid-cols-2">
                     <RequirementPill
                       label="Federation registration mandatory"
                       active={fed.eligibilityCriteria.registrationRequired}
@@ -1136,8 +1205,8 @@ export function FederationDetailClient({
                   {fed.eligibilityCriteria.notes && (
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4">
                       <div className="flex items-start gap-2.5">
-                        <Info className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
-                        <p className="text-sm text-slate-600 leading-relaxed">
+                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                        <p className="text-sm leading-relaxed text-slate-600">
                           {fed.eligibilityCriteria.notes}
                         </p>
                       </div>
@@ -1147,25 +1216,30 @@ export function FederationDetailClient({
 
                 {/* Source notice */}
                 {isVerified && fed.sourceUrls && fed.sourceUrls.length > 0 && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-start gap-3">
-                    <BadgeCheck className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+                    <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                     <div>
-                      <p className="text-sm font-semibold text-emerald-800 mb-1">Verified eligibility data</p>
-                      <p className="text-xs text-emerald-700 leading-relaxed">
-                        This eligibility information was cross-checked against the official {fed.acronym} rulebook and tournament circulars.
-                        Always confirm the exact cutoff dates in the official tournament circular before entering.
+                      <p className="mb-1 text-sm font-semibold text-emerald-800">
+                        Verified eligibility data
+                      </p>
+                      <p className="text-xs leading-relaxed text-emerald-700">
+                        This eligibility information was cross-checked against the official{" "}
+                        {fed.acronym} rulebook and tournament circulars. Always confirm the exact
+                        cutoff dates in the official tournament circular before entering.
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {[...new Set(fed.sourceUrls)].map((url, i) => {
                           let hostname = url;
-                          try { hostname = new URL(url).hostname; } catch {}
+                          try {
+                            hostname = new URL(url).hostname;
+                          } catch {}
                           return (
                             <a
                               key={i}
                               href={url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 underline hover:text-emerald-900 transition"
+                              className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 underline transition hover:text-emerald-900"
                             >
                               <ExternalLink className="h-3 w-3" />
                               {hostname}
@@ -1179,9 +1253,9 @@ export function FederationDetailClient({
               </>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 py-16 text-center">
-                <Users className="h-8 w-8 text-slate-300 mx-auto mb-3" />
+                <Users className="mx-auto mb-3 h-8 w-8 text-slate-300" />
                 <p className="text-sm font-semibold text-slate-600">Eligibility data coming soon</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="mt-1 text-xs text-slate-400">
                   We&apos;re verifying this information against official {fed.acronym} sources.
                 </p>
               </div>
@@ -1191,23 +1265,23 @@ export function FederationDetailClient({
 
         {/* ── How to Register tab ── */}
         {activeTab === "register" && (
-          <div className="grid lg:grid-cols-[1fr_300px] gap-8 items-start">
+          <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
             <div className="space-y-6">
-
               {/* Steps */}
               {fed.registrationSteps && fed.registrationSteps.length > 0 ? (
-                <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 sm:p-8">
+                <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
                   <SectionHeading>Step-by-Step Registration</SectionHeading>
-                  <p className="text-sm text-slate-400 mb-8">
-                    Follow these steps in order. Starting early gives your child a significant advantage — many spots fill fast.
+                  <p className="mb-8 text-sm text-slate-400">
+                    Follow these steps in order. Starting early gives your child a significant
+                    advantage — many spots fill fast.
                   </p>
                   <ol className="space-y-6">
                     {fed.registrationSteps.map((step, i) => (
                       <li key={i} className="flex items-start gap-5">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-power-orange/10 border-2 border-power-orange/20 text-sm font-bold text-power-orange">
+                        <span className="bg-power-orange/10 border-power-orange/20 text-power-orange flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold">
                           {i + 1}
                         </span>
-                        <p className="flex-1 pt-1 text-[15px] text-slate-700 leading-relaxed">
+                        <p className="flex-1 pt-1 text-[15px] leading-relaxed text-slate-700">
                           {step}
                         </p>
                       </li>
@@ -1215,25 +1289,29 @@ export function FederationDetailClient({
                   </ol>
                 </section>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-slate-500 text-sm">
+                <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-sm text-slate-500">
                   Registration steps not yet available for this federation.
                 </div>
               )}
 
               {/* Required documents */}
               {fed.requiredDocuments && fed.requiredDocuments.length > 0 && (
-                <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-7 sm:p-8">
+                <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
                   <SectionHeading>Required Documents</SectionHeading>
-                  <p className="text-sm text-slate-400 mb-6">
-                    Prepare these before the tournament entry deadline — missing documents result in rejection.
+                  <p className="mb-6 text-sm text-slate-400">
+                    Prepare these before the tournament entry deadline — missing documents result in
+                    rejection.
                   </p>
                   <ul className="space-y-3">
                     {fed.requiredDocuments.map((doc, i) => (
-                      <li key={i} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                        <div className="shrink-0 h-5 w-5 mt-0.5 rounded border border-slate-300 flex items-center justify-center">
+                      <li
+                        key={i}
+                        className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                      >
+                        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-300">
                           <FileText className="h-3 w-3 text-slate-400" />
                         </div>
-                        <span className="text-[14px] text-slate-700 leading-snug">{doc}</span>
+                        <span className="text-[14px] leading-snug text-slate-700">{doc}</span>
                       </li>
                     ))}
                   </ul>
@@ -1243,41 +1321,42 @@ export function FederationDetailClient({
 
             {/* Sidebar — Concierge */}
             <aside className="space-y-4 lg:sticky lg:top-20">
-              <div className="rounded-2xl bg-slate-900 p-6 relative overflow-hidden">
-                <div className="pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full bg-power-orange/[0.12] blur-2xl" />
-                <div className="pointer-events-none absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-power-orange/[0.07] blur-2xl" />
+              <div className="relative overflow-hidden rounded-2xl bg-slate-900 p-6">
+                <div className="bg-power-orange/[0.12] pointer-events-none absolute -top-8 -right-8 h-32 w-32 rounded-full blur-2xl" />
+                <div className="bg-power-orange/[0.07] pointer-events-none absolute -bottom-8 -left-8 h-24 w-24 rounded-full blur-2xl" />
                 <div className="relative z-10">
-                  <div className="flex items-center gap-1.5 mb-3">
-                    <Sparkles className="h-3.5 w-3.5 text-power-orange" />
-                    <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-power-orange">
+                  <div className="mb-3 flex items-center gap-1.5">
+                    <Sparkles className="text-power-orange h-3.5 w-3.5" />
+                    <p className="text-power-orange text-[10px] font-bold tracking-[0.13em] uppercase">
                       PowerMySport Concierge
                     </p>
                   </div>
-                  <h3 className="font-title text-[17px] font-bold text-white mb-2 leading-snug">
+                  <h3 className="font-title mb-2 text-[17px] leading-snug font-bold text-white">
                     We handle registration for you
                   </h3>
-                  <p className="text-[13px] text-white/50 leading-relaxed mb-5">
-                    Federation IDs, documents, form submissions — our team takes care of all of it. At no cost.
+                  <p className="mb-5 text-[13px] leading-relaxed text-white/50">
+                    Federation IDs, documents, form submissions — our team takes care of all of it.
+                    At no cost.
                   </p>
-                  <ul className="space-y-2 mb-5">
+                  <ul className="mb-5 space-y-2">
                     {[
                       `Get your child's ${fed.acronym} number`,
                       "Prepare and submit all required documents",
                       "Monitor deadlines and confirm your entry",
                     ].map((line, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                         <span className="text-[12px] text-white/60">{line}</span>
                       </li>
                     ))}
                   </ul>
                   <a
                     href={buildWhatsAppUrl(
-                      `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel} — found via PowerMySport.`,
+                      `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel} — found via PowerMySport.`
                     )}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full rounded-xl bg-power-orange py-3 text-sm font-bold text-white hover:bg-orange-500 transition shadow-lg shadow-orange-900/30"
+                    className="bg-power-orange flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-lg shadow-orange-900/30 transition hover:bg-orange-500"
                   >
                     <WhatsAppIcon className="h-4 w-4 text-white" />
                     Get Help via WhatsApp
@@ -1287,7 +1366,7 @@ export function FederationDetailClient({
                       href={fed.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-2.5 text-xs font-semibold text-white/35 hover:text-white/65 transition"
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-white/35 transition hover:text-white/65"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                       Official {fed.acronym} Portal
@@ -1298,20 +1377,22 @@ export function FederationDetailClient({
 
               {/* Quick facts */}
               {fed.eligibilityCriteria && (
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400 mb-3">Quick reference</p>
+                <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                  <p className="mb-3 text-[10px] font-bold tracking-[0.13em] text-slate-400 uppercase">
+                    Quick reference
+                  </p>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-start gap-2.5">
-                      <BadgeCheck className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <span className="text-slate-600 leading-snug">
+                      <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                      <span className="leading-snug text-slate-600">
                         {fed.eligibilityCriteria.registrationRequired
                           ? `${fed.acronym} registration is mandatory`
                           : `${fed.acronym} registration not required for all events`}
                       </span>
                     </div>
                     <div className="flex items-start gap-2.5">
-                      <BadgeCheck className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <span className="text-slate-600 leading-snug">
+                      <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                      <span className="leading-snug text-slate-600">
                         {fed.eligibilityCriteria.stateAssociationFirst
                           ? "Register with your State Association first"
                           : "Direct national federation registration available"}
@@ -1333,19 +1414,25 @@ export function FederationDetailClient({
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <h2 className="font-title text-xl font-bold text-slate-900 tracking-tight leading-tight">
+      <h2 className="font-title text-xl leading-tight font-bold tracking-tight text-slate-900">
         {children}
       </h2>
-      <div className="mt-1.5 h-[3px] w-7 bg-power-orange rounded-full" />
+      <div className="bg-power-orange mt-1.5 h-[3px] w-7 rounded-full" />
     </div>
   );
 }
 
 function RequirementPill({ label, active }: { label: string; active: boolean }) {
   return (
-    <div className={`flex items-center gap-2.5 rounded-xl px-4 py-3 border ${active ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
-      <div className={`h-2 w-2 rounded-full shrink-0 ${active ? "bg-emerald-500" : "bg-slate-300"}`} />
-      <span className={`text-sm font-medium ${active ? "text-emerald-800" : "text-slate-500"}`}>{label}</span>
+    <div
+      className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 ${active ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
+    >
+      <div
+        className={`h-2 w-2 shrink-0 rounded-full ${active ? "bg-emerald-500" : "bg-slate-300"}`}
+      />
+      <span className={`text-sm font-medium ${active ? "text-emerald-800" : "text-slate-500"}`}>
+        {label}
+      </span>
     </div>
   );
 }

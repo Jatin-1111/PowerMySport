@@ -34,11 +34,7 @@ import {
 } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
-import {
-  getCommunitySocket,
-  QNA_FEED_ROOM,
-  subscribeToCommunityRoom,
-} from "@/lib/realtime/socket";
+import { getCommunitySocket, QNA_FEED_ROOM, subscribeToCommunityRoom } from "@/lib/realtime/socket";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
 import { toast } from "@/lib/toast";
 import { useMutationState } from "@/lib/hooks/useMutationState";
@@ -149,8 +145,7 @@ export default function QnAFeedClient() {
   const [activityUnreadCount, setActivityUnreadCount] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [reputation, setReputation] =
-    useState<CommunityReputationSummary | null>(null);
+  const [reputation, setReputation] = useState<CommunityReputationSummary | null>(null);
 
   // Unified voting mutation state - replaces isMutatingPostId and isVotingKey
   const voting = useMutationState(
@@ -173,22 +168,22 @@ export default function QnAFeedClient() {
                   upvoteCount: result.upvoteCount,
                   downvoteCount: result.downvoteCount,
                 }
-              : item,
-          ),
+              : item
+          )
         );
         void loadActivity();
       },
       onError: (postId, error) => {
         toast.error(error.message || "Failed to vote");
       },
-    },
+    }
   );
 
   // Post edit/delete mutation state - replaces isMutatingPostId for close/open/delete
   const postMutations = useMutationState(
     async (
       postId: string,
-      payload: { action: "toggle" | "delete"; nextStatus?: "OPEN" | "CLOSED" },
+      payload: { action: "toggle" | "delete"; nextStatus?: "OPEN" | "CLOSED" }
     ) => {
       if (payload.action === "toggle") {
         return await communityService.updatePost(postId, {
@@ -203,13 +198,9 @@ export default function QnAFeedClient() {
       onSuccess: (postId, result, payload) => {
         if (payload.action === "toggle" && result) {
           setPosts((current) =>
-            current.map((item) =>
-              item.id === postId ? { ...item, status: result.status } : item,
-            ),
+            current.map((item) => (item.id === postId ? { ...item, status: result.status } : item))
           );
-          toast.success(
-            `Question ${payload.nextStatus === "OPEN" ? "reopened" : "closed"}`,
-          );
+          toast.success(`Question ${payload.nextStatus === "OPEN" ? "reopened" : "closed"}`);
         } else if (payload.action === "delete") {
           setPosts((current) => current.filter((item) => item.id !== postId));
           toast.success("Question deleted");
@@ -220,11 +211,10 @@ export default function QnAFeedClient() {
         const action = payload.action === "toggle" ? "update" : "delete";
         toast.error(error.message || `Failed to ${action} question`);
       },
-    },
+    }
   );
   const [sort, setSort] = useState<CommunityFeedSort>("NEW");
-  const [direction, setDirection] =
-    useState<CommunityFeedSortDirection>("DESC");
+  const [direction, setDirection] = useState<CommunityFeedSortDirection>("DESC");
   const [q, setQ] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [activeTag, setActiveTag] = useState<string>("");
@@ -252,13 +242,10 @@ export default function QnAFeedClient() {
     const mineParam = urlSearchParams.get("mine") === "1";
 
     const nextSort: CommunityFeedSort =
-      sortParam === "TOP" ||
-      sortParam === "UNANSWERED" ||
-      sortParam === "ANSWERED"
+      sortParam === "TOP" || sortParam === "UNANSWERED" || sortParam === "ANSWERED"
         ? sortParam
         : "NEW";
-    const nextDirection: CommunityFeedSortDirection =
-      dirParam === "ASC" ? "ASC" : "DESC";
+    const nextDirection: CommunityFeedSortDirection = dirParam === "ASC" ? "ASC" : "DESC";
 
     const parseCsv = (value: string): string[] =>
       value
@@ -327,24 +314,13 @@ export default function QnAFeedClient() {
         setPage(targetPage);
         setHasMore(targetPage < (postData.pagination?.totalPages || 0));
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to load feed",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to load feed");
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
       }
     },
-    [
-      sort,
-      direction,
-      q,
-      activeTag,
-      selectedSports,
-      selectedCities,
-      categoryFilter,
-      viewMode,
-    ],
+    [sort, direction, q, activeTag, selectedSports, selectedCities, categoryFilter, viewMode]
   );
 
   const loadActivity = useCallback(async () => {
@@ -357,9 +333,7 @@ export default function QnAFeedClient() {
       setIsLoadingActivity(true);
       const items = await communityService.listMyKnowledgeActivity(20);
       setActivity(items);
-      setActivityUnreadCount(
-        items.reduce((count, item) => (item.isRead ? count : count + 1), 0),
-      );
+      setActivityUnreadCount(items.reduce((count, item) => (item.isRead ? count : count + 1), 0));
     } catch {
       setActivity([]);
       setActivityUnreadCount(0);
@@ -368,26 +342,21 @@ export default function QnAFeedClient() {
     }
   }, []);
 
-  const handleActivityOpen = useCallback(
-    async (item: CommunityActivityItem) => {
-      if (item.isRead) {
-        return;
-      }
+  const handleActivityOpen = useCallback(async (item: CommunityActivityItem) => {
+    if (item.isRead) {
+      return;
+    }
 
-      try {
-        await communityService.markCommunityNotificationRead(item.id);
-        setActivity((current) =>
-          current.map((entry) =>
-            entry.id === item.id ? { ...entry, isRead: true } : entry,
-          ),
-        );
-        setActivityUnreadCount((count) => Math.max(0, count - 1));
-      } catch {
-        // Keep navigation responsive even if read status update fails.
-      }
-    },
-    [],
-  );
+    try {
+      await communityService.markCommunityNotificationRead(item.id);
+      setActivity((current) =>
+        current.map((entry) => (entry.id === item.id ? { ...entry, isRead: true } : entry))
+      );
+      setActivityUnreadCount((count) => Math.max(0, count - 1));
+    } catch {
+      // Keep navigation responsive even if read status update fails.
+    }
+  }, []);
 
   const handleMarkAllActivityRead = useCallback(async () => {
     if (!activityUnreadCount || isMarkingActivityRead) {
@@ -396,20 +365,18 @@ export default function QnAFeedClient() {
 
     try {
       setIsMarkingActivityRead(true);
-      const unreadIds = activity
-        .filter((entry) => !entry.isRead)
-        .map((entry) => entry.id);
+      const unreadIds = activity.filter((entry) => !entry.isRead).map((entry) => entry.id);
 
       await Promise.all(
         unreadIds.map((notificationId) =>
-          communityService.markCommunityNotificationRead(notificationId),
-        ),
+          communityService.markCommunityNotificationRead(notificationId)
+        )
       );
       setActivity((current) =>
         current.map((entry) => ({
           ...entry,
           isRead: true,
-        })),
+        }))
       );
       setActivityUnreadCount(0);
       toast.success("Activity marked as read");
@@ -505,9 +472,7 @@ export default function QnAFeedClient() {
     const currentSport = (urlSearchParams.get("sport") || "").trim();
     const currentCity = (urlSearchParams.get("city") || "").trim();
     const currentSort = (urlSearchParams.get("sort") || "").toUpperCase();
-    const currentDirection = (
-      urlSearchParams.get("dir") || ""
-    ).toUpperCase();
+    const currentDirection = (urlSearchParams.get("dir") || "").toUpperCase();
     const currentMine = urlSearchParams.get("mine") === "1" ? "MINE" : "ALL";
 
     const desiredQ = q.trim();
@@ -598,13 +563,11 @@ export default function QnAFeedClient() {
       a: reputation?.answerCount || 0,
       upvotes: reputation?.receivedUpvotes || 0,
     }),
-    [reputation],
+    [reputation]
   );
 
   const spotlight = useMemo(() => {
-    const unansweredCount = posts.filter(
-      (post) => post.answerCount === 0,
-    ).length;
+    const unansweredCount = posts.filter((post) => post.answerCount === 0).length;
     const answeredCount = posts.length - unansweredCount;
     const tagCounts = new Map<string, number>();
 
@@ -635,8 +598,7 @@ export default function QnAFeedClient() {
 
     // Blend recency, traction, and unanswered urgency for a smarter hero pick.
     const scored = posts.map((post) => {
-      const ageInHours =
-        Math.max(1, Date.now() - new Date(post.createdAt).getTime()) / 3600000;
+      const ageInHours = Math.max(1, Date.now() - new Date(post.createdAt).getTime()) / 3600000;
       const recencyWeight = Math.max(1, 24 / ageInHours);
       const unresolvedBoost = post.answerCount === 0 ? 2.5 : 0;
       const score =
@@ -655,7 +617,7 @@ export default function QnAFeedClient() {
 
   const nonFeaturedPosts = useMemo(
     () => posts.filter((post) => post.id !== featuredPost?.id),
-    [posts, featuredPost?.id],
+    [posts, featuredPost?.id]
   );
 
   const urgentUnanswered = useMemo(
@@ -664,22 +626,18 @@ export default function QnAFeedClient() {
         .filter((post) => post.answerCount === 0)
         .sort((a, b) => b.voteScore - a.voteScore)
         .slice(0, 3),
-    [nonFeaturedPosts],
+    [nonFeaturedPosts]
   );
 
   const toggleSport = (sport: string) => {
     setSelectedSports((current) =>
-      current.includes(sport)
-        ? current.filter((item) => item !== sport)
-        : [...current, sport],
+      current.includes(sport) ? current.filter((item) => item !== sport) : [...current, sport]
     );
   };
 
   const toggleCity = (city: string) => {
     setSelectedCities((current) =>
-      current.includes(city)
-        ? current.filter((item) => item !== city)
-        : [...current, city],
+      current.includes(city) ? current.filter((item) => item !== city) : [...current, city]
     );
   };
 
@@ -704,7 +662,7 @@ export default function QnAFeedClient() {
       { value: "", label: "All Categories" },
       ...COMMUNITY_POST_CATEGORIES.map((cat) => ({ value: cat, label: cat })),
     ],
-    [],
+    []
   );
 
   const topicOptions = useMemo(
@@ -712,7 +670,7 @@ export default function QnAFeedClient() {
       { value: "", label: "All Topics" },
       ...spotlight.popularTags.map((tag) => ({ value: tag, label: `#${tag}` })),
     ],
-    [spotlight.popularTags],
+    [spotlight.popularTags]
   );
 
   const toggleTopicFollow = async (topic: string) => {
@@ -735,13 +693,9 @@ export default function QnAFeedClient() {
       });
 
       setFollowedTopics(await communityFollowStore.getIdsByKind("TOPIC"));
-      toast.success(
-        result.following ? `Following #${topic}` : `Unfollowed #${topic}`,
-      );
+      toast.success(result.following ? `Following #${topic}` : `Unfollowed #${topic}`);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update follow",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update follow");
     }
   };
 
@@ -751,9 +705,9 @@ export default function QnAFeedClient() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <div className="absolute left-[-12%] top-[-8%] h-136 w-136 rounded-full bg-sky-300/30 blur-3xl" />
-        <div className="absolute right-[-16%] top-[14%] h-124 w-124 rounded-full bg-amber-200/28 blur-3xl" />
-        <div className="absolute left-[24%] top-[48%] h-64 w-64 rounded-full bg-indigo-200/18 blur-3xl" />
+        <div className="absolute top-[-8%] left-[-12%] h-136 w-136 rounded-full bg-sky-300/30 blur-3xl" />
+        <div className="absolute top-[14%] right-[-16%] h-124 w-124 rounded-full bg-amber-200/28 blur-3xl" />
+        <div className="absolute top-[48%] left-[24%] h-64 w-64 rounded-full bg-indigo-200/18 blur-3xl" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.14)_1px,transparent_1px)] bg-size-[42px_42px] opacity-40" />
       </div>
 
@@ -769,7 +723,7 @@ export default function QnAFeedClient() {
             aria-hidden="true"
             animate={reduceMotion ? undefined : { x: [0, -10, 0], y: [0, 10, 0] }}
             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-300/25 blur-3xl"
+            className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-sky-300/25 blur-3xl"
           />
           <motion.div
             aria-hidden="true"
@@ -780,24 +734,19 @@ export default function QnAFeedClient() {
 
           <div className="relative">
             <div>
-              <p className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600">
-                <Sparkles
-                  size={12}
-                  className="text-power-orange"
-                  aria-hidden="true"
-                />
+              <p className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-bold tracking-[0.18em] text-slate-600 uppercase">
+                <Sparkles size={12} className="text-power-orange" aria-hidden="true" />
                 Community knowledge exchange
               </p>
               <h1
                 id="qna-hero-title"
-                className="font-title mt-3 text-2xl font-semibold leading-[1.1] tracking-tight sm:text-3xl lg:text-[2.4rem]"
+                className="font-title mt-3 text-2xl leading-[1.1] font-semibold tracking-tight sm:text-3xl lg:text-[2.4rem]"
               >
-                Ask better questions.{" "}
-                <span className="text-slate-500">Share better answers.</span>
+                Ask better questions. <span className="text-slate-500">Share better answers.</span>
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-700">
-                Post what you are stuck on and get practical answers from
-                parents who have solved it before.
+                Post what you are stuck on and get practical answers from parents who have solved it
+                before.
               </p>
 
               <div className="mt-5 flex flex-wrap items-center gap-2.5">
@@ -813,20 +762,16 @@ export default function QnAFeedClient() {
                     }
                     setShowAskForm((v) => !v);
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
                   <Plus size={16} aria-hidden="true" />
                   Ask a question
                 </motion.button>
                 <Link
                   href="/contributors"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white hover:shadow-md focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 focus-visible:outline-none"
                 >
-                  <Trophy
-                    size={16}
-                    className="text-amber-600"
-                    aria-hidden="true"
-                  />
+                  <Trophy size={16} className="text-amber-600" aria-hidden="true" />
                   Leaderboard
                 </Link>
               </div>
@@ -845,10 +790,10 @@ export default function QnAFeedClient() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               {/* Row 1: View toggle + Search + Filter button */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-                <div className="inline-flex items-center self-start rounded-xl border border-slate-200 bg-slate-50 p-1 shrink-0">
+                <div className="inline-flex shrink-0 items-center self-start rounded-xl border border-slate-200 bg-slate-50 p-1">
                   <button
                     onClick={() => setViewMode("ALL")}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition ${
                       viewMode === "ALL"
                         ? "bg-slate-900 text-white shadow-sm"
                         : "text-slate-600 hover:bg-white"
@@ -864,7 +809,7 @@ export default function QnAFeedClient() {
                       }
                       setViewMode("MINE");
                     }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition ${
                       viewMode === "MINE"
                         ? "bg-slate-900 text-white shadow-sm"
                         : "text-slate-600 hover:bg-white"
@@ -874,13 +819,13 @@ export default function QnAFeedClient() {
                   </button>
                 </div>
 
-                <div className="flex flex-1 items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 transition focus-within:border-power-orange focus-within:bg-white focus-within:shadow-sm">
+                <div className="focus-within:border-power-orange flex flex-1 items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 transition focus-within:bg-white focus-within:shadow-sm">
                   <Search size={16} className="shrink-0 text-slate-500" />
                   <input
                     value={searchInput}
                     onChange={(event) => setSearchInput(event.target.value)}
                     placeholder="Search questions, keywords, topics…"
-                    className="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none"
+                    className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
                   />
                   <AnimatePresence>
                     {searchInput ? (
@@ -905,7 +850,7 @@ export default function QnAFeedClient() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setShowFilterPanel((v) => !v)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold uppercase tracking-wide transition ${
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold tracking-wide uppercase transition ${
                     showFilterPanel || hasActiveFilters
                       ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
                       : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
@@ -919,7 +864,7 @@ export default function QnAFeedClient() {
                   </motion.span>
                   <span className="hidden sm:inline">Filters</span>
                   {hasActiveFilters && (
-                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-power-orange px-1 text-[9px] font-bold text-white">
+                    <span className="bg-power-orange flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white">
                       {selectedSports.length +
                         selectedCities.length +
                         (categoryFilter ? 1 : 0) +
@@ -935,7 +880,7 @@ export default function QnAFeedClient() {
                   <button
                     key={option.value}
                     onClick={() => setSort(option.value)}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase transition ${
                       sort === option.value
                         ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
                         : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
@@ -964,9 +909,7 @@ export default function QnAFeedClient() {
                           icon={<SlidersHorizontal size={14} className="text-slate-500" />}
                           options={SORT_DIRECTION_OPTIONS}
                           value={direction}
-                          onChange={(value) =>
-                            setDirection(value as CommunityFeedSortDirection)
-                          }
+                          onChange={(value) => setDirection(value as CommunityFeedSortDirection)}
                         />
                         <MultiCheckboxDropdown
                           label="Sport"
@@ -1002,7 +945,7 @@ export default function QnAFeedClient() {
                               <button
                                 type="button"
                                 onClick={() => void toggleTopicFollow(value)}
-                                className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
+                                className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold tracking-wide uppercase transition ${
                                   followedTopics.includes(value.toLowerCase())
                                     ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                                     : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
@@ -1024,7 +967,7 @@ export default function QnAFeedClient() {
               {/* Active filter capsules + Clear all */}
               {hasActiveFilters ? (
                 <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                  <span className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                     Active
                   </span>
                   {categoryFilter ? (
@@ -1083,7 +1026,7 @@ export default function QnAFeedClient() {
                 Loading questions...
               </div>
             ) : posts.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-border bg-white/82 p-12 text-center text-slate-600 shadow-sm backdrop-blur-sm">
+              <div className="border-border rounded-3xl border border-dashed bg-white/82 p-12 text-center text-slate-600 shadow-sm backdrop-blur-sm">
                 {viewMode === "MINE"
                   ? "You have not posted a question yet. Start your first knowledge thread."
                   : "No knowledge threads found. Start one and invite answers."}
@@ -1091,16 +1034,16 @@ export default function QnAFeedClient() {
             ) : (
               <section className="space-y-4">
                 {featuredPost ? (
-                  <article className="group relative flex gap-0 overflow-hidden rounded-xl border-2 border-power-orange/30 bg-linear-to-br from-power-orange/5 via-white to-white shadow-lg transition-all hover:border-power-orange/50 hover:shadow-xl">
+                  <article className="group border-power-orange/30 from-power-orange/5 hover:border-power-orange/50 relative flex gap-0 overflow-hidden rounded-xl border-2 bg-linear-to-br via-white to-white shadow-lg transition-all hover:shadow-xl">
                     {/* Voting Sidebar */}
-                    <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r-2 border-power-orange/20 bg-power-orange/5 px-2.5 py-4 group-hover:bg-power-orange/10">
+                    <div className="border-power-orange/20 bg-power-orange/5 group-hover:bg-power-orange/10 flex w-16 shrink-0 flex-col items-center gap-0.5 border-r-2 px-2.5 py-4">
                       <button
                         onClick={() => void vote(featuredPost, 1)}
                         disabled={voting.isLoading(featuredPost.id)}
                         className={`rounded-md p-1.5 transition-colors ${
                           featuredPost.myVote === 1
-                            ? "bg-orange-100 text-power-orange"
-                            : "text-slate-400 hover:text-power-orange"
+                            ? "text-power-orange bg-orange-100"
+                            : "hover:text-power-orange text-slate-400"
                         } disabled:opacity-50`}
                         title="Upvote"
                       >
@@ -1125,19 +1068,16 @@ export default function QnAFeedClient() {
 
                     {/* Featured Content */}
                     <div className="flex-1 p-5 sm:p-6">
-                      <div className="inline-flex gap-2 items-center rounded-full border-2 border-power-orange/30 bg-power-orange/10 px-3 py-1.5 mb-3">
-                        <Trophy
-                          size={14}
-                          className="text-power-orange font-bold"
-                        />
-                        <span className="text-xs font-bold uppercase tracking-wide text-power-orange">
+                      <div className="border-power-orange/30 bg-power-orange/10 mb-3 inline-flex items-center gap-2 rounded-full border-2 px-3 py-1.5">
+                        <Trophy size={14} className="text-power-orange font-bold" />
+                        <span className="text-power-orange text-xs font-bold tracking-wide uppercase">
                           Featured Thread
                         </span>
                       </div>
 
                       <Link
                         href={`/questions/${featuredPost.id}`}
-                        className="block font-title text-2xl font-bold leading-tight text-slate-900 transition-colors hover:text-power-orange"
+                        className="font-title hover:text-power-orange block text-2xl leading-tight font-bold text-slate-900 transition-colors"
                       >
                         {featuredPost.title}
                       </Link>
@@ -1171,28 +1111,32 @@ export default function QnAFeedClient() {
                       {/* Footer */}
                       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/50 pt-4">
                         <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <AuthorAvatar author={featuredPost.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : featuredPost.author} size={32} />
+                          <AuthorAvatar
+                            author={
+                              featuredPost.isAnonymous
+                                ? { displayName: "Anonymous", photoUrl: null }
+                                : featuredPost.author
+                            }
+                            size={32}
+                          />
                           <span className="font-semibold text-slate-900">
-                            {featuredPost.isAnonymous ? "Anonymous" : featuredPost.author.displayName}
+                            {featuredPost.isAnonymous
+                              ? "Anonymous"
+                              : featuredPost.author.displayName}
                           </span>
                           {featuredPost.author.isVerifiedExpert ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                              ★{" "}
-                              {featuredPost.author.expertTitle}
+                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700 uppercase">
+                              ★ {featuredPost.author.expertTitle}
                             </span>
                           ) : null}
                           <span className="inline-flex items-center gap-1 text-slate-500">
-                            <CalendarDays
-                              size={12}
-                              className="text-slate-400"
-                            />
+                            <CalendarDays size={12} className="text-slate-400" />
                             {formatPostedDate(featuredPost.createdAt)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                            <MessageCircle size={13} />{" "}
-                            {featuredPost.answerCount}
+                            <MessageCircle size={13} /> {featuredPost.answerCount}
                           </span>
                           <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
                             <Trophy size={13} /> {featuredPost.upvoteCount}
@@ -1218,15 +1162,13 @@ export default function QnAFeedClient() {
                             title="Upvote"
                             className={`rounded-md p-1.5 transition-colors ${
                               post.myVote === 1
-                                ? "bg-orange-100 text-power-orange"
+                                ? "text-power-orange bg-orange-100"
                                 : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
                             } disabled:opacity-50`}
                           >
                             <ArrowBigUp size={16} />
                           </button>
-                          <span className="text-xs font-bold text-slate-700">
-                            {post.voteScore}
-                          </span>
+                          <span className="text-xs font-bold text-slate-700">{post.voteScore}</span>
                           <button
                             onClick={() => void vote(post, -1)}
                             disabled={voting.isLoading(post.id)}
@@ -1246,15 +1188,13 @@ export default function QnAFeedClient() {
                           {/* Title */}
                           <Link
                             href={`/questions/${post.id}`}
-                            className="block font-title text-lg font-semibold text-slate-900 transition-colors hover:text-power-orange"
+                            className="font-title hover:text-power-orange block text-lg font-semibold text-slate-900 transition-colors"
                           >
                             {post.title}
                           </Link>
 
                           {/* Excerpt */}
-                          <p className="mt-1.5 line-clamp-2 text-sm text-slate-600">
-                            {post.body}
-                          </p>
+                          <p className="mt-1.5 line-clamp-2 text-sm text-slate-600">{post.body}</p>
 
                           {/* Tags & Status */}
                           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1291,14 +1231,20 @@ export default function QnAFeedClient() {
                           {/* Footer - Metadata & Actions */}
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                             <div className="flex items-center gap-2 text-xs text-slate-500">
-                              <AuthorAvatar author={post.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : post.author} size={26} />
+                              <AuthorAvatar
+                                author={
+                                  post.isAnonymous
+                                    ? { displayName: "Anonymous", photoUrl: null }
+                                    : post.author
+                                }
+                                size={26}
+                              />
                               <span className="font-medium text-slate-700">
                                 {post.isAnonymous ? "Anonymous" : post.author.displayName}
                               </span>
                               {post.author.isVerifiedExpert ? (
-                                <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                                  ★{" "}
-                                  {post.author.expertTitle}
+                                <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-700 uppercase">
+                                  ★ {post.author.expertTitle}
                                 </span>
                               ) : null}
                               <span className="inline-flex items-center gap-1 text-slate-400">
@@ -1336,14 +1282,14 @@ export default function QnAFeedClient() {
                               <button
                                 onClick={() => void togglePostStatus(post)}
                                 disabled={postMutations.isLoading(post.id)}
-                                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50"
+                                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
                               >
                                 {post.status === "OPEN" ? "Close" : "Reopen"}
                               </button>
                               <button
                                 onClick={() => void deletePost(post)}
                                 disabled={postMutations.isLoading(post.id)}
-                                className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:border-red-300 disabled:opacity-50"
+                                className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:opacity-50"
                               >
                                 Delete
                               </button>
@@ -1360,7 +1306,7 @@ export default function QnAFeedClient() {
                     <button
                       onClick={() => void loadMore()}
                       disabled={isLoadingMore}
-                      className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                      className="border-border inline-flex min-h-10 items-center gap-2 rounded-lg border bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
                     >
                       {isLoadingMore ? (
                         <>
@@ -1397,12 +1343,10 @@ export default function QnAFeedClient() {
                   transition={{ duration: 0.18 }}
                   className="rounded-2xl border border-white/85 bg-white/92 p-4 shadow-sm backdrop-blur-sm"
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
                     {stat.label}
                   </p>
-                  <p className="mt-1 text-2xl font-bold text-slate-900">
-                    {stat.value}
-                  </p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">{stat.value}</p>
                 </motion.div>
               ))}
             </motion.section>
@@ -1415,9 +1359,7 @@ export default function QnAFeedClient() {
               className="rounded-3xl border border-white/90 bg-white/90 p-4 shadow-sm backdrop-blur-md sm:p-5"
             >
               <div className="mb-3 flex items-center justify-between gap-2">
-                <h3 className="font-title text-lg font-semibold text-slate-900">
-                  Your Activity
-                </h3>
+                <h3 className="font-title text-lg font-semibold text-slate-900">Your Activity</h3>
                 <div className="flex items-center gap-2">
                   <AnimatePresence>
                     {activityUnreadCount > 0 ? (
@@ -1425,7 +1367,7 @@ export default function QnAFeedClient() {
                         initial={{ opacity: 0, scale: 0.7 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.7 }}
-                        className="rounded-full bg-power-orange/10 px-2.5 py-1 text-[11px] font-semibold text-power-orange"
+                        className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-1 text-[11px] font-semibold"
                       >
                         {activityUnreadCount} unread
                       </motion.span>
@@ -1433,9 +1375,7 @@ export default function QnAFeedClient() {
                   </AnimatePresence>
                   <button
                     onClick={() => void handleMarkAllActivityRead()}
-                    disabled={
-                      activityUnreadCount === 0 || isMarkingActivityRead
-                    }
+                    disabled={activityUnreadCount === 0 || isMarkingActivityRead}
                     className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isMarkingActivityRead ? "Marking..." : "Mark all read"}
@@ -1447,16 +1387,14 @@ export default function QnAFeedClient() {
                 <p className="text-sm text-slate-500">Loading activity...</p>
               ) : activity.length === 0 ? (
                 <p className="text-sm text-slate-500">
-                  No recent activity yet. When players answer or upvote your
-                  content, it will show up here.
+                  No recent activity yet. When players answer or upvote your content, it will show
+                  up here.
                 </p>
               ) : (
                 <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
                   <AnimatePresence initial={false}>
                     {activity.map((item) => {
-                      const postLink = item.data?.postId
-                        ? `/questions/${item.data.postId}`
-                        : null;
+                      const postLink = item.data?.postId ? `/questions/${item.data.postId}` : null;
 
                       return (
                         <motion.div
@@ -1472,23 +1410,21 @@ export default function QnAFeedClient() {
                           }`}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                               {getActivityLabel(item)}
                             </p>
                             <span className="text-xs text-slate-500">
                               {toRelativeTime(item.createdAt)} ago
                             </span>
                           </div>
-                          <p className="mt-1 text-sm text-slate-700">
-                            {item.message}
-                          </p>
+                          <p className="mt-1 text-sm text-slate-700">{item.message}</p>
                           {postLink ? (
                             <Link
                               href={postLink}
                               onClick={() => {
                                 void handleActivityOpen(item);
                               }}
-                              className="mt-2 inline-flex text-xs font-semibold text-power-orange hover:underline"
+                              className="text-power-orange mt-2 inline-flex text-xs font-semibold hover:underline"
                             >
                               Open thread
                             </Link>
@@ -1515,7 +1451,7 @@ export default function QnAFeedClient() {
                     aria-hidden="true"
                     animate={{ opacity: [0.25, 0.5, 0.25] }}
                     transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                    className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-300/30 blur-2xl"
+                    className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-300/30 blur-2xl"
                   />
                   <div className="relative mb-2 flex items-center gap-1.5">
                     <motion.span
@@ -1525,7 +1461,7 @@ export default function QnAFeedClient() {
                     >
                       <AlertTriangle size={13} />
                     </motion.span>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">
+                    <p className="text-xs font-bold tracking-[0.16em] text-amber-800 uppercase">
                       Help Needed Now
                     </p>
                   </div>
@@ -1553,24 +1489,22 @@ export default function QnAFeedClient() {
                 whileHover={{ y: -3 }}
                 className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                   Knowledge Opportunities
                 </p>
                 <p className="mt-1 text-sm text-blue-900">
-                  {spotlight.unansweredCount} questions still need helpful
-                  answers.
+                  {spotlight.unansweredCount} questions still need helpful answers.
                 </p>
               </motion.div>
               <motion.div
                 whileHover={{ y: -3 }}
                 className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4"
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                <p className="text-xs font-semibold tracking-wide text-emerald-700 uppercase">
                   Solved Discussions
                 </p>
                 <p className="mt-1 text-sm text-emerald-900">
-                  {spotlight.answeredCount} questions already have shared
-                  solutions.
+                  {spotlight.answeredCount} questions already have shared solutions.
                 </p>
               </motion.div>
             </section>

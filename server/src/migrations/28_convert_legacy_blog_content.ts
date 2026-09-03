@@ -50,7 +50,7 @@ const REPORT_DIR = path.resolve(process.cwd(), "migration-reports");
 export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Starting migration 28: convert legacy blog content (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 28: convert legacy blog content (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   const collection = BlogPost.collection;
@@ -77,7 +77,7 @@ export const up = async (options: Options = {}) => {
     console.log(
       `  "${String(doc.title).slice(0, 34)}" ${
         Array.isArray(doc.content) ? doc.content.length : "?"
-      } blocks -> ${html.length} chars`,
+      } blocks -> ${html.length} chars`
     );
   }
 
@@ -123,9 +123,7 @@ export const restore = async (file: string, apply: boolean) => {
     title?: string;
     content: unknown;
   }[];
-  console.log(
-    `Restoring ${docs.length} posts from ${file} (${apply ? "APPLY" : "DRY RUN"})...`,
-  );
+  console.log(`Restoring ${docs.length} posts from ${file} (${apply ? "APPLY" : "DRY RUN"})...`);
 
   if (!apply) {
     console.log("Dry run complete — re-run with --apply.");
@@ -135,7 +133,7 @@ export const restore = async (file: string, apply: boolean) => {
   for (const doc of docs) {
     await BlogPost.collection.updateOne(
       { _id: new mongoose.Types.ObjectId(String(doc._id)) },
-      { $set: { content: doc.content } },
+      { $set: { content: doc.content } }
     );
   }
   console.log("Restore complete.");
@@ -157,9 +155,7 @@ if (isDirectRun) {
 
   void mongoose
     .connect(uri)
-    .then(() =>
-      restoreFile ? restore(restoreFile, apply) : up({ apply }),
-    )
+    .then(() => (restoreFile ? restore(restoreFile, apply) : up({ apply })))
     .then(() => mongoose.disconnect())
     .then(() => process.exit(0))
     .catch((error: unknown) => {

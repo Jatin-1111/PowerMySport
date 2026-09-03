@@ -12,9 +12,7 @@ export interface AcademyEarningsData {
   recentBookings: any[];
 }
 
-export const getAcademyEarnings = async (
-  ownerUserId: string,
-): Promise<AcademyEarningsData> => {
+export const getAcademyEarnings = async (ownerUserId: string): Promise<AcademyEarningsData> => {
   const empty: AcademyEarningsData = {
     allTime: { total: 0, sessions: 0 },
     thisMonth: { total: 0, sessions: 0 },
@@ -38,22 +36,12 @@ export const getAcademyEarnings = async (
   const now = new Date();
   const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    0,
-    23,
-    59,
-    59,
-  );
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
   const query: any = { status: { $nin: ["CANCELLED"] } };
   if (venueIds.length > 0 && coachIds.length > 0) {
-    query.$or = [
-      { venueId: { $in: venueIds } },
-      { coachId: { $in: coachIds } },
-    ];
+    query.$or = [{ venueId: { $in: venueIds } }, { coachId: { $in: coachIds } }];
   } else if (venueIds.length > 0) {
     query.venueId = { $in: venueIds };
   } else {
@@ -72,26 +60,20 @@ export const getAcademyEarnings = async (
   // pulled into memory on every earnings-dashboard load. recentBookings is
   // already capped at 10 and renders broader fields in the API response, so
   // it's left unprojected.
-  const [completedBookings, pendingBookings, recentBookings] =
-    await Promise.all([
-      Booking.find(completedQuery)
-        .select("payments totalAmount date sport status")
-        .lean(),
-      Booking.find(pendingQuery)
-        .select("payments totalAmount date sport status")
-        .lean(),
-      Booking.find(completedQuery)
-        .sort({ date: -1 })
-        .limit(10)
-        .populate("userId", "name photoUrl")
-        .lean(),
-    ]);
+  const [completedBookings, pendingBookings, recentBookings] = await Promise.all([
+    Booking.find(completedQuery).select("payments totalAmount date sport status").lean(),
+    Booking.find(pendingQuery).select("payments totalAmount date sport status").lean(),
+    Booking.find(completedQuery)
+      .sort({ date: -1 })
+      .limit(10)
+      .populate("userId", "name photoUrl")
+      .lean(),
+  ]);
 
   const getAmount = (b: any): number => {
     if (Array.isArray(b.payments)) {
       const p = b.payments.find(
-        (p: any) =>
-          ["VenueLister", "Coach"].includes(p.userType) && p.status === "PAID",
+        (p: any) => ["VenueLister", "Coach"].includes(p.userType) && p.status === "PAID"
       );
       if (p) return p.amount;
     }
@@ -102,9 +84,7 @@ export const getAcademyEarnings = async (
     total: completedBookings.reduce((s: number, b: any) => s + getAmount(b), 0),
     sessions: completedBookings.length,
   };
-  const thisMonthB = completedBookings.filter(
-    (b: any) => new Date(b.date) >= startOfThisMonth,
-  );
+  const thisMonthB = completedBookings.filter((b: any) => new Date(b.date) >= startOfThisMonth);
   const lastMonthB = completedBookings.filter((b: any) => {
     const d = new Date(b.date);
     return d >= startOfLastMonth && d <= endOfLastMonth;
@@ -131,7 +111,7 @@ export const getAcademyEarnings = async (
         month: "short",
         year: "numeric",
       }),
-      { total: 0, sessions: 0 },
+      { total: 0, sessions: 0 }
     );
   }
   completedBookings
@@ -193,9 +173,7 @@ export interface AcademyAnalyticsData {
   studentRetention: { newStudents: number; returningStudents: number };
 }
 
-export const getAcademyAnalytics = async (
-  ownerUserId: string,
-): Promise<AcademyAnalyticsData> => {
+export const getAcademyAnalytics = async (ownerUserId: string): Promise<AcademyAnalyticsData> => {
   const emptyOverview = {
     totalSessions: 0,
     completedSessions: 0,
@@ -234,10 +212,7 @@ export const getAcademyAnalytics = async (
 
   const query: any = { status: { $nin: ["CANCELLED"] } };
   if (venueIds.length > 0 && coachIds.length > 0) {
-    query.$or = [
-      { venueId: { $in: venueIds } },
-      { coachId: { $in: coachIds } },
-    ];
+    query.$or = [{ venueId: { $in: venueIds } }, { coachId: { $in: coachIds } }];
   } else if (venueIds.length > 0) {
     query.venueId = { $in: venueIds };
   } else {
@@ -255,16 +230,12 @@ export const getAcademyAnalytics = async (
 
   const completed = allBookings.filter((b: any) => b.status === "COMPLETED");
   const terminal = allBookings.filter((b: any) =>
-    ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status),
+    ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status)
   );
   const completionRate =
-    terminal.length > 0
-      ? Math.round((completed.length / terminal.length) * 100)
-      : 0;
+    terminal.length > 0 ? Math.round((completed.length / terminal.length) * 100) : 0;
 
-  const studentIds = [
-    ...new Set(allBookings.map((b: any) => b.userId.toString())),
-  ];
+  const studentIds = [...new Set(allBookings.map((b: any) => b.userId.toString()))];
   const countMap = new Map<string, number>();
   allBookings.forEach((b: any) => {
     const id = b.userId.toString();
@@ -275,9 +246,7 @@ export const getAcademyAnalytics = async (
     if (c > 1) returningSet.add(id);
   });
   const retentionRate =
-    studentIds.length > 0
-      ? Math.round((returningSet.size / studentIds.length) * 100)
-      : 0;
+    studentIds.length > 0 ? Math.round((returningSet.size / studentIds.length) * 100) : 0;
 
   const trendMap = new Map<string, number>();
   for (let i = 29; i >= 0; i--) {
@@ -287,8 +256,7 @@ export const getAcademyAnalytics = async (
   }
   recentBookings.forEach((b: any) => {
     const key = new Date(b.date).toISOString().split("T")[0] ?? "";
-    if (key && trendMap.has(key))
-      trendMap.set(key, (trendMap.get(key) ?? 0) + 1);
+    if (key && trendMap.has(key)) trendMap.set(key, (trendMap.get(key) ?? 0) + 1);
   });
   const sessionsTrend = Array.from(trendMap.entries()).map(([date, count]) => ({
     label: new Date(date).toLocaleDateString("en-IN", {

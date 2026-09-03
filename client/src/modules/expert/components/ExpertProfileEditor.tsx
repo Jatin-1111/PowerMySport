@@ -2,9 +2,9 @@
 
 import { authApi } from "@/modules/auth/services/auth";
 import {
-    expertApi,
-    type Expert,
-    type ExpertAvailabilityWindow,
+  expertApi,
+  type Expert,
+  type ExpertAvailabilityWindow,
 } from "@/modules/expert/services/expert";
 import ExpertiseMultiSelect from "@/modules/shared/components/ExpertiseMultiSelect";
 import LanguagesMultiSelect from "@/modules/shared/components/LanguagesMultiSelect";
@@ -13,15 +13,15 @@ import { Card } from "@/modules/shared/ui/Card";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { SUPPORTED_SPORT_NAMES } from "@/modules/sports/config/supportedSports";
 import {
-    Award,
-    BadgeIndianRupee,
-    CalendarClock,
-    FileText,
-    MapPin,
-    Plus,
-    Star,
-    Trash2,
-    User,
+  Award,
+  BadgeIndianRupee,
+  CalendarClock,
+  FileText,
+  MapPin,
+  Plus,
+  Star,
+  Trash2,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -35,8 +35,7 @@ const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 const field =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20";
-const fieldLabel =
-  "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500";
+const fieldLabel = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500";
 
 function SectionHeader({
   icon: Icon,
@@ -67,9 +66,7 @@ function SectionHeader({
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
+      <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</p>
       <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
     </div>
   );
@@ -91,42 +88,26 @@ export function ExpertProfileEditor({
   const [city, setCity] = useState(profile.city || "");
   const [panNumber, setPanNumber] = useState(profile.panNumber || "");
   const [gstNumber, setGstNumber] = useState(profile.gstNumber || "");
-  const [inPersonAddress, setInPersonAddress] = useState(
-    profile.inPersonAddress || "",
-  );
-  const [sessionMode, setSessionMode] = useState(
-    profile.sessionMode || "ONLINE",
-  );
-  const [sessionFee, setSessionFee] = useState(
-    String(profile.sessionFee ?? ""),
-  );
-  const [duration, setDuration] = useState(
-    String(profile.sessionDurationMinutes ?? 60),
-  );
+  const [inPersonAddress, setInPersonAddress] = useState(profile.inPersonAddress || "");
+  const [sessionMode, setSessionMode] = useState(profile.sessionMode || "ONLINE");
+  const [sessionFee, setSessionFee] = useState(String(profile.sessionFee ?? ""));
+  const [duration, setDuration] = useState(String(profile.sessionDurationMinutes ?? 60));
   const [photoUrl, setPhotoUrl] = useState(profile.photoUrl || "");
   const [photoKey, setPhotoKey] = useState(profile.photoKey || "");
   const [windows, setWindows] = useState<ExpertAvailabilityWindow[]>(
-    profile.weeklyAvailability || [],
+    profile.weeklyAvailability || []
   );
-  const [blackout, setBlackout] = useState<string[]>(
-    profile.blackoutDates || [],
-  );
+  const [blackout, setBlackout] = useState<string[]>(profile.blackoutDates || []);
   const [newBlackout, setNewBlackout] = useState("");
   const [saving, setSaving] = useState(false);
 
   const addWindow = (dayOfWeek: number) =>
     setWindows((w) => [...w, { dayOfWeek, start: "09:00", end: "10:00" }]);
 
-  const updateWindow = (
-    idx: number,
-    patch: Partial<ExpertAvailabilityWindow>,
-  ) =>
-    setWindows((w) =>
-      w.map((win, i) => (i === idx ? { ...win, ...patch } : win)),
-    );
+  const updateWindow = (idx: number, patch: Partial<ExpertAvailabilityWindow>) =>
+    setWindows((w) => w.map((win, i) => (i === idx ? { ...win, ...patch } : win)));
 
-  const removeWindow = (idx: number) =>
-    setWindows((w) => w.filter((_, i) => i !== idx));
+  const removeWindow = (idx: number) => setWindows((w) => w.filter((_, i) => i !== idx));
 
   const save = async () => {
     // Same validation rules as onboarding — keep create and edit in sync.
@@ -147,10 +128,7 @@ export function ExpertProfileEditor({
       toast.error("Enter a valid session fee.");
       return;
     }
-    if (
-      (sessionMode === "IN_PERSON" || sessionMode === "BOTH") &&
-      !inPersonAddress.trim()
-    ) {
+    if ((sessionMode === "IN_PERSON" || sessionMode === "BOTH") && !inPersonAddress.trim()) {
       toast.error("In-person address is required.");
       return;
     }
@@ -206,8 +184,8 @@ export function ExpertProfileEditor({
       }
     } catch (err: unknown) {
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Could not save your profile.",
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          "Could not save your profile."
       );
     } finally {
       setSaving(false);
@@ -237,17 +215,13 @@ export function ExpertProfileEditor({
                 }}
               />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Expert Profile
                 </p>
                 <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                   {name || "Expert"}
                 </h2>
-                {profile.email && (
-                  <p className="mt-0.5 text-sm text-slate-500">
-                    {profile.email}
-                  </p>
-                )}
+                {profile.email && <p className="mt-0.5 text-sm text-slate-500">{profile.email}</p>}
               </div>
             </div>
 
@@ -269,7 +243,7 @@ export function ExpertProfileEditor({
                 <Link
                   href={`/experts/${profile.id}`}
                   target="_blank"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:border-power-orange hover:text-power-orange"
+                  className="hover:border-power-orange hover:text-power-orange inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600"
                 >
                   View public profile
                 </Link>
@@ -318,9 +292,7 @@ export function ExpertProfileEditor({
                   onChange={(e) => setBio(e.target.value)}
                   maxLength={4000}
                 />
-                <p className="mt-1 text-right text-xs text-slate-400">
-                  {bio.length}/4000
-                </p>
+                <p className="mt-1 text-right text-xs text-slate-400">{bio.length}/4000</p>
               </div>
               <div>
                 <label className={fieldLabel}>Achievements</label>
@@ -361,17 +333,11 @@ export function ExpertProfileEditor({
               </div>
               <div>
                 <label className={fieldLabel}>Expertise</label>
-                <ExpertiseMultiSelect
-                  value={expertise}
-                  onChange={setExpertise}
-                />
+                <ExpertiseMultiSelect value={expertise} onChange={setExpertise} />
               </div>
               <div>
                 <label className={fieldLabel}>Languages</label>
-                <LanguagesMultiSelect
-                  value={languages}
-                  onChange={setLanguages}
-                />
+                <LanguagesMultiSelect value={languages} onChange={setLanguages} />
               </div>
             </div>
           </Card>
@@ -419,14 +385,10 @@ export function ExpertProfileEditor({
                       className={`rounded-xl border py-3 text-sm font-semibold transition-all ${
                         sessionMode === mode
                           ? "border-power-orange bg-power-orange/10 text-power-orange"
-                          : "border-slate-200 bg-slate-50 text-slate-600 hover:border-power-orange/50"
+                          : "hover:border-power-orange/50 border-slate-200 bg-slate-50 text-slate-600"
                       }`}
                     >
-                      {mode === "ONLINE"
-                        ? "Online"
-                        : mode === "IN_PERSON"
-                          ? "In-person"
-                          : "Both"}
+                      {mode === "ONLINE" ? "Online" : mode === "IN_PERSON" ? "In-person" : "Both"}
                     </button>
                   ))}
                 </div>
@@ -434,8 +396,7 @@ export function ExpertProfileEditor({
               {(sessionMode === "IN_PERSON" || sessionMode === "BOTH") && (
                 <div className="sm:col-span-2">
                   <label className={fieldLabel}>
-                    <MapPin className="mr-1 inline h-3.5 w-3.5" /> In-person
-                    location
+                    <MapPin className="mr-1 inline h-3.5 w-3.5" /> In-person location
                   </label>
                   <input
                     className={field}
@@ -444,8 +405,7 @@ export function ExpertProfileEditor({
                     onChange={(e) => setInPersonAddress(e.target.value)}
                   />
                   <p className="mt-1.5 text-xs text-slate-500">
-                    Shown to a client only after they&apos;ve booked a session
-                    with you.
+                    Shown to a client only after they&apos;ve booked a session with you.
                   </p>
                 </div>
               )}
@@ -483,7 +443,10 @@ export function ExpertProfileEditor({
             </div>
             <p className="mt-3 text-xs text-slate-500">
               Manage your bank account or UPI payout method from{" "}
-              <Link href="/expert/payouts" className="font-semibold text-power-orange hover:underline">
+              <Link
+                href="/expert/payouts"
+                className="text-power-orange font-semibold hover:underline"
+              >
                 Payouts
               </Link>
               .
@@ -524,15 +487,13 @@ export function ExpertProfileEditor({
                       </span>
                       <button
                         onClick={() => addWindow(dayIdx)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-power-orange hover:underline"
+                        className="text-power-orange inline-flex items-center gap-1 text-xs font-semibold hover:underline"
                       >
                         <Plus size={13} /> Add
                       </button>
                     </div>
                     {dayWindows.length === 0 ? (
-                      <p className="mt-1.5 text-xs text-slate-400">
-                        Unavailable
-                      </p>
+                      <p className="mt-1.5 text-xs text-slate-400">Unavailable</p>
                     ) : (
                       <div className="mt-2 space-y-2">
                         {dayWindows.map(({ w, i }) => (
@@ -540,18 +501,14 @@ export function ExpertProfileEditor({
                             <input
                               type="time"
                               value={w.start}
-                              onChange={(e) =>
-                                updateWindow(i, { start: e.target.value })
-                              }
+                              onChange={(e) => updateWindow(i, { start: e.target.value })}
                               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
                             />
                             <span className="text-slate-400">–</span>
                             <input
                               type="time"
                               value={w.end}
-                              onChange={(e) =>
-                                updateWindow(i, { end: e.target.value })
-                              }
+                              onChange={(e) => updateWindow(i, { end: e.target.value })}
                               className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
                             />
                             <button
@@ -572,9 +529,7 @@ export function ExpertProfileEditor({
 
             {/* Blackout dates */}
             <div className="mt-5 border-t border-slate-100 pt-4">
-              <h4 className="text-sm font-bold text-slate-900">
-                Blackout dates
-              </h4>
+              <h4 className="text-sm font-bold text-slate-900">Blackout dates</h4>
               <p className="mt-1 text-xs text-slate-500">
                 Days you&apos;re unavailable even if within your weekly hours.
               </p>
@@ -586,9 +541,7 @@ export function ExpertProfileEditor({
                   >
                     {d}
                     <button
-                      onClick={() =>
-                        setBlackout((b) => b.filter((x) => x !== d))
-                      }
+                      onClick={() => setBlackout((b) => b.filter((x) => x !== d))}
                       aria-label="Remove date"
                     >
                       <Trash2 size={12} />
@@ -621,7 +574,7 @@ export function ExpertProfileEditor({
       </div>
 
       {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200 bg-white/95 px-6 py-3 backdrop-blur-sm lg:left-72">
+      <div className="fixed right-0 bottom-0 left-0 z-10 border-t border-slate-200 bg-white/95 px-6 py-3 backdrop-blur-sm lg:left-72">
         <div className="mx-auto flex max-w-5xl justify-end">
           <Button onClick={save} loading={saving} variant="primary" size="md">
             Save changes

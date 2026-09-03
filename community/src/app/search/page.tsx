@@ -39,7 +39,7 @@ function SearchPageContent() {
   const searchParams = useSearchParams();
 
   const [scope, setScope] = useState<SearchScope>(
-    (searchParams.get("type") as SearchScope) || "ALL",
+    (searchParams.get("type") as SearchScope) || "ALL"
   );
 
   // The shared hook already debounces, enforces the two-character floor and
@@ -50,7 +50,7 @@ function SearchPageContent() {
       const result = await communityService.search(term, scope);
       return result.items;
     },
-    [scope],
+    [scope]
   );
 
   const { query, setQuery, displayQuery, results, isSearching, error } =
@@ -97,14 +97,14 @@ function SearchPageContent() {
           <div className="relative">
             <Search
               size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-slate-400"
             />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               autoFocus
               placeholder="Search questions and stories..."
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 focus:border-power-orange focus:outline-none"
+              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-3 pl-9 text-sm text-slate-800 focus:outline-none"
             />
           </div>
 
@@ -139,7 +139,7 @@ function SearchPageContent() {
             </p>
             <Link
               href="/questions"
-              className="mt-3 inline-flex rounded-lg bg-power-orange px-3 py-2 text-sm font-semibold text-white"
+              className="bg-power-orange mt-3 inline-flex rounded-lg px-3 py-2 text-sm font-semibold text-white"
             >
               Ask a question
             </Link>
@@ -150,11 +150,11 @@ function SearchPageContent() {
               <Link
                 key={`${item.kind}-${item.id}`}
                 href={item.href}
-                className="block rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-power-orange/40 hover:shadow-sm"
+                className="hover:border-power-orange/40 block rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:shadow-sm"
               >
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   <span
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
                       item.kind === "POST"
                         ? "bg-blue-50 text-blue-700"
                         : "bg-purple-50 text-purple-700"
@@ -171,7 +171,7 @@ function SearchPageContent() {
                     )}
                   </span>
                   {item.isSolved ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-800 uppercase">
                       <CheckCircle2 size={11} /> Solved
                     </span>
                   ) : null}
@@ -182,22 +182,16 @@ function SearchPageContent() {
                   ) : null}
                 </div>
 
-                <p className="text-sm font-semibold text-slate-900">
-                  {item.title}
-                </p>
+                <p className="text-sm font-semibold text-slate-900">{item.title}</p>
                 {item.snippet ? (
-                  <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">
-                    {item.snippet}
-                  </p>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{item.snippet}</p>
                 ) : null}
               </Link>
             ))}
           </div>
         ) : (
           <div className="community-card">
-            <p className="text-sm text-slate-500">
-              Type at least two characters to search.
-            </p>
+            <p className="text-sm text-slate-500">Type at least two characters to search.</p>
           </div>
         )}
       </div>

@@ -150,7 +150,7 @@ export class NotificationService {
    */
   static async send(
     data: NotificationData,
-    options: SendOptions = {},
+    options: SendOptions = {}
   ): Promise<INotification | null> {
     const {
       persistToDb = true,
@@ -199,7 +199,7 @@ export class NotificationService {
             message: data.message,
             data: data.data,
             createdAt: notification.createdAt,
-          }),
+          })
         );
       }
     }
@@ -214,10 +214,10 @@ export class NotificationService {
             data.title,
             data.message,
             emailTemplate,
-            emailData,
+            emailData
           ).catch((err) => {
             log.error("Failed to send email notification:", err);
-          }),
+          })
         );
       }
     }
@@ -225,9 +225,7 @@ export class NotificationService {
     if (shouldSendPush) {
       const pushEnabled = preferences?.push?.[preferenceKey] !== false;
       if (pushEnabled) {
-        deliveries.push(
-          this.sendPush(data.userId, data.title, data.message, data.data),
-        );
+        deliveries.push(this.sendPush(data.userId, data.title, data.message, data.data));
       }
     }
 
@@ -242,7 +240,7 @@ export class NotificationService {
   private static async sendSocket(
     userId: string,
     type: NotificationType,
-    payload: Record<string, unknown>,
+    payload: Record<string, unknown>
   ): Promise<void> {
     if (!socketInstance) {
       log.warn("Socket instance not initialized, cannot send notification");
@@ -277,7 +275,7 @@ export class NotificationService {
     title: string,
     message: string,
     template?: string,
-    templateData?: Record<string, unknown>,
+    templateData?: Record<string, unknown>
   ): Promise<void> {
     // If a custom template is provided, use it
     if (template && templateData) {
@@ -309,7 +307,7 @@ export class NotificationService {
     userId: string,
     title: string,
     message: string,
-    data?: Record<string, unknown>,
+    data?: Record<string, unknown>
   ): Promise<void> {
     try {
       const pushService = pushNotificationService;
@@ -341,7 +339,7 @@ export class NotificationService {
           endpoint: string;
           keys: { p256dh: string; auth: string };
         }>,
-        payload,
+        payload
       );
 
       if (result.expiredEndpoints.length > 0) {
@@ -361,10 +359,7 @@ export class NotificationService {
   /**
    * Mark a notification as read
    */
-  static async markRead(
-    notificationId: string,
-    userId: string,
-  ): Promise<INotification | null> {
+  static async markRead(notificationId: string, userId: string): Promise<INotification | null> {
     const notification = await Notification.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(notificationId),
@@ -374,7 +369,7 @@ export class NotificationService {
         isRead: true,
         readAt: new Date(),
       },
-      { new: true },
+      { new: true }
     );
 
     return notification;
@@ -393,7 +388,7 @@ export class NotificationService {
       {
         isRead: true,
         readAt: new Date(),
-      },
+      }
     );
 
     return result.modifiedCount;
@@ -409,7 +404,7 @@ export class NotificationService {
     filters?: {
       category?: NotificationCategory;
       isRead?: boolean;
-    },
+    }
   ): Promise<{ notifications: INotification[]; total: number; pages: number }> {
     const query: Record<string, unknown> = {
       userId: new mongoose.Types.ObjectId(userId),
@@ -427,11 +422,7 @@ export class NotificationService {
     const skip = (page - 1) * limit;
 
     const [notifications, total] = await Promise.all([
-      Notification.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Notification.countDocuments(query),
     ]);
 
@@ -445,10 +436,7 @@ export class NotificationService {
   /**
    * Get unread notification count for a user
    */
-  static async getUnreadCount(
-    userId: string,
-    category?: NotificationCategory,
-  ): Promise<number> {
+  static async getUnreadCount(userId: string, category?: NotificationCategory): Promise<number> {
     const query: Record<string, unknown> = {
       userId: new mongoose.Types.ObjectId(userId),
       isRead: false,
@@ -468,7 +456,7 @@ export class NotificationService {
    */
   static async deleteNotification(
     notificationId: string,
-    userId: string,
+    userId: string
   ): Promise<INotification | null> {
     const notification = await Notification.findOneAndUpdate(
       {
@@ -478,7 +466,7 @@ export class NotificationService {
       {
         deletedAt: new Date(),
       },
-      { new: true },
+      { new: true }
     );
 
     return notification;

@@ -1,8 +1,7 @@
 ﻿import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, Booking, Venue } from "@/types";
 
-const STATS_API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const STATS_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export interface PlatformStats {
   totalUsers: number;
@@ -72,9 +71,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users?${params.toString()}`);
     return response.data;
   },
 
@@ -86,9 +83,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/venues?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/venues?${params.toString()}`);
     return response.data;
   },
 
@@ -100,9 +95,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/bookings?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/bookings?${params.toString()}`);
     return response.data;
   },
 };

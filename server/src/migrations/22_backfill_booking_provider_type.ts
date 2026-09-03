@@ -24,7 +24,7 @@ export const up = async (options: { apply?: boolean } = {}) => {
   const apply = Boolean(options.apply);
 
   console.log(
-    `Starting migration 22: backfill Booking.providerType (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 22: backfill Booking.providerType (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   const bookings = await Booking.find({ providerType: { $exists: false } })
@@ -82,9 +82,7 @@ export const up = async (options: { apply?: boolean } = {}) => {
 export const down = async (options: { apply?: boolean } = {}) => {
   const apply = Boolean(options.apply);
 
-  console.log(
-    `Rolling back migration 22 (${apply ? "APPLY" : "DRY RUN"})...`,
-  );
+  console.log(`Rolling back migration 22 (${apply ? "APPLY" : "DRY RUN"})...`);
 
   const affected = await Booking.countDocuments({
     providerType: { $exists: true },
@@ -94,13 +92,13 @@ export const down = async (options: { apply?: boolean } = {}) => {
   if (apply) {
     const result = await Booking.collection.updateMany(
       { providerType: { $exists: true } },
-      { $unset: { providerType: "" } },
+      { $unset: { providerType: "" } }
     );
     console.log(`Unset providerType on ${result.modifiedCount} booking(s).`);
     console.log(
       "Note: the model still declares providerType required and derives it on " +
         "save, so new and re-saved bookings will get it back. A full rollback " +
-        "also requires reverting the model change.",
+        "also requires reverting the model change."
     );
   } else {
     console.log("Dry run — nothing was written.");
@@ -112,9 +110,7 @@ export const down = async (options: { apply?: boolean } = {}) => {
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const apply = process.argv.includes("--apply");
   const rollback = process.argv.includes("--down");

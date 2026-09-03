@@ -11,9 +11,7 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const { CommunityPost } = require("../community/models/CommunityPost");
 const { CommunityAnswer } = require("../community/models/CommunityAnswer");
-const {
-  CommunityReputation,
-} = require("../community/models/CommunityReputation");
+const { CommunityReputation } = require("../community/models/CommunityReputation");
 const { CommunityService } = require("../community/services/CommunityService");
 const { User } = require("../client/models/User");
 
@@ -33,9 +31,7 @@ const createUser = async (name: string, role = "Parent") => {
 };
 
 const points = async (userId: string): Promise<number> => {
-  const row = await CommunityReputation.findOne({ userId })
-    .select("totalPoints")
-    .lean();
+  const row = await CommunityReputation.findOne({ userId }).select("totalPoints").lean();
   return row?.totalPoints || 0;
 };
 
@@ -145,11 +141,11 @@ describe("accepting an answer", () => {
 
     await assert.rejects(
       () => CommunityService.acceptAnswer(stranger, post.id, a.id),
-      /Only the person who asked/,
+      /Only the person who asked/
     );
     await assert.rejects(
       () => CommunityService.acceptAnswer(helper, post.id, a.id),
-      /Only the person who asked/,
+      /Only the person who asked/
     );
   });
 
@@ -188,7 +184,7 @@ describe("accepting an answer", () => {
 
     await assert.rejects(
       () => CommunityService.acceptAnswer(asker, post.id, strayAnswer.id),
-      /answer not found/,
+      /answer not found/
     );
   });
 
@@ -240,10 +236,7 @@ describe("accepting an answer", () => {
 
     await CommunityService.acceptAnswer(asker, post.id, a.id);
     // Simulate a historical accept whose points were never recorded.
-    await CommunityReputation.updateOne(
-      { userId: helper },
-      { $set: { totalPoints: 3 } },
-    );
+    await CommunityReputation.updateOne({ userId: helper }, { $set: { totalPoints: 3 } });
     await CommunityService.acceptAnswer(asker, post.id, a.id);
 
     assert.equal(await points(helper), 0);

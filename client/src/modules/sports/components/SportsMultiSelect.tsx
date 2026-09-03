@@ -34,10 +34,7 @@ export default function SportsMultiSelect({
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -68,9 +65,7 @@ export default function SportsMultiSelect({
         const fetched = await sportsApi.getAllSports();
         const sports = allowedSports
           ? fetched.filter((s) =>
-              allowedSports.some(
-                (allowed) => allowed.toLowerCase() === s.name.toLowerCase(),
-              ),
+              allowedSports.some((allowed) => allowed.toLowerCase() === s.name.toLowerCase())
             )
           : fetched;
         setAllSports(sports);
@@ -109,7 +104,7 @@ export default function SportsMultiSelect({
         setFilteredSports(results.map((result) => result.item));
       }
     },
-    [fuse, allSports],
+    [fuse, allSports]
   );
 
   // Handle sport selection
@@ -144,9 +139,7 @@ export default function SportsMultiSelect({
   };
 
   // Get selected sport objects
-  const selectedSportObjects = allSports.filter((sport) =>
-    value.includes(sport.name),
-  );
+  const selectedSportObjects = allSports.filter((sport) => value.includes(sport.name));
 
   return (
     <div className="w-full" ref={containerRef}>
@@ -206,7 +199,7 @@ export default function SportsMultiSelect({
             tabIndex={-1}
             disabled={disabled || isLoading}
             onClick={() => setIsOpen((prev) => !prev)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed"
+            className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-slate-400 hover:text-slate-600 disabled:cursor-not-allowed"
             aria-label={isOpen ? "Close sports dropdown" : "Open sports dropdown"}
           >
             <ChevronDown
@@ -220,7 +213,7 @@ export default function SportsMultiSelect({
         {isOpen && !disabled && (
           <div
             id="sports-multiselect-listbox"
-            className="absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg"
+            className="absolute top-full right-0 left-0 z-50 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg"
           >
             {isLoading ? (
               <div className="flex items-center justify-center px-4 py-6">
@@ -255,15 +248,13 @@ export default function SportsMultiSelect({
                             }
                           }}
                           disabled={isSelected}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 disabled:cursor-default disabled:bg-indigo-50 disabled:text-slate-600 focus:outline-none focus-visible:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 focus:outline-none focus-visible:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset disabled:cursor-default disabled:bg-indigo-50 disabled:text-slate-600"
                         >
                           <div className="flex items-center gap-2">
                             {isSelected && (
                               <div className="h-4 w-4 rounded bg-blue-500" aria-hidden="true" />
                             )}
-                            <span className={isSelected ? "font-semibold" : ""}>
-                              {sport.name}
-                            </span>
+                            <span className={isSelected ? "font-semibold" : ""}>{sport.name}</span>
                           </div>
                         </button>
                       );
@@ -284,9 +275,7 @@ export default function SportsMultiSelect({
 
       {/* Error message for no sports selected if required */}
       {required && value.length === 0 && (
-        <p className="mt-1 text-xs text-red-500">
-          Please select at least one sport
-        </p>
+        <p className="mt-1 text-xs text-red-500">Please select at least one sport</p>
       )}
     </div>
   );

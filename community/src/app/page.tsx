@@ -22,7 +22,6 @@ import {
 } from "@/modules/community/components/seo/JsonLd";
 import { buildMetadata } from "@/lib/seo";
 
-
 export const metadata = buildMetadata({
   title: "Youth Sports Community for Parents",
   description:
@@ -77,42 +76,30 @@ function SectionHeading({
   return (
     <div className="max-w-3xl">
       {eyebrow ? (
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.26em] text-power-orange">
+        <p className="text-power-orange mb-2 text-[11px] font-bold tracking-[0.26em] uppercase">
           {eyebrow}
         </p>
       ) : null}
-      <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-        {title}
-      </h2>
-      <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">
-        {description}
-      </p>
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">{description}</p>
     </div>
   );
 }
 
-function ValuePropCard({
-  title,
-  description,
-  href,
-  cta,
-  icon: Icon,
-}: ValueProp) {
+function ValuePropCard({ title, description, href, cta, icon: Icon }: ValueProp) {
   return (
     <Link
       href={href}
-      className="group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:border-power-orange/40 hover:shadow-lg hover:shadow-slate-900/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+      className="group hover:border-power-orange/40 focus-visible:ring-power-orange flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(233,115,22,0.14),rgba(245,158,11,0.16))] text-power-orange">
+      <div className="text-power-orange flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(233,115,22,0.14),rgba(245,158,11,0.16))]">
         <Icon className="h-5 w-5" />
       </div>
-      <h3 className="mt-4 text-balance text-lg font-semibold text-slate-900">
-        {title}
-      </h3>
+      <h3 className="mt-4 text-lg font-semibold text-balance text-slate-900">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
       {/* mt-auto pins the CTA to the card's bottom edge so a longer or shorter
           description can't shift it out of line with the sibling cards. */}
-      <span className="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-power-orange">
+      <span className="text-power-orange mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold">
         {cta}
         <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
       </span>
@@ -186,7 +173,7 @@ export default function CommunityLandingPage() {
                 cards immediately below it. */}
             <div className="relative px-5 py-9 sm:px-7 sm:py-12 lg:px-9 lg:py-16">
               <div className="mx-auto max-w-3xl text-center">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-bold tracking-[0.2em] text-orange-200 uppercase backdrop-blur">
                   <Users className="h-3.5 w-3.5" />
                   Parent-first youth sports community
                 </span>
@@ -197,10 +184,9 @@ export default function CommunityLandingPage() {
                   </span>
                 </h1>
                 <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-slate-50 sm:text-base">
-                  From choosing the right academy or coach to planning
-                  tournaments, exploring scholarships and careers, learn from
-                  parents who have already navigated the path—and share your
-                  own experiences to support the community.
+                  From choosing the right academy or coach to planning tournaments, exploring
+                  scholarships and careers, learn from parents who have already navigated the
+                  path—and share your own experiences to support the community.
                 </p>
 
                 <HeroSearch />
@@ -227,7 +213,7 @@ export default function CommunityLandingPage() {
 
                 <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[13px] font-medium text-slate-200">
                   <span className="inline-flex items-center gap-1.5">
-                    <MessageSquareQuote className="h-4 w-4 text-power-orange" />
+                    <MessageSquareQuote className="text-power-orange h-4 w-4" />
                     Parent-to-parent advice
                   </span>
                   <span className="inline-flex items-center gap-1.5">
@@ -240,7 +226,6 @@ export default function CommunityLandingPage() {
                   </span>
                 </div>
               </div>
-
             </div>
           </section>
 
@@ -271,29 +256,21 @@ export default function CommunityLandingPage() {
             <div className="space-y-6">
               <DynamicFeaturedQA />
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
                   Community safety layer
                 </p>
                 <div className="mt-4 grid gap-3 text-sm text-slate-600">
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
                     <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
-                    <span>
-                      Strict moderation to ensure helpful, respectful
-                      discussions.
-                    </span>
+                    <span>Strict moderation to ensure helpful, respectful discussions.</span>
                   </div>
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
-                    <BadgeCheck className="mt-0.5 h-4 w-4 text-power-orange" />
-                    <span>
-                      Expert responses are clearly badged for credibility.
-                    </span>
+                    <BadgeCheck className="text-power-orange mt-0.5 h-4 w-4" />
+                    <span>Expert responses are clearly badged for credibility.</span>
                   </div>
                   <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
                     <BrainCircuit className="mt-0.5 h-4 w-4 text-sky-600" />
-                    <span>
-                      AI synthesis helps summarize complex debates into clear
-                      takeaways.
-                    </span>
+                    <span>AI synthesis helps summarize complex debates into clear takeaways.</span>
                   </div>
                 </div>
               </div>

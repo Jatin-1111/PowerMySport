@@ -92,8 +92,7 @@ export interface CoachUserRow {
   sports: string[];
   hourlyRate: number | null;
   serviceMode: "OWN_VENUE" | "FREELANCE" | "HYBRID" | null;
-  verificationStatus:
-    "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
+  verificationStatus: "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
   isVerified: boolean;
   rating: number;
   reviewCount: number;
@@ -351,9 +350,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users?${params.toString()}`);
     return response.data;
   },
 
@@ -362,9 +359,7 @@ export const statsApi = {
     return response.data;
   },
 
-  getUserGrowthAnalytics: async (
-    months = 6,
-  ): Promise<ApiResponse<UserGrowthAnalytics>> => {
+  getUserGrowthAnalytics: async (months = 6): Promise<ApiResponse<UserGrowthAnalytics>> => {
     const response = await axiosInstance.get("/stats/users/growth", {
       params: { months },
     });
@@ -379,9 +374,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users/experts?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users/experts?${params.toString()}`);
     return response.data;
   },
 
@@ -393,9 +386,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users/parents?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users/parents?${params.toString()}`);
     return response.data;
   },
 
@@ -407,9 +398,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users/players?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users/players?${params.toString()}`);
     return response.data;
   },
 
@@ -421,9 +410,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users/coaches?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users/coaches?${params.toString()}`);
     return response.data;
   },
 
@@ -435,13 +422,9 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users/venue-listers?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users/venue-listers?${params.toString()}`);
     return response.data;
   },
-
-
 
   getPlayersAnalytics: async (): Promise<ApiResponse<PlayersAnalytics>> => {
     const response = await axiosInstance.get("/stats/users/analytics/players");
@@ -453,12 +436,8 @@ export const statsApi = {
     return response.data;
   },
 
-  getVenueListersAnalytics: async (): Promise<
-    ApiResponse<VenueListersAnalytics>
-  > => {
-    const response = await axiosInstance.get(
-      "/stats/users/analytics/venue-listers",
-    );
+  getVenueListersAnalytics: async (): Promise<ApiResponse<VenueListersAnalytics>> => {
+    const response = await axiosInstance.get("/stats/users/analytics/venue-listers");
     return response.data;
   },
 
@@ -472,9 +451,7 @@ export const statsApi = {
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
     if (pagination?.search) params.append("search", pagination.search);
 
-    const response = await axiosInstance.get(
-      `/stats/venues?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/venues?${params.toString()}`);
     return response.data;
   },
 
@@ -486,14 +463,12 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/bookings?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/bookings?${params.toString()}`);
     return response.data;
   },
 
   getFunnelSummary: async (
-    days = 30,
+    days = 30
   ): Promise<ApiResponse<{ days: number; events: FunnelSummaryRow[] }>> => {
     const response = await axiosInstance.get(`/stats/funnel/summary`, {
       params: { days },
@@ -508,16 +483,12 @@ export const statsApi = {
     return response.data;
   },
 
-  getFinanceReconciliation: async (): Promise<
-    ApiResponse<FinanceReconciliation>
-  > => {
+  getFinanceReconciliation: async (): Promise<ApiResponse<FinanceReconciliation>> => {
     const response = await axiosInstance.get("/stats/finance/reconciliation");
     return response.data;
   },
 
-  getObservabilitySnapshot: async (): Promise<
-    ApiResponse<ObservabilitySnapshot>
-  > => {
+  getObservabilitySnapshot: async (): Promise<ApiResponse<ObservabilitySnapshot>> => {
     const response = await axiosInstance.get("/stats/observability");
     return response.data;
   },
@@ -552,9 +523,7 @@ export const statsApi = {
     return response.data;
   },
 
-  getUnsupportedSportsStats: async (
-    days = 30,
-  ): Promise<ApiResponse<UnsupportedSportsStats>> => {
+  getUnsupportedSportsStats: async (days = 30): Promise<ApiResponse<UnsupportedSportsStats>> => {
     const response = await axiosInstance.get("/stats/unsupported-sports", {
       params: { days },
     });

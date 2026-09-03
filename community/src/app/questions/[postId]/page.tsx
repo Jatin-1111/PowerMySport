@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
 import QnAPostDetailClient from "@/modules/community/components/page/QnAPostDetailClient";
-import {
-  breadcrumbSchema,
-  JsonLd,
-} from "@/modules/community/components/seo/JsonLd";
-import {
-  buildMetadata,
-  clampText,
-  communityUrl,
-  fetchPublicData,
-} from "@/lib/seo";
+import { breadcrumbSchema, JsonLd } from "@/modules/community/components/seo/JsonLd";
+import { buildMetadata, clampText, communityUrl, fetchPublicData } from "@/lib/seo";
 import type { CommunityPostDetailResponse } from "@/modules/community/types";
 
 const getPost = (postId: string) =>
@@ -27,15 +19,12 @@ export async function generateMetadata({
   if (!post) {
     return buildMetadata({
       title: "Community Question",
-      description:
-        "Ask sports questions and get answers from parents on PowerMySport.",
+      description: "Ask sports questions and get answers from parents on PowerMySport.",
       path: `/questions/${postId}`,
     });
   }
 
-  const contextTags = [post.sport, post.city, post.category].filter(
-    Boolean,
-  ) as string[];
+  const contextTags = [post.sport, post.city, post.category].filter(Boolean) as string[];
 
   return buildMetadata({
     title: post.title,
@@ -62,20 +51,13 @@ export default async function CommunityQnADetailPage({
   // `acceptedAnswer` is emitted only when the asker actually accepted one.
   // Everything else is a `suggestedAnswer` — the earlier version advertised the
   // top-voted answer as accepted, which claimed something the data never said.
-  const acceptedAnswer = answers.find(
-    (answer) => answer.id === post?.acceptedAnswerId,
-  );
-  const suggestedAnswers = answers.filter(
-    (answer) => answer.id !== acceptedAnswer?.id,
-  );
+  const acceptedAnswer = answers.find((answer) => answer.id === post?.acceptedAnswerId);
+  const suggestedAnswers = answers.filter((answer) => answer.id !== acceptedAnswer?.id);
 
   // `jobTitle` carries the verification a reader sees on the badge, so the
   // credential travels with the answer into search results. Only set when the
   // server actually granted one.
-  const personSchema = (author?: {
-    displayName?: string;
-    expertTitle?: string;
-  }) => ({
+  const personSchema = (author?: { displayName?: string; expertTitle?: string }) => ({
     "@type": "Person",
     name: author?.displayName || "PowerMySport Community",
     ...(author?.expertTitle ? { jobTitle: author.expertTitle } : {}),
@@ -103,9 +85,7 @@ export default async function CommunityQnADetailPage({
           datePublished: post.createdAt,
           author: personSchema(post.author),
           url: communityUrl(`/questions/${postId}`),
-          ...(acceptedAnswer
-            ? { acceptedAnswer: answerSchema(acceptedAnswer) }
-            : {}),
+          ...(acceptedAnswer ? { acceptedAnswer: answerSchema(acceptedAnswer) } : {}),
           ...(suggestedAnswers.length
             ? { suggestedAnswer: suggestedAnswers.map(answerSchema) }
             : {}),
@@ -114,7 +94,7 @@ export default async function CommunityQnADetailPage({
     : null;
 
   return (
-    <div className="min-h-[calc(100vh-88px)] bg-background">
+    <div className="bg-background min-h-[calc(100vh-88px)]">
       {post && qaSchema ? (
         <JsonLd
           data={[

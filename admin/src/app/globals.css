@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --power-orange: #E97316;
-  --deep-slate: #0F172A;
-  --ghost-white: #F8FAFC;
-  --turf-green: #22C55E;
-  --error-red: #EF4444;
+  --power-orange: #e97316;
+  --deep-slate: #0f172a;
+  --ghost-white: #f8fafc;
+  --turf-green: #22c55e;
+  --error-red: #ef4444;
   --background: #ffffff;
   --foreground: #171717;
   --card: #ffffff;
@@ -116,7 +116,7 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 
-  .admin-shell .admin-tabs-scroll>* {
+  .admin-shell .admin-tabs-scroll > * {
     flex: 0 0 auto;
   }
 }

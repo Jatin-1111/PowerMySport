@@ -12,10 +12,7 @@ import {
   updateVenue,
 } from "../services/VenueService";
 import { getPaginationParams } from "../../utils/pagination";
-import {
-  transformDocument,
-  transformDocuments,
-} from "../../middleware/responseTransform";
+import { transformDocument, transformDocuments } from "../../middleware/responseTransform";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("venue");
 
@@ -32,17 +29,11 @@ interface DiscoveryContext {
 const buildDiscoveryContext = (req: Request): DiscoveryContext => {
   const lat = (req.query.lat || req.query.latitude) as string | undefined;
   const lng = (req.query.lng || req.query.longitude) as string | undefined;
-  const radius = (req.query.radius || req.query.maxDistance) as
-    string | undefined;
+  const radius = (req.query.radius || req.query.maxDistance) as string | undefined;
   const { sport } = req.query;
 
   const sportFilter = sport as string | undefined;
-  const { page, limit } = getPaginationParams(
-    req.query.page,
-    req.query.limit,
-    20,
-    100,
-  );
+  const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
 
   const hasLocation = Boolean(lat && lng);
   const latitude = hasLocation ? parseFloat(lat as string) : undefined;
@@ -60,11 +51,7 @@ const buildDiscoveryContext = (req: Request): DiscoveryContext => {
 };
 
 const fetchDiscoveryVenues = async (ctx: DiscoveryContext) => {
-  if (
-    !ctx.hasLocation ||
-    ctx.latitude === undefined ||
-    ctx.longitude === undefined
-  ) {
+  if (!ctx.hasLocation || ctx.latitude === undefined || ctx.longitude === undefined) {
     const venueFilters = ctx.sportFilter
       ? {
           sports: [ctx.sportFilter],
@@ -82,14 +69,11 @@ const fetchDiscoveryVenues = async (ctx: DiscoveryContext) => {
     ctx.radiusMeters,
     ctx.sportFilter,
     ctx.page,
-    ctx.limit,
+    ctx.limit
   );
 };
 
-export const createNewVenue = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createNewVenue = async (req: Request, res: Response): Promise<void> => {
   try {
     log.info("=== Create Venue Request ===");
     log.info("User:", req.user);
@@ -137,8 +121,7 @@ export const createNewVenue = async (
     log.error("Venue creation error:", error);
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create venue",
+      message: error instanceof Error ? error.message : "Failed to create venue",
     });
   }
 };
@@ -172,10 +155,7 @@ export const getVenue = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const getMyVenues = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getMyVenues = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -185,12 +165,7 @@ export const getMyVenues = async (
       return;
     }
 
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
 
     const result = await getVenuesByOwner(req.user.id, page, limit);
 
@@ -208,8 +183,7 @@ export const getMyVenues = async (
     log.error("Get my venues error:", error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch venues",
+      message: error instanceof Error ? error.message : "Failed to fetch venues",
     });
   }
 };
@@ -218,10 +192,7 @@ export const getMyVenues = async (
  * Discovery endpoint: Search for venues near a location
  * GET /api/search?lat=28.6139&lng=77.2090&radius=5000&sport=cricket
  */
-export const discoverNearby = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const discoverNearby = async (req: Request, res: Response): Promise<void> => {
   try {
     const requestStartedAt = Date.now();
     const context = buildDiscoveryContext(req);
@@ -244,7 +215,7 @@ export const discoverNearby = async (
         venueCount,
         venuesFetchMs,
         totalDurationMs,
-      }),
+      })
     );
 
     res.status(200).json({
@@ -272,27 +243,18 @@ export const discoverNearby = async (
 /**
  * Legacy search endpoint (for backward compatibility)
  */
-export const searchVenues = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const searchVenues = async (req: Request, res: Response): Promise<void> => {
   try {
     const { sports, page: queryPage, limit: queryLimit } = req.query;
 
     const filters: { sports?: string[] } = {};
     if (sports) {
-      filters.sports = Array.isArray(sports)
-        ? (sports as string[])
-        : [sports as string];
+      filters.sports = Array.isArray(sports) ? (sports as string[]) : [sports as string];
     }
 
     const { page, limit } = getPaginationParams(queryPage, queryLimit, 20, 100);
 
-    const result = await getAllVenues(
-      { ...filters, approvalStatus: "APPROVED" },
-      page,
-      limit,
-    );
+    const result = await getAllVenues({ ...filters, approvalStatus: "APPROVED" }, page, limit);
 
     res.status(200).json({
       success: true,
@@ -312,10 +274,7 @@ export const searchVenues = async (
   }
 };
 
-export const updateVenueDetails = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateVenueDetails = async (req: Request, res: Response): Promise<void> => {
   try {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
@@ -348,16 +307,12 @@ export const updateVenueDetails = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update venue",
+      message: error instanceof Error ? error.message : "Failed to update venue",
     });
   }
 };
 
-export const deleteVenueById = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteVenueById = async (req: Request, res: Response): Promise<void> => {
   try {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
@@ -387,16 +342,12 @@ export const deleteVenueById = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to delete venue",
+      message: error instanceof Error ? error.message : "Failed to delete venue",
     });
   }
 };
 
-export const getVenueImageUploadUrls = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getVenueImageUploadUrls = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -460,7 +411,7 @@ export const getVenueImageUploadUrls = async (
         file.fileName,
         file.contentType,
         venueId,
-        isCover,
+        isCover
       );
 
       uploadUrls.push({
@@ -483,10 +434,7 @@ export const getVenueImageUploadUrls = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate image upload URLs",
+      message: error instanceof Error ? error.message : "Failed to generate image upload URLs",
     });
   }
 };

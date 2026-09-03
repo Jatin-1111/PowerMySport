@@ -39,15 +39,13 @@ async function main(): Promise<void> {
       .toArray();
 
     if (stateScoped.length > 0) {
-      console.error(
-        `Refusing to run: ${stateScoped.length} guide(s) still have a state.`,
-      );
+      console.error(`Refusing to run: ${stateScoped.length} guide(s) still have a state.`);
       for (const doc of stateScoped) {
         console.error(`  ${doc.sportSlug} · ${doc.stateSlug} · ${doc.status}`);
       }
       console.error(
         "Decide what happens to each one first — deleting the field would " +
-          "promote it to that sport's only pathway.",
+          "promote it to that sport's only pathway."
       );
       process.exitCode = 1;
       return;
@@ -78,7 +76,7 @@ async function main(): Promise<void> {
     if (withField > 0) {
       const result = await collection.updateMany(
         { stateSlug: { $exists: true } },
-        { $unset: { stateSlug: "" } },
+        { $unset: { stateSlug: "" } }
       );
       console.log(`Cleared stateSlug from ${result.modifiedCount} document(s).`);
     }

@@ -3,8 +3,7 @@
 import { useCallback, useState } from "react";
 import { authHeaders, useChatCore } from "./useChatCore";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 interface ChatSessionMeta {
   dailyRemaining: number;
@@ -90,7 +89,7 @@ export function useGuidanceChat({ submissionId }: UseGuidanceChatOptions) {
         setMeta((m) => ({ ...m, dailyRemaining: 0 }));
       }
     },
-    [sendCore, submissionId],
+    [sendCore, submissionId]
   );
 
   return {

@@ -16,10 +16,7 @@ import type { FederationSummary } from "../services/fetchFederations";
  * reads "National Federation" on `/roadmap/tennis` and something else one click
  * later on `/federations/aita` reads as two different organisations.
  */
-const TYPE_META: Record<
-  FederationSummary["type"],
-  { label: string; className: string }
-> = {
+const TYPE_META: Record<FederationSummary["type"], { label: string; className: string }> = {
   govt: {
     label: "Government Body",
     className: "border-blue-200 bg-blue-50 text-blue-700",
@@ -59,21 +56,18 @@ export function FederationCard({
   const href = `/federations/${federation.slug}`;
 
   return (
-    <div className="group flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow transition hover:border-power-orange/40 hover:shadow-lg sm:p-6">
+    <div className="group premium-shadow hover:border-power-orange/40 flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm transition hover:shadow-lg sm:p-6">
       <div className="flex items-start gap-4">
         <div
           aria-hidden
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 font-title text-sm font-extrabold tracking-tight text-white"
+          className="font-title flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-sm font-extrabold tracking-tight text-white"
         >
           {federation.acronym.slice(0, 4)}
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="font-title text-base font-bold leading-snug text-slate-900">
-            <Link
-              href={href}
-              className="transition group-hover:text-power-orange"
-            >
+          <h3 className="font-title text-base leading-snug font-bold text-slate-900">
+            <Link href={href} className="group-hover:text-power-orange transition">
               {federation.name}
             </Link>
           </h3>
@@ -110,7 +104,7 @@ export function FederationCard({
             <Link
               key={quick.tab}
               href={`${href}?tab=${quick.tab}`}
-              className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-power-orange/40 hover:text-power-orange"
+              className="hover:border-power-orange/40 hover:text-power-orange inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition"
             >
               {quick.label}
             </Link>
@@ -119,7 +113,7 @@ export function FederationCard({
 
         <Link
           href={href}
-          className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-power-orange transition hover:gap-1.5"
+          className="text-power-orange mt-3 inline-flex items-center gap-1 text-sm font-semibold transition hover:gap-1.5"
         >
           Read the full guide
           <ArrowUpRight className="h-4 w-4" />

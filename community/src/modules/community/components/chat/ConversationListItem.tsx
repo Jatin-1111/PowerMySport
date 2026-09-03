@@ -53,10 +53,7 @@ export const ConversationListItem = memo(function ConversationListItem({
   useEffect(() => {
     if (!showContextMenu) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        contextMenuRef.current &&
-        !contextMenuRef.current.contains(e.target as Node)
-      ) {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
         setShowContextMenu(false);
       }
     };
@@ -81,16 +78,15 @@ export const ConversationListItem = memo(function ConversationListItem({
             else onToggleSelect?.(conversation.id);
           }
         }}
-        className={`relative w-full overflow-hidden px-3 py-2.5 text-left transition-all cursor-pointer ${
+        className={`relative w-full cursor-pointer overflow-hidden px-3 py-2.5 text-left transition-all ${
           isSelected && !isSelectMode
             ? "bg-slate-100"
             : "bg-white hover:bg-slate-50/80 active:bg-slate-100/60"
         }`}
       >
-
         <div className="flex items-center gap-3">
           {/* Avatar */}
-          <div className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-[14px] font-bold uppercase text-slate-700 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_1px_3px_rgba(0,0,0,0.05)]">
+          <div className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-[14px] font-bold text-slate-700 uppercase shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_1px_3px_rgba(0,0,0,0.05)]">
             {conversationPhotoUrl ? (
               <img
                 src={conversationPhotoUrl}
@@ -106,9 +102,9 @@ export const ConversationListItem = memo(function ConversationListItem({
           {/* Content */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex min-w-0 items-center gap-1.5">
                 {conversation.unreadCount > 0 && (
-                  <div className="w-2 h-2 shrink-0 rounded-full bg-power-orange mt-0.5" />
+                  <div className="bg-power-orange mt-0.5 h-2 w-2 shrink-0 rounded-full" />
                 )}
                 <p
                   className={`truncate text-[14px] tracking-tight ${
@@ -119,30 +115,21 @@ export const ConversationListItem = memo(function ConversationListItem({
                 >
                   {conversationName}
                 </p>
-                {isPinned && (
-                  <Pin
-                    size={11}
-                    className="shrink-0 text-slate-400 fill-slate-400"
-                  />
-                )}
-                {isMuted && (
-                  <BellOff size={11} className="shrink-0 text-slate-400" />
-                )}
+                {isPinned && <Pin size={11} className="shrink-0 fill-slate-400 text-slate-400" />}
+                {isMuted && <BellOff size={11} className="shrink-0 text-slate-400" />}
                 {conversation.status === "PENDING" && (
-                  <span className="shrink-0 rounded-full bg-orange-100/80 border border-orange-200/50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-orange-700">
+                  <span className="shrink-0 rounded-full border border-orange-200/50 bg-orange-100/80 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-orange-700 uppercase">
                     New
                   </span>
                 )}
               </div>
 
               {/* Timestamp */}
-              <div className="shrink-0 flex items-center gap-1.5">
+              <div className="flex shrink-0 items-center gap-1.5">
                 {conversation.latestMessage?.createdAt && (
                   <span
-                    className={`text-[11px] font-medium leading-none tabular-nums ${
-                      conversation.unreadCount > 0
-                        ? "text-power-orange"
-                        : "text-slate-400"
+                    className={`text-[11px] leading-none font-medium tabular-nums ${
+                      conversation.unreadCount > 0 ? "text-power-orange" : "text-slate-400"
                     }`}
                   >
                     {formatChatListDate(conversation.latestMessage.createdAt)}
@@ -154,7 +141,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                     e.stopPropagation();
                     setShowContextMenu((prev) => !prev);
                   }}
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-600 transition"
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 opacity-0 transition group-hover:opacity-100 hover:bg-slate-100 hover:text-slate-600"
                   style={{ opacity: showContextMenu ? 1 : undefined }}
                 >
                   <MoreHorizontal size={14} />
@@ -162,12 +149,10 @@ export const ConversationListItem = memo(function ConversationListItem({
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 mt-0.5">
+            <div className="mt-0.5 flex items-center justify-between gap-2">
               <p
                 className={`truncate text-[12px] leading-tight ${
-                  conversation.unreadCount > 0
-                    ? "font-medium text-slate-700"
-                    : "text-slate-500"
+                  conversation.unreadCount > 0 ? "font-medium text-slate-700" : "text-slate-500"
                 }`}
               >
                 {lastMessageText}
@@ -178,11 +163,9 @@ export const ConversationListItem = memo(function ConversationListItem({
                 <motion.span
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="shrink-0 inline-flex min-w-[18px] items-center justify-center rounded-full bg-gradient-to-b from-power-orange to-orange-600 px-1 py-0.5 text-[10px] font-bold text-white shadow-sm"
+                  className="from-power-orange inline-flex min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gradient-to-b to-orange-600 px-1 py-0.5 text-[10px] font-bold text-white shadow-sm"
                 >
-                  {conversation.unreadCount > 99
-                    ? "99+"
-                    : conversation.unreadCount}
+                  {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
                 </motion.span>
               )}
             </div>
@@ -191,7 +174,7 @@ export const ConversationListItem = memo(function ConversationListItem({
 
         {/* Subtle separator line */}
         {!isSelected && (
-          <div className="absolute bottom-0 left-[64px] right-0 h-px bg-gradient-to-r from-slate-100 to-transparent" />
+          <div className="absolute right-0 bottom-0 left-[64px] h-px bg-gradient-to-r from-slate-100 to-transparent" />
         )}
       </div>
 
@@ -204,7 +187,7 @@ export const ConversationListItem = memo(function ConversationListItem({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute right-3 top-1 z-30 w-40 rounded-xl border border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.1)] overflow-hidden"
+            className="absolute top-1 right-3 z-30 w-40 overflow-hidden rounded-xl border border-slate-200/60 bg-white/95 shadow-[0_4px_24px_rgba(0,0,0,0.1)] backdrop-blur-xl"
           >
             <button
               onClick={(e) => {
@@ -212,7 +195,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                 onTogglePin(conversation.id);
                 setShowContextMenu(false);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 transition"
+              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50"
             >
               <Pin size={14} className={isPinned ? "fill-power-orange text-power-orange" : ""} />
               {isPinned ? "Unpin" : "Pin"}
@@ -223,7 +206,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                 onToggleMute(conversation.id);
                 setShowContextMenu(false);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] font-medium text-slate-700 hover:bg-slate-50 transition"
+              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50"
             >
               {isMuted ? (
                 <>

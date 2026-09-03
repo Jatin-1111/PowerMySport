@@ -15,10 +15,7 @@ import {
   MapPin,
   Trophy,
 } from "lucide-react";
-import type {
-  EditionDocument,
-  TournamentEditionDetail,
-} from "@/modules/pathway/services/pathway";
+import type { EditionDocument, TournamentEditionDetail } from "@/modules/pathway/services/pathway";
 import { CAL_TZ, formatLocation, levelColor } from "../../federations/[slug]/editionUtils";
 import { AddToCalendarButton } from "../../federations/[slug]/AddToCalendarButton";
 import { groupDocumentsByKind } from "./documentGroups";
@@ -85,10 +82,7 @@ function formatShortDate(value: string): string {
   });
 }
 
-const DOCUMENT_META: Record<
-  EditionDocument["kind"],
-  { label: string; hint: string }
-> = {
+const DOCUMENT_META: Record<EditionDocument["kind"], { label: string; hint: string }> = {
   factSheet: {
     label: "Fact sheet",
     hint: "Entry fee, entry deadline, format and venue rules — read this before entering.",
@@ -246,7 +240,7 @@ export default async function TournamentEditionPage({
             </div>
           )}
 
-          <div className="mb-5 mt-6 flex flex-wrap items-center gap-2">
+          <div className="mt-6 mb-5 flex flex-wrap items-center gap-2">
             {edition.level && lc && (
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${lc.pill}`}
@@ -265,7 +259,7 @@ export default async function TournamentEditionPage({
             ))}
           </div>
 
-          <h1 className="font-title text-3xl font-bold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-[3rem]">
+          <h1 className="font-title text-3xl leading-[1.1] font-bold tracking-tight text-white sm:text-4xl lg:text-[3rem]">
             {edition.officialName || edition.name}
           </h1>
           {/* The short calendar name is what the federation's own calendar prints,
@@ -300,13 +294,13 @@ export default async function TournamentEditionPage({
         {/* ── Fact sheet: the thing a parent actually came for ── */}
         {factSheet ? (
           <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-            <h2 className="font-title text-xl font-bold text-deep-slate">Entry details</h2>
+            <h2 className="font-title text-deep-slate text-xl font-bold">Entry details</h2>
             <p className="mt-1.5 text-sm text-slate-500">{DOCUMENT_META.factSheet.hint}</p>
             <a
               href={factSheet.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-power-orange px-5 py-3 text-sm font-bold text-white transition hover:opacity-90"
+              className="bg-power-orange mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition hover:opacity-90"
             >
               <FileText className="h-4 w-4" />
               Open the fact sheet
@@ -321,7 +315,7 @@ export default async function TournamentEditionPage({
                   href={edition.detailUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-slate-500 underline hover:text-power-orange"
+                  className="hover:text-power-orange font-semibold text-slate-500 underline"
                 >
                   Open this tournament on the federation site
                 </a>{" "}
@@ -334,19 +328,19 @@ export default async function TournamentEditionPage({
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
               <div>
-                <h2 className="font-title text-lg font-bold text-deep-slate">
+                <h2 className="font-title text-deep-slate text-lg font-bold">
                   No fact sheet published yet
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  {federation?.acronym ?? "The federation"} hasn&apos;t posted entry details for this
-                  event yet. They usually go up a few weeks before it starts.
+                  {federation?.acronym ?? "The federation"} hasn&apos;t posted entry details for
+                  this event yet. They usually go up a few weeks before it starts.
                 </p>
                 {edition.detailUrl && (
                   <a
                     href={edition.detailUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-power-orange"
+                    className="text-power-orange mt-3 inline-flex items-center gap-1.5 text-sm font-semibold"
                   >
                     Check the federation&apos;s page
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -359,13 +353,13 @@ export default async function TournamentEditionPage({
 
         {/* ── At a glance ── */}
         <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-          <h2 className="font-title text-xl font-bold text-deep-slate">At a glance</h2>
+          <h2 className="font-title text-deep-slate text-xl font-bold">At a glance</h2>
           <dl className="mt-5 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
             {facts.map((fact) => (
               <div key={fact.label} className="flex items-start gap-3">
                 <span className="mt-0.5 shrink-0 text-slate-400">{fact.icon}</span>
                 <div className="min-w-0">
-                  <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                  <dt className="text-[11px] font-bold tracking-wide text-slate-400 uppercase">
                     {fact.label}
                   </dt>
                   <dd className="text-sm font-semibold text-slate-700">{fact.value}</dd>
@@ -378,12 +372,12 @@ export default async function TournamentEditionPage({
         {/* ── Remaining documents ── */}
         {otherDocuments.length > 0 && (
           <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-            <h2 className="font-title text-xl font-bold text-deep-slate">Documents</h2>
+            <h2 className="font-title text-deep-slate text-xl font-bold">Documents</h2>
             {/* Grouped by kind so the explanation is stated once, instead of
                 repeating under every row of the same type. */}
             {groupDocumentsByKind(otherDocuments).map((group) => (
               <div key={group.kind} className="mt-5 first:mt-4">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                <p className="text-[11px] font-bold tracking-wide text-slate-400 uppercase">
                   {group.items.length > 1
                     ? `${DOCUMENT_META[group.kind].label}s`
                     : DOCUMENT_META[group.kind].label}
@@ -399,7 +393,7 @@ export default async function TournamentEditionPage({
                         className="group flex items-center gap-3 py-2.5 transition hover:bg-slate-50/60"
                       >
                         <ListChecks className="h-4 w-4 shrink-0 text-slate-400" />
-                        <p className="min-w-0 flex-1 text-sm font-semibold text-slate-700 group-hover:text-power-orange">
+                        <p className="group-hover:text-power-orange min-w-0 flex-1 text-sm font-semibold text-slate-700">
                           {doc.displayLabel}
                         </p>
                         <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-300" />
@@ -415,7 +409,7 @@ export default async function TournamentEditionPage({
         {/* ── Other events nearby ── */}
         {related.length > 0 && (
           <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-            <h2 className="font-title text-xl font-bold text-deep-slate">
+            <h2 className="font-title text-deep-slate text-xl font-bold">
               {edition.city ? `More tournaments in ${edition.city}` : "Other upcoming tournaments"}
             </h2>
             <ul className="mt-4 divide-y divide-slate-100">
@@ -426,7 +420,7 @@ export default async function TournamentEditionPage({
                     className="group flex items-center justify-between gap-3 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-700 group-hover:text-power-orange">
+                      <p className="group-hover:text-power-orange truncate text-sm font-semibold text-slate-700">
                         {r.name}
                       </p>
                       <p className="text-xs text-slate-400">
@@ -434,7 +428,7 @@ export default async function TournamentEditionPage({
                         {r.ageGroups?.length ? ` · ${r.ageGroups.join(", ")}` : ""}
                       </p>
                     </div>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:text-power-orange" />
+                    <ArrowRight className="group-hover:text-power-orange h-4 w-4 shrink-0 text-slate-300 transition" />
                   </Link>
                 </li>
               ))}
@@ -444,7 +438,8 @@ export default async function TournamentEditionPage({
 
         {/* ── Provenance ── */}
         <p className="px-1 text-xs text-slate-400">
-          Details published by {federation ? `${federation.name} (${federation.acronym})` : "the federation"}
+          Details published by{" "}
+          {federation ? `${federation.name} (${federation.acronym})` : "the federation"}
           {edition.lastCheckedAt && <> · last checked {formatShortDate(edition.lastCheckedAt)}</>}.
           {edition.detailUrl && (
             <>
@@ -453,7 +448,7 @@ export default async function TournamentEditionPage({
                 href={edition.detailUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold underline hover:text-power-orange"
+                className="hover:text-power-orange font-semibold underline"
               >
                 View the original listing
               </a>

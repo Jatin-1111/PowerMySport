@@ -36,8 +36,7 @@ const defaultPreferences: ReminderPreferences = {
 };
 
 export default function ReminderPreferencesPage() {
-  const [preferences, setPreferences] =
-    useState<ReminderPreferences>(defaultPreferences);
+  const [preferences, setPreferences] = useState<ReminderPreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -67,7 +66,7 @@ export default function ReminderPreferencesPage() {
       setIsSaving(true);
       const response = await axiosInstance.patch<{ success: boolean }>(
         "/reminders/preferences",
-        preferences,
+        preferences
       );
       if (response.data.success) {
         toast.success("Reminder preferences saved");
@@ -88,7 +87,7 @@ export default function ReminderPreferencesPage() {
 
   const toggleInterval = (
     interval: keyof ReminderPreferences["bookingReminders"]["intervals"],
-    value: boolean,
+    value: boolean
   ) => {
     setPreferences((prev) => ({
       ...prev,
@@ -103,10 +102,7 @@ export default function ReminderPreferencesPage() {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Reminder Preferences" },
-          ]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reminder Preferences" }]}
         />
         <PlayerPageHeader
           badge="Player"
@@ -144,10 +140,7 @@ export default function ReminderPreferencesPage() {
   return (
     <div className="space-y-6">
       <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Reminder Preferences" },
-        ]}
+        items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reminder Preferences" }]}
       />
 
       <PlayerPageHeader
@@ -170,12 +163,12 @@ export default function ReminderPreferencesPage() {
                 className="sr-only"
               />
               <div
-                className={`relative h-6 w-11 rounded-full transition-colors cursor-pointer ${
+                className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${
                   bookingReminders.enabled ? "bg-power-orange" : "bg-slate-200"
                 }`}
               >
                 <span
-                  className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
                     bookingReminders.enabled ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
@@ -187,12 +180,10 @@ export default function ReminderPreferencesPage() {
           }
         />
 
-        <CardContent className="px-6 py-6 space-y-4">
+        <CardContent className="space-y-4 px-6 py-6">
           {bookingReminders.enabled ? (
             <>
-              <p className="text-sm font-semibold text-slate-700">
-                Remind me before a booking:
-              </p>
+              <p className="text-sm font-semibold text-slate-700">Remind me before a booking:</p>
               <div className="space-y-3">
                 {intervalItems.map(({ key, label, description, icon }) => {
                   const isChecked = bookingReminders.intervals[key];
@@ -203,7 +194,7 @@ export default function ReminderPreferencesPage() {
                         "flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all",
                         isChecked
                           ? "border-power-orange/30 bg-orange-50/50"
-                          : "border-slate-200/70 bg-slate-50/40 hover:border-slate-300 hover:bg-white",
+                          : "border-slate-200/70 bg-slate-50/40 hover:border-slate-300 hover:bg-white"
                       )}
                       whileHover={{ y: -1 }}
                       transition={{ duration: 0.15 }}
@@ -212,7 +203,7 @@ export default function ReminderPreferencesPage() {
                         <div
                           className={cn(
                             "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg",
-                            isChecked ? "bg-power-orange/10" : "bg-slate-100",
+                            isChecked ? "bg-power-orange/10" : "bg-slate-100"
                           )}
                         >
                           {icon}
@@ -221,27 +212,21 @@ export default function ReminderPreferencesPage() {
                           <p
                             className={cn(
                               "text-sm font-semibold",
-                              isChecked ? "text-slate-900" : "text-slate-700",
+                              isChecked ? "text-slate-900" : "text-slate-700"
                             )}
                           >
                             {label}
                           </p>
-                          <p className="text-xs text-slate-500">
-                            {description}
-                          </p>
+                          <p className="text-xs text-slate-500">{description}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {isChecked && (
-                          <CheckCircle className="h-4 w-4 text-power-orange" />
-                        )}
+                        {isChecked && <CheckCircle className="text-power-orange h-4 w-4" />}
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={(e) =>
-                            toggleInterval(key, e.target.checked)
-                          }
-                          className="h-4 w-4 cursor-pointer accent-power-orange"
+                          onChange={(e) => toggleInterval(key, e.target.checked)}
+                          className="accent-power-orange h-4 w-4 cursor-pointer"
                         />
                       </div>
                     </motion.label>
@@ -262,12 +247,7 @@ export default function ReminderPreferencesPage() {
           )}
 
           <div className="flex justify-end border-t border-slate-200/60 pt-4">
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              disabled={isSaving}
-              loading={isSaving}
-            >
+            <Button variant="primary" onClick={handleSave} disabled={isSaving} loading={isSaving}>
               {isSaving ? "Saving..." : "Save Preferences"}
             </Button>
           </div>

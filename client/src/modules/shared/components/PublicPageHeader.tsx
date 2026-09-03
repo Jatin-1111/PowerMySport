@@ -15,12 +15,12 @@ export default function PublicPageHeader({
   children,
 }: PublicPageHeaderProps) {
   return (
-    <div className="relative bg-linear-to-br from-slate-900 to-slate-800 text-white overflow-hidden py-12 sm:py-16 md:py-20">
+    <div className="relative overflow-hidden bg-linear-to-br from-slate-900 to-slate-800 py-12 text-white sm:py-16 md:py-20">
       {/* Blob overlays */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-power-orange/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-turf-green/10 rounded-full blur-3xl -ml-32 -mb-32"></div>
+      <div className="bg-power-orange/10 absolute top-0 right-0 -mt-32 -mr-32 h-96 w-96 rounded-full blur-3xl"></div>
+      <div className="bg-turf-green/10 absolute bottom-0 left-0 -mb-32 -ml-32 h-80 w-80 rounded-full blur-3xl"></div>
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="relative z-10 container mx-auto px-4">
         <div className="max-w-3xl">
           {/* Icon */}
           <div className="mb-4 flex items-center gap-2">
@@ -28,14 +28,10 @@ export default function PublicPageHeader({
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4 leading-tight">
-            {title}
-          </h1>
+          <h1 className="mb-4 text-4xl leading-tight font-bold sm:text-5xl">{title}</h1>
 
           {/* Subtitle */}
-          <p className="text-lg sm:text-xl text-slate-200 mb-8 leading-relaxed">
-            {subtitle}
-          </p>
+          <p className="mb-8 text-lg leading-relaxed text-slate-200 sm:text-xl">{subtitle}</p>
 
           {/* Children (search bar, etc) */}
           {children && <div className="mt-8">{children}</div>}

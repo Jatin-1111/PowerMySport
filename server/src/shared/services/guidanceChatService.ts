@@ -42,16 +42,13 @@ When declining, always stay in character: "I'm a sports development coach, not a
 
 export function buildChatSystemPrompt(
   request: GuidanceRequest,
-  response: GuidanceResponse,
+  response: GuidanceResponse
 ): string {
   const childName = `a ${request.child_age}-year-old ${request.child_gender}`;
   const sport = request.sport || "an undetermined sport";
   const phases =
     response.journeyPhases
-      ?.map(
-        (p, i) =>
-          `  Phase ${i + 1}: "${p.title}" (${p.timeframe}) — ${p.focus}`,
-      )
+      ?.map((p, i) => `  Phase ${i + 1}: "${p.title}" (${p.timeframe}) — ${p.focus}`)
       .join("\n") || "  No phases specified.";
 
   const costSummary = response.costBreakdown
@@ -133,12 +130,10 @@ export interface ChatHistoryMessage {
 export async function* streamGuidanceChatResponse(
   systemPrompt: string,
   history: ChatHistoryMessage[],
-  userMessage: string,
+  userMessage: string
 ): AsyncGenerator<string> {
   if (!apiKey) {
-    throw new Error(
-      "Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable",
-    );
+    throw new Error("Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable");
   }
 
   const genAI = new GoogleGenAI({ apiKey });
@@ -191,6 +186,6 @@ export async function* streamGuidanceChatResponse(
   throw new Error(
     `No supported Gemini chat model found. Tried: ${chatModelCandidates.join(", ")}. Last error: ${
       lastError instanceof Error ? lastError.message : String(lastError)
-    }`,
+    }`
   );
 }

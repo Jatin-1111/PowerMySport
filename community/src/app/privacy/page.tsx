@@ -25,9 +25,7 @@ export default function PrivacyPage() {
   const [aliasDraft, setAliasDraft] = useState("");
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [blockSearch, setBlockSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<
-    CommunityUserSearchResult[]
-  >([]);
+  const [searchResults, setSearchResults] = useState<CommunityUserSearchResult[]>([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [isLoadingBlockedUsers, setIsLoadingBlockedUsers] = useState(false);
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null);
@@ -51,11 +49,7 @@ export default function PrivacyPage() {
         const blocked = await communityService.getBlockedUsers();
         setBlockedUsers(blocked);
       } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to load privacy settings",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to load privacy settings");
       } finally {
         setIsLoadingBlockedUsers(false);
         setIsLoading(false);
@@ -81,11 +75,7 @@ export default function PrivacyPage() {
       setProfile(updated);
     } catch (error) {
       setProfile(previous);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update privacy settings",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update privacy settings");
     }
   };
 
@@ -117,9 +107,7 @@ export default function PrivacyPage() {
           const results = await communityService.searchCommunityUsers(trimmed);
           setSearchResults(results);
         } catch (error) {
-          toast.error(
-            error instanceof Error ? error.message : "Failed to search users",
-          );
+          toast.error(error instanceof Error ? error.message : "Failed to search users");
         } finally {
           setIsSearchingUsers(false);
         }
@@ -131,8 +119,7 @@ export default function PrivacyPage() {
     return () => clearTimeout(timeout);
   }, [blockSearch]);
 
-  const isUserBlocked = (userId: string) =>
-    blockedUsers.some((user) => user.id === userId);
+  const isUserBlocked = (userId: string) => blockedUsers.some((user) => user.id === userId);
 
   const handleBlockUser = async (targetUserId: string) => {
     if (isUserBlocked(targetUserId)) {
@@ -156,9 +143,7 @@ export default function PrivacyPage() {
     setUnblockingUserId(targetUserId);
     try {
       await communityService.unblockUser(targetUserId);
-      setBlockedUsers((current) =>
-        current.filter((user) => user.id !== targetUserId),
-      );
+      setBlockedUsers((current) => current.filter((user) => user.id !== targetUserId));
       toast.success("User unblocked");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to unblock");
@@ -170,7 +155,7 @@ export default function PrivacyPage() {
   if (isLoading) {
     return (
       <div className="community-page-shell">
-        <div className="community-content-wrap-narrow rounded-3xl border border-border bg-white p-5 shadow-sm sm:p-6">
+        <div className="community-content-wrap-narrow border-border rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
           <div className="h-6 w-44 animate-pulse rounded bg-slate-200" />
           <div className="mt-4 h-28 animate-pulse rounded-xl bg-slate-100" />
         </div>
@@ -197,12 +182,12 @@ export default function PrivacyPage() {
                 <input
                   value={aliasDraft}
                   onChange={(event) => setAliasDraft(event.target.value)}
-                  className="w-full rounded-2xl border border-border bg-background px-3 py-2.5 text-sm shadow-xs focus:border-power-orange focus:outline-none"
+                  className="border-border bg-background focus:border-power-orange w-full rounded-2xl border px-3 py-2.5 text-sm shadow-xs focus:outline-none"
                 />
                 <button
                   onClick={() => void saveAlias()}
                   disabled={isSavingAlias || !aliasDraft.trim()}
-                  className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-power-orange px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 sm:min-w-28"
+                  className="bg-power-orange inline-flex min-h-11 items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 sm:min-w-28"
                 >
                   {isSavingAlias ? "Saving" : "Save"}
                 </button>
@@ -214,9 +199,7 @@ export default function PrivacyPage() {
               <input
                 type="checkbox"
                 checked={profile?.isIdentityPublic || false}
-                onChange={(event) =>
-                  void updateProfile({ isIdentityPublic: event.target.checked })
-                }
+                onChange={(event) => void updateProfile({ isIdentityPublic: event.target.checked })}
               />
             </label>
 
@@ -238,18 +221,14 @@ export default function PrivacyPage() {
               <input
                 type="checkbox"
                 checked={profile?.lastSeenVisible || false}
-                onChange={(event) =>
-                  void updateProfile({ lastSeenVisible: event.target.checked })
-                }
+                onChange={(event) => void updateProfile({ lastSeenVisible: event.target.checked })}
               />
             </label>
 
             <label className="block text-sm sm:text-base">
-              <span className="mb-1 block text-slate-500">
-                Who can message me
-              </span>
+              <span className="mb-1 block text-slate-500">Who can message me</span>
               <select
-                className="w-full rounded-2xl border border-border bg-background px-3 py-2.5 text-sm shadow-xs focus:border-power-orange focus:outline-none"
+                className="border-border bg-background focus:border-power-orange w-full rounded-2xl border px-3 py-2.5 text-sm shadow-xs focus:outline-none"
                 value={profile?.messagePrivacy || "EVERYONE"}
                 onChange={(event) =>
                   void updateProfile({
@@ -268,9 +247,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="community-card">
-          <h2 className="text-base font-semibold text-slate-900">
-            Blocked Users
-          </h2>
+          <h2 className="text-base font-semibold text-slate-900">Blocked Users</h2>
           <p className="mt-1 text-sm text-slate-500">
             Blocked users cannot start conversations with you.
           </p>
@@ -282,16 +259,14 @@ export default function PrivacyPage() {
                 value={blockSearch}
                 onChange={(event) => setBlockSearch(event.target.value)}
                 placeholder="Search users by name"
-                className="w-full rounded-2xl border border-border bg-background px-3 py-2.5 text-sm shadow-xs focus:border-power-orange focus:outline-none"
+                className="border-border bg-background focus:border-power-orange w-full rounded-2xl border px-3 py-2.5 text-sm shadow-xs focus:outline-none"
               />
             </label>
 
-            {isSearchingUsers && (
-              <p className="text-xs text-slate-500">Searching users...</p>
-            )}
+            {isSearchingUsers && <p className="text-xs text-slate-500">Searching users...</p>}
 
             {!isSearchingUsers && blockSearch.trim().length >= 2 && (
-              <div className="space-y-2 rounded-xl border border-border/70 bg-slate-50/70 p-3">
+              <div className="border-border/70 space-y-2 rounded-xl border bg-slate-50/70 p-3">
                 {searchResults.length === 0 ? (
                   <p className="text-xs text-slate-500">No users found.</p>
                 ) : (
@@ -302,7 +277,7 @@ export default function PrivacyPage() {
                     return (
                       <div
                         key={user.id}
-                        className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
+                        className="border-border/70 flex flex-col gap-3 rounded-2xl border bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-slate-900">
@@ -310,9 +285,7 @@ export default function PrivacyPage() {
                           </p>
                           <div className="mt-0.5 flex items-center gap-1.5">
                             <p className="text-xs text-slate-500">
-                              {user.isIdentityPublic
-                                ? "Identity visible"
-                                : "Anonymous profile"}
+                              {user.isIdentityPublic ? "Identity visible" : "Anonymous profile"}
                             </p>
                             {user.role && (
                               <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
@@ -324,13 +297,9 @@ export default function PrivacyPage() {
                         <button
                           onClick={() => void handleBlockUser(user.id)}
                           disabled={blocked || isBlocking}
-                          className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-power-orange/40 px-3 py-2 text-xs font-medium text-power-orange transition hover:bg-power-orange/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="border-power-orange/40 text-power-orange hover:bg-power-orange/10 inline-flex min-h-10 items-center justify-center rounded-2xl border px-3 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {blocked
-                            ? "Blocked"
-                            : isBlocking
-                              ? "Blocking"
-                              : "Block"}
+                          {blocked ? "Blocked" : isBlocking ? "Blocking" : "Block"}
                         </button>
                       </div>
                     );
@@ -341,9 +310,7 @@ export default function PrivacyPage() {
           </div>
 
           <div className="mt-5 space-y-2">
-            <h3 className="text-sm font-medium text-slate-800">
-              Current blocked list
-            </h3>
+            <h3 className="text-sm font-medium text-slate-800">Current blocked list</h3>
             {isLoadingBlockedUsers ? (
               <p className="text-xs text-slate-500">Loading blocked users...</p>
             ) : blockedUsers.length === 0 ? (
@@ -354,15 +321,13 @@ export default function PrivacyPage() {
                 return (
                   <div
                     key={user.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-slate-50/70 px-3 py-2"
+                    className="border-border/70 flex items-center justify-between gap-3 rounded-lg border bg-slate-50/70 px-3 py-2"
                   >
-                    <p className="truncate text-sm text-slate-800">
-                      {user.name}
-                    </p>
+                    <p className="truncate text-sm text-slate-800">{user.name}</p>
                     <button
                       onClick={() => void handleUnblockUser(user.id)}
                       disabled={isUnblocking}
-                      className="rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="border-border rounded-lg border bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isUnblocking ? "Unblocking" : "Unblock"}
                     </button>

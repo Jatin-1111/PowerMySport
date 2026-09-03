@@ -45,11 +45,11 @@ export default function AdminProfilePage() {
           subtitle="View your account and role permissions."
         />
         <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
+          <div className="space-y-3 py-10 text-center">
+            <p className="font-semibold text-red-600">{error}</p>
             <button
               onClick={loadProfile}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
             >
               Retry
             </button>
@@ -71,21 +71,15 @@ export default function AdminProfilePage() {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <p className="text-sm text-slate-500">Name</p>
-            <p className="text-base font-semibold text-slate-900">
-              {profile?.name || "N/A"}
-            </p>
+            <p className="text-base font-semibold text-slate-900">{profile?.name || "N/A"}</p>
           </div>
           <div>
             <p className="text-sm text-slate-500">Email</p>
-            <p className="text-base font-semibold text-slate-900">
-              {profile?.email || "N/A"}
-            </p>
+            <p className="text-base font-semibold text-slate-900">{profile?.email || "N/A"}</p>
           </div>
           <div>
             <p className="text-sm text-slate-500">Role</p>
-            <p className="text-base font-semibold text-slate-900">
-              {profile?.role || "N/A"}
-            </p>
+            <p className="text-base font-semibold text-slate-900">{profile?.role || "N/A"}</p>
           </div>
           <div>
             <p className="text-sm text-slate-500">Status</p>

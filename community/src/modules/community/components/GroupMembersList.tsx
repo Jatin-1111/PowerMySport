@@ -35,7 +35,7 @@ export function GroupMembersList({
       return Array.isArray(data) ? data : [];
     },
     [groupId],
-    { onError: () => {} },
+    { onError: () => {} }
   );
 
   const members = data ?? [];
@@ -70,10 +70,7 @@ export function GroupMembersList({
       <div className="py-2">
         <div className="mt-4 space-y-2">
           {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-12 animate-pulse rounded-xl bg-slate-100/90"
-            />
+            <div key={i} className="h-12 animate-pulse rounded-xl bg-slate-100/90" />
           ))}
         </div>
       </div>
@@ -89,9 +86,7 @@ export function GroupMembersList({
     >
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50/80 p-3">
-          <p className="text-sm text-red-700">
-            {error.message || "Failed to load members"}
-          </p>
+          <p className="text-sm text-red-700">{error.message || "Failed to load members"}</p>
         </div>
       )}
 
@@ -105,10 +100,10 @@ export function GroupMembersList({
                 prefersReducedMotion ? undefined : { backgroundColor: "rgba(248, 250, 252, 0.8)" }
               }
               whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors hover:bg-slate-50"
+              className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 transition-colors hover:bg-slate-50"
               aria-label={`View ${member.displayName} profile`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
                 {member.photoUrl && member.isIdentityPublic ? (
                   <img
                     src={member.photoUrl}
@@ -131,10 +126,10 @@ export function GroupMembersList({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <span
-                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase ${
                     member.isIdentityPublic
-                      ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                      : "bg-slate-50 text-slate-500 border border-slate-200"
+                      ? "border border-emerald-100 bg-emerald-50 text-emerald-600"
+                      : "border border-slate-200 bg-slate-50 text-slate-500"
                   }`}
                 >
                   {member.isIdentityPublic ? "Public" : "Private"}
@@ -144,11 +139,9 @@ export function GroupMembersList({
             </motion.button>
           ))
         ) : (
-          <div className="rounded-xl border border-dashed border-border bg-slate-50/80 p-8 text-center">
+          <div className="border-border rounded-xl border border-dashed bg-slate-50/80 p-8 text-center">
             <Users size={32} className="mx-auto text-slate-300" />
-            <p className="mt-3 text-sm font-medium text-slate-600">
-              No members yet
-            </p>
+            <p className="mt-3 text-sm font-medium text-slate-600">No members yet</p>
           </div>
         )}
       </div>

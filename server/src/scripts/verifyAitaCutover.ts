@@ -39,7 +39,7 @@ async function main(): Promise<void> {
   console.log(
     problems.length === 0
       ? "no drift against our canonical names or zones"
-      : problems.map((p) => `  ! ${p}`).join("\n"),
+      : problems.map((p) => `  ! ${p}`).join("\n")
   );
 
   console.log("\n── parse one list ──────────────────────────────────────────");
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
   console.log(`  no birthYear ${parsed.diagnostics.missingDob}`);
   console.log(
     `  unmapped st. ${parsed.diagnostics.unknownStateRows} ` +
-      `(${parsed.diagnostics.unknownStateCodes.join(", ") || "none"})`,
+      `(${parsed.diagnostics.unknownStateCodes.join(", ") || "none"})`
   );
   console.log(`  warnings     ${parsed.diagnostics.warnings.length}`);
   const first = parsed.rows[0];
@@ -73,14 +73,12 @@ async function main(): Promise<void> {
 
   console.log("\n── point breakdown, rank 1 ─────────────────────────────────");
   if (first) {
-    const { parsePointBreakdown } = await import(
-      "../shared/services/aita/rankingListParser"
-    );
+    const { parsePointBreakdown } = await import("../shared/services/aita/rankingListParser");
     const fragment = await aitaRankingSource.fetchPointBreakdown(
       list,
       week.wid,
       first.playerKey,
-      first.rank,
+      first.rank
     );
     const breakdown = parsePointBreakdown(fragment);
     const scoring = breakdown.slices
@@ -99,7 +97,7 @@ async function main(): Promise<void> {
     console.log(`  ${"scoring sum".padEnd(20)} ${String(scoring).padStart(9)}`);
     console.log(`  ${"printed total".padEnd(20)} ${String(breakdown.totalPoints).padStart(9)}`);
     console.log(
-      `  reconciles?  ${Math.abs(scoring - (breakdown.totalPoints ?? 0)) < 0.01 ? "YES" : "NO"}`,
+      `  reconciles?  ${Math.abs(scoring - (breakdown.totalPoints ?? 0)) < 0.01 ? "YES" : "NO"}`
     );
   }
 
@@ -139,13 +137,13 @@ async function main(): Promise<void> {
       const archived = heldByRegNo.get(row.regNo)!;
       console.log(
         `  ${row.regNo}  live "${row.fullName}" (rank ${row.rank})` +
-          `  vs archived "${archived.fullName}" (rank ${archived.rank})`,
+          `  vs archived "${archived.fullName}" (rank ${archived.rank})`
       );
     }
     console.log(
       rate > 80
         ? "\nVERDICT: the key is continuous — movement against the archive will work."
-        : "\nVERDICT: LOW MATCH RATE. Do not ingest; investigate before publishing.",
+        : "\nVERDICT: LOW MATCH RATE. Do not ingest; investigate before publishing."
     );
   } finally {
     await mongoose.disconnect();

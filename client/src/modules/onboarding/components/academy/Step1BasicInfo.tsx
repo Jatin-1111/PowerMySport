@@ -28,9 +28,7 @@ export default function Step1BasicInfo({
     name: previousData?.name || "",
     legalName: previousData?.legalName || "",
     sports: previousData?.sports || ([] as string[]),
-    ageGroups:
-      previousData?.ageGroups ||
-      ([] as ("kids" | "teens" | "adults" | "all")[]),
+    ageGroups: previousData?.ageGroups || ([] as ("kids" | "teens" | "adults" | "all")[]),
     establishedYear: previousData?.establishedYear?.toString() || "",
     description: previousData?.description || "",
     logoUrl: previousData?.logoUrl || "",
@@ -68,8 +66,7 @@ export default function Step1BasicInfo({
       errors.ownerEmail = "Invalid email address";
     }
     if (!/^\+91[0-9]{10}$/.test(formData.ownerPhone.trim())) {
-      errors.ownerPhone =
-        "Phone must be +91 followed by 10 digits (e.g. +919876543210)";
+      errors.ownerPhone = "Phone must be +91 followed by 10 digits (e.g. +919876543210)";
     }
     if (formData.name.trim().length < 3) {
       errors.name = "Academy name must be at least 3 characters";
@@ -130,32 +127,23 @@ export default function Step1BasicInfo({
         establishedYear: formData.establishedYear
           ? parseInt(formData.establishedYear, 10)
           : undefined,
-        ...(formData.logoUrl.trim()
-          ? { logoUrl: formData.logoUrl.trim() }
-          : {}),
-        ...(formData.logoKey.trim()
-          ? { logoKey: formData.logoKey.trim() }
-          : {}),
+        ...(formData.logoUrl.trim() ? { logoUrl: formData.logoUrl.trim() } : {}),
+        ...(formData.logoKey.trim() ? { logoKey: formData.logoKey.trim() } : {}),
       };
 
       const submission = await onSubmit(payload);
 
       if (logoFile) {
-        const uploadResponse = await academyOnboardingApi.getImageUploadUrls(
-          submission.academyId,
-          ["logo"],
-        );
+        const uploadResponse = await academyOnboardingApi.getImageUploadUrls(submission.academyId, [
+          "logo",
+        ]);
 
         const logoUpload = uploadResponse.data?.uploadUrls?.[0];
         if (!uploadResponse.success || !logoUpload) {
           throw new Error("Failed to prepare logo upload");
         }
 
-        await uploadFileToPresignedUrl(
-          logoFile,
-          logoUpload.uploadUrl,
-          logoUpload.contentType,
-        );
+        await uploadFileToPresignedUrl(logoFile, logoUpload.uploadUrl, logoUpload.contentType);
 
         const confirmResponse = await academyOnboardingApi.confirmImages({
           academyId: submission.academyId,
@@ -164,15 +152,11 @@ export default function Step1BasicInfo({
         });
 
         if (!confirmResponse.success) {
-          throw new Error(
-            confirmResponse.message || "Failed to save academy logo",
-          );
+          throw new Error(confirmResponse.message || "Failed to save academy logo");
         }
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create academy",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to create academy");
     } finally {
       if (isMountedRef.current) {
         setIsSubmitting(false);
@@ -182,25 +166,19 @@ export default function Step1BasicInfo({
 
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">
-          Step 1: Academy Basics
-        </h2>
-        <p className="text-slate-600">
-          Tell us about your academy and get started
-        </p>
+      <div className="mb-8 text-center">
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 1: Academy Basics</h2>
+        <p className="text-slate-600">Tell us about your academy and get started</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Owner Information */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-4">
-            Owner Information
-          </h3>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-4 font-semibold text-slate-900">Owner Information</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-1">
+              <label className="mb-1 block text-sm font-medium text-slate-900">
                 Full Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -212,22 +190,18 @@ export default function Step1BasicInfo({
                     ownerName: e.target.value,
                   }))
                 }
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                  fieldErrors.ownerName
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 bg-white"
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  fieldErrors.ownerName ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
               />
               {fieldErrors.ownerName && (
-                <p className="text-red-600 text-xs mt-1">
-                  {fieldErrors.ownerName}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.ownerName}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-1">
+              <label className="mb-1 block text-sm font-medium text-slate-900">
                 Email <span className="text-red-500">*</span>
               </label>
               <input
@@ -239,35 +213,29 @@ export default function Step1BasicInfo({
                     ownerEmail: e.target.value,
                   }))
                 }
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                  fieldErrors.ownerEmail
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 bg-white"
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  fieldErrors.ownerEmail ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
               />
               {fieldErrors.ownerEmail && (
-                <p className="text-red-600 text-xs mt-1">
-                  {fieldErrors.ownerEmail}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.ownerEmail}</p>
               )}
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-900 mb-1">
+              <label className="mb-1 block text-sm font-medium text-slate-900">
                 WhatsApp/Phone <span className="text-red-500">*</span>
               </label>
               <div className="flex">
-                <span className="inline-flex items-center px-3 py-2 border border-r-0 border-slate-300 rounded-l-lg bg-slate-50 text-sm text-slate-600">
+                <span className="inline-flex items-center rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                   +91
                 </span>
                 <input
                   type="tel"
                   value={formData.ownerPhone.replace(/^\+91/, "")}
                   onChange={(e) => {
-                    const digits = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 10);
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                     setFormData((prev) => ({
                       ...prev,
                       ownerPhone: `+91${digits}`,
@@ -278,7 +246,7 @@ export default function Step1BasicInfo({
                   }}
                   placeholder="9876543210"
                   maxLength={10}
-                  className={`flex-1 px-3 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                  className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                     fieldErrors.ownerPhone
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white"
@@ -287,46 +255,36 @@ export default function Step1BasicInfo({
                 />
               </div>
               {fieldErrors.ownerPhone && (
-                <p className="text-red-600 text-xs mt-1">
-                  {fieldErrors.ownerPhone}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.ownerPhone}</p>
               )}
             </div>
           </div>
         </div>
 
         {/* Academy Information */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-4">
-            Academy Information
-          </h3>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-4 font-semibold text-slate-900">Academy Information</h3>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-1">
+              <label className="mb-1 block text-sm font-medium text-slate-900">
                 Academy Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Elite Basketball Academy"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                  fieldErrors.name
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 bg-white"
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  fieldErrors.name ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
               />
-              {fieldErrors.name && (
-                <p className="text-red-600 text-xs mt-1">{fieldErrors.name}</p>
-              )}
+              {fieldErrors.name && <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-1">
+              <label className="mb-1 block text-sm font-medium text-slate-900">
                 Legal Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -339,22 +297,18 @@ export default function Step1BasicInfo({
                   }))
                 }
                 placeholder="Registered business name"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                  fieldErrors.legalName
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 bg-white"
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  fieldErrors.legalName ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
               />
               {fieldErrors.legalName && (
-                <p className="text-red-600 text-xs mt-1">
-                  {fieldErrors.legalName}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.legalName}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-1">
+              <label className="mb-1 block text-sm font-medium text-slate-900">
                 Year Established
               </label>
               <input
@@ -375,7 +329,7 @@ export default function Step1BasicInfo({
                 placeholder="2015"
                 min="1900"
                 max={currentYear}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                   fieldErrors.establishedYear
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -383,14 +337,12 @@ export default function Step1BasicInfo({
                 disabled={isSubmitting}
               />
               {fieldErrors.establishedYear && (
-                <p className="text-red-600 text-xs mt-1">
-                  {fieldErrors.establishedYear}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.establishedYear}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-900">
                 Description <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -406,32 +358,26 @@ export default function Step1BasicInfo({
                 }}
                 placeholder="Describe your academy, coaching philosophy, achievements, etc. (min. 20 characters)"
                 rows={4}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                  fieldErrors.description
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 bg-white"
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  fieldErrors.description ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
               />
-              <div className="flex justify-between mt-1">
+              <div className="mt-1 flex justify-between">
                 {fieldErrors.description ? (
-                  <p className="text-red-600 text-xs">
-                    {fieldErrors.description}
-                  </p>
+                  <p className="text-xs text-red-600">{fieldErrors.description}</p>
                 ) : (
                   <span />
                 )}
-                <span className="text-xs text-slate-400">
-                  {formData.description.length}/20 min
-                </span>
+                <span className="text-xs text-slate-400">{formData.description.length}/20 min</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Sports Selection */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-3">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-3 font-semibold text-slate-900">
             Sports Offered <span className="text-red-500">*</span>
           </h3>
           <SportsMultiSelect
@@ -445,38 +391,29 @@ export default function Step1BasicInfo({
             disabled={isSubmitting}
             required
           />
-          {fieldErrors.sports && (
-            <p className="text-red-600 text-xs mt-2">{fieldErrors.sports}</p>
-          )}
+          {fieldErrors.sports && <p className="mt-2 text-xs text-red-600">{fieldErrors.sports}</p>}
         </div>
 
         {/* Age Groups */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-3">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-3 font-semibold text-slate-900">
             Age Groups <span className="text-red-500">*</span>
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             {[
               { id: "kids", label: "Kids (5-12)" },
               { id: "teens", label: "Teens (13-17)" },
               { id: "adults", label: "Adults (18+)" },
               { id: "all", label: "All Ages" },
             ].map((group) => (
-              <label
-                key={group.id}
-                className="flex items-center gap-2 cursor-pointer"
-              >
+              <label key={group.id} className="flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
                   checked={formData.ageGroups.includes(
-                    group.id as "kids" | "teens" | "adults" | "all",
+                    group.id as "kids" | "teens" | "adults" | "all"
                   )}
-                  onChange={() =>
-                    toggleAgeGroup(
-                      group.id as "kids" | "teens" | "adults" | "all",
-                    )
-                  }
-                  className="w-4 h-4 rounded border-slate-300"
+                  onChange={() => toggleAgeGroup(group.id as "kids" | "teens" | "adults" | "all")}
+                  className="h-4 w-4 rounded border-slate-300"
                   disabled={isSubmitting}
                 />
                 <span className="text-sm text-slate-700">{group.label}</span>
@@ -484,17 +421,15 @@ export default function Step1BasicInfo({
             ))}
           </div>
           {fieldErrors.ageGroups && (
-            <p className="text-red-600 text-xs mt-2">{fieldErrors.ageGroups}</p>
+            <p className="mt-2 text-xs text-red-600">{fieldErrors.ageGroups}</p>
           )}
         </div>
 
         {/* Logo Upload */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-3">
-            Academy Logo (Optional)
-          </h3>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-3 font-semibold text-slate-900">Academy Logo (Optional)</h3>
           <div className="flex items-center gap-4">
-            <label className="flex-1 border-2 border-dashed border-slate-300 rounded-lg p-4 text-center cursor-pointer hover:border-power-orange hover:bg-orange-50 transition">
+            <label className="hover:border-power-orange flex-1 cursor-pointer rounded-lg border-2 border-dashed border-slate-300 p-4 text-center transition hover:bg-orange-50">
               <input
                 type="file"
                 accept="image/jpeg,image/png"
@@ -503,13 +438,11 @@ export default function Step1BasicInfo({
                 disabled={isSubmitting}
               />
               <div className="flex flex-col items-center gap-2">
-                <Upload className="w-5 h-5 text-slate-500" />
+                <Upload className="h-5 w-5 text-slate-500" />
                 <span className="text-sm text-slate-600">
                   {logoFile ? logoFile.name : "Click to upload"}
                 </span>
-                <span className="text-xs text-slate-500">
-                  Max 2MB (JPG, PNG)
-                </span>
+                <span className="text-xs text-slate-500">Max 2MB (JPG, PNG)</span>
               </div>
             </label>
           </div>
@@ -517,20 +450,15 @@ export default function Step1BasicInfo({
 
         {/* Submit Button */}
         <div className="flex gap-3">
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Creating Academy..." : "Create Academy & Continue"}
           </Button>
         </div>
 
-        <div className="flex gap-2 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-          <Lightbulb className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+        <div className="flex gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+          <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600" />
           <p className="text-sm text-blue-900">
-            All information can be updated later. Complete the onboarding to go
-            live.
+            All information can be updated later. Complete the onboarding to go live.
           </p>
         </div>
       </form>

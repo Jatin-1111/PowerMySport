@@ -49,16 +49,10 @@ const DEFAULT_ARCHETYPE_INFO: SportArchetypeInfo = { archetype: "federation" };
  * the same string, and a second hand-rolled normaliser would silently drift.
  */
 export function normalizeSportKey(sportNameOrSlug: string): string {
-  return sportNameOrSlug
-    .trim()
-    .toLowerCase()
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ");
+  return sportNameOrSlug.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
 }
 
 /** Accepts a sport name ("Table Tennis") or slug ("table-tennis"). */
-export function getSportArchetypeInfo(
-  sportNameOrSlug: string,
-): SportArchetypeInfo {
+export function getSportArchetypeInfo(sportNameOrSlug: string): SportArchetypeInfo {
   return SPORT_ARCHETYPE[normalizeSportKey(sportNameOrSlug)] ?? DEFAULT_ARCHETYPE_INFO;
 }

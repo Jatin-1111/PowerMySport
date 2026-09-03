@@ -8,15 +8,10 @@
  * @param doc - Mongoose document or plain object
  * @returns Transformed object with id field
  */
-export function transformDocument<T extends Record<string, any>>(
-  doc: T,
-): T & { id: string } {
+export function transformDocument<T extends Record<string, any>>(doc: T): T & { id: string } {
   if (!doc) return doc as any;
 
-  const obj =
-    typeof doc.toJSON === "function"
-      ? doc.toJSON({ flattenMaps: true })
-      : { ...doc };
+  const obj = typeof doc.toJSON === "function" ? doc.toJSON({ flattenMaps: true }) : { ...doc };
 
   if (obj._id) {
     return {
@@ -34,7 +29,7 @@ export function transformDocument<T extends Record<string, any>>(
  * @returns Array of transformed objects with id fields
  */
 export function transformDocuments<T extends Record<string, any>>(
-  docs: T[],
+  docs: T[]
 ): Array<T & { id: string }> {
   if (!Array.isArray(docs)) return [];
   return docs.map((doc) => transformDocument(doc));

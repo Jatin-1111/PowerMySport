@@ -97,7 +97,7 @@ const communityPostSchema = new Schema<CommunityPostDocument>(
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 communityPostSchema.index({ createdAt: -1 });
@@ -108,5 +108,5 @@ communityPostSchema.index({ title: "text", body: "text", tags: "text" });
 
 export const CommunityPost = mongoose.model<CommunityPostDocument>(
   "CommunityPost",
-  communityPostSchema,
+  communityPostSchema
 );

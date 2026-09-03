@@ -27,8 +27,7 @@ export interface ProductEditableFields {
 export interface AdminOrderRecord {
   id: string;
   orderNumber: string;
-  userId?:
-    string | { _id?: string; id?: string; name?: string; email?: string };
+  userId?: string | { _id?: string; id?: string; name?: string; email?: string };
   status: string;
   paymentStatus: string;
   fulfillmentStatus: string;
@@ -86,8 +85,7 @@ export const adminEcommerceApi = {
     if (params?.page) query.set("page", String(params.page));
     if (params?.limit) query.set("limit", String(params.limit));
     if (params?.search) query.set("search", params.search);
-    if (typeof params?.isActive === "boolean")
-      query.set("isActive", String(params.isActive));
+    if (typeof params?.isActive === "boolean") query.set("isActive", String(params.isActive));
     if (params?.sortBy) query.set("sortBy", params.sortBy);
     if (params?.sortOrder) query.set("sortOrder", params.sortOrder);
 
@@ -104,9 +102,10 @@ export const adminEcommerceApi = {
   },
 
   async updateProduct(productId: string, payload: ProductEditableFields) {
-    const response = await axiosInstance.patch<
-      ApiResponse<{ product: AdminProductRecord }>
-    >(`/v1/admin/products/${productId}`, payload);
+    const response = await axiosInstance.patch<ApiResponse<{ product: AdminProductRecord }>>(
+      `/v1/admin/products/${productId}`,
+      payload
+    );
     return response.data;
   },
 
@@ -139,9 +138,10 @@ export const adminEcommerceApi = {
       reorderLevel?: number;
     }>;
   }) {
-    const response = await axiosInstance.post<
-      ApiResponse<{ product: AdminProductRecord }>
-    >("/v1/admin/products", payload);
+    const response = await axiosInstance.post<ApiResponse<{ product: AdminProductRecord }>>(
+      "/v1/admin/products",
+      payload
+    );
 
     return response.data;
   },
@@ -192,23 +192,24 @@ export const adminEcommerceApi = {
   },
 
   async getOrderDetail(orderId: string) {
-    const response = await axiosInstance.get<
-      ApiResponse<{ order: AdminOrderDetailRecord }>
-    >(`/v1/admin/orders/${orderId}`);
+    const response = await axiosInstance.get<ApiResponse<{ order: AdminOrderDetailRecord }>>(
+      `/v1/admin/orders/${orderId}`
+    );
     return response.data;
   },
 
   async updateOrderFulfillmentStatus(
     orderId: string,
     fulfillmentStatus: string,
-    trackingNumber?: string,
+    trackingNumber?: string
   ) {
-    const response = await axiosInstance.patch<
-      ApiResponse<{ order: AdminOrderDetailRecord }>
-    >(`/v1/admin/orders/${orderId}/fulfillment-status`, {
-      fulfillmentStatus,
-      trackingNumber,
-    });
+    const response = await axiosInstance.patch<ApiResponse<{ order: AdminOrderDetailRecord }>>(
+      `/v1/admin/orders/${orderId}/fulfillment-status`,
+      {
+        fulfillmentStatus,
+        trackingNumber,
+      }
+    );
     return response.data;
   },
 };

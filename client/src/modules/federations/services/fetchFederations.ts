@@ -38,8 +38,7 @@ export type FederationSummary = Omit<
   | "sourceUrls"
 >;
 
-const apiBase = (): string =>
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const apiBase = (): string => process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 /**
  * Ordered so the body a parent in India has to deal with comes first.
@@ -54,10 +53,7 @@ const TYPE_RANK: Record<FederationSummary["type"], number> = {
   hybrid: 2,
 };
 
-function byGoverningRelevance(
-  a: FederationSummary,
-  b: FederationSummary,
-): number {
+function byGoverningRelevance(a: FederationSummary, b: FederationSummary): number {
   const rank = TYPE_RANK[a.type] - TYPE_RANK[b.type];
   return rank !== 0 ? rank : a.name.localeCompare(b.name);
 }
@@ -71,7 +67,7 @@ function byGoverningRelevance(
  */
 export async function fetchFederations(
   sportSlug?: string,
-  revalidateSeconds: number = REVALIDATE_SECONDS,
+  revalidateSeconds: number = REVALIDATE_SECONDS
 ): Promise<FederationSummary[]> {
   const query = sportSlug?.trim()
     ? `?sport=${encodeURIComponent(sportSlug.trim().toLowerCase())}`

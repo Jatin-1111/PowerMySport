@@ -16,7 +16,6 @@ import { cn } from "@/utils/cn";
  * here, not editing three chains.
  */
 
-
 interface BookingTabConfig {
   id: BookingTabId;
   label: string;
@@ -68,8 +67,7 @@ const ALL_TABS: BookingTabConfig[] = [
     icon: Users,
     idleBadgeClass: "bg-orange-100/70 text-orange-700",
     emptyTitle: "No expert sessions",
-    emptyDescription:
-      "You haven't booked a 1:1 session with an expert yet.",
+    emptyDescription: "You haven't booked a 1:1 session with an expert yet.",
     emptyActionLabel: "Find an Expert",
     browseHref: "/booking?tab=experts",
   },
@@ -83,12 +81,8 @@ const ALL_TABS: BookingTabConfig[] = [
  * bookings. Without that, turning the flag off would hide sessions they have
  * already been charged for, while the server still counts them in the totals.
  */
-export const visibleBookingTabs = (
-  counts: Record<BookingTabId, number>,
-): BookingTabConfig[] =>
-  ALL_TABS.filter(
-    (tab) => tab.id !== "experts" || isExpertsLive || counts.experts > 0,
-  );
+export const visibleBookingTabs = (counts: Record<BookingTabId, number>): BookingTabConfig[] =>
+  ALL_TABS.filter((tab) => tab.id !== "experts" || isExpertsLive || counts.experts > 0);
 
 /** Looks up every tab, not just the visible ones, so the active id always resolves. */
 export const bookingTabConfig = (id: BookingTabId): BookingTabConfig =>
@@ -126,17 +120,15 @@ export function BookingTabBar({
               "flex-1 border-b-2 px-3 py-4 font-semibold transition-colors sm:px-6",
               index > 0 && "sm:border-l",
               isSelected
-                ? "border-power-orange bg-orange-50/50 text-power-orange"
-                : "border-transparent text-slate-600 hover:text-slate-900",
+                ? "border-power-orange text-power-orange bg-orange-50/50"
+                : "border-transparent text-slate-600 hover:text-slate-900"
             )}
           >
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span
                 className={cn(
                   "flex h-7 w-7 items-center justify-center rounded-lg",
-                  isSelected
-                    ? "bg-power-orange text-white"
-                    : "bg-slate-100 text-slate-500",
+                  isSelected ? "bg-power-orange text-white" : "bg-slate-100 text-slate-500"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -145,9 +137,7 @@ export function BookingTabBar({
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs",
-                  isSelected
-                    ? "bg-power-orange/10 text-power-orange"
-                    : tab.idleBadgeClass,
+                  isSelected ? "bg-power-orange/10 text-power-orange" : tab.idleBadgeClass
                 )}
               >
                 {counts[tab.id]}
@@ -174,12 +164,7 @@ function HeadingRow({
 }) {
   return (
     <div className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900">
-      <span
-        className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-lg",
-          iconClass,
-        )}
-      >
+      <span className={cn("flex h-7 w-7 items-center justify-center rounded-lg", iconClass)}>
         <Icon className="h-4 w-4" />
       </span>
       {children}
@@ -199,9 +184,7 @@ function SubLine({ children }: { children: React.ReactNode }) {
 function Pending({ what }: { what: string }) {
   return (
     <div className="mb-2">
-      <h3 className="text-base font-bold text-slate-900">
-        {what} details pending
-      </h3>
+      <h3 className="text-base font-bold text-slate-900">{what} details pending</h3>
       <p className="text-sm text-slate-500">
         We&apos;ll show the full details once they are resolved.
       </p>
@@ -210,13 +193,7 @@ function Pending({ what }: { what: string }) {
 }
 
 /** The provider name and location line at the top of a booking card. */
-export function BookingProviderHeading({
-  booking,
-  tab,
-}: {
-  booking: Booking;
-  tab: BookingTabId;
-}) {
+export function BookingProviderHeading({ booking, tab }: { booking: Booking; tab: BookingTabId }) {
   if (tab === "venues") {
     const venue = asObject<Venue & { _id?: string }>(booking.venueId);
     if (!venue) return <Pending what="Venue" />;
@@ -224,7 +201,7 @@ export function BookingProviderHeading({
       <>
         <Link
           href={`/venues/${venue._id || venue.id}`}
-          className="transition-colors hover:text-power-orange"
+          className="hover:text-power-orange transition-colors"
         >
           <HeadingRow icon={MapPin} iconClass="bg-indigo-100 text-indigo-600">
             {venue.name || "Venue"}
@@ -261,12 +238,7 @@ export function BookingProviderHeading({
   if (tab === "academies") {
     const academy = asObject<AcademyRef>(booking.academyId);
     if (!academy) return <Pending what="Academy" />;
-    const address = [
-      academy.address,
-      academy.city,
-      academy.state,
-      academy.pincode,
-    ]
+    const address = [academy.address, academy.city, academy.state, academy.pincode]
       .filter(Boolean)
       .join(", ");
     return (
@@ -286,7 +258,7 @@ export function BookingProviderHeading({
     <>
       <Link
         href={`/experts/${expert._id || expert.id}`}
-        className="transition-colors hover:text-power-orange"
+        className="hover:text-power-orange transition-colors"
       >
         <HeadingRow icon={Users} iconClass="bg-orange-100 text-power-orange">
           {expert.name || "Expert"}

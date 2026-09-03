@@ -28,8 +28,7 @@ const CHAT_ATTACHMENT_EXTENSIONS: Record<string, string> = {
   "text/plain": "txt",
   "text/csv": "csv",
   "application/msword": "doc",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-    "docx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
   "application/vnd.ms-excel": "xls",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
   "audio/webm": "webm",
@@ -38,9 +37,7 @@ const CHAT_ATTACHMENT_EXTENSIONS: Record<string, string> = {
   "audio/ogg": "ogg",
 };
 
-export const CHAT_ATTACHMENT_CONTENT_TYPES = Object.keys(
-  CHAT_ATTACHMENT_EXTENSIONS,
-);
+export const CHAT_ATTACHMENT_CONTENT_TYPES = Object.keys(CHAT_ATTACHMENT_EXTENSIONS);
 
 /** 25 MB. Large enough for a scanned form or a match schedule, small enough
  *  that a chat bucket does not become file hosting. */
@@ -89,17 +86,12 @@ export class S3Service {
   constructor() {
     // Load environment variables first
     this.region = process.env.AWS_REGION || "ap-south-1";
-    this.documentsBucket =
-      process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-documents";
-    this.imagesBucket =
-      process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
+    this.documentsBucket = process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-documents";
+    this.imagesBucket = process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
 
     // This class is constructed in a dozen modules, several at import time, so
     // logging per-instance printed the same three lines five times at boot.
-    bootFactOnce(
-      "s3",
-      `${this.region} · images=${this.imagesBucket} docs=${this.documentsBucket}`,
-    );
+    bootFactOnce("s3", `${this.region} · images=${this.imagesBucket} docs=${this.documentsBucket}`);
 
     const clientConfig: S3ClientConfig = {
       region: this.region,
@@ -138,13 +130,8 @@ export class S3Service {
    * and it is stripped to a short alphanumeric token to avoid surprises.
    */
   private resolveSafeExtension(fileName: string, contentType: string): string {
-    if (
-      !contentType ||
-      !S3Service.ALLOWED_UPLOAD_CONTENT_TYPES.has(contentType.toLowerCase())
-    ) {
-      throw new Error(
-        `Unsupported upload content type: ${contentType || "unknown"}`,
-      );
+    if (!contentType || !S3Service.ALLOWED_UPLOAD_CONTENT_TYPES.has(contentType.toLowerCase())) {
+      throw new Error(`Unsupported upload content type: ${contentType || "unknown"}`);
     }
     const ext = (fileName.split(".").pop() || "")
       .toLowerCase()
@@ -171,7 +158,7 @@ export class S3Service {
       | "CERTIFICATE"
       | "panDocument"
       | "gstDocument",
-    venueId: string,
+    venueId: string
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const sanitizedFileName = `${documentType.toLowerCase()}_${Date.now()}.${fileExtension}`;
@@ -217,7 +204,7 @@ export class S3Service {
     fileName: string,
     contentType: string,
     venueId: string,
-    isCoverPhoto: boolean = false,
+    isCoverPhoto: boolean = false
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const folder = isCoverPhoto ? "cover" : "gallery";
@@ -260,7 +247,7 @@ export class S3Service {
    */
   async generateProductImageUploadUrl(
     fileName: string,
-    contentType: string,
+    contentType: string
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const sanitizedFileName = `product_${Date.now()}_${uuidv4().substring(0, 8)}.${fileExtension}`;
@@ -303,7 +290,7 @@ export class S3Service {
   async generateProfilePictureUploadUrl(
     fileName: string,
     contentType: string,
-    userId: string,
+    userId: string
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const sanitizedFileName = `profile_${Date.now()}.${fileExtension}`;
@@ -347,7 +334,7 @@ export class S3Service {
   async generateCoachPhotoUploadUrl(
     fileName: string,
     contentType: string,
-    venueId: string,
+    venueId: string
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const sanitizedFileName = `coach_${Date.now()}.${fileExtension}`;
@@ -394,12 +381,7 @@ export class S3Service {
     contentType: string,
     coachId: string,
     documentType:
-      | "CERTIFICATION"
-      | "ID_PROOF"
-      | "ADDRESS_PROOF"
-      | "BACKGROUND_CHECK"
-      | "INSURANCE"
-      | "OTHER",
+      "CERTIFICATION" | "ID_PROOF" | "ADDRESS_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER"
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const sanitizedFileName = `${documentType.toLowerCase()}_${Date.now()}.${fileExtension}`;
@@ -445,7 +427,7 @@ export class S3Service {
   async generateDataSourceUploadUrl(
     fileName: string,
     contentType: string,
-    sportSlug: string,
+    sportSlug: string
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const sanitizedFileName = `${Date.now()}.${fileExtension}`;
@@ -481,7 +463,7 @@ export class S3Service {
   async generateCoachVenueImageUploadUrl(
     fileName: string,
     contentType: string,
-    coachId: string,
+    coachId: string
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const sanitizedFileName = `venue_${Date.now()}.${fileExtension}`;
@@ -526,7 +508,7 @@ export class S3Service {
     fileName: string,
     contentType: string,
     userId: string,
-    documentType: string,
+    documentType: string
   ): Promise<UploadUrlResponse> {
     const fileExtension = this.resolveSafeExtension(fileName, contentType);
     const cleanDocType = documentType.toLowerCase().replace(/[^a-z0-9]/g, "_");
@@ -598,7 +580,7 @@ export class S3Service {
   async generateChatAttachmentPresignedPost(
     conversationId: string,
     contentType: string,
-    kind: "FILE" | "VOICE",
+    kind: "FILE" | "VOICE"
   ): Promise<{ url: string; fields: Record<string, string>; key: string }> {
     const chatBucket = process.env.AWS_S3_CHAT_BUCKET;
     if (!chatBucket) {
@@ -610,8 +592,7 @@ export class S3Service {
       throw new Error("That file type is not supported");
     }
 
-    const maxBytes =
-      kind === "VOICE" ? 10 * 1024 * 1024 : CHAT_FILE_MAX_BYTES;
+    const maxBytes = kind === "VOICE" ? 10 * 1024 * 1024 : CHAT_FILE_MAX_BYTES;
     const folder = kind === "VOICE" ? "voice" : "files";
     const key = `chats/${conversationId}/${folder}/${uuidv4()}.${extension}`;
 
@@ -633,7 +614,7 @@ export class S3Service {
 
   async generateChatImagePresignedPost(
     conversationId: string,
-    contentType: "image/jpeg" | "image/png" | "image/webp",
+    contentType: "image/jpeg" | "image/png" | "image/webp"
   ): Promise<{ url: string; fields: Record<string, string>; key: string }> {
     const chatBucket = process.env.AWS_S3_CHAT_BUCKET;
     if (!chatBucket) {
@@ -676,7 +657,7 @@ export class S3Service {
    */
   async generateBlogImageUploadUrl(
     userId: string,
-    contentType: "image/jpeg" | "image/png" | "image/webp",
+    contentType: "image/jpeg" | "image/png" | "image/webp"
   ): Promise<UploadUrlResponse> {
     const extMap: Record<string, string> = {
       "image/jpeg": "jpg",
@@ -718,10 +699,9 @@ export class S3Service {
   async generateDownloadUrl(
     key: string,
     bucketType: "verification" | "images" = "images",
-    expiresIn: number = 3600,
+    expiresIn: number = 3600
   ): Promise<string> {
-    const bucket =
-      bucketType === "verification" ? this.documentsBucket : this.imagesBucket;
+    const bucket = bucketType === "verification" ? this.documentsBucket : this.imagesBucket;
 
     const getCommand = new GetObjectCommand({
       Bucket: bucket,
@@ -742,7 +722,7 @@ export class S3Service {
   async generateCachedDownloadUrl(
     key: string,
     bucketType: "verification" | "images" = "images",
-    expiresIn: number = 3600,
+    expiresIn: number = 3600
   ): Promise<string> {
     const cacheKey = `${bucketType}:${key}:${expiresIn}`;
     const cached = S3Service.signedUrlCache.get(cacheKey);
@@ -773,12 +753,8 @@ export class S3Service {
    * @param key - S3 object key
    * @param bucketType - Type of bucket ("documents" or "images")
    */
-  async deleteFile(
-    key: string,
-    bucketType: "documents" | "images" = "images",
-  ): Promise<void> {
-    const bucket =
-      bucketType === "documents" ? this.documentsBucket : this.imagesBucket;
+  async deleteFile(key: string, bucketType: "documents" | "images" = "images"): Promise<void> {
+    const bucket = bucketType === "documents" ? this.documentsBucket : this.imagesBucket;
 
     const deleteCommand = new DeleteObjectCommand({
       Bucket: bucket,
@@ -793,14 +769,10 @@ export class S3Service {
    * @param keys - Array of S3 object keys
    * @param bucketType - Type of bucket ("documents" or "images")
    */
-  async deleteFiles(
-    keys: string[],
-    bucketType: "documents" | "images" = "images",
-  ): Promise<void> {
+  async deleteFiles(keys: string[], bucketType: "documents" | "images" = "images"): Promise<void> {
     if (keys.length === 0) return;
 
-    const bucket =
-      bucketType === "documents" ? this.documentsBucket : this.imagesBucket;
+    const bucket = bucketType === "documents" ? this.documentsBucket : this.imagesBucket;
 
     const deleteCommand = new DeleteObjectsCommand({
       Bucket: bucket,
@@ -827,7 +799,7 @@ export class S3Service {
   async putDocumentBuffer(
     key: string,
     body: Buffer,
-    contentType = "application/octet-stream",
+    contentType = "application/octet-stream"
   ): Promise<void> {
     const putCommand = new PutObjectCommand({
       Bucket: this.documentsBucket,
@@ -847,21 +819,15 @@ export class S3Service {
    * @param key - S3 object key
    * @param maxSizeBytes - Reject (throw) if the object is larger than this
    */
-  async getDocumentBuffer(
-    key: string,
-    maxSizeBytes = 15 * 1024 * 1024,
-  ): Promise<Buffer> {
+  async getDocumentBuffer(key: string, maxSizeBytes = 15 * 1024 * 1024): Promise<Buffer> {
     const getCommand = new GetObjectCommand({
       Bucket: this.documentsBucket,
       Key: key,
     });
     const response = await this.s3Client.send(getCommand);
-    if (
-      typeof response.ContentLength === "number" &&
-      response.ContentLength > maxSizeBytes
-    ) {
+    if (typeof response.ContentLength === "number" && response.ContentLength > maxSizeBytes) {
       throw new Error(
-        `Document is too large (${response.ContentLength} bytes, max ${maxSizeBytes})`,
+        `Document is too large (${response.ContentLength} bytes, max ${maxSizeBytes})`
       );
     }
     const chunks: Buffer[] = [];
@@ -870,9 +836,7 @@ export class S3Service {
     }
     const buffer = Buffer.concat(chunks);
     if (buffer.byteLength > maxSizeBytes) {
-      throw new Error(
-        `Document is too large (${buffer.byteLength} bytes, max ${maxSizeBytes})`,
-      );
+      throw new Error(`Document is too large (${buffer.byteLength} bytes, max ${maxSizeBytes})`);
     }
     return buffer;
   }
@@ -890,7 +854,7 @@ export class S3Service {
     contentType: string,
     fileSize: number,
     allowedTypes: string[],
-    maxSizeBytes: number,
+    maxSizeBytes: number
   ): { valid: boolean; error?: string } {
     // Check file type
     if (!allowedTypes.includes(contentType)) {

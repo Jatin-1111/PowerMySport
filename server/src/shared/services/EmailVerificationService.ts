@@ -46,9 +46,7 @@ export const checkRateLimit = async (email: string): Promise<boolean> => {
  */
 const incrementRateLimit = async (email: string): Promise<void> => {
   const now = new Date();
-  const resetAt = new Date(
-    now.getTime() + RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000,
-  );
+  const resetAt = new Date(now.getTime() + RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000);
 
   await RateLimit.findOneAndUpdate(
     {
@@ -62,7 +60,7 @@ const incrementRateLimit = async (email: string): Promise<void> => {
     {
       upsert: true,
       new: true,
-    },
+    }
   );
 };
 
@@ -71,7 +69,7 @@ const incrementRateLimit = async (email: string): Promise<void> => {
  */
 export const sendVerificationCode = async (
   email: string,
-  name: string,
+  name: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
     // Check rate limit
@@ -107,7 +105,7 @@ export const sendVerificationCode = async (
       {
         upsert: true,
         new: true,
-      },
+      }
     );
 
     // Increment rate limit
@@ -235,7 +233,7 @@ export const sendVerificationCode = async (
  */
 export const verifyCode = async (
   email: string,
-  submittedCode: string,
+  submittedCode: string
 ): Promise<{ success: boolean; message: string }> => {
   const stored = await EmailVerification.findOne({
     email: email.toLowerCase(),

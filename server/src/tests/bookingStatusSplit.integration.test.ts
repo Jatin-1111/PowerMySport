@@ -80,16 +80,10 @@ describe("payment moves a booking from AWAITING_PAYMENT to AWAITING_PROVIDER", (
     const payerId = oid();
     const { _id } = await seedBooking({
       status: "AWAITING_PAYMENT",
-      payments: [
-        { userId: payerId, userType: "Player", amount: 500, status: "PENDING" },
-      ],
+      payments: [{ userId: payerId, userType: "Player", amount: 500, status: "PENDING" }],
     });
 
-    const updated = await updatePaymentStatus(
-      _id.toString(),
-      payerId.toString(),
-      "PAID",
-    );
+    const updated = await updatePaymentStatus(_id.toString(), payerId.toString(), "PAID");
 
     assert.equal(updated.status, "AWAITING_PROVIDER");
     assert.ok(updated.paymentConfirmedAt, "paymentConfirmedAt should be set");
@@ -107,19 +101,11 @@ describe("payment moves a booking from AWAITING_PAYMENT to AWAITING_PROVIDER", (
       ],
     });
 
-    const afterFirst = await updatePaymentStatus(
-      _id.toString(),
-      payerA.toString(),
-      "PAID",
-    );
+    const afterFirst = await updatePaymentStatus(_id.toString(), payerA.toString(), "PAID");
     assert.equal(afterFirst.status, "AWAITING_PAYMENT");
     assert.equal(afterFirst.paymentConfirmedAt, undefined);
 
-    const afterSecond = await updatePaymentStatus(
-      _id.toString(),
-      payerB.toString(),
-      "PAID",
-    );
+    const afterSecond = await updatePaymentStatus(_id.toString(), payerB.toString(), "PAID");
     assert.equal(afterSecond.status, "AWAITING_PROVIDER");
   });
 
@@ -127,16 +113,10 @@ describe("payment moves a booking from AWAITING_PAYMENT to AWAITING_PROVIDER", (
     const payerId = oid();
     const { _id } = await seedBooking({
       status: "CONFIRMED",
-      payments: [
-        { userId: payerId, userType: "Player", amount: 500, status: "PENDING" },
-      ],
+      payments: [{ userId: payerId, userType: "Player", amount: 500, status: "PENDING" }],
     });
 
-    const updated = await updatePaymentStatus(
-      _id.toString(),
-      payerId.toString(),
-      "PAID",
-    );
+    const updated = await updatePaymentStatus(_id.toString(), payerId.toString(), "PAID");
 
     assert.equal(updated.status, "CONFIRMED");
   });
@@ -153,11 +133,7 @@ describe("payment moves a booking from AWAITING_PAYMENT to AWAITING_PROVIDER", (
       ],
     });
 
-    const updated = await updatePaymentStatus(
-      _id.toString(),
-      payerId.toString(),
-      "PAID",
-    );
+    const updated = await updatePaymentStatus(_id.toString(), payerId.toString(), "PAID");
 
     assert.equal(updated.status, "AWAITING_PROVIDER");
   });
@@ -239,17 +215,14 @@ describe("migration 23 splits legacy rows by paymentConfirmedAt", () => {
     assert.equal(result.toPayment, 2);
     assert.equal(result.remaining, 0);
 
-    assert.equal(
-      (await Booking.collection.findOne({ _id: paid._id })).status,
-      "AWAITING_PROVIDER",
-    );
+    assert.equal((await Booking.collection.findOne({ _id: paid._id })).status, "AWAITING_PROVIDER");
     assert.equal(
       (await Booking.collection.findOne({ _id: unpaid._id })).status,
-      "AWAITING_PAYMENT",
+      "AWAITING_PAYMENT"
     );
     assert.equal(
       (await Booking.collection.findOne({ _id: explicitNull._id })).status,
-      "AWAITING_PAYMENT",
+      "AWAITING_PAYMENT"
     );
   });
 
@@ -259,10 +232,7 @@ describe("migration 23 splits legacy rows by paymentConfirmedAt", () => {
     const result = await migration23.up();
 
     assert.equal(result.modified, 0);
-    assert.equal(
-      (await Booking.collection.findOne({ _id })).status,
-      "PENDING_CONFIRMATION",
-    );
+    assert.equal((await Booking.collection.findOne({ _id })).status, "PENDING_CONFIRMATION");
   });
 
   it("does not touch bookings in other states", async () => {
@@ -271,14 +241,8 @@ describe("migration 23 splits legacy rows by paymentConfirmedAt", () => {
 
     await migration23.up({ apply: true });
 
-    assert.equal(
-      (await Booking.collection.findOne({ _id: confirmed._id })).status,
-      "CONFIRMED",
-    );
-    assert.equal(
-      (await Booking.collection.findOne({ _id: cancelled._id })).status,
-      "CANCELLED",
-    );
+    assert.equal((await Booking.collection.findOne({ _id: confirmed._id })).status, "CONFIRMED");
+    assert.equal((await Booking.collection.findOne({ _id: cancelled._id })).status, "CANCELLED");
   });
 
   it("is idempotent", async () => {
@@ -298,9 +262,6 @@ describe("migration 23 splits legacy rows by paymentConfirmedAt", () => {
 
     await migration23.down({ apply: true });
 
-    assert.equal(
-      await Booking.collection.countDocuments({ status: "PENDING_CONFIRMATION" }),
-      2,
-    );
+    assert.equal(await Booking.collection.countDocuments({ status: "PENDING_CONFIRMATION" }), 2);
   });
 });

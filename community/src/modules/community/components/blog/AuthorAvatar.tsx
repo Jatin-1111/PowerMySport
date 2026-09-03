@@ -49,7 +49,7 @@ export default function AuthorAvatar({
     <span
       style={{ width: size, height: size, fontSize: size * 0.42 }}
       className={`inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${gradientFor(
-        name || "?",
+        name || "?"
       )} font-bold text-white ring-2 ring-white ${className}`}
     >
       {initial}

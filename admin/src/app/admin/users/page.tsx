@@ -15,17 +15,10 @@ import {
   VenueListersAnalytics,
 } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
-import {
-  DetailDrawer,
-  DetailRow,
-  DetailSection,
-} from "@/modules/shared/ui/DetailDrawer";
+import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -69,8 +62,7 @@ const DEFAULT_SUMMARY: UsersRoleSummary = {
   VenueLister: 0,
 };
 
-const formatDateTime = (value?: string): string =>
-  value ? new Date(value).toLocaleString() : "—";
+const formatDateTime = (value?: string): string => (value ? new Date(value).toLocaleString() : "—");
 
 const formatDate = (value?: string): string =>
   value
@@ -90,25 +82,17 @@ interface PresenceUpdateEvent {
   lastActiveAt: string;
 }
 
-function OnlinePill({
-  online,
-  lastActiveAt,
-}: {
-  online: boolean;
-  lastActiveAt: string;
-}) {
+function OnlinePill({ online, lastActiveAt }: { online: boolean; lastActiveAt: string }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
         online
-          ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200"
+          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 ring-inset"
           : "bg-slate-100 text-slate-600"
       }`}
       title={`Last active: ${formatDateTime(lastActiveAt)}`}
     >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-slate-400"}`}
-      />
+      <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-slate-400"}`} />
       {online ? "Online" : formatDate(lastActiveAt)}
     </span>
   );
@@ -117,7 +101,7 @@ function OnlinePill({
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <Card className="bg-white">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-xs tracking-wide text-slate-500 uppercase">{label}</p>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
     </Card>
   );
@@ -125,9 +109,7 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
 
 export default function AdminUsersPage() {
   return (
-    <Suspense
-      fallback={<div className="py-12 text-center">Loading users...</div>}
-    >
+    <Suspense fallback={<div className="py-12 text-center">Loading users...</div>}>
       <AdminUsersPageContent />
     </Suspense>
   );
@@ -151,9 +133,7 @@ function AdminUsersPageContent() {
   const pageParam = Number(searchParams.get("page"));
   const currentPage = !isNaN(pageParam) && pageParam > 0 ? pageParam : 1;
 
-  const updateQueryParams = (
-    params: Record<string, string | number | null>,
-  ) => {
+  const updateQueryParams = (params: Record<string, string | number | null>) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
     Object.entries(params).forEach(([key, value]) => {
       if (value === null || value === undefined) {
@@ -172,12 +152,11 @@ function AdminUsersPageContent() {
 
   const [users, setUsers] = useState<UsersRow[]>([]);
   const [summary, setSummary] = useState<UsersRoleSummary>(DEFAULT_SUMMARY);
-  const [playersAnalytics, setPlayersAnalytics] =
-    useState<PlayersAnalytics | null>(null);
-  const [coachesAnalytics, setCoachesAnalytics] =
-    useState<CoachesAnalytics | null>(null);
-  const [venueListersAnalytics, setVenueListersAnalytics] =
-    useState<VenueListersAnalytics | null>(null);
+  const [playersAnalytics, setPlayersAnalytics] = useState<PlayersAnalytics | null>(null);
+  const [coachesAnalytics, setCoachesAnalytics] = useState<CoachesAnalytics | null>(null);
+  const [venueListersAnalytics, setVenueListersAnalytics] = useState<VenueListersAnalytics | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationData>({
     total: 0,
@@ -206,7 +185,10 @@ function AdminUsersPageContent() {
       setError(null);
 
       if (activeTab === "EXPERT") {
-        const usersResponse = await statsApi.getExpertUsers({ page: currentPage, limit: PAGE_SIZE });
+        const usersResponse = await statsApi.getExpertUsers({
+          page: currentPage,
+          limit: PAGE_SIZE,
+        });
         if (!usersResponse.success || !usersResponse.data) {
           setError(usersResponse.message || "Failed to load experts.");
           return;
@@ -217,7 +199,10 @@ function AdminUsersPageContent() {
       }
 
       if (activeTab === "Parent") {
-        const usersResponse = await statsApi.getParentUsers({ page: currentPage, limit: PAGE_SIZE });
+        const usersResponse = await statsApi.getParentUsers({
+          page: currentPage,
+          limit: PAGE_SIZE,
+        });
         if (!usersResponse.success || !usersResponse.data) {
           setError(usersResponse.message || "Failed to load parents.");
           return;
@@ -323,8 +308,8 @@ function AdminUsersPageContent() {
                 isOnlineNow: event.isOnlineNow,
                 lastActiveAt: event.lastActiveAt,
               }
-            : user,
-        ),
+            : user
+        )
       );
     };
 
@@ -353,23 +338,13 @@ function AdminUsersPageContent() {
       }
       if (sortColumn === "lastActive") {
         return (
-          factor *
-          (new Date(left.lastActiveAt).getTime() -
-            new Date(right.lastActiveAt).getTime())
+          factor * (new Date(left.lastActiveAt).getTime() - new Date(right.lastActiveAt).getTime())
         );
       }
-      if (
-        sortColumn === "rating" &&
-        left.role === "Coach" &&
-        right.role === "Coach"
-      ) {
+      if (sortColumn === "rating" && left.role === "Coach" && right.role === "Coach") {
         return factor * (left.rating - right.rating);
       }
-      return (
-        factor *
-        (new Date(left.createdAt).getTime() -
-          new Date(right.createdAt).getTime())
-      );
+      return factor * (new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
     });
   }, [users, searchQuery, sortColumn, sortDirection]);
 
@@ -389,17 +364,13 @@ function AdminUsersPageContent() {
       key: "joined",
       header: "Joined",
       sortable: true,
-      render: (u) => (
-        <span className="text-slate-600">{formatDate(u.createdAt)}</span>
-      ),
+      render: (u) => <span className="text-slate-600">{formatDate(u.createdAt)}</span>,
     };
     const activityCol: AdminDataTableColumn<UsersRow> = {
       key: "lastActive",
       header: "Activity",
       sortable: true,
-      render: (u) => (
-        <OnlinePill online={u.isOnlineNow} lastActiveAt={u.lastActiveAt} />
-      ),
+      render: (u) => <OnlinePill online={u.isOnlineNow} lastActiveAt={u.lastActiveAt} />,
     };
 
     if (activeTab === "EXPERT") {
@@ -452,9 +423,7 @@ function AdminUsersPageContent() {
           key: "sports",
           header: "Sports",
           render: (u) =>
-            u.role === "Player" ? (
-              <span className="text-slate-700">{u.sportsCount}</span>
-            ) : null,
+            u.role === "Player" ? <span className="text-slate-700">{u.sportsCount}</span> : null,
         },
         {
           key: "dependents",
@@ -477,9 +446,7 @@ function AdminUsersPageContent() {
           key: "verification",
           header: "Verification",
           render: (u) =>
-            u.role === "Coach" ? (
-              <StatusBadge status={u.verificationStatus} />
-            ) : null,
+            u.role === "Coach" ? <StatusBadge status={u.verificationStatus} /> : null,
         },
         {
           key: "serviceMode",
@@ -496,8 +463,7 @@ function AdminUsersPageContent() {
           render: (u) =>
             u.role === "Coach" ? (
               <span className="text-slate-700">
-                {u.rating.toFixed(1)}{" "}
-                <span className="text-slate-400">({u.reviewCount})</span>
+                {u.rating.toFixed(1)} <span className="text-slate-400">({u.reviewCount})</span>
               </span>
             ) : null,
         },
@@ -548,8 +514,7 @@ function AdminUsersPageContent() {
         },
         {
           header: "Dependents",
-          value: (u: UsersRow) =>
-            u.role === "Player" ? u.dependentsCount : "",
+          value: (u: UsersRow) => (u.role === "Player" ? u.dependentsCount : ""),
         },
         { header: "Created At", value: (u: UsersRow) => u.createdAt },
         { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
@@ -562,13 +527,11 @@ function AdminUsersPageContent() {
         { header: "Phone", value: (u: UsersRow) => u.phone || "" },
         {
           header: "Verification Status",
-          value: (u: UsersRow) =>
-            u.role === "Coach" ? u.verificationStatus : "",
+          value: (u: UsersRow) => (u.role === "Coach" ? u.verificationStatus : ""),
         },
         {
           header: "Service Mode",
-          value: (u: UsersRow) =>
-            u.role === "Coach" ? u.serviceMode || "" : "",
+          value: (u: UsersRow) => (u.role === "Coach" ? u.serviceMode || "" : ""),
         },
         {
           header: "Rating",
@@ -584,8 +547,7 @@ function AdminUsersPageContent() {
       { header: "Phone", value: (u: UsersRow) => u.phone || "" },
       {
         header: "Business Name",
-        value: (u: UsersRow) =>
-          u.role === "VenueLister" ? u.businessName || "" : "",
+        value: (u: UsersRow) => (u.role === "VenueLister" ? u.businessName || "" : ""),
       },
       {
         header: "Total Venues",
@@ -593,13 +555,11 @@ function AdminUsersPageContent() {
       },
       {
         header: "Approved Venues",
-        value: (u: UsersRow) =>
-          u.role === "VenueLister" ? u.approvedVenueCount : "",
+        value: (u: UsersRow) => (u.role === "VenueLister" ? u.approvedVenueCount : ""),
       },
       {
         header: "Pending Venues",
-        value: (u: UsersRow) =>
-          u.role === "VenueLister" ? u.pendingVenueCount : "",
+        value: (u: UsersRow) => (u.role === "VenueLister" ? u.pendingVenueCount : ""),
       },
       { header: "Created At", value: (u: UsersRow) => u.createdAt },
       { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
@@ -642,7 +602,7 @@ function AdminUsersPageContent() {
           <button
             key={tab}
             onClick={() => switchTab(tab)}
-            className={`px-3 py-2.5 text-sm font-semibold transition-colors border-b-2 sm:px-4 sm:py-3 ${
+            className={`border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4 sm:py-3 ${
               activeTab === tab
                 ? "border-power-orange text-power-orange"
                 : "border-transparent text-slate-600 hover:text-slate-900"
@@ -659,22 +619,10 @@ function AdminUsersPageContent() {
       {activeTab === "Player" && playersAnalytics && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Total" value={playersAnalytics.totalPlayers} />
-          <StatCard
-            label="New This Month"
-            value={playersAnalytics.newThisMonth}
-          />
-          <StatCard
-            label="Sports Profile"
-            value={playersAnalytics.withSportsProfile}
-          />
-          <StatCard
-            label="With Dependents"
-            value={playersAnalytics.withDependents}
-          />
-          <StatCard
-            label="New Last 24h"
-            value={playersAnalytics.newAccountsLast24Hours}
-          />
+          <StatCard label="New This Month" value={playersAnalytics.newThisMonth} />
+          <StatCard label="Sports Profile" value={playersAnalytics.withSportsProfile} />
+          <StatCard label="With Dependents" value={playersAnalytics.withDependents} />
+          <StatCard label="New Last 24h" value={playersAnalytics.newAccountsLast24Hours} />
         </div>
       )}
 
@@ -682,43 +630,19 @@ function AdminUsersPageContent() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Total" value={coachesAnalytics.totalCoaches} />
           <StatCard label="Verified" value={coachesAnalytics.verifiedCount} />
-          <StatCard
-            label="Pending / Review"
-            value={coachesAnalytics.pendingOrReviewCount}
-          />
-          <StatCard
-            label="Avg Rating"
-            value={coachesAnalytics.avgRating.toFixed(2)}
-          />
-          <StatCard
-            label="New Last 24h"
-            value={coachesAnalytics.newAccountsLast24Hours}
-          />
+          <StatCard label="Pending / Review" value={coachesAnalytics.pendingOrReviewCount} />
+          <StatCard label="Avg Rating" value={coachesAnalytics.avgRating.toFixed(2)} />
+          <StatCard label="New Last 24h" value={coachesAnalytics.newAccountsLast24Hours} />
         </div>
       )}
 
       {activeTab === "VenueLister" && venueListersAnalytics && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <StatCard
-            label="Total"
-            value={venueListersAnalytics.totalVenueListers}
-          />
-          <StatCard
-            label="Owners With Venues"
-            value={venueListersAnalytics.withAtLeastOneVenue}
-          />
-          <StatCard
-            label="Approved Venues"
-            value={venueListersAnalytics.approvedVenuesCount}
-          />
-          <StatCard
-            label="Pending Venues"
-            value={venueListersAnalytics.pendingVenuesCount}
-          />
-          <StatCard
-            label="New Last 24h"
-            value={venueListersAnalytics.newAccountsLast24Hours}
-          />
+          <StatCard label="Total" value={venueListersAnalytics.totalVenueListers} />
+          <StatCard label="Owners With Venues" value={venueListersAnalytics.withAtLeastOneVenue} />
+          <StatCard label="Approved Venues" value={venueListersAnalytics.approvedVenuesCount} />
+          <StatCard label="Pending Venues" value={venueListersAnalytics.pendingVenuesCount} />
+          <StatCard label="New Last 24h" value={venueListersAnalytics.newAccountsLast24Hours} />
         </div>
       )}
 
@@ -779,14 +703,8 @@ function AdminUsersPageContent() {
               <DetailRow label="Role" value={TAB_LABELS[activeTab]} />
               <DetailRow label="Email" value={selectedUser.email} />
               <DetailRow label="Phone" value={selectedUser.phone || "—"} />
-              <DetailRow
-                label="Joined"
-                value={formatDateTime(selectedUser.createdAt)}
-              />
-              <DetailRow
-                label="Last active"
-                value={formatDateTime(selectedUser.lastActiveAt)}
-              />
+              <DetailRow label="Joined" value={formatDateTime(selectedUser.createdAt)} />
+              <DetailRow label="Last active" value={formatDateTime(selectedUser.lastActiveAt)} />
             </DetailSection>
 
             {selectedUser.role === "EXPERT" && (
@@ -819,16 +737,9 @@ function AdminUsersPageContent() {
                 />
                 <DetailRow
                   label="Sports"
-                  value={
-                    selectedUser.sports.length
-                      ? selectedUser.sports.join(", ")
-                      : "—"
-                  }
+                  value={selectedUser.sports.length ? selectedUser.sports.join(", ") : "—"}
                 />
-                <DetailRow
-                  label="Dependents"
-                  value={selectedUser.dependentsCount}
-                />
+                <DetailRow label="Dependents" value={selectedUser.dependentsCount} />
               </DetailSection>
             )}
 
@@ -836,21 +747,12 @@ function AdminUsersPageContent() {
               <DetailSection title="Coach profile">
                 <DetailRow
                   label="Verification"
-                  value={
-                    <StatusBadge status={selectedUser.verificationStatus} />
-                  }
+                  value={<StatusBadge status={selectedUser.verificationStatus} />}
                 />
-                <DetailRow
-                  label="Service mode"
-                  value={selectedUser.serviceMode || "—"}
-                />
+                <DetailRow label="Service mode" value={selectedUser.serviceMode || "—"} />
                 <DetailRow
                   label="Hourly rate"
-                  value={
-                    selectedUser.hourlyRate != null
-                      ? `₹${selectedUser.hourlyRate}`
-                      : "—"
-                  }
+                  value={selectedUser.hourlyRate != null ? `₹${selectedUser.hourlyRate}` : "—"}
                 />
                 <DetailRow
                   label="Rating"
@@ -858,11 +760,7 @@ function AdminUsersPageContent() {
                 />
                 <DetailRow
                   label="Sports"
-                  value={
-                    selectedUser.sports.length
-                      ? selectedUser.sports.join(", ")
-                      : "—"
-                  }
+                  value={selectedUser.sports.length ? selectedUser.sports.join(", ") : "—"}
                 />
                 <DetailRow
                   label="Profile complete"
@@ -873,22 +771,10 @@ function AdminUsersPageContent() {
 
             {selectedUser.role === "VenueLister" && (
               <DetailSection title="Venue owner profile">
-                <DetailRow
-                  label="Business"
-                  value={selectedUser.businessName || "—"}
-                />
-                <DetailRow
-                  label="Total venues"
-                  value={selectedUser.venueCount}
-                />
-                <DetailRow
-                  label="Approved venues"
-                  value={selectedUser.approvedVenueCount}
-                />
-                <DetailRow
-                  label="Pending venues"
-                  value={selectedUser.pendingVenueCount}
-                />
+                <DetailRow label="Business" value={selectedUser.businessName || "—"} />
+                <DetailRow label="Total venues" value={selectedUser.venueCount} />
+                <DetailRow label="Approved venues" value={selectedUser.approvedVenueCount} />
+                <DetailRow label="Pending venues" value={selectedUser.pendingVenueCount} />
                 <DetailRow
                   label="Can add more venues"
                   value={selectedUser.canAddMoreVenues ? "Yes" : "No"}

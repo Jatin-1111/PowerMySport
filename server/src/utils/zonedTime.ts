@@ -45,19 +45,17 @@ export const tzOffsetMinutes = (tz: string, at: Date): number => {
       minute: "2-digit",
       second: "2-digit",
     });
-    const parts = dtf
-      .formatToParts(at)
-      .reduce<Record<string, string>>((acc, p) => {
-        if (p.type !== "literal") acc[p.type] = p.value;
-        return acc;
-      }, {});
+    const parts = dtf.formatToParts(at).reduce<Record<string, string>>((acc, p) => {
+      if (p.type !== "literal") acc[p.type] = p.value;
+      return acc;
+    }, {});
     const asUtc = Date.UTC(
       Number(parts.year),
       Number(parts.month) - 1,
       Number(parts.day),
       Number(parts.hour === "24" ? "0" : parts.hour),
       Number(parts.minute),
-      Number(parts.second),
+      Number(parts.second)
     );
     return Math.round((asUtc - at.getTime()) / MS_PER_MIN);
   } catch {
@@ -66,11 +64,7 @@ export const tzOffsetMinutes = (tz: string, at: Date): number => {
 };
 
 /** Convert a local "YYYY-MM-DD" + minutes-from-midnight in `tz` to a UTC Date. */
-export const zonedToUtc = (
-  dateKey: string,
-  minutesFromMidnight: number,
-  tz: string,
-): Date => {
+export const zonedToUtc = (dateKey: string, minutesFromMidnight: number, tz: string): Date => {
   const [y, m, d] = parseDateKey(dateKey);
   const hh = Math.floor(minutesFromMidnight / 60);
   const mm = minutesFromMidnight % 60;

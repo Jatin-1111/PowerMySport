@@ -29,10 +29,7 @@ import { CommunityGroupMember } from "../community/models/CommunityGroupMember";
 const NEW_INDEX_NAME = "groupId_createdAt";
 const NEW_INDEX_SPEC = { groupId: 1, createdAt: 1 } as const;
 
-const keysMatch = (
-  a: Record<string, unknown>,
-  b: Record<string, 1 | -1>,
-): boolean => {
+const keysMatch = (a: Record<string, unknown>, b: Record<string, 1 | -1>): boolean => {
   const aKeys = Object.keys(a);
   const bKeys = Object.keys(b);
   if (aKeys.length !== bKeys.length) return false;

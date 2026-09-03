@@ -27,11 +27,7 @@ const SPORTS_OPTIONS = [
   "Swimming",
 ];
 
-export default function Step5CoachList({
-  onFinalize,
-  loading,
-  venueId,
-}: Step5CoachListProps) {
+export default function Step5CoachList({ onFinalize, loading, venueId }: Step5CoachListProps) {
   const [coaches, setCoaches] = useState<VenueCoach[]>([]);
 
   // Form state for adding new coach
@@ -48,9 +44,7 @@ export default function Step5CoachList({
   const [photoUploadError, setPhotoUploadError] = useState<string>("");
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
 
@@ -89,8 +83,7 @@ export default function Step5CoachList({
 
     try {
       // Use venueId from props or fallback to URL (though URL might be unreliable in dev/skip flow)
-      const targetVenueId =
-        venueId || new URLSearchParams(window.location.search).get("venueId");
+      const targetVenueId = venueId || new URLSearchParams(window.location.search).get("venueId");
 
       if (!targetVenueId) {
         throw new Error("Venue ID not found. Please try refreshing the page.");
@@ -101,7 +94,7 @@ export default function Step5CoachList({
       const response = await onboardingApi.getCoachPhotoUploadUrl(
         targetVenueId,
         file.name,
-        file.type,
+        file.type
       );
 
       if (!response.success || !response.data) {
@@ -125,9 +118,7 @@ export default function Step5CoachList({
         profilePhoto: response.data!.downloadUrl,
       }));
     } catch (err) {
-      setPhotoUploadError(
-        err instanceof Error ? err.message : "Failed to upload photo",
-      );
+      setPhotoUploadError(err instanceof Error ? err.message : "Failed to upload photo");
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -213,16 +204,12 @@ export default function Step5CoachList({
   };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto rounded-2xl border border-slate-200 bg-white/90 shadow-xs">
-      <div className="p-6 md:p-8 space-y-6">
+    <Card className="mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-white/90 shadow-xs">
+      <div className="space-y-6 p-6 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">
-            Add In-House Coaches
-          </h1>
-          <p className="mt-2 text-slate-600">
-            Step 5 of 5: List your internal coaches (optional)
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900">Add In-House Coaches</h1>
+          <p className="mt-2 text-slate-600">Step 5 of 5: List your internal coaches (optional)</p>
         </div>
 
         {/* Coaches List */}
@@ -235,7 +222,7 @@ export default function Step5CoachList({
               {coaches.map((coach, index) => (
                 <div
                   key={index}
-                  className="p-4 border border-slate-200 rounded-lg flex justify-between items-start bg-slate-50"
+                  className="flex items-start justify-between rounded-lg border border-slate-200 bg-slate-50 p-4"
                 >
                   <div className="flex items-start gap-3">
                     {/* Coach Photo */}
@@ -243,36 +230,32 @@ export default function Step5CoachList({
                       <img
                         src={coach.profilePhoto}
                         alt={coach.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-slate-200 shrink-0"
+                        className="h-12 w-12 shrink-0 rounded-full border-2 border-slate-200 object-cover"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center border-2 border-slate-300 shrink-0">
-                        <User className="w-6 h-6 text-slate-600" />
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 bg-gray-300">
+                        <User className="h-6 w-6 text-slate-600" />
                       </div>
                     )}
 
                     {/* Coach Info */}
                     <div>
-                      <h3 className="font-semibold text-slate-900">
-                        {coach.name}
-                      </h3>
-                      <p className="text-sm text-slate-600 flex items-center gap-2">
+                      <h3 className="font-semibold text-slate-900">{coach.name}</h3>
+                      <p className="flex items-center gap-2 text-sm text-slate-600">
                         <span>{coach.sport}</span>
                         <span className="text-slate-400">|</span>
                         <IndianRupee className="h-4 w-4 text-slate-500" />
                         <span>{coach.hourlyRate}/hour</span>
                       </p>
                       {coach.bio && (
-                        <p className="text-sm text-slate-600 mt-2 italic">
-                          "{coach.bio}"
-                        </p>
+                        <p className="mt-2 text-sm text-slate-600 italic">"{coach.bio}"</p>
                       )}
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleRemoveCoach(index)}
-                    className="text-red-600 hover:text-red-800 font-medium text-sm"
+                    className="text-sm font-medium text-red-600 hover:text-red-800"
                   >
                     Remove
                   </button>
@@ -287,18 +270,18 @@ export default function Step5CoachList({
           <Button
             type="button"
             onClick={() => setShowForm(true)}
-            className="w-full bg-power-orange hover:bg-orange-600 text-white py-2.5"
+            className="bg-power-orange w-full py-2.5 text-white hover:bg-orange-600"
           >
             + Add Coach
           </Button>
         ) : (
           <form
             onSubmit={handleAddCoach}
-            className="space-y-4 p-4 bg-power-orange/5 rounded-lg border border-power-orange/20"
+            className="bg-power-orange/5 border-power-orange/20 space-y-4 rounded-lg border p-4"
           >
             {/* Coach Name */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
                 Coach Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -307,14 +290,14 @@ export default function Step5CoachList({
                 value={newCoach.name}
                 onChange={handleInputChange}
                 placeholder="e.g., John Doe"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
 
             {/* Profile Photo */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
                 Profile Photo (Optional)
               </label>
               <div className="flex items-center gap-4">
@@ -325,20 +308,20 @@ export default function Step5CoachList({
                       <img
                         src={newCoach.profilePhoto}
                         alt="Coach profile"
-                        className="w-20 h-20 rounded-full object-cover border-2 border-slate-200"
+                        className="h-20 w-20 rounded-full border-2 border-slate-200 object-cover"
                       />
                       <button
                         type="button"
                         onClick={handleRemovePhoto}
-                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        className="absolute -top-1 -right-1 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
                         aria-label="Remove photo"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="h-3 w-3" />
                       </button>
                     </div>
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center border-2 border-slate-200">
-                      <User className="w-10 h-10 text-slate-400" />
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-slate-200 bg-slate-200">
+                      <User className="h-10 w-10 text-slate-400" />
                     </div>
                   )}
                 </div>
@@ -346,9 +329,9 @@ export default function Step5CoachList({
                 {/* Upload Button */}
                 <div className="">
                   <label className="cursor-pointer">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white border border-power-orange/30 rounded-lg hover:bg-power-orange/5 transition-colors">
-                      <Camera className="w-4 h-4 text-power-orange" />
-                      <span className="text-sm font-medium text-power-orange">
+                    <div className="border-power-orange/30 hover:bg-power-orange/5 flex items-center gap-2 rounded-lg border bg-white px-4 py-2 transition-colors">
+                      <Camera className="text-power-orange h-4 w-4" />
+                      <span className="text-power-orange text-sm font-medium">
                         {isUploadingPhoto
                           ? "Uploading..."
                           : newCoach.profilePhoto
@@ -364,13 +347,9 @@ export default function Step5CoachList({
                       disabled={isUploadingPhoto || loading}
                     />
                   </label>
-                  <p className="text-xs text-slate-500 mt-1">
-                    JPG, PNG up to 5MB
-                  </p>
+                  <p className="mt-1 text-xs text-slate-500">JPG, PNG up to 5MB</p>
                   {photoUploadError && (
-                    <p className="text-xs text-red-600 mt-1">
-                      {photoUploadError}
-                    </p>
+                    <p className="mt-1 text-xs text-red-600">{photoUploadError}</p>
                   )}
                 </div>
               </div>
@@ -378,14 +357,14 @@ export default function Step5CoachList({
 
             {/* Sport */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
                 Sport <span className="text-red-500">*</span>
               </label>
               <select
                 name="sport"
                 value={newCoach.sport}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               >
                 <option value="">Select a sport</option>
@@ -399,7 +378,7 @@ export default function Step5CoachList({
 
             {/* Hourly Rate */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
                 <span className="inline-flex items-center gap-1">
                   <IndianRupee className="h-4 w-4 text-slate-600" />
                   Hourly Rate (INR)
@@ -413,14 +392,14 @@ export default function Step5CoachList({
                 onChange={handleInputChange}
                 placeholder="500"
                 min="0"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
 
             {/* Bio */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
                 Bio / Expertise (Optional)
               </label>
               <textarea
@@ -429,7 +408,7 @@ export default function Step5CoachList({
                 onChange={handleInputChange}
                 placeholder="e.g., Certified coach with 5+ years of experience"
                 rows={3}
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full resize-none rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               />
             </div>
@@ -439,14 +418,14 @@ export default function Step5CoachList({
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-power-orange hover:bg-orange-600 text-white py-2"
+                className="bg-power-orange flex-1 py-2 text-white hover:bg-orange-600"
               >
                 {loading ? "Adding..." : "Add Coach"}
               </Button>
               <Button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2"
+                className="flex-1 bg-slate-600 py-2 text-white hover:bg-slate-700"
               >
                 Cancel
               </Button>
@@ -455,12 +434,12 @@ export default function Step5CoachList({
         )}
 
         {/* Info Message */}
-        <div className="p-4 bg-power-orange/5 border border-power-orange/20 rounded-lg">
-          <p className="text-sm text-slate-700 flex items-start gap-2">
-            <Lightbulb className="h-4 w-4 mt-0.5 text-power-orange" />
+        <div className="bg-power-orange/5 border-power-orange/20 rounded-lg border p-4">
+          <p className="flex items-start gap-2 text-sm text-slate-700">
+            <Lightbulb className="text-power-orange mt-0.5 h-4 w-4" />
             <span>
-              <strong>Tip:</strong> You can add coaches now or skip this step
-              and add them later from your venue dashboard.
+              <strong>Tip:</strong> You can add coaches now or skip this step and add them later
+              from your venue dashboard.
             </span>
           </p>
         </div>
@@ -471,7 +450,7 @@ export default function Step5CoachList({
             type="button"
             onClick={handleSkip}
             disabled={loading}
-            className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2.5"
+            className="flex-1 bg-slate-600 py-2.5 text-white hover:bg-slate-700"
           >
             {loading ? "Processing..." : "Skip"}
           </Button>
@@ -479,7 +458,7 @@ export default function Step5CoachList({
             type="button"
             onClick={handleComplete}
             disabled={loading}
-            className="flex-1 bg-power-orange hover:bg-orange-600 text-white py-2.5"
+            className="bg-power-orange flex-1 py-2.5 text-white hover:bg-orange-600"
           >
             {loading ? "Completing..." : "Complete Onboarding"}
           </Button>

@@ -42,9 +42,7 @@ export default function Step2Location({
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [hasSelectedLocation, setHasSelectedLocation] = useState(
-    !!previousData?.address,
-  );
+  const [hasSelectedLocation, setHasSelectedLocation] = useState(!!previousData?.address);
   const skipAutocompleteRef = useRef(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -231,9 +229,7 @@ export default function Step2Location({
       };
       await onSubmit(payload);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save location",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save location");
     } finally {
       setIsSubmitting(false);
     }
@@ -241,17 +237,15 @@ export default function Step2Location({
 
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">
-          Step 2: Location & Contact
-        </h2>
+      <div className="mb-8 text-center">
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 2: Location & Contact</h2>
         <p className="text-slate-600">Where is your academy located?</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Address with Google Maps Autocomplete */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Full Address <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -260,92 +254,74 @@ export default function Step2Location({
               value={addressQuery}
               onChange={handleAddressChange}
               placeholder="Search your academy location..."
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                fieldErrors.address
-                  ? "border-red-300 bg-red-50"
-                  : "border-slate-300 bg-white"
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                fieldErrors.address ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             />
             {isSearching && (
-              <div className="absolute right-3 top-2.5">
-                <div className="animate-spin w-5 h-5 border-2 border-power-orange border-t-transparent rounded-full" />
+              <div className="absolute top-2.5 right-3">
+                <div className="border-power-orange h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
               </div>
             )}
             {suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+              <div className="absolute top-full right-0 left-0 z-10 max-h-60 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                 {suggestions.map((suggestion) => (
                   <button
                     key={`${suggestion.lat}-${suggestion.lon}`}
                     type="button"
                     onClick={() => handleSuggestionSelect(suggestion)}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-100 border-b border-slate-100 text-sm"
+                    className="w-full border-b border-slate-100 px-3 py-2 text-left text-sm hover:bg-slate-100"
                   >
-                    <p className="font-medium text-slate-900">
-                      {suggestion.label.split(",")[0]}
-                    </p>
-                    <p className="text-xs text-slate-500 truncate">
-                      {suggestion.label}
-                    </p>
+                    <p className="font-medium text-slate-900">{suggestion.label.split(",")[0]}</p>
+                    <p className="truncate text-xs text-slate-500">{suggestion.label}</p>
                   </button>
                 ))}
               </div>
             )}
           </div>
-          {searchError && (
-            <p className="text-amber-600 text-xs mt-1">{searchError}</p>
-          )}
+          {searchError && <p className="mt-1 text-xs text-amber-600">{searchError}</p>}
           {fieldErrors.address && (
-            <p className="text-red-600 text-xs mt-1">{fieldErrors.address}</p>
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.address}</p>
           )}
           {hasSelectedLocation && (
-            <p className="text-emerald-600 text-xs mt-1">✓ Location selected</p>
+            <p className="mt-1 text-xs text-emerald-600">✓ Location selected</p>
           )}
           {fieldErrors.location && (
-            <p className="text-amber-600 text-xs mt-1 bg-amber-50 p-2 rounded border border-amber-200">
+            <p className="mt-1 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-600">
               ⚠️ {fieldErrors.location}
             </p>
           )}
         </div>
 
         {/* City, State, Pincode */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
               City <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.city}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, city: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
               placeholder="Mumbai"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                fieldErrors.city
-                  ? "border-red-300 bg-red-50"
-                  : "border-slate-300 bg-white"
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                fieldErrors.city ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             />
-            {fieldErrors.city && (
-              <p className="text-red-600 text-xs mt-1">{fieldErrors.city}</p>
-            )}
+            {fieldErrors.city && <p className="mt-1 text-xs text-red-600">{fieldErrors.city}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
               State / UT <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.state}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, state: e.target.value }))
-              }
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                fieldErrors.state
-                  ? "border-red-300 bg-red-50"
-                  : "border-slate-300 bg-white"
+              onChange={(e) => setFormData((prev) => ({ ...prev, state: e.target.value }))}
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                fieldErrors.state ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             >
@@ -356,45 +332,37 @@ export default function Step2Location({
                 </option>
               ))}
             </select>
-            {fieldErrors.state && (
-              <p className="text-red-600 text-xs mt-1">{fieldErrors.state}</p>
-            )}
+            {fieldErrors.state && <p className="mt-1 text-xs text-red-600">{fieldErrors.state}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-slate-900">
               Pincode <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.pincode}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, pincode: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, pincode: e.target.value }))}
               placeholder="400001"
               maxLength={6}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                fieldErrors.pincode
-                  ? "border-red-300 bg-red-50"
-                  : "border-slate-300 bg-white"
+              className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                fieldErrors.pincode ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
               }`}
               disabled={isSubmitting}
             />
             {fieldErrors.pincode && (
-              <p className="text-red-600 text-xs mt-1">{fieldErrors.pincode}</p>
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.pincode}</p>
             )}
           </div>
         </div>
 
         {/* Contact Person */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-4">
-            Contact Information
-          </h3>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-4 font-semibold text-slate-900">Contact Information</h3>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-1">
+              <label className="mb-1 block text-sm font-medium text-slate-900">
                 Contact Person Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -407,7 +375,7 @@ export default function Step2Location({
                   }))
                 }
                 placeholder="Full name"
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                   fieldErrors.contactPersonName
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -415,28 +383,24 @@ export default function Step2Location({
                 disabled={isSubmitting}
               />
               {fieldErrors.contactPersonName && (
-                <p className="text-red-600 text-xs mt-1">
-                  {fieldErrors.contactPersonName}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.contactPersonName}</p>
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-slate-900 mb-1">
+                <label className="mb-1 block text-sm font-medium text-slate-900">
                   Phone (+91XXXXXXXXXX) <span className="text-red-500">*</span>
                 </label>
                 <div className="flex">
-                  <span className="inline-flex items-center px-3 py-2 border border-r-0 border-slate-300 rounded-l-lg bg-slate-50 text-sm text-slate-600">
+                  <span className="inline-flex items-center rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                     +91
                   </span>
                   <input
                     type="tel"
                     value={formData.contactPhone.replace(/^\+91/, "")}
                     onChange={(e) => {
-                      const digits = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 10);
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                       setFormData((prev) => ({
                         ...prev,
                         contactPhone: `+91${digits}`,
@@ -449,7 +413,7 @@ export default function Step2Location({
                     }}
                     placeholder="9876543210"
                     maxLength={10}
-                    className={`flex-1 px-3 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                    className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                       fieldErrors.contactPhone
                         ? "border-red-300 bg-red-50"
                         : "border-slate-300 bg-white"
@@ -458,14 +422,12 @@ export default function Step2Location({
                   />
                 </div>
                 {fieldErrors.contactPhone && (
-                  <p className="text-red-600 text-xs mt-1">
-                    {fieldErrors.contactPhone}
-                  </p>
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.contactPhone}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-900 mb-1">
+                <label className="mb-1 block text-sm font-medium text-slate-900">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -478,7 +440,7 @@ export default function Step2Location({
                     }))
                   }
                   placeholder="contact@academy.com"
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                  className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                     fieldErrors.contactEmail
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white"
@@ -486,28 +448,24 @@ export default function Step2Location({
                   disabled={isSubmitting}
                 />
                 {fieldErrors.contactEmail && (
-                  <p className="text-red-600 text-xs mt-1">
-                    {fieldErrors.contactEmail}
-                  </p>
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.contactEmail}</p>
                 )}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-1">
+              <label className="mb-1 block text-sm font-medium text-slate-900">
                 WhatsApp <span className="text-red-500">*</span>
               </label>
               <div className="flex">
-                <span className="inline-flex items-center px-3 py-2 border border-r-0 border-slate-300 rounded-l-lg bg-slate-50 text-sm text-slate-600">
+                <span className="inline-flex items-center rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                   +91
                 </span>
                 <input
                   type="tel"
                   value={formData.whatsappNumber.replace(/^\+91/, "")}
                   onChange={(e) => {
-                    const digits = e.target.value
-                      .replace(/\D/g, "")
-                      .slice(0, 10);
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
                     setFormData((prev) => ({
                       ...prev,
                       whatsappNumber: `+91${digits}`,
@@ -520,7 +478,7 @@ export default function Step2Location({
                   }}
                   placeholder="9876543210"
                   maxLength={10}
-                  className={`flex-1 px-3 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
+                  className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                     fieldErrors.whatsappNumber
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white"
@@ -529,9 +487,7 @@ export default function Step2Location({
                 />
               </div>
               {fieldErrors.whatsappNumber && (
-                <p className="text-red-600 text-xs mt-1">
-                  {fieldErrors.whatsappNumber}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.whatsappNumber}</p>
               )}
             </div>
           </div>
@@ -539,20 +495,17 @@ export default function Step2Location({
 
         {/* Languages */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Languages Spoken <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             {languageOptions.map((lang) => (
-              <label
-                key={lang}
-                className="flex items-center gap-2 cursor-pointer"
-              >
+              <label key={lang} className="flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
                   checked={formData.languagesSpoken.includes(lang)}
                   onChange={() => toggleLanguage(lang)}
-                  className="w-4 h-4 rounded border-slate-300"
+                  className="h-4 w-4 rounded border-slate-300"
                   disabled={isSubmitting}
                 />
                 <span className="text-sm text-slate-700">{lang}</span>
@@ -560,29 +513,18 @@ export default function Step2Location({
             ))}
           </div>
           {fieldErrors.languagesSpoken && (
-            <p className="text-red-600 text-xs mt-2">
-              {fieldErrors.languagesSpoken}
-            </p>
+            <p className="mt-2 text-xs text-red-600">{fieldErrors.languagesSpoken}</p>
           )}
         </div>
 
         {/* Buttons */}
         <div className="flex gap-3 pt-4">
           {onBack && (
-            <Button
-              type="button"
-              onClick={onBack}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button type="button" onClick={onBack} variant="outline" disabled={isSubmitting}>
               Back
             </Button>
           )}
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Saving..." : "Continue to Step 3"}
           </Button>
         </div>

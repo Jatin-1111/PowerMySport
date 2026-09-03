@@ -4,18 +4,18 @@ import { toast } from "@/lib/toast";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { PresignedUrl } from "@/modules/onboarding/types/onboarding";
 import {
-    BadgeCheck,
-    Briefcase,
-    Building2,
-    CheckCircle,
-    ClipboardCheck,
-    ClipboardList,
-    FileText,
-    Mail,
-    Shield,
-    Upload,
-    X,
-    Zap,
+  BadgeCheck,
+  Briefcase,
+  Building2,
+  CheckCircle,
+  ClipboardCheck,
+  ClipboardList,
+  FileText,
+  Mail,
+  Shield,
+  Upload,
+  X,
+  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import OnboardingSectionCard from "./OnboardingSectionCard";
@@ -70,8 +70,7 @@ const DOCUMENT_INFO: Record<
   },
 };
 
-const isDev =
-  typeof window !== "undefined" && process.env.NODE_ENV === "development";
+const isDev = typeof window !== "undefined" && process.env.NODE_ENV === "development";
 
 export default function Step3DocumentUpload({
   presignedUrls,
@@ -86,7 +85,7 @@ export default function Step3DocumentUpload({
   const handleDocumentSelect = async (
     file: File,
     fieldName: string,
-    presignedUrl: PresignedUrl,
+    presignedUrl: PresignedUrl
   ) => {
     const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
 
@@ -110,11 +109,7 @@ export default function Step3DocumentUpload({
 
     try {
       // Upload to S3
-      await uploadFileToPresignedUrl(
-        file,
-        presignedUrl.uploadUrl,
-        presignedUrl.contentType,
-      );
+      await uploadFileToPresignedUrl(file, presignedUrl.uploadUrl, presignedUrl.contentType);
 
       const docType = fieldName.replace("document_", "");
 
@@ -136,8 +131,7 @@ export default function Step3DocumentUpload({
     } catch (err) {
       setUploadErrors((prev) => ({
         ...prev,
-        [fieldName]:
-          err instanceof Error ? err.message : "Failed to upload document",
+        [fieldName]: err instanceof Error ? err.message : "Failed to upload document",
       }));
     } finally {
       setUploading((prev) => ({ ...prev, [fieldName]: false }));
@@ -152,9 +146,7 @@ export default function Step3DocumentUpload({
     e.preventDefault();
 
     if (uploadedDocs.length < presignedUrls.length) {
-      toast.error(
-        `Upload all ${presignedUrls.length} required documents`,
-      );
+      toast.error(`Upload all ${presignedUrls.length} required documents`);
       return;
     }
 
@@ -171,9 +163,7 @@ export default function Step3DocumentUpload({
     <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">
-          Upload Required Documents
-        </h2>
+        <h2 className="mb-2 text-2xl font-bold text-slate-900">Upload Required Documents</h2>
         <p className="text-slate-600">
           Upload verification documents to complete your venue registration
         </p>
@@ -183,19 +173,17 @@ export default function Step3DocumentUpload({
       <OnboardingSectionCard
         title="Upload Progress"
         subtitle="Track completion of required onboarding documents"
-        className="mb-6 bg-linear-to-r from-power-orange/10 to-white border-power-orange/20"
+        className="from-power-orange/10 border-power-orange/20 mb-6 bg-linear-to-r to-white"
       >
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-slate-700">
-            Upload Progress
-          </span>
-          <span className="text-sm font-bold text-power-orange">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm font-medium text-slate-700">Upload Progress</span>
+          <span className="text-power-orange text-sm font-bold">
             {uploadedDocs.length} / {presignedUrls.length}
           </span>
         </div>
-        <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+        <div className="h-3 overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full bg-linear-to-r from-power-orange to-orange-500 transition-all duration-500 ease-out"
+            className="from-power-orange h-full bg-linear-to-r to-orange-500 transition-all duration-500 ease-out"
             style={{ width: `${uploadProgress}%` }}
           ></div>
         </div>
@@ -208,7 +196,7 @@ export default function Step3DocumentUpload({
           subtitle="Upload each document in PDF, JPG, or PNG format"
           contentClassName="space-y-0"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {presignedUrls.map((presigned) => {
               const docTypeKey = presigned.field.replace("document_", "");
               const docInfo = DOCUMENT_INFO[docTypeKey] || {
@@ -216,9 +204,7 @@ export default function Step3DocumentUpload({
                 description: "Required document",
                 IconComponent: FileText,
               };
-              const uploadedDoc = uploadedDocs.find(
-                (doc) => doc.type === docTypeKey,
-              );
+              const uploadedDoc = uploadedDocs.find((doc) => doc.type === docTypeKey);
               const isUploaded = !!uploadedDoc;
               const isUploading = uploading[presigned.field];
               const uploadError = uploadErrors[presigned.field];
@@ -226,28 +212,22 @@ export default function Step3DocumentUpload({
               return (
                 <div
                   key={presigned.field}
-                  className={`relative border-2 rounded-lg p-5 transition-all ${
+                  className={`relative rounded-lg border-2 p-5 transition-all ${
                     isUploaded
                       ? "border-emerald-400 bg-emerald-50"
-                      : "border-slate-200 bg-white hover:border-power-orange/50 hover:shadow-sm"
+                      : "hover:border-power-orange/50 border-slate-200 bg-white hover:shadow-sm"
                   }`}
                 >
                   {/* Document Header */}
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="mb-3 flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <docInfo.IconComponent className="w-8 h-8 text-power-orange" />
+                      <docInfo.IconComponent className="text-power-orange h-8 w-8" />
                       <div>
-                        <h3 className="font-semibold text-slate-900">
-                          {docInfo.label}
-                        </h3>
-                        <p className="text-xs text-slate-600 mt-0.5">
-                          {docInfo.description}
-                        </p>
+                        <h3 className="font-semibold text-slate-900">{docInfo.label}</h3>
+                        <p className="mt-0.5 text-xs text-slate-600">{docInfo.description}</p>
                       </div>
                     </div>
-                    {isUploaded && (
-                      <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0" />
-                    )}
+                    {isUploaded && <CheckCircle className="h-6 w-6 shrink-0 text-emerald-600" />}
                   </div>
 
                   {/* Upload Area */}
@@ -257,35 +237,26 @@ export default function Step3DocumentUpload({
                       accept=".pdf,.jpg,.jpeg,.png"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file)
-                          handleDocumentSelect(
-                            file,
-                            presigned.field,
-                            presigned,
-                          );
+                        if (file) handleDocumentSelect(file, presigned.field, presigned);
                       }}
                       disabled={isUploading}
                       className="hidden"
                     />
 
                     {isUploading ? (
-                      <div className="flex flex-col items-center justify-center py-6 bg-power-orange/10 rounded-lg border-2 border-power-orange/25">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-power-orange"></div>
-                        <p className="text-sm text-power-orange mt-2 font-medium">
-                          Uploading...
-                        </p>
+                      <div className="bg-power-orange/10 border-power-orange/25 flex flex-col items-center justify-center rounded-lg border-2 py-6">
+                        <div className="border-power-orange h-8 w-8 animate-spin rounded-full border-b-2"></div>
+                        <p className="text-power-orange mt-2 text-sm font-medium">Uploading...</p>
                       </div>
                     ) : isUploaded ? (
-                      <div className="relative py-4 px-4 bg-white rounded-lg border-2 border-emerald-300">
+                      <div className="relative rounded-lg border-2 border-emerald-300 bg-white px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <FileText className="w-8 h-8 text-emerald-600" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">
+                          <FileText className="h-8 w-8 text-emerald-600" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-slate-900">
                               {uploadedDoc.fileName}
                             </p>
-                            <p className="text-xs text-emerald-600 mt-0.5">
-                              Successfully uploaded
-                            </p>
+                            <p className="mt-0.5 text-xs text-emerald-600">Successfully uploaded</p>
                           </div>
                           <button
                             type="button"
@@ -293,29 +264,25 @@ export default function Step3DocumentUpload({
                               e.preventDefault();
                               handleRemoveDocument(docTypeKey);
                             }}
-                            className="shrink-0 p-1 hover:bg-red-100 rounded-full transition"
+                            className="shrink-0 rounded-full p-1 transition hover:bg-red-100"
                           >
-                            <X className="w-5 h-5 text-red-600" />
+                            <X className="h-5 w-5 text-red-600" />
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300 hover:border-power-orange/40 hover:bg-power-orange/5 transition-all">
-                        <Upload className="w-10 h-10 text-slate-400 mb-2" />
-                        <p className="text-sm text-slate-600 font-medium">
-                          Click to upload
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          PDF, JPG, PNG (Max 10MB)
-                        </p>
+                      <div className="hover:border-power-orange/40 hover:bg-power-orange/5 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 py-6 transition-all">
+                        <Upload className="mb-2 h-10 w-10 text-slate-400" />
+                        <p className="text-sm font-medium text-slate-600">Click to upload</p>
+                        <p className="mt-1 text-xs text-slate-500">PDF, JPG, PNG (Max 10MB)</p>
                       </div>
                     )}
                   </label>
 
                   {/* Error Message */}
                   {uploadError && (
-                    <p className="text-error-red text-xs mt-2 flex items-center gap-1">
-                      <X className="w-3 h-3" />
+                    <p className="text-error-red mt-2 flex items-center gap-1 text-xs">
+                      <X className="h-3 w-3" />
                       {uploadError}
                     </p>
                   )}
@@ -328,57 +295,53 @@ export default function Step3DocumentUpload({
         {/* Info Box */}
         <OnboardingSectionCard
           title="What Happens Next"
-          className="mt-6 bg-linear-to-br from-power-orange/10 to-white border-power-orange/20"
+          className="from-power-orange/10 border-power-orange/20 mt-6 bg-linear-to-br to-white"
           contentClassName="space-y-0"
         >
-          <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-power-orange" />
+          <h4 className="mb-3 flex items-center gap-2 font-semibold text-slate-900">
+            <Zap className="text-power-orange h-5 w-5" />
             What happens next?
           </h4>
           <ul className="space-y-2">
             <li className="flex items-start gap-3 text-sm text-slate-700">
-              <ClipboardCheck className="w-5 h-5 shrink-0 text-power-orange mt-0.5" />
+              <ClipboardCheck className="text-power-orange mt-0.5 h-5 w-5 shrink-0" />
+              <span>Our review team will review your venue and documents within 24-48 hours</span>
+            </li>
+            <li className="flex items-start gap-3 text-sm text-slate-700">
+              <Mail className="text-power-orange mt-0.5 h-5 w-5 shrink-0" />
               <span>
-                Our review team will review your venue and documents within
-                24-48 hours
+                You'll receive an email notification once approved or if we need additional
+                information
               </span>
             </li>
             <li className="flex items-start gap-3 text-sm text-slate-700">
-              <Mail className="w-5 h-5 shrink-0 text-power-orange mt-0.5" />
+              <CheckCircle className="text-power-orange mt-0.5 h-5 w-5 shrink-0" />
               <span>
-                You'll receive an email notification once approved or if we need
-                additional information
-              </span>
-            </li>
-            <li className="flex items-start gap-3 text-sm text-slate-700">
-              <CheckCircle className="w-5 h-5 shrink-0 text-power-orange mt-0.5" />
-              <span>
-                Once approved, your venue will be live and ready to accept
-                bookings immediately
+                Once approved, your venue will be live and ready to accept bookings immediately
               </span>
             </li>
           </ul>
         </OnboardingSectionCard>
 
         {/* Submit Button */}
-        <div className="flex gap-4 mt-6">
+        <div className="mt-6 flex gap-4">
           <button
             type="submit"
             disabled={loading || uploadedDocs.length < presignedUrls.length}
-            className={`flex-1 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 font-medium transition-all ${
               uploadedDocs.length >= presignedUrls.length && !loading
-                ? "bg-power-orange text-white hover:bg-orange-600 shadow-sm"
-                : "bg-slate-300 text-slate-500 cursor-not-allowed"
+                ? "bg-power-orange text-white shadow-sm hover:bg-orange-600"
+                : "cursor-not-allowed bg-slate-300 text-slate-500"
             }`}
           >
             {loading ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
                 Finalizing...
               </>
             ) : (
               <>
-                <CheckCircle className="w-5 h-5" />
+                <CheckCircle className="h-5 w-5" />
                 Complete Onboarding
               </>
             )}
@@ -389,14 +352,14 @@ export default function Step3DocumentUpload({
               type="button"
               onClick={onSkip}
               disabled={loading}
-              className="px-6 py-3 bg-yellow-100 text-yellow-700 font-medium rounded-lg hover:bg-yellow-200 disabled:opacity-50 transition"
+              className="rounded-lg bg-yellow-100 px-6 py-3 font-medium text-yellow-700 transition hover:bg-yellow-200 disabled:opacity-50"
             >
               Skip (Dev)
             </button>
           )}
         </div>
 
-        <p className="text-xs text-slate-500 text-center mt-4">
+        <p className="mt-4 text-center text-xs text-slate-500">
           By submitting, you agree to our{" "}
           <a href="#" className="text-power-orange hover:underline">
             venue terms and conditions

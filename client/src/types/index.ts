@@ -12,13 +12,7 @@ export interface IPlayerProfile {
 }
 
 export type UserRole =
-  | "Player"
-  | "Parent"
-  | "VenueLister"
-  | "Coach"
-  | "Academy"
-  | "EXPERT"
-  | "Admin";
+  "Player" | "Parent" | "VenueLister" | "Coach" | "Academy" | "EXPERT" | "Admin";
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 export type BookingStatus =
   | "PENDING_INVITES"
@@ -239,13 +233,10 @@ export interface IOwnVenueDetails {
   openingHours?: string;
 }
 
-export type CoachVerificationStatus =
-  "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
+export type CoachVerificationStatus = "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
-export type CoachSubscriptionPackageFrequency =
-  "MONTHLY" | "QUARTERLY" | "YEARLY";
-export type CoachSubscriptionStatus =
-  "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
+export type CoachSubscriptionPackageFrequency = "MONTHLY" | "QUARTERLY" | "YEARLY";
+export type CoachSubscriptionStatus = "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
 
 export interface CoachSubscription {
   id?: string;
@@ -293,13 +284,7 @@ export interface CoachSubscriptionPackageCreateInput {
 }
 
 export interface CoachVerificationDocument {
-  type:
-    | "CERTIFICATION"
-    | "ID_PROOF"
-    | "ADDRESS_PROOF"
-    | "BACKGROUND_CHECK"
-    | "INSURANCE"
-    | "OTHER";
+  type: "CERTIFICATION" | "ID_PROOF" | "ADDRESS_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
   url: string;
   s3Key?: string;
   fileName: string;

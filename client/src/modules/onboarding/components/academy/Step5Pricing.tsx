@@ -1,10 +1,7 @@
 "use client";
 
 import { toast } from "@/lib/toast";
-import type {
-    AcademyBatchTiming,
-    AcademyStep5Payload,
-} from "@/modules/onboarding/types/academy";
+import type { AcademyBatchTiming, AcademyStep5Payload } from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
 import { useState } from "react";
 
@@ -88,14 +85,10 @@ export default function Step5Pricing({
         ...formData,
         academyId,
         // Ensure trialSessionPrice is undefined if trial not offered
-        trialSessionPrice: formData.trialsessionOffered
-          ? formData.trialSessionPrice
-          : undefined,
+        trialSessionPrice: formData.trialsessionOffered ? formData.trialSessionPrice : undefined,
       });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save pricing",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save pricing");
     } finally {
       setIsSubmitting(false);
     }
@@ -103,28 +96,22 @@ export default function Step5Pricing({
 
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">
-          Step 5: Pricing & Subscriptions
-        </h2>
+      <div className="mb-8 text-center">
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 5: Pricing & Subscriptions</h2>
         <p className="text-slate-600">Set your pricing structure</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Session Rate */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Session Rate per Hour <span className="text-red-500">*</span>
           </label>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-slate-600">₹</span>
             <input
               type="number"
-              value={
-                formData.sessionRatePerHour > 0
-                  ? formData.sessionRatePerHour / 100
-                  : ""
-              }
+              value={formData.sessionRatePerHour > 0 ? formData.sessionRatePerHour / 100 : ""}
               onChange={(e) => {
                 const val = parseFloat(e.target.value || "0");
                 setFormData((prev) => ({
@@ -140,7 +127,7 @@ export default function Step5Pricing({
               placeholder="500"
               min="1"
               step="1"
-              className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
+              className={`focus:ring-power-orange flex-1 rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
                 fieldErrors.sessionRatePerHour
                   ? "border-red-300 bg-red-50"
                   : "border-slate-300 bg-white"
@@ -150,15 +137,13 @@ export default function Step5Pricing({
             <span className="text-sm text-slate-500">/hr</span>
           </div>
           {fieldErrors.sessionRatePerHour && (
-            <p className="text-red-600 text-xs mt-1">
-              {fieldErrors.sessionRatePerHour}
-            </p>
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.sessionRatePerHour}</p>
           )}
         </div>
 
         {/* Batch Timings */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-3">
+          <label className="mb-3 block text-sm font-semibold text-slate-900">
             Batch Timings <span className="text-red-500">*</span>
           </label>
           <div className="space-y-2">
@@ -167,17 +152,12 @@ export default function Step5Pricing({
               { id: "evening", label: "Evening (3 PM - 9 PM)" },
               { id: "both", label: "Both" },
             ].map((timing) => (
-              <label
-                key={timing.id}
-                className="flex items-center gap-2 cursor-pointer"
-              >
+              <label key={timing.id} className="flex cursor-pointer items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={formData.batchTimings.includes(
-                    timing.id as AcademyBatchTiming,
-                  )}
+                  checked={formData.batchTimings.includes(timing.id as AcademyBatchTiming)}
                   onChange={() => toggleTiming(timing.id as AcademyBatchTiming)}
-                  className="w-4 h-4 rounded"
+                  className="h-4 w-4 rounded"
                   disabled={isSubmitting}
                 />
                 <span className="text-sm text-slate-700">{timing.label}</span>
@@ -185,15 +165,13 @@ export default function Step5Pricing({
             ))}
           </div>
           {fieldErrors.batchTimings && (
-            <p className="text-red-600 text-xs mt-2">
-              {fieldErrors.batchTimings}
-            </p>
+            <p className="mt-2 text-xs text-red-600">{fieldErrors.batchTimings}</p>
           )}
         </div>
 
         {/* Max Batch Size */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Max Batch Size <span className="text-red-500">*</span>
           </label>
           <input
@@ -211,23 +189,19 @@ export default function Step5Pricing({
             min="1"
             max="100"
             placeholder="20"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange ${
-              fieldErrors.maxBatchSize
-                ? "border-red-300 bg-red-50"
-                : "border-slate-300 bg-white"
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              fieldErrors.maxBatchSize ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
             disabled={isSubmitting}
           />
           {fieldErrors.maxBatchSize && (
-            <p className="text-red-600 text-xs mt-1">
-              {fieldErrors.maxBatchSize}
-            </p>
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.maxBatchSize}</p>
           )}
         </div>
 
         {/* Trial Sessions */}
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <label className="flex items-center gap-2 cursor-pointer mb-4">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <label className="mb-4 flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
               checked={formData.trialsessionOffered}
@@ -237,17 +211,15 @@ export default function Step5Pricing({
                   trialsessionOffered: e.target.checked,
                 }))
               }
-              className="w-4 h-4 rounded"
+              className="h-4 w-4 rounded"
               disabled={isSubmitting}
             />
-            <span className="font-medium text-slate-900">
-              Offer Trial Sessions
-            </span>
+            <span className="font-medium text-slate-900">Offer Trial Sessions</span>
           </label>
 
           {formData.trialsessionOffered && (
             <div>
-              <label className="block text-sm font-medium text-slate-900 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-900">
                 Trial Session Price
               </label>
               <div className="flex items-center gap-2">
@@ -258,48 +230,34 @@ export default function Step5Pricing({
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      trialSessionPrice: Math.round(
-                        parseFloat(e.target.value || "0") * 100,
-                      ),
+                      trialSessionPrice: Math.round(parseFloat(e.target.value || "0") * 100),
                     }))
                   }
                   placeholder="100"
                   min="0"
                   step="1"
-                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange"
+                  className="focus:ring-power-orange flex-1 rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
                   disabled={isSubmitting}
                 />
               </div>
-              <p className="text-xs text-slate-600 mt-1">
-                Enter 0 for free trial
-              </p>
+              <p className="mt-1 text-xs text-slate-600">Enter 0 for free trial</p>
             </div>
           )}
         </div>
 
-        <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
           <p className="text-sm text-blue-900">
-            💡 You can create subscription plans and packages later from your
-            dashboard.
+            💡 You can create subscription plans and packages later from your dashboard.
           </p>
         </div>
 
         <div className="flex gap-3 pt-4">
           {onBack && (
-            <Button
-              type="button"
-              onClick={onBack}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button type="button" onClick={onBack} variant="outline" disabled={isSubmitting}>
               Back
             </Button>
           )}
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Saving..." : "Continue to Step 6"}
           </Button>
         </div>

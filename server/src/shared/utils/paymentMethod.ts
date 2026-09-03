@@ -5,10 +5,7 @@
  * were stored (older records, or a status check that didn't return them).
  */
 export const extractPhonePePaymentMethodLabel = (
-  payloads:
-    | { callbackPayload?: unknown; lastStatusPayload?: unknown }
-    | null
-    | undefined,
+  payloads: { callbackPayload?: unknown; lastStatusPayload?: unknown } | null | undefined
 ): string => {
   const pick = (payload: unknown): string | undefined => {
     if (!payload || typeof payload !== "object") return undefined;
@@ -20,8 +17,7 @@ export const extractPhonePePaymentMethodLabel = (
     return typeof mode === "string" ? mode : undefined;
   };
 
-  const modeRaw =
-    pick(payloads?.lastStatusPayload) || pick(payloads?.callbackPayload);
+  const modeRaw = pick(payloads?.lastStatusPayload) || pick(payloads?.callbackPayload);
   if (!modeRaw) return "PhonePe";
 
   const mode = modeRaw.toUpperCase();

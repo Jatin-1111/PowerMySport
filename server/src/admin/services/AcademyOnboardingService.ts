@@ -90,9 +90,7 @@ export const startAcademyOnboarding = async (payload: {
   });
 
   if (existingAcademy) {
-    throw new Error(
-      "You already have an incomplete academy onboarding. Complete or start fresh.",
-    );
+    throw new Error("You already have an incomplete academy onboarding. Complete or start fresh.");
   }
 
   let slug = generateSlug(payload.name);
@@ -201,7 +199,7 @@ export const startAcademyOnboarding = async (payload: {
 export const updateAcademyStep = async (
   academyId: string,
   stepNumber: number,
-  payload: any,
+  payload: any
 ): Promise<AcademyDocument> => {
   const academy = await ensureAcademyExists(academyId);
   const updateData: Record<string, unknown> = {};
@@ -265,13 +263,9 @@ export const updateAcademyStep = async (
     updateData.onboardingStep = stepNumber;
   }
 
-  const updatedAcademy = await Academy.findByIdAndUpdate(
-    academyId,
-    updateData,
-    {
-      new: true,
-    },
-  );
+  const updatedAcademy = await Academy.findByIdAndUpdate(academyId, updateData, {
+    new: true,
+  });
 
   if (!updatedAcademy) {
     throw new Error("Failed to update academy");
@@ -281,7 +275,7 @@ export const updateAcademyStep = async (
 };
 
 export const getAcademyOnboardingProgress = async (
-  academyId: string,
+  academyId: string
 ): Promise<{
   academyId: string;
   currentStep: number;
@@ -292,17 +286,14 @@ export const getAcademyOnboardingProgress = async (
   return {
     academyId: academy._id.toString(),
     currentStep: academy.onboardingStep,
-    completedSteps: Array.from(
-      { length: academy.onboardingStep - 1 },
-      (_, i) => i + 1,
-    ),
+    completedSteps: Array.from({ length: academy.onboardingStep - 1 }, (_, i) => i + 1),
     data: academy.toObject(),
   };
 };
 
 export const getImageUploadPresignedUrls = async (
   academyId: string,
-  imageTypes: string[],
+  imageTypes: string[]
 ): Promise<IOnboardingUploadUrl[]> => {
   await ensureAcademyExists(academyId);
   const urls: IOnboardingUploadUrl[] = [];
@@ -314,7 +305,7 @@ export const getImageUploadPresignedUrls = async (
         "logo.jpg",
         "image/jpeg",
         academyId,
-        false,
+        false
       );
       urls.push({
         field: "logo",
@@ -332,7 +323,7 @@ export const getImageUploadPresignedUrls = async (
         "cover.jpg",
         "image/jpeg",
         academyId,
-        true,
+        true
       );
       urls.push({
         field: "coverPhoto",
@@ -348,13 +339,8 @@ export const getImageUploadPresignedUrls = async (
     if (type === "galleryPhotos") {
       const responses = await Promise.all(
         Array.from({ length: 5 }, (_, i) =>
-          s3Service.generateImageUploadUrl(
-            `gallery_${i}.jpg`,
-            "image/jpeg",
-            academyId,
-            false,
-          ),
-        ),
+          s3Service.generateImageUploadUrl(`gallery_${i}.jpg`, "image/jpeg", academyId, false)
+        )
       );
       responses.forEach((uploadResponse, i) => {
         urls.push({
@@ -378,9 +364,9 @@ export const getImageUploadPresignedUrls = async (
             `academy/${academyId}/venue_general_${Date.now()}_${i}.jpg`,
             "image/jpeg",
             academyId,
-            false,
-          ),
-        ),
+            false
+          )
+        )
       );
       responses.forEach((uploadResponse, i) => {
         urls.push({
@@ -403,9 +389,9 @@ export const getImageUploadPresignedUrls = async (
             `academy/${academyId}/venue_sport_${Date.now()}_${i}.jpg`,
             "image/jpeg",
             academyId,
-            false,
-          ),
-        ),
+            false
+          )
+        )
       );
       responses.forEach((uploadResponse, i) => {
         urls.push({
@@ -425,7 +411,7 @@ export const getImageUploadPresignedUrls = async (
         `academy/${academyId}/venue_cover_${Date.now()}.jpg`,
         "image/jpeg",
         academyId,
-        true,
+        true
       );
       urls.push({
         field: `academyVenue_cover`,
@@ -443,7 +429,7 @@ export const getImageUploadPresignedUrls = async (
         `academy/${academyId}/coach_photo_${Date.now()}.jpg`,
         "image/jpeg",
         academyId,
-        false,
+        false
       );
       urls.push({
         field: `academyCoach_photo`,
@@ -469,15 +455,13 @@ export const confirmAcademyImages = async (
     coverPhotoKey?: string;
     galleryPhotoUrls?: string[];
     galleryPhotoKeys?: string[];
-  },
+  }
 ): Promise<AcademyDocument> => {
   await ensureAcademyExists(academyId);
   const updatedAcademy = await Academy.findByIdAndUpdate(
     academyId,
     {
-      ...(payload.logoUrl
-        ? { logoUrl: payload.logoUrl, logoKey: payload.logoKey }
-        : {}),
+      ...(payload.logoUrl ? { logoUrl: payload.logoUrl, logoKey: payload.logoKey } : {}),
       ...(payload.coverPhotoUrl
         ? {
             coverPhotoUrl: payload.coverPhotoUrl,
@@ -491,7 +475,7 @@ export const confirmAcademyImages = async (
           }
         : {}),
     },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedAcademy) {
@@ -503,19 +487,18 @@ export const confirmAcademyImages = async (
 
 export const getDocumentUploadPresignedUrls = async (
   academyId: string,
-  docTypes: ("panDocument" | "gstDocument")[],
+  docTypes: ("panDocument" | "gstDocument")[]
 ): Promise<IOnboardingUploadUrl[]> => {
   await ensureAcademyExists(academyId);
   const urls: IOnboardingUploadUrl[] = [];
 
   for (const docType of docTypes) {
-    const fileName =
-      docType === "panDocument" ? "pan_document.pdf" : "gst_document.pdf";
+    const fileName = docType === "panDocument" ? "pan_document.pdf" : "gst_document.pdf";
     const uploadResponse = await s3Service.generateDocumentUploadUrl(
       fileName,
       "application/pdf",
       docType,
-      academyId,
+      academyId
     );
 
     urls.push({
@@ -539,7 +522,7 @@ export const confirmAcademyDocuments = async (
     panDocumentKey: string;
     gstDocumentUrl?: string;
     gstDocumentKey?: string;
-  },
+  }
 ): Promise<AcademyDocument> => {
   await ensureAcademyExists(academyId);
   const updatedAcademy = await Academy.findByIdAndUpdate(
@@ -554,7 +537,7 @@ export const confirmAcademyDocuments = async (
           }
         : {}),
     },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedAcademy) {
@@ -564,15 +547,11 @@ export const confirmAcademyDocuments = async (
   return updatedAcademy;
 };
 
-export const submitAcademyForApproval = async (
-  academyId: string,
-): Promise<AcademyDocument> => {
+export const submitAcademyForApproval = async (academyId: string): Promise<AcademyDocument> => {
   const academy = await ensureAcademyExists(academyId);
 
   if (academy.onboardingStep < 7) {
-    throw new Error(
-      "All 7 onboarding steps must be completed before submission",
-    );
+    throw new Error("All 7 onboarding steps must be completed before submission");
   }
   if (!academy.panNumber || !academy.panDocumentUrl) {
     throw new Error("PAN details are required");
@@ -588,7 +567,7 @@ export const submitAcademyForApproval = async (
       isApproved: false,
       kycVerified: false,
     },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedAcademy) {
@@ -615,7 +594,7 @@ export const submitAcademyForApproval = async (
 export const getPendingAcademies = async (
   page = 1,
   limit = 20,
-  filter?: "pending" | "approved" | "rejected",
+  filter?: "pending" | "approved" | "rejected"
 ): Promise<{
   academies: IAcademyPendingReview[];
   total: number;
@@ -656,16 +635,14 @@ export const getPendingAcademies = async (
 };
 
 export const getAcademyOnboardingDetails = async (
-  academyId: string,
+  academyId: string
 ): Promise<AcademyDocument | null> =>
   Academy.findById(academyId)
     .populate("ownerId", "name email phone")
     .populate("subscriptionPlans")
     .populate("sessionPackages");
 
-export const approveAcademy = async (
-  academyId: string,
-): Promise<AcademyDocument | null> => {
+export const approveAcademy = async (academyId: string): Promise<AcademyDocument | null> => {
   const academy = await ensureAcademyExists(academyId);
   const updatedAcademy = await Academy.findByIdAndUpdate(
     academyId,
@@ -673,7 +650,7 @@ export const approveAcademy = async (
       isApproved: true,
       ...(academy.kycVerified ? { isActive: true } : {}),
     },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedAcademy) {
@@ -716,7 +693,7 @@ export const approveAcademy = async (
 
 export const rejectAcademy = async (
   academyId: string,
-  rejectionReason: string,
+  rejectionReason: string
 ): Promise<AcademyDocument | null> => {
   const academy = await ensureAcademyExists(academyId);
   const updatedAcademy = await Academy.findByIdAndUpdate(
@@ -726,7 +703,7 @@ export const rejectAcademy = async (
       rejectionReason,
       onboardingStep: 6,
     },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedAcademy) {
@@ -770,13 +747,13 @@ export const rejectAcademy = async (
 };
 
 export const markAcademyKycVerified = async (
-  academyId: string,
+  academyId: string
 ): Promise<AcademyDocument | null> => {
   await ensureAcademyExists(academyId);
   const updatedAcademy = await Academy.findByIdAndUpdate(
     academyId,
     { kycVerified: true, isActive: true },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedAcademy) {
@@ -788,7 +765,7 @@ export const markAcademyKycVerified = async (
 
 export const suspendAcademy = async (
   academyId: string,
-  reason?: string,
+  reason?: string
 ): Promise<AcademyDocument | null> => {
   await ensureAcademyExists(academyId);
   const updatedAcademy = await Academy.findByIdAndUpdate(
@@ -797,7 +774,7 @@ export const suspendAcademy = async (
       isActive: false,
       rejectionReason: reason || "Suspended by admin",
     },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedAcademy) {

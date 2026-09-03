@@ -9,13 +9,9 @@ import React from "react";
  */
 export const metadata: Metadata = noindexMetadata(
   "My Expert Sessions",
-  "Your booked 1:1 sessions with PowerMySport experts.",
+  "Your booked 1:1 sessions with PowerMySport experts."
 );
 
-export default function ExpertSessionsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ExpertSessionsLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

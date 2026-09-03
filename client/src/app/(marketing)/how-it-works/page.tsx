@@ -3,23 +3,20 @@
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import {
-    Timeline,
-    type TimelineEntry,
-} from "@/modules/marketing/components/marketing/Timeline";
+import { Timeline, type TimelineEntry } from "@/modules/marketing/components/marketing/Timeline";
 import { cn } from "@/utils/cn";
 import { motion, Variants } from "framer-motion";
 import {
-    BrainCircuit,
-    CalendarRange,
-    CheckCircle,
-    type LucideIcon,
-    Map,
-    Target,
-    Trophy,
-    UserPlus,
-    Wallet,
-    X,
+  BrainCircuit,
+  CalendarRange,
+  CheckCircle,
+  type LucideIcon,
+  Map,
+  Target,
+  Trophy,
+  UserPlus,
+  Wallet,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useRef } from "react";
@@ -73,10 +70,7 @@ function AmbientBlob({ className }: { className: string }) {
 /** Checklist item */
 function CheckItem({ text, iconColor }: { text: string; iconColor: string }) {
   return (
-    <motion.li
-      variants={fadeSlideUp}
-      className="flex items-start gap-3 text-slate-700"
-    >
+    <motion.li variants={fadeSlideUp} className="flex items-start gap-3 text-slate-700">
       <CheckCircle size={20} className={`mt-0.5 shrink-0 ${iconColor}`} />
       <span className="text-base leading-relaxed">{text}</span>
     </motion.li>
@@ -111,20 +105,19 @@ function AssetFrame({
       {/* Offset tinted backdrop panel */}
       <div
         aria-hidden
-        className={`absolute -inset-x-5 -bottom-5 top-8 rounded-[2.5rem] bg-gradient-to-br ${backdropTint}`}
+        className={`absolute -inset-x-5 top-8 -bottom-5 rounded-[2.5rem] bg-gradient-to-br ${backdropTint}`}
       />
       {/* Dotted accent */}
       <div
         aria-hidden
-        className="absolute -right-6 -top-6 h-24 w-24 opacity-50"
+        className="absolute -top-6 -right-6 h-24 w-24 opacity-50"
         style={{
-          backgroundImage:
-            "radial-gradient(circle, rgba(15,23,42,0.25) 1.5px, transparent 1.5px)",
+          backgroundImage: "radial-gradient(circle, rgba(15,23,42,0.25) 1.5px, transparent 1.5px)",
           backgroundSize: "13px 13px",
         }}
       />
 
-      <div className="relative h-[280px] w-full overflow-hidden rounded-[2rem] shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5 sm:h-[420px] lg:h-[480px]">
+      <div className="relative h-[280px] w-full overflow-hidden rounded-[2rem] shadow-2xl ring-1 shadow-slate-900/15 ring-slate-900/5 sm:h-[420px] lg:h-[480px]">
         {/* Main image */}
         <Image
           src={src}
@@ -151,15 +144,15 @@ function AssetFrame({
 
         {/* Step chip — glass, top-left */}
         {step !== undefined && (
-          <div className="absolute left-5 top-5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-xl">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
+          <div className="absolute top-5 left-5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-xl">
+            <p className="text-[10px] font-bold tracking-[0.18em] text-white/90 uppercase">
               Step 0{step}
             </p>
           </div>
         )}
 
         {/* Floating glass overlay card */}
-        <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+        <div className="absolute right-5 bottom-5 left-5 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
             {overlayIcon}
           </div>
@@ -199,10 +192,7 @@ function StepRow({
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div
-      ref={containerRef}
-      className="group grid items-center gap-10 lg:grid-cols-2 lg:gap-20"
-    >
+    <div ref={containerRef} className="group grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
       {/* Copy block */}
       <motion.div
         variants={orchestratorVariants}
@@ -213,14 +203,11 @@ function StepRow({
       >
         <motion.h3
           variants={fadeSlideUp}
-          className="mb-4 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl lg:text-4xl"
+          className="mb-4 text-2xl leading-tight font-bold text-slate-900 sm:text-3xl lg:text-4xl"
         >
           {title}
         </motion.h3>
-        <motion.p
-          variants={fadeSlideUp}
-          className="mb-8 text-lg leading-relaxed text-slate-600"
-        >
+        <motion.p variants={fadeSlideUp} className="mb-8 text-lg leading-relaxed text-slate-600">
           {description}
         </motion.p>
         <motion.ul variants={orchestratorVariants} className="space-y-3">
@@ -271,7 +258,7 @@ function DeliverableCard({
       {/* Soft corner glow */}
       <div
         aria-hidden
-        className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-bl ${glow} to-transparent blur-2xl opacity-70 transition-transform duration-500 group-hover:scale-125`}
+        className={`pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-gradient-to-bl ${glow} to-transparent opacity-70 blur-2xl transition-transform duration-500 group-hover:scale-125`}
       />
 
       <div
@@ -279,12 +266,8 @@ function DeliverableCard({
       >
         <Icon className="h-[22px] w-[22px]" />
       </div>
-      <h3 className="relative mb-2.5 text-lg font-bold text-slate-900">
-        {title}
-      </h3>
-      <p className="relative text-sm leading-relaxed text-slate-500 sm:text-base">
-        {desc}
-      </p>
+      <h3 className="relative mb-2.5 text-lg font-bold text-slate-900">{title}</h3>
+      <p className="relative text-sm leading-relaxed text-slate-500 sm:text-base">{desc}</p>
     </motion.div>
   );
 }
@@ -302,7 +285,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
       {/* Accent left border stripe */}
       <div
         aria-hidden
-        className="absolute bottom-0 left-0 top-0 w-1 rounded-l-2xl bg-gradient-to-b from-power-orange to-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="from-power-orange absolute top-0 bottom-0 left-0 w-1 rounded-l-2xl bg-gradient-to-b to-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
       />
       <h3 className="mb-3 text-lg font-bold text-slate-900">{q}</h3>
       <p className="text-base leading-relaxed text-slate-500">{a}</p>
@@ -477,9 +460,9 @@ export default function HowItWorksPage() {
       {/* ── Players Journey ── */}
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
         {/* Ambient blobs */}
-        <AmbientBlob className="h-96 w-96 bg-orange-100/40 -left-48 top-24" />
-        <AmbientBlob className="h-80 w-80 bg-indigo-100/30 -right-40 top-1/3" />
-        <AmbientBlob className="h-72 w-72 bg-indigo-100/30 -left-32 bottom-1/4" />
+        <AmbientBlob className="top-24 -left-48 h-96 w-96 bg-orange-100/40" />
+        <AmbientBlob className="top-1/3 -right-40 h-80 w-80 bg-indigo-100/30" />
+        <AmbientBlob className="bottom-1/4 -left-32 h-72 w-72 bg-indigo-100/30" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Section header */}
@@ -490,10 +473,7 @@ export default function HowItWorksPage() {
             viewport={{ once: true, margin: "-80px" }}
             className="mb-12 text-center lg:mb-28"
           >
-            <motion.div
-              variants={fadeSlideUp}
-              className="mb-5 flex justify-center"
-            >
+            <motion.div variants={fadeSlideUp} className="mb-5 flex justify-center">
               <SectionLabel label="For Parents & Guardians" color="orange" />
             </motion.div>
             <motion.h2
@@ -514,11 +494,7 @@ export default function HowItWorksPage() {
           {/* Step timeline: sticky step numbers + scroll-tracking beam */}
           <Timeline
             data={playerSteps.map<TimelineEntry>((step) => ({
-              title: (
-                <span className={cn("font-title", step.stepColor)}>
-                  {step.step}
-                </span>
-              ),
+              title: <span className={cn("font-title", step.stepColor)}>{step.step}</span>,
               content: <StepRow {...step} />,
             }))}
           />
@@ -532,13 +508,12 @@ export default function HowItWorksPage() {
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.025]"
           style={{
-            backgroundImage:
-              "radial-gradient(circle, #0f172a 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(circle, #0f172a 1px, transparent 1px)",
             backgroundSize: "32px 32px",
           }}
         />
-        <AmbientBlob className="h-96 w-96 bg-orange-100/50 -right-32 top-20" />
-        <AmbientBlob className="h-72 w-72 bg-sky-100/40 -left-24 bottom-16" />
+        <AmbientBlob className="top-20 -right-32 h-96 w-96 bg-orange-100/50" />
+        <AmbientBlob className="bottom-16 -left-24 h-72 w-72 bg-sky-100/40" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -548,10 +523,7 @@ export default function HowItWorksPage() {
             viewport={{ once: true, margin: "-80px" }}
             className="mb-14 text-center"
           >
-            <motion.div
-              variants={fadeSlideUp}
-              className="mb-5 flex justify-center"
-            >
+            <motion.div variants={fadeSlideUp} className="mb-5 flex justify-center">
               <SectionLabel label="What You Walk Away With" color="orange" />
             </motion.div>
             <motion.h2
@@ -564,8 +536,8 @@ export default function HowItWorksPage() {
               variants={fadeSlideUp}
               className="mx-auto mt-4 max-w-xl text-lg text-slate-500"
             >
-              Every plan is built for your child specifically—here&apos;s what
-              you&apos;ll actually have in hand after those three steps.
+              Every plan is built for your child specifically—here&apos;s what you&apos;ll actually
+              have in hand after those three steps.
             </motion.p>
           </motion.div>
 
@@ -585,8 +557,8 @@ export default function HowItWorksPage() {
 
       {/* ── The old way vs the clear way ── */}
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
-        <AmbientBlob className="h-96 w-96 bg-orange-100/40 -right-40 top-24" />
-        <AmbientBlob className="h-72 w-72 bg-indigo-100/30 -left-32 bottom-16" />
+        <AmbientBlob className="top-24 -right-40 h-96 w-96 bg-orange-100/40" />
+        <AmbientBlob className="bottom-16 -left-32 h-72 w-72 bg-indigo-100/30" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -596,10 +568,7 @@ export default function HowItWorksPage() {
             viewport={{ once: true, margin: "-80px" }}
             className="mb-14 text-center"
           >
-            <motion.div
-              variants={fadeSlideUp}
-              className="mb-5 flex justify-center"
-            >
+            <motion.div variants={fadeSlideUp} className="mb-5 flex justify-center">
               <SectionLabel label="The Difference" color="orange" />
             </motion.div>
             <motion.h2
@@ -612,8 +581,8 @@ export default function HowItWorksPage() {
               variants={fadeSlideUp}
               className="mx-auto mt-4 max-w-xl text-lg text-slate-500"
             >
-              Most parents piece it together from contradicting advice.
-              Here&apos;s what changes when there&apos;s an actual plan.
+              Most parents piece it together from contradicting advice. Here&apos;s what changes
+              when there&apos;s an actual plan.
             </motion.p>
           </motion.div>
 
@@ -629,12 +598,10 @@ export default function HowItWorksPage() {
               variants={cardReveal}
               className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-slate-50/80 p-7 sm:p-8"
             >
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              <p className="mb-1 text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase">
                 Without a plan
               </p>
-              <h3 className="mb-6 text-xl font-bold text-slate-700">
-                Figuring it out alone
-              </h3>
+              <h3 className="mb-6 text-xl font-bold text-slate-700">Figuring it out alone</h3>
               <ul className="space-y-4">
                 {[
                   "Advice from WhatsApp groups that contradicts itself",
@@ -646,9 +613,7 @@ export default function HowItWorksPage() {
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200/80 text-slate-400">
                       <X size={13} strokeWidth={2.5} />
                     </span>
-                    <span className="text-base leading-relaxed text-slate-500">
-                      {item}
-                    </span>
+                    <span className="text-base leading-relaxed text-slate-500">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -662,9 +627,9 @@ export default function HowItWorksPage() {
               {/* Corner glow */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-bl from-orange-400/20 to-transparent blur-2xl"
+                className="pointer-events-none absolute -top-12 -right-12 h-40 w-40 rounded-full bg-gradient-to-bl from-orange-400/20 to-transparent blur-2xl"
               />
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-power-orange">
+              <p className="text-power-orange mb-1 text-[11px] font-bold tracking-[0.16em] uppercase">
                 With PowerMySport
               </p>
               <h3 className="mb-6 text-xl font-bold text-slate-900">
@@ -681,15 +646,13 @@ export default function HowItWorksPage() {
                     <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200/70">
                       <CheckCircle size={13} strokeWidth={2.5} />
                     </span>
-                    <span className="text-base leading-relaxed text-slate-700">
-                      {item}
-                    </span>
+                    <span className="text-base leading-relaxed text-slate-700">{item}</span>
                   </li>
                 ))}
               </ul>
               <a
                 href="/assessment"
-                className="group mt-7 inline-flex items-center gap-1.5 text-sm font-bold text-power-orange transition-colors hover:text-orange-600"
+                className="group text-power-orange mt-7 inline-flex items-center gap-1.5 text-sm font-bold transition-colors hover:text-orange-600"
               >
                 Start free — it takes 10 minutes
                 <span className="transition-transform duration-200 group-hover:translate-x-0.5">
@@ -712,7 +675,7 @@ export default function HowItWorksPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        <AmbientBlob className="h-80 w-80 bg-indigo-100/40 -right-24 top-16" />
+        <AmbientBlob className="top-16 -right-24 h-80 w-80 bg-indigo-100/40" />
 
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -722,10 +685,7 @@ export default function HowItWorksPage() {
             viewport={{ once: true, margin: "-80px" }}
             className="mb-12 text-center"
           >
-            <motion.div
-              variants={fadeSlideUp}
-              className="mb-5 flex justify-center"
-            >
+            <motion.div variants={fadeSlideUp} className="mb-5 flex justify-center">
               <SectionLabel label="Common Questions" color="slate" />
             </motion.div>
             <motion.h2

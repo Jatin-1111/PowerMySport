@@ -118,8 +118,18 @@ const ENDPOINTS = {
     { path: "/api/venues?page=1&limit=10", weight: 4, method: "GET", label: "Venues (p1)" },
     { path: "/api/venues?page=2&limit=10", weight: 2, method: "GET", label: "Venues (p2)" },
     { path: "/api/venues/search?q=football", weight: 2, method: "GET", label: "Venues Search" },
-    { path: "/api/venues/discover?lat=28.6&lng=77.2", weight: 2, method: "GET", label: "Venues Discover" },
-    { path: "/api/coaches/discover?lat=28.6&lng=77.2", weight: 2, method: "GET", label: "Coaches Discover" },
+    {
+      path: "/api/venues/discover?lat=28.6&lng=77.2",
+      weight: 2,
+      method: "GET",
+      label: "Venues Discover",
+    },
+    {
+      path: "/api/coaches/discover?lat=28.6&lng=77.2",
+      weight: 2,
+      method: "GET",
+      label: "Coaches Discover",
+    },
     { path: "/api/v1/products", weight: 3, method: "GET", label: "Shop Products" },
   ],
 
@@ -131,8 +141,18 @@ const ENDPOINTS = {
     { path: "/api/venues?page=1&limit=10", weight: 4, method: "GET", label: "Venues (p1)" },
     { path: "/api/venues?page=2&limit=10", weight: 2, method: "GET", label: "Venues (p2)" },
     { path: "/api/venues/search?q=football", weight: 2, method: "GET", label: "Venues Search" },
-    { path: "/api/venues/discover?lat=28.6&lng=77.2", weight: 3, method: "GET", label: "Venues Discover" },
-    { path: "/api/coaches/discover?lat=28.6&lng=77.2", weight: 3, method: "GET", label: "Coaches Discover" },
+    {
+      path: "/api/venues/discover?lat=28.6&lng=77.2",
+      weight: 3,
+      method: "GET",
+      label: "Venues Discover",
+    },
+    {
+      path: "/api/coaches/discover?lat=28.6&lng=77.2",
+      weight: 3,
+      method: "GET",
+      label: "Coaches Discover",
+    },
     { path: "/api/v1/products", weight: 2, method: "GET", label: "Shop Products" },
   ],
 
@@ -141,28 +161,87 @@ const ENDPOINTS = {
     { path: "/api/venues?page=1&limit=10", weight: 4, method: "GET", label: "Venues (p1)" },
     { path: "/api/venues?page=2&limit=10", weight: 3, method: "GET", label: "Venues (p2)" },
     { path: "/api/venues?page=3&limit=10", weight: 2, method: "GET", label: "Venues (p3)" },
-    { path: "/api/venues/search?q=cricket", weight: 3, method: "GET", label: "Venues Search (cricket)" },
-    { path: "/api/venues/search?q=football", weight: 3, method: "GET", label: "Venues Search (football)" },
-    { path: "/api/venues/discover?lat=28.6&lng=77.2", weight: 3, method: "GET", label: "Venues Discover (Delhi)" },
-    { path: "/api/venues/discover?lat=19.0&lng=72.8", weight: 2, method: "GET", label: "Venues Discover (Mumbai)" },
+    {
+      path: "/api/venues/search?q=cricket",
+      weight: 3,
+      method: "GET",
+      label: "Venues Search (cricket)",
+    },
+    {
+      path: "/api/venues/search?q=football",
+      weight: 3,
+      method: "GET",
+      label: "Venues Search (football)",
+    },
+    {
+      path: "/api/venues/discover?lat=28.6&lng=77.2",
+      weight: 3,
+      method: "GET",
+      label: "Venues Discover (Delhi)",
+    },
+    {
+      path: "/api/venues/discover?lat=19.0&lng=72.8",
+      weight: 2,
+      method: "GET",
+      label: "Venues Discover (Mumbai)",
+    },
   ],
 
   discovery: [
-    { path: "/api/venues/discover?lat=28.6&lng=77.2", weight: 5, method: "GET", label: "Venues (Delhi)" },
-    { path: "/api/venues/discover?lat=19.0&lng=72.8", weight: 4, method: "GET", label: "Venues (Mumbai)" },
-    { path: "/api/venues/discover?lat=12.9&lng=77.6", weight: 3, method: "GET", label: "Venues (Bangalore)" },
-    { path: "/api/coaches/discover?lat=28.6&lng=77.2", weight: 5, method: "GET", label: "Coaches (Delhi)" },
-    { path: "/api/coaches/discover?lat=19.0&lng=72.8", weight: 4, method: "GET", label: "Coaches (Mumbai)" },
-    { path: "/api/coaches/discover?lat=12.9&lng=77.6", weight: 3, method: "GET", label: "Coaches (Bangalore)" },
+    {
+      path: "/api/venues/discover?lat=28.6&lng=77.2",
+      weight: 5,
+      method: "GET",
+      label: "Venues (Delhi)",
+    },
+    {
+      path: "/api/venues/discover?lat=19.0&lng=72.8",
+      weight: 4,
+      method: "GET",
+      label: "Venues (Mumbai)",
+    },
+    {
+      path: "/api/venues/discover?lat=12.9&lng=77.6",
+      weight: 3,
+      method: "GET",
+      label: "Venues (Bangalore)",
+    },
+    {
+      path: "/api/coaches/discover?lat=28.6&lng=77.2",
+      weight: 5,
+      method: "GET",
+      label: "Coaches (Delhi)",
+    },
+    {
+      path: "/api/coaches/discover?lat=19.0&lng=72.8",
+      weight: 4,
+      method: "GET",
+      label: "Coaches (Mumbai)",
+    },
+    {
+      path: "/api/coaches/discover?lat=12.9&lng=77.6",
+      weight: 3,
+      method: "GET",
+      label: "Coaches (Bangalore)",
+    },
   ],
 };
 
 // ─── ANSI Colors ────────────────────────────────────────────────────────────
 const C = {
-  reset: "\x1b[0m", bold: "\x1b[1m", dim: "\x1b[2m",
-  green: "\x1b[32m", red: "\x1b[31m", yellow: "\x1b[33m",
-  cyan: "\x1b[36m", blue: "\x1b[34m", magenta: "\x1b[35m", white: "\x1b[37m",
-  bgRed: "\x1b[41m", bgGreen: "\x1b[42m", bgYellow: "\x1b[43m",
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  dim: "\x1b[2m",
+  green: "\x1b[32m",
+  red: "\x1b[31m",
+  yellow: "\x1b[33m",
+  cyan: "\x1b[36m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
+  white: "\x1b[37m",
+  bgRed: "\x1b[41m",
+  bgGreen: "\x1b[42m",
+  bgYellow: "\x1b[43m",
 };
 
 // ─── Compact log histogram (bounded memory, ~2% bucket error) ────────────────
@@ -171,10 +250,17 @@ const C = {
 // is ~48k entries per endpoint and sorting them all at the end. This is O(1) mem.
 const SUBS = 32; // sub-buckets per power of two → ~2.2% relative spacing
 class Hist {
-  constructor() { this.buckets = new Map(); this.count = 0; this.sum = 0; this.min = Infinity; this.max = 0; }
+  constructor() {
+    this.buckets = new Map();
+    this.count = 0;
+    this.sum = 0;
+    this.min = Infinity;
+    this.max = 0;
+  }
   record(v) {
     if (v < 0) v = 0;
-    this.count++; this.sum += v;
+    this.count++;
+    this.sum += v;
     if (v < this.min) this.min = v;
     if (v > this.max) this.max = v;
     const idx = v <= 0 ? 0 : Math.floor(Math.log2(v) * SUBS);
@@ -194,29 +280,46 @@ class Hist {
     }
     return Math.round(this.max);
   }
-  get mean() { return this.count ? Math.round(this.sum / this.count) : 0; }
-  get minVal() { return this.count ? Math.round(this.min) : 0; }
-  get maxVal() { return Math.round(this.max); }
+  get mean() {
+    return this.count ? Math.round(this.sum / this.count) : 0;
+  }
+  get minVal() {
+    return this.count ? Math.round(this.min) : 0;
+  }
+  get maxVal() {
+    return Math.round(this.max);
+  }
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
 const stats = {
-  total: 0, succeeded: 0, failed: 0, rateLimited: 0, timedOut: 0,
-  backpressure: 0,            // arrivals we could not fire (in-flight cap hit)
+  total: 0,
+  succeeded: 0,
+  failed: 0,
+  rateLimited: 0,
+  timedOut: 0,
+  backpressure: 0, // arrivals we could not fire (in-flight cap hit)
   byStatus: {},
-  byEndpoint: {},             // label -> {total, succeeded, failed, limited, svc:Hist, co:Hist}
-  errKinds: {},               // categorised network errors
-  svc: new Hist(),            // service latency (send → response)
-  co: new Hist(),             // coordinated-omission-corrected (scheduled → response)
-  series: [],                 // per-second snapshots
-  errors: [],                 // small sample of error details
-  startTime: null, endTime: null,
+  byEndpoint: {}, // label -> {total, succeeded, failed, limited, svc:Hist, co:Hist}
+  errKinds: {}, // categorised network errors
+  svc: new Hist(), // service latency (send → response)
+  co: new Hist(), // coordinated-omission-corrected (scheduled → response)
+  series: [], // per-second snapshots
+  errors: [], // small sample of error details
+  startTime: null,
+  endTime: null,
 };
 
 const envDetails = {
-  Environment: "Unknown", Instance: "Unknown", AutoScaling: "Unknown",
-  LoadBalancer: "Unknown", Region: "Unknown", Health: "Unknown",
-  Status: "Unknown", Platform: "Unknown", CNAME: "Unknown",
+  Environment: "Unknown",
+  Instance: "Unknown",
+  AutoScaling: "Unknown",
+  LoadBalancer: "Unknown",
+  Region: "Unknown",
+  Health: "Unknown",
+  Status: "Unknown",
+  Platform: "Unknown",
+  CNAME: "Unknown",
 };
 
 let inFlight = 0;
@@ -259,9 +362,19 @@ async function fireRequest(scheduledAt) {
 
   const rec = measuring; // capture: should this request count toward stats?
   if (rec && !stats.byEndpoint[label]) {
-    stats.byEndpoint[label] = { total: 0, succeeded: 0, failed: 0, limited: 0, svc: new Hist(), co: new Hist() };
+    stats.byEndpoint[label] = {
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+      limited: 0,
+      svc: new Hist(),
+      co: new Hist(),
+    };
   }
-  if (rec) { stats.total++; stats.byEndpoint[label].total++; }
+  if (rec) {
+    stats.total++;
+    stats.byEndpoint[label].total++;
+  }
   inFlight++;
 
   const sentAt = performance.now();
@@ -283,17 +396,26 @@ async function fireRequest(scheduledAt) {
     if (rec) {
       const sk = String(res.status);
       stats.byStatus[sk] = (stats.byStatus[sk] ?? 0) + 1;
-      stats.svc.record(svcMs); stats.co.record(coMs);
+      stats.svc.record(svcMs);
+      stats.co.record(coMs);
       const eb = stats.byEndpoint[label];
-      eb.svc.record(svcMs); eb.co.record(coMs);
+      eb.svc.record(svcMs);
+      eb.co.record(coMs);
 
       const is429 = res.status === 429;
       const ok = res.ok || (is429 && COUNT_429_AS === "success");
-      if (is429) { stats.rateLimited++; eb.limited++; }
-      if (ok) { stats.succeeded++; eb.succeeded++; }
-      else {
-        stats.failed++; eb.failed++;
-        if (!is429 && stats.errors.length < 25) stats.errors.push({ url, status: res.status, latencyMs: Math.round(svcMs) });
+      if (is429) {
+        stats.rateLimited++;
+        eb.limited++;
+      }
+      if (ok) {
+        stats.succeeded++;
+        eb.succeeded++;
+      } else {
+        stats.failed++;
+        eb.failed++;
+        if (!is429 && stats.errors.length < 25)
+          stats.errors.push({ url, status: res.status, latencyMs: Math.round(svcMs) });
       }
     }
   } catch (err) {
@@ -302,26 +424,36 @@ async function fireRequest(scheduledAt) {
     const kind = classifyError(err);
     if (rec) {
       stats.failed++;
-      stats.svc.record(svcMs); stats.co.record(coMs);
+      stats.svc.record(svcMs);
+      stats.co.record(coMs);
       stats.errKinds[kind] = (stats.errKinds[kind] ?? 0) + 1;
       if (kind === "TIMEOUT") stats.timedOut++;
       const eb = stats.byEndpoint[label];
-      if (eb) { eb.failed++; eb.svc.record(svcMs); eb.co.record(coMs); }
-      if (stats.errors.length < 25) stats.errors.push({ url, error: kind, latencyMs: Math.round(svcMs) });
+      if (eb) {
+        eb.failed++;
+        eb.svc.record(svcMs);
+        eb.co.record(coMs);
+      }
+      if (stats.errors.length < 25)
+        stats.errors.push({ url, error: kind, latencyMs: Math.round(svcMs) });
     }
   } finally {
     inFlight--;
   }
 }
 
-function avgArr(arr) { return arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0; }
+function avgArr(arr) {
+  return arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+}
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
 function sparkline(values) {
   const ticks = "▁▂▃▄▅▆▇█";
   if (!values.length) return "";
   const max = Math.max(...values, 1);
-  return values.map((v) => ticks[Math.min(ticks.length - 1, Math.floor((v / max) * (ticks.length - 1)))]).join("");
+  return values
+    .map((v) => ticks[Math.min(ticks.length - 1, Math.floor((v / max) * (ticks.length - 1)))])
+    .join("");
 }
 
 // ─── Live Progress Bar ───────────────────────────────────────────────────────
@@ -336,14 +468,14 @@ function drawProgress(elapsed, total, phaseLabel, liveRps) {
 
   process.stdout.write(
     `\r${C.bold}[${bar}${C.bold}]${C.reset} ` +
-    `${C.cyan}${elapsed}s/${total}s${C.reset} ` +
-    `${C.dim}${phaseLabel}${C.reset} ` +
-    `${C.green}✓${stats.succeeded}${C.reset} ` +
-    `${C.red}✗${stats.failed}${C.reset} ` +
-    `${C.yellow}⏱${stats.rateLimited}${C.reset} ` +
-    `${C.magenta}~${liveRps}rps${C.reset} ` +
-    `${srCol}${sr}%${C.reset} ` +
-    `${C.dim}inflight:${inFlight} bp:${stats.backpressure}${C.reset}   `
+      `${C.cyan}${elapsed}s/${total}s${C.reset} ` +
+      `${C.dim}${phaseLabel}${C.reset} ` +
+      `${C.green}✓${stats.succeeded}${C.reset} ` +
+      `${C.red}✗${stats.failed}${C.reset} ` +
+      `${C.yellow}⏱${stats.rateLimited}${C.reset} ` +
+      `${C.magenta}~${liveRps}rps${C.reset} ` +
+      `${srCol}${sr}%${C.reset} ` +
+      `${C.dim}inflight:${inFlight} bp:${stats.backpressure}${C.reset}   `
   );
 }
 
@@ -372,7 +504,9 @@ function printReport() {
   console.log(`  Auto Scaling : ${envDetails.AutoScaling}`);
   console.log(`  Load Balancer: ${envDetails.LoadBalancer}`);
   console.log(`  Region       : ${envDetails.Region}`);
-  console.log(`  Health       : ${envDetails.Health.includes("Green") ? C.green : C.yellow}${envDetails.Health}${C.reset}`);
+  console.log(
+    `  Health       : ${envDetails.Health.includes("Green") ? C.green : C.yellow}${envDetails.Health}${C.reset}`
+  );
   console.log(`  CNAME        : ${envDetails.CNAME}`);
   console.log(`  Target URL   : ${TARGET_URL}`);
   console.log(`  HTTP Client  : ${UNDICI}`);
@@ -380,37 +514,57 @@ function printReport() {
   // ── Test Config ──
   console.log(`\n${C.bold}${C.blue}▸ Test Configuration${C.reset}`);
   console.log(`  Scenario     : ${SCENARIO}`);
-  console.log(`  Stages       : ${STAGES.map((s) => `${s.warmup ? "warmup " : ""}${s.rps}rps×${s.sec}s`).join("  →  ")}`);
+  console.log(
+    `  Stages       : ${STAGES.map((s) => `${s.warmup ? "warmup " : ""}${s.rps}rps×${s.sec}s`).join("  →  ")}`
+  );
   console.log(`  Peak RPS     : ${PEAK_RPS}`);
   console.log(`  Max in-flight: ${MAX_INFLIGHT}`);
-  console.log(`  Timeout      : ${TIMEOUT_MS}ms   Keep-alive: ${KEEPALIVE ? "on" : "off"}   429→${COUNT_429_AS}`);
+  console.log(
+    `  Timeout      : ${TIMEOUT_MS}ms   Keep-alive: ${KEEPALIVE ? "on" : "off"}   429→${COUNT_429_AS}`
+  );
 
   // ── Summary ──
   console.log(`\n${C.bold}${C.blue}▸ Summary  ${C.dim}(warmup excluded)${C.reset}`);
   console.log(`  Total Requests   : ${C.bold}${stats.total}${C.reset}`);
-  console.log(`  Requests Served  : ${C.green}${C.bold}${stats.succeeded}${C.reset}  (${successPct}% success rate)`);
-  console.log(`  Real Failures    : ${realFailed > 0 ? C.red : C.green}${C.bold}${realFailed}${C.reset}  (${failPct}%)`);
-  console.log(`  Rate Limited 429 : ${C.yellow}${C.bold}${stats.rateLimited}${C.reset}  (${rlPct}%) ${C.dim}← counted as ${COUNT_429_AS}${C.reset}`);
-  console.log(`  Timed Out        : ${stats.timedOut > 0 ? C.yellow : C.green}${stats.timedOut}${C.reset}`);
-  console.log(`  Backpressure     : ${stats.backpressure > 0 ? C.red : C.green}${stats.backpressure}${C.reset}  ${C.dim}← arrivals dropped because in-flight cap was hit${C.reset}`);
-  console.log(`  Actual RPS sent  : ${C.magenta}${actualRps}${C.reset}  ${C.dim}(target delivery: ${deliveryPct}%)${C.reset}`);
-  console.log(`  Effective RPS    : ${C.cyan}${throughputRps}${C.reset}  ${C.dim}(2xx + accepted 429)${C.reset}`);
+  console.log(
+    `  Requests Served  : ${C.green}${C.bold}${stats.succeeded}${C.reset}  (${successPct}% success rate)`
+  );
+  console.log(
+    `  Real Failures    : ${realFailed > 0 ? C.red : C.green}${C.bold}${realFailed}${C.reset}  (${failPct}%)`
+  );
+  console.log(
+    `  Rate Limited 429 : ${C.yellow}${C.bold}${stats.rateLimited}${C.reset}  (${rlPct}%) ${C.dim}← counted as ${COUNT_429_AS}${C.reset}`
+  );
+  console.log(
+    `  Timed Out        : ${stats.timedOut > 0 ? C.yellow : C.green}${stats.timedOut}${C.reset}`
+  );
+  console.log(
+    `  Backpressure     : ${stats.backpressure > 0 ? C.red : C.green}${stats.backpressure}${C.reset}  ${C.dim}← arrivals dropped because in-flight cap was hit${C.reset}`
+  );
+  console.log(
+    `  Actual RPS sent  : ${C.magenta}${actualRps}${C.reset}  ${C.dim}(target delivery: ${deliveryPct}%)${C.reset}`
+  );
+  console.log(
+    `  Effective RPS    : ${C.cyan}${throughputRps}${C.reset}  ${C.dim}(2xx + accepted 429)${C.reset}`
+  );
   console.log(`  Duration         : ${durationSec.toFixed(1)}s`);
 
   // ── Latency: service vs coordinated-omission corrected ──
-  console.log(`\n${C.bold}${C.blue}▸ Latency (ms)${C.reset}   ${C.dim}service = send→recv  |  corrected = scheduled→recv (real user-felt)${C.reset}`);
+  console.log(
+    `\n${C.bold}${C.blue}▸ Latency (ms)${C.reset}   ${C.dim}service = send→recv  |  corrected = scheduled→recv (real user-felt)${C.reset}`
+  );
   const latColor = (ms) => (ms < 200 ? C.green : ms < 500 ? C.yellow : C.red);
   const row = (name, h) => {
     const p = (q) => h.percentile(q);
     console.log(
       `  ${name.padEnd(11)} ` +
-      `min ${latColor(h.minVal)}${String(h.minVal).padStart(5)}${C.reset}  ` +
-      `mean ${latColor(h.mean)}${String(h.mean).padStart(5)}${C.reset}  ` +
-      `p50 ${latColor(p(50))}${String(p(50)).padStart(5)}${C.reset}  ` +
-      `p90 ${latColor(p(90))}${String(p(90)).padStart(5)}${C.reset}  ` +
-      `p95 ${latColor(p(95))}${String(p(95)).padStart(5)}${C.reset}  ` +
-      `p99 ${latColor(p(99))}${String(p(99)).padStart(5)}${C.reset}  ` +
-      `max ${latColor(h.maxVal)}${String(h.maxVal).padStart(5)}${C.reset}`
+        `min ${latColor(h.minVal)}${String(h.minVal).padStart(5)}${C.reset}  ` +
+        `mean ${latColor(h.mean)}${String(h.mean).padStart(5)}${C.reset}  ` +
+        `p50 ${latColor(p(50))}${String(p(50)).padStart(5)}${C.reset}  ` +
+        `p90 ${latColor(p(90))}${String(p(90)).padStart(5)}${C.reset}  ` +
+        `p95 ${latColor(p(95))}${String(p(95)).padStart(5)}${C.reset}  ` +
+        `p99 ${latColor(p(99))}${String(p(99)).padStart(5)}${C.reset}  ` +
+        `max ${latColor(h.maxVal)}${String(h.maxVal).padStart(5)}${C.reset}`
     );
   };
   if (stats.svc.count > 0) {
@@ -418,7 +572,9 @@ function printReport() {
     row("corrected", stats.co);
     const gap = stats.co.percentile(99) - stats.svc.percentile(99);
     if (gap > stats.svc.percentile(99) * 0.5 && gap > 50) {
-      console.log(`  ${C.yellow}⚠  Large gap between corrected and service p99 (${gap}ms) → requests are queuing; server can't drain at target RPS.${C.reset}`);
+      console.log(
+        `  ${C.yellow}⚠  Large gap between corrected and service p99 (${gap}ms) → requests are queuing; server can't drain at target RPS.${C.reset}`
+      );
     }
   } else {
     console.log("  No latency data");
@@ -429,8 +585,12 @@ function printReport() {
     const rpsSeries = stats.series.map((s) => s.rps);
     const p95Series = stats.series.map((s) => s.p95);
     console.log(`\n${C.bold}${C.blue}▸ Over Time  ${C.dim}(per second)${C.reset}`);
-    console.log(`  RPS  ${C.magenta}${sparkline(rpsSeries)}${C.reset}  ${C.dim}${Math.min(...rpsSeries)}–${Math.max(...rpsSeries)}${C.reset}`);
-    console.log(`  p95  ${C.cyan}${sparkline(p95Series)}${C.reset}  ${C.dim}${Math.min(...p95Series)}–${Math.max(...p95Series)}ms${C.reset}`);
+    console.log(
+      `  RPS  ${C.magenta}${sparkline(rpsSeries)}${C.reset}  ${C.dim}${Math.min(...rpsSeries)}–${Math.max(...rpsSeries)}${C.reset}`
+    );
+    console.log(
+      `  p95  ${C.cyan}${sparkline(p95Series)}${C.reset}  ${C.dim}${Math.min(...p95Series)}–${Math.max(...p95Series)}ms${C.reset}`
+    );
   }
 
   // ── Status Codes ──
@@ -453,7 +613,9 @@ function printReport() {
       OTHER: "uncategorised",
     };
     for (const [k, n] of Object.entries(stats.errKinds).sort((a, b) => b[1] - a[1])) {
-      console.log(`  ${C.red}${k.padEnd(13)}${C.reset} ${String(n).padStart(6)}  ${C.dim}${hint[k] ?? ""}${C.reset}`);
+      console.log(
+        `  ${C.red}${k.padEnd(13)}${C.reset} ${String(n).padStart(6)}  ${C.dim}${hint[k] ?? ""}${C.reset}`
+      );
     }
   }
 
@@ -466,10 +628,10 @@ function printReport() {
     const failCol = d.failed > 0 ? C.red : C.green;
     console.log(
       `  ${label.padEnd(28)} ${String(d.total).padStart(6)}  ` +
-      `${C.green}${String(d.succeeded).padStart(6)}${C.reset}  ` +
-      `${failCol}${String(d.failed).padStart(6)}${C.reset}  ` +
-      `${C.yellow}${String(d.limited).padStart(5)}${C.reset}  ` +
-      `${String(d.svc.percentile(50)).padStart(5)}  ${String(d.svc.percentile(95)).padStart(5)}`
+        `${C.green}${String(d.succeeded).padStart(6)}${C.reset}  ` +
+        `${failCol}${String(d.failed).padStart(6)}${C.reset}  ` +
+        `${C.yellow}${String(d.limited).padStart(5)}${C.reset}  ` +
+        `${String(d.svc.percentile(50)).padStart(5)}  ${String(d.svc.percentile(95)).padStart(5)}`
     );
   }
 
@@ -486,20 +648,34 @@ function printReport() {
   const ok = parseFloat(successPct);
   console.log(`\n${"═".repeat(72)}`);
   if (stats.backpressure > stats.total * 0.02) {
-    console.log(`${C.bgYellow}${C.bold}  ⚠️  SATURATED — couldn't sustain target RPS (backpressure). Lower RPS or scale up. ${C.reset}`);
+    console.log(
+      `${C.bgYellow}${C.bold}  ⚠️  SATURATED — couldn't sustain target RPS (backpressure). Lower RPS or scale up. ${C.reset}`
+    );
   } else if (realFailed === 0 && stats.timedOut === 0) {
-    console.log(`${C.bgGreen}${C.bold}  ✅ EXCELLENT — Zero real errors at target throughput.            ${C.reset}`);
+    console.log(
+      `${C.bgGreen}${C.bold}  ✅ EXCELLENT — Zero real errors at target throughput.            ${C.reset}`
+    );
   } else if (ok >= 99.5) {
-    console.log(`${C.bgGreen}${C.bold}  ✅ EXCELLENT — Server handled the load with flying colours!      ${C.reset}`);
+    console.log(
+      `${C.bgGreen}${C.bold}  ✅ EXCELLENT — Server handled the load with flying colours!      ${C.reset}`
+    );
   } else if (ok >= 95) {
-    console.log(`${C.bgYellow}${C.bold}  ⚠️  ACCEPTABLE — Minor failures. Check errors above.             ${C.reset}`);
+    console.log(
+      `${C.bgYellow}${C.bold}  ⚠️  ACCEPTABLE — Minor failures. Check errors above.             ${C.reset}`
+    );
   } else if (ok >= 80) {
-    console.log(`${C.bgYellow}${C.bold}  ⚠️  SOME ISSUES — Check 4xx/5xx errors and routes above.         ${C.reset}`);
+    console.log(
+      `${C.bgYellow}${C.bold}  ⚠️  SOME ISSUES — Check 4xx/5xx errors and routes above.         ${C.reset}`
+    );
   } else {
-    console.log(`${C.bgRed}${C.bold}  ❌ DEGRADED  — High failure rate. Server under stress.           ${C.reset}`);
+    console.log(
+      `${C.bgRed}${C.bold}  ❌ DEGRADED  — High failure rate. Server under stress.           ${C.reset}`
+    );
   }
   if (stats.rateLimited > 0) {
-    console.log(`${C.dim}  ℹ️  ${stats.rateLimited} requests were rate-limited (429). Ceiling ≈ ${throughputRps} req/s served on this run.${C.reset}`);
+    console.log(
+      `${C.dim}  ℹ️  ${stats.rateLimited} requests were rate-limited (429). Ceiling ≈ ${throughputRps} req/s served on this run.${C.reset}`
+    );
   }
   console.log("═".repeat(72) + "\n");
 
@@ -508,27 +684,66 @@ function printReport() {
 
 function writeExports(durationSec, derived) {
   if (OUT_JSON) {
-    const pct = (h) => ({ min: h.minVal, mean: h.mean, p50: h.percentile(50), p90: h.percentile(90), p95: h.percentile(95), p99: h.percentile(99), max: h.maxVal });
+    const pct = (h) => ({
+      min: h.minVal,
+      mean: h.mean,
+      p50: h.percentile(50),
+      p90: h.percentile(90),
+      p95: h.percentile(95),
+      p99: h.percentile(99),
+      max: h.maxVal,
+    });
     const out = {
-      target: TARGET_URL, scenario: SCENARIO, stages: STAGES,
-      env: envDetails, client: UNDICI,
-      durationSec, ...derived,
-      total: stats.total, succeeded: stats.succeeded, failed: stats.failed,
-      rateLimited: stats.rateLimited, timedOut: stats.timedOut, backpressure: stats.backpressure,
-      byStatus: stats.byStatus, errKinds: stats.errKinds,
+      target: TARGET_URL,
+      scenario: SCENARIO,
+      stages: STAGES,
+      env: envDetails,
+      client: UNDICI,
+      durationSec,
+      ...derived,
+      total: stats.total,
+      succeeded: stats.succeeded,
+      failed: stats.failed,
+      rateLimited: stats.rateLimited,
+      timedOut: stats.timedOut,
+      backpressure: stats.backpressure,
+      byStatus: stats.byStatus,
+      errKinds: stats.errKinds,
       latency: { service: pct(stats.svc), corrected: pct(stats.co) },
-      byEndpoint: Object.fromEntries(Object.entries(stats.byEndpoint).map(([k, d]) => [k, { total: d.total, succeeded: d.succeeded, failed: d.failed, limited: d.limited, p50: d.svc.percentile(50), p95: d.svc.percentile(95) }])),
+      byEndpoint: Object.fromEntries(
+        Object.entries(stats.byEndpoint).map(([k, d]) => [
+          k,
+          {
+            total: d.total,
+            succeeded: d.succeeded,
+            failed: d.failed,
+            limited: d.limited,
+            p50: d.svc.percentile(50),
+            p95: d.svc.percentile(95),
+          },
+        ])
+      ),
       series: stats.series,
       timestamp: new Date().toISOString(),
     };
-    try { writeFileSync(OUT_JSON, JSON.stringify(out, null, 2)); console.log(`${C.green}  ✓ Wrote JSON results → ${OUT_JSON}${C.reset}`); }
-    catch (e) { console.log(`${C.red}  ✗ Could not write ${OUT_JSON}: ${e.message}${C.reset}`); }
+    try {
+      writeFileSync(OUT_JSON, JSON.stringify(out, null, 2));
+      console.log(`${C.green}  ✓ Wrote JSON results → ${OUT_JSON}${C.reset}`);
+    } catch (e) {
+      console.log(`${C.red}  ✗ Could not write ${OUT_JSON}: ${e.message}${C.reset}`);
+    }
   }
   if (OUT_CSV) {
     const head = "second,rps,ok,fail,limited,p50,p95,inflight\n";
-    const body = stats.series.map((s) => `${s.t},${s.rps},${s.ok},${s.fail},${s.limited},${s.p50},${s.p95},${s.inflight}`).join("\n");
-    try { writeFileSync(OUT_CSV, head + body + "\n"); console.log(`${C.green}  ✓ Wrote time series CSV → ${OUT_CSV}${C.reset}`); }
-    catch (e) { console.log(`${C.red}  ✗ Could not write ${OUT_CSV}: ${e.message}${C.reset}`); }
+    const body = stats.series
+      .map((s) => `${s.t},${s.rps},${s.ok},${s.fail},${s.limited},${s.p50},${s.p95},${s.inflight}`)
+      .join("\n");
+    try {
+      writeFileSync(OUT_CSV, head + body + "\n");
+      console.log(`${C.green}  ✓ Wrote time series CSV → ${OUT_CSV}${C.reset}`);
+    } catch (e) {
+      console.log(`${C.red}  ✗ Could not write ${OUT_CSV}: ${e.message}${C.reset}`);
+    }
   }
 }
 
@@ -538,26 +753,45 @@ async function fetchEbStatus() {
   console.log(`${C.dim}  Fetching environment status from AWS Elastic Beanstalk...${C.reset}`);
   try {
     const { stdout: statusOut } = await execAsync("eb status", { cwd: ".." });
-    const ex = (key) => { const m = statusOut.match(new RegExp(`${key}: (.+)`)); return m ? m[1].trim() : null; };
+    const ex = (key) => {
+      const m = statusOut.match(new RegExp(`${key}: (.+)`));
+      return m ? m[1].trim() : null;
+    };
     const envNameMatch = statusOut.match(/Environment details for: (.+)/);
     if (envNameMatch) envDetails.Environment = envNameMatch[1].trim();
     if (ex("Region")) envDetails.Region = ex("Region");
     if (ex("Health")) envDetails.Health = ex("Health") + (ex("Health") === "Green" ? " ✓" : "");
     if (ex("Status")) envDetails.Status = ex("Status");
-    if (ex("Platform")) { const p = ex("Platform"); envDetails.Platform = p.includes("::platform/") ? p.split("::platform/")[1] : p; }
+    if (ex("Platform")) {
+      const p = ex("Platform");
+      envDetails.Platform = p.includes("::platform/") ? p.split("::platform/")[1] : p;
+    }
     if (ex("CNAME")) envDetails.CNAME = ex("CNAME");
     try {
-      const { stdout: configOut } = await execAsync(`eb config ${envDetails.Environment} --display`, { cwd: ".." });
-      const exc = (key) => { const m = configOut.match(new RegExp(`${key}:\\s*(.+)`)); return m ? m[1].trim().replace(/^['"]|['"]$/g, "") : null; };
+      const { stdout: configOut } = await execAsync(
+        `eb config ${envDetails.Environment} --display`,
+        { cwd: ".." }
+      );
+      const exc = (key) => {
+        const m = configOut.match(new RegExp(`${key}:\\s*(.+)`));
+        return m ? m[1].trim().replace(/^['"]|['"]$/g, "") : null;
+      };
       if (exc("InstanceType")) envDetails.Instance = exc("InstanceType");
-      const mn = exc("MinSize"), mx = exc("MaxSize");
+      const mn = exc("MinSize"),
+        mx = exc("MaxSize");
       if (mn && mx) envDetails.AutoScaling = `Min ${mn} → Max ${mx} instances`;
       const lb = exc("LoadBalancerType");
       if (lb) envDetails.LoadBalancer = lb === "application" ? "Application LB (ALB)" : lb;
-    } catch { /* ignore */ }
-    console.log(`${C.green}  ✓ Environment: ${envDetails.Environment} (${envDetails.Health})${C.reset}\n`);
+    } catch {
+      /* ignore */
+    }
+    console.log(
+      `${C.green}  ✓ Environment: ${envDetails.Environment} (${envDetails.Health})${C.reset}\n`
+    );
   } catch {
-    console.log(`${C.yellow}  ⚠️  Could not fetch live eb status (eb CLI not found / not configured).${C.reset}\n`);
+    console.log(
+      `${C.yellow}  ⚠️  Could not fetch live eb status (eb CLI not found / not configured).${C.reset}\n`
+    );
   }
 }
 
@@ -566,7 +800,9 @@ async function main() {
   console.clear();
   console.log(`\n${C.bold}${C.cyan}  ⚡ PowerMySport — Production Load Test v2${C.reset}`);
   console.log(`  ${C.dim}Target : ${TARGET_URL}${C.reset}`);
-  console.log(`  ${C.dim}Plan   : ${STAGES.map((s) => `${s.warmup ? "warmup " : ""}${s.rps}rps×${s.sec}s`).join(" → ")}  |  scenario: ${SCENARIO}${C.reset}`);
+  console.log(
+    `  ${C.dim}Plan   : ${STAGES.map((s) => `${s.warmup ? "warmup " : ""}${s.rps}rps×${s.sec}s`).join(" → ")}  |  scenario: ${SCENARIO}${C.reset}`
+  );
   console.log(`  ${C.dim}Client : ${UNDICI}${C.reset}\n`);
 
   await fetchEbStatus();
@@ -575,9 +811,11 @@ async function main() {
   console.log(`${C.dim}  Pinging server...${C.reset}`);
   try {
     const ping = await fetch(`${TARGET_URL}/api/health`, { signal: AbortSignal.timeout(8000) });
-    console.log(ping.ok
-      ? `${C.green}  ✓ Server is up (${ping.status})${C.reset}\n`
-      : `${C.yellow}  ⚠️  Health check returned ${ping.status}. Proceeding anyway.${C.reset}\n`);
+    console.log(
+      ping.ok
+        ? `${C.green}  ✓ Server is up (${ping.status})${C.reset}\n`
+        : `${C.yellow}  ⚠️  Health check returned ${ping.status}. Proceeding anyway.${C.reset}\n`
+    );
   } catch (err) {
     console.log(`${C.red}  ✗ Cannot reach server: ${err.message}${C.reset}\n`);
     process.exit(1);
@@ -590,7 +828,10 @@ async function main() {
   let lastDone = 0;
   let windowHist = new Hist();
   const origSvcRecord = stats.svc.record.bind(stats.svc);
-  stats.svc.record = (v) => { origSvcRecord(v); if (measuring) windowHist.record(v); };
+  stats.svc.record = (v) => {
+    origSvcRecord(v);
+    if (measuring) windowHist.record(v);
+  };
 
   let secondElapsed = 0;
   const sampler = setInterval(() => {
@@ -600,9 +841,13 @@ async function main() {
     lastDone = doneNow;
     if (measuring) {
       stats.series.push({
-        t: secondElapsed, rps,
-        ok: stats.succeeded, fail: stats.failed, limited: stats.rateLimited,
-        p50: windowHist.percentile(50), p95: windowHist.percentile(95),
+        t: secondElapsed,
+        rps,
+        ok: stats.succeeded,
+        fail: stats.failed,
+        limited: stats.rateLimited,
+        p50: windowHist.percentile(50),
+        p95: windowHist.percentile(95),
         inflight: inFlight,
       });
       windowHist = new Hist();
@@ -613,12 +858,16 @@ async function main() {
   // Open-loop scheduler: anchored to absolute scheduled times, no drift,
   // catches up after stalls, and counts dropped arrivals as backpressure.
   let stageIdx = 0;
-  let stageStartMs = 0;            // perf time when current stage began
+  let stageStartMs = 0; // perf time when current stage began
   let firedInStage = 0;
   let curPhaseLabel = STAGES[0] ? phaseLabel(STAGES[0], 0) : "";
 
-  function phaseLabel(stage, idx) { return `${stage.warmup ? "warmup" : "stage " + (idx + 1)} @${stage.rps}rps`; }
-  function currentPhaseLabel() { return curPhaseLabel; }
+  function phaseLabel(stage, idx) {
+    return `${stage.warmup ? "warmup" : "stage " + (idx + 1)} @${stage.rps}rps`;
+  }
+  function currentPhaseLabel() {
+    return curPhaseLabel;
+  }
 
   await new Promise((resolve) => {
     function tick() {
@@ -653,7 +902,10 @@ async function main() {
         if (stageIdx >= STAGES.length) {
           stopped = true;
           const drain = setInterval(() => {
-            if (inFlight === 0) { clearInterval(drain); resolve(); }
+            if (inFlight === 0) {
+              clearInterval(drain);
+              resolve();
+            }
           }, 50);
           return;
         }
@@ -677,7 +929,11 @@ process.on("SIGINT", () => {
   stopped = true;
   stats.endTime = Date.now();
   console.log(`\n${C.yellow}  Interrupted — printing partial results...${C.reset}`);
-  try { printReport(); } catch { /* ignore */ }
+  try {
+    printReport();
+  } catch {
+    /* ignore */
+  }
   process.exit(130);
 });
 
@@ -688,8 +944,12 @@ function parseArgs(argv) {
     if (argv[i].startsWith("--")) {
       const next = argv[i + 1];
       // boolean flags like --no-keepalive / --no-eb take no value
-      if (next === undefined || next.startsWith("--")) { result[argv[i]] = true; }
-      else { result[argv[i]] = next; i++; }
+      if (next === undefined || next.startsWith("--")) {
+        result[argv[i]] = true;
+      } else {
+        result[argv[i]] = next;
+        i++;
+      }
     }
   }
   return result;
@@ -701,10 +961,12 @@ function parseStages(spec, rps, duration, warmup) {
   if (typeof spec === "string") {
     for (const part of spec.split(",")) {
       const [r, s] = part.split(":").map((x) => parseInt(x.trim()));
-      if (Number.isFinite(r) && Number.isFinite(s) && r > 0 && s > 0) stages.push({ rps: r, sec: s, warmup: false });
+      if (Number.isFinite(r) && Number.isFinite(s) && r > 0 && s > 0)
+        stages.push({ rps: r, sec: s, warmup: false });
     }
   }
-  if (stages.filter((s) => !s.warmup).length === 0) stages.push({ rps, sec: duration, warmup: false });
+  if (stages.filter((s) => !s.warmup).length === 0)
+    stages.push({ rps, sec: duration, warmup: false });
   return stages;
 }
 

@@ -1,13 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import {
-    animate,
-    motion,
-    useInView,
-    useMotionValue,
-    Variants,
-} from "framer-motion";
+import { animate, motion, useInView, useMotionValue, Variants } from "framer-motion";
 import React, { useEffect, useRef } from "react";
 
 export interface Stat {
@@ -41,13 +35,7 @@ const statVariants: Variants = {
 
 // ─── Animated number: detects if value is numeric and animates from 0 ─────────
 
-function AnimatedStatValue({
-  value,
-  className,
-}: {
-  value: string;
-  className?: string;
-}) {
+function AnimatedStatValue({ value, className }: { value: string; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-60px" });
 
@@ -66,9 +54,7 @@ function AnimatedStatValue({
         onUpdate: (latest) => {
           if (ref.current) {
             const formatted =
-              numericPart % 1 === 0
-                ? Math.round(latest).toString()
-                : latest.toFixed(1);
+              numericPart % 1 === 0 ? Math.round(latest).toString() : latest.toFixed(1);
             ref.current.textContent = `${formatted}${suffix}`;
           }
         },
@@ -86,11 +72,7 @@ function AnimatedStatValue({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-export const Stats: React.FC<StatsProps> = ({
-  stats,
-  variant = "default",
-  columns = 4,
-}) => {
+export const Stats: React.FC<StatsProps> = ({ stats, variant = "default", columns = 4 }) => {
   const gridCols = {
     2: "grid-cols-1 sm:grid-cols-2",
     3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
@@ -104,14 +86,14 @@ export const Stats: React.FC<StatsProps> = ({
       className={cn(
         "relative overflow-hidden py-16 sm:py-20 lg:py-24",
         isGradient
-          ? "bg-gradient-to-br from-power-orange via-amber-500 to-turf-green"
-          : "bg-slate-50/60",
+          ? "from-power-orange to-turf-green bg-gradient-to-br via-amber-500"
+          : "bg-slate-50/60"
       )}
     >
       {/* Ambient overlays */}
       {isGradient && (
         <>
-          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+          <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         </>
       )}
@@ -131,30 +113,27 @@ export const Stats: React.FC<StatsProps> = ({
               className={cn(
                 "text-center",
                 !isGradient &&
-                  "rounded-2xl border border-white/70 bg-white/80 px-6 py-8 backdrop-blur-sm premium-shadow",
+                  "premium-shadow rounded-2xl border border-white/70 bg-white/80 px-6 py-8 backdrop-blur-sm"
               )}
             >
               <AnimatedStatValue
                 value={stat.value}
                 className={cn(
                   "text-4xl font-bold sm:text-5xl",
-                  isGradient ? "text-white" : "text-power-orange",
+                  isGradient ? "text-white" : "text-power-orange"
                 )}
               />
               <div
                 className={cn(
                   "mt-2 text-lg font-semibold",
-                  isGradient ? "text-white" : "text-slate-900",
+                  isGradient ? "text-white" : "text-slate-900"
                 )}
               >
                 {stat.label}
               </div>
               {stat.description && (
                 <div
-                  className={cn(
-                    "mt-1 text-sm",
-                    isGradient ? "text-white/80" : "text-slate-500",
-                  )}
+                  className={cn("mt-1 text-sm", isGradient ? "text-white/80" : "text-slate-500")}
                 >
                   {stat.description}
                 </div>

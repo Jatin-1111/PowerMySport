@@ -37,7 +37,7 @@ const walletTransactionSchema = new Schema<WalletTransaction>(
     referenceId: { type: String },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const walletSchema = new Schema<WalletDocument>(
@@ -72,7 +72,7 @@ const walletSchema = new Schema<WalletDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 export const Wallet = mongoose.model<WalletDocument>("Wallet", walletSchema);

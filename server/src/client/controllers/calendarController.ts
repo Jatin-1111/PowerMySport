@@ -10,10 +10,7 @@ const log = __rootLog.child("calendar");
  * Returns all non-cancelled bookings for the authenticated user in the given date range.
  * Optimised for calendar dot rendering — only selects fields needed for the UI.
  */
-export const getCalendarBookings = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCalendarBookings = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -27,12 +24,10 @@ export const getCalendarBookings = async (
     };
 
     if (!startDate || !endDate) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "startDate and endDate are required",
-        });
+      res.status(400).json({
+        success: false,
+        message: "startDate and endDate are required",
+      });
       return;
     }
 
@@ -62,9 +57,7 @@ export const getCalendarBookings = async (
     res.json({ success: true, data: { bookings } });
   } catch (error) {
     log.error("[getCalendarBookings]", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch calendar bookings" });
+    res.status(500).json({ success: false, message: "Failed to fetch calendar bookings" });
   }
 };
 
@@ -72,10 +65,7 @@ export const getCalendarBookings = async (
  * GET /api/calendar/events?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  * Returns all personal calendar events for the user (optionally filtered by date range).
  */
-export const getCalendarEvents = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCalendarEvents = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -107,9 +97,7 @@ export const getCalendarEvents = async (
     res.json({ success: true, data: { events } });
   } catch (error) {
     log.error("[getCalendarEvents]", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch calendar events" });
+    res.status(500).json({ success: false, message: "Failed to fetch calendar events" });
   }
 };
 
@@ -117,10 +105,7 @@ export const getCalendarEvents = async (
  * POST /api/calendar/events
  * Create a new personal calendar event.
  */
-export const createCalendarEvent = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createCalendarEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -137,9 +122,7 @@ export const createCalendarEvent = async (
     };
 
     if (!title?.trim() || !date) {
-      res
-        .status(400)
-        .json({ success: false, message: "title and date are required" });
+      res.status(400).json({ success: false, message: "title and date are required" });
       return;
     }
 
@@ -154,12 +137,10 @@ export const createCalendarEvent = async (
       userId: new mongoose.Types.ObjectId(user.id),
     });
     if (count >= 200) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "Maximum 200 calendar events allowed",
-        });
+      res.status(400).json({
+        success: false,
+        message: "Maximum 200 calendar events allowed",
+      });
       return;
     }
 
@@ -183,9 +164,7 @@ export const createCalendarEvent = async (
     });
   } catch (error) {
     log.error("[createCalendarEvent]", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to create calendar event" });
+    res.status(500).json({ success: false, message: "Failed to create calendar event" });
   }
 };
 
@@ -193,10 +172,7 @@ export const createCalendarEvent = async (
  * PUT /api/calendar/events/:id
  * Update an existing personal calendar event (owner-scoped).
  */
-export const updateCalendarEvent = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateCalendarEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -233,7 +209,7 @@ export const updateCalendarEvent = async (
         userId: new mongoose.Types.ObjectId(user.id),
       } as any,
       update,
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     );
 
     if (!event) {
@@ -244,9 +220,7 @@ export const updateCalendarEvent = async (
     res.json({ success: true, data: { event: (event as any).toJSON() } });
   } catch (error) {
     log.error("[updateCalendarEvent]", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update calendar event" });
+    res.status(500).json({ success: false, message: "Failed to update calendar event" });
   }
 };
 
@@ -254,10 +228,7 @@ export const updateCalendarEvent = async (
  * DELETE /api/calendar/events/:id
  * Delete a personal calendar event (owner-scoped).
  */
-export const deleteCalendarEvent = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteCalendarEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -279,8 +250,6 @@ export const deleteCalendarEvent = async (
     res.json({ success: true, message: "Event deleted" });
   } catch (error) {
     log.error("[deleteCalendarEvent]", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to delete calendar event" });
+    res.status(500).json({ success: false, message: "Failed to delete calendar event" });
   }
 };

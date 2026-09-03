@@ -26,15 +26,9 @@ export function AvailabilityEditor({
 
   const addWindow = (dayOfWeek: number) =>
     onWindowsChange([...windows, { dayOfWeek, start: "09:00", end: "10:00" }]);
-  const updateWindow = (
-    idx: number,
-    patch: Partial<AdminExpertAvailabilityWindow>,
-  ) =>
-    onWindowsChange(
-      windows.map((w, i) => (i === idx ? { ...w, ...patch } : w)),
-    );
-  const removeWindow = (idx: number) =>
-    onWindowsChange(windows.filter((_, i) => i !== idx));
+  const updateWindow = (idx: number, patch: Partial<AdminExpertAvailabilityWindow>) =>
+    onWindowsChange(windows.map((w, i) => (i === idx ? { ...w, ...patch } : w)));
+  const removeWindow = (idx: number) => onWindowsChange(windows.filter((_, i) => i !== idx));
 
   return (
     <div>
@@ -48,9 +42,7 @@ export function AvailabilityEditor({
               key={day}
               className="flex flex-col gap-2 border-b border-slate-100 pb-3 last:border-0 sm:flex-row sm:items-start"
             >
-              <div className="w-12 pt-2 text-sm font-semibold text-slate-700">
-                {day}
-              </div>
+              <div className="w-12 pt-2 text-sm font-semibold text-slate-700">{day}</div>
               <div className="flex-1 space-y-2">
                 {dayWindows.length === 0 && (
                   <p className="pt-2 text-sm text-slate-400">Unavailable</p>
@@ -60,9 +52,7 @@ export function AvailabilityEditor({
                     <input
                       type="time"
                       value={w.start}
-                      onChange={(e) =>
-                        updateWindow(i, { start: e.target.value })
-                      }
+                      onChange={(e) => updateWindow(i, { start: e.target.value })}
                       className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
                     />
                     <span className="text-slate-400">–</span>
@@ -85,7 +75,7 @@ export function AvailabilityEditor({
                 <button
                   type="button"
                   onClick={() => addWindow(dayIdx)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-power-orange hover:underline"
+                  className="text-power-orange inline-flex items-center gap-1 text-xs font-semibold hover:underline"
                 >
                   <Plus size={13} /> Add window
                 </button>
@@ -109,9 +99,7 @@ export function AvailabilityEditor({
               {d}
               <button
                 type="button"
-                onClick={() =>
-                  onBlackoutChange(blackout.filter((x) => x !== d))
-                }
+                onClick={() => onBlackoutChange(blackout.filter((x) => x !== d))}
                 aria-label="Remove date"
               >
                 <Trash2 size={12} />

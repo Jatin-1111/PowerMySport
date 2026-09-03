@@ -190,12 +190,18 @@ describe("buildQuestion — weakness", () => {
   });
 
   it("daughter gender label", () => {
-    const q = buildQuestion(form({ sport: "Badminton", gender: "FEMALE", age: "10", weaknessArea: "technique" }), "weakness");
+    const q = buildQuestion(
+      form({ sport: "Badminton", gender: "FEMALE", age: "10", weaknessArea: "technique" }),
+      "weakness"
+    );
     expect(q).toContain("daughter");
   });
 
   it("unknown gender uses neutral 'child'", () => {
-    const q = buildQuestion(form({ sport: "Badminton", gender: null, age: "10", weaknessArea: "technique" }), "weakness");
+    const q = buildQuestion(
+      form({ sport: "Badminton", gender: null, age: "10", weaknessArea: "technique" }),
+      "weakness"
+    );
     expect(q).toContain("child");
     expect(q).not.toContain("son");
     expect(q).not.toContain("daughter");
@@ -231,8 +237,12 @@ describe("buildQuestion — weakness", () => {
 
   it("includes the parent's specific weaknessDetail when provided", () => {
     const q = buildQuestion(
-      form({ sport: "Tennis", weaknessArea: "technique", weaknessDetail: "Breaks down on backhand under pressure" }),
-      "weakness",
+      form({
+        sport: "Tennis",
+        weaknessArea: "technique",
+        weaknessDetail: "Breaks down on backhand under pressure",
+      }),
+      "weakness"
     );
     expect(q).toContain("Breaks down on backhand under pressure");
     expect(q).toContain("do not default back to generic advice");
@@ -343,7 +353,10 @@ describe("buildQuestion — levelup", () => {
   });
 
   it("omits optional sections when null", () => {
-    const q = buildQuestion(form({ sport: "Cricket", currentLevel: "club", targetLevel: "state" }), "levelup");
+    const q = buildQuestion(
+      form({ sport: "Cricket", currentLevel: "club", targetLevel: "state" }),
+      "levelup"
+    );
     // timeAtLevel is null → sentence should not appear
     expect(q).not.toContain("They have been at their current level for");
     // training is null → sentence should not appear
@@ -400,7 +413,10 @@ describe("buildQuestion — custom", () => {
   });
 
   it("no sport shows fallback without sport line", () => {
-    const q = buildQuestion(form({ sport: "", age: "10", challenge: "Feeling burnt out" }), "custom");
+    const q = buildQuestion(
+      form({ sport: "", age: "10", challenge: "Feeling burnt out" }),
+      "custom"
+    );
     expect(q).not.toContain("plays");
     expect(q).toContain("Feeling burnt out");
   });
@@ -411,7 +427,10 @@ describe("buildQuestion — custom", () => {
   });
 
   it("nutrition category label includes burnout", () => {
-    const q = buildQuestion(form({ sport: "Tennis", challengeCategory: "nutrition", challenge: "Burnout recovery" }), "custom");
+    const q = buildQuestion(
+      form({ sport: "Tennis", challengeCategory: "nutrition", challenge: "Burnout recovery" }),
+      "custom"
+    );
     expect(q).toContain("burnout");
   });
 
@@ -421,7 +440,10 @@ describe("buildQuestion — custom", () => {
   });
 
   it("null desiredOutcome falls back gracefully", () => {
-    const q = buildQuestion(form({ sport: "Tennis", challenge: "some challenge", desiredOutcome: null }), "custom");
+    const q = buildQuestion(
+      form({ sport: "Tennis", challenge: "some challenge", desiredOutcome: null }),
+      "custom"
+    );
     expect(q).toContain("actionable advice");
   });
 });
@@ -455,7 +477,10 @@ describe("buildPayload", () => {
   });
 
   it("maps female gender correctly", () => {
-    const payload = buildPayload(form({ sport: "Badminton", age: "10", gender: "FEMALE" }), "weakness");
+    const payload = buildPayload(
+      form({ sport: "Badminton", age: "10", gender: "FEMALE" }),
+      "weakness"
+    );
     expect(payload.child_gender).toBe("female");
   });
 
@@ -525,9 +550,18 @@ describe("buildPayload", () => {
   });
 
   it("custom objective is inferred from experienceLevel when answered", () => {
-    expect(buildPayload(form({ sport: "Tennis", experienceLevel: "beginner" }), "custom").primary_objective).toBe("Recreational");
-    expect(buildPayload(form({ sport: "Tennis", experienceLevel: "intermediate" }), "custom").primary_objective).toBe("Fitness");
-    expect(buildPayload(form({ sport: "Tennis", experienceLevel: "competitive" }), "custom").primary_objective).toBe("Compete");
+    expect(
+      buildPayload(form({ sport: "Tennis", experienceLevel: "beginner" }), "custom")
+        .primary_objective
+    ).toBe("Recreational");
+    expect(
+      buildPayload(form({ sport: "Tennis", experienceLevel: "intermediate" }), "custom")
+        .primary_objective
+    ).toBe("Fitness");
+    expect(
+      buildPayload(form({ sport: "Tennis", experienceLevel: "competitive" }), "custom")
+        .primary_objective
+    ).toBe("Compete");
   });
 
   it("plan_horizon is short for weakness/tournament, journey for levelup, auto for custom", () => {

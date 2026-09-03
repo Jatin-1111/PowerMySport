@@ -39,15 +39,14 @@ export default function ForgotPasswordPage() {
 
   return (
     <SlideUp duration={0.6} yOffset={20}>
-      <Card className="w-full glass-panel-heavy premium-shadow border-0">
+      <Card className="glass-panel-heavy premium-shadow w-full border-0">
         <CardHeader>
-          <h1 className="text-2xl font-bold text-center text-slate-900 dark:text-white sm:text-3xl">
+          <h1 className="text-center text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
             Forgot Password
           </h1>
           {!success && (
-            <p className="text-center mt-2 text-sm text-slate-600 dark:text-slate-300 sm:text-base">
-              Enter your email address and we&apos;ll send you instructions to
-              reset your password.
+            <p className="mt-2 text-center text-sm text-slate-600 sm:text-base dark:text-slate-300">
+              Enter your email address and we&apos;ll send you instructions to reset your password.
             </p>
           )}
         </CardHeader>
@@ -57,7 +56,7 @@ export default function ForgotPasswordPage() {
             <>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-slate-900 dark:text-white">
+                  <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
                     Email
                   </label>
                   <input
@@ -65,7 +64,7 @@ export default function ForgotPasswordPage() {
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white/50 backdrop-blur-sm text-slate-900 transition-all"
+                    className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white/50 px-4 py-3 text-slate-900 backdrop-blur-sm transition-all focus:ring-2 focus:outline-none dark:border-slate-600"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -74,17 +73,17 @@ export default function ForgotPasswordPage() {
                   type="submit"
                   disabled={isSubmitting}
                   variant="primary"
-                  className="w-full premium-shadow"
+                  className="premium-shadow w-full"
                 >
                   {isSubmitting ? "Sending..." : "Send Reset Instructions"}
                 </Button>
               </form>
 
-              <p className="text-center mt-6 text-slate-600 dark:text-slate-300">
+              <p className="mt-6 text-center text-slate-600 dark:text-slate-300">
                 Remember your password?{" "}
                 <Link
                   href="/login"
-                  className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
+                  className="text-power-orange font-semibold transition-colors hover:text-orange-600"
                 >
                   Login
                 </Link>
@@ -92,8 +91,8 @@ export default function ForgotPasswordPage() {
             </>
           ) : (
             <div className="space-y-4">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                <p className="text-emerald-800 text-center font-semibold">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-center font-semibold text-emerald-800">
                   Password reset instructions have been sent to your email!
                 </p>
               </div>
@@ -101,7 +100,7 @@ export default function ForgotPasswordPage() {
               <div className="text-center">
                 <Link
                   href="/login"
-                  className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
+                  className="text-power-orange font-semibold transition-colors hover:text-orange-600"
                 >
                   Back to Login
                 </Link>

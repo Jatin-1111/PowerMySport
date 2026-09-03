@@ -49,12 +49,12 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="relative">
         <Link
           href={`/shop/products/${product.id}`}
-          className="block relative [perspective:1000px]"
+          className="relative block [perspective:1000px]"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
           <motion.div
-            className="relative aspect-[4/3] w-full [transform-style:preserve-3d] will-change-transform"
+            className="relative aspect-[4/3] w-full will-change-transform [transform-style:preserve-3d]"
             animate={{
               rotateY: isHovered ? 180 : 0,
               scale: isHovered ? 1.02 : 1,
@@ -68,44 +68,36 @@ export function ProductCard({ product }: { product: Product }) {
           >
             {image ? (
               <>
-                <div className="absolute inset-0 [backface-visibility:hidden] bg-slate-50 overflow-hidden">
-                  <img
-                    src={image}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                  />
+                <div className="absolute inset-0 overflow-hidden bg-slate-50 [backface-visibility:hidden]">
+                  <img src={image} alt={product.name} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
                 </div>
-                <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] bg-slate-50 overflow-hidden">
-                  <img
-                    src={hoverImage}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                  />
+                <div className="absolute inset-0 [transform:rotateY(180deg)] overflow-hidden bg-slate-50 [backface-visibility:hidden]">
+                  <img src={hoverImage} alt={product.name} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
                 </div>
               </>
             ) : (
-              <div className="absolute inset-0 [backface-visibility:hidden] bg-slate-50 flex h-full items-center justify-center px-6 text-center text-sm font-bold text-slate-400">
+              <div className="absolute inset-0 flex h-full items-center justify-center bg-slate-50 px-6 text-center text-sm font-bold text-slate-400 [backface-visibility:hidden]">
                 {product.category}
               </div>
             )}
           </motion.div>
         </Link>
-        <div className="absolute left-4 top-4 z-20 flex flex-col gap-2 pointer-events-none">
+        <div className="pointer-events-none absolute top-4 left-4 z-20 flex flex-col gap-2">
           {product.salePrice ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ff5722] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ff5722] px-3 py-1.5 text-[10px] font-black tracking-wider text-white uppercase shadow-md">
               <BadgePercent className="h-3.5 w-3.5" />
               Sale
             </span>
           ) : null}
           {product.condition === "USED" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black tracking-wider text-white uppercase shadow-md">
               Used
             </span>
           ) : null}
         </div>
-        <div className="absolute right-4 top-4 z-20">
+        <div className="absolute top-4 right-4 z-20">
           <WishlistButton productId={product.id} />
         </div>
       </div>
@@ -113,16 +105,15 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-1 flex-col p-5">
         <Link
           href={`/shop/products/${product.id}`}
-          className="block text-lg font-black leading-tight text-slate-900 transition-colors hover:text-[#ff5722] mb-1"
+          className="mb-1 block text-lg leading-tight font-black text-slate-900 transition-colors hover:text-[#ff5722]"
         >
           {product.name}
         </Link>
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-          {product.category}{" "}
-          {product.sellerName ? `• Sold by: ${product.sellerName}` : ""}
+        <p className="text-[11px] font-bold tracking-[0.2em] text-slate-400 uppercase">
+          {product.category} {product.sellerName ? `• Sold by: ${product.sellerName}` : ""}
         </p>
 
-        <div className="mt-auto pt-5 flex flex-col gap-4">
+        <div className="mt-auto flex flex-col gap-4 pt-5">
           <div className="flex items-end justify-between gap-3">
             <div>
               <div className="text-xl font-black tracking-tight text-slate-900">
@@ -136,10 +127,10 @@ export function ProductCard({ product }: { product: Product }) {
             </div>
             <span
               className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
+                "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase",
                 stockLevel === "Sold out"
                   ? "bg-red-50 text-red-600"
-                  : "bg-emerald-50 text-emerald-600",
+                  : "bg-emerald-50 text-emerald-600"
               )}
             >
               {stockLevel}

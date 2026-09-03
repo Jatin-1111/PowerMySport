@@ -25,9 +25,7 @@ const log = __rootLog.child("phonepeWebhook");
 const router = express.Router();
 
 const getSignatureHeader = (req: express.Request) =>
-  (req.headers["x-phonepe-signature"] ||
-    req.headers["x-callback-signature"] ||
-    "") as string;
+  (req.headers["x-phonepe-signature"] || req.headers["x-callback-signature"] || "") as string;
 
 router.post("/webhook", async (req, res) => {
   const secret = process.env.PHONEPE_WEBHOOK_SECRET;

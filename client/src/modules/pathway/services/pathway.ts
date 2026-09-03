@@ -142,10 +142,7 @@ export interface PathwayGuide {
 }
 
 /** The stage fields the picker needs. Everything long stays in the full guide. */
-export type PathwayStageSummary = Pick<
-  PathwayStage,
-  "key" | "name" | "ageRange" | "coreQuestion"
->;
+export type PathwayStageSummary = Pick<PathwayStage, "key" | "name" | "ageRange" | "coreQuestion">;
 
 export interface PathwayGuideSummary {
   sportSlug: string;
@@ -174,7 +171,7 @@ export const pathwayApi = {
     try {
       const q = new URLSearchParams({ sport });
       const resp = await axiosInstance.get<ApiResponse<PathwayGuide>>(
-        `/pathways/guide?${q.toString()}`,
+        `/pathways/guide?${q.toString()}`
       );
       return resp.data.data ?? null;
     } catch {
@@ -185,9 +182,7 @@ export const pathwayApi = {
   /** Which sports a parent can actually read a pathway for. */
   listPathwayGuides: async (): Promise<PathwayGuideSummary[]> => {
     try {
-      const resp = await axiosInstance.get<ApiResponse<PathwayGuideSummary[]>>(
-        "/pathways/guides",
-      );
+      const resp = await axiosInstance.get<ApiResponse<PathwayGuideSummary[]>>("/pathways/guides");
       return resp.data.data ?? [];
     } catch {
       return [];
@@ -199,7 +194,7 @@ export const pathwayApi = {
     try {
       const params = sportSlug ? `?sport=${encodeURIComponent(sportSlug)}` : "";
       const resp = await axiosInstance.get<ApiResponse<Tournament[]>>(
-        `/pathways/tournaments${params}`,
+        `/pathways/tournaments${params}`
       );
       return resp.data.data ?? [];
     } catch {
@@ -276,12 +271,7 @@ export interface FederationTournamentsResponse {
 }
 
 export type EditionDocumentKind =
-  | "factSheet"
-  | "acceptanceList"
-  | "entryForm"
-  | "draw"
-  | "results"
-  | "other";
+  "factSheet" | "acceptanceList" | "entryForm" | "draw" | "results" | "other";
 
 export interface EditionDocument {
   label: string;
@@ -344,7 +334,7 @@ export const federationApi = {
   listBySport: async (sportSlug: string): Promise<Federation[]> => {
     try {
       const resp = await axiosInstance.get<ApiResponse<Federation[]>>(
-        `/federations?sport=${encodeURIComponent(sportSlug)}`,
+        `/federations?sport=${encodeURIComponent(sportSlug)}`
       );
       return resp.data.data ?? [];
     } catch {
@@ -355,7 +345,7 @@ export const federationApi = {
   getBySlug: async (slug: string): Promise<Federation | null> => {
     try {
       const resp = await axiosInstance.get<ApiResponse<Federation>>(
-        `/federations/${encodeURIComponent(slug)}`,
+        `/federations/${encodeURIComponent(slug)}`
       );
       return resp.data.data ?? null;
     } catch {
@@ -365,7 +355,7 @@ export const federationApi = {
 
   getTournaments: async (
     slug: string,
-    params?: { level?: string; ageGroup?: string; page?: number; limit?: number },
+    params?: { level?: string; ageGroup?: string; page?: number; limit?: number }
   ): Promise<FederationTournamentsResponse | null> => {
     try {
       const qs = new URLSearchParams();
@@ -373,9 +363,9 @@ export const federationApi = {
       if (params?.ageGroup) qs.set("ageGroup", params.ageGroup);
       if (params?.page) qs.set("page", String(params.page));
       if (params?.limit) qs.set("limit", String(params.limit));
-      const resp = await axiosInstance.get<
-        ApiResponse<FederationTournamentsResponse>
-      >(`/federations/${encodeURIComponent(slug)}/tournaments?${qs.toString()}`);
+      const resp = await axiosInstance.get<ApiResponse<FederationTournamentsResponse>>(
+        `/federations/${encodeURIComponent(slug)}/tournaments?${qs.toString()}`
+      );
       return resp.data.data ?? null;
     } catch {
       return null;
@@ -384,13 +374,13 @@ export const federationApi = {
 
   getEditions: async (
     slug: string,
-    params?: { limit?: number },
+    params?: { limit?: number }
   ): Promise<FederationEditionsResponse | null> => {
     try {
       const qs = new URLSearchParams();
       if (params?.limit) qs.set("limit", String(params.limit));
       const resp = await axiosInstance.get<ApiResponse<FederationEditionsResponse>>(
-        `/federations/${encodeURIComponent(slug)}/editions?${qs.toString()}`,
+        `/federations/${encodeURIComponent(slug)}/editions?${qs.toString()}`
       );
       return resp.data.data ?? null;
     } catch {

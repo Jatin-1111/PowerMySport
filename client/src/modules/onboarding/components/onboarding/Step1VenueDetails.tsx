@@ -45,10 +45,7 @@ const AMENITIES_OPTIONS = [
   "WiFi",
 ];
 
-export default function Step1VenueDetails({
-  onSubmit,
-  loading,
-}: Step1VenueDetailsProps) {
+export default function Step1VenueDetails({ onSubmit, loading }: Step1VenueDetailsProps) {
   const [formData, setFormData] = useState<OnboardingStep2Payload>({
     venueId: "",
     name: "",
@@ -134,9 +131,7 @@ export default function Step1VenueDetails({
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
 
@@ -175,9 +170,7 @@ export default function Step1VenueDetails({
 
   const toggleSport = (sport: string) => {
     setSelectedSports((prev) => {
-      const updated = prev.includes(sport)
-        ? prev.filter((s) => s !== sport)
-        : [...prev, sport];
+      const updated = prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport];
       setFormData((prev) => ({
         ...prev,
         sports: updated,
@@ -248,9 +241,7 @@ export default function Step1VenueDetails({
         return;
       }
     } else {
-      const invalidSport = formData.sports.find(
-        (sport) => (sportPricing[sport] || 0) <= 0,
-      );
+      const invalidSport = formData.sports.find((sport) => (sportPricing[sport] || 0) <= 0);
       if (invalidSport) {
         toast.error(`Please enter a valid price for ${invalidSport}`);
         return;
@@ -263,9 +254,7 @@ export default function Step1VenueDetails({
 
     try {
       const pricingMap = samePriceForAll
-        ? Object.fromEntries(
-            formData.sports.map((sport) => [sport, basePricePerHour]),
-          )
+        ? Object.fromEntries(formData.sports.map((sport) => [sport, basePricePerHour]))
         : formData.sports.reduce<Record<string, number>>((acc, sport) => {
             acc[sport] = sportPricing[sport] || 0;
             return acc;
@@ -286,16 +275,16 @@ export default function Step1VenueDetails({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow">
+    <div className="mx-auto w-full max-w-2xl rounded-lg bg-white p-6 shadow">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Add Your Venue</h1>
-        <p className="text-slate-600 mt-2">Step 1 of 3: Basic Details</p>
+        <p className="mt-2 text-slate-600">Step 1 of 3: Basic Details</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Venue Name */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-700">
             Venue Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -304,27 +293,24 @@ export default function Step1VenueDetails({
             value={formData.name}
             onChange={handleInputChange}
             placeholder="e.g., Central Sports Complex"
-            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
 
         {/* Sports Selection */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-700">
             Sports Available <span className="text-red-500">*</span>
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {SPORTS_OPTIONS.map((sport) => (
-              <label
-                key={sport}
-                className="flex items-center space-x-2 cursor-pointer"
-              >
+              <label key={sport} className="flex cursor-pointer items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={selectedSports.includes(sport)}
                   onChange={() => toggleSport(sport)}
-                  className="w-4 h-4 text-indigo-600 rounded"
+                  className="h-4 w-4 rounded text-indigo-600"
                 />
                 <span className="text-sm text-slate-700">{sport}</span>
               </label>
@@ -353,27 +339,25 @@ export default function Step1VenueDetails({
                     setSportPricing(nextPricing);
                   }
                 }}
-                className="w-4 h-4 text-indigo-600 rounded"
+                className="h-4 w-4 rounded text-indigo-600"
               />
               Same price for all sports
             </label>
           </div>
 
           {samePriceForAll && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-700">
                   Base price per hour
                 </label>
                 <input
                   type="number"
                   value={basePricePerHour === 0 ? "" : basePricePerHour}
-                  onChange={(e) =>
-                    handleBasePriceChange(parseFloat(e.target.value) || 0)
-                  }
+                  onChange={(e) => handleBasePriceChange(parseFloat(e.target.value) || 0)}
                   placeholder="500"
                   min="0"
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -381,34 +365,25 @@ export default function Step1VenueDetails({
           )}
 
           {formData.sports.length === 0 && (
-            <p className="text-sm text-slate-500">
-              Select sports to set specific prices.
-            </p>
+            <p className="text-sm text-slate-500">Select sports to set specific prices.</p>
           )}
 
           {!samePriceForAll && formData.sports.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {formData.sports.map((sport) => (
                 <div key={sport}>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
                     {sport} price per hour
                   </label>
                   <input
                     type="number"
                     value={
-                      sportPricing[sport] === 0 || !sportPricing[sport]
-                        ? ""
-                        : sportPricing[sport]
+                      sportPricing[sport] === 0 || !sportPricing[sport] ? "" : sportPricing[sport]
                     }
-                    onChange={(e) =>
-                      handleSportPriceChange(
-                        sport,
-                        parseFloat(e.target.value) || 0,
-                      )
-                    }
+                    onChange={(e) => handleSportPriceChange(sport, parseFloat(e.target.value) || 0)}
                     placeholder="500"
                     min="0"
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -420,14 +395,12 @@ export default function Step1VenueDetails({
         {/* Opening Hours */}
         <OpeningHoursInput
           value={formData.openingHours}
-          onChange={(hours) =>
-            setFormData((prev) => ({ ...prev, openingHours: hours }))
-          }
+          onChange={(hours) => setFormData((prev) => ({ ...prev, openingHours: hours }))}
         />
 
         {/* Address */}
         <div className="relative">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-700">
             Address <span className="text-red-500">*</span>
           </label>
           <input
@@ -436,14 +409,14 @@ export default function Step1VenueDetails({
             value={addressInput}
             onChange={handleInputChange}
             placeholder="Search or type address..."
-            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
             required
             onFocus={() => addressInput && setShowSuggestions(true)}
           />
           {autocompleteLoading && (
-            <div className="absolute right-3 top-[2.4rem] text-slate-500">
+            <div className="absolute top-[2.4rem] right-3 text-slate-500">
               <svg
-                className="animate-spin h-5 w-5"
+                className="h-5 w-5 animate-spin"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -467,18 +440,16 @@ export default function Step1VenueDetails({
 
           {/* Address Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg">
+            <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg">
               {suggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => handleSuggestionSelect(suggestion)}
-                  className="w-full text-left px-4 py-3 hover:bg-indigo-50 border-b border-slate-200 last:border-b-0 transition"
+                  className="w-full border-b border-slate-200 px-4 py-3 text-left transition last:border-b-0 hover:bg-indigo-50"
                 >
-                  <div className="font-medium text-slate-900 text-sm">
-                    {suggestion.label}
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1">
+                  <div className="text-sm font-medium text-slate-900">{suggestion.label}</div>
+                  <div className="mt-1 text-xs text-slate-500">
                     {suggestion.lat.toFixed(4)}, {suggestion.lon.toFixed(4)}
                   </div>
                 </button>
@@ -486,29 +457,22 @@ export default function Step1VenueDetails({
             </div>
           )}
 
-          {showSuggestions &&
-            addressInput &&
-            suggestions.length === 0 &&
-            !autocompleteLoading && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg p-3">
-                <p className="text-sm text-slate-600">No locations found</p>
-              </div>
-            )}
+          {showSuggestions && addressInput && suggestions.length === 0 && !autocompleteLoading && (
+            <div className="absolute z-10 mt-1 w-full rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+              <p className="text-sm text-slate-600">No locations found</p>
+            </div>
+          )}
         </div>
 
         {/* Location Coordinates */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="mb-2 block text-sm font-medium text-slate-700">
             Location Coordinates
-            <span className="text-slate-500 text-xs ml-2">
-              (Auto-filled from Google Places)
-            </span>
+            <span className="ml-2 text-xs text-slate-500">(Auto-filled from Google Places)</span>
           </label>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-600 mb-1">
-                Longitude
-              </label>
+              <label className="mb-1 block text-xs text-slate-600">Longitude</label>
               <input
                 type="number"
                 name="lng"
@@ -516,13 +480,11 @@ export default function Step1VenueDetails({
                 onChange={handleInputChange}
                 placeholder="77.2"
                 step="0.0001"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-600 mb-1">
-                Latitude
-              </label>
+              <label className="mb-1 block text-xs text-slate-600">Latitude</label>
               <input
                 type="number"
                 name="lat"
@@ -530,7 +492,7 @@ export default function Step1VenueDetails({
                 onChange={handleInputChange}
                 placeholder="28.7"
                 step="0.0001"
-                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -538,35 +500,28 @@ export default function Step1VenueDetails({
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Description
-          </label>
+          <label className="mb-2 block text-sm font-medium text-slate-700">Description</label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleInputChange}
             placeholder="Tell players about your venue..."
             rows={4}
-            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full resize-none rounded-lg border border-slate-200 px-4 py-2 focus:border-transparent focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         {/* Amenities */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Amenities
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <label className="mb-2 block text-sm font-medium text-slate-700">Amenities</label>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {AMENITIES_OPTIONS.map((amenity) => (
-              <label
-                key={amenity}
-                className="flex items-center space-x-2 cursor-pointer"
-              >
+              <label key={amenity} className="flex cursor-pointer items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={selectedAmenities.includes(amenity)}
                   onChange={() => toggleAmenity(amenity)}
-                  className="w-4 h-4 text-indigo-600 rounded"
+                  className="h-4 w-4 rounded text-indigo-600"
                 />
                 <span className="text-sm text-slate-700">{amenity}</span>
               </label>
@@ -581,18 +536,16 @@ export default function Step1VenueDetails({
             name="allowExternalCoaches"
             checked={formData.allowExternalCoaches}
             onChange={handleInputChange}
-            className="w-4 h-4 text-indigo-600 rounded"
+            className="h-4 w-4 rounded text-indigo-600"
           />
-          <label className="text-sm text-slate-700">
-            Allow external coaches at your venue?
-          </label>
+          <label className="text-sm text-slate-700">Allow external coaches at your venue?</label>
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="w-full rounded-lg bg-blue-600 py-3 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Creating Venue..." : "Continue to Step 2: Upload Images"}
         </button>

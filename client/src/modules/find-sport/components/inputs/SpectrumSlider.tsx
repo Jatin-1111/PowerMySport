@@ -27,7 +27,7 @@ export function SpectrumSlider({
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase tracking-widest">
+      <div className="flex justify-between text-xs font-semibold tracking-widest text-slate-500 uppercase">
         <span>{leftLabel}</span>
         <span>{rightLabel}</span>
       </div>
@@ -40,7 +40,7 @@ export function SpectrumSlider({
               key={tick}
               type="button"
               onClick={() => onChange(tick)}
-              className={`rounded-2xl py-5 flex flex-col items-center gap-2 border-2 transition-all duration-150 active:scale-[0.97] ${
+              className={`flex flex-col items-center gap-2 rounded-2xl border-2 py-5 transition-all duration-150 active:scale-[0.97] ${
                 selected
                   ? "border-power-orange bg-power-orange text-white shadow-sm"
                   : "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:bg-slate-50"
@@ -54,7 +54,7 @@ export function SpectrumSlider({
                 {tick}
               </span>
               <span
-                className={`text-[10px] font-medium leading-none text-center ${
+                className={`text-center text-[10px] leading-none font-medium ${
                   selected ? "text-white/80" : "text-slate-400"
                 }`}
               >
@@ -65,7 +65,7 @@ export function SpectrumSlider({
         })}
       </div>
 
-      <div className="flex justify-between text-xs text-slate-400 leading-snug">
+      <div className="flex justify-between text-xs leading-snug text-slate-400">
         <span className="max-w-[140px]">{leftExamples}</span>
         <span className="max-w-[140px] text-right">{rightExamples}</span>
       </div>

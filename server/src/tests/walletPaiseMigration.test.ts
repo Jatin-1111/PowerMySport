@@ -58,7 +58,7 @@ test("an amount matching neither reading is refused, not guessed", () => {
   assert.equal(verdict.kind, "UNCLASSIFIED");
   assert.match(
     (verdict as { reason: string }).reason,
-    /matches neither 500 \(rupees\) nor 50000 \(paise\)/,
+    /matches neither 500 \(rupees\) nor 50000 \(paise\)/
   );
 });
 

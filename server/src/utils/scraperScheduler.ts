@@ -7,14 +7,11 @@ import { log as __rootLog } from "./logger";
 const log = __rootLog.child("scraper");
 
 export function initializeScraperScheduler() {
-
   // Run every Sunday at 2:00 AM
   const job = cron.schedule(
     "0 2 * * 0",
     async () => {
-      log.info(
-        `[${new Date().toISOString()}] Running scheduled scraper bots...`,
-      );
+      log.info(`[${new Date().toISOString()}] Running scheduled scraper bots...`);
 
       const scrapers: Array<{ name: string; fn: () => Promise<void> }> = [
         { name: "Tournament", fn: scrapeTournaments },
@@ -34,7 +31,7 @@ export function initializeScraperScheduler() {
     },
     {
       timezone: "Asia/Kolkata",
-    },
+    }
   );
 
   // Dated tournament-calendar extraction (TournamentEdition) is no longer a

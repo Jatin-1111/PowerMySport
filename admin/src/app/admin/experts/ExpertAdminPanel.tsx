@@ -33,8 +33,7 @@ const formatDate = (v?: string) =>
     : "—";
 const field =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange/40";
-const label =
-  "mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500";
+const label = "mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500";
 
 export function ExpertAdminPanel({
   expert,
@@ -47,9 +46,7 @@ export function ExpertAdminPanel({
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [sessions, setSessions] = useState<AdminExpertSessionsResult | null>(
-    null,
-  );
+  const [sessions, setSessions] = useState<AdminExpertSessionsResult | null>(null);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
   const [form, setForm] = useState({
@@ -65,15 +62,11 @@ export function ExpertAdminPanel({
   const [sports, setSports] = useState<string[]>(expert.sports || []);
   const [expertise, setExpertise] = useState<string[]>(expert.expertise || []);
   const [languages, setLanguages] = useState<string[]>(expert.languages || []);
-  const [photoKey, setPhotoKey] = useState<string | null>(
-    expert.photoKey || null,
-  );
+  const [photoKey, setPhotoKey] = useState<string | null>(expert.photoKey || null);
   const [windows, setWindows] = useState<AdminExpertAvailabilityWindow[]>(
-    expert.weeklyAvailability || [],
+    expert.weeklyAvailability || []
   );
-  const [blackout, setBlackout] = useState<string[]>(
-    expert.blackoutDates || [],
-  );
+  const [blackout, setBlackout] = useState<string[]>(expert.blackoutDates || []);
 
   const resetForm = () => {
     setForm({
@@ -98,8 +91,7 @@ export function ExpertAdminPanel({
     resetForm();
   }, [expert]);
 
-  const set = (k: keyof typeof form, v: string) =>
-    setForm((p) => ({ ...p, [k]: v }));
+  const set = (k: keyof typeof form, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   const id = expert.id || expert._id || "";
 
@@ -145,9 +137,7 @@ export function ExpertAdminPanel({
       const res = await expertAdminApi.setActive(id, !expert.isActive);
       if (res.success && res.data) {
         onUpdated(res.data);
-        toast.success(
-          res.data.isActive ? "Expert activated." : "Expert deactivated.",
-        );
+        toast.success(res.data.isActive ? "Expert activated." : "Expert deactivated.");
       } else toast.error(res.message || "Failed.");
     } catch {
       toast.error("Failed to update status.");
@@ -340,9 +330,7 @@ export function ExpertAdminPanel({
           </div>
         </div>
         <div className="border-t border-slate-100 pt-4">
-          <h4 className="text-sm font-bold text-slate-900">
-            Weekly availability
-          </h4>
+          <h4 className="text-sm font-bold text-slate-900">Weekly availability</h4>
           <p className="mt-1 text-xs text-slate-500">
             Clients can only book slots inside these windows.
           </p>
@@ -360,7 +348,7 @@ export function ExpertAdminPanel({
           <button
             onClick={saveEdit}
             disabled={busy}
-            className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+            className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
           >
             {busy ? "Saving..." : "Save"}
           </button>
@@ -385,7 +373,8 @@ export function ExpertAdminPanel({
         <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p className="mb-1 text-sm font-bold text-amber-900">Awaiting Review</p>
           <p className="mb-3 text-xs text-amber-700">
-            This expert self-registered and submitted their profile for review. Review their profile details below, then approve or reject.
+            This expert self-registered and submitted their profile for review. Review their profile
+            details below, then approve or reject.
           </p>
           {!rejecting ? (
             <div className="flex gap-2">
@@ -408,7 +397,7 @@ export function ExpertAdminPanel({
             <div className="space-y-2">
               <textarea
                 rows={2}
-                className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-red-300 focus:outline-none"
                 placeholder="Rejection reason — the expert will see this in their email..."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
@@ -422,7 +411,10 @@ export function ExpertAdminPanel({
                   {busy ? "Rejecting…" : "Send Rejection"}
                 </button>
                 <button
-                  onClick={() => { setRejecting(false); setRejectionReason(""); }}
+                  onClick={() => {
+                    setRejecting(false);
+                    setRejectionReason("");
+                  }}
                   className="rounded-lg px-3 py-1.5 text-sm text-slate-500 hover:text-slate-800"
                 >
                   Cancel
@@ -458,9 +450,7 @@ export function ExpertAdminPanel({
         </button>
         <button
           onClick={toggleActive}
-          disabled={
-            busy || (!expert.isActive && expert.verificationStatus !== "APPROVED")
-          }
+          disabled={busy || (!expert.isActive && expert.verificationStatus !== "APPROVED")}
           title={
             !expert.isActive && expert.verificationStatus !== "APPROVED"
               ? "Approve this expert first — only APPROVED experts can be activated"
@@ -488,14 +478,8 @@ export function ExpertAdminPanel({
                 : "In-person"
           }
         />
-        <DetailRow
-          label="Session length"
-          value={`${expert.sessionDurationMinutes || 60} min`}
-        />
-        <DetailRow
-          label="Availability"
-          value={expert.hasAvailability ? "Published" : "Not set"}
-        />
+        <DetailRow label="Session length" value={`${expert.sessionDurationMinutes || 60} min`} />
+        <DetailRow label="Availability" value={expert.hasAvailability ? "Published" : "Not set"} />
         <DetailRow
           label="Rating"
           value={`${expert.rating.toFixed(1)} (${expert.reviewCount} reviews)`}
@@ -509,7 +493,7 @@ export function ExpertAdminPanel({
           {(expert.sports || []).map((s) => (
             <span
               key={s}
-              className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-medium text-power-orange"
+              className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-medium"
             >
               {s}
             </span>
@@ -533,9 +517,7 @@ export function ExpertAdminPanel({
 
       <DetailSection title="Tax & payout info">
         <DetailRow label="PAN number" value={expert.panNumber || "Not provided"} />
-        {expert.gstNumber && (
-          <DetailRow label="GST number" value={expert.gstNumber} />
-        )}
+        {expert.gstNumber && <DetailRow label="GST number" value={expert.gstNumber} />}
         {(() => {
           const methods = expert.payoutMethods || [];
           const primary = methods.find((m) => m.isDefault) || methods[0];
@@ -545,17 +527,10 @@ export function ExpertAdminPanel({
           return primary.type === "BANK_TRANSFER" ? (
             <>
               <DetailRow label="Payout method" value="Bank transfer" />
-              <DetailRow
-                label="Account holder"
-                value={primary.accountHolderName || "—"}
-              />
+              <DetailRow label="Account holder" value={primary.accountHolderName || "—"} />
               <DetailRow
                 label="Account number"
-                value={
-                  primary.accountNumber
-                    ? maskAccountNumber(primary.accountNumber)
-                    : "—"
-                }
+                value={primary.accountNumber ? maskAccountNumber(primary.accountNumber) : "—"}
               />
               <DetailRow label="IFSC" value={primary.ifscCode || "—"} />
               <DetailRow label="Bank" value={primary.bankName || "—"} />
@@ -581,14 +556,8 @@ export function ExpertAdminPanel({
         ) : (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <SummaryStat
-                label="Total"
-                value={String(sessions.summary.total)}
-              />
-              <SummaryStat
-                label="Completed"
-                value={String(sessions.summary.completed)}
-              />
+              <SummaryStat label="Total" value={String(sessions.summary.total)} />
+              <SummaryStat label="Completed" value={String(sessions.summary.completed)} />
               <SummaryStat
                 label="Awaiting MOM"
                 value={String(sessions.summary.awaitingMom)}
@@ -615,9 +584,7 @@ export function ExpertAdminPanel({
               {sessions.sessions.map((s) => (
                 <div key={s.id || s._id} className="py-2.5 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-800">
-                      {s.clientName || "Client"}
-                    </span>
+                    <span className="font-medium text-slate-800">{s.clientName || "Client"}</span>
                     <span className="text-slate-500">
                       {formatInr(s.amount)} · {s.status.replace(/_/g, " ")}
                     </span>
@@ -630,10 +597,7 @@ export function ExpertAdminPanel({
                   )}
                   {s.momNotes && (
                     <p className="mt-0.5 text-xs text-slate-500">
-                      <span className="font-semibold text-slate-600">
-                        MOM:
-                      </span>{" "}
-                      {s.momNotes}
+                      <span className="font-semibold text-slate-600">MOM:</span> {s.momNotes}
                     </p>
                   )}
                   {s.reviewed && (
@@ -642,34 +606,31 @@ export function ExpertAdminPanel({
                       {s.review ? `— "${s.review}"` : ""}
                     </p>
                   )}
-                  {s.refundStatus === "REQUIRED" &&
-                    s.cancellationNoticeHours != null && (
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {s.cancellationNoticeHours >= 0
-                          ? `Cancelled ${s.cancellationNoticeHours}h before the scheduled session.`
-                          : `Cancelled ${Math.abs(s.cancellationNoticeHours)}h after the scheduled time.`}
-                      </p>
-                    )}
-                  {s.status === "COMPLETED" &&
-                    s.paymentStatus === "COMPLETED" && (
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {s.payoutStatus === "PAID" ? (
-                          `Payout released${s.payoutPaidAt ? ` on ${formatDate(s.payoutPaidAt)}` : ""}.`
-                        ) : (
-                          <>
-                            Payout pending (auto-releases 24h after completion,
-                            or process it now from{" "}
-                            <Link
-                              href="/admin/payouts"
-                              className="font-semibold text-power-orange hover:underline"
-                            >
-                              Pending Payouts
-                            </Link>
-                            ).
-                          </>
-                        )}
-                      </p>
-                    )}
+                  {s.refundStatus === "REQUIRED" && s.cancellationNoticeHours != null && (
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {s.cancellationNoticeHours >= 0
+                        ? `Cancelled ${s.cancellationNoticeHours}h before the scheduled session.`
+                        : `Cancelled ${Math.abs(s.cancellationNoticeHours)}h after the scheduled time.`}
+                    </p>
+                  )}
+                  {s.status === "COMPLETED" && s.paymentStatus === "COMPLETED" && (
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {s.payoutStatus === "PAID" ? (
+                        `Payout released${s.payoutPaidAt ? ` on ${formatDate(s.payoutPaidAt)}` : ""}.`
+                      ) : (
+                        <>
+                          Payout pending (auto-releases 24h after completion, or process it now from{" "}
+                          <Link
+                            href="/admin/payouts"
+                            className="text-power-orange font-semibold hover:underline"
+                          >
+                            Pending Payouts
+                          </Link>
+                          ).
+                        </>
+                      )}
+                    </p>
+                  )}
                   <div className="mt-1 flex gap-2">
                     {s.refundStatus === "REQUIRED" && (
                       <button
@@ -681,9 +642,7 @@ export function ExpertAdminPanel({
                     )}
                     {s.reviewed && (
                       <button
-                        onClick={() =>
-                          toggleHide(s.id || s._id || "", !s.reviewHidden)
-                        }
+                        onClick={() => toggleHide(s.id || s._id || "", !s.reviewHidden)}
                         className="text-xs font-semibold text-slate-600 hover:underline"
                       >
                         {s.reviewHidden ? "Unhide review" : "Hide review"}
@@ -700,23 +659,11 @@ export function ExpertAdminPanel({
   );
 }
 
-function SummaryStat({
-  label,
-  value,
-  warn,
-}: {
-  label: string;
-  value: string;
-  warn?: boolean;
-}) {
+function SummaryStat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div className={`rounded-lg p-2.5 ${warn ? "bg-amber-50" : "bg-slate-50"}`}>
-      <p className={`text-xs ${warn ? "text-amber-700" : "text-slate-500"}`}>
-        {label}
-      </p>
-      <p className={`font-bold ${warn ? "text-amber-800" : "text-slate-900"}`}>
-        {value}
-      </p>
+      <p className={`text-xs ${warn ? "text-amber-700" : "text-slate-500"}`}>{label}</p>
+      <p className={`font-bold ${warn ? "text-amber-800" : "text-slate-900"}`}>{value}</p>
     </div>
   );
 }

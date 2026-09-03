@@ -7,21 +7,18 @@ import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
-import {
-    StaggerContainer,
-    StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { AcademyRef, Booking, Venue } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
 import { getOwnVenueLocationDisplay } from "@/utils/location";
 import {
-    Building2,
-    Calendar,
-    ChevronLeft,
-    ChevronRight,
-    Clock,
-    IndianRupee,
-    MapPin,
+  Building2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  IndianRupee,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -49,14 +46,11 @@ const getStatusBadgeClass = (status: Booking["status"]) => {
 };
 
 const formatStatusLabel = (status: Booking["status"]) =>
-  status.charAt(0).toUpperCase() +
-  status.slice(1).toLowerCase().replace(/_/g, " ");
+  status.charAt(0).toUpperCase() + status.slice(1).toLowerCase().replace(/_/g, " ");
 
 export default function CoachBookingsPage() {
   const [allCoachBookings, setAllCoachBookings] = useState<Booking[]>([]);
-  const [currentCoach, setCurrentCoach] = useState<Booking["coach"] | null>(
-    null,
-  );
+  const [currentCoach, setCurrentCoach] = useState<Booking["coach"] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -89,27 +83,16 @@ export default function CoachBookingsPage() {
     fetchBookings();
   }, []);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(allCoachBookings.length / PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil(allCoachBookings.length / PAGE_SIZE));
 
   const paginatedBookings = useMemo(
-    () =>
-      allCoachBookings.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE,
-      ),
-    [allCoachBookings, currentPage],
+    () => allCoachBookings.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [allCoachBookings, currentPage]
   );
 
   const stats = useMemo(() => {
-    const confirmed = allCoachBookings.filter(
-      (booking) => booking.status === "CONFIRMED",
-    ).length;
-    const completed = allCoachBookings.filter(
-      (booking) => booking.status === "COMPLETED",
-    ).length;
+    const confirmed = allCoachBookings.filter((booking) => booking.status === "CONFIRMED").length;
+    const completed = allCoachBookings.filter((booking) => booking.status === "COMPLETED").length;
     const totalEarnings = allCoachBookings
       .filter((booking) => booking.status === "COMPLETED")
       .reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
@@ -130,17 +113,13 @@ export default function CoachBookingsPage() {
       if (response.success && confirmedStatus) {
         setAllCoachBookings((prev) =>
           prev.map((booking) =>
-            booking.id === bookingId
-              ? { ...booking, status: confirmedStatus }
-              : booking,
-          ),
+            booking.id === bookingId ? { ...booking, status: confirmedStatus } : booking
+          )
         );
         toast.success("Booking confirmed.");
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Unable to confirm booking.",
-      );
+      toast.error(error?.response?.data?.message || "Unable to confirm booking.");
     } finally {
       setApprovingId(null);
     }
@@ -149,32 +128,25 @@ export default function CoachBookingsPage() {
   const handleRejectBooking = async (bookingId: string) => {
     try {
       setRejectingId(bookingId);
-      const response = await bookingApi.rejectBookingByProvider(
-        bookingId,
-        "Rejected by coach",
-      );
+      const response = await bookingApi.rejectBookingByProvider(bookingId, "Rejected by coach");
       const rejectedBooking = response.data?.booking;
       if (response.success && rejectedBooking) {
         setAllCoachBookings((prev) =>
           prev.map((booking) =>
-            booking.id === bookingId
-              ? { ...booking, status: rejectedBooking.status }
-              : booking,
-          ),
+            booking.id === bookingId ? { ...booking, status: rejectedBooking.status } : booking
+          )
         );
         toast.success("Booking rejected.");
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Unable to reject booking.",
-      );
+      toast.error(error?.response?.data?.message || "Unable to reject booking.");
     } finally {
       setRejectingId(null);
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading bookings...</div>;
+    return <div className="py-12 text-center">Loading bookings...</div>;
   }
 
   return (
@@ -193,54 +165,41 @@ export default function CoachBookingsPage() {
       {allCoachBookings.length === 0 ? (
         <Card className="bg-white">
           <div className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
+            <div className="bg-power-orange/10 text-power-orange rounded-full px-4 py-2 text-sm font-semibold">
               No bookings yet
             </div>
             <p className="max-w-md text-slate-600">
-              Player bookings for your sessions will appear here once they start
-              booking with you.
+              Player bookings for your sessions will appear here once they start booking with you.
             </p>
           </div>
         </Card>
       ) : (
         <div className="space-y-6">
-          <StaggerContainer className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StaggerContainer className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
             <StaggerItem className="h-full">
-              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
-                  Total Bookings
-                </p>
+              <Card className="glass-panel premium-shadow h-full transition-all hover:shadow-xl">
+                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Total Bookings</p>
                 <p className="text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
                   {stats.total}
                 </p>
               </Card>
             </StaggerItem>
             <StaggerItem className="h-full">
-              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
-                  Confirmed
-                </p>
-                <p className="text-2xl font-bold text-emerald-600 sm:text-3xl">
-                  {stats.confirmed}
-                </p>
+              <Card className="glass-panel premium-shadow h-full transition-all hover:shadow-xl">
+                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Confirmed</p>
+                <p className="text-2xl font-bold text-emerald-600 sm:text-3xl">{stats.confirmed}</p>
               </Card>
             </StaggerItem>
             <StaggerItem className="h-full">
-              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
-                  Completed
-                </p>
-                <p className="text-2xl font-bold text-emerald-600 sm:text-3xl">
-                  {stats.completed}
-                </p>
+              <Card className="glass-panel premium-shadow h-full transition-all hover:shadow-xl">
+                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Completed</p>
+                <p className="text-2xl font-bold text-emerald-600 sm:text-3xl">{stats.completed}</p>
               </Card>
             </StaggerItem>
             <StaggerItem className="h-full">
-              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
-                  Tracked Earnings
-                </p>
-                <p className="text-2xl font-bold text-power-orange sm:text-3xl">
+              <Card className="glass-panel premium-shadow h-full transition-all hover:shadow-xl">
+                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">Tracked Earnings</p>
+                <p className="text-power-orange text-2xl font-bold sm:text-3xl">
                   ₹{stats.totalEarnings}
                 </p>
               </Card>
@@ -250,7 +209,7 @@ export default function CoachBookingsPage() {
           <StaggerContainer className="space-y-4">
             {paginatedBookings.map((booking) => (
               <StaggerItem key={booking.id}>
-                <Card className="glass-panel hover:shadow-lg transition-all">
+                <Card className="glass-panel transition-all hover:shadow-lg">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
                       <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -259,7 +218,7 @@ export default function CoachBookingsPage() {
                         </h3>
                         <span
                           className={`inline-block rounded px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
-                            booking.status,
+                            booking.status
                           )}`}
                         >
                           {formatStatusLabel(booking.status)}
@@ -268,28 +227,24 @@ export default function CoachBookingsPage() {
 
                       <div className="grid gap-4 lg:grid-cols-2">
                         <div>
-                          <p className="mb-1 text-sm text-slate-600">
-                            Date & Time
-                          </p>
+                          <p className="mb-1 text-sm text-slate-600">Date & Time</p>
                           <p className="flex items-center gap-2 font-semibold text-slate-900">
                             <Calendar className="h-4 w-4 text-slate-500" />
                             {formatDate(booking.date)}
                           </p>
                           <p className="mt-1 flex items-center gap-2 text-sm text-slate-700">
                             <Clock className="h-4 w-4 text-slate-400" />
-                            {formatTime(booking.startTime)} -{" "}
-                            {formatTime(booking.endTime)}
+                            {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
                           </p>
                         </div>
 
                         <div>
                           <p className="mb-1 text-sm text-slate-600">Venue</p>
-                          {typeof booking.venueId === "object" &&
-                          booking.venueId !== null ? (
+                          {typeof booking.venueId === "object" && booking.venueId !== null ? (
                             <>
                               <Link
                                 href={`/venues/${(booking.venueId as Venue).id || (booking.venueId as Venue)._id}`}
-                                className="inline-flex items-center gap-2 font-semibold text-slate-900 transition-colors hover:text-power-orange"
+                                className="hover:text-power-orange inline-flex items-center gap-2 font-semibold text-slate-900 transition-colors"
                               >
                                 <MapPin className="h-4 w-4 text-slate-400" />
                                 {(booking.venueId as Venue).name || "Venue"}
@@ -319,9 +274,7 @@ export default function CoachBookingsPage() {
                                     {academy.name || "Academy"}
                                   </p>
                                   {academyAddress && (
-                                    <p className="mt-1 text-sm text-slate-600">
-                                      {academyAddress}
-                                    </p>
+                                    <p className="mt-1 text-sm text-slate-600">{academyAddress}</p>
                                   )}
                                 </>
                               );
@@ -329,14 +282,12 @@ export default function CoachBookingsPage() {
                           ) : currentCoach?.ownVenueDetails ? (
                             (() => {
                               const venueLocation = getOwnVenueLocationDisplay(
-                                currentCoach.ownVenueDetails,
+                                currentCoach.ownVenueDetails
                               );
 
                               if (!venueLocation) {
                                 return (
-                                  <p className="font-semibold text-slate-900">
-                                    Location on file
-                                  </p>
+                                  <p className="font-semibold text-slate-900">Location on file</p>
                                 );
                               }
 
@@ -352,34 +303,25 @@ export default function CoachBookingsPage() {
                               );
                             })()
                           ) : (
-                            <p className="font-semibold text-slate-900">
-                              Location on file
-                            </p>
+                            <p className="font-semibold text-slate-900">Location on file</p>
                           )}
                           {booking.sport && (
                             <p className="mt-1 text-sm text-slate-600">
-                              Sport:{" "}
-                              <span className="font-medium">
-                                {booking.sport}
-                              </span>
+                              Sport: <span className="font-medium">{booking.sport}</span>
                             </p>
                           )}
                           {booking.participantName && (
                             <p className="mt-1 text-sm text-slate-600">
                               Participant:{" "}
-                              <span className="font-medium">
-                                {booking.participantName}
-                              </span>
+                              <span className="font-medium">{booking.participantName}</span>
                             </p>
                           )}
                         </div>
                       </div>
 
                       <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <p className="mb-2 text-sm font-semibold text-slate-900">
-                          Session Value
-                        </p>
-                        <p className="flex items-center gap-1 text-2xl font-bold text-power-orange">
+                        <p className="mb-2 text-sm font-semibold text-slate-900">Session Value</p>
+                        <p className="text-power-orange flex items-center gap-1 text-2xl font-bold">
                           <IndianRupee className="h-5 w-5" />
                           {booking.totalAmount}
                         </p>
@@ -393,9 +335,7 @@ export default function CoachBookingsPage() {
                             disabled={approvingId === booking.id}
                             className="w-full sm:w-auto"
                           >
-                            {approvingId === booking.id
-                              ? "Confirming..."
-                              : "Confirm booking"}
+                            {approvingId === booking.id ? "Confirming..." : "Confirm booking"}
                           </Button>
                           <Button
                             variant="outline"
@@ -403,9 +343,7 @@ export default function CoachBookingsPage() {
                             disabled={rejectingId === booking.id}
                             className="w-full sm:w-auto"
                           >
-                            {rejectingId === booking.id
-                              ? "Rejecting..."
-                              : "Reject"}
+                            {rejectingId === booking.id ? "Rejecting..." : "Reject"}
                           </Button>
                         </div>
                       )}
@@ -421,15 +359,12 @@ export default function CoachBookingsPage() {
               <Card className="glass-panel">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-sm text-slate-600">
-                    Page {currentPage} of {totalPages} •{" "}
-                    {allCoachBookings.length} bookings
+                    Page {currentPage} of {totalPages} • {allCoachBookings.length} bookings
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:flex">
                     <Button
                       variant="secondary"
-                      onClick={() =>
-                        setCurrentPage((page) => Math.max(1, page - 1))
-                      }
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                       disabled={currentPage === 1 || isLoading}
                       className="flex items-center justify-center gap-2"
                     >
@@ -438,9 +373,7 @@ export default function CoachBookingsPage() {
                     </Button>
                     <Button
                       variant="secondary"
-                      onClick={() =>
-                        setCurrentPage((page) => Math.min(totalPages, page + 1))
-                      }
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                       disabled={currentPage === totalPages || isLoading}
                       className="flex items-center justify-center gap-2"
                     >

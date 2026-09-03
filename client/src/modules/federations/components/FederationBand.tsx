@@ -39,10 +39,9 @@ export async function FederationBand({
             The bodies that govern {sportName} in India
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
-            Once your child starts competing, someone else&apos;s rules decide
-            what they can enter and when. These are the organisations that set
-            them — age categories, registration order, and the official calendar
-            the season is built from.
+            Once your child starts competing, someone else&apos;s rules decide what they can enter
+            and when. These are the organisations that set them — age categories, registration
+            order, and the official calendar the season is built from.
           </p>
         </div>
 

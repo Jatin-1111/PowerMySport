@@ -63,7 +63,7 @@ export const up = async (options: Options = {}) => {
   console.log(
     `Starting migration 26: extract group members (${apply ? "APPLY" : "DRY RUN"}${
       dropArrays ? ", DROP ARRAYS" : ""
-    })...`,
+    })...`
   );
 
   // Read through the raw collection: the Mongoose schema no longer declares
@@ -122,7 +122,7 @@ export const up = async (options: Options = {}) => {
             upsert: true,
           },
         })),
-        { ordered: false },
+        { ordered: false }
       );
     }
 
@@ -130,42 +130,32 @@ export const up = async (options: Options = {}) => {
     const count = await CommunityGroupMember.countDocuments({
       groupId: group._id,
     });
-    await collection.updateOne(
-      { _id: group._id },
-      { $set: { memberCount: count } },
-    );
+    await collection.updateOne({ _id: group._id }, { $set: { memberCount: count } });
   }
 
   console.log(`  groups scanned:        ${groupsSeen}`);
   console.log(`  memberships ${apply ? "written" : "to write"}: ${membershipsPlanned}`);
   console.log(`  of which admins:       ${adminsPlanned}`);
   if (orphanGroups > 0) {
-    console.log(
-      `  groups with no members: ${orphanGroups} (left in place, memberCount 0)`,
-    );
+    console.log(`  groups with no members: ${orphanGroups} (left in place, memberCount 0)`);
   }
 
   if (dropArrays) {
     if (!apply) {
       console.log("  would unset members/admins on every group");
     } else {
-      const result = await collection.updateMany(
-        {},
-        { $unset: { members: "", admins: "" } },
-      );
+      const result = await collection.updateMany({}, { $unset: { members: "", admins: "" } });
       console.log(`  arrays unset on ${result.modifiedCount} groups`);
     }
   }
 
-  console.log(
-    apply ? "Migration 26 complete." : "Dry run complete — re-run with --apply.",
-  );
+  console.log(apply ? "Migration 26 complete." : "Dry run complete — re-run with --apply.");
 };
 
 export const down = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Reverting migration 26 (${apply ? "APPLY" : "DRY RUN"})— rebuilding embedded arrays...`,
+    `Reverting migration 26 (${apply ? "APPLY" : "DRY RUN"})— rebuilding embedded arrays...`
   );
 
   const collection = CommunityGroup.collection;
@@ -186,12 +176,10 @@ export const down = async (options: Options = {}) => {
       {
         $set: {
           members: rows.map((row) => row.userId),
-          admins: rows
-            .filter((row) => row.role === "ADMIN")
-            .map((row) => row.userId),
+          admins: rows.filter((row) => row.role === "ADMIN").map((row) => row.userId),
         },
         $unset: { memberCount: "" },
-      },
+      }
     );
   }
 

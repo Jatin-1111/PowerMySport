@@ -41,9 +41,7 @@ export const setupNotificationSocket = (io: SocketIOServer) => {
       });
 
     socket.on("disconnect", () => {
-      log.info(
-        `Notification monitoring client disconnected: ${socket.id}`,
-      );
+      log.info(`Notification monitoring client disconnected: ${socket.id}`);
     });
   });
 };
@@ -101,12 +99,8 @@ export const getNotificationSocket = (): SocketIOServer | null => {
 // ---------------------------------------------------------------------------
 
 const getPresenceUserId = async (socket: Socket): Promise<string | null> => {
-  const authToken = (
-    socket.handshake.auth?.token as string | undefined
-  )?.trim();
-  const bearerToken = (
-    socket.handshake.headers.authorization as string | undefined
-  )
+  const authToken = (socket.handshake.auth?.token as string | undefined)?.trim();
+  const bearerToken = (socket.handshake.headers.authorization as string | undefined)
     ?.replace(/^Bearer\s+/i, "")
     .trim();
 
@@ -122,9 +116,7 @@ const getPresenceUserId = async (socket: Socket): Promise<string | null> => {
     }
   }
 
-  const candidates = [authToken, bearerToken, cookieToken].filter(
-    (t): t is string => Boolean(t),
-  );
+  const candidates = [authToken, bearerToken, cookieToken].filter((t): t is string => Boolean(t));
 
   for (const token of candidates) {
     try {

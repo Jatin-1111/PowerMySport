@@ -1,15 +1,6 @@
-import {
-  CommunityFollow,
-  type CommunityFollowKind,
-} from "../models/CommunityFollow";
-import {
-  CommunityGroup,
-} from "../models/CommunityGroup";
-import {
-  MAX_FOLLOWS_PER_USER,
-  ensureProfile,
-  normalizeFollowTargetId,
-} from "./communityShared";
+import { CommunityFollow, type CommunityFollowKind } from "../models/CommunityFollow";
+import { CommunityGroup } from "../models/CommunityGroup";
+import { MAX_FOLLOWS_PER_USER, ensureProfile, normalizeFollowTargetId } from "./communityShared";
 import mongoose from "mongoose";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("communityFollow");
@@ -23,9 +14,7 @@ const log = __rootLog.child("communityFollow");
  */
 export const communityFollowService = {
   async listFollows(userId: string) {
-    const follows = await CommunityFollow.find({ userId })
-      .sort({ createdAt: -1 })
-      .lean();
+    const follows = await CommunityFollow.find({ userId }).sort({ createdAt: -1 }).lean();
 
     const groupIds = follows
       .filter((follow) => follow.kind === "GROUP")
@@ -38,9 +27,7 @@ export const communityFollowService = {
           .lean()
       : [];
 
-    const groupNameById = new Map(
-      groups.map((group) => [String(group._id), group.name]),
-    );
+    const groupNameById = new Map(groups.map((group) => [String(group._id), group.name]));
 
     const items: {
       kind: CommunityFollowKind;
@@ -81,11 +68,9 @@ export const communityFollowService = {
     }
 
     if (staleIds.length) {
-      void CommunityFollow.deleteMany({ _id: { $in: staleIds } }).catch(
-        (error: unknown) => {
-          log.error("Failed to prune stale community follows:", error);
-        },
-      );
+      void CommunityFollow.deleteMany({ _id: { $in: staleIds } }).catch((error: unknown) => {
+        log.error("Failed to prune stale community follows:", error);
+      });
     }
 
     return { items };
@@ -93,7 +78,7 @@ export const communityFollowService = {
 
   async toggleFollow(
     userId: string,
-    payload: { kind: CommunityFollowKind; targetId: string },
+    payload: { kind: CommunityFollowKind; targetId: string }
   ): Promise<{ following: boolean }> {
     await ensureProfile(userId);
 
@@ -111,15 +96,13 @@ export const communityFollowService = {
 
     const total = await CommunityFollow.countDocuments({ userId });
     if (total >= MAX_FOLLOWS_PER_USER) {
-      throw new Error(
-        `You can follow at most ${MAX_FOLLOWS_PER_USER} groups and topics`,
-      );
+      throw new Error(`You can follow at most ${MAX_FOLLOWS_PER_USER} groups and topics`);
     }
 
     await CommunityFollow.updateOne(
       { userId, kind: payload.kind, targetId },
       { $setOnInsert: { userId, kind: payload.kind, targetId } },
-      { upsert: true },
+      { upsert: true }
     );
 
     return { following: true };
@@ -132,7 +115,7 @@ export const communityFollowService = {
    */
   async importFollows(
     userId: string,
-    items: { kind: CommunityFollowKind; targetId: string }[],
+    items: { kind: CommunityFollowKind; targetId: string }[]
   ): Promise<{ imported: number }> {
     await ensureProfile(userId);
 

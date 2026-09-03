@@ -5,10 +5,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CornerDownRight, Heart, Loader2, Trash2 } from "lucide-react";
 import { BlogComment } from "@/modules/community/types";
-import {
-  toRelativeTime,
-  formatCount,
-} from "@/modules/community/utils/blogFormat";
+import { toRelativeTime, formatCount } from "@/modules/community/utils/blogFormat";
 import AuthorAvatar from "./AuthorAvatar";
 
 interface CommentItemProps {
@@ -20,9 +17,7 @@ interface CommentItemProps {
 }
 
 const authorHref = (author: BlogComment["author"]) =>
-  author.username
-    ? `/blog/writer/${author.username}`
-    : `/blog/writer/${author.id}`;
+  author.username ? `/blog/writer/${author.username}` : `/blog/writer/${author.id}`;
 
 const MENTION_RE = /@([a-zA-Z0-9_]{2,30})/g;
 
@@ -35,19 +30,17 @@ const renderContent = (text: string) => {
   MENTION_RE.lastIndex = 0;
   while ((match = MENTION_RE.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      nodes.push(
-        <Fragment key={key++}>{text.slice(lastIndex, match.index)}</Fragment>,
-      );
+      nodes.push(<Fragment key={key++}>{text.slice(lastIndex, match.index)}</Fragment>);
     }
     const username = match[1];
     nodes.push(
       <Link
         key={key++}
         href={`/blog/writer/${username}`}
-        className="font-semibold text-power-orange hover:underline"
+        className="text-power-orange font-semibold hover:underline"
       >
         @{username}
-      </Link>,
+      </Link>
     );
     lastIndex = match.index + match[0].length;
   }
@@ -125,21 +118,17 @@ export default function CommentItem({
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <Link
               href={authorHref(comment.author)}
-              className="text-sm font-semibold text-slate-900 hover:text-power-orange"
+              className="hover:text-power-orange text-sm font-semibold text-slate-900"
             >
               {comment.author.name}
             </Link>
             {comment.author.username ? (
-              <span className="text-xs text-slate-400">
-                @{comment.author.username}
-              </span>
+              <span className="text-xs text-slate-400">@{comment.author.username}</span>
             ) : null}
-            <span className="text-xs text-slate-400">
-              · {toRelativeTime(comment.createdAt)}
-            </span>
+            <span className="text-xs text-slate-400">· {toRelativeTime(comment.createdAt)}</span>
           </div>
 
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">
+          <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap text-slate-700">
             {renderContent(comment.content)}
           </p>
 
@@ -148,17 +137,10 @@ export default function CommentItem({
               type="button"
               onClick={() => onToggleLike(comment)}
               className={`inline-flex items-center gap-1 text-xs font-semibold transition ${
-                comment.likedByMe
-                  ? "text-rose-600"
-                  : "text-slate-400 hover:text-rose-500"
+                comment.likedByMe ? "text-rose-600" : "text-slate-400 hover:text-rose-500"
               }`}
             >
-              <Heart
-                size={13}
-                className={
-                  comment.likedByMe ? "fill-rose-500 text-rose-500" : ""
-                }
-              />
+              <Heart size={13} className={comment.likedByMe ? "fill-rose-500 text-rose-500" : ""} />
               {comment.likeCount > 0 ? formatCount(comment.likeCount) : "Like"}
             </button>
             <button
@@ -188,7 +170,7 @@ export default function CommentItem({
                 onChange={(event) => setReplyText(event.target.value)}
                 rows={2}
                 placeholder={`Reply to ${comment.author.name}...`}
-                className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-1 focus:ring-power-orange"
+                className="focus:border-power-orange focus:ring-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
               />
               <button
                 type="button"
@@ -196,11 +178,7 @@ export default function CommentItem({
                 disabled={submitting || !replyText.trim()}
                 className="inline-flex h-9 shrink-0 items-center gap-1 rounded-xl bg-slate-900 px-3 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
               >
-                {submitting ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  "Send"
-                )}
+                {submitting ? <Loader2 size={13} className="animate-spin" /> : "Send"}
               </button>
             </div>
           ) : null}

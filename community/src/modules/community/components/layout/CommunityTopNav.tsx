@@ -64,8 +64,7 @@ export default function CommunityTopNav() {
         return;
       }
       try {
-        const count =
-          await communityService.getCommunityUnreadNotificationCount();
+        const count = await communityService.getCommunityUnreadNotificationCount();
         setUnreadCount(count);
       } catch {
         setUnreadCount(0);
@@ -112,10 +111,7 @@ export default function CommunityTopNav() {
       socket.off("notification:new", handleNewNotification);
       socket.off("community:newMessage", handleChatsChanged);
       socket.off("community:messagesRead", handleChatsChanged);
-      window.removeEventListener(
-        "community:notificationsRead",
-        handleLocalRead,
-      );
+      window.removeEventListener("community:notificationsRead", handleLocalRead);
     };
   }, []);
 
@@ -123,10 +119,7 @@ export default function CommunityTopNav() {
   useEffect(() => {
     if (!isSettingsOpen) return;
     const handler = (e: MouseEvent) => {
-      if (
-        settingsRef.current &&
-        !settingsRef.current.contains(e.target as Node)
-      ) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
         setIsSettingsOpen(false);
       }
     };
@@ -137,9 +130,7 @@ export default function CommunityTopNav() {
   // ── hide on join pages ────────────────────────────────────────────────────
   if (pathname.startsWith("/join/")) return null;
 
-  const isSettingsActive = SETTINGS_ITEMS.some((item) =>
-    pathname.startsWith(item.href),
-  );
+  const isSettingsActive = SETTINGS_ITEMS.some((item) => pathname.startsWith(item.href));
 
   // ── primary nav-link style helper (center) ───────────────────────────────
   const navLinkCls = (active: boolean) =>
@@ -154,34 +145,28 @@ export default function CommunityTopNav() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3 lg:px-6">
         <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/70 bg-white/75 px-2.5 py-2 shadow-sm shadow-slate-900/5 backdrop-blur sm:px-3 lg:gap-3">
           {/* Left section: Back button & Logo */}
-          <div className="flex items-center flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
-            <a
-              href="/"
-              className="inline-flex h-full flex-col items-start justify-center"
-            >
-              <span className="font-title text-xl font-extrabold leading-none tracking-tight xl:text-2xl">
+            <a href="/" className="inline-flex h-full flex-col items-start justify-center">
+              <span className="font-title text-xl leading-none font-extrabold tracking-tight xl:text-2xl">
                 <span className="text-slate-900">Power</span>
                 <span className="text-power-orange">My</span>
                 <span className="text-slate-900">Sport</span>
               </span>
-              <span className="mt-1.5 text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400">
+              <span className="mt-1.5 text-[9px] leading-none font-medium tracking-wider text-slate-400 uppercase">
                 Community
               </span>
             </a>
           </div>
 
           {/* ── Desktop Center Nav ────────────────────────────────────────── */}
-          <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5 lg:mx-1 xl:mx-2">
+          <div className="hidden flex-1 items-center justify-center gap-0.5 lg:mx-1 lg:flex xl:mx-2">
             <Link href="/" className={navLinkCls(pathname === "/")}>
               <House size={16} />
               Home
             </Link>
 
-            <Link
-              href="/discover"
-              className={navLinkCls(pathname.startsWith("/discover"))}
-            >
+            <Link href="/discover" className={navLinkCls(pathname.startsWith("/discover"))}>
               <Compass size={16} />
               Discover
             </Link>
@@ -193,38 +178,29 @@ export default function CommunityTopNav() {
               <MessagesSquare size={16} />
               Chats
               {unreadChatsCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-power-orange px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="bg-power-orange absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                   {unreadChatsCount > 99 ? "99+" : unreadChatsCount}
                 </span>
               )}
             </Link>
 
-            <Link
-              href="/blog"
-              className={navLinkCls(pathname.startsWith("/blog"))}
-            >
+            <Link href="/blog" className={navLinkCls(pathname.startsWith("/blog"))}>
               <Newspaper size={16} />
               Blog
             </Link>
 
-            <Link
-              href="/questions"
-              className={navLinkCls(pathname.startsWith("/questions"))}
-            >
+            <Link href="/questions" className={navLinkCls(pathname.startsWith("/questions"))}>
               <MessageSquare size={16} />
               Questions
             </Link>
-            <Link
-              href="/contributors"
-              className={navLinkCls(pathname.startsWith("/contributors"))}
-            >
+            <Link href="/contributors" className={navLinkCls(pathname.startsWith("/contributors"))}>
               <Trophy size={16} />
               Contributors
             </Link>
           </div>
 
           {/* ── Desktop Right Actions ─────────────────────────────────────── */}
-          <div className="hidden lg:flex items-center justify-end gap-2 xl:gap-3 flex-shrink-0">
+          <div className="hidden flex-shrink-0 items-center justify-end gap-2 lg:flex xl:gap-3">
             {/* Notifications */}
             <Link
               href="/notifications"
@@ -232,7 +208,7 @@ export default function CommunityTopNav() {
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-power-orange px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="bg-power-orange absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -263,10 +239,10 @@ export default function CommunityTopNav() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.97 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
+                    className="absolute top-[calc(100%+8px)] right-0 z-50 min-w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
                   >
-                    <div className="px-3 pb-1 pt-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    <div className="px-3 pt-3 pb-1">
+                      <p className="text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
                         Settings
                       </p>
                     </div>
@@ -276,9 +252,7 @@ export default function CommunityTopNav() {
                         href={href}
                         onClick={() => setIsSettingsOpen(false)}
                         className={`flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium transition hover:bg-slate-50 ${
-                          pathname.startsWith(href)
-                            ? "text-power-orange"
-                            : "text-slate-700"
+                          pathname.startsWith(href) ? "text-power-orange" : "text-slate-700"
                         }`}
                       >
                         <Icon size={16} />
@@ -293,14 +267,14 @@ export default function CommunityTopNav() {
           </div>
 
           {/* ── Mobile hamburger ──────────────────────────────────────────── */}
-          <div className="flex lg:hidden items-center gap-2">
+          <div className="flex items-center gap-2 lg:hidden">
             <Link
               href="/notifications"
               className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-600 transition hover:bg-slate-100"
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-power-orange px-1 text-[9px] font-bold text-white ring-2 ring-white">
+                <span className="bg-power-orange absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -336,18 +310,16 @@ export default function CommunityTopNav() {
                   animate={{ x: 0, opacity: 1 }}
                   exit={{ x: -24, opacity: 0 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="absolute left-0 top-0 h-full w-[88vw] max-w-sm overflow-y-auto border-r border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98))] p-4 shadow-2xl"
+                  className="absolute top-0 left-0 h-full w-[88vw] max-w-sm overflow-y-auto border-r border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98))] p-4 shadow-2xl"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                      <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
                         Navigate
                       </p>
-                      <h2 className="mt-1 text-lg font-semibold text-slate-900">
-                        Community menu
-                      </h2>
+                      <h2 className="mt-1 text-lg font-semibold text-slate-900">Community menu</h2>
                     </div>
                     <button
                       type="button"
@@ -365,22 +337,18 @@ export default function CommunityTopNav() {
                       href="/"
                       className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-power-orange/10 text-power-orange">
+                      <span className="bg-power-orange/10 text-power-orange flex h-10 w-10 items-center justify-center rounded-2xl">
                         <ExternalLink size={18} />
                       </span>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          Main App
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Return to main site
-                        </p>
+                        <p className="text-sm font-semibold text-slate-900">Main App</p>
+                        <p className="text-xs text-slate-500">Return to main site</p>
                       </div>
                     </a>
                   </div>
 
                   {/* Primary nav items */}
-                  <p className="mt-5 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-1">
+                  <p className="mt-5 mb-2 px-1 text-[10px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
                     Main
                   </p>
                   <div className="grid grid-cols-2 gap-2">
@@ -411,7 +379,7 @@ export default function CommunityTopNav() {
                         <Icon size={15} />
                         {label}
                         {!!badge && badge > 0 && (
-                          <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-power-orange px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                          <span className="bg-power-orange absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white ring-2 ring-white">
                             {badge > 99 ? "99+" : badge}
                           </span>
                         )}
@@ -427,7 +395,7 @@ export default function CommunityTopNav() {
                       <Bell size={15} />
                       Notifications
                       {unreadCount > 0 && (
-                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-power-orange px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        <span className="bg-power-orange inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white">
                           {unreadCount > 99 ? "99+" : unreadCount}
                         </span>
                       )}
@@ -465,19 +433,19 @@ export default function CommunityTopNav() {
 
                   {/* Tip */}
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
                       Quick note
                     </p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Use the drawer to move fast on mobile. The page keeps your
-                      current context while navigating.
+                      Use the drawer to move fast on mobile. The page keeps your current context
+                      while navigating.
                     </p>
                   </div>
                 </motion.div>
               </motion.div>
             )}
           </AnimatePresence>,
-          document.body,
+          document.body
         )}
     </header>
   );

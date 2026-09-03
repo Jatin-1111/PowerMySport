@@ -18,9 +18,7 @@ const migrateAdminPermissions = async () => {
   try {
     // Connect to database
     const MONGODB_URI =
-      process.env.MONGO_URI ||
-      process.env.MONGODB_URI ||
-      "mongodb://localhost:27017/powermysport";
+      process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
     if (!process.env.MONGO_URI && !process.env.MONGODB_URI) {
       console.log("⚠️  Warning: Using default local MongoDB connection");
@@ -49,9 +47,7 @@ const migrateAdminPermissions = async () => {
 
       // Check if admin already uses new role system
       if (Object.values(ADMIN_ROLES).includes(admin.role as any)) {
-        console.log(
-          `⏭️  Skipped: ${admin.name} (${admin.email}) - Already migrated`,
-        );
+        console.log(`⏭️  Skipped: ${admin.name} (${admin.email}) - Already migrated`);
         skippedCount++;
         continue;
       }
@@ -69,15 +65,11 @@ const migrateAdminPermissions = async () => {
         console.log(`✅ Migrated: ${admin.name} (${admin.email})`);
         console.log(`   ${oldRole} → ${admin.role}`);
         console.log(
-          `   Permissions: ${oldPermissions.join(", ")} → ${admin.permissions.length} permissions`,
+          `   Permissions: ${oldPermissions.join(", ")} → ${admin.permissions.length} permissions`
         );
       } else {
-        console.log(
-          `⚠️  Unknown role: ${admin.name} (${admin.email}) - ${oldRole}`,
-        );
-        console.log(
-          `   Setting to ${ADMIN_ROLES.SUPPORT_ADMIN} with base permissions`,
-        );
+        console.log(`⚠️  Unknown role: ${admin.name} (${admin.email}) - ${oldRole}`);
+        console.log(`   Setting to ${ADMIN_ROLES.SUPPORT_ADMIN} with base permissions`);
         admin.role = ADMIN_ROLES.SUPPORT_ADMIN;
         admin.permissions = [...SUPPORT_ADMIN_PERMISSIONS];
       }

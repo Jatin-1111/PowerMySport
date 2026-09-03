@@ -56,12 +56,7 @@ const router = Router();
 // The non-geographic discovery lane. Coach `/discover` is a $geoNear and an
 // online-only coach has no base location, so they can only be found here.
 // public: never reads req.user or embeds a per-viewer field.
-router.get(
-  "/browse",
-  cacheControl(60, "public"),
-  cacheResponse(60),
-  browseOfferingsHandler,
-);
+router.get("/browse", cacheControl(60, "public"), cacheResponse(60), browseOfferingsHandler);
 
 // ── student ─────────────────────────────────────────────────────────────────
 router.get("/my/enrollments", authMiddleware, myEnrollmentsHandler);
@@ -70,52 +65,31 @@ router.post(
   "/:offeringId/enroll",
   authMiddleware,
   validateRequest(coachEnrollSchema),
-  enrollHandler,
+  enrollHandler
 );
-router.post(
-  "/enrollments/:enrollmentId/leave",
-  authMiddleware,
-  leaveEnrollmentHandler,
-);
-router.post(
-  "/enrollments/:enrollmentId/renew",
-  authMiddleware,
-  renewEnrollmentHandler,
-);
+router.post("/enrollments/:enrollmentId/leave", authMiddleware, leaveEnrollmentHandler);
+router.post("/enrollments/:enrollmentId/renew", authMiddleware, renewEnrollmentHandler);
 router.get("/my/waitlist", authMiddleware, myWaitlistHandler);
 router.post(
   "/:offeringId/waitlist",
   authMiddleware,
   validateRequest(coachWaitlistSchema),
-  joinWaitlistHandler,
+  joinWaitlistHandler
 );
-router.post(
-  "/waitlist/:entryId/leave",
-  authMiddleware,
-  leaveWaitlistHandler,
-);
+router.post("/waitlist/:entryId/leave", authMiddleware, leaveWaitlistHandler);
 
 // ── coach: programmes ───────────────────────────────────────────────────────
 router.get("/mine", authMiddleware, listMyOfferingsHandler);
-router.post(
-  "/",
-  authMiddleware,
-  validateRequest(createCoachOfferingSchema),
-  createOfferingHandler,
-);
+router.post("/", authMiddleware, validateRequest(createCoachOfferingSchema), createOfferingHandler);
 router.post("/:offeringId/activate", authMiddleware, activateOfferingHandler);
 router.post("/:offeringId/pause", authMiddleware, pauseOfferingHandler);
 router.get("/:offeringId/roster", authMiddleware, offeringRosterHandler);
-router.get(
-  "/:offeringId/waitlist",
-  authMiddleware,
-  offeringWaitlistHandler,
-);
+router.get("/:offeringId/waitlist", authMiddleware, offeringWaitlistHandler);
 router.put(
   "/:offeringId/meeting-link",
   authMiddleware,
   validateRequest(coachMeetingLinkSchema),
-  setOfferingLinkHandler,
+  setOfferingLinkHandler
 );
 
 // ── coach: sessions ─────────────────────────────────────────────────────────
@@ -126,31 +100,31 @@ router.post(
   "/sessions/:occurrenceId/complete",
   authMiddleware,
   validateRequest(coachSessionCompleteSchema),
-  completeSessionHandler,
+  completeSessionHandler
 );
 router.post(
   "/sessions/:occurrenceId/cancel",
   authMiddleware,
   validateRequest(coachSessionCancelSchema),
-  cancelSessionHandler,
+  cancelSessionHandler
 );
 router.post(
   "/sessions/:occurrenceId/makeup",
   authMiddleware,
   validateRequest(coachMakeupSchema),
-  scheduleMakeupHandler,
+  scheduleMakeupHandler
 );
 router.post(
   "/sessions/:occurrenceId/attendance",
   authMiddleware,
   validateRequest(coachAttendanceSchema),
-  markAttendanceHandler,
+  markAttendanceHandler
 );
 router.put(
   "/sessions/:occurrenceId/meeting-link",
   authMiddleware,
   validateRequest(coachMeetingLinkSchema),
-  setSessionLinkHandler,
+  setSessionLinkHandler
 );
 
 export default router;

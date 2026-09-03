@@ -60,13 +60,9 @@ function Bucket({
   return (
     <section className="border-t border-slate-200 pt-5">
       <div className="mb-3 flex items-baseline gap-3">
-        <span className="text-xs font-extrabold tracking-[0.18em] text-power-orange">
-          {number}
-        </span>
+        <span className="text-power-orange text-xs font-extrabold tracking-[0.18em]">{number}</span>
         <div>
-          <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">
-            {title}
-          </h2>
+          <h2 className="text-sm font-extrabold tracking-wide text-slate-800 uppercase">{title}</h2>
           <p className="text-xs text-slate-500">{subtitle}</p>
         </div>
       </div>
@@ -124,10 +120,8 @@ export function StageEditor({
     setDraft(stage);
   }
 
-  const set = <K extends keyof AdminPathwayStage>(
-    field: K,
-    value: AdminPathwayStage[K],
-  ) => setDraft((current) => ({ ...current, [field]: value }));
+  const set = <K extends keyof AdminPathwayStage>(field: K, value: AdminPathwayStage[K]) =>
+    setDraft((current) => ({ ...current, [field]: value }));
 
   /**
    * A new stage gets its key suggested from its name; an existing one does not,
@@ -140,9 +134,7 @@ export function StageEditor({
     setDraft((current) => ({
       ...current,
       name,
-      ...(isNew && current.key === slugify(current.name)
-        ? { key: slugify(name) }
-        : {}),
+      ...(isNew && current.key === slugify(current.name) ? { key: slugify(name) } : {}),
     }));
 
   const primary = draft.primaryAction ?? { label: "" };
@@ -158,11 +150,7 @@ export function StageEditor({
       {/* ── Identity ── */}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Stage name" hint="Shown upper-case, e.g. Discover Tennis">
-          <TextInput
-            value={draft.name}
-            onChange={setName}
-            placeholder="Discover Tennis"
-          />
+          <TextInput value={draft.name} onChange={setName} placeholder="Discover Tennis" />
         </Field>
         <Field
           label="Stage key"
@@ -194,11 +182,7 @@ export function StageEditor({
         </Field>
       </div>
 
-      <Bucket
-        number="01"
-        title="Overview"
-        subtitle="Where am I and what does this stage mean?"
-      >
+      <Bucket number="01" title="Overview" subtitle="Where am I and what does this stage mean?">
         <TextArea
           value={draft.overview}
           rows={4}
@@ -268,11 +252,7 @@ export function StageEditor({
         />
       </Bucket>
 
-      <Bucket
-        number="04"
-        title="Decisions"
-        subtitle="What choices may I need to make?"
-      >
+      <Bucket number="04" title="Decisions" subtitle="What choices may I need to make?">
         <RepeatableList
           label="Decisions"
           items={draft.decisions}
@@ -305,17 +285,11 @@ export function StageEditor({
           makeEmpty={(): AdminPathwayAction => ({ label: "" })}
           addLabel="Add link"
           emptyText="No help links yet."
-          renderRow={(item, setItem) => (
-            <ActionRow value={item} onChange={setItem} />
-          )}
+          renderRow={(item, setItem) => <ActionRow value={item} onChange={setItem} />}
         />
       </Bucket>
 
-      <Bucket
-        number="05"
-        title="Next step"
-        subtitle="What should I actually do now?"
-      >
+      <Bucket number="05" title="Next step" subtitle="What should I actually do now?">
         <Field label="Lead-in line">
           <TextInput
             value={draft.nextStepLead ?? ""}
@@ -326,9 +300,7 @@ export function StageEditor({
 
         <RepeatableList
           label="Steps"
-          hint={
-            'The left column is the situation ("Not started") or the order ("Step 1").'
-          }
+          hint={'The left column is the situation ("Not started") or the order ("Step 1").'}
           items={draft.nextSteps}
           onChange={(nextSteps) => set("nextSteps", nextSteps)}
           makeEmpty={() => ({ when: "", action: "" })}
@@ -350,15 +322,10 @@ export function StageEditor({
           )}
         />
 
-        <Field
-          label="Primary action button"
-          hint="Leave the text blank to hide the button."
-        >
+        <Field label="Primary action button" hint="Leave the text blank to hide the button.">
           <ActionRow
             value={primary}
-            onChange={(next) =>
-              set("primaryAction", next.label.trim() ? next : undefined)
-            }
+            onChange={(next) => set("primaryAction", next.label.trim() ? next : undefined)}
           />
         </Field>
       </Bucket>
@@ -371,11 +338,7 @@ export function StageEditor({
           disabled={saving}
           className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-40"
         >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {isNew ? "Add stage" : "Save stage"}
         </button>
         {onCancel && (

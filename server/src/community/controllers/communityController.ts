@@ -63,10 +63,7 @@ const handleError = (res: Response, error: unknown, fallback: string) => {
   });
 };
 
-export const getCommunityProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCommunityProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await CommunityService.getMyProfile(getUserId(req));
     res.status(200).json({
@@ -79,27 +76,18 @@ export const getCommunityProfile = async (
   }
 };
 
-export const searchPlayers = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const searchPlayers = async (req: Request, res: Response): Promise<void> => {
   try {
     const rawQuery = req.query.q;
     const query = typeof rawQuery === "string" ? rawQuery : "";
     const rawLimit = req.query.limit;
-    const parsedLimit =
-      typeof rawLimit === "string" ? Number(rawLimit) : Number.NaN;
+    const parsedLimit = typeof rawLimit === "string" ? Number(rawLimit) : Number.NaN;
     const limit = Number.isFinite(parsedLimit) ? parsedLimit : 10;
 
     const roleRaw = req.query.role;
     const role = typeof roleRaw === "string" ? roleRaw : undefined;
 
-    const data = await CommunityService.searchPlayers(
-      getUserId(req),
-      query,
-      limit,
-      role,
-    );
+    const data = await CommunityService.searchPlayers(getUserId(req), query, limit, role);
 
     res.status(200).json({
       success: true,
@@ -111,20 +99,14 @@ export const searchPlayers = async (
   }
 };
 
-export const getPlayerProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPlayerProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const targetUserId = String(req.params.userId || "");
     if (!targetUserId) {
       throw new Error("userId is required");
     }
 
-    const data = await CommunityService.getPlayerProfile(
-      getUserId(req),
-      targetUserId,
-    );
+    const data = await CommunityService.getPlayerProfile(getUserId(req), targetUserId);
 
     res.status(200).json({
       success: true,
@@ -136,15 +118,9 @@ export const getPlayerProfile = async (
   }
 };
 
-export const updateCommunityProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateCommunityProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = await CommunityService.updateMyProfile(
-      getUserId(req),
-      req.body,
-    );
+    const data = await CommunityService.updateMyProfile(getUserId(req), req.body);
     res.status(200).json({
       success: true,
       message: "Community privacy settings updated",
@@ -155,10 +131,7 @@ export const updateCommunityProfile = async (
   }
 };
 
-export const getBlockedUsers = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getBlockedUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await CommunityService.getBlockedUsers(getUserId(req));
     res.status(200).json({
@@ -185,16 +158,10 @@ export const blockUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const unblockUser = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const unblockUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { targetUserId } = req.body as { targetUserId: string };
-    const data = await CommunityService.unblockUser(
-      getUserId(req),
-      targetUserId,
-    );
+    const data = await CommunityService.unblockUser(getUserId(req), targetUserId);
     res.status(200).json({
       success: true,
       message: "User unblocked successfully",
@@ -205,16 +172,10 @@ export const unblockUser = async (
   }
 };
 
-export const startConversation = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const startConversation = async (req: Request, res: Response): Promise<void> => {
   try {
     const { targetUserId } = req.body as { targetUserId: string };
-    const data = await CommunityService.startConversation(
-      getUserId(req),
-      targetUserId,
-    );
+    const data = await CommunityService.startConversation(getUserId(req), targetUserId);
     res.status(200).json({
       success: true,
       message: "Conversation ready",
@@ -225,14 +186,11 @@ export const startConversation = async (
   }
 };
 
-export const acceptConversationRequest = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const acceptConversationRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await CommunityService.acceptConversationRequest(
       getUserId(req),
-      getConversationId(req),
+      getConversationId(req)
     );
     res.status(200).json({
       success: true,
@@ -244,14 +202,11 @@ export const acceptConversationRequest = async (
   }
 };
 
-export const rejectConversationRequest = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const rejectConversationRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await CommunityService.rejectConversationRequest(
       getUserId(req),
-      getConversationId(req),
+      getConversationId(req)
     );
     res.status(200).json({
       success: true,
@@ -263,28 +218,18 @@ export const rejectConversationRequest = async (
   }
 };
 
-export const listConversations = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listConversations = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-    const mode =
-      typeof req.query.mode === "string" ? req.query.mode.toUpperCase() : "ALL";
-    const type =
-      typeof req.query.type === "string" ? req.query.type.toUpperCase() : "ALL";
+    const mode = typeof req.query.mode === "string" ? req.query.mode.toUpperCase() : "ALL";
+    const type = typeof req.query.type === "string" ? req.query.type.toUpperCase() : "ALL";
     const search = typeof req.query.q === "string" ? req.query.q : "";
-    const data = await CommunityService.listConversations(
-      getUserId(req),
-      page,
-      limit,
-      {
-        mode: mode === "UNREAD" || mode === "REQUESTS" ? mode : "ALL",
-        type: type === "CONTACTS" || type === "GROUPS" ? type : "ALL",
-        search,
-      },
-    );
+    const data = await CommunityService.listConversations(getUserId(req), page, limit, {
+      mode: mode === "UNREAD" || mode === "REQUESTS" ? mode : "ALL",
+      type: type === "CONTACTS" || type === "GROUPS" ? type : "ALL",
+      search,
+    });
     res.status(200).json({
       success: true,
       message: "Conversations fetched",
@@ -295,14 +240,9 @@ export const listConversations = async (
   }
 };
 
-export const getUnreadConversationCount = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getUnreadConversationCount = async (req: Request, res: Response): Promise<void> => {
   try {
-    const count = await CommunityService.getUnreadConversationCount(
-      getUserId(req),
-    );
+    const count = await CommunityService.getUnreadConversationCount(getUserId(req));
     res.status(200).json({
       success: true,
       message: "Unread conversation count fetched",
@@ -313,10 +253,7 @@ export const getUnreadConversationCount = async (
   }
 };
 
-export const getConversationMessages = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getConversationMessages = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
@@ -324,7 +261,7 @@ export const getConversationMessages = async (
       getUserId(req),
       getConversationId(req),
       page,
-      limit,
+      limit
     );
 
     res.status(200).json({
@@ -337,14 +274,10 @@ export const getConversationMessages = async (
   }
 };
 
-
 /**
  * POST /community/groups/upload-url
  */
-export const getGroupImageUploadUrl = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getGroupImageUploadUrl = async (req: Request, res: Response): Promise<void> => {
   try {
     const { contentType } = req.body as {
       contentType: "image/jpeg" | "image/png" | "image/webp";
@@ -352,42 +285,28 @@ export const getGroupImageUploadUrl = async (
     // Reusing the blog image generator for general public images
     const { S3Service } = await import("../../shared/services/S3Service");
     const s3Service = new S3Service();
-    const data = await s3Service.generateBlogImageUploadUrl(
-      getUserId(req),
-      contentType,
-    );
-    res
-      .status(200)
-      .json({ success: true, message: "Upload URL generated", data });
+    const data = await s3Service.generateBlogImageUploadUrl(getUserId(req), contentType);
+    res.status(200).json({ success: true, message: "Upload URL generated", data });
   } catch (error) {
     handleError(res, error, "Failed to generate upload URL");
   }
 };
 
-export const sendMessage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const sendMessage = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { conversationId, content, replyToId, type, metadata } =
-      req.body as {
-        conversationId: string;
-        content: string;
-        replyToId?: string;
-        type?: "TEXT" | "IMAGE" | "FILE" | "VOICE";
-        metadata?: Record<string, unknown>;
-      };
+    const { conversationId, content, replyToId, type, metadata } = req.body as {
+      conversationId: string;
+      content: string;
+      replyToId?: string;
+      type?: "TEXT" | "IMAGE" | "FILE" | "VOICE";
+      metadata?: Record<string, unknown>;
+    };
 
-    const data = await CommunityService.sendMessage(
-      getUserId(req),
-      conversationId,
-      content,
-      {
-        ...(type ? { type } : {}),
-        ...(metadata ? { metadata } : {}),
-        ...(replyToId ? { replyToId } : {}),
-      },
-    );
+    const data = await CommunityService.sendMessage(getUserId(req), conversationId, content, {
+      ...(type ? { type } : {}),
+      ...(metadata ? { metadata } : {}),
+      ...(replyToId ? { replyToId } : {}),
+    });
 
     res.status(201).json({
       success: true,
@@ -399,10 +318,7 @@ export const sendMessage = async (
   }
 };
 
-export const editMessage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const editMessage = async (req: Request, res: Response): Promise<void> => {
   try {
     const messageId = String(req.params.messageId || "");
     if (!messageId) {
@@ -410,11 +326,7 @@ export const editMessage = async (
     }
 
     const { content } = req.body as { content: string };
-    const data = await CommunityService.editMessage(
-      getUserId(req),
-      messageId,
-      content,
-    );
+    const data = await CommunityService.editMessage(getUserId(req), messageId, content);
 
     res.status(200).json({
       success: true,
@@ -426,20 +338,14 @@ export const editMessage = async (
   }
 };
 
-export const deleteMessage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteMessage = async (req: Request, res: Response): Promise<void> => {
   try {
     const messageId = String(req.params.messageId || "");
     if (!messageId) {
       throw new Error("messageId is required");
     }
 
-    const data = await CommunityService.deleteMessage(
-      getUserId(req),
-      messageId,
-    );
+    const data = await CommunityService.deleteMessage(getUserId(req), messageId);
 
     res.status(200).json({
       success: true,
@@ -451,20 +357,11 @@ export const deleteMessage = async (
   }
 };
 
-export const listGroups = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listGroups = async (req: Request, res: Response): Promise<void> => {
   try {
     const query = typeof req.query.q === "string" ? req.query.q : "";
-    const limit = Number.isFinite(Number(req.query.limit))
-      ? Number(req.query.limit)
-      : 20;
-    const data = await CommunityService.listGroups(
-      getOptionalUserId(req),
-      query,
-      limit,
-    );
+    const limit = Number.isFinite(Number(req.query.limit)) ? Number(req.query.limit) : 20;
+    const data = await CommunityService.listGroups(getOptionalUserId(req), query, limit);
 
     res.status(200).json({
       success: true,
@@ -476,10 +373,7 @@ export const listGroups = async (
   }
 };
 
-export const createGroup = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createGroup = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       name,
@@ -523,11 +417,7 @@ export const createGroup = async (
     if (audience === "ALL") {
       payload.audience = audience;
     }
-    if (
-      visibility === "PUBLIC" ||
-      visibility === "INVITE_ONLY" ||
-      visibility === "PRIVATE"
-    ) {
+    if (visibility === "PUBLIC" || visibility === "INVITE_ONLY" || visibility === "PRIVATE") {
       payload.visibility = visibility;
     }
     if (typeof profilePicture === "string") {
@@ -549,10 +439,7 @@ export const createGroup = async (
   }
 };
 
-export const updateGroup = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateGroup = async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     const {
@@ -594,11 +481,7 @@ export const updateGroup = async (
     if (typeof profilePicture === "string") payload.profilePicture = profilePicture;
     if (typeof profilePictureKey === "string") payload.profilePictureKey = profilePictureKey;
 
-    const data = await CommunityService.updateGroup(
-      getUserId(req),
-      groupId,
-      payload,
-    );
+    const data = await CommunityService.updateGroup(getUserId(req), groupId, payload);
 
     res.status(200).json({
       success: true,
@@ -628,10 +511,7 @@ export const joinGroup = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const deleteGroup = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteGroup = async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     if (!groupId) {
@@ -649,10 +529,7 @@ export const deleteGroup = async (
   }
 };
 
-export const leaveGroup = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const leaveGroup = async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     if (!groupId) {
@@ -670,10 +547,7 @@ export const leaveGroup = async (
   }
 };
 
-export const addGroupMember = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const addGroupMember = async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     if (!groupId) {
@@ -681,11 +555,7 @@ export const addGroupMember = async (
     }
 
     const { targetUserId } = req.body as { targetUserId: string };
-    const data = await CommunityService.addGroupMember(
-      getUserId(req),
-      groupId,
-      targetUserId,
-    );
+    const data = await CommunityService.addGroupMember(getUserId(req), groupId, targetUserId);
 
     res.status(200).json({
       success: true,
@@ -697,10 +567,7 @@ export const addGroupMember = async (
   }
 };
 
-export const updateGroupSettings = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateGroupSettings = async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     if (!groupId) {
@@ -711,14 +578,10 @@ export const updateGroupSettings = async (
       memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
       postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
     };
-    const data = await CommunityService.updateGroupSettings(
-      getUserId(req),
-      groupId,
-      {
-        ...(memberAddPolicy ? { memberAddPolicy } : {}),
-        ...(postPolicy ? { postPolicy } : {}),
-      },
-    );
+    const data = await CommunityService.updateGroupSettings(getUserId(req), groupId, {
+      ...(memberAddPolicy ? { memberAddPolicy } : {}),
+      ...(postPolicy ? { postPolicy } : {}),
+    });
 
     res.status(200).json({
       success: true,
@@ -730,10 +593,7 @@ export const updateGroupSettings = async (
   }
 };
 
-export const reportCommunityContent = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const reportCommunityContent = async (req: Request, res: Response): Promise<void> => {
   try {
     const { targetType, targetId, reason, details } = req.body as {
       targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
@@ -759,18 +619,11 @@ export const reportCommunityContent = async (
   }
 };
 
-export const listMyCommunityReports = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listMyCommunityReports = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
-    const data = await CommunityService.listMyReports(
-      getUserId(req),
-      page,
-      limit,
-    );
+    const data = await CommunityService.listMyReports(getUserId(req), page, limit);
 
     res.status(200).json({
       success: true,
@@ -783,20 +636,12 @@ export const listMyCommunityReports = async (
   }
 };
 
-export const getGroupMembers = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getGroupMembers = async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = req.params.groupId as string;
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
-    const data = await CommunityService.getGroupMembers(
-      getUserId(req),
-      groupId,
-      page,
-      limit,
-    );
+    const data = await CommunityService.getGroupMembers(getUserId(req), groupId, page, limit);
     res.status(200).json({
       success: true,
       message: "Group members fetched",
@@ -808,16 +653,10 @@ export const getGroupMembers = async (
   }
 };
 
-export const joinGroupByCode = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const joinGroupByCode = async (req: Request, res: Response): Promise<void> => {
   try {
     const inviteCode = req.params.inviteCode as string;
-    const data = await CommunityService.joinGroupByCode(
-      getUserId(req),
-      inviteCode,
-    );
+    const data = await CommunityService.joinGroupByCode(getUserId(req), inviteCode);
     res.status(200).json({
       success: true,
       message: "Joined group successfully",
@@ -828,16 +667,10 @@ export const joinGroupByCode = async (
   }
 };
 
-export const getGroupInviteCode = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getGroupInviteCode = async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = req.params.groupId as string;
-    const data = await CommunityService.getGroupInviteCode(
-      getUserId(req),
-      groupId,
-    );
+    const data = await CommunityService.getGroupInviteCode(getUserId(req), groupId);
     res.status(200).json({
       success: true,
       message: "Invite code fetched",
@@ -848,10 +681,7 @@ export const getGroupInviteCode = async (
   }
 };
 
-export const getMyCommunityReputation = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getMyCommunityReputation = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await CommunityService.getMyReputation(getUserId(req));
     res.status(200).json({
@@ -864,25 +694,15 @@ export const getMyCommunityReputation = async (
   }
 };
 
-export const searchCommunity = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const searchCommunity = async (req: Request, res: Response): Promise<void> => {
   try {
     const q = typeof req.query.q === "string" ? req.query.q : "";
-    const rawType =
-      typeof req.query.type === "string" ? req.query.type.toUpperCase() : "ALL";
+    const rawType = typeof req.query.type === "string" ? req.query.type.toUpperCase() : "ALL";
     const type =
-      rawType === "POST" || rawType === "BLOG"
-        ? (rawType as "POST" | "BLOG")
-        : ("ALL" as const);
+      rawType === "POST" || rawType === "BLOG" ? (rawType as "POST" | "BLOG") : ("ALL" as const);
     const limit = Number(req.query.limit) || 20;
 
-    const data = await CommunityService.searchCommunity(
-      getOptionalUserId(req),
-      q,
-      { type, limit },
-    );
+    const data = await CommunityService.searchCommunity(getOptionalUserId(req), q, { type, limit });
 
     res.status(200).json({
       success: true,
@@ -894,10 +714,7 @@ export const searchCommunity = async (
   }
 };
 
-export const listCommunityLeaderboard = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listCommunityLeaderboard = async (req: Request, res: Response): Promise<void> => {
   try {
     const limit = Number(req.query.limit) || 15;
     const data = await CommunityService.listLeaderboard(getUserId(req), limit);
@@ -911,10 +728,7 @@ export const listCommunityLeaderboard = async (
   }
 };
 
-export const listCommunityFollows = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listCommunityFollows = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await CommunityService.listFollows(getUserId(req));
     res.status(200).json({
@@ -927,10 +741,7 @@ export const listCommunityFollows = async (
   }
 };
 
-export const toggleCommunityFollow = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const toggleCommunityFollow = async (req: Request, res: Response): Promise<void> => {
   try {
     const { kind, targetId } = req.body as {
       kind: "GROUP" | "TOPIC";
@@ -950,10 +761,7 @@ export const toggleCommunityFollow = async (
   }
 };
 
-export const importCommunityFollows = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const importCommunityFollows = async (req: Request, res: Response): Promise<void> => {
   try {
     const { items } = req.body as {
       items: { kind: "GROUP" | "TOPIC"; targetId: string }[];
@@ -969,36 +777,24 @@ export const importCommunityFollows = async (
   }
 };
 
-export const listCommunityPosts = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listCommunityPosts = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
-    const sortRaw =
-      typeof req.query.sort === "string" ? req.query.sort.toUpperCase() : "NEW";
+    const sortRaw = typeof req.query.sort === "string" ? req.query.sort.toUpperCase() : "NEW";
     const sort =
-      sortRaw === "TOP" || sortRaw === "UNANSWERED" || sortRaw === "ANSWERED"
-        ? sortRaw
-        : "NEW";
+      sortRaw === "TOP" || sortRaw === "UNANSWERED" || sortRaw === "ANSWERED" ? sortRaw : "NEW";
     const directionRaw =
-      typeof req.query.direction === "string"
-        ? req.query.direction.toUpperCase()
-        : "DESC";
+      typeof req.query.direction === "string" ? req.query.direction.toUpperCase() : "DESC";
     const direction = directionRaw === "ASC" ? "ASC" : "DESC";
     const q = typeof req.query.q === "string" ? req.query.q : "";
     const tag = typeof req.query.tag === "string" ? req.query.tag : "";
     const sport = typeof req.query.sport === "string" ? req.query.sport : "";
     const city = typeof req.query.city === "string" ? req.query.city : "";
-    const category =
-      typeof req.query.category === "string" ? req.query.category : "";
+    const category = typeof req.query.category === "string" ? req.query.category : "";
     const mine =
-      typeof req.query.mine === "string"
-        ? req.query.mine.toLowerCase() === "true"
-        : false;
-    const authorId =
-      typeof req.query.authorId === "string" ? req.query.authorId : "";
+      typeof req.query.mine === "string" ? req.query.mine.toLowerCase() === "true" : false;
+    const authorId = typeof req.query.authorId === "string" ? req.query.authorId : "";
 
     const data = await CommunityService.listPosts(getOptionalUserId(req), page, limit, {
       sort,
@@ -1022,10 +818,7 @@ export const listCommunityPosts = async (
   }
 };
 
-export const getCommunityPostDetails = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCommunityPostDetails = async (req: Request, res: Response): Promise<void> => {
   try {
     const postId = String(req.params.postId || "");
     if (!postId) {
@@ -1034,12 +827,7 @@ export const getCommunityPostDetails = async (
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
 
-    const data = await CommunityService.getPostDetails(
-      getOptionalUserId(req),
-      postId,
-      page,
-      limit,
-    );
+    const data = await CommunityService.getPostDetails(getOptionalUserId(req), postId, page, limit);
     res.status(200).json({
       success: true,
       message: "Post details fetched",
@@ -1050,21 +838,17 @@ export const getCommunityPostDetails = async (
   }
 };
 
-export const createCommunityPost = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createCommunityPost = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { title, body, tags, sport, city, category, isAnonymous } =
-      req.body as {
-        title: string;
-        body: string;
-        tags?: string[];
-        sport?: string;
-        city?: string;
-        category?: string;
-        isAnonymous?: boolean;
-      };
+    const { title, body, tags, sport, city, category, isAnonymous } = req.body as {
+      title: string;
+      body: string;
+      tags?: string[];
+      sport?: string;
+      city?: string;
+      category?: string;
+      isAnonymous?: boolean;
+    };
 
     const payload: {
       title: string;
@@ -1099,7 +883,7 @@ export const createCommunityPost = async (
     emitCommunityQnaEvent(
       "community:qnaPostCreated",
       { postId: data.id, authorId: getUserId(req) },
-      [QNA_FEED_ROOM],
+      [QNA_FEED_ROOM]
     );
 
     res.status(201).json({
@@ -1112,10 +896,7 @@ export const createCommunityPost = async (
   }
 };
 
-export const updateCommunityPost = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateCommunityPost = async (req: Request, res: Response): Promise<void> => {
   try {
     const postId = String(req.params.postId || "");
     if (!postId) {
@@ -1159,16 +940,12 @@ export const updateCommunityPost = async (
       payload.city = city;
     }
 
-    const data = await CommunityService.updatePost(
-      getUserId(req),
-      postId,
-      payload,
-    );
+    const data = await CommunityService.updatePost(getUserId(req), postId, payload);
 
     emitCommunityQnaEvent(
       "community:qnaPostUpdated",
       { postId: data.id, authorId: getUserId(req), status: data.status },
-      [QNA_FEED_ROOM, qnaPostRoom(data.id)],
+      [QNA_FEED_ROOM, qnaPostRoom(data.id)]
     );
 
     res.status(200).json({
@@ -1181,10 +958,7 @@ export const updateCommunityPost = async (
   }
 };
 
-export const deleteCommunityPost = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteCommunityPost = async (req: Request, res: Response): Promise<void> => {
   try {
     const postId = String(req.params.postId || "");
     if (!postId) {
@@ -1193,11 +967,10 @@ export const deleteCommunityPost = async (
 
     const data = await CommunityService.deletePost(getUserId(req), postId);
 
-    emitCommunityQnaEvent(
-      "community:qnaPostDeleted",
-      { postId, authorId: getUserId(req) },
-      [QNA_FEED_ROOM, qnaPostRoom(postId)],
-    );
+    emitCommunityQnaEvent("community:qnaPostDeleted", { postId, authorId: getUserId(req) }, [
+      QNA_FEED_ROOM,
+      qnaPostRoom(postId),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -1209,10 +982,7 @@ export const deleteCommunityPost = async (
   }
 };
 
-export const createCommunityAnswer = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createCommunityAnswer = async (req: Request, res: Response): Promise<void> => {
   try {
     const postId = String(req.params.postId || "");
     if (!postId) {
@@ -1227,13 +997,13 @@ export const createCommunityAnswer = async (
       getUserId(req),
       postId,
       content,
-      isAnonymous === true,
+      isAnonymous === true
     );
 
     emitCommunityQnaEvent(
       "community:qnaAnswerCreated",
       { postId: data.postId, answerId: data.id, authorId: getUserId(req) },
-      [QNA_FEED_ROOM, qnaPostRoom(data.postId)],
+      [QNA_FEED_ROOM, qnaPostRoom(data.postId)]
     );
 
     res.status(201).json({
@@ -1246,10 +1016,7 @@ export const createCommunityAnswer = async (
   }
 };
 
-export const updateCommunityAnswer = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateCommunityAnswer = async (req: Request, res: Response): Promise<void> => {
   try {
     const answerId = String(req.params.answerId || "");
     if (!answerId) {
@@ -1257,16 +1024,12 @@ export const updateCommunityAnswer = async (
     }
 
     const { content } = req.body as { content: string };
-    const data = await CommunityService.updateAnswer(
-      getUserId(req),
-      answerId,
-      content,
-    );
+    const data = await CommunityService.updateAnswer(getUserId(req), answerId, content);
 
     emitCommunityQnaEvent(
       "community:qnaAnswerUpdated",
       { postId: data.postId, answerId: data.id, authorId: getUserId(req) },
-      [qnaPostRoom(data.postId)],
+      [qnaPostRoom(data.postId)]
     );
 
     res.status(200).json({
@@ -1279,10 +1042,7 @@ export const updateCommunityAnswer = async (
   }
 };
 
-export const deleteCommunityAnswer = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteCommunityAnswer = async (req: Request, res: Response): Promise<void> => {
   try {
     const answerId = String(req.params.answerId || "");
     if (!answerId) {
@@ -1294,7 +1054,7 @@ export const deleteCommunityAnswer = async (
     emitCommunityQnaEvent(
       "community:qnaAnswerDeleted",
       { postId: data.postId, answerId, authorId: getUserId(req) },
-      [QNA_FEED_ROOM, qnaPostRoom(data.postId)],
+      [QNA_FEED_ROOM, qnaPostRoom(data.postId)]
     );
 
     res.status(200).json({
@@ -1307,10 +1067,7 @@ export const deleteCommunityAnswer = async (
   }
 };
 
-export const createCommunityAnswerComment = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createCommunityAnswerComment = async (req: Request, res: Response): Promise<void> => {
   try {
     const answerId = String(req.params.answerId || "");
     const { content, isAnonymous } = req.body as {
@@ -1322,7 +1079,7 @@ export const createCommunityAnswerComment = async (
       getUserId(req),
       answerId,
       content,
-      Boolean(isAnonymous),
+      Boolean(isAnonymous)
     );
 
     // Comment volume is only rendered inside an open thread, so this stays out
@@ -1330,7 +1087,7 @@ export const createCommunityAnswerComment = async (
     emitCommunityQnaEvent(
       "community:qnaCommentCreated",
       { postId: data.postId, answerId: data.answerId, commentId: data.id },
-      [qnaPostRoom(data.postId)],
+      [qnaPostRoom(data.postId)]
     );
 
     res.status(201).json({
@@ -1343,21 +1100,15 @@ export const createCommunityAnswerComment = async (
   }
 };
 
-export const deleteCommunityAnswerComment = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteCommunityAnswerComment = async (req: Request, res: Response): Promise<void> => {
   try {
     const commentId = String(req.params.commentId || "");
-    const data = await CommunityService.deleteAnswerComment(
-      getUserId(req),
-      commentId,
-    );
+    const data = await CommunityService.deleteAnswerComment(getUserId(req), commentId);
 
     emitCommunityQnaEvent(
       "community:qnaCommentDeleted",
       { postId: data.postId, answerId: data.answerId, commentId: data.id },
-      [qnaPostRoom(data.postId)],
+      [qnaPostRoom(data.postId)]
     );
 
     res.status(200).json({
@@ -1370,16 +1121,10 @@ export const deleteCommunityAnswerComment = async (
   }
 };
 
-export const pinGroupMessage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const pinGroupMessage = async (req: Request, res: Response): Promise<void> => {
   try {
     const messageId = String(req.params.messageId || "");
-    const data = await CommunityService.pinGroupMessage(
-      getUserId(req),
-      messageId,
-    );
+    const data = await CommunityService.pinGroupMessage(getUserId(req), messageId);
 
     emitCommunityGroupEvent(data.groupId, "community:groupMembersUpdated", {
       groupId: data.groupId,
@@ -1396,19 +1141,12 @@ export const pinGroupMessage = async (
   }
 };
 
-export const acceptCommunityAnswer = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const acceptCommunityAnswer = async (req: Request, res: Response): Promise<void> => {
   try {
     const postId = String(req.params.postId || "");
     const answerId = String(req.params.answerId || "");
 
-    const data = await CommunityService.acceptAnswer(
-      getUserId(req),
-      postId,
-      answerId,
-    );
+    const data = await CommunityService.acceptAnswer(getUserId(req), postId, answerId);
 
     emitCommunityQnaEvent(
       "community:qnaAnswerAccepted",
@@ -1417,7 +1155,7 @@ export const acceptCommunityAnswer = async (
         answerId: data.answerId,
         acceptedAnswerId: data.acceptedAnswerId,
       },
-      [QNA_FEED_ROOM, qnaPostRoom(data.postId)],
+      [QNA_FEED_ROOM, qnaPostRoom(data.postId)]
     );
 
     res.status(200).json({
@@ -1430,10 +1168,7 @@ export const acceptCommunityAnswer = async (
   }
 };
 
-export const voteCommunityTarget = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const voteCommunityTarget = async (req: Request, res: Response): Promise<void> => {
   try {
     const { targetType, targetId, value } = req.body as {
       targetType: "POST" | "ANSWER";
@@ -1457,9 +1192,7 @@ export const voteCommunityTarget = async (
         upvoteCount: data.upvoteCount,
         downvoteCount: data.downvoteCount,
       },
-      data.postId
-        ? [QNA_FEED_ROOM, qnaPostRoom(data.postId)]
-        : [QNA_FEED_ROOM],
+      data.postId ? [QNA_FEED_ROOM, qnaPostRoom(data.postId)] : [QNA_FEED_ROOM]
     );
 
     res.status(200).json({
@@ -1472,10 +1205,7 @@ export const voteCommunityTarget = async (
   }
 };
 
-export const getCommunityPulseStats = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCommunityPulseStats = async (req: Request, res: Response): Promise<void> => {
   try {
     const count = await CommunityService.getCommunityPulseStats();
     res.status(200).json({ success: true, count });
@@ -1502,10 +1232,7 @@ export const getCommunityPulseStats = async (
  * participant check here is what stops someone uploading into a conversation
  * they are not part of.
  */
-export const getChatAttachmentUploadUrl = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getChatAttachmentUploadUrl = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = getUserId(req);
     const { conversationId, contentType, kind } = req.body as {
@@ -1516,12 +1243,11 @@ export const getChatAttachmentUploadUrl = async (
 
     await CommunityService.assertConversationAccess(userId, conversationId);
 
-    const { url, fields, key } =
-      await s3Service.generateChatAttachmentPresignedPost(
-        conversationId,
-        contentType,
-        kind,
-      );
+    const { url, fields, key } = await s3Service.generateChatAttachmentPresignedPost(
+      conversationId,
+      contentType,
+      kind
+    );
 
     res.status(200).json({
       success: true,
@@ -1533,10 +1259,7 @@ export const getChatAttachmentUploadUrl = async (
   }
 };
 
-export const getChatImageUploadUrl = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getChatImageUploadUrl = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = getUserId(req);
     const { conversationId, contentType } = req.body as {
@@ -1549,7 +1272,7 @@ export const getChatImageUploadUrl = async (
 
     const { url, fields, key } = await s3Service.generateChatImagePresignedPost(
       conversationId,
-      contentType,
+      contentType
     );
 
     res.status(200).json({

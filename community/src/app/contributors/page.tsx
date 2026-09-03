@@ -4,10 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { HelpCircle, MessageSquare, Star, ThumbsUp, Users } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
-import {
-  CommunityLeaderboardResponse,
-  CommunityPost,
-} from "@/modules/community/types";
+import { CommunityLeaderboardResponse, CommunityPost } from "@/modules/community/types";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { toast } from "@/lib/toast";
@@ -22,7 +19,7 @@ export default function ContributorsPage() {
     <Suspense
       fallback={
         <div className="community-page-shell">
-          <div className="community-content-wrap rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-6">
+          <div className="community-content-wrap border-border rounded-2xl border bg-white p-4 shadow-sm sm:p-6">
             <p className="text-sm text-slate-500">Loading contributors...</p>
           </div>
         </div>
@@ -35,16 +32,13 @@ export default function ContributorsPage() {
 
 function ContributorsPageContent() {
   const [isLoading, setIsLoading] = useState(true);
-  const [leaderboard, setLeaderboard] =
-    useState<CommunityLeaderboardResponse | null>(null);
+  const [leaderboard, setLeaderboard] = useState<CommunityLeaderboardResponse | null>(null);
   const [threadState, setThreadState] = useState<{
     forId: string;
     items: CommunityPost[];
   } | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string>("");
-  const [selectedContributorId, setSelectedContributorId] = useState<
-    string | null
-  >(null);
+  const [selectedContributorId, setSelectedContributorId] = useState<string | null>(null);
   const [myReputation, setMyReputation] = useState<{
     totalPoints: number;
     questionCount: number;
@@ -71,11 +65,7 @@ function ContributorsPageContent() {
         setMyReputation(rep);
         setLeaderboard(board);
       } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to load contributors",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to load contributors");
       } finally {
         setIsLoading(false);
       }
@@ -84,10 +74,7 @@ function ContributorsPageContent() {
     void load();
   }, []);
 
-  const rows = useMemo<LeaderboardItem[]>(
-    () => leaderboard?.items ?? [],
-    [leaderboard],
-  );
+  const rows = useMemo<LeaderboardItem[]>(() => leaderboard?.items ?? [], [leaderboard]);
 
   const myEntry = leaderboard?.me ?? null;
 
@@ -102,9 +89,8 @@ function ContributorsPageContent() {
   }, [rows, myEntry]);
 
   const selectedContributor = useMemo(
-    () =>
-      displayRows.find((item) => item.id === selectedContributorId) || null,
-    [displayRows, selectedContributorId],
+    () => displayRows.find((item) => item.id === selectedContributorId) || null,
+    [displayRows, selectedContributorId]
   );
 
   // Fetched per contributor rather than sliced out of a bulk post prefetch —
@@ -143,12 +129,9 @@ function ContributorsPageContent() {
   }, [selectedContributorId]);
 
   const threads =
-    threadState && threadState.forId === selectedContributorId
-      ? threadState.items
-      : [];
+    threadState && threadState.forId === selectedContributorId ? threadState.items : [];
   const isLoadingThreads =
-    Boolean(selectedContributorId) &&
-    threadState?.forId !== selectedContributorId;
+    Boolean(selectedContributorId) && threadState?.forId !== selectedContributorId;
 
   return (
     <div className="community-page-shell">
@@ -166,15 +149,35 @@ function ContributorsPageContent() {
             transition={{ duration: 0.35 }}
             className="rounded-2xl border border-amber-200/80 bg-[linear-gradient(125deg,#fff9ed_0%,#fffdf7_100%)] p-4 sm:p-5"
           >
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-amber-700 uppercase">
               My Contribution
             </p>
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: "Your Points", value: myReputation.totalPoints, icon: Star, tint: "bg-amber-100 text-amber-600" },
-                { label: "Questions", value: myReputation.questionCount, icon: HelpCircle, tint: "bg-blue-100 text-blue-600" },
-                { label: "Answers", value: myReputation.answerCount, icon: MessageSquare, tint: "bg-emerald-100 text-emerald-600" },
-                { label: "Upvotes", value: myReputation.receivedUpvotes, icon: ThumbsUp, tint: "bg-rose-100 text-rose-600" },
+                {
+                  label: "Your Points",
+                  value: myReputation.totalPoints,
+                  icon: Star,
+                  tint: "bg-amber-100 text-amber-600",
+                },
+                {
+                  label: "Questions",
+                  value: myReputation.questionCount,
+                  icon: HelpCircle,
+                  tint: "bg-blue-100 text-blue-600",
+                },
+                {
+                  label: "Answers",
+                  value: myReputation.answerCount,
+                  icon: MessageSquare,
+                  tint: "bg-emerald-100 text-emerald-600",
+                },
+                {
+                  label: "Upvotes",
+                  value: myReputation.receivedUpvotes,
+                  icon: ThumbsUp,
+                  tint: "bg-rose-100 text-rose-600",
+                },
               ].map((stat) => (
                 <motion.div
                   key={stat.label}
@@ -182,14 +185,14 @@ function ContributorsPageContent() {
                   transition={{ duration: 0.18 }}
                   className="flex items-center gap-3 rounded-xl border border-white/80 bg-white/90 p-3 shadow-sm"
                 >
-                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${stat.tint}`}>
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${stat.tint}`}
+                  >
                     <stat.icon size={16} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-lg font-bold leading-tight text-slate-900">
-                      {stat.value}
-                    </p>
-                    <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-lg leading-tight font-bold text-slate-900">{stat.value}</p>
+                    <p className="truncate text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
                       {stat.label}
                     </p>
                   </div>
@@ -208,18 +211,14 @@ function ContributorsPageContent() {
             {/* Leaderboard list */}
             <section className="community-card overflow-hidden !p-0">
               <div className="border-b border-slate-100 px-5 py-4">
-                <h2 className="font-title text-base font-bold text-slate-900">
-                  Top Contributors
-                </h2>
+                <h2 className="font-title text-base font-bold text-slate-900">Top Contributors</h2>
               </div>
 
               {displayRows.length === 0 ? (
-                <p className="px-5 py-6 text-sm text-slate-500">
-                  No contributor data yet.
-                </p>
+                <p className="px-5 py-6 text-sm text-slate-500">No contributor data yet.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <div className="grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <div className="grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
                     <span>Place</span>
                     <span>Contributor</span>
                     <span className="text-center">Posts</span>
@@ -235,9 +234,7 @@ function ContributorsPageContent() {
                         <motion.button
                           key={`${item.rank}-${item.id || item.name}`}
                           disabled={!item.id}
-                          onClick={() =>
-                            item.id && setSelectedContributorId(item.id)
-                          }
+                          onClick={() => item.id && setSelectedContributorId(item.id)}
                           whileHover={{ backgroundColor: "rgba(248,250,252,1)" }}
                           className={`grid w-full min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-l-[3px] px-5 py-3 text-left transition ${
                             isMe
@@ -248,7 +245,7 @@ function ContributorsPageContent() {
                           <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
                             {item.rank}
                           </span>
-                          <span className="flex items-center gap-2.5 min-w-0">
+                          <span className="flex min-w-0 items-center gap-2.5">
                             <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-bold text-slate-500">
                               {item.photoUrl ? (
                                 <img
@@ -260,24 +257,18 @@ function ContributorsPageContent() {
                                 item.name.charAt(0).toUpperCase()
                               )}
                             </span>
-                            <span className="truncate text-sm font-semibold text-slate-900 hover:text-power-orange">
+                            <span className="hover:text-power-orange truncate text-sm font-semibold text-slate-900">
                               {item.name}
                             </span>
                             {isMe && (
-                              <span className="shrink-0 rounded-full bg-power-orange px-2 py-0.5 text-[10px] font-bold text-white">
+                              <span className="bg-power-orange shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white">
                                 You
                               </span>
                             )}
                           </span>
-                          <span className="text-center text-sm text-slate-700">
-                            {item.posts}
-                          </span>
-                          <span className="text-center text-sm text-slate-700">
-                            {item.answers}
-                          </span>
-                          <span className="text-center text-sm text-slate-700">
-                            {item.upvotes}
-                          </span>
+                          <span className="text-center text-sm text-slate-700">{item.posts}</span>
+                          <span className="text-center text-sm text-slate-700">{item.answers}</span>
+                          <span className="text-center text-sm text-slate-700">{item.upvotes}</span>
                           <span className="text-right text-sm font-bold text-emerald-700">
                             {item.score} pts
                           </span>
@@ -301,13 +292,10 @@ function ContributorsPageContent() {
         <section className="community-card">
           <div className="flex items-center gap-2">
             <Users size={18} className="text-power-orange" />
-            <h2 className="text-lg font-semibold text-slate-900">
-              Role Highlights
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">Role Highlights</h2>
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            Parents with sustained answer quality gain more visibility across
-            community spaces.
+            Parents with sustained answer quality gain more visibility across community spaces.
           </p>
         </section>
       </div>

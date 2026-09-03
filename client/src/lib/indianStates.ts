@@ -64,7 +64,11 @@ export type IndianStateOrUT = (typeof INDIAN_STATES_AND_UTS)[number];
  * canonical spelling the API accepts.
  */
 export function normalizeStateName(raw: string): IndianStateOrUT | undefined {
-  const wanted = raw.trim().replace(/\s*&\s*/g, " and ").replace(/\s+/g, " ").toLowerCase();
+  const wanted = raw
+    .trim()
+    .replace(/\s*&\s*/g, " and ")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
   return INDIAN_STATES_AND_UTS.find((s) => s.toLowerCase() === wanted);
 }
 
@@ -92,11 +96,9 @@ export function normalizeStoredState(raw?: string | null): string {
  * selectable so an editing user can't silently drop it by saving another field.
  */
 export function stateSelectOptions(
-  current?: string | null,
+  current?: string | null
 ): Array<{ value: string; label: string }> {
   const options = INDIAN_STATES_AND_UTS.map((s) => ({ value: s, label: s }));
   const kept = current?.trim();
-  return kept && !normalizeStateName(kept)
-    ? [{ value: kept, label: kept }, ...options]
-    : options;
+  return kept && !normalizeStateName(kept) ? [{ value: kept, label: kept }, ...options] : options;
 }

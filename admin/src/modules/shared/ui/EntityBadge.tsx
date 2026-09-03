@@ -8,8 +8,7 @@ interface EntityBadgeProps {
   className?: string;
 }
 
-const getInitial = (name: string): string =>
-  name.trim().charAt(0).toUpperCase() || "?";
+const getInitial = (name: string): string => name.trim().charAt(0).toUpperCase() || "?";
 
 /**
  * Renders a resolved reference (name + optional email) consistently across
@@ -32,7 +31,7 @@ export function EntityBadge({
       <span
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500",
-          className,
+          className
         )}
         title="This reference could not be resolved to a record."
       >
@@ -45,20 +44,16 @@ export function EntityBadge({
     <div className={cn("flex items-center gap-2", className)}>
       <span
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-full bg-power-orange/10 font-semibold text-power-orange",
-          avatarSize,
+          "bg-power-orange/10 text-power-orange flex shrink-0 items-center justify-center rounded-full font-semibold",
+          avatarSize
         )}
         aria-hidden="true"
       >
         {getInitial(name)}
       </span>
       <div className="min-w-0">
-        <p className={cn("truncate font-medium text-slate-900", nameSize)}>
-          {name}
-        </p>
-        {email && (
-          <p className={cn("truncate text-slate-500", emailSize)}>{email}</p>
-        )}
+        <p className={cn("truncate font-medium text-slate-900", nameSize)}>{name}</p>
+        {email && <p className={cn("truncate text-slate-500", emailSize)}>{email}</p>}
       </div>
     </div>
   );

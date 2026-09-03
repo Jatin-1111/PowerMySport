@@ -61,9 +61,7 @@ const bookingFields = (overrides: Record<string, unknown> = {}) => {
 /** Legacy rows are inserted raw — that is exactly what the migration meets. */
 const insertLegacyBooking = async (overrides: Record<string, unknown> = {}) => {
   const doc = { ...bookingFields(overrides), providerType: "VENUE" };
-  const result = await mongoose.connection.db
-    .collection("bookings")
-    .insertOne(doc);
+  const result = await mongoose.connection.db.collection("bookings").insertOne(doc);
   return result.insertedId;
 };
 
@@ -82,16 +80,13 @@ describe("Booking.delivery persistence", () => {
           addressSnapshot: "44 MG Road, Bengaluru",
           coordinates: [77.5946, 12.9716],
         },
-      }),
+      })
     );
 
     const reloaded = await Booking.findById(booking._id);
     assert.equal(reloaded.delivery.kind, "PLATFORM_VENUE");
     assert.equal(reloaded.delivery.addressSnapshot, "44 MG Road, Bengaluru");
-    assert.deepEqual(
-      Array.from(reloaded.delivery.coordinates),
-      [77.5946, 12.9716],
-    );
+    assert.deepEqual(Array.from(reloaded.delivery.coordinates), [77.5946, 12.9716]);
   });
 
   it("stores a student-location delivery with no address", async () => {
@@ -102,7 +97,7 @@ describe("Booking.delivery persistence", () => {
           kind: "STUDENT_LOCATION",
           coordinates: [77.6101, 12.9345],
         },
-      }),
+      })
     );
 
     const reloaded = await Booking.findById(booking._id);
@@ -127,9 +122,9 @@ describe("Booking.delivery invariants", () => {
           bookingFields({
             venueId: oid(),
             delivery: { kind: "PLATFORM_VENUE", addressSnapshot: "somewhere" },
-          }),
+          })
         ),
-      /delivery is missing the fields its kind requires/,
+      /delivery is missing the fields its kind requires/
     );
   });
 
@@ -140,9 +135,9 @@ describe("Booking.delivery invariants", () => {
           bookingFields({
             coachId: oid(),
             delivery: { kind: "STUDENT_LOCATION", addressSnapshot: "31 Koramangala" },
-          }),
+          })
         ),
-      /delivery is missing the fields its kind requires/,
+      /delivery is missing the fields its kind requires/
     );
   });
 
@@ -152,8 +147,8 @@ describe("Booking.delivery invariants", () => {
         bookingFields({
           venueId: oid(),
           delivery: { kind: "TELEPORT", venueId: oid() },
-        }),
-      ),
+        })
+      )
     );
   });
 
@@ -162,7 +157,7 @@ describe("Booking.delivery invariants", () => {
       bookingFields({
         coachId: oid(),
         delivery: { kind: "PROVIDER_VENUE" },
-      }),
+      })
     );
     assert.equal(booking.delivery.kind, "PROVIDER_VENUE");
   });
@@ -183,9 +178,7 @@ describe("migration 29 — backfill delivery", () => {
 
     await migration29({ apply: true });
 
-    const row = await mongoose.connection.db
-      .collection("bookings")
-      .findOne({ _id: bookingId });
+    const row = await mongoose.connection.db.collection("bookings").findOne({ _id: bookingId });
     assert.equal(row.delivery.kind, "PLATFORM_VENUE");
     assert.equal(row.delivery.addressSnapshot, "44 MG Road, Bengaluru");
   });
@@ -204,9 +197,7 @@ describe("migration 29 — backfill delivery", () => {
 
     const result = await migration29({ apply: true });
 
-    const row = await mongoose.connection.db
-      .collection("bookings")
-      .findOne({ _id: bookingId });
+    const row = await mongoose.connection.db.collection("bookings").findOne({ _id: bookingId });
     assert.equal(row.delivery, undefined);
     assert.equal(result.unrecoverable, 1);
   });
@@ -226,9 +217,7 @@ describe("migration 29 — backfill delivery", () => {
 
     await migration29({ apply: true });
 
-    const row = await mongoose.connection.db
-      .collection("bookings")
-      .findOne({ _id: bookingId });
+    const row = await mongoose.connection.db.collection("bookings").findOne({ _id: bookingId });
     assert.equal(row.delivery.kind, "PROVIDER_VENUE");
     assert.equal(row.delivery.addressSnapshot, "12 Residency Road, Bengaluru");
   });
@@ -247,13 +236,8 @@ describe("migration 29 — backfill delivery", () => {
 
     await migration29({ apply: true });
 
-    const row = await mongoose.connection.db
-      .collection("bookings")
-      .findOne({ _id: bookingId });
-    assert.equal(
-      row.delivery.addressSnapshot,
-      "7 Hosur Road, Bengaluru, Karnataka, 560029",
-    );
+    const row = await mongoose.connection.db.collection("bookings").findOne({ _id: bookingId });
+    assert.equal(row.delivery.addressSnapshot, "7 Hosur Road, Bengaluru, Karnataka, 560029");
   });
 
   it("writes nothing on a dry run", async () => {
@@ -265,9 +249,7 @@ describe("migration 29 — backfill delivery", () => {
 
     const result = await migration29();
 
-    const row = await mongoose.connection.db
-      .collection("bookings")
-      .findOne({ _id: bookingId });
+    const row = await mongoose.connection.db.collection("bookings").findOne({ _id: bookingId });
     assert.equal(row.delivery, undefined);
     assert.equal(result.planned, 1);
     assert.equal(result.modified, 0);
@@ -304,12 +286,7 @@ describe("migration 29 — backfill delivery", () => {
 
     await migration29({ apply: true });
 
-    const row = await mongoose.connection.db
-      .collection("bookings")
-      .findOne({ _id: bookingId });
-    assert.equal(
-      row.delivery.addressSnapshot,
-      "the address when the booking was sold",
-    );
+    const row = await mongoose.connection.db.collection("bookings").findOne({ _id: bookingId });
+    assert.equal(row.delivery.addressSnapshot, "the address when the booking was sold");
   });
 });

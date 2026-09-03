@@ -10,12 +10,8 @@ const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const { CommunityGroup } = require("../community/models/CommunityGroup");
-const {
-  CommunityGroupMember,
-} = require("../community/models/CommunityGroupMember");
-const {
-  CommunityConversation,
-} = require("../community/models/CommunityConversation");
+const { CommunityGroupMember } = require("../community/models/CommunityGroupMember");
+const { CommunityConversation } = require("../community/models/CommunityConversation");
 const { CommunityMessage } = require("../community/models/CommunityMessage");
 const { CommunityProfile } = require("../community/models/CommunityProfile");
 const { CommunityService } = require("../community/services/CommunityService");
@@ -72,11 +68,7 @@ describe("announcement groups", () => {
   it("lets any member post in an ordinary group", async () => {
     const { member, conversationId } = await setupGroup();
 
-    const sent = await CommunityService.sendMessage(
-      member,
-      conversationId,
-      "See you at training.",
-    );
+    const sent = await CommunityService.sendMessage(member, conversationId, "See you at training.");
     assert.equal(sent.type, "TEXT");
   });
 
@@ -88,9 +80,8 @@ describe("announcement groups", () => {
     });
 
     await assert.rejects(
-      () =>
-        CommunityService.sendMessage(member, conversationId, "Can I still?"),
-      /Only admins can post/,
+      () => CommunityService.sendMessage(member, conversationId, "Can I still?"),
+      /Only admins can post/
     );
   });
 
@@ -104,7 +95,7 @@ describe("announcement groups", () => {
     const sent = await CommunityService.sendMessage(
       admin,
       conversationId,
-      "Training moved to seven.",
+      "Training moved to seven."
     );
     assert.equal(sent.content, "Training moved to seven.");
   });
@@ -130,7 +121,7 @@ describe("announcement groups", () => {
         CommunityService.updateGroupSettings(member, groupId, {
           postPolicy: "ADMIN_ONLY",
         }),
-      /Only group admins/,
+      /Only group admins/
     );
   });
 
@@ -146,11 +137,7 @@ describe("announcement groups", () => {
       lastMessageAt: new Date(),
     });
 
-    const sent = await CommunityService.sendMessage(
-      b,
-      String(conversation._id),
-      "Hello",
-    );
+    const sent = await CommunityService.sendMessage(b, String(conversation._id), "Hello");
     assert.equal(sent.content, "Hello");
   });
 });
@@ -161,7 +148,7 @@ describe("pinned group messages", () => {
     const message = await CommunityService.sendMessage(
       admin,
       conversationId,
-      "Kit collection is on Friday.",
+      "Kit collection is on Friday."
     );
 
     await CommunityService.pinGroupMessage(admin, message.id);
@@ -179,7 +166,7 @@ describe("pinned group messages", () => {
     const message = await CommunityService.sendMessage(
       admin,
       conversationId,
-      "Kit collection is on Friday.",
+      "Kit collection is on Friday."
     );
 
     await CommunityService.pinGroupMessage(admin, message.id);
@@ -205,12 +192,12 @@ describe("pinned group messages", () => {
     const message = await CommunityService.sendMessage(
       admin,
       conversationId,
-      "Kit collection is on Friday.",
+      "Kit collection is on Friday."
     );
 
     await assert.rejects(
       () => CommunityService.pinGroupMessage(member, message.id),
-      /Only group admins can pin/,
+      /Only group admins can pin/
     );
   });
 
@@ -225,15 +212,11 @@ describe("pinned group messages", () => {
       requestedBy: a,
       lastMessageAt: new Date(),
     });
-    const message = await CommunityService.sendMessage(
-      a,
-      String(conversation._id),
-      "Hello",
-    );
+    const message = await CommunityService.sendMessage(a, String(conversation._id), "Hello");
 
     await assert.rejects(
       () => CommunityService.pinGroupMessage(a, message.id),
-      /Only group messages can be pinned/,
+      /Only group messages can be pinned/
     );
   });
 
@@ -242,7 +225,7 @@ describe("pinned group messages", () => {
     const message = await CommunityService.sendMessage(
       admin,
       conversationId,
-      "Kit collection is on Friday.",
+      "Kit collection is on Friday."
     );
     await CommunityService.pinGroupMessage(admin, message.id);
 

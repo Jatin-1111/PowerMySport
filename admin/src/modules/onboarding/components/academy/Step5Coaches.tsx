@@ -63,23 +63,15 @@ export default function Step5Coaches({
   previousData,
 }: Step5CoachesProps) {
   const [coaches, setCoaches] = useState<AcademyOwnedCoachInput[]>(
-    previousData?.academyCoaches?.length
-      ? previousData.academyCoaches
-      : [createEmptyCoach()],
+    previousData?.academyCoaches?.length ? previousData.academyCoaches : [createEmptyCoach()]
   );
   const [baseLocationQueries, setBaseLocationQueries] = useState<string[]>(
-    previousData?.academyCoaches?.length
-      ? previousData.academyCoaches.map(() => "")
-      : [""],
+    previousData?.academyCoaches?.length ? previousData.academyCoaches.map(() => "") : [""]
   );
-  const [ownVenueAddressQueries, setOwnVenueAddressQueries] = useState<
-    string[]
-  >(
+  const [ownVenueAddressQueries, setOwnVenueAddressQueries] = useState<string[]>(
     previousData?.academyCoaches?.length
-      ? previousData.academyCoaches.map(
-          (coach) => coach.ownVenueDetails?.address || "",
-        )
-      : [""],
+      ? previousData.academyCoaches.map((coach) => coach.ownVenueDetails?.address || "")
+      : [""]
   );
 
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
@@ -130,12 +122,10 @@ export default function Step5Coaches({
 
   const updateCoach = (
     index: number,
-    updater: (coach: AcademyOwnedCoachInput) => AcademyOwnedCoachInput,
+    updater: (coach: AcademyOwnedCoachInput) => AcademyOwnedCoachInput
   ) => {
     setCoaches((prev) =>
-      prev.map((coach, currentIndex) =>
-        currentIndex === index ? updater(coach) : coach,
-      ),
+      prev.map((coach, currentIndex) => (currentIndex === index ? updater(coach) : coach))
     );
   };
 
@@ -146,15 +136,9 @@ export default function Step5Coaches({
   };
 
   const removeCoach = (index: number) => {
-    setCoaches((prev) =>
-      prev.filter((_, currentIndex) => currentIndex !== index),
-    );
-    setBaseLocationQueries((prev) =>
-      prev.filter((_, currentIndex) => currentIndex !== index),
-    );
-    setOwnVenueAddressQueries((prev) =>
-      prev.filter((_, currentIndex) => currentIndex !== index),
-    );
+    setCoaches((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    setBaseLocationQueries((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    setOwnVenueAddressQueries((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
     if (activeTarget?.index === index) {
       setActiveTarget(null);
       setSuggestions([]);
@@ -168,9 +152,7 @@ export default function Step5Coaches({
 
     if (activeTarget.type === "base") {
       setBaseLocationQueries((prev) =>
-        prev.map((query, index) =>
-          index === activeTarget.index ? suggestion.label : query,
-        ),
+        prev.map((query, index) => (index === activeTarget.index ? suggestion.label : query))
       );
       updateCoach(activeTarget.index, (coach) => ({
         ...coach,
@@ -181,9 +163,7 @@ export default function Step5Coaches({
       }));
     } else {
       setOwnVenueAddressQueries((prev) =>
-        prev.map((query, index) =>
-          index === activeTarget.index ? suggestion.label : query,
-        ),
+        prev.map((query, index) => (index === activeTarget.index ? suggestion.label : query))
       );
       updateCoach(activeTarget.index, (coach) => ({
         ...coach,
@@ -238,21 +218,18 @@ export default function Step5Coaches({
         errors[`${key}_hourlyRate`] = "Hourly rate must be at least Rs 1";
       }
       if (coach.serviceMode !== "OWN_VENUE" && !coach.baseLocation) {
-        errors[`${key}_baseLocation`] =
-          "Base location is required for this service mode";
+        errors[`${key}_baseLocation`] = "Base location is required for this service mode";
       }
       if (coach.serviceMode !== "OWN_VENUE") {
         if (!coach.serviceRadiusKm || coach.serviceRadiusKm <= 0) {
-          errors[`${key}_serviceRadiusKm`] =
-            "Service radius must be greater than 0";
+          errors[`${key}_serviceRadiusKm`] = "Service radius must be greater than 0";
         }
         if (
           coach.travelBufferTime === undefined ||
           coach.travelBufferTime === null ||
           coach.travelBufferTime < 0
         ) {
-          errors[`${key}_travelBufferTime`] =
-            "Travel buffer time must be non-negative";
+          errors[`${key}_travelBufferTime`] = "Travel buffer time must be non-negative";
         }
       }
       if (coach.serviceMode !== "FREELANCE") {
@@ -263,8 +240,7 @@ export default function Step5Coaches({
           errors[`${key}_ownVenueAddress`] = "Own venue address is required";
         }
         if ((coach.ownVenueDetails?.images || []).length < 3) {
-          errors[`${key}_ownVenueImages`] =
-            "Add at least 3 own-venue image URLs";
+          errors[`${key}_ownVenueImages`] = "Add at least 3 own-venue image URLs";
         }
       }
     });
@@ -288,9 +264,7 @@ export default function Step5Coaches({
         academyCoaches: coaches,
       });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save coaches",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save coaches");
     } finally {
       setIsSubmitting(false);
     }
@@ -299,20 +273,16 @@ export default function Step5Coaches({
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-3xl font-bold text-slate-900">
-          Step 5: Coach Details
-        </h2>
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 5: Coach Details</h2>
         <p className="text-slate-600">
-          Add full coach onboarding details, including sports, pricing, service
-          mode, maps location, and images.
+          Add full coach onboarding details, including sports, pricing, service mode, maps location,
+          and images.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">
-            In-house Coaches
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-900">In-house Coaches</h3>
           <Button
             type="button"
             variant="outline"
@@ -323,9 +293,7 @@ export default function Step5Coaches({
           </Button>
         </div>
 
-        {fieldErrors.coaches ? (
-          <p className="text-xs text-red-600">{fieldErrors.coaches}</p>
-        ) : null}
+        {fieldErrors.coaches ? <p className="text-xs text-red-600">{fieldErrors.coaches}</p> : null}
 
         {coaches.map((coach, index) => (
           <div
@@ -333,9 +301,7 @@ export default function Step5Coaches({
             className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-slate-900">
-                Coach {index + 1}
-              </h4>
+              <h4 className="font-semibold text-slate-900">Coach {index + 1}</h4>
               <button
                 type="button"
                 className="text-sm text-red-600 disabled:text-slate-400"
@@ -376,9 +342,7 @@ export default function Step5Coaches({
               <input
                 type="email"
                 value={coach.email}
-                onChange={(e) =>
-                  updateCoach(index, (c) => ({ ...c, email: e.target.value }))
-                }
+                onChange={(e) => updateCoach(index, (c) => ({ ...c, email: e.target.value }))}
                 placeholder="Email"
                 className="rounded-lg border border-slate-300 px-3 py-2"
                 disabled={isSubmitting || loading}
@@ -386,9 +350,7 @@ export default function Step5Coaches({
               <input
                 type="text"
                 value={coach.phone}
-                onChange={(e) =>
-                  updateCoach(index, (c) => ({ ...c, phone: e.target.value }))
-                }
+                onChange={(e) => updateCoach(index, (c) => ({ ...c, phone: e.target.value }))}
                 placeholder="Phone"
                 className="rounded-lg border border-slate-300 px-3 py-2"
                 disabled={isSubmitting || loading}
@@ -410,9 +372,7 @@ export default function Step5Coaches({
 
             <textarea
               value={coach.bio}
-              onChange={(e) =>
-                updateCoach(index, (c) => ({ ...c, bio: e.target.value }))
-              }
+              onChange={(e) => updateCoach(index, (c) => ({ ...c, bio: e.target.value }))}
               placeholder="Coach bio"
               rows={3}
               className="w-full rounded-lg border border-slate-300 px-3 py-2"
@@ -420,9 +380,7 @@ export default function Step5Coaches({
             />
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-900">
-                Sports *
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-900">Sports *</label>
               <SportsMultiSelect
                 value={coach.sports}
                 onChange={(sports) =>
@@ -430,10 +388,7 @@ export default function Step5Coaches({
                     ...c,
                     sports,
                     sportPricing: Object.fromEntries(
-                      sports.map((sport) => [
-                        sport,
-                        c.sportPricing?.[sport] || c.hourlyRate || 0,
-                      ]),
+                      sports.map((sport) => [sport, c.sportPricing?.[sport] || c.hourlyRate || 0])
                     ),
                   }))
                 }
@@ -516,8 +471,8 @@ export default function Step5Coaches({
                   onChange={(e) => {
                     setBaseLocationQueries((prev) =>
                       prev.map((query, currentIndex) =>
-                        currentIndex === index ? e.target.value : query,
-                      ),
+                        currentIndex === index ? e.target.value : query
+                      )
                     );
                     updateCoach(index, (c) => ({
                       ...c,
@@ -529,12 +484,8 @@ export default function Step5Coaches({
                   className="w-full rounded-lg border border-slate-300 px-3 py-2"
                   disabled={isSubmitting || loading}
                 />
-                {activeTarget?.index === index &&
-                activeTarget.type === "base" &&
-                isSearching ? (
-                  <p className="text-xs text-slate-500">
-                    Searching location...
-                  </p>
+                {activeTarget?.index === index && activeTarget.type === "base" && isSearching ? (
+                  <p className="text-xs text-slate-500">Searching location...</p>
                 ) : null}
                 <div className="grid gap-3 md:grid-cols-2">
                   <input
@@ -571,9 +522,7 @@ export default function Step5Coaches({
 
             {coach.serviceMode !== "FREELANCE" ? (
               <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
-                <p className="text-sm font-medium text-slate-900">
-                  Own venue details
-                </p>
+                <p className="text-sm font-medium text-slate-900">Own venue details</p>
                 <input
                   type="text"
                   value={coach.ownVenueDetails?.name || ""}
@@ -603,8 +552,8 @@ export default function Step5Coaches({
                   onChange={(e) => {
                     setOwnVenueAddressQueries((prev) =>
                       prev.map((query, currentIndex) =>
-                        currentIndex === index ? e.target.value : query,
-                      ),
+                        currentIndex === index ? e.target.value : query
+                      )
                     );
                     updateCoach(index, (c) => ({
                       ...c,
@@ -717,44 +666,28 @@ export default function Step5Coaches({
             ) : null}
 
             {fieldErrors[`coach_${index}_firstName`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_firstName`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_firstName`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_lastName`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_lastName`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_lastName`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_email`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_email`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_email`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_phone`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_phone`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_phone`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_bio`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_bio`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_bio`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_sports`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_sports`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_sports`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_hourlyRate`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_hourlyRate`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_hourlyRate`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_baseLocation`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_baseLocation`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_baseLocation`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_serviceRadiusKm`] ? (
               <p className="text-xs text-red-600">
@@ -767,9 +700,7 @@ export default function Step5Coaches({
               </p>
             ) : null}
             {fieldErrors[`coach_${index}_ownVenueName`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_ownVenueName`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_ownVenueName`]}</p>
             ) : null}
             {fieldErrors[`coach_${index}_ownVenueAddress`] ? (
               <p className="text-xs text-red-600">
@@ -777,9 +708,7 @@ export default function Step5Coaches({
               </p>
             ) : null}
             {fieldErrors[`coach_${index}_ownVenueImages`] ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors[`coach_${index}_ownVenueImages`]}
-              </p>
+              <p className="text-xs text-red-600">{fieldErrors[`coach_${index}_ownVenueImages`]}</p>
             ) : null}
           </div>
         ))}
@@ -813,11 +742,7 @@ export default function Step5Coaches({
               Back
             </Button>
           ) : null}
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Saving..." : "Continue to Step 6"}
           </Button>
         </div>

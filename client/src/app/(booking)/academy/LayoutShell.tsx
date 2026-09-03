@@ -4,26 +4,15 @@ import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-    DashboardShell,
-    type DashboardNavItem,
+  DashboardShell,
+  type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
-import {
-    BarChart2,
-    Building2,
-    LayoutDashboard,
-    Settings,
-    Star,
-    TrendingUp,
-} from "lucide-react";
+import { BarChart2, Building2, LayoutDashboard, Settings, Star, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
 
-export default function AcademyLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AcademyLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
 

@@ -24,10 +24,7 @@ function deriveTitle(firstUserMessage: string): string {
 // ─── GET /api/assistant-chat/sessions ────────────────────────────────────────
 // List all assistant chat sessions for the authenticated user, newest first.
 
-export const listAssistantChatSessions = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listAssistantChatSessions = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Authentication required" });
@@ -53,10 +50,7 @@ export const listAssistantChatSessions = async (
 // Create a brand-new session — called every time the assistant is opened, so
 // it always starts fresh (history is reachable separately, not auto-resumed).
 
-export const createAssistantChatSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createAssistantChatSession = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Authentication required" });
@@ -92,10 +86,7 @@ export const createAssistantChatSession = async (
 
 // ─── GET /api/assistant-chat/sessions/:sessionId ─────────────────────────────
 
-export const getAssistantChatSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAssistantChatSession = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Authentication required" });
@@ -144,7 +135,7 @@ export const getAssistantChatSession = async (
 
 export const sendAssistantChatSessionMessage = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user) {
@@ -209,7 +200,7 @@ export const sendAssistantChatSessionMessage = async (
       session,
       systemPrompt,
       userMessage,
-      ASSISTANT_CHAT_TOOLS,
+      ASSISTANT_CHAT_TOOLS
     );
   } catch (error) {
     if (!res.headersSent) {
@@ -219,7 +210,7 @@ export const sendAssistantChatSessionMessage = async (
       });
     } else {
       res.write(
-        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`,
+        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
       );
       res.end();
     }

@@ -11,9 +11,6 @@ export default function BlogContentRenderer({ content }: { content: string }) {
   if (!content) return null;
 
   return (
-    <div
-      className="blog-prose"
-      dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(content) }}
-    />
+    <div className="blog-prose" dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(content) }} />
   );
 }

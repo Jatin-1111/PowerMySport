@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import BlogDetailClient from "@/modules/community/components/blog/BlogDetailClient";
-import {
-  breadcrumbSchema,
-  JsonLd,
-} from "@/modules/community/components/seo/JsonLd";
+import { breadcrumbSchema, JsonLd } from "@/modules/community/components/seo/JsonLd";
 import {
   buildMetadata,
   clampText,
@@ -14,8 +11,7 @@ import {
 } from "@/lib/seo";
 import type { BlogDetail } from "@/modules/community/types";
 
-const getBlog = (blogId: string) =>
-  fetchPublicData<BlogDetail>(`/community/blog/posts/${blogId}`);
+const getBlog = (blogId: string) => fetchPublicData<BlogDetail>(`/community/blog/posts/${blogId}`);
 
 export async function generateMetadata({
   params,
@@ -34,10 +30,7 @@ export async function generateMetadata({
     });
   }
 
-  const description = clampText(
-    blog.excerpt || stripHtml(blog.content) || "",
-    160,
-  );
+  const description = clampText(blog.excerpt || stripHtml(blog.content) || "", 160);
 
   return buildMetadata({
     title: blog.title,

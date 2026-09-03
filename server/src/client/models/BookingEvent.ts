@@ -32,22 +32,13 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export type BookingEventSubjectType = "BOOKING" | "EXPERT_SESSION";
 
-export type BookingEventProviderType =
-  | "VENUE"
-  | "COACH"
-  | "ACADEMY"
-  | "EXPERT";
+export type BookingEventProviderType = "VENUE" | "COACH" | "ACADEMY" | "EXPERT";
 
 /**
  * Who caused the event.
  * SYSTEM = a cron/background job. GATEWAY = PhonePe (webhook or status poll).
  */
-export type BookingEventActorType =
-  | "USER"
-  | "PROVIDER"
-  | "ADMIN"
-  | "SYSTEM"
-  | "GATEWAY";
+export type BookingEventActorType = "USER" | "PROVIDER" | "ADMIN" | "SYSTEM" | "GATEWAY";
 
 /**
  * Which surface the event arrived through — the "how" behind the actor.
@@ -60,13 +51,7 @@ export type BookingEventActorType =
  * measured facts with inferred ones.
  */
 export type BookingEventChannel =
-  | "CLIENT_WEB"
-  | "PROVIDER_WEB"
-  | "ADMIN_PANEL"
-  | "CRON"
-  | "WEBHOOK"
-  | "SYSTEM"
-  | "BACKFILL";
+  "CLIENT_WEB" | "PROVIDER_WEB" | "ADMIN_PANEL" | "CRON" | "WEBHOOK" | "SYSTEM" | "BACKFILL";
 
 export type BookingEventType =
   // lifecycle
@@ -198,15 +183,7 @@ const bookingEventSchema = new Schema<BookingEventDocument>(
     },
     channel: {
       type: String,
-      enum: [
-        "CLIENT_WEB",
-        "PROVIDER_WEB",
-        "ADMIN_PANEL",
-        "CRON",
-        "WEBHOOK",
-        "SYSTEM",
-        "BACKFILL",
-      ],
+      enum: ["CLIENT_WEB", "PROVIDER_WEB", "ADMIN_PANEL", "CRON", "WEBHOOK", "SYSTEM", "BACKFILL"],
       required: true,
     },
     amountPaise: {
@@ -232,7 +209,7 @@ const bookingEventSchema = new Schema<BookingEventDocument>(
     // Nothing outside this schema should be able to smuggle fields into an
     // audit record.
     strict: true,
-  },
+  }
 );
 
 // The main read pattern: one booking's full timeline, oldest first. Sorted
@@ -242,27 +219,24 @@ const bookingEventSchema = new Schema<BookingEventDocument>(
 // migration 35.
 bookingEventSchema.index(
   { subjectType: 1, subjectId: 1, occurredAt: 1, createdAt: 1 },
-  { name: "event_subject_timeline" },
+  { name: "event_subject_timeline" }
 );
 // Support-tooling lookup when the caller has an id but not its subjectType
 // (getBookingEventTimelineByIdAcrossSubjects) — the index above requires
 // subjectType as its leading key, so it can't serve a subjectId-only filter.
 bookingEventSchema.index(
   { subjectId: 1, occurredAt: 1, createdAt: 1 },
-  { name: "event_subject_id_timeline" },
+  { name: "event_subject_id_timeline" }
 );
 
 // Operational slices: "all academy cancellations last month", "refund events
 // this week", "everything this admin touched".
 bookingEventSchema.index(
   { providerType: 1, type: 1, occurredAt: -1 },
-  { name: "event_provider_type_recent" },
+  { name: "event_provider_type_recent" }
 );
 bookingEventSchema.index({ type: 1, occurredAt: -1 }, { name: "event_type_recent" });
-bookingEventSchema.index(
-  { actorUserId: 1, occurredAt: -1 },
-  { name: "event_actor_recent" },
-);
+bookingEventSchema.index({ actorUserId: 1, occurredAt: -1 }, { name: "event_actor_recent" });
 
 /**
  * Append-only enforcement.
@@ -275,7 +249,7 @@ bookingEventSchema.index(
 const blockMutation = function () {
   throw new Error(
     "BookingEvent is append-only — events cannot be modified or deleted. " +
-      "Record a new corrective event instead.",
+      "Record a new corrective event instead."
   );
 };
 
@@ -296,21 +270,15 @@ for (const op of [
 // here too, so only non-new documents are rejected.
 bookingEventSchema.pre("save", function () {
   if (!this.isNew) {
-    throw new Error(
-      "BookingEvent is append-only — an existing event cannot be re-saved.",
-    );
+    throw new Error("BookingEvent is append-only — an existing event cannot be re-saved.");
   }
 });
 
 // `doc.deleteOne()` is document middleware and needs registering separately
 // from the query-level `deleteOne` handled in the loop above.
-bookingEventSchema.pre(
-  "deleteOne",
-  { document: true, query: false },
-  blockMutation,
-);
+bookingEventSchema.pre("deleteOne", { document: true, query: false }, blockMutation);
 
 export const BookingEvent = mongoose.model<BookingEventDocument>(
   "BookingEvent",
-  bookingEventSchema,
+  bookingEventSchema
 );

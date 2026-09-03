@@ -1,13 +1,6 @@
 import mongoose from "mongoose";
-import {
-  CoachOffering,
-  CoachOfferingDocument,
-  CoachOfferingSlot,
-} from "../models/CoachOffering";
-import {
-  CoachEnrollment,
-  CoachEnrollmentDocument,
-} from "../models/CoachEnrollment";
+import { CoachOffering, CoachOfferingDocument, CoachOfferingSlot } from "../models/CoachOffering";
+import { CoachEnrollment, CoachEnrollmentDocument } from "../models/CoachEnrollment";
 import { CoachSubscriptionPackage } from "../models/CoachSubscriptionPackage";
 import { CoachSessionOccurrence } from "../models/CoachSessionOccurrence";
 import {
@@ -15,10 +8,7 @@ import {
   scheduledInstantsBetween,
   syncRostersForFutureOccurrences,
 } from "./CoachOccurrenceService";
-import {
-  grantCreditsForPeriod,
-  refundBasisPaiseForEnrollment,
-} from "./CoachCreditLedgerService";
+import { grantCreditsForPeriod, refundBasisPaiseForEnrollment } from "./CoachCreditLedgerService";
 import { notifyWaitlistOfFreeSeat } from "./CoachWaitlistService";
 import { log as __rootLog } from "../../utils/logger";
 
@@ -50,7 +40,7 @@ export interface CreateOfferingPayload {
 }
 
 export const createOffering = async (
-  payload: CreateOfferingPayload,
+  payload: CreateOfferingPayload
 ): Promise<CoachOfferingDocument> => {
   const pkg = await CoachSubscriptionPackage.findById(payload.packageId);
   if (!pkg) throw new Error("Billing package not found");
@@ -62,7 +52,7 @@ export const createOffering = async (
   const capacity = payload.capacity ?? 1;
   if (pkg.maxStudents != null && capacity > pkg.maxStudents) {
     throw new Error(
-      `Capacity ${capacity} exceeds the package's limit of ${pkg.maxStudents} students`,
+      `Capacity ${capacity} exceeds the package's limit of ${pkg.maxStudents} students`
     );
   }
 
@@ -158,7 +148,7 @@ export const ENROLLMENT_HOLD_MINUTES = 10;
  * back, so a crash cannot permanently shrink a batch.
  */
 export const reserveEnrollmentSeat = async (
-  payload: ReserveSeatPayload,
+  payload: ReserveSeatPayload
 ): Promise<CoachEnrollmentDocument> => {
   const now = payload.now ?? new Date();
 
@@ -173,9 +163,7 @@ export const reserveEnrollmentSeat = async (
     !payload.deliveryAddress?.coordinates &&
     !payload.deliveryAddress?.addressSnapshot
   ) {
-    throw new Error(
-      "This coach travels to the student, so an address is required to enroll",
-    );
+    throw new Error("This coach travels to the student, so an address is required to enroll");
   }
 
   // Atomically claim a seat. Returns null when the batch is already full.
@@ -185,14 +173,14 @@ export const reserveEnrollmentSeat = async (
       $expr: { $lt: ["$enrolledCount", "$capacity"] },
     },
     { $inc: { enrolledCount: 1 } },
-    { new: true },
+    { new: true }
   ).exec();
 
   if (!reserved) {
     throw new Error(
       offering.capacity === 1
         ? "This coach is already taken for this programme"
-        : `This batch is full (${offering.capacity} students)`,
+        : `This batch is full (${offering.capacity} students)`
     );
   }
 
@@ -206,8 +194,7 @@ export const reserveEnrollmentSeat = async (
       status: "PENDING",
       joinedAt: now,
       holdExpiresAt: new Date(
-        now.getTime() +
-          (payload.holdMinutes ?? ENROLLMENT_HOLD_MINUTES) * 60 * 1000,
+        now.getTime() + (payload.holdMinutes ?? ENROLLMENT_HOLD_MINUTES) * 60 * 1000
       ),
       deliveryAddress: payload.deliveryAddress ?? null,
     });
@@ -252,7 +239,7 @@ export const activateEnrollmentAfterPayment = async (params: {
     // push the batch over capacity.
     throw new Error(
       "This enrolment was released before the payment completed. " +
-        "The seat may have been taken — refund or re-enrol manually.",
+        "The seat may have been taken — refund or re-enrol manually."
     );
   }
 
@@ -263,7 +250,7 @@ export const activateEnrollmentAfterPayment = async (params: {
   const scheduled = scheduledInstantsBetween(
     offering,
     now > params.periodStart ? now : params.periodStart,
-    params.periodEnd,
+    params.periodEnd
   ).length;
   const cap = pkg?.maxSessions ?? null;
   const sessionCount = cap == null ? scheduled : Math.min(scheduled, cap);
@@ -294,7 +281,7 @@ export const activateEnrollmentAfterPayment = async (params: {
 
   log.info(
     `activateEnrollmentAfterPayment: enrolment ${enrollment._id.toString()} live ` +
-      `with ${credits.length} credit(s)`,
+      `with ${credits.length} credit(s)`
   );
 
   return { enrollment, creditsGranted: credits.length };
@@ -306,9 +293,11 @@ export const activateEnrollmentAfterPayment = async (params: {
  * Without this an abandoned payment holds a seat forever, and a batch silently
  * shrinks every time someone opens the checkout and closes the tab.
  */
-export const expireUnpaidEnrollmentHolds = async (params: {
-  now?: Date;
-} = {}): Promise<number> => {
+export const expireUnpaidEnrollmentHolds = async (
+  params: {
+    now?: Date;
+  } = {}
+): Promise<number> => {
   const now = params.now ?? new Date();
 
   const stale = await CoachEnrollment.find({
@@ -328,7 +317,7 @@ export const expireUnpaidEnrollmentHolds = async (params: {
           leftAt: now,
           cancellationReason: "Payment not completed",
         },
-      },
+      }
     );
     if (!claimed) continue;
 
@@ -340,9 +329,7 @@ export const expireUnpaidEnrollmentHolds = async (params: {
 
   if (released > 0) {
     log.info(`expireUnpaidEnrollmentHolds: released ${released} held seat(s)`);
-    for (const offeringId of new Set(
-      stale.map((e) => e.offeringId.toString()),
-    )) {
+    for (const offeringId of new Set(stale.map((e) => e.offeringId.toString()))) {
       await notifyWaitlistOfFreeSeat({
         offeringId: new mongoose.Types.ObjectId(offeringId),
         now,
@@ -376,9 +363,7 @@ export const cancelEnrollment = async (params: {
   if (!enrollment) throw new Error("Enrollment not found");
 
   if (enrollment.status === "CANCELLED") {
-    const basis = await refundBasisPaiseForEnrollment(
-      enrollment._id as mongoose.Types.ObjectId,
-    );
+    const basis = await refundBasisPaiseForEnrollment(enrollment._id as mongoose.Types.ObjectId);
     return {
       enrollment,
       refundBasisPaise: basis.amountPaise,
@@ -386,9 +371,7 @@ export const cancelEnrollment = async (params: {
     };
   }
 
-  const basis = await refundBasisPaiseForEnrollment(
-    enrollment._id as mongoose.Types.ObjectId,
-  );
+  const basis = await refundBasisPaiseForEnrollment(enrollment._id as mongoose.Types.ObjectId);
 
   enrollment.status = "CANCELLED";
   enrollment.leftAt = now;
@@ -437,11 +420,7 @@ export const renewEnrollmentPeriod = async (params: {
   if (!offering) throw new Error("Offering not found");
 
   const pkg = await CoachSubscriptionPackage.findById(offering.packageId);
-  const scheduled = scheduledInstantsBetween(
-    offering,
-    params.periodStart,
-    params.periodEnd,
-  ).length;
+  const scheduled = scheduledInstantsBetween(offering, params.periodStart, params.periodEnd).length;
   const cap = pkg?.maxSessions ?? null;
   const sessionCount = cap == null ? scheduled : Math.min(scheduled, cap);
 
@@ -463,7 +442,7 @@ export const renewEnrollmentPeriod = async (params: {
 
 /** The live roster of an offering. */
 export const rosterForOffering = async (
-  offeringId: mongoose.Types.ObjectId,
+  offeringId: mongoose.Types.ObjectId
 ): Promise<CoachEnrollmentDocument[]> =>
   CoachEnrollment.find({
     offeringId,
@@ -481,7 +460,7 @@ export const rosterForOffering = async (
  * time, and is what the migration uses to seed the field.
  */
 export const reconcileEnrolledCount = async (
-  offeringId: mongoose.Types.ObjectId,
+  offeringId: mongoose.Types.ObjectId
 ): Promise<number> => {
   const live = await CoachEnrollment.countDocuments({
     offeringId,

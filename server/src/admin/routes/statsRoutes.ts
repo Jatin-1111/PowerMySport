@@ -52,16 +52,12 @@ router.post(
   "/guest/event",
   guestTrackRateLimiter,
   validateRequest(guestEventSchema),
-  trackGuestEvents,
+  trackGuestEvents
 );
 
 // Authenticated events (players/coaches/venue-listers/admins)
 router.use(authMiddleware);
-router.post(
-  "/funnel/event",
-  validateRequest(funnelEventSchema),
-  trackFunnelEvent,
-);
+router.post("/funnel/event", validateRequest(funnelEventSchema), trackFunnelEvent);
 
 // All routes below require admin authentication
 router.use(adminMiddleware);
@@ -80,89 +76,57 @@ router.delete("/analytics", superAdminMiddleware, clearAnalyticsData);
 
 // AWS Elastic Beanstalk / CloudWatch infrastructure monitoring — part of the
 // Analytics page's Server tab.
-router.get(
-  "/infra/overview",
-  requirePermission("analytics:view"),
-  getInfraOverviewController,
-);
-router.get(
-  "/infra/metrics",
-  requirePermission("analytics:view"),
-  getInfraMetricsController,
-);
+router.get("/infra/overview", requirePermission("analytics:view"), getInfraOverviewController);
+router.get("/infra/metrics", requirePermission("analytics:view"), getInfraMetricsController);
 
 router.get(
   "/guests/activity",
   requirePermission("analytics:view"),
   cacheResponse(60),
-  getGuestActivity,
+  getGuestActivity
 );
 router.get(
   "/users/growth",
   requirePermission("analytics:view"),
   cacheResponse(60),
-  getUserGrowthAnalytics,
+  getUserGrowthAnalytics
 );
 router.get(
   "/funnel/summary",
   requirePermission("analytics:view"),
   cacheResponse(60),
-  getFunnelSummary,
+  getFunnelSummary
 );
 router.get(
   "/funnel/trends",
   requirePermission("analytics:view"),
   cacheResponse(60),
-  getFunnelTrends,
+  getFunnelTrends
 );
 router.get(
   "/finance/reconciliation",
   requirePermission("analytics:view"),
   cacheResponse(60),
-  getFinanceReconciliation,
+  getFinanceReconciliation
 );
-router.get(
-  "/observability",
-  requirePermission("analytics:view"),
-  getObservabilityStats,
-);
-router.get(
-  "/observability/latency",
-  requirePermission("analytics:view"),
-  getLatencyProfileStats,
-);
+router.get("/observability", requirePermission("analytics:view"), getObservabilityStats);
+router.get("/observability/latency", requirePermission("analytics:view"), getLatencyProfileStats);
 
 // Entity list/detail endpoints — gated by the same permission as their
 // equivalent admin CRUD routes, since they back the Users/Venues/Bookings
 // admin pages (shared by every role that already needs those pages, not
 // just Analytics Admin).
-router.get(
-  "/users/summary",
-  requirePermission("users:view"),
-  getUserRoleSummary,
-);
+router.get("/users/summary", requirePermission("users:view"), getUserRoleSummary);
 router.get("/users/players", requirePermission("users:view"), getPlayersUsers);
 router.get("/users/coaches", requirePermission("users:view"), getCoachUsers);
-router.get(
-  "/users/venue-listers",
-  requirePermission("users:view"),
-  getVenueListerUsers,
-);
-router.get(
-  "/users/analytics/players",
-  requirePermission("users:view"),
-  getPlayersAnalytics,
-);
-router.get(
-  "/users/analytics/coaches",
-  requirePermission("users:view"),
-  getCoachesAnalytics,
-);
+router.get("/users/venue-listers", requirePermission("users:view"), getVenueListerUsers);
+router.get("/users/analytics/players", requirePermission("users:view"), getPlayersAnalytics);
+router.get("/users/analytics/coaches", requirePermission("users:view"), getCoachesAnalytics);
 router.get(
   "/users/analytics/venue-listers",
   requirePermission("users:view"),
   cacheResponse(60),
-  getVenueListersAnalytics,
+  getVenueListersAnalytics
 );
 router.get("/users/experts", requirePermission("users:view"), getExpertUsers);
 router.get("/users/parents", requirePermission("users:view"), getParentUsers);
@@ -174,7 +138,7 @@ router.get(
   "/unsupported-sports",
   requirePermission("analytics:view"),
   cacheResponse(60),
-  getUnsupportedSportsStats,
+  getUnsupportedSportsStats
 );
 
 export default router;

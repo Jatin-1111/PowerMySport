@@ -93,14 +93,14 @@ export function PointsComposition({
   const showsRollDown = legend.some((label) => label.startsWith(ROLLED_DOWN_PREFIX));
   const showsDoublesQuarter = bands.some((band) =>
     (band.composition ?? []).some(
-      (slice) => /\b25\s*%/.test(slice.label) && /DBLS|DOUBLES/i.test(slice.label),
-    ),
+      (slice) => /\b25\s*%/.test(slice.label) && /DBLS|DOUBLES/i.test(slice.label)
+    )
   );
 
   return (
-    <section className="rounded-xl border bg-card p-5 sm:p-6">
+    <section className="bg-card rounded-xl border p-5 sm:p-6">
       <h3 className="text-base font-semibold tracking-tight">{title}</h3>
-      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+      <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
         {caption ??
           "Each bar is one part of the list, and the colours show what that group's points were made of on average. The full bar is their total, so the widths can be compared directly."}
       </p>
@@ -109,11 +109,8 @@ export function PointsComposition({
           never rests on colour alone. */}
       <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5">
         {legend.map((label) => (
-          <li key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span
-              className={`h-2.5 w-2.5 shrink-0 rounded-sm ${colorOf(label)}`}
-              aria-hidden
-            />
+          <li key={label} className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <span className={`h-2.5 w-2.5 shrink-0 rounded-sm ${colorOf(label)}`} aria-hidden />
             <span title={label}>{plainPointLabel(label)}</span>
           </li>
         ))}
@@ -132,12 +129,12 @@ export function PointsComposition({
                   {/* Suppressed at one, where the count is both wrong-sounding
                       and already implied by the label. */}
                   {band.playerCount > 1 && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    <span className="text-muted-foreground ml-2 text-xs font-normal">
                       {band.playerCount.toLocaleString("en-IN")} players
                     </span>
                   )}
                 </span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">
+                <span className="text-muted-foreground shrink-0 tabular-nums">
                   {band.playerCount > 1 ? "avg " : ""}
                   {formatPoints(total)} pts
                   {/* The bar can only speak for the players behind it. Saying so
@@ -169,11 +166,10 @@ export function PointsComposition({
               )}
 
               {parts!.deductions.length > 0 && (
-                <p className="mt-1.5 text-xs text-muted-foreground">
+                <p className="text-muted-foreground mt-1.5 text-xs">
                   {parts!.deductions
                     .map(
-                      (slice) =>
-                        `${plainPointLabel(slice.label)}: −${formatPoints(slice.value)}`,
+                      (slice) => `${plainPointLabel(slice.label)}: −${formatPoints(slice.value)}`
                     )
                     .join(" · ")}
                 </p>
@@ -185,19 +181,18 @@ export function PointsComposition({
 
       {/* The two rules that make the bars add up. Without them a parent reading
           carefully would find the arithmetic short and have no way to explain it. */}
-      <div className="mt-5 space-y-1.5 border-t pt-3 text-xs leading-relaxed text-muted-foreground">
+      <div className="text-muted-foreground mt-5 space-y-1.5 border-t pt-3 text-xs leading-relaxed">
         {showsDoublesQuarter && (
           <p>
-            <span className="font-medium text-foreground">Doubles:</span> only a
-            quarter of doubles points count towards the ranking. The figures here
-            are the quarter that counts.
+            <span className="text-foreground font-medium">Doubles:</span> only a quarter of doubles
+            points count towards the ranking. The figures here are the quarter that counts.
           </p>
         )}
         {showsRollDown && (
           <p>
-            <span className="font-medium text-foreground">Playing up:</span> when a
-            player also enters the next age group, that whole score is added to
-            this one. It is why the leading players can be so far ahead.
+            <span className="text-foreground font-medium">Playing up:</span> when a player also
+            enters the next age group, that whole score is added to this one. It is why the leading
+            players can be so far ahead.
           </p>
         )}
       </div>
@@ -206,7 +201,7 @@ export function PointsComposition({
           makes the panel usable without colour vision, without CSS, and to
           anyone who wants the actual numbers. */}
       <details className="mt-4">
-        <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+        <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-sm font-medium">
           Show the numbers
         </summary>
         <div className="mt-3 overflow-x-auto">
@@ -232,10 +227,10 @@ export function PointsComposition({
                   {explained.map(({ band, parts }) => (
                     <td
                       key={band.label}
-                      className="py-2 pl-3 text-right tabular-nums text-muted-foreground"
+                      className="text-muted-foreground py-2 pl-3 text-right tabular-nums"
                     >
                       {formatPoints(
-                        parts!.slices.find((slice) => slice.label === label)?.value ?? 0,
+                        parts!.slices.find((slice) => slice.label === label)?.value ?? 0
                       )}
                     </td>
                   ))}

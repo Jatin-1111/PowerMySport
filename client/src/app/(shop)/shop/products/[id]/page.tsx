@@ -5,12 +5,7 @@ import { RelatedProducts } from "@/modules/shop/components/RelatedProducts";
 import { WishlistButton } from "@/modules/shop/components/WishlistButton";
 import { getProductById } from "@/lib/shop/ecommerce-api";
 import { formatInr, getProductPrice } from "@/lib/shop/format";
-import {
-  breadcrumbJsonLd,
-  clampText,
-  NOINDEX_METADATA,
-  productJsonLd,
-} from "@/lib/seo";
+import { breadcrumbJsonLd, clampText, NOINDEX_METADATA, productJsonLd } from "@/lib/seo";
 import { ArrowLeft, ShieldCheck, Truck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -38,7 +33,7 @@ export async function generateMetadata({
 
   const description = clampText(
     product.description ||
-      `Buy ${product.name} on the PowerMySport shop. ${product.category} gear with secure checkout and dispatch across India.`,
+      `Buy ${product.name} on the PowerMySport shop. ${product.category} gear with secure checkout and dispatch across India.`
   );
 
   return {
@@ -62,11 +57,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProductDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const product = await getProductById(id).catch(() => null);
 
@@ -74,9 +65,7 @@ export default async function ProductDetailPage({
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 shadow-sm">
-          <h1 className="text-3xl font-black text-slate-950">
-            Product not found
-          </h1>
+          <h1 className="text-3xl font-black text-slate-950">Product not found</h1>
           <p className="mt-3 text-slate-600">
             This product is unavailable or the shop backend is not reachable.
           </p>
@@ -138,19 +127,12 @@ export default async function ProductDetailPage({
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_0.9fr]">
         <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="absolute right-4 top-4 z-20">
-            <WishlistButton
-              productId={product.id}
-              className="h-12 w-12 border border-slate-200"
-            />
+          <div className="absolute top-4 right-4 z-20">
+            <WishlistButton productId={product.id} className="h-12 w-12 border border-slate-200" />
           </div>
           <div className="aspect-square bg-linear-to-br from-blue-50 via-white to-orange-50">
             {image ? (
-              <img
-                src={image}
-                alt={product.name}
-                className="h-full w-full object-cover"
-              />
+              <img src={image} alt={product.name} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full items-center justify-center text-lg font-bold text-slate-400">
                 {product.category}
@@ -179,9 +161,7 @@ export default async function ProductDetailPage({
             <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950">
               {product.name}
             </h1>
-            <p className="mt-4 text-base leading-7 text-slate-600">
-              {product.description}
-            </p>
+            <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -205,9 +185,7 @@ export default async function ProductDetailPage({
             </div>
 
             <div className="mt-5 rounded-xl bg-slate-50 p-4">
-              <p className="text-sm font-bold text-slate-950">
-                {variant.variantLabel}
-              </p>
+              <p className="text-sm font-bold text-slate-950">{variant.variantLabel}</p>
               <p className="mt-1 text-sm text-slate-500">{variant.sku}</p>
             </div>
 

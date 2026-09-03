@@ -1,7 +1,4 @@
-import {
-  INDIAN_STATES,
-  normalizeStateName,
-} from "../../constants/indianStates";
+import { INDIAN_STATES, normalizeStateName } from "../../constants/indianStates";
 
 /**
  * Official GST state codes (the numeric prefix of a 15-char GSTIN), keyed by
@@ -63,9 +60,7 @@ const STATE_NAMES_BY_LENGTH_DESC = [...INDIAN_STATES]
  * string (venues/coaches store address as a single field, not structured).
  * Returns undefined rather than guessing wrong when no state name appears.
  */
-export const guessStateFromAddress = (
-  address?: string | null,
-): string | undefined => {
+export const guessStateFromAddress = (address?: string | null): string | undefined => {
   if (!address) return undefined;
   const haystack = address.toLowerCase();
   for (const name of STATE_NAMES_BY_LENGTH_DESC) {

@@ -1,10 +1,7 @@
 "use client";
 
 import { getCommunityAppUrl } from "@/lib/community/url";
-import {
-    ActiveFilter,
-    FilterBar,
-} from "@/modules/discovery/components/FilterBar";
+import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBar";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
@@ -13,20 +10,20 @@ import { Venue } from "@/types";
 import { cn } from "@/utils/cn";
 import { getVenueImageUrls } from "@/utils/venueImages";
 import {
-    ArrowRight,
-    Bath,
-    Bookmark,
-    Building2,
-    Car,
-    ChevronLeft,
-    ChevronRight,
-    Coffee,
-    Droplets,
-    Dumbbell,
-    HeartPulse,
-    MapPin,
-    MessageCircle,
-    Star,
+  ArrowRight,
+  Bath,
+  Bookmark,
+  Building2,
+  Car,
+  ChevronLeft,
+  ChevronRight,
+  Coffee,
+  Droplets,
+  Dumbbell,
+  HeartPulse,
+  MapPin,
+  MessageCircle,
+  Star,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -78,9 +75,7 @@ export default function VenuesTab() {
   }, []);
 
   useEffect(() => {
-    const followed = clientFollowStore
-      .getByKind("venue")
-      .map((item) => item.id);
+    const followed = clientFollowStore.getByKind("venue").map((item) => item.id);
     setFollowedVenueIds(followed);
   }, []);
 
@@ -124,7 +119,7 @@ export default function VenuesTab() {
   const getDisplayPrice = (venue: Venue) => {
     if (venue.sportPricing) {
       const values = Object.values(venue.sportPricing).filter(
-        (v) => typeof v === "number" && v >= 0,
+        (v) => typeof v === "number" && v >= 0
       );
       if (values.length > 0) return Math.min(...values);
     }
@@ -137,18 +132,14 @@ export default function VenuesTab() {
     const parsedRating = Number(minRating || 0);
     let next = base.filter((v) => {
       const price = getDisplayPrice(v);
-      if (parsedMin !== undefined && !isNaN(parsedMin) && price < parsedMin)
-        return false;
-      if (parsedMax !== undefined && !isNaN(parsedMax) && price > parsedMax)
-        return false;
+      if (parsedMin !== undefined && !isNaN(parsedMin) && price < parsedMin) return false;
+      if (parsedMax !== undefined && !isNaN(parsedMax) && price > parsedMax) return false;
       if ((v.rating || 0) < parsedRating) return false;
 
       if (selectedAmenities.length > 0) {
         const venueAmenities = v.amenities || [];
         const hasAllAmenities = selectedAmenities.every((a) =>
-          venueAmenities.some((va) =>
-            va.toLowerCase().includes(a.toLowerCase()),
-          ),
+          venueAmenities.some((va) => va.toLowerCase().includes(a.toLowerCase()))
         );
         if (!hasAllAmenities) return false;
       }
@@ -210,8 +201,7 @@ export default function VenuesTab() {
     activeFilters.push({
       id: `amenity-${am}`,
       label: am,
-      onRemove: () =>
-        setSelectedAmenities((prev) => prev.filter((a) => a !== am)),
+      onRemove: () => setSelectedAmenities((prev) => prev.filter((a) => a !== am)),
       badgeClassName: "bg-indigo-50 border-indigo-100 text-indigo-700",
       iconClassName: "hover:text-blue-900",
     });
@@ -234,12 +224,10 @@ export default function VenuesTab() {
       >
         {/* Price range */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Price Range (₹/hr)
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Price Range (₹/hr)</label>
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+              <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
                 ₹
               </span>
               <input
@@ -248,12 +236,12 @@ export default function VenuesTab() {
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
                 placeholder="Min"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
               />
             </div>
-            <div className="h-0.5 w-4 bg-slate-300 rounded-full" />
+            <div className="h-0.5 w-4 rounded-full bg-slate-300" />
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+              <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
                 ₹
               </span>
               <input
@@ -262,7 +250,7 @@ export default function VenuesTab() {
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 placeholder="Max"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-power-orange focus:bg-white focus:outline-none"
+                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
               />
             </div>
           </div>
@@ -270,9 +258,7 @@ export default function VenuesTab() {
 
         {/* Rating */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Minimum Rating
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Minimum Rating</label>
           <div className="grid grid-cols-3 gap-2">
             {[
               { val: "0", label: "Any" },
@@ -287,8 +273,8 @@ export default function VenuesTab() {
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   minRating === opt.val
-                    ? "border-power-orange bg-orange-50 text-power-orange"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-power-orange text-power-orange bg-orange-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -299,9 +285,7 @@ export default function VenuesTab() {
 
         {/* Amenities */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Amenities
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Amenities</label>
           <div className="grid grid-cols-2 gap-2">
             {AMENITIES_OPTIONS.map((amenity) => {
               const isSelected = selectedAmenities.includes(amenity.id);
@@ -311,16 +295,14 @@ export default function VenuesTab() {
                   type="button"
                   onClick={() => {
                     setSelectedAmenities((prev) =>
-                      isSelected
-                        ? prev.filter((a) => a !== amenity.id)
-                        : [...prev, amenity.id],
+                      isSelected ? prev.filter((a) => a !== amenity.id) : [...prev, amenity.id]
                     );
                   }}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl border py-2.5 px-3 text-left text-sm font-semibold transition-all",
+                    "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-all",
                     isSelected
                       ? "border-indigo-300 bg-indigo-50 text-indigo-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                   )}
                 >
                   <amenity.icon size={16} />
@@ -333,9 +315,7 @@ export default function VenuesTab() {
 
         {/* Sort */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Sort By
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Sort By</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { val: "relevance", label: "Recommended" },
@@ -350,8 +330,8 @@ export default function VenuesTab() {
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   sortBy === opt.val
-                    ? "border-power-orange bg-orange-50 text-power-orange"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-power-orange text-power-orange bg-orange-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -362,21 +342,17 @@ export default function VenuesTab() {
       </FilterBar>
 
       {/* ── Content ─────────────────────────────────────────────── */}
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-8xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-100 border-t-power-orange" />
-            <p className="text-sm font-medium text-slate-500">
-              Loading venues…
-            </p>
+          <div className="flex flex-col items-center justify-center gap-3 py-24">
+            <div className="border-t-power-orange h-10 w-10 animate-spin rounded-full border-2 border-slate-100" />
+            <p className="text-sm font-medium text-slate-500">Loading venues…</p>
           </div>
         ) : filteredVenues.length === 0 ? (
           <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center">
             <Building2 size={40} className="mx-auto mb-3 text-slate-200" />
             <h3 className="text-lg font-bold text-slate-900">
-              {appliedSportFilter
-                ? `No venues for "${appliedSportFilter}"`
-                : "No venues right now"}
+              {appliedSportFilter ? `No venues for "${appliedSportFilter}"` : "No venues right now"}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
               {appliedSportFilter
@@ -401,9 +377,7 @@ export default function VenuesTab() {
           <>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="font-title text-xl font-bold text-slate-900">
-                {appliedSportFilter
-                  ? `${appliedSportFilter} Venues`
-                  : "All Venues"}
+                {appliedSportFilter ? `${appliedSportFilter} Venues` : "All Venues"}
               </h2>
             </div>
 
@@ -423,9 +397,7 @@ export default function VenuesTab() {
                     subtitle: venue.address,
                     href: `/venues/${venueId}`,
                   });
-                  setFollowedVenueIds(
-                    clientFollowStore.getByKind("venue").map((i) => i.id),
-                  );
+                  setFollowedVenueIds(clientFollowStore.getByKind("venue").map((i) => i.id));
                 };
 
                 return (
@@ -452,17 +424,14 @@ export default function VenuesTab() {
                         type="button"
                         onClick={onToggleFollow}
                         className={cn(
-                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
+                          "absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
                           isFollowed
-                            ? "border-white bg-white text-power-orange"
-                            : "border-white/20 bg-black/20 text-white hover:bg-black/40",
+                            ? "text-power-orange border-white bg-white"
+                            : "border-white/20 bg-black/20 text-white hover:bg-black/40"
                         )}
                         aria-label={isFollowed ? "Unsave venue" : "Save venue"}
                       >
-                        <Bookmark
-                          size={14}
-                          className={isFollowed ? "fill-current" : ""}
-                        />
+                        <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
                       </button>
                     </div>
 
@@ -474,10 +443,7 @@ export default function VenuesTab() {
 
                       {(venue.address || venue.location) && (
                         <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-                          <MapPin
-                            size={14}
-                            className="mt-0.5 shrink-0 text-slate-400"
-                          />
+                          <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
                           <span className="line-clamp-1">
                             {venue.address ||
                               `${venue.location?.coordinates[1].toFixed(3)}°N, ${venue.location?.coordinates[0].toFixed(3)}°E`}
@@ -489,14 +455,11 @@ export default function VenuesTab() {
                       <div className="mt-4 flex flex-wrap items-center gap-1.5">
                         {venue.rating && venue.rating > 0 && (
                           <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
-                            <Star
-                              size={12}
-                              className="fill-yellow-400 text-yellow-400"
-                            />
+                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
                             {venue.rating.toFixed(1)}
                           </span>
                         )}
-                        <span className="rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-100/50">
+                        <span className="rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-emerald-100/50 ring-inset">
                           Verified
                         </span>
                         {venue.sports[0] && (
@@ -512,19 +475,15 @@ export default function VenuesTab() {
                           <span className="text-xl font-black text-slate-900">
                             ₹{getDisplayPrice(venue)}
                           </span>
-                          <span className="ml-1 text-sm font-medium text-slate-500">
-                            /hr
-                          </span>
+                          <span className="ml-1 text-sm font-medium text-slate-500">/hr</span>
                         </div>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            router.push(
-                              `/checkout?type=venue&venueId=${venueId}`,
-                            );
+                            router.push(`/checkout?type=venue&venueId=${venueId}`);
                           }}
-                          className="flex items-center gap-1.5 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
+                          className="bg-power-orange flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
                         >
                           Book <ArrowRight size={14} />
                         </button>
@@ -564,7 +523,7 @@ export default function VenuesTab() {
                           "h-9 min-w-9 rounded-lg px-3 text-sm font-medium transition-all",
                           currentPage === pageNum
                             ? "bg-power-orange text-white shadow"
-                            : "border border-slate-200 bg-white text-slate-700 hover:border-power-orange hover:text-power-orange",
+                            : "hover:border-power-orange hover:text-power-orange border border-slate-200 bg-white text-slate-700"
                         )}
                       >
                         {pageNum}
@@ -575,9 +534,7 @@ export default function VenuesTab() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages || loading}
                 >
                   Next <ChevronRight size={15} />
@@ -585,8 +542,8 @@ export default function VenuesTab() {
               </div>
             )}
             <p className="mt-4 text-center text-xs text-slate-500">
-              Showing {(currentPage - 1) * 20 + 1}–
-              {Math.min(currentPage * 20, totalVenues)} of {totalVenues} venues
+              Showing {(currentPage - 1) * 20 + 1}–{Math.min(currentPage * 20, totalVenues)} of{" "}
+              {totalVenues} venues
             </p>
           </>
         )}

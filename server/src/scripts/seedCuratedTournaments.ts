@@ -12,10 +12,7 @@ import { Tournament } from "../shared/models/Tournament";
 
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || "";
 
-const CURATED: Omit<
-  InstanceType<typeof Tournament>,
-  keyof mongoose.Document
->[] = [
+const CURATED: Omit<InstanceType<typeof Tournament>, keyof mongoose.Document>[] = [
   // ─── CRICKET (BCCI) ──────────────────────────────────────────────────────
   {
     sportSlug: "cricket",
@@ -102,7 +99,8 @@ const CURATED: Omit<
       "BCCI's prestigious Under-16 inter-zonal cricket championship. Named after batting legend Vijay Merchant, it is the first major national platform for young cricketers and a direct feeder into the U-19 system.",
     ageGroup: "Under-16",
     typicalDates: "November–January",
-    registrationDeadline: "Selection trials in September–October through State Cricket Associations",
+    registrationDeadline:
+      "Selection trials in September–October through State Cricket Associations",
     isCurated: true,
     isVerified: true,
     federation: {
@@ -110,8 +108,7 @@ const CURATED: Omit<
       acronym: "BCCI",
       website: "https://www.bcci.tv",
       type: "private",
-      about:
-        "BCCI is the national governing body for cricket in India, founded in 1928.",
+      about: "BCCI is the national governing body for cricket in India, founded in 1928.",
     },
     participationGuide: [
       "Play in your school and district age-group cricket tournaments",
@@ -140,7 +137,8 @@ const CURATED: Omit<
       "BCCI's Under-19 inter-zonal cricket championship, one of the most prestigious junior tournaments in India. Many current Indian internationals (Virat Kohli, Rohit Sharma) played in this tournament. It is the primary gateway to the India U-19 World Cup squad.",
     ageGroup: "Under-19",
     typicalDates: "October–December",
-    registrationDeadline: "U-19 state trials in August–September through State Cricket Associations",
+    registrationDeadline:
+      "U-19 state trials in August–September through State Cricket Associations",
     isCurated: true,
     isVerified: true,
     federation: {
@@ -148,8 +146,7 @@ const CURATED: Omit<
       acronym: "BCCI",
       website: "https://www.bcci.tv",
       type: "private",
-      about:
-        "BCCI is the national governing body for cricket in India, founded in 1928.",
+      about: "BCCI is the national governing body for cricket in India, founded in 1928.",
     },
     participationGuide: [
       "Play state-level cricket in the U-16 and U-19 categories",
@@ -207,7 +204,8 @@ const CURATED: Omit<
     prestige: "flagship",
     prizePool: "₹15 lakh+ total prize money (varies by edition)",
     entryFee: "Entry fee as per AITA schedule — typically ₹1,000–₹2,000 per player",
-    selectionCriteria: "Direct acceptance by AITA national ranking. Players ranked outside direct acceptance enter qualifying rounds. No minimum age — ranking determines eligibility.",
+    selectionCriteria:
+      "Direct acceptance by AITA national ranking. Players ranked outside direct acceptance enter qualifying rounds. No minimum age — ranking determines eligibility.",
     keyFacts: [
       "No minimum age requirement — ranking determines acceptance, not age",
       "Dual-sanctioned: AITA national ranking points + ITF world ranking points both awarded",
@@ -236,8 +234,7 @@ const CURATED: Omit<
       acronym: "AITA",
       website: "https://www.aita.in",
       type: "national" as any,
-      about:
-        "AITA is the national governing body for tennis in India, founded in 1920.",
+      about: "AITA is the national governing body for tennis in India, founded in 1920.",
     },
     participationGuide: [
       "Obtain an AITA membership through your State Tennis Association",
@@ -252,8 +249,10 @@ const CURATED: Omit<
       "The AITA Senior Ranking Circuit runs four tiers. Talent Series (TS): the entry rung for players new to the circuit. Championship Series (CS): held dozens of times per year across India — the main ranking tier. National Series (NS): higher points, stronger field, national venue. Super Series (SS): the premium domestic tier; attracting India's top-100 ranked players. No minimum age for senior events — any AITA-registered player who meets the ranking criteria can enter. Players under 18 regularly compete in senior events if their ranking qualifies them. This circuit is separate from the junior circuit and counts toward senior national ranking only.",
     format: "Single elimination with qualifying rounds for lower-ranked players",
     prestige: "ranking",
-    entryFee: "Championship Series: ₹500–₹800 · National Series: ₹800–₹1,200 · Super Series: ₹1,500–₹2,000",
-    selectionCriteria: "AITA national ranking determines direct acceptance into each tier. No age restriction — senior circuit is open to any AITA-registered player.",
+    entryFee:
+      "Championship Series: ₹500–₹800 · National Series: ₹800–₹1,200 · Super Series: ₹1,500–₹2,000",
+    selectionCriteria:
+      "AITA national ranking determines direct acceptance into each tier. No age restriction — senior circuit is open to any AITA-registered player.",
     keyFacts: [
       "No minimum age — junior players with sufficient ranking regularly compete in senior events",
       "Four tiers: Talent Series (TS) → Championship Series (CS) → National Series (NS) → Super Series (SS)",
@@ -282,8 +281,7 @@ const CURATED: Omit<
       acronym: "AITA",
       website: "https://www.aita.in",
       type: "national" as any,
-      about:
-        "AITA is the national governing body for tennis in India, founded in 1920.",
+      about: "AITA is the national governing body for tennis in India, founded in 1920.",
     },
     participationGuide: [
       "Join your State Tennis Association (STA) and register as an AITA junior member",
@@ -299,7 +297,8 @@ const CURATED: Omit<
     format: "Single elimination — separate draws for each age group and gender",
     prestige: "flagship",
     entryFee: "Typically ₹500–₹1,000 per player per category",
-    selectionCriteria: "AITA junior national ranking (direct acceptance) or State Tennis Association nomination. Age cutoff: January 1st of the tournament year.",
+    selectionCriteria:
+      "AITA junior national ranking (direct acceptance) or State Tennis Association nomination. Age cutoff: January 1st of the tournament year.",
     keyFacts: [
       "Age cutoff: January 1st of the tournament year — not registration date",
       "Separate Boys and Girls draws for each category: U-12, U-14, U-16, U-18",
@@ -321,7 +320,8 @@ const CURATED: Omit<
     description:
       "A series of ITF World Tennis Tour events held across India, sanctioned by the International Tennis Federation. These M15/M25 (men) and W15/W25 (women) category events offer ITF world ranking points and serve as the primary stepping stone from domestic AITA ranking to the international professional circuit. Multiple editions are held in Indian cities annually.",
     ageGroup: "Men's Open / Women's Open",
-    typicalDates: "Multiple editions year-round — typically January, March, September, and November",
+    typicalDates:
+      "Multiple editions year-round — typically January, March, September, and November",
     registrationDeadline: "ITF Tournament Entry System (TES) — 4 weeks before each event",
     isCurated: true,
     isVerified: true,
@@ -348,8 +348,10 @@ const CURATED: Omit<
     format: "Single elimination with qualifying (qualifying: 4–5 rounds; main draw: 32–48 players)",
     prestige: "ranking",
     prizePool: "M15/W15: $15,000 USD · M25/W25: $25,000 USD (prize money varies by edition grade)",
-    entryFee: "ITF registration fee applies — check the specific tournament circular on itftennis.com",
-    selectionCriteria: "ITF world ranking determines acceptance. No minimum age — players of any age with an ITF player ID and sufficient ranking can enter.",
+    entryFee:
+      "ITF registration fee applies — check the specific tournament circular on itftennis.com",
+    selectionCriteria:
+      "ITF world ranking determines acceptance. No minimum age — players of any age with an ITF player ID and sufficient ranking can enter.",
     keyFacts: [
       "No minimum age — ITF world ranking determines entry, not age",
       "Both ITF player ID and AITA membership are required for India-hosted editions",
@@ -369,7 +371,8 @@ const CURATED: Omit<
     description:
       "A series of ITF-sanctioned junior tennis events held in India for players under 18, ranging from Grade 5 (most accessible) to Grade A (most prestigious). These events offer ITF junior ranking points that determine global junior seedings and the pathway to the ITF Junior Grand Slams. India hosts multiple junior circuit events every year, particularly Grade 3 through Grade 5.",
     ageGroup: "Under-18 (Boys & Girls — separate draws)",
-    typicalDates: "Multiple editions year-round — concentrated in January–March and October–December",
+    typicalDates:
+      "Multiple editions year-round — concentrated in January–March and October–December",
     registrationDeadline: "ITF Tournament Entry System (TES) — 3 weeks before each event",
     isCurated: true,
     isVerified: true,
@@ -396,7 +399,8 @@ const CURATED: Omit<
     format: "Single elimination — separate Boys and Girls draws (typically 32–64 players per draw)",
     prestige: "ranking",
     entryFee: "ITF registration fee + travel to venue; check specific circular at itftennis.com",
-    selectionCriteria: "ITF junior ranking determines acceptance (Grade 5 has no ranking cutoff). Players must be under 18 as of the first day of the main draw.",
+    selectionCriteria:
+      "ITF junior ranking determines acceptance (Grade 5 has no ranking cutoff). Players must be under 18 as of the first day of the main draw.",
     keyFacts: [
       "Age cutoff: under 18 as of Day 1 of main draw (not January 1st — differs from AITA)",
       "Grade 5 has no ITF ranking requirement — ideal first international event",
@@ -445,7 +449,8 @@ const CURATED: Omit<
     format: "Single elimination — 32 main draw + 16-player qualifying",
     prestige: "ranking",
     prizePool: "Approx. $75,000 USD total prize money (Challenger 75 grade)",
-    selectionCriteria: "ATP ranking determines direct acceptance. Qualifying is open to players with lower ATP rankings. No age restriction — any player with an ATP ranking and account can enter.",
+    selectionCriteria:
+      "ATP ranking determines direct acceptance. Qualifying is open to players with lower ATP rankings. No age restriction — any player with an ATP ranking and account can enter.",
     keyFacts: [
       "No minimum age — ATP ranking determines entry, not age",
       "Challenger 75 grade: second tier of men's professional tennis worldwide",
@@ -493,7 +498,8 @@ const CURATED: Omit<
     format: "Round robin groups + knockout finals; format varies by event size",
     prestige: "developmental",
     entryFee: "Typically ₹500–₹2,000 per event — check specific listing on universaltennis.com",
-    selectionCriteria: "Open entry — any player with a UTR ID can register. No minimum rating required for most events. Some events may specify a UTR range to ensure competitive balance.",
+    selectionCriteria:
+      "Open entry — any player with a UTR ID can register. No minimum rating required for most events. Some events may specify a UTR range to ensure competitive balance.",
     keyFacts: [
       "No AITA or ITF membership required — just a free UTR account",
       "UTR rating (1–16.5) is calculated from ALL match results, not just UTR events",
@@ -540,7 +546,8 @@ const CURATED: Omit<
       "AICF's competitive ladder is built on FIDE rating — the globally recognised numerical system. The pathway: unrated beginner → AICF/FIDE rated club or school events → district tournaments → State Championship → state nomination → National Championship. Key FIDE rating milestones: 2000 = National Master (NM) title; 2200 + 3 IM norms = International Master (IM); 2500 + 3 GM norms = Grandmaster (GM). India currently has 80+ Grandmasters. The National Senior Championship is the event AICF selectors watch to name players for the Chess Olympiad team and FIDE World Team Championship. Winning the National title essentially guarantees inclusion in India's Olympiad team selection discussion.",
     format: "Swiss system (9–13 rounds) or Round Robin for top players",
     prestige: "flagship",
-    prizePool: "₹5 lakh+ total; champion receives national title and international team consideration",
+    prizePool:
+      "₹5 lakh+ total; champion receives national title and international team consideration",
     registrationUrl: "https://www.aicf.in",
     sourceUrls: ["https://www.aicf.in/tournaments"],
     lastScrapedAt: new Date(),
@@ -562,8 +569,7 @@ const CURATED: Omit<
       acronym: "AICF",
       website: "https://www.aicf.in",
       type: "private",
-      about:
-        "AICF is the national governing body for chess in India, affiliated with FIDE.",
+      about: "AICF is the national governing body for chess in India, affiliated with FIDE.",
     },
     participationGuide: [
       "Register with your State Chess Association and participate in state-level age-group tournaments",
@@ -637,8 +643,7 @@ const CURATED: Omit<
       acronym: "AICF",
       website: "https://www.aicf.in",
       type: "private",
-      about:
-        "AICF is the national governing body for chess in India, affiliated with FIDE.",
+      about: "AICF is the national governing body for chess in India, affiliated with FIDE.",
     },
     participationGuide: [
       "Participate in school and district chess tournaments to gain experience",
@@ -714,8 +719,7 @@ const CURATED: Omit<
       acronym: "AIFF",
       website: "https://www.the-aiff.com",
       type: "private",
-      about:
-        "AIFF is the national governing body for football in India, founded in 1937.",
+      about: "AIFF is the national governing body for football in India, founded in 1937.",
     },
     participationGuide: [
       "Register with your State Football Association (SFA) and play in state league/district tournaments",
@@ -760,8 +764,7 @@ const CURATED: Omit<
       "Player registration follows AIFF transfer window and club contract rules",
       "Compete in the group stage (held in multiple cities) followed by knockout rounds in Kolkata",
     ],
-    qualificationPath:
-      "Club contract (ISL/I-League/Service team) → Club entry into Durand Cup",
+    qualificationPath: "Club contract (ISL/I-League/Service team) → Club entry into Durand Cup",
     circuitContext:
       "The Durand Cup is a club-based knockout competition running alongside the I-League and ISL in the AIFF calendar. As Asia's oldest tournament, it provides additional competitive exposure for ISL and I-League clubs. It uniquely includes service teams (Indian Army, Navy, Air Force) — offering an alternative professional pathway for players who join the armed forces. For young players, the Durand Cup is aspirational: a professional club contract with an ISL or I-League club is the prerequisite. The full club ladder: AIFF Grassroots → ISL/I-League academy (U-18/U-21) → senior club contract → I-League → ISL → Durand Cup and AFC international competition.",
     format: "Group stage followed by knockout quarterfinals, semis, and final",
@@ -788,8 +791,7 @@ const CURATED: Omit<
       acronym: "AIFF",
       website: "https://www.the-aiff.com",
       type: "private",
-      about:
-        "AIFF is the national governing body for football in India, founded in 1937.",
+      about: "AIFF is the national governing body for football in India, founded in 1937.",
     },
     participationGuide: [
       "Enroll in an AIFF-affiliated academy or play for your school/club in AIFF Grassroots programs",
@@ -864,8 +866,7 @@ const CURATED: Omit<
       acronym: "BFI",
       website: "https://www.basketballfederationindia.org",
       type: "private",
-      about:
-        "BFI is the national governing body for basketball in India, affiliated with FIBA.",
+      about: "BFI is the national governing body for basketball in India, affiliated with FIBA.",
     },
     participationGuide: [
       "Join a BFI-affiliated basketball academy or your school team",
@@ -900,8 +901,7 @@ const CURATED: Omit<
       acronym: "BFI",
       website: "https://www.basketballfederationindia.org",
       type: "private",
-      about:
-        "BFI is the national governing body for basketball in India, affiliated with FIBA.",
+      about: "BFI is the national governing body for basketball in India, affiliated with FIBA.",
     },
     participationGuide: [
       "Form a team of 3 players + 1 substitute (all FIBA-registered)",
@@ -1160,8 +1160,7 @@ const CURATED: Omit<
       acronym: "TTFI",
       website: "https://www.ttfi.org",
       type: "private",
-      about:
-        "TTFI is the national governing body for table tennis in India, affiliated with ITTF.",
+      about: "TTFI is the national governing body for table tennis in India, affiliated with ITTF.",
     },
     participationGuide: [
       "Join an ITTF-registered table tennis academy or school TT program",
@@ -1197,8 +1196,7 @@ const CURATED: Omit<
       acronym: "TTFI",
       website: "https://www.ttfi.org",
       type: "private",
-      about:
-        "TTFI is the national governing body for table tennis in India, affiliated with ITTF.",
+      about: "TTFI is the national governing body for table tennis in India, affiliated with ITTF.",
     },
     participationGuide: [
       "Register with your State Table Tennis Association (STTA) and get a TTFI player ID",
@@ -1461,8 +1459,7 @@ const CURATED: Omit<
       acronym: "BAI",
       website: "https://www.badmintonindia.org",
       type: "private",
-      about:
-        "BAI is the national governing body for badminton in India, affiliated with BWF.",
+      about: "BAI is the national governing body for badminton in India, affiliated with BWF.",
     },
     participationGuide: [
       "Register with your State Badminton Association (SBA) and build your state ranking",
@@ -1498,8 +1495,7 @@ const CURATED: Omit<
       acronym: "BAI",
       website: "https://www.badmintonindia.org",
       type: "private",
-      about:
-        "BAI is the national governing body for badminton in India, affiliated with BWF.",
+      about: "BAI is the national governing body for badminton in India, affiliated with BWF.",
     },
     participationGuide: [
       "Train with a BAI-affiliated badminton academy and participate in state junior tournaments",
@@ -1612,8 +1608,7 @@ const CURATED: Omit<
       acronym: "VFI",
       website: "https://www.vfi.net.in",
       type: "private",
-      about:
-        "VFI is the national governing body for volleyball in India, affiliated with FIVB.",
+      about: "VFI is the national governing body for volleyball in India, affiliated with FIVB.",
     },
     participationGuide: [
       "Play for your district or club in your state volleyball league",
@@ -1648,8 +1643,7 @@ const CURATED: Omit<
       acronym: "VFI",
       website: "https://www.vfi.net.in",
       type: "private",
-      about:
-        "VFI is the national governing body for volleyball in India, affiliated with FIVB.",
+      about: "VFI is the national governing body for volleyball in India, affiliated with FIVB.",
     },
     participationGuide: [
       "Play for your school or club volleyball team and build your game at the state level",

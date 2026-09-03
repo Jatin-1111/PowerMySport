@@ -20,11 +20,7 @@ import mongoose, { Document, Schema } from "mongoose";
  * from becoming spam. Worth revisiting if waitlists get long.
  */
 
-export type CoachWaitlistStatus =
-  | "WAITING"
-  | "NOTIFIED"
-  | "CONVERTED"
-  | "CANCELLED";
+export type CoachWaitlistStatus = "WAITING" | "NOTIFIED" | "CONVERTED" | "CANCELLED";
 
 export interface CoachWaitlistEntryDocument extends Document {
   id?: string;
@@ -94,12 +90,10 @@ const coachWaitlistEntrySchema = new Schema<CoachWaitlistEntryDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
-coachWaitlistEntrySchema.virtual("id").get(function (
-  this: CoachWaitlistEntryDocument,
-) {
+coachWaitlistEntrySchema.virtual("id").get(function (this: CoachWaitlistEntryDocument) {
   return this._id.toString();
 });
 
@@ -114,7 +108,7 @@ coachWaitlistEntrySchema.index(
     name: "one_live_waitlist_entry_per_student",
     unique: true,
     partialFilterExpression: { status: { $in: ["WAITING", "NOTIFIED"] } },
-  },
+  }
 );
 
 // FIFO reads, and the sweep that finds who to tell about a freed seat.
@@ -123,5 +117,5 @@ coachWaitlistEntrySchema.index({ userId: 1, status: 1 });
 
 export const CoachWaitlistEntry = mongoose.model<CoachWaitlistEntryDocument>(
   "CoachWaitlistEntry",
-  coachWaitlistEntrySchema,
+  coachWaitlistEntrySchema
 );

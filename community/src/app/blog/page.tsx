@@ -5,12 +5,7 @@ import {
   itemListSchema,
   JsonLd,
 } from "@/modules/community/components/seo/JsonLd";
-import {
-  buildMetadata,
-  communityUrl,
-  fetchPublicData,
-  SITE_NAME,
-} from "@/lib/seo";
+import { buildMetadata, communityUrl, fetchPublicData, SITE_NAME } from "@/lib/seo";
 
 export const metadata = buildMetadata({
   title: "Sports Blog — Stories, Tips & Expert Advice",
@@ -38,7 +33,7 @@ export default async function CommunityBlogPage() {
   // evidence of what it lists. One cached page of posts is enough to tell a
   // crawler this is a real, populated collection rather than an empty shell.
   const recent = await fetchPublicData<{ items?: BlogListRow[] }>(
-    "/community/blog/posts?page=1&limit=20",
+    "/community/blog/posts?page=1&limit=20"
   );
 
   return (
@@ -67,7 +62,7 @@ export default async function CommunityBlogPage() {
       <Suspense
         fallback={
           <div className="community-page-shell">
-            <div className="community-content-wrap rounded-3xl border border-border bg-white p-5 shadow-sm sm:p-6">
+            <div className="community-content-wrap border-border rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
               <div className="h-5 w-40 animate-pulse rounded-full bg-slate-200" />
               <div className="mt-4 h-24 animate-pulse rounded-2xl bg-slate-100" />
               <p className="mt-4 text-sm text-slate-500">Loading stories...</p>

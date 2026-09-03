@@ -19,10 +19,7 @@ import { BookingDelivery } from "./Booking";
  */
 
 export type CoachOccurrenceStatus =
-  | "SCHEDULED"
-  | "COMPLETED"
-  | "CANCELLED_BY_COACH"
-  | "CANCELLED_BY_PLATFORM";
+  "SCHEDULED" | "COMPLETED" | "CANCELLED_BY_COACH" | "CANCELLED_BY_PLATFORM";
 
 export type CoachAttendanceMark = "PENDING" | "PRESENT" | "ABSENT";
 
@@ -116,7 +113,7 @@ const rosterEntrySchema = new Schema<CoachOccurrenceRosterEntry>(
     },
     earnedPaise: { type: Number, min: 0 },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const coachSessionOccurrenceSchema = new Schema<CoachSessionOccurrenceDocument>(
@@ -138,12 +135,7 @@ const coachSessionOccurrenceSchema = new Schema<CoachSessionOccurrenceDocument>(
     durationMinutes: { type: Number, required: true, min: 15, max: 480 },
     status: {
       type: String,
-      enum: [
-        "SCHEDULED",
-        "COMPLETED",
-        "CANCELLED_BY_COACH",
-        "CANCELLED_BY_PLATFORM",
-      ],
+      enum: ["SCHEDULED", "COMPLETED", "CANCELLED_BY_COACH", "CANCELLED_BY_PLATFORM"],
       default: "SCHEDULED",
       index: true,
     },
@@ -152,12 +144,7 @@ const coachSessionOccurrenceSchema = new Schema<CoachSessionOccurrenceDocument>(
         {
           kind: {
             type: String,
-            enum: [
-              "PLATFORM_VENUE",
-              "PROVIDER_VENUE",
-              "STUDENT_LOCATION",
-              "ONLINE",
-            ],
+            enum: ["PLATFORM_VENUE", "PROVIDER_VENUE", "STUDENT_LOCATION", "ONLINE"],
             required: true,
           },
           venueId: { type: Schema.Types.ObjectId, ref: "Venue" },
@@ -182,7 +169,7 @@ const coachSessionOccurrenceSchema = new Schema<CoachSessionOccurrenceDocument>(
           platform: { type: String, trim: true },
           meetingLink: { type: String, trim: true },
         },
-        { _id: false },
+        { _id: false }
       ),
       required: false,
     },
@@ -238,12 +225,10 @@ const coachSessionOccurrenceSchema = new Schema<CoachSessionOccurrenceDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
-coachSessionOccurrenceSchema.virtual("id").get(function (
-  this: CoachSessionOccurrenceDocument,
-) {
+coachSessionOccurrenceSchema.virtual("id").get(function (this: CoachSessionOccurrenceDocument) {
   return this._id.toString();
 });
 
@@ -261,7 +246,7 @@ coachSessionOccurrenceSchema.index(
     name: "one_generated_occurrence_per_slot",
     unique: true,
     partialFilterExpression: { isMakeup: false },
-  },
+  }
 );
 
 // The coach's calendar, and the conflict check across offerings.
@@ -275,8 +260,7 @@ coachSessionOccurrenceSchema.index({
   "payout.releaseAt": 1,
 });
 
-export const CoachSessionOccurrence =
-  mongoose.model<CoachSessionOccurrenceDocument>(
-    "CoachSessionOccurrence",
-    coachSessionOccurrenceSchema,
-  );
+export const CoachSessionOccurrence = mongoose.model<CoachSessionOccurrenceDocument>(
+  "CoachSessionOccurrence",
+  coachSessionOccurrenceSchema
+);

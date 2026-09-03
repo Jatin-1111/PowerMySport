@@ -120,8 +120,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const logout = async (req: Request, res: Response): Promise<void> => {
-  const token =
-    req.cookies?.token || req.headers.authorization?.slice(7).trim();
+  const token = req.cookies?.token || req.headers.authorization?.slice(7).trim();
   if (token) {
     await revokeToken(token);
   }
@@ -133,10 +132,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
   });
 };
 
-export const getProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -258,16 +254,12 @@ export const getProfile = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch profile",
+      message: error instanceof Error ? error.message : "Failed to fetch profile",
     });
   }
 };
 
-export const getAuthBridge = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAuthBridge = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -301,16 +293,12 @@ export const getAuthBridge = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to validate session",
+      message: error instanceof Error ? error.message : "Failed to validate session",
     });
   }
 };
 
-export const updateProfileHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateProfileHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -320,8 +308,7 @@ export const updateProfileHandler = async (
       return;
     }
 
-    const { name, email, phone, dob, parentProfile, playerProfile, shippingAddress } =
-      req.body;
+    const { name, email, phone, dob, parentProfile, playerProfile, shippingAddress } = req.body;
 
     const updatedUser = await updateProfile(req.user.id, {
       name,
@@ -361,16 +348,12 @@ export const updateProfileHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update profile",
+      message: error instanceof Error ? error.message : "Failed to update profile",
     });
   }
 };
 
-export const forgotPassword = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email } = req.body;
     await requestPasswordReset(email);
@@ -387,10 +370,7 @@ export const forgotPassword = async (
   }
 };
 
-export const resetPasswordHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const resetPasswordHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { token, newPassword } = req.body;
     await resetPassword(token, newPassword);
@@ -407,10 +387,7 @@ export const resetPasswordHandler = async (
   }
 };
 
-export const changePasswordHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const changePasswordHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -445,16 +422,12 @@ export const changePasswordHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to change password",
+      message: error instanceof Error ? error.message : "Failed to change password",
     });
   }
 };
 
-export const deleteAccountHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteAccountHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -467,8 +440,7 @@ export const deleteAccountHandler = async (
     const { password } = req.body;
     await requestAccountDeletion(req.user.id, password || "");
 
-    const token =
-      req.cookies?.token || req.headers.authorization?.slice(7).trim();
+    const token = req.cookies?.token || req.headers.authorization?.slice(7).trim();
     if (token) {
       await revokeToken(token);
     }
@@ -482,24 +454,14 @@ export const deleteAccountHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to delete account",
+      message: error instanceof Error ? error.message : "Failed to delete account",
     });
   }
 };
 
-export const googleAuth = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const googleAuth = async (req: Request, res: Response): Promise<void> => {
   try {
-    const {
-      credential,
-      role,
-      action,
-      acceptedTerms,
-      acceptedPrivacy,
-    } = req.body;
+    const { credential, role, action, acceptedTerms, acceptedPrivacy } = req.body;
 
     // Verify the Google ID token server-side. Identity (googleId/email/name) is
     // derived ONLY from the verified token — never from client-supplied fields.
@@ -546,10 +508,7 @@ export const googleAuth = async (
   }
 };
 
-export const graduateDependentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const graduateDependentHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -624,10 +583,7 @@ export const graduateDependentHandler = async (
   }
 };
 
-export const getMyPlayersHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getMyPlayersHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -647,16 +603,12 @@ export const getMyPlayersHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch players",
+      message: error instanceof Error ? error.message : "Failed to fetch players",
     });
   }
 };
 
-export const addDependentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const addDependentHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -676,16 +628,12 @@ export const addDependentHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to add dependent",
+      message: error instanceof Error ? error.message : "Failed to add dependent",
     });
   }
 };
 
-export const updateDependentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateDependentHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -713,16 +661,12 @@ export const updateDependentHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update dependent",
+      message: error instanceof Error ? error.message : "Failed to update dependent",
     });
   }
 };
 
-export const deleteDependentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteDependentHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -749,8 +693,7 @@ export const deleteDependentHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to delete dependent",
+      message: error instanceof Error ? error.message : "Failed to delete dependent",
     });
   }
 };
@@ -760,7 +703,7 @@ export const deleteDependentHandler = async (
  */
 export const getProfilePictureUploadUrlHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { fileName, contentType } = req.body;
@@ -790,11 +733,7 @@ export const getProfilePictureUploadUrlHandler = async (
       return;
     }
 
-    const result = await getProfilePictureUploadUrl(
-      req.user.id,
-      fileName,
-      contentType,
-    );
+    const result = await getProfilePictureUploadUrl(req.user.id, fileName, contentType);
 
     res.status(200).json({
       success: true,
@@ -805,10 +744,7 @@ export const getProfilePictureUploadUrlHandler = async (
     log.error("Profile picture upload URL error:", error);
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate upload URL",
+      message: error instanceof Error ? error.message : "Failed to generate upload URL",
     });
   }
 };
@@ -818,7 +754,7 @@ export const getProfilePictureUploadUrlHandler = async (
  */
 export const confirmProfilePictureUploadHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { photoUrl, photoS3Key } = req.body;
@@ -839,11 +775,7 @@ export const confirmProfilePictureUploadHandler = async (
       return;
     }
 
-    const user = await confirmProfilePictureUpload(
-      req.user.id,
-      photoUrl,
-      photoS3Key,
-    );
+    const user = await confirmProfilePictureUpload(req.user.id, photoUrl, photoS3Key);
 
     res.status(200).json({
       success: true,
@@ -861,10 +793,7 @@ export const confirmProfilePictureUploadHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to confirm profile picture upload",
+      message: error instanceof Error ? error.message : "Failed to confirm profile picture upload",
     });
   }
 };
@@ -872,10 +801,7 @@ export const confirmProfilePictureUploadHandler = async (
 /**
  * Add a new address for the user
  */
-export const addAddressHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const addAddressHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -885,27 +811,10 @@ export const addAddressHandler = async (
       return;
     }
 
-    const {
-      fullName,
-      email,
-      phone,
-      addressLine1,
-      addressLine2,
-      city,
-      state,
-      postalCode,
-      country,
-    } = req.body;
+    const { fullName, email, phone, addressLine1, addressLine2, city, state, postalCode, country } =
+      req.body;
 
-    if (
-      !fullName ||
-      !email ||
-      !phone ||
-      !addressLine1 ||
-      !city ||
-      !state ||
-      !postalCode
-    ) {
+    if (!fullName || !email || !phone || !addressLine1 || !city || !state || !postalCode) {
       res.status(400).json({
         success: false,
         message: "All required fields must be provided",
@@ -944,10 +853,7 @@ export const addAddressHandler = async (
 /**
  * Get all addresses for the user
  */
-export const getAddressesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAddressesHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -966,8 +872,7 @@ export const getAddressesHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch addresses",
+      message: error instanceof Error ? error.message : "Failed to fetch addresses",
     });
   }
 };
@@ -975,10 +880,7 @@ export const getAddressesHandler = async (
 /**
  * Update an existing address
  */
-export const updateAddressHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateAddressHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -996,17 +898,8 @@ export const updateAddressHandler = async (
       });
       return;
     }
-    const {
-      fullName,
-      email,
-      phone,
-      addressLine1,
-      addressLine2,
-      city,
-      state,
-      postalCode,
-      country,
-    } = req.body;
+    const { fullName, email, phone, addressLine1, addressLine2, city, state, postalCode, country } =
+      req.body;
 
     const user = await updateAddress(req.user.id, addressId, {
       fullName,
@@ -1031,8 +924,7 @@ export const updateAddressHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update address",
+      message: error instanceof Error ? error.message : "Failed to update address",
     });
   }
 };
@@ -1040,10 +932,7 @@ export const updateAddressHandler = async (
 /**
  * Delete an address
  */
-export const deleteAddressHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteAddressHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1075,8 +964,7 @@ export const deleteAddressHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to delete address",
+      message: error instanceof Error ? error.message : "Failed to delete address",
     });
   }
 };
@@ -1084,10 +972,7 @@ export const deleteAddressHandler = async (
 /**
  * Set default address
  */
-export const setDefaultAddressHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const setDefaultAddressHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1119,10 +1004,7 @@ export const setDefaultAddressHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to set default address",
+      message: error instanceof Error ? error.message : "Failed to set default address",
     });
   }
 };
@@ -1141,7 +1023,7 @@ export const linkGoogleHandler = async (req: Request, res: Response): Promise<vo
     }
 
     const user = await linkGoogleAccount(req.user.id, credential);
-    
+
     res.status(200).json({
       success: true,
       message: "Google account linked successfully",
@@ -1153,8 +1035,8 @@ export const linkGoogleHandler = async (req: Request, res: Response): Promise<vo
           role: user.role,
           googleId: user.googleId,
           photoUrl: user.photoUrl,
-        }
-      }
+        },
+      },
     });
   } catch (error) {
     res.status(400).json({

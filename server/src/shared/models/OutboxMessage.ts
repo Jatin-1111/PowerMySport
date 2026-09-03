@@ -11,7 +11,7 @@ const OutboxMessageSchema = new mongoose.Schema(
     nextAttemptAt: { type: Date, default: () => new Date() },
     lastError: { type: String, default: null },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 OutboxMessageSchema.index({ status: 1, nextAttemptAt: 1 });

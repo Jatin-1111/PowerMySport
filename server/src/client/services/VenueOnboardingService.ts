@@ -44,7 +44,7 @@ export const UPLOAD_CONSTRAINTS = {
  * REFACTORED: Now accepts owner contact info, creates minimal venue record
  */
 export const startVenueOnboarding = async (
-  payload: IVenueOnboardingStep1,
+  payload: IVenueOnboardingStep1
 ): Promise<VenueDocument> => {
   // Check if venue lister already submitted with this email
   const existingVenue = await Venue.findOne({
@@ -53,9 +53,7 @@ export const startVenueOnboarding = async (
   });
 
   if (existingVenue) {
-    throw new Error(
-      "You already have a pending venue approval. Complete or cancel it first.",
-    );
+    throw new Error("You already have a pending venue approval. Complete or cancel it first.");
   }
 
   // Create minimal venue record with only contact info
@@ -135,7 +133,7 @@ export const startVenueOnboarding = async (
  * PREVIOUSLY this was Step 1
  */
 export const updateVenueDetails = async (
-  payload: IVenueOnboardingStep2,
+  payload: IVenueOnboardingStep2
 ): Promise<VenueDocument> => {
   const venue = await Venue.findById(payload.venueId);
   if (!venue) {
@@ -164,7 +162,7 @@ export const updateVenueDetails = async (
  */
 export const getImageUploadPresignedUrls = async (
   venueId: string,
-  sports: string[], // Array of selected sports
+  sports: string[] // Array of selected sports
 ): Promise<IOnboardingUploadUrl[]> => {
   // Verify venue exists
   const venue = await Venue.findById(venueId);
@@ -185,7 +183,7 @@ export const getImageUploadPresignedUrls = async (
       `general_${i}.jpg`,
       "image/jpeg",
       venueId,
-      i === 0, // First general image is the default cover photo
+      i === 0 // First general image is the default cover photo
     );
 
     urls.push({
@@ -209,7 +207,7 @@ export const getImageUploadPresignedUrls = async (
         `sport_${sport.toLowerCase().replace(/\s+/g, "_")}_${i}.jpg`,
         "image/jpeg",
         venueId,
-        false, // Sport images cannot be cover photos
+        false // Sport images cannot be cover photos
       );
 
       urls.push({
@@ -232,7 +230,7 @@ export const getImageUploadPresignedUrls = async (
  * Supports both legacy (flat array) and new (sport-specific) image structures
  */
 export const confirmVenueImages = async (
-  payload: IVenueOnboardingStep3,
+  payload: IVenueOnboardingStep3
 ): Promise<VenueDocument | null> => {
   // Handle new sport-specific structure
   if (payload.generalImages && payload.sportImages) {
@@ -259,7 +257,7 @@ export const confirmVenueImages = async (
         coverPhotoUrl: payload.coverPhotoUrl,
         coverPhotoKey: payload.coverPhotoKey,
       },
-      { new: true },
+      { new: true }
     );
 
     if (!venue) {
@@ -272,14 +270,10 @@ export const confirmVenueImages = async (
   // Handle legacy structure (backward compatibility)
   if (payload.images && payload.images.length > 0) {
     if (payload.images.length < UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT) {
-      throw new Error(
-        `Minimum ${UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT} images required`,
-      );
+      throw new Error(`Minimum ${UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT} images required`);
     }
     if (payload.images.length > UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT) {
-      throw new Error(
-        `Maximum ${UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT} images allowed`,
-      );
+      throw new Error(`Maximum ${UPLOAD_CONSTRAINTS.IMAGES.MAX_COUNT} images allowed`);
     }
 
     const venue = await Venue.findByIdAndUpdate(
@@ -290,7 +284,7 @@ export const confirmVenueImages = async (
         coverPhotoUrl: payload.coverPhotoUrl,
         coverPhotoKey: payload.coverPhotoKey,
       },
-      { new: true },
+      { new: true }
     );
 
     if (!venue) {
@@ -308,7 +302,7 @@ export const confirmVenueImages = async (
  */
 export const getDocumentUploadPresignedUrls = async (
   venueId: string,
-  documents: Array<{ type: string; fileName: string; contentType: string }>,
+  documents: Array<{ type: string; fileName: string; contentType: string }>
 ): Promise<IOnboardingUploadUrl[]> => {
   // Verify venue exists
   const venue = await Venue.findById(venueId);
@@ -329,12 +323,8 @@ export const getDocumentUploadPresignedUrls = async (
       doc.fileName,
       doc.contentType,
       doc.type as
-        | "OWNERSHIP_PROOF"
-        | "BUSINESS_REGISTRATION"
-        | "TAX_DOCUMENT"
-        | "INSURANCE"
-        | "CERTIFICATE",
-      venueId,
+        "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE",
+      venueId
     );
 
     urls.push({
@@ -356,7 +346,7 @@ export const getDocumentUploadPresignedUrls = async (
  * Saves final images and documents, marks venue ready for admin approval
  */
 export const finalizeVenueOnboarding = async (
-  payload: IVenueOnboardingStep4,
+  payload: IVenueOnboardingStep4
 ): Promise<VenueDocument | null> => {
   // Validate images
   if (!payload.images || payload.images.length < 5) {
@@ -375,16 +365,12 @@ export const finalizeVenueOnboarding = async (
   const documentsToSave: IVenueDocument[] = payload.documents.map(
     (doc: (typeof payload.documents)[number]) => ({
       type: doc.type as
-        | "OWNERSHIP_PROOF"
-        | "BUSINESS_REGISTRATION"
-        | "TAX_DOCUMENT"
-        | "INSURANCE"
-        | "CERTIFICATE",
+        "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE",
       url: doc.url,
       ...(doc.s3Key !== undefined && { s3Key: doc.s3Key }), // Only include s3Key if defined
       fileName: doc.fileName,
       uploadedAt: new Date(),
-    }),
+    })
   );
 
   // Update venue with images, cover photo, and documents
@@ -398,7 +384,7 @@ export const finalizeVenueOnboarding = async (
       documents: documentsToSave,
       approvalStatus: "PENDING", // Ready for admin review
     },
-    { new: true },
+    { new: true }
   );
 
   if (!venue) {
@@ -415,7 +401,7 @@ export const finalizeVenueOnboarding = async (
 export const getPendingVenues = async (
   page: number = 1,
   limit: number = 20,
-  approvalStatus?: "PENDING" | "REVIEW" | "REJECTED",
+  approvalStatus?: "PENDING" | "REVIEW" | "REJECTED"
 ): Promise<{
   venues: IPendingVenue[];
   total: number;
@@ -458,9 +444,7 @@ export const getPendingVenues = async (
  * Get venue onboarding details (for admin review)
  * Returns full venue info with all documents and images
  */
-export const getVenueOnboardingDetails = async (
-  venueId: string,
-): Promise<VenueDocument | null> => {
+export const getVenueOnboardingDetails = async (venueId: string): Promise<VenueDocument | null> => {
   return Venue.findById(venueId).populate("ownerId", "name email phone");
 };
 
@@ -469,9 +453,7 @@ export const getVenueOnboardingDetails = async (
  * Creates user account for venue lister and links venue to that user
  * Updates approval status to APPROVED and sends credentials to venue lister
  */
-export const approveVenue = async (
-  venueId: string,
-): Promise<VenueDocument | null> => {
+export const approveVenue = async (venueId: string): Promise<VenueDocument | null> => {
   const venue = await Venue.findById(venueId);
 
   if (!venue) {
@@ -678,9 +660,7 @@ export const approveVenue = async (
           isNewUser,
           ...(isNewUser && tempPassword ? { hasCredentials: true } : {}),
         },
-      }).catch((err: Error) =>
-        log.error("Failed to send venue approval notification:", err),
-      );
+      }).catch((err: Error) => log.error("Failed to send venue approval notification:", err));
     }
   } catch (error) {
     log.error("Failed to send approval email:", error);
@@ -696,7 +676,7 @@ export const approveVenue = async (
  */
 export const rejectVenue = async (
   venueId: string,
-  reason: string,
+  reason: string
 ): Promise<VenueDocument | null> => {
   const venue = await Venue.findByIdAndUpdate(
     venueId,
@@ -704,7 +684,7 @@ export const rejectVenue = async (
       approvalStatus: "REJECTED",
       rejectionReason: reason,
     },
-    { new: true },
+    { new: true }
   );
 
   if (!venue) {
@@ -724,16 +704,13 @@ export const rejectVenue = async (
         reason: reason,
         rejectedAt: new Date().toISOString(),
       },
-    }).catch((err: Error) =>
-      log.error("Failed to send venue rejection notification:", err),
-    );
+    }).catch((err: Error) => log.error("Failed to send venue rejection notification:", err));
   }
 
   // Send rejection email to venue owner
   try {
     const ownerEmail =
-      venue.ownerEmail ||
-      (venue.ownerId ? (await User.findById(venue.ownerId))?.email : undefined);
+      venue.ownerEmail || (venue.ownerId ? (await User.findById(venue.ownerId))?.email : undefined);
 
     if (ownerEmail) {
       const rejectionEmailHtml = `
@@ -805,7 +782,7 @@ export const rejectVenue = async (
  */
 export const markVenueForReview = async (
   venueId: string,
-  notes?: string,
+  notes?: string
 ): Promise<VenueDocument | null> => {
   const venue = await Venue.findByIdAndUpdate(
     venueId,
@@ -813,7 +790,7 @@ export const markVenueForReview = async (
       approvalStatus: "REVIEW",
       reviewNotes: notes,
     },
-    { new: true },
+    { new: true }
   );
 
   if (!venue) {
@@ -833,16 +810,13 @@ export const markVenueForReview = async (
         notes: notes || "",
         reviewStartedAt: new Date().toISOString(),
       },
-    }).catch((err: Error) =>
-      log.error("Failed to send venue review notification:", err),
-    );
+    }).catch((err: Error) => log.error("Failed to send venue review notification:", err));
   }
 
   // Send review notification email to venue owner
   try {
     const ownerEmail =
-      venue.ownerEmail ||
-      (venue.ownerId ? (await User.findById(venue.ownerId))?.email : undefined);
+      venue.ownerEmail || (venue.ownerId ? (await User.findById(venue.ownerId))?.email : undefined);
 
     if (ownerEmail) {
       const reviewEmailHtml = `
@@ -902,10 +876,7 @@ export const markVenueForReview = async (
       log.info(`Review notification email sent to ${ownerEmail}`);
     }
   } catch (emailError) {
-    log.error(
-      "Failed to send venue review notification email:",
-      emailError,
-    );
+    log.error("Failed to send venue review notification email:", emailError);
     // Don't throw — review status was already saved
   }
 
@@ -930,10 +901,7 @@ export const isVenueOnboardingComplete = (venue: VenueDocument): boolean => {
  * Delete venue (for canceling onboarding)
  * Only allowed if venue is not approved
  */
-export const deleteVenueOnboarding = async (
-  venueId: string,
-  ownerId: string,
-): Promise<void> => {
+export const deleteVenueOnboarding = async (venueId: string, ownerId: string): Promise<void> => {
   const venue = await Venue.findById(venueId);
 
   if (!venue || !venue.ownerId) {
@@ -947,9 +915,7 @@ export const deleteVenueOnboarding = async (
 
   // Don't allow deletion of approved venues
   if (venue.approvalStatus === "APPROVED") {
-    throw new Error(
-      "Cannot delete approved venues. Contact admin for assistance.",
-    );
+    throw new Error("Cannot delete approved venues. Contact admin for assistance.");
   }
 
   // Delete associated files from S3

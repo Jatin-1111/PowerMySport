@@ -128,8 +128,7 @@ const STAGE_COLORS = [
   "#65a30d",
 ];
 
-const colorFor = (index: number) =>
-  STAGE_COLORS[index % STAGE_COLORS.length] as string;
+const colorFor = (index: number) => STAGE_COLORS[index % STAGE_COLORS.length] as string;
 
 /** `/roadmap/tennis?stage=compete` — the reader renders that stage server-side. */
 const stageHref = (slug: string, key?: string) =>
@@ -150,15 +149,13 @@ function SportTile({
 }) {
   const panelId = `pathway-stages-${entry.sportSlug}`;
   const matchIndex =
-    age === null || entry.stages.length === 0
-      ? -1
-      : findStageForAge(entry.stages, age);
+    age === null || entry.stages.length === 0 ? -1 : findStageForAge(entry.stages, age);
   const match = matchIndex >= 0 ? entry.stages[matchIndex] : undefined;
 
   return (
     // `isolate`, so the stretched link below covers this tile and stops at its
     // edge rather than sitting over the neighbouring one.
-    <div className="relative isolate flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-4 backdrop-blur-sm premium-shadow transition hover:border-power-orange/40 hover:shadow-lg">
+    <div className="premium-shadow hover:border-power-orange/40 relative isolate flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-4 backdrop-blur-sm transition hover:shadow-lg">
       {/* The whole tile is the target, but only one element is the link: an
           anchor with a stretched `::after` rather than a card-wide anchor with
           controls nested inside it. Nesting a button inside an anchor is invalid
@@ -166,7 +163,7 @@ function SportTile({
           secondary "show stages" toggle tempts you into. */}
       <Link
         href={stageHref(entry.sportSlug, match?.key)}
-        className="font-title text-[17px] font-bold leading-tight text-slate-900 transition after:absolute after:inset-0 after:content-[''] hover:text-power-orange focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-power-orange"
+        className="font-title hover:text-power-orange focus-visible:outline-power-orange text-[17px] leading-tight font-bold text-slate-900 transition after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {entry.sportName}
       </Link>
@@ -197,14 +194,12 @@ function SportTile({
             onClick={onToggle}
             aria-expanded={expanded}
             aria-controls={panelId}
-            className="relative z-10 mt-2.5 inline-flex w-fit items-center gap-1 rounded-lg px-1.5 py-1 text-[12px] font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-power-orange"
+            className="focus-visible:outline-power-orange relative z-10 mt-2.5 inline-flex w-fit items-center gap-1 rounded-lg px-1.5 py-1 text-[12px] font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {expanded ? "Hide stages" : "All stages"}
             <ChevronDown
               aria-hidden
-              className={`h-3.5 w-3.5 transition-transform ${
-                expanded ? "rotate-180" : ""
-              }`}
+              className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
             />
           </button>
 
@@ -217,7 +212,7 @@ function SportTile({
                 <li key={stage.key}>
                   <Link
                     href={stageHref(entry.sportSlug, stage.key)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[12px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-power-orange ${
+                    className={`focus-visible:outline-power-orange inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[12px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 ${
                       i === matchIndex
                         ? "border-amber-300 bg-amber-50 text-amber-900"
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
@@ -231,13 +226,9 @@ function SportTile({
                       {i + 1}
                     </span>
                     {stage.name}
-                    <span className="font-semibold text-slate-400">
-                      {stage.ageRange}
-                    </span>
+                    <span className="font-semibold text-slate-400">{stage.ageRange}</span>
                     {i === matchIndex && (
-                      <span className="sr-only">
-                        — where a {age}-year-old starts
-                      </span>
+                      <span className="sr-only">— where a {age}-year-old starts</span>
                     )}
                   </Link>
                 </li>
@@ -289,18 +280,15 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
     entries.length >= GROUP_FILTER_FROM &&
     groups.length >= 3 &&
     largestGroup / entries.length < 0.6;
-  const visible = useMemo(
-    () => filterSports(sports, { group, query }),
-    [sports, group, query],
-  );
+  const visible = useMemo(() => filterSports(sports, { group, query }), [sports, group, query]);
 
   const needle = query.trim().toLowerCase();
 
   if (entries.length === 0) {
     return (
       <p className="mx-auto mt-4 max-w-xl text-center text-sm text-slate-600 sm:text-base">
-        No pathways are published yet. We&apos;re building them with coaches and
-        experienced parents, one sport at a time — check back shortly.
+        No pathways are published yet. We&apos;re building them with coaches and experienced
+        parents, one sport at a time — check back shortly.
       </p>
     );
   }
@@ -312,9 +300,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
   const topMatch = visible[0];
 
   /** Every sport, alphabetically, for the dense index at the foot. */
-  const alphabetical = [...entries].sort((a, b) =>
-    a.sportName.localeCompare(b.sportName),
-  );
+  const alphabetical = [...entries].sort((a, b) => a.sportName.localeCompare(b.sportName));
 
   return (
     <>
@@ -326,7 +312,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
       <div
         className={`z-20 mx-auto mt-9 max-w-2xl px-1 py-1 ${
           dense
-            ? "sticky top-16 rounded-2xl border border-white/70 bg-white/85 px-3 py-3 backdrop-blur-md premium-shadow"
+            ? "premium-shadow sticky top-16 rounded-2xl border border-white/70 bg-white/85 px-3 py-3 backdrop-blur-md"
             : ""
         }`}
       >
@@ -340,13 +326,12 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
             // Enter opens the top match. The list below is the slow path; a
             // parent who typed "badmin" has already chosen.
             if (topMatch) {
-              const matchIndex =
-                age === null ? -1 : findStageForAge(topMatch.stages, age);
+              const matchIndex = age === null ? -1 : findStageForAge(topMatch.stages, age);
               router.push(
                 stageHref(
                   topMatch.sportSlug,
-                  matchIndex >= 0 ? topMatch.stages[matchIndex]?.key : undefined,
-                ),
+                  matchIndex >= 0 ? topMatch.stages[matchIndex]?.key : undefined
+                )
               );
             }
           }}
@@ -358,23 +343,21 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
           <div className="relative">
             <Search
               aria-hidden
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute top-1/2 left-3.5 h-4.5 w-4.5 -translate-y-1/2 text-slate-400"
             />
             <input
               id={searchId}
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={`Search ${entries.length} sport${
-                entries.length === 1 ? "" : "s"
-              }`}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-[15px] font-semibold text-slate-800 shadow-sm placeholder:font-normal placeholder:text-slate-400 focus:border-power-orange focus:outline-none"
+              placeholder={`Search ${entries.length} sport${entries.length === 1 ? "" : "s"}`}
+              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pr-9 pl-10 text-[15px] font-semibold text-slate-800 shadow-sm placeholder:font-normal placeholder:text-slate-400 focus:outline-none"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-power-orange"
+                className="focus-visible:outline-power-orange absolute top-1/2 right-2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 <X aria-hidden className="h-4 w-4" />
                 <span className="sr-only">Clear search</span>
@@ -384,42 +367,34 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
           {needle && topMatch && (
             <p className="mt-1.5 text-center text-[12px] text-slate-500">
               Press Enter to open{" "}
-              <span className="font-bold text-slate-700">
-                {topMatch.sportName}
-              </span>
+              <span className="font-bold text-slate-700">{topMatch.sportName}</span>
             </p>
           )}
         </form>
 
         {showGroups && (
           <ul className="mt-3 flex flex-wrap justify-center gap-1.5">
-            {(
-              [["All", entries.length], ...groups] as Array<
-                [SportGroup | "All", number]
-              >
-            ).map(([name, count]) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  onClick={() => setGroup(name)}
-                  aria-pressed={group === name}
-                  className={`rounded-full px-3 py-1.5 text-[12.5px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-power-orange ${
-                    group === name
-                      ? "bg-slate-900 text-white"
-                      : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
-                  }`}
-                >
-                  {name}{" "}
-                  <span
-                    className={
-                      group === name ? "text-white/60" : "text-slate-400"
-                    }
+            {([["All", entries.length], ...groups] as Array<[SportGroup | "All", number]>).map(
+              ([name, count]) => (
+                <li key={name}>
+                  <button
+                    type="button"
+                    onClick={() => setGroup(name)}
+                    aria-pressed={group === name}
+                    className={`focus-visible:outline-power-orange rounded-full px-3 py-1.5 text-[12.5px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                      group === name
+                        ? "bg-slate-900 text-white"
+                        : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                    }`}
                   >
-                    {count}
-                  </span>
-                </button>
-              </li>
-            ))}
+                    {name}{" "}
+                    <span className={group === name ? "text-white/60" : "text-slate-400"}>
+                      {count}
+                    </span>
+                  </button>
+                </li>
+              )
+            )}
           </ul>
         )}
       </div>
@@ -460,11 +435,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
                 entry={entry}
                 age={age}
                 expanded={openSlug === entry.sportSlug}
-                onToggle={() =>
-                  setOpenSlug(
-                    openSlug === entry.sportSlug ? null : entry.sportSlug,
-                  )
-                }
+                onToggle={() => setOpenSlug(openSlug === entry.sportSlug ? null : entry.sportSlug)}
               />
             </li>
           ))}
@@ -473,19 +444,18 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
         // A search that finds nothing is the clearest signal this page ever gets
         // that a parent knows exactly what they want and we do not have it. It
         // ends in a route to a person, not an apology.
-        <div className="mx-auto mt-6 max-w-md rounded-2xl border border-white/70 bg-white/80 p-6 text-center backdrop-blur-sm premium-shadow">
+        <div className="premium-shadow mx-auto mt-6 max-w-md rounded-2xl border border-white/70 bg-white/80 p-6 text-center backdrop-blur-sm">
           <p className="text-[15px] font-bold text-slate-900">
             No pathway for {needle ? `"${query.trim()}"` : "that group"} yet
           </p>
           <p className="mt-1.5 text-[13.5px] leading-relaxed text-slate-600">
-            We write them with coaches and experienced parents, one sport at a
-            time. Tell us about your child and we&apos;ll point you at the right
-            people for their sport in the meantime.
+            We write them with coaches and experienced parents, one sport at a time. Tell us about
+            your child and we&apos;ll point you at the right people for their sport in the meantime.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Link
               href="/assessment"
-              className="inline-flex items-center rounded-xl bg-power-orange px-3.5 py-2 text-[13px] font-bold text-white transition hover:bg-orange-600"
+              className="bg-power-orange inline-flex items-center rounded-xl px-3.5 py-2 text-[13px] font-bold text-white transition hover:bg-orange-600"
             >
               Get a plan for their sport
             </Link>
@@ -511,13 +481,12 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
         <p className="mt-3 text-center text-[12.5px] text-slate-500">
           {narrowed ? (
             <>
-              {beyondCap} more match{beyondCap === 1 ? "" : "es"} — keep typing
-              to narrow it down.
+              {beyondCap} more match{beyondCap === 1 ? "" : "es"} — keep typing to narrow it down.
             </>
           ) : (
             <>
-              Showing {tiles.length} of {entries.length} sports. Search above,
-              or open the full list below.
+              Showing {tiles.length} of {entries.length} sports. Search above, or open the full list
+              below.
             </>
           )}
         </p>
@@ -546,7 +515,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
               <li key={entry.sportSlug} className="break-inside-avoid">
                 <Link
                   href={`/roadmap/${entry.sportSlug}`}
-                  className="block truncate py-1 text-[13.5px] font-semibold text-slate-600 transition hover:text-power-orange"
+                  className="hover:text-power-orange block truncate py-1 text-[13.5px] font-semibold text-slate-600 transition"
                 >
                   {entry.sportName}
                 </Link>
@@ -558,8 +527,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
 
       <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-slate-400">
         <Sparkles aria-hidden className="h-3.5 w-3.5" />
-        More sports are being written with coaches and experienced parents, one
-        at a time.
+        More sports are being written with coaches and experienced parents, one at a time.
       </p>
     </>
   );

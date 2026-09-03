@@ -21,7 +21,7 @@ export const reviewApi = {
   getVenueReviews: async (
     venueId: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ): Promise<ApiResponse<ReviewListData>> => {
     const response = await axiosInstance.get(`/reviews/venues/${venueId}`, {
       params: { page, limit },
@@ -32,7 +32,7 @@ export const reviewApi = {
   getCoachReviews: async (
     coachId: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ): Promise<ApiResponse<ReviewListData>> => {
     const response = await axiosInstance.get(`/reviews/coaches/${coachId}`, {
       params: { page, limit },

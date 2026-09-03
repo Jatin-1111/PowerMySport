@@ -2,11 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import jwt from "jsonwebtoken";
 
-import {
-  escapeRegex,
-  buildSafeSearchRegexSource,
-  MAX_SEARCH_TERM_LENGTH,
-} from "../utils/regex";
+import { escapeRegex, buildSafeSearchRegexSource, MAX_SEARCH_TERM_LENGTH } from "../utils/regex";
 import { registerSchema } from "../middleware/schemas";
 import { S3Service } from "../shared/services/S3Service";
 
@@ -24,10 +20,7 @@ describe("H5 — search input is escaped before regex use", () => {
   it("trims and length-caps the raw term before escaping", () => {
     const long = "a".repeat(200);
     // 'a' needs no escaping, so the result reflects the raw cap exactly.
-    assert.equal(
-      buildSafeSearchRegexSource(long).length,
-      MAX_SEARCH_TERM_LENGTH,
-    );
+    assert.equal(buildSafeSearchRegexSource(long).length, MAX_SEARCH_TERM_LENGTH);
     assert.equal(buildSafeSearchRegexSource("  Foo.*Bar  "), "Foo\\.\\*Bar");
   });
 
@@ -69,23 +62,14 @@ describe("C1 — Google login refuses unverifiable / client-supplied identity", 
   const { verifyGoogleCredential } = require("../shared/services/AuthService");
 
   it("rejects a missing / empty / non-string credential", async () => {
-    await assert.rejects(
-      verifyGoogleCredential(undefined),
-      /Missing Google credential/,
-    );
-    await assert.rejects(
-      verifyGoogleCredential(""),
-      /Missing Google credential/,
-    );
-    await assert.rejects(
-      verifyGoogleCredential(12345),
-      /Missing Google credential/,
-    );
+    await assert.rejects(verifyGoogleCredential(undefined), /Missing Google credential/);
+    await assert.rejects(verifyGoogleCredential(""), /Missing Google credential/);
+    await assert.rejects(verifyGoogleCredential(12345), /Missing Google credential/);
     // The old attack shape — a raw {googleId,email} object — is not a string,
     // so it is rejected outright instead of being trusted.
     await assert.rejects(
       verifyGoogleCredential({ googleId: "x", email: "victim@x.com" }),
-      /Missing Google credential/,
+      /Missing Google credential/
     );
   });
 });
@@ -133,15 +117,15 @@ describe("M6 — S3 uploads validate content-type + sanitize extension", () => {
   it("rejects dangerous / non-allowed content types", () => {
     assert.throws(
       () => svc.resolveSafeExtension("evil.html", "text/html"),
-      /Unsupported upload content type/,
+      /Unsupported upload content type/
     );
     assert.throws(
       () => svc.resolveSafeExtension("evil.svg", "image/svg+xml"),
-      /Unsupported upload content type/,
+      /Unsupported upload content type/
     );
     assert.throws(
       () => svc.resolveSafeExtension("x.bin", "application/octet-stream"),
-      /Unsupported upload content type/,
+      /Unsupported upload content type/
     );
   });
 });

@@ -24,13 +24,12 @@ const sent: CapturedMail[] = [];
 // Stub the transport BEFORE importing the email module. email.ts calls
 // nodemailer.createTransport() lazily per-send, so mutating the shared module
 // object here is enough to intercept every send.
-(nodemailer as unknown as { createTransport: () => unknown }).createTransport =
-  () => ({
-    sendMail: async (mail: CapturedMail) => {
-      sent.push(mail);
-      return { messageId: `test-${sent.length}` };
-    },
-  });
+(nodemailer as unknown as { createTransport: () => unknown }).createTransport = () => ({
+  sendMail: async (mail: CapturedMail) => {
+    sent.push(mail);
+    return { messageId: `test-${sent.length}` };
+  },
+});
 
 // Ensure a deterministic "from" address.
 process.env.EMAIL_FROM = "teams@powermysport.com";

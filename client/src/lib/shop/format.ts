@@ -6,9 +6,6 @@ export function formatInr(paise: number): string {
   }).format(paise / 100);
 }
 
-export function getProductPrice(product: {
-  basePrice: number;
-  salePrice?: number;
-}): number {
+export function getProductPrice(product: { basePrice: number; salePrice?: number }): number {
   return product.salePrice ?? product.basePrice;
 }

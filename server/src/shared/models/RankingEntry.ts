@@ -174,7 +174,7 @@ const rankingEntrySchema = new Schema<RankingEntryDocument>(
     wtnDoubles: { type: Number },
     pointsSampled: { type: Boolean },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // One row per player per snapshot. Re-running a parse updates in place.

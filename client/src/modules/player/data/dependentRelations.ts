@@ -15,9 +15,7 @@ export const DEFAULT_DEPENDENT_RELATION: DependentRelation = "CHILD";
 export function formatDependentRelation(relation?: string): string {
   if (!relation) return "";
 
-  const match = DEPENDENT_RELATIONS.find(
-    (option) => option.value === relation.toUpperCase(),
-  );
+  const match = DEPENDENT_RELATIONS.find((option) => option.value === relation.toUpperCase());
   if (match) return match.label;
 
   return relation
@@ -26,13 +24,9 @@ export function formatDependentRelation(relation?: string): string {
     .join(" ");
 }
 
-export function normalizeDependentRelation(
-  relation?: string,
-): DependentRelation {
+export function normalizeDependentRelation(relation?: string): DependentRelation {
   if (!relation) return DEFAULT_DEPENDENT_RELATION;
 
-  const match = DEPENDENT_RELATIONS.find(
-    (option) => option.value === relation.toUpperCase(),
-  );
+  const match = DEPENDENT_RELATIONS.find((option) => option.value === relation.toUpperCase());
   return match?.value ?? DEFAULT_DEPENDENT_RELATION;
 }

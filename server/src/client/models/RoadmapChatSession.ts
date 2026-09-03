@@ -17,7 +17,7 @@ const chatMessageSchema = new Schema<ChatMessage>(
     content: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const roadmapChatSessionSchema = new Schema<RoadmapChatSessionDocument>(
@@ -32,7 +32,7 @@ const roadmapChatSessionSchema = new Schema<RoadmapChatSessionDocument>(
     messages: { type: [chatMessageSchema], default: [] },
     totalMessageCount: { type: Number, default: 0 },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Non-unique index — multiple sessions per (user, sport) are allowed
@@ -41,5 +41,5 @@ roadmapChatSessionSchema.index({ userId: 1, updatedAt: -1 });
 
 export const RoadmapChatSession = mongoose.model<RoadmapChatSessionDocument>(
   "RoadmapChatSession",
-  roadmapChatSessionSchema,
+  roadmapChatSessionSchema
 );

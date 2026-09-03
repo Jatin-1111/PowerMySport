@@ -57,15 +57,11 @@ const fail = (res: Response, error: unknown, code = 400) =>
 
 const num = (v: unknown) => (v == null ? undefined : Number(v));
 
-export const getExperts = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getExperts = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await listActiveExperts({
       sport: typeof req.query.sport === "string" ? req.query.sport : undefined,
-      search:
-        typeof req.query.search === "string" ? req.query.search : undefined,
+      search: typeof req.query.search === "string" ? req.query.search : undefined,
       page: num(req.query.page),
       limit: num(req.query.limit),
     });
@@ -89,10 +85,7 @@ export const getExpert = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const getReviews = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getReviews = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await getExpertReviews(req.params.expertId as string);
     res.json({ success: true, message: "Reviews retrieved", data });
@@ -101,22 +94,14 @@ export const getReviews = async (
   }
 };
 
-export const createExpert = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createExpert = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, phone, sessionFee } = req.body as Record<
-      string,
-      unknown
-    >;
+    const { name, email, phone, sessionFee } = req.body as Record<string, unknown>;
     if (!name || !email || !phone || sessionFee == null) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "name, email, phone and sessionFee are required",
-        });
+      res.status(400).json({
+        success: false,
+        message: "name, email, phone and sessionFee are required",
+      });
       return;
     }
     const { expert, temporaryPassword, user } = await createExpertByAdmin({
@@ -136,9 +121,7 @@ export const createExpert = async (
       weeklyAvailability: Array.isArray(req.body.weeklyAvailability)
         ? req.body.weeklyAvailability
         : undefined,
-      blackoutDates: Array.isArray(req.body.blackoutDates)
-        ? req.body.blackoutDates
-        : undefined,
+      blackoutDates: Array.isArray(req.body.blackoutDates) ? req.body.blackoutDates : undefined,
       city: req.body.city,
       languages: req.body.languages,
       photoUrl: req.body.photoUrl,
@@ -151,33 +134,25 @@ export const createExpert = async (
       email: user.email,
       password: temporaryPassword,
       loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
-    }).catch((err: unknown) =>
-      log.error("Failed to send expert credentials email:", err),
-    );
+    }).catch((err: unknown) => log.error("Failed to send expert credentials email:", err));
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Expert created and credentials emailed",
-        data: expert,
-      });
+    res.status(201).json({
+      success: true,
+      message: "Expert created and credentials emailed",
+      data: expert,
+    });
   } catch (e) {
     fail(res, e);
   }
 };
 
-export const listExpertsAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listExpertsAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await listExpertsForAdmin({
       page: num(req.query.page),
       limit: num(req.query.limit),
-      verificationStatus: typeof req.query.verificationStatus === "string"
-        ? req.query.verificationStatus
-        : undefined,
+      verificationStatus:
+        typeof req.query.verificationStatus === "string" ? req.query.verificationStatus : undefined,
     });
     res.json({
       success: true,
@@ -199,17 +174,12 @@ const requireAuth = (req: Request, res: Response): string | null => {
   return req.user.id;
 };
 
-export const initiateSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const initiateSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
     if (!req.body?.scheduledAt) {
-      res
-        .status(400)
-        .json({ success: false, message: "scheduledAt is required" });
+      res.status(400).json({ success: false, message: "scheduledAt is required" });
       return;
     }
     const data = await initiateExpertSession({
@@ -226,10 +196,7 @@ export const initiateSession = async (
   }
 };
 
-export const reconcileSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const reconcileSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -243,10 +210,7 @@ export const reconcileSession = async (
   }
 };
 
-export const getSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -261,10 +225,7 @@ export const getSession = async (
   }
 };
 
-export const getSessionPlayerDetail = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getSessionPlayerDetail = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -282,10 +243,7 @@ export const getSessionPlayerDetail = async (
  * Download expert session invoice PDF
  * GET /experts/sessions/:sessionId/invoice/pdf
  */
-export const downloadSessionInvoicePdf = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const downloadSessionInvoicePdf = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -297,13 +255,8 @@ export const downloadSessionInvoicePdf = async (
       return;
     }
 
-    const expert = await Expert.findById(session.expertId).populate(
-      "userId",
-      "name email phone",
-    );
-    const expertUser = expert?.userId as unknown as
-      | { _id: unknown; name?: string }
-      | undefined;
+    const expert = await Expert.findById(session.expertId).populate("userId", "name email phone");
+    const expertUser = expert?.userId as unknown as { _id: unknown; name?: string } | undefined;
 
     const isClient = session.userId.toString() === userId;
     const isExpert = expertUser?._id?.toString() === userId;
@@ -321,13 +274,9 @@ export const downloadSessionInvoicePdf = async (
       return;
     }
 
-    const client = await User.findById(session.userId).select(
-      "name email phone",
-    );
+    const client = await User.findById(session.userId).select("name email phone");
 
-    const bookingDate = session.scheduledAt
-      ? new Date(session.scheduledAt)
-      : session.createdAt;
+    const bookingDate = session.scheduledAt ? new Date(session.scheduledAt) : session.createdAt;
     const invoiceNumber = `INV-${bookingDate
       .toISOString()
       .slice(0, 10)
@@ -338,9 +287,7 @@ export const downloadSessionInvoicePdf = async (
     let timeLabel = "-";
     if (session.scheduledAt) {
       const start = new Date(session.scheduledAt);
-      const end = new Date(
-        start.getTime() + session.durationMinutes * 60000,
-      );
+      const end = new Date(start.getTime() + session.durationMinutes * 60000);
       const fmtTime = (d: Date) =>
         d.toLocaleTimeString("en-IN", {
           timeZone: "Asia/Kolkata",
@@ -382,9 +329,7 @@ export const downloadSessionInvoicePdf = async (
         phone: client?.phone || "-",
       },
       placeOfSupply:
-        session.mode === "IN_PERSON"
-          ? guessPlaceOfSupply(expert?.inPersonAddress)
-          : "-",
+        session.mode === "IN_PERSON" ? guessPlaceOfSupply(expert?.inPersonAddress) : "-",
       detailsSectionTitle: "Session details",
       detailsBadge: session.status === "COMPLETED" ? "Completed" : "Scheduled",
       detailFields,
@@ -411,27 +356,19 @@ export const downloadSessionInvoicePdf = async (
     const pdfBuffer = await renderInvoicePdf(invoiceData);
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${invoiceNumber}.pdf"`,
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${invoiceNumber}.pdf"`);
     res.status(200).send(pdfBuffer);
   } catch (e) {
     fail(res, e, 500);
   }
 };
 
-export const scheduleSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const scheduleSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
     if (!req.body?.scheduledAt) {
-      res
-        .status(400)
-        .json({ success: false, message: "scheduledAt is required" });
+      res.status(400).json({ success: false, message: "scheduledAt is required" });
       return;
     }
     const session = await scheduleExpertSession({
@@ -446,10 +383,7 @@ export const scheduleSession = async (
   }
 };
 
-export const completeSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const completeSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -465,10 +399,7 @@ export const completeSession = async (
   }
 };
 
-export const updateSessionMom = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateSessionMom = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -484,10 +415,7 @@ export const updateSessionMom = async (
   }
 };
 
-export const reviewSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const reviewSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -504,10 +432,7 @@ export const reviewSession = async (
   }
 };
 
-export const mySessions = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const mySessions = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -518,10 +443,7 @@ export const mySessions = async (
   }
 };
 
-export const expertSessions = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const expertSessions = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -532,15 +454,12 @@ export const expertSessions = async (
   }
 };
 
-export const getAvailability = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAvailability = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await getExpertOpenSlots(
       req.params.expertId as string,
       typeof req.query.from === "string" ? req.query.from : undefined,
-      typeof req.query.to === "string" ? req.query.to : undefined,
+      typeof req.query.to === "string" ? req.query.to : undefined
     );
     res.json({ success: true, message: "Availability retrieved", data });
   } catch (e) {
@@ -548,10 +467,7 @@ export const getAvailability = async (
   }
 };
 
-export const cancelSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const cancelSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -567,21 +483,16 @@ export const cancelSession = async (
   }
 };
 
-export const respondSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const respondSession = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const action = String(req.body?.action || "").toUpperCase();
     if (!["ACCEPT", "DECLINE", "RESCHEDULE"].includes(action)) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "action must be ACCEPT, DECLINE or RESCHEDULE",
-        });
+      res.status(400).json({
+        success: false,
+        message: "action must be ACCEPT, DECLINE or RESCHEDULE",
+      });
       return;
     }
     const session = await respondToExpertSession({
@@ -589,9 +500,7 @@ export const respondSession = async (
       expertUserId: userId,
       isAdmin: req.user?.role === "Admin",
       action: action as "ACCEPT" | "DECLINE" | "RESCHEDULE",
-      scheduledAt: req.body?.scheduledAt
-        ? String(req.body.scheduledAt)
-        : undefined,
+      scheduledAt: req.body?.scheduledAt ? String(req.body.scheduledAt) : undefined,
       reason: req.body?.reason,
     });
     res.json({ success: true, message: "Response recorded", data: session });
@@ -600,17 +509,12 @@ export const respondSession = async (
   }
 };
 
-export const updateMeetingLink = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateMeetingLink = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
     if (typeof req.body?.meetingLink !== "string") {
-      res
-        .status(400)
-        .json({ success: false, message: "meetingLink is required" });
+      res.status(400).json({ success: false, message: "meetingLink is required" });
       return;
     }
     const session = await setSessionMeetingLink({
@@ -627,10 +531,7 @@ export const updateMeetingLink = async (
 
 // ── Expert self-service ──────────────────────────────────────────────────────
 
-export const getMyProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getMyProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -641,10 +542,7 @@ export const getMyProfile = async (
   }
 };
 
-export const updateMyProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateMyProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -657,40 +555,25 @@ export const updateMyProfile = async (
 
 // ── Admin management ─────────────────────────────────────────────────────────
 
-export const updateExpertAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateExpertAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = await updateExpertByAdmin(
-      req.params.expertId as string,
-      req.body || {},
-    );
+    const data = await updateExpertByAdmin(req.params.expertId as string, req.body || {});
     res.json({ success: true, message: "Expert updated", data });
   } catch (e) {
     fail(res, e);
   }
 };
 
-export const setExpertActiveAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const setExpertActiveAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
-    const data = await setExpertActive(
-      req.params.expertId as string,
-      Boolean(req.body?.isActive),
-    );
+    const data = await setExpertActive(req.params.expertId as string, Boolean(req.body?.isActive));
     res.json({ success: true, message: "Expert status updated", data });
   } catch (e) {
     fail(res, e);
   }
 };
 
-export const expertSessionsAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const expertSessionsAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await getExpertSessionsForAdmin(req.params.expertId as string);
     res.json({ success: true, message: "Sessions retrieved", data });
@@ -699,10 +582,7 @@ export const expertSessionsAdmin = async (
   }
 };
 
-export const refundDoneAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const refundDoneAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     const session = await markSessionRefundDone(req.params.sessionId as string);
     res.json({
@@ -715,14 +595,11 @@ export const refundDoneAdmin = async (
   }
 };
 
-export const hideReviewAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const hideReviewAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     const session = await setReviewHidden(
       req.params.sessionId as string,
-      req.body?.hidden !== false,
+      req.body?.hidden !== false
     );
     res.json({
       success: true,
@@ -736,10 +613,7 @@ export const hideReviewAdmin = async (
 
 // ── Expert self-serve review submission ──────────────────────────────────────
 
-export const submitForReview = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const submitForReview = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -752,10 +626,7 @@ export const submitForReview = async (
 
 // ── Admin approve / reject ────────────────────────────────────────────────────
 
-export const approveExpertAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const approveExpertAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await approveExpert(req.params.expertId as string);
 
@@ -765,9 +636,7 @@ export const approveExpertAdmin = async (
         name: data.name || "Expert",
         email: data.email,
         dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/expert/dashboard`,
-      }).catch((err: unknown) =>
-        log.error("Failed to send expert approval email:", err),
-      );
+      }).catch((err: unknown) => log.error("Failed to send expert approval email:", err));
     }
 
     res.json({ success: true, message: "Expert approved and is now live", data });
@@ -776,14 +645,13 @@ export const approveExpertAdmin = async (
   }
 };
 
-export const rejectExpertAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const rejectExpertAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     const reason = req.body?.reason;
     if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
-      res.status(400).json({ success: false, message: "A rejection reason (min 5 characters) is required" });
+      res
+        .status(400)
+        .json({ success: false, message: "A rejection reason (min 5 characters) is required" });
       return;
     }
     const data = await rejectExpert(req.params.expertId as string, reason);
@@ -795,9 +663,7 @@ export const rejectExpertAdmin = async (
         email: data.email,
         reason: reason.trim(),
         dashboardUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/expert/onboarding`,
-      }).catch((err: unknown) =>
-        log.error("Failed to send expert rejection email:", err),
-      );
+      }).catch((err: unknown) => log.error("Failed to send expert rejection email:", err));
     }
 
     res.json({ success: true, message: "Expert profile rejected", data });

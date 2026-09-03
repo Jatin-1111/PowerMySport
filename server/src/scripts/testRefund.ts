@@ -104,7 +104,7 @@ const run = async () => {
     } catch (err: any) {
       console.log(
         "ORIGINAL_CARD threw an expected error (likely PhonePe auth/config):",
-        err.message,
+        err.message
       );
     }
 

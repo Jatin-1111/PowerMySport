@@ -15,8 +15,7 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
     typeof (error as { response?: unknown }).response === "object" &&
     (error as { response?: unknown }).response !== null
   ) {
-    const response = (error as { response?: { data?: { message?: string } } })
-      .response;
+    const response = (error as { response?: { data?: { message?: string } } }).response;
     if (response?.data?.message) {
       return response.data.message;
     }
@@ -63,31 +62,25 @@ export default function AdminLoginPage() {
       }
     } catch (error) {
       console.error("Admin login failed:", error);
-      toast.error(
-        getErrorMessage(error, "Invalid credentials. Please try again."),
-      );
+      toast.error(getErrorMessage(error, "Invalid credentials. Please try again."));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
       <div className="w-full max-w-md">
         {/* Header Card */}
         <div className="relative mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
           <div className="relative z-10 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
-              <Shield className="w-8 h-8 text-white" />
+            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+              <Shield className="h-8 w-8 text-white" />
             </div>
-            <h1 className="mb-2 text-2xl font-bold sm:text-3xl">
-              Admin Portal
-            </h1>
-            <p className="text-sm text-slate-200">
-              PowerMySport Administration Panel
-            </p>
+            <h1 className="mb-2 text-2xl font-bold sm:text-3xl">Admin Portal</h1>
+            <p className="text-sm text-slate-200">PowerMySport Administration Panel</p>
           </div>
-          <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
+          <div className="bg-power-orange/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
         </div>
 
@@ -95,7 +88,7 @@ export default function AdminLoginPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Email Address
               </label>
               <input
@@ -104,15 +97,13 @@ export default function AdminLoginPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 transition-all"
+                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:ring-2 focus:outline-none"
                 placeholder="teams@powermysport.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Password
-              </label>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -120,13 +111,13 @@ export default function AdminLoginPage() {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 focus:border-power-orange bg-white text-slate-900 transition-all"
+                  className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:ring-2 focus:outline-none"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
@@ -136,11 +127,11 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              className="w-full rounded-lg bg-slate-900 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                   Logging in...
                 </span>
               ) : (
@@ -152,9 +143,9 @@ export default function AdminLoginPage() {
           <div className="mt-6 text-center">
             <Link
               href="/"
-              className="text-sm text-power-orange hover:text-orange-600 inline-flex items-center gap-1 font-medium transition-colors"
+              className="text-power-orange inline-flex items-center gap-1 text-sm font-medium transition-colors hover:text-orange-600"
             >
-              <ArrowLeft className="w-3 h-3" />
+              <ArrowLeft className="h-3 w-3" />
               Back to Main Site
             </Link>
           </div>
@@ -162,7 +153,7 @@ export default function AdminLoginPage() {
 
         {/* Security Notice */}
         <div className="mt-6 text-center">
-          <div className="inline-flex items-center gap-2 text-xs text-slate-600 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs text-slate-600 shadow-sm">
             <Lock size={14} className="text-slate-400" />
             <span>Secure admin access only</span>
           </div>

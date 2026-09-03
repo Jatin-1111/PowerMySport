@@ -2,24 +2,24 @@
 
 import type { Variants } from "framer-motion";
 import {
-    Activity,
-    Compass,
-    CreditCard,
-    Crosshair,
-    Diamond,
-    Flame,
-    Network,
-    Shield,
-    Smile,
-    Sparkles,
-    Sprout,
-    Target,
-    Timer,
-    Trophy,
-    UserCircle2,
-    Users,
-    Wallet,
-    Zap,
+  Activity,
+  Compass,
+  CreditCard,
+  Crosshair,
+  Diamond,
+  Flame,
+  Network,
+  Shield,
+  Smile,
+  Sparkles,
+  Sprout,
+  Target,
+  Timer,
+  Trophy,
+  UserCircle2,
+  Users,
+  Wallet,
+  Zap,
 } from "lucide-react";
 import type { GuidanceFormState } from "./types";
 
@@ -159,7 +159,7 @@ export function isFormValid(form: GuidanceFormState): boolean {
 export function buildLevelPlanQuestion(
   sport: string,
   levelLabel: string,
-  alreadyAtLevel: boolean,
+  alreadyAtLevel: boolean
 ): string {
   return alreadyAtLevel
     ? `My child is already playing ${sport} at the ${levelLabel} level. Based on their profile, what's realistic for us to focus on and achieve over the next 3 months, and what would tell us they're ready to progress to the next level?`

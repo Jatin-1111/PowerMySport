@@ -16,26 +16,18 @@ if (!rawEncryptionKey || ENCRYPTION_KEY.length !== 32) {
     throw new Error("FATAL: BANK_ENCRYPTION_KEY must be a 32-byte hex string.");
   }
   log.warn(
-    "WARNING: BANK_ENCRYPTION_KEY is missing or invalid. Financial fields will not be encrypted correctly.",
+    "WARNING: BANK_ENCRYPTION_KEY is missing or invalid. Financial fields will not be encrypted correctly."
   );
 }
 
-export const isEncryptedValue = (value: string): boolean =>
-  value.split(":").length === 3;
+export const isEncryptedValue = (value: string): boolean => value.split(":").length === 3;
 
 export const encryptValue = (plaintext: string): string => {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
-    cipher.final(),
-  ]);
+  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
-  return [
-    iv.toString("hex"),
-    tag.toString("hex"),
-    encrypted.toString("hex"),
-  ].join(":");
+  return [iv.toString("hex"), tag.toString("hex"), encrypted.toString("hex")].join(":");
 };
 
 export const decryptValue = (ciphertext: string): string => {
@@ -55,9 +47,7 @@ export const decryptValue = (ciphertext: string): string => {
     const enc = Buffer.from(encHex, "hex");
     const decipher = crypto.createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
     decipher.setAuthTag(tag);
-    return Buffer.concat([decipher.update(enc), decipher.final()]).toString(
-      "utf8",
-    );
+    return Buffer.concat([decipher.update(enc), decipher.final()]).toString("utf8");
   } catch {
     return ciphertext;
   }

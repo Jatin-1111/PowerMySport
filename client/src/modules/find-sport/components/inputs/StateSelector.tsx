@@ -14,25 +14,23 @@ export function StateSelector({
   const [query, setQuery] = useState("");
 
   const filtered = query.trim()
-    ? INDIAN_STATES_AND_UTS.filter((s) =>
-        s.toLowerCase().includes(query.toLowerCase()),
-      )
+    ? INDIAN_STATES_AND_UTS.filter((s) => s.toLowerCase().includes(query.toLowerCase()))
     : INDIAN_STATES_AND_UTS;
 
   return (
     <div className="space-y-3">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
           placeholder="Search your state..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-power-orange focus:ring-1 focus:ring-power-orange/20"
+          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-9 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
         />
       </div>
 
-      <div className="flex flex-wrap gap-2 max-h-[calc(100vh-360px)] overflow-y-auto pr-1">
+      <div className="flex max-h-[calc(100vh-360px)] flex-wrap gap-2 overflow-y-auto pr-1">
         {filtered.map((s) => {
           const selected = value === s;
           return (
@@ -40,7 +38,7 @@ export function StateSelector({
               key={s}
               type="button"
               onClick={() => onChange(s)}
-              className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-150 ${
+              className={`rounded-full border-2 px-4 py-2 text-sm font-medium transition-all duration-150 ${
                 selected
                   ? "border-power-orange bg-power-orange/5 text-power-orange"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"

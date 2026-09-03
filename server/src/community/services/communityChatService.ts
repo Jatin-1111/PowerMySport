@@ -1,27 +1,11 @@
-import {
-  User,
-} from "../../client/models/User";
+import { User } from "../../client/models/User";
 import OutboxMessage from "../../shared/models/OutboxMessage";
-import {
-  CommunityConversation,
-} from "../models/CommunityConversation";
-import {
-  CommunityGroup,
-} from "../models/CommunityGroup";
-import {
-  CommunityMessage,
-  type CommunityMessageType,
-} from "../models/CommunityMessage";
-import {
-  CommunityMessageReaction,
-} from "../models/CommunityMessageReaction";
-import {
-  CommunityProfile,
-} from "../models/CommunityProfile";
-import {
-  getMemberRole,
-  isGroupAdmin,
-} from "./communityGroupMembership";
+import { CommunityConversation } from "../models/CommunityConversation";
+import { CommunityGroup } from "../models/CommunityGroup";
+import { CommunityMessage, type CommunityMessageType } from "../models/CommunityMessage";
+import { CommunityMessageReaction } from "../models/CommunityMessageReaction";
+import { CommunityProfile } from "../models/CommunityProfile";
+import { getMemberRole, isGroupAdmin } from "./communityGroupMembership";
 import {
   COMMUNITY_INTERACTION_POLICY,
   ROLE_LABEL,
@@ -71,7 +55,7 @@ export const communityChatService = {
     if (isCrossRoleInteraction(requesterRole, targetRole)) {
       ensurePolicyAllowed(
         COMMUNITY_INTERACTION_POLICY.allowCrossRoleDm,
-        `Direct messages between ${ROLE_LABEL[requesterRole]} and ${ROLE_LABEL[targetRole]} accounts are currently disabled`,
+        `Direct messages between ${ROLE_LABEL[requesterRole]} and ${ROLE_LABEL[targetRole]} accounts are currently disabled`
       );
       trackCommunityRoleMixEvent("dm_cross_role_start", {
         requesterRole,
@@ -101,8 +85,7 @@ export const communityChatService = {
       };
     }
 
-    const initialStatus =
-      targetProfile.messagePrivacy === "REQUEST_ONLY" ? "PENDING" : "ACTIVE";
+    const initialStatus = targetProfile.messagePrivacy === "REQUEST_ONLY" ? "PENDING" : "ACTIVE";
 
     const conversation = await CommunityConversation.findOneAndUpdate(
       { participantKey },
@@ -116,7 +99,7 @@ export const communityChatService = {
           lastMessageAt: new Date(),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
 
     if (!conversation) {
@@ -126,9 +109,7 @@ export const communityChatService = {
     if (targetUserId !== userId) {
       sendCommunityNotification(
         targetUserId,
-        initialStatus === "PENDING"
-          ? "New message request"
-          : "New conversation started",
+        initialStatus === "PENDING" ? "New message request" : "New conversation started",
         initialStatus === "PENDING"
           ? "Someone wants to connect with you in community chat."
           : "Someone started a conversation with you.",
@@ -139,7 +120,7 @@ export const communityChatService = {
               : "COMMUNITY_CONVERSATION_STARTED",
           conversationId: String(conversation._id),
           actorUserId: userId,
-        },
+        }
       );
     }
 
@@ -162,7 +143,7 @@ export const communityChatService = {
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participantId) => String(participantId) === userId
     );
     if (!isParticipant) {
       throw new Error("Access denied");
@@ -184,7 +165,7 @@ export const communityChatService = {
           event: "COMMUNITY_CONVERSATION_ACCEPTED",
           conversationId: String(conversation._id),
           actorUserId: userId,
-        },
+        }
       );
     }
 
@@ -202,7 +183,7 @@ export const communityChatService = {
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participantId) => String(participantId) === userId
     );
     if (!isParticipant) {
       throw new Error("Access denied");
@@ -221,7 +202,7 @@ export const communityChatService = {
         event: "COMMUNITY_CONVERSATION_REJECTED",
         conversationId: String(conversation._id),
         actorUserId: userId,
-      },
+      }
     );
 
     await Promise.all([
@@ -265,7 +246,7 @@ export const communityChatService = {
       mode?: "ALL" | "UNREAD" | "REQUESTS";
       type?: "ALL" | "CONTACTS" | "GROUPS";
       search?: string;
-    },
+    }
   ) {
     await ensureProfile(userId);
 
@@ -318,10 +299,7 @@ export const communityChatService = {
         .lean();
       total = conversations.length;
     } else if (mode === "UNREAD") {
-      const idOnly = await CommunityConversation.find(
-        conversationQuery,
-        { _id: 1 },
-      ).lean();
+      const idOnly = await CommunityConversation.find(conversationQuery, { _id: 1 }).lean();
       const unreadAgg = await CommunityMessage.aggregate([
         {
           $match: {
@@ -364,13 +342,12 @@ export const communityChatService = {
     }
 
     const dmConversations = conversations.filter(
-      (conversation) => conversation.conversationType !== "GROUP",
+      (conversation) => conversation.conversationType !== "GROUP"
     );
 
     const otherParticipantIds = dmConversations.map((conversation) => {
       const other = conversation.participants.find(
-        (participantId: mongoose.Types.ObjectId) =>
-          String(participantId) !== userId,
+        (participantId: mongoose.Types.ObjectId) => String(participantId) !== userId
       );
       return String(other);
     });
@@ -385,9 +362,7 @@ export const communityChatService = {
         .select("_id name photoUrl photoS3Key")
         .lean(),
       CommunityProfile.find({ userId: { $in: otherParticipantIds } })
-        .select(
-          "userId anonymousAlias isIdentityPublic lastSeenVisible lastSeenAt",
-        )
+        .select("userId anonymousAlias isIdentityPublic lastSeenVisible lastSeenAt")
         .lean(),
       CommunityMessage.aggregate([
         {
@@ -430,17 +405,10 @@ export const communityChatService = {
     ]);
 
     const userMap = new Map(users.map((user) => [String(user._id), user]));
-    const profileMap = new Map(
-      profiles.map((profile) => [String(profile.userId), profile]),
-    );
-    const messageMap = new Map(
-      latestMessages.map((message) => [String(message._id), message]),
-    );
+    const profileMap = new Map(profiles.map((profile) => [String(profile.userId), profile]));
+    const messageMap = new Map(latestMessages.map((message) => [String(message._id), message]));
     const unreadMap = new Map(
-      unreadStats.map((item) => [
-        String(item._id),
-        Number(item.unreadCount) || 0,
-      ]),
+      unreadStats.map((item) => [String(item._id), Number(item.unreadCount) || 0])
     );
     const groupMap = new Map(groups.map((group) => [String(group._id), group]));
 
@@ -449,16 +417,13 @@ export const communityChatService = {
         const conversationType = conversation.conversationType || "DM";
         const otherId = String(
           conversation.participants.find(
-            (participantId: mongoose.Types.ObjectId) =>
-              String(participantId) !== userId,
-          ),
+            (participantId: mongoose.Types.ObjectId) => String(participantId) !== userId
+          )
         );
         const otherUser = userMap.get(otherId);
         const otherProfile = profileMap.get(otherId);
         const latest = messageMap.get(String(conversation._id));
-        const group = conversation.groupId
-          ? groupMap.get(String(conversation.groupId))
-          : null;
+        const group = conversation.groupId ? groupMap.get(String(conversation.groupId)) : null;
         const groupMemberCount = group?.memberCount || 0;
 
         return {
@@ -467,8 +432,7 @@ export const communityChatService = {
           status: conversation.status,
           requestedBy: String(conversation.requestedBy),
           otherParticipant: {
-            id:
-              conversationType === "GROUP" ? String(group?._id || "") : otherId,
+            id: conversationType === "GROUP" ? String(group?._id || "") : otherId,
             displayName:
               conversationType === "GROUP"
                 ? group?.name || "Community Group"
@@ -476,9 +440,7 @@ export const communityChatService = {
                   ? otherUser?.name || "Player"
                   : otherProfile?.anonymousAlias || "Anonymous Player",
             isIdentityPublic:
-              conversationType === "GROUP"
-                ? true
-                : (otherProfile?.isIdentityPublic ?? true),
+              conversationType === "GROUP" ? true : (otherProfile?.isIdentityPublic ?? true),
             photoUrl:
               conversationType === "GROUP"
                 ? null
@@ -512,8 +474,7 @@ export const communityChatService = {
                     ? "📷 Image"
                     : // Falling through to `content` for FILE/VOICE would put
                       // an S3 object key in the conversation list.
-                      describeNonTextMessage(latest.type, latest.metadata) ||
-                      latest.content,
+                      describeNonTextMessage(latest.type, latest.metadata) || latest.content,
                 createdAt: latest.createdAt,
                 senderId: String(latest.senderId),
                 type: latest.type || "TEXT",
@@ -522,7 +483,7 @@ export const communityChatService = {
           unreadCount: unreadMap.get(String(conversation._id)) || 0,
           updatedAt: conversation.updatedAt,
         };
-      }),
+      })
     );
 
     const filteredItems = mappedItems.filter((conversation) => {
@@ -530,8 +491,7 @@ export const communityChatService = {
         mode === "UNREAD"
           ? conversation.unreadCount > 0
           : mode === "REQUESTS"
-            ? conversation.status === "PENDING" &&
-              conversation.conversationType !== "GROUP"
+            ? conversation.status === "PENDING" && conversation.conversationType !== "GROUP"
             : true;
 
       if (!modeMatches) {
@@ -542,21 +502,12 @@ export const communityChatService = {
         return true;
       }
 
-      const displayName = conversation.otherParticipant.displayName
-        .toLowerCase()
-        .trim();
-      const latestMessage = (conversation.latestMessage?.content || "")
-        .toLowerCase()
-        .trim();
-      return (
-        displayName.includes(normalizedSearch) ||
-        latestMessage.includes(normalizedSearch)
-      );
+      const displayName = conversation.otherParticipant.displayName.toLowerCase().trim();
+      const latestMessage = (conversation.latestMessage?.content || "").toLowerCase().trim();
+      return displayName.includes(normalizedSearch) || latestMessage.includes(normalizedSearch);
     });
 
-    const pagedItems = needsFullFetch
-      ? filteredItems.slice(skip, skip + safeLimit)
-      : filteredItems;
+    const pagedItems = needsFullFetch ? filteredItems.slice(skip, skip + safeLimit) : filteredItems;
     const effectiveTotal = needsFullFetch ? filteredItems.length : total;
 
     return {
@@ -578,7 +529,7 @@ export const communityChatService = {
       {
         participants: userId,
       },
-      { _id: 1 },
+      { _id: 1 }
     )
       .sort({ updatedAt: -1 })
       .limit(safeLimit)
@@ -596,7 +547,7 @@ export const communityChatService = {
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participantId) => String(participantId) === userId
     );
     if (!isParticipant) {
       throw new Error("Access denied");
@@ -613,9 +564,7 @@ export const communityChatService = {
     if (!unreadMessages.length) {
       return {
         conversationId: String(conversation._id),
-        participantIds: conversation.participants.map((participantId) =>
-          String(participantId),
-        ),
+        participantIds: conversation.participants.map((participantId) => String(participantId)),
         readerId: userId,
         messageIds: [] as string[],
       };
@@ -627,14 +576,12 @@ export const communityChatService = {
       },
       {
         $addToSet: { readBy: new mongoose.Types.ObjectId(userId) },
-      },
+      }
     );
 
     return {
       conversationId: String(conversation._id),
-      participantIds: conversation.participants.map((participantId) =>
-        String(participantId),
-      ),
+      participantIds: conversation.participants.map((participantId) => String(participantId)),
       readerId: userId,
       messageIds: unreadMessages.map((message) => String(message._id)),
     };
@@ -649,7 +596,7 @@ export const communityChatService = {
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participantId) => String(participantId) === userId
     );
     if (!isParticipant) {
       throw new Error("Access denied");
@@ -666,9 +613,7 @@ export const communityChatService = {
     if (!undeliveredMessages.length) {
       return {
         conversationId: String(conversation._id),
-        participantIds: conversation.participants.map((participantId) =>
-          String(participantId),
-        ),
+        participantIds: conversation.participants.map((participantId) => String(participantId)),
         readerId: userId,
         messageIds: [] as string[],
       };
@@ -680,33 +625,25 @@ export const communityChatService = {
       },
       {
         $addToSet: { deliveredTo: new mongoose.Types.ObjectId(userId) },
-      },
+      }
     );
 
     return {
       conversationId: String(conversation._id),
-      participantIds: conversation.participants.map((participantId) =>
-        String(participantId),
-      ),
+      participantIds: conversation.participants.map((participantId) => String(participantId)),
       readerId: userId,
       messageIds: undeliveredMessages.map((message) => String(message._id)),
     };
   },
 
-  async getMessages(
-    userId: string,
-    conversationId: string,
-    page = 1,
-    limit = 30,
-  ) {
-    const conversation =
-      await CommunityConversation.findById(conversationId).lean();
+  async getMessages(userId: string, conversationId: string, page = 1, limit = 30) {
+    const conversation = await CommunityConversation.findById(conversationId).lean();
     if (!conversation) {
       throw new Error("Conversation not found");
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participantId) => String(participantId) === userId
     );
     if (!isParticipant) {
       throw new Error("Access denied");
@@ -724,48 +661,45 @@ export const communityChatService = {
     const allParticipantIds = conversation.participants.map((id) => String(id));
     const conversationType = conversation.conversationType || "DM";
     const replyTargetIds = messages.flatMap((message) =>
-      message.replyToId ? [message.replyToId] : [],
+      message.replyToId ? [message.replyToId] : []
     );
 
     // None of these five depend on each other — only on `messages`/
     // `conversation`, both already resolved above — so they run concurrently
     // instead of as five sequential round trips.
-    const [users, profiles, reactionRows, replyTargets, group] =
-      await Promise.all([
-        User.find({ _id: { $in: allParticipantIds } })
-          .select("_id name photoUrl photoS3Key")
-          .lean(),
-        CommunityProfile.find({ userId: { $in: allParticipantIds } })
-          .select("userId anonymousAlias isIdentityPublic readReceiptsEnabled")
-          .lean(),
-        // One query for the whole page's reactions, grouped client-side below.
-        CommunityMessageReaction.find({
-          messageId: { $in: messages.map((message) => message._id) },
-        })
-          .select("messageId userId emoji")
-          .lean(),
-        // One query for every quoted message on the page, rather than a
-        // lookup per message. Quotes are resolved live rather than
-        // snapshotted at send time, so an edit to the original shows through
-        // and a deletion is visible.
-        replyTargetIds.length
-          ? CommunityMessage.find({ _id: { $in: replyTargetIds } })
-              .select("_id senderId type content isDeleted metadata")
-              .lean()
-          : Promise.resolve([]),
-        conversationType === "GROUP" && conversation.groupId
-          ? CommunityGroup.findById(conversation.groupId)
-              .select(
-                "_id name description visibility sport city memberCount postPolicy pinnedMessageId",
-              )
-              .lean()
-          : Promise.resolve(null),
-      ]);
+    const [users, profiles, reactionRows, replyTargets, group] = await Promise.all([
+      User.find({ _id: { $in: allParticipantIds } })
+        .select("_id name photoUrl photoS3Key")
+        .lean(),
+      CommunityProfile.find({ userId: { $in: allParticipantIds } })
+        .select("userId anonymousAlias isIdentityPublic readReceiptsEnabled")
+        .lean(),
+      // One query for the whole page's reactions, grouped client-side below.
+      CommunityMessageReaction.find({
+        messageId: { $in: messages.map((message) => message._id) },
+      })
+        .select("messageId userId emoji")
+        .lean(),
+      // One query for every quoted message on the page, rather than a
+      // lookup per message. Quotes are resolved live rather than
+      // snapshotted at send time, so an edit to the original shows through
+      // and a deletion is visible.
+      replyTargetIds.length
+        ? CommunityMessage.find({ _id: { $in: replyTargetIds } })
+            .select("_id senderId type content isDeleted metadata")
+            .lean()
+        : Promise.resolve([]),
+      conversationType === "GROUP" && conversation.groupId
+        ? CommunityGroup.findById(conversation.groupId)
+            .select(
+              "_id name description visibility sport city memberCount postPolicy pinnedMessageId"
+            )
+            .lean()
+        : Promise.resolve(null),
+    ]);
 
     const userMap = new Map(users.map((user) => [String(user._id), user]));
-    const profileMap = new Map(
-      profiles.map((profile) => [String(profile.userId), profile]),
-    );
+    const profileMap = new Map(profiles.map((profile) => [String(profile.userId), profile]));
 
     const reactionsByMessage = new Map<
       string,
@@ -777,8 +711,7 @@ export const communityChatService = {
       const existing = bucket.find((item) => item.emoji === reaction.emoji);
       if (existing) {
         existing.count += 1;
-        existing.reactedByMe =
-          existing.reactedByMe || String(reaction.userId) === userId;
+        existing.reactedByMe = existing.reactedByMe || String(reaction.userId) === userId;
       } else {
         bucket.push({
           emoji: reaction.emoji,
@@ -789,9 +722,7 @@ export const communityChatService = {
       reactionsByMessage.set(key, bucket);
     }
 
-    const replyTargetMap = new Map(
-      replyTargets.map((target) => [String(target._id), target]),
-    );
+    const replyTargetMap = new Map(replyTargets.map((target) => [String(target._id), target]));
 
     const shapeReplyPreview = (replyToId?: mongoose.Types.ObjectId | null) => {
       if (!replyToId) {
@@ -857,7 +788,7 @@ export const communityChatService = {
         metadata: normalizeMessageMetadata(message.metadata),
         replyTo: shapeReplyPreview(message.replyToId),
         reactions: (reactionsByMessage.get(String(message._id)) || []).sort(
-          (a, b) => b.count - a.count,
+          (a, b) => b.count - a.count
         ),
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,
@@ -886,15 +817,12 @@ export const communityChatService = {
                 city: group?.city || "",
                 memberCount: group?.memberCount || 0,
                 postPolicy: group?.postPolicy || "ANY_MEMBER",
-                pinnedMessageId: group?.pinnedMessageId
-                  ? String(group.pinnedMessageId)
-                  : null,
+                pinnedMessageId: group?.pinnedMessageId ? String(group.pinnedMessageId) : null,
                 // Whether *this* viewer may post, so the composer can be
                 // disabled without the client re-deriving the rule.
                 canPost:
                   group?.postPolicy === "ADMIN_ONLY"
-                    ? (await getMemberRole(String(group._id), userId)) ===
-                      "ADMIN"
+                    ? (await getMemberRole(String(group._id), userId)) === "ADMIN"
                     : true,
               }
             : null,
@@ -924,7 +852,7 @@ export const communityChatService = {
         waveform?: number[];
       };
       replyToId?: string;
-    },
+    }
   ) {
     const conversation = await CommunityConversation.findById(conversationId);
     if (!conversation) {
@@ -932,7 +860,7 @@ export const communityChatService = {
     }
 
     const isParticipant = conversation.participants.some(
-      (participantId) => String(participantId) === userId,
+      (participantId) => String(participantId) === userId
     );
     if (!isParticipant) {
       throw new Error("Access denied");
@@ -942,9 +870,7 @@ export const communityChatService = {
       // Announcement groups: everyone reads, only admins post. Checked here
       // rather than in the UI because the socket send path bypasses any
       // client-side gate.
-      const group = await CommunityGroup.findById(conversation.groupId)
-        .select("postPolicy")
-        .lean();
+      const group = await CommunityGroup.findById(conversation.groupId).select("postPolicy").lean();
       if (group?.postPolicy === "ADMIN_ONLY") {
         const role = await getMemberRole(String(conversation.groupId), userId);
         if (role !== "ADMIN") {
@@ -955,9 +881,7 @@ export const communityChatService = {
 
     if (conversation.conversationType !== "GROUP") {
       const otherParticipantId = String(
-        conversation.participants.find(
-          (participantId) => String(participantId) !== userId,
-        ),
+        conversation.participants.find((participantId) => String(participantId) !== userId)
       );
 
       const otherProfile = await ensureProfile(otherParticipantId);
@@ -971,10 +895,7 @@ export const communityChatService = {
       }
     }
 
-    if (
-      conversation.status === "PENDING" &&
-      conversation.conversationType !== "GROUP"
-    ) {
+    if (conversation.status === "PENDING" && conversation.conversationType !== "GROUP") {
       const requester = String(conversation.requestedBy);
       if (requester !== userId) {
         throw new Error("Please accept this message request first");
@@ -1024,12 +945,8 @@ export const communityChatService = {
         .lean(),
     ]);
 
-    const sender = participants.find(
-      (participant) => String(participant._id) === userId,
-    );
-    const senderProfile = profiles.find(
-      (profile) => String(profile.userId) === userId,
-    );
+    const sender = participants.find((participant) => String(participant._id) === userId);
+    const senderProfile = profiles.find((profile) => String(profile.userId) === userId);
 
     const senderDisplayName = senderProfile?.isIdentityPublic
       ? sender?.name || "Player"
@@ -1063,9 +980,7 @@ export const communityChatService = {
       for (const participantId of otherParticipantIds) {
         sendCommunityNotification(
           participantId,
-          conversation.conversationType === "GROUP"
-            ? "New group message"
-            : "New message",
+          conversation.conversationType === "GROUP" ? "New group message" : "New message",
           messageType === "IMAGE"
             ? `${senderDisplayName} shared an image in community chat.`
             : `${senderDisplayName} sent you a message in community chat.`,
@@ -1075,7 +990,7 @@ export const communityChatService = {
             messageId: String(message._id),
             actorUserId: userId,
             conversationType: conversation.conversationType || "DM",
-          },
+          }
         );
       }
     }
@@ -1093,10 +1008,10 @@ export const communityChatService = {
           }
           const targetSenderId = String(target.senderId);
           const targetProfile = profiles.find(
-            (profile) => String(profile.userId) === targetSenderId,
+            (profile) => String(profile.userId) === targetSenderId
           );
           const targetUser = participants.find(
-            (participant) => String(participant._id) === targetSenderId,
+            (participant) => String(participant._id) === targetSenderId
           );
           return {
             id: String(target._id),
@@ -1130,9 +1045,7 @@ export const communityChatService = {
       isEdited: false,
       isDeleted: false,
       readBy: [String(message.senderId)],
-      participantIds: conversation.participants.map((participantId) =>
-        String(participantId),
-      ),
+      participantIds: conversation.participants.map((participantId) => String(participantId)),
     };
   },
 
@@ -1155,10 +1068,7 @@ export const communityChatService = {
     }
 
     // Reacting is participation, so it needs the same access check as reading.
-    await assertConversationAccess(
-      userId,
-      String(message.conversationId),
-    );
+    await assertConversationAccess(userId, String(message.conversationId));
 
     const existing = await CommunityMessageReaction.findOne({
       messageId: message._id,
@@ -1170,10 +1080,7 @@ export const communityChatService = {
     if (existing && existing.emoji === trimmed) {
       await CommunityMessageReaction.deleteOne({ _id: existing._id });
     } else if (existing) {
-      await CommunityMessageReaction.updateOne(
-        { _id: existing._id },
-        { $set: { emoji: trimmed } },
-      );
+      await CommunityMessageReaction.updateOne({ _id: existing._id }, { $set: { emoji: trimmed } });
     } else {
       await CommunityMessageReaction.updateOne(
         { messageId: message._id, userId },
@@ -1185,7 +1092,7 @@ export const communityChatService = {
           },
           $set: { emoji: trimmed },
         },
-        { upsert: true },
+        { upsert: true }
       );
     }
 
@@ -1195,14 +1102,12 @@ export const communityChatService = {
       .select("userId emoji")
       .lean();
 
-    const grouped: { emoji: string; count: number; reactedByMe: boolean }[] =
-      [];
+    const grouped: { emoji: string; count: number; reactedByMe: boolean }[] = [];
     for (const row of rows) {
       const bucket = grouped.find((item) => item.emoji === row.emoji);
       if (bucket) {
         bucket.count += 1;
-        bucket.reactedByMe =
-          bucket.reactedByMe || String(row.userId) === userId;
+        bucket.reactedByMe = bucket.reactedByMe || String(row.userId) === userId;
       } else {
         grouped.push({
           emoji: row.emoji,
@@ -1232,9 +1137,7 @@ export const communityChatService = {
       throw new Error("Message not found");
     }
 
-    const conversation = await CommunityConversation.findById(
-      message.conversationId,
-    )
+    const conversation = await CommunityConversation.findById(message.conversationId)
       .select("groupId conversationType")
       .lean();
     if (!conversation?.groupId) {
@@ -1246,15 +1149,12 @@ export const communityChatService = {
       throw new Error("Only group admins can pin a message");
     }
 
-    const group = await CommunityGroup.findById(groupId).select(
-      "pinnedMessageId",
-    );
+    const group = await CommunityGroup.findById(groupId).select("pinnedMessageId");
     if (!group) {
       throw new Error("Group not found");
     }
 
-    const alreadyPinned =
-      String(group.pinnedMessageId || "") === String(message._id);
+    const alreadyPinned = String(group.pinnedMessageId || "") === String(message._id);
     group.pinnedMessageId = alreadyPinned ? null : message._id;
     await group.save();
 
@@ -1263,9 +1163,7 @@ export const communityChatService = {
       conversationId: String(message.conversationId),
       messageId: String(message._id),
       pinned: !alreadyPinned,
-      pinnedMessageId: group.pinnedMessageId
-        ? String(group.pinnedMessageId)
-        : null,
+      pinnedMessageId: group.pinnedMessageId ? String(group.pinnedMessageId) : null,
     };
   },
 
@@ -1284,10 +1182,7 @@ export const communityChatService = {
       throw new Error("Deleted messages cannot be edited");
     }
 
-    if (
-      Date.now() - message.createdAt.getTime() >
-      MESSAGE_EDIT_DELETE_WINDOW_MS
-    ) {
+    if (Date.now() - message.createdAt.getTime() > MESSAGE_EDIT_DELETE_WINDOW_MS) {
       throw new Error("Message edit window has expired");
     }
 
@@ -1300,9 +1195,7 @@ export const communityChatService = {
     message.editedAt = new Date();
     await message.save();
 
-    const conversation = await CommunityConversation.findById(
-      message.conversationId,
-    )
+    const conversation = await CommunityConversation.findById(message.conversationId)
       .select("participants conversationType")
       .lean();
 
@@ -1310,9 +1203,7 @@ export const communityChatService = {
       throw new Error("Conversation not found");
     }
 
-    const participants = conversation.participants.map((participantId) =>
-      String(participantId),
-    );
+    const participants = conversation.participants.map((participantId) => String(participantId));
 
     return {
       id: String(message._id),
@@ -1347,10 +1238,7 @@ export const communityChatService = {
       throw new Error("Message already deleted");
     }
 
-    if (
-      Date.now() - message.createdAt.getTime() >
-      MESSAGE_EDIT_DELETE_WINDOW_MS
-    ) {
+    if (Date.now() - message.createdAt.getTime() > MESSAGE_EDIT_DELETE_WINDOW_MS) {
       throw new Error("Message delete window has expired");
     }
 
@@ -1368,12 +1256,10 @@ export const communityChatService = {
     // no banner.
     await CommunityGroup.updateOne(
       { pinnedMessageId: message._id },
-      { $set: { pinnedMessageId: null } },
+      { $set: { pinnedMessageId: null } }
     );
 
-    const conversation = await CommunityConversation.findById(
-      message.conversationId,
-    )
+    const conversation = await CommunityConversation.findById(message.conversationId)
       .select("participants conversationType")
       .lean();
 
@@ -1381,9 +1267,7 @@ export const communityChatService = {
       throw new Error("Conversation not found");
     }
 
-    const participants = conversation.participants.map((participantId) =>
-      String(participantId),
-    );
+    const participants = conversation.participants.map((participantId) => String(participantId));
 
     return {
       id: String(message._id),

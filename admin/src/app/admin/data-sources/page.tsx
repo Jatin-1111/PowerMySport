@@ -12,7 +12,14 @@ import {
 } from "@/modules/admin/services/admin";
 import { SUPPORTED_SPORT_NAMES } from "@/modules/sports/config/supportedSports";
 import { Card } from "@/modules/shared/ui/Card";
-import { CalendarClock, ChevronLeft, ChevronRight, Link as LinkIcon, Plus, Upload } from "lucide-react";
+import {
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  Link as LinkIcon,
+  Plus,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
@@ -46,7 +53,11 @@ export default function AdminDataSourcesPage() {
   const [statusFilter, setStatusFilter] = useState<DataSourceStatus | "ALL">("ALL");
   const [targetTypeFilter, setTargetTypeFilter] = useState<DataSourceTargetType | "ALL">("ALL");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState<PaginationData>({ total: 0, page: 1, totalPages: 1 });
+  const [pagination, setPagination] = useState<PaginationData>({
+    total: 0,
+    page: 1,
+    totalPages: 1,
+  });
   const PAGE_SIZE = 15;
 
   const [showAddForm, setShowAddForm] = useState(false);
@@ -94,7 +105,7 @@ export default function AdminDataSourcesPage() {
         action={
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
+            className="bg-power-orange inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <Plus size={16} /> Add Source
           </button>
@@ -148,14 +159,14 @@ export default function AdminDataSourcesPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12">Loading data sources...</div>
+        <div className="py-12 text-center">Loading data sources...</div>
       ) : error ? (
         <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
+          <div className="space-y-3 py-10 text-center">
+            <p className="font-semibold text-red-600">{error}</p>
             <button
               onClick={load}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
             >
               Retry
             </button>
@@ -205,7 +216,7 @@ export default function AdminDataSourcesPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -215,7 +226,7 @@ export default function AdminDataSourcesPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
                 disabled={currentPage === pagination.totalPages}
-                className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronRight size={18} />
               </button>
@@ -235,10 +246,16 @@ function freshnessBadge(lastCheckedAt: string | null): { label: string; classNam
   }
   const days = Math.floor((Date.now() - new Date(lastCheckedAt).getTime()) / (24 * 60 * 60 * 1000));
   if (days < FRESHNESS_THRESHOLDS.freshDays) {
-    return { label: `${days}d ago`, className: "bg-green-100 text-green-700 border border-green-200" };
+    return {
+      label: `${days}d ago`,
+      className: "bg-green-100 text-green-700 border border-green-200",
+    };
   }
   if (days < FRESHNESS_THRESHOLDS.agingDays) {
-    return { label: `${days}d ago`, className: "bg-yellow-100 text-yellow-700 border border-yellow-200" };
+    return {
+      label: `${days}d ago`,
+      className: "bg-yellow-100 text-yellow-700 border border-yellow-200",
+    };
   }
   return { label: `${days}d ago`, className: "bg-red-100 text-red-700 border border-red-200" };
 }
@@ -263,13 +280,13 @@ function CalendarFreshnessCard() {
     <Card className="bg-white">
       <div className="mb-3 flex items-center gap-2">
         <CalendarClock size={16} className="text-slate-500" />
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+        <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">
           Tournament Calendar Freshness
         </h2>
       </div>
       <p className="mb-3 text-xs text-slate-500">
-        There's no longer an automatic refresh — this shows how long it's been since each sport's calendar was
-        last updated by an approved Tournament Calendar source.
+        There's no longer an automatic refresh — this shows how long it's been since each sport's
+        calendar was last updated by an approved Tournament Calendar source.
       </p>
       <div className="flex flex-wrap gap-2">
         {rows.map((row) => {
@@ -288,13 +305,7 @@ function CalendarFreshnessCard() {
   );
 }
 
-function AddSourceForm({
-  onCreated,
-  onCancel,
-}: {
-  onCreated: () => void;
-  onCancel: () => void;
-}) {
+function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () => void }) {
   const [targetType, setTargetType] = useState<DataSourceTargetType>("FEDERATION");
   const [sportName, setSportName] = useState(SUPPORTED_SPORT_NAMES[0]);
   const [targets, setTargets] = useState<DataSourceTargetOption[]>([]);
@@ -335,7 +346,11 @@ function AddSourceForm({
   };
 
   const handleSubmit = async () => {
-    if (targetType === "FEDERATION" && selectedTargetSlug === "__new__" && !newFederationSlug.trim()) {
+    if (
+      targetType === "FEDERATION" &&
+      selectedTargetSlug === "__new__" &&
+      !newFederationSlug.trim()
+    ) {
       toast.error("Enter a federation slug (e.g. bai).");
       return;
     }
@@ -404,12 +419,12 @@ function AddSourceForm({
   };
 
   return (
-    <Card className="bg-white space-y-4">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">New Data Source</h2>
+    <Card className="space-y-4 bg-white">
+      <h2 className="text-sm font-bold tracking-wide text-slate-500 uppercase">New Data Source</h2>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
             Target Type
           </label>
           <select
@@ -426,7 +441,7 @@ function AddSourceForm({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
             Sport
           </label>
           <select
@@ -448,7 +463,7 @@ function AddSourceForm({
 
       {needsTarget && (
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
             {targetType === "FEDERATION" ? "Federation" : "Tournament"}
           </label>
           <select
@@ -483,7 +498,7 @@ function AddSourceForm({
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
           Source
         </label>
         <div className="mb-2 flex gap-2">
@@ -491,7 +506,9 @@ function AddSourceForm({
             type="button"
             onClick={() => setSourceKind("LINK")}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              sourceKind === "LINK" ? "bg-power-orange text-white" : "border border-slate-300 text-slate-700"
+              sourceKind === "LINK"
+                ? "bg-power-orange text-white"
+                : "border border-slate-300 text-slate-700"
             }`}
           >
             Link
@@ -500,7 +517,9 @@ function AddSourceForm({
             type="button"
             onClick={() => setSourceKind("PDF")}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              sourceKind === "PDF" ? "bg-power-orange text-white" : "border border-slate-300 text-slate-700"
+              sourceKind === "PDF"
+                ? "bg-power-orange text-white"
+                : "border border-slate-300 text-slate-700"
             }`}
           >
             PDF Upload

@@ -108,10 +108,7 @@ const normalizeDayHours = (dayHours: DayHours): DayHours => {
   };
 };
 
-export default function OpeningHoursInput({
-  value,
-  onChange,
-}: OpeningHoursInputProps) {
+export default function OpeningHoursInput({ value, onChange }: OpeningHoursInputProps) {
   const handleDayToggle = (day: keyof OpeningHours) => {
     const current = normalizeDayHours(value[day]);
     const isOpening = !current.isOpen;
@@ -133,11 +130,11 @@ export default function OpeningHoursInput({
     day: keyof OpeningHours,
     slotIndex: number,
     field: keyof DaySlot,
-    time: string,
+    time: string
   ) => {
     const current = normalizeDayHours(value[day]);
     const nextSlots = (current.slots || []).map((slot, index) =>
-      index === slotIndex ? { ...slot, [field]: time } : slot,
+      index === slotIndex ? { ...slot, [field]: time } : slot
     );
 
     const normalized = normalizeDayHours({
@@ -181,10 +178,7 @@ export default function OpeningHoursInput({
       ...value,
       [day]: normalizeDayHours({
         ...current,
-        slots:
-          nextSlots.length > 0
-            ? nextSlots
-            : [{ startTime: "09:00", endTime: "21:00" }],
+        slots: nextSlots.length > 0 ? nextSlots : [{ startTime: "09:00", endTime: "21:00" }],
       }),
     });
   };
@@ -204,13 +198,11 @@ export default function OpeningHoursInput({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-semibold text-slate-900">
-          Opening Hours
-        </label>
+        <label className="block text-sm font-semibold text-slate-900">Opening Hours</label>
         <button
           type="button"
           onClick={copyToAllDays}
-          className="text-sm text-power-orange hover:text-orange-600 font-semibold"
+          className="text-power-orange text-sm font-semibold hover:text-orange-600"
         >
           Copy Monday to all days
         </button>
@@ -220,28 +212,23 @@ export default function OpeningHoursInput({
         {DAYS.map(({ key, label }) => {
           const dayHours = normalizeDayHours(value[key]);
           return (
-            <div
-              key={key}
-              className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3"
-            >
+            <div key={key} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={dayHours.isOpen}
                     onChange={() => handleDayToggle(key)}
-                    className="h-4 w-4 rounded accent-power-orange"
+                    className="accent-power-orange h-4 w-4 rounded"
                   />
-                  <span className="text-sm font-medium text-slate-700">
-                    {label}
-                  </span>
+                  <span className="text-sm font-medium text-slate-700">{label}</span>
                 </div>
 
                 {dayHours.isOpen && (
                   <button
                     type="button"
                     onClick={() => addSlot(key)}
-                    className="text-sm font-semibold text-power-orange hover:text-orange-600"
+                    className="text-power-orange text-sm font-semibold hover:text-orange-600"
                   >
                     Add slot
                   </button>
@@ -251,36 +238,23 @@ export default function OpeningHoursInput({
               {dayHours.isOpen ? (
                 <div className="space-y-2">
                   {(dayHours.slots || []).map((slot, slotIndex) => (
-                    <div
-                      key={`${key}-${slotIndex}`}
-                      className="flex items-center gap-2"
-                    >
+                    <div key={`${key}-${slotIndex}`} className="flex items-center gap-2">
                       <input
                         type="time"
                         value={slot.startTime}
                         onChange={(e) =>
-                          handleSlotTimeChange(
-                            key,
-                            slotIndex,
-                            "startTime",
-                            e.target.value,
-                          )
+                          handleSlotTimeChange(key, slotIndex, "startTime", e.target.value)
                         }
-                        className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2 focus:ring-power-orange"
+                        className="focus:ring-power-orange rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2"
                       />
                       <span className="text-sm text-slate-500">to</span>
                       <input
                         type="time"
                         value={slot.endTime}
                         onChange={(e) =>
-                          handleSlotTimeChange(
-                            key,
-                            slotIndex,
-                            "endTime",
-                            e.target.value,
-                          )
+                          handleSlotTimeChange(key, slotIndex, "endTime", e.target.value)
                         }
-                        className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2 focus:ring-power-orange"
+                        className="focus:ring-power-orange rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2"
                       />
                       {(dayHours.slots || []).length > 1 && (
                         <button

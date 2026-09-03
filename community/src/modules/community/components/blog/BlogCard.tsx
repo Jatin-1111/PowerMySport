@@ -16,11 +16,7 @@ interface BlogCardProps {
   likePending?: boolean;
 }
 
-export default function BlogCard({
-  blog,
-  onToggleLike,
-  likePending,
-}: BlogCardProps) {
+export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardProps) {
   const topic = getBlogTopic(blog.topic);
   const coverUrl = blog.coverImageUrl || "";
 
@@ -32,13 +28,10 @@ export default function BlogCard({
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
       whileHover={{ y: -4 }}
-      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm transition hover:border-power-orange/30 hover:shadow-xl hover:shadow-slate-900/5"
+      className="group hover:border-power-orange/30 flex h-full flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm transition hover:shadow-xl hover:shadow-slate-900/5"
     >
       {/* Cover */}
-      <Link
-        href={`/blog/${blog.id}`}
-        className="relative block aspect-[16/10] overflow-hidden"
-      >
+      <Link href={`/blog/${blog.id}`} className="relative block aspect-[16/10] overflow-hidden">
         {coverUrl ? (
           <img
             src={coverUrl}
@@ -48,7 +41,7 @@ export default function BlogCard({
         ) : (
           <BlogCoverFallback topic={blog.topic} />
         )}
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           <span
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur-sm ${topic.accent}`}
           >
@@ -61,14 +54,12 @@ export default function BlogCard({
       {/* Body */}
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <Link href={`/blog/${blog.id}`} className="block">
-          <h3 className="font-title text-lg font-bold leading-snug text-slate-900 transition-colors line-clamp-2 group-hover:text-power-orange">
+          <h3 className="font-title group-hover:text-power-orange line-clamp-2 text-lg leading-snug font-bold text-slate-900 transition-colors">
             {blog.title}
           </h3>
         </Link>
         {blog.excerpt ? (
-          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-500">
-            {blog.excerpt}
-          </p>
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-500">{blog.excerpt}</p>
         ) : null}
 
         {blog.tags.length > 0 ? (
@@ -94,11 +85,7 @@ export default function BlogCard({
             }
             className="flex min-w-0 items-center gap-2"
           >
-            <AuthorAvatar
-              name={blog.author.name}
-              photoUrl={blog.author.photoUrl}
-              size={34}
-            />
+            <AuthorAvatar name={blog.author.name} photoUrl={blog.author.photoUrl} size={34} />
             <span className="min-w-0">
               <span className="block truncate text-xs font-semibold text-slate-800">
                 {blog.author.name}

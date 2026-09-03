@@ -108,9 +108,7 @@ describe("resolveAccess — the access matrix", () => {
   it("keeps declared public paths open to everyone", () => {
     for (const session of [unknown, anonymous, as("Parent"), as("Coach")]) {
       expect(resolveAccess("/academy/onboarding", session).kind).toBe("allow");
-      expect(
-        resolveAccess("/academy/onboarding/success/abc", session).kind,
-      ).toBe("allow");
+      expect(resolveAccess("/academy/onboarding/success/abc", session).kind).toBe("allow");
     }
   });
 
@@ -118,9 +116,7 @@ describe("resolveAccess — the access matrix", () => {
     expect(resolveAccess("/academy", anonymous).kind).toBe("redirect");
     expect(resolveAccess("/academy/earnings", anonymous).kind).toBe("redirect");
     // A path that merely starts with the public prefix string must not pass.
-    expect(resolveAccess("/academy/onboarding-secrets", anonymous).kind).toBe(
-      "redirect",
-    );
+    expect(resolveAccess("/academy/onboarding-secrets", anonymous).kind).toBe("redirect");
   });
 
   it("is total — every console/session pair yields exactly one decision", () => {

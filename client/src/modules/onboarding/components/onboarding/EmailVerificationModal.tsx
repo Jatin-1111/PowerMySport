@@ -130,7 +130,7 @@ export default function EmailVerificationModal({
             code: verificationCode,
             venueId,
           }),
-        },
+        }
       );
 
       const data = await response.json();
@@ -165,7 +165,7 @@ export default function EmailVerificationModal({
             email,
             name: "Venue Lister", // We don't have name here, but it's ok
           }),
-        },
+        }
       );
 
       const data = await response.json();
@@ -194,8 +194,8 @@ export default function EmailVerificationModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/55 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
         {/* Close button */}
         {showCloseButton && (
           <button
@@ -208,14 +208,12 @@ export default function EmailVerificationModal({
         )}
 
         {/* Header */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-power-orange/10 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="mb-6 text-center">
+          <div className="bg-power-orange/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
             <Mail size={30} className="text-power-orange" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Verify Your Email
-          </h2>
-          <p className="text-slate-600 text-sm">
+          <h2 className="mb-2 text-2xl font-bold text-slate-900">Verify Your Email</h2>
+          <p className="text-sm text-slate-600">
             We've sent a 6-digit code to
             <br />
             <span className="font-semibold text-slate-900">{email}</span>
@@ -224,7 +222,7 @@ export default function EmailVerificationModal({
 
         {/* OTP Input */}
         <div className="mb-6">
-          <div className="flex gap-2 justify-center mb-4" onPaste={handlePaste}>
+          <div className="mb-4 flex justify-center gap-2" onPaste={handlePaste}>
             {code.map((digit, index) => (
               <input
                 key={index}
@@ -237,14 +235,14 @@ export default function EmailVerificationModal({
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-12 h-14 text-center text-2xl font-bold border-2 border-slate-300 rounded-lg focus:border-power-orange focus:outline-none transition"
+                className="focus:border-power-orange h-14 w-12 rounded-lg border-2 border-slate-300 text-center text-2xl font-bold transition focus:outline-none"
                 disabled={loading}
               />
             ))}
           </div>
 
           {/* Timer */}
-          <div className="text-center text-sm text-slate-600 mb-4">
+          <div className="mb-4 text-center text-sm text-slate-600">
             {timeLeft > 0 ? (
               <span>Code expires in {formatTime(timeLeft)}</span>
             ) : (
@@ -257,7 +255,7 @@ export default function EmailVerificationModal({
         <button
           onClick={() => handleVerify()}
           disabled={loading || code.join("").length !== 6}
-          className="w-full bg-power-orange hover:bg-orange-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition mb-4"
+          className="bg-power-orange mb-4 w-full rounded-lg py-3 font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Verifying..." : "Verify Email"}
         </button>
@@ -271,7 +269,7 @@ export default function EmailVerificationModal({
             <button
               onClick={handleResend}
               disabled={loading}
-              className="text-power-orange hover:text-orange-600 font-semibold disabled:opacity-50"
+              className="text-power-orange font-semibold hover:text-orange-600 disabled:opacity-50"
             >
               Resend Code
             </button>

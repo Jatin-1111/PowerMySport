@@ -7,10 +7,6 @@ export const metadata: Metadata = {
   ...NOINDEX_METADATA,
 };
 
-export default function ResetPasswordLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ResetPasswordLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

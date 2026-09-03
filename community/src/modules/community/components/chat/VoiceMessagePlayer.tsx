@@ -40,14 +40,11 @@ export function VoiceMessagePlayer({
 
   // The recorded length is known before the file is fetched, so the bubble can
   // show a real duration immediately instead of "0:00" until metadata loads.
-  const totalSeconds =
-    loadedDuration || (durationMs ? durationMs / 1000 : 0) || 0;
+  const totalSeconds = loadedDuration || (durationMs ? durationMs / 1000 : 0) || 0;
   const progress = totalSeconds > 0 ? Math.min(1, elapsed / totalSeconds) : 0;
 
   const bars =
-    waveform && waveform.length > 0
-      ? waveform
-      : Array.from({ length: WAVEFORM_BARS }, () => 28);
+    waveform && waveform.length > 0 ? waveform : Array.from({ length: WAVEFORM_BARS }, () => 28);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -103,10 +100,7 @@ export function VoiceMessagePlayer({
     if (!audio || totalSeconds <= 0) return;
 
     const bounds = event.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(
-      0,
-      Math.min(1, (event.clientX - bounds.left) / bounds.width),
-    );
+    const ratio = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
     audio.currentTime = ratio * totalSeconds;
     setElapsed(audio.currentTime);
   };

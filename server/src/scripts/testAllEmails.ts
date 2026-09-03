@@ -44,31 +44,30 @@ const realTransport = SEND
     })
   : null;
 
-(nodemailer as unknown as { createTransport: () => unknown }).createTransport =
-  () => ({
-    sendMail: async (mail: { to: string; subject: string; html: string }) => {
-      const rec: Captured = {
-        to: mail.to,
-        subject: mail.subject,
-        html: mail.html || "",
-        sent: false,
-      };
-      if (SEND && realTransport) {
-        try {
-          const info = await realTransport.sendMail(mail);
-          rec.sent = true;
-          rec.messageId = info.messageId;
-        } catch (e) {
-          rec.error = (e as Error).message;
-        }
-      } else {
+(nodemailer as unknown as { createTransport: () => unknown }).createTransport = () => ({
+  sendMail: async (mail: { to: string; subject: string; html: string }) => {
+    const rec: Captured = {
+      to: mail.to,
+      subject: mail.subject,
+      html: mail.html || "",
+      sent: false,
+    };
+    if (SEND && realTransport) {
+      try {
+        const info = await realTransport.sendMail(mail);
         rec.sent = true;
-        rec.messageId = `dry-${captured.length + 1}`;
+        rec.messageId = info.messageId;
+      } catch (e) {
+        rec.error = (e as Error).message;
       }
-      captured.push(rec);
-      return { messageId: rec.messageId || "dry" };
-    },
-  });
+    } else {
+      rec.sent = true;
+      rec.messageId = `dry-${captured.length + 1}`;
+    }
+    captured.push(rec);
+    return { messageId: rec.messageId || "dry" };
+  },
+});
 
 process.env.EMAIL_FROM = process.env.EMAIL_FROM || "teams@powermysport.com";
 
@@ -539,9 +538,7 @@ interface Result {
 }
 
 async function main(): Promise<void> {
-  console.log(
-    `\nEmail template test — mode: ${SEND ? "LIVE SEND" : "DRY RUN (no mail sent)"}`,
-  );
+  console.log(`\nEmail template test — mode: ${SEND ? "LIVE SEND" : "DRY RUN (no mail sent)"}`);
   if (SEND && !OVERRIDE_TO) {
     console.error("--send requires --to <address>. Aborting.");
     process.exit(1);
@@ -573,9 +570,7 @@ async function main(): Promise<void> {
       subject: produced ? rec!.subject : "",
       toMatch: produced ? rec!.to === c.expectedTo : false,
       validRecipient: produced ? emailish.test(rec!.to) : false,
-      subjectOk: produced
-        ? Boolean(rec!.subject && rec!.subject.length > 0)
-        : false,
+      subjectOk: produced ? Boolean(rec!.subject && rec!.subject.length > 0) : false,
       htmlOk: produced ? html.length > 0 && badTokens.length === 0 : false,
       badTokens,
       expectOk,
@@ -601,7 +596,7 @@ async function main(): Promise<void> {
       `[${badge}] ${res.category}\n        → to=${res.to} subject="${res.subject.slice(0, 60)}"` +
         (res.badTokens.length ? ` badTokens=${res.badTokens.join(",")}` : "") +
         (res.error ? ` error=${res.error}` : "") +
-        (SEND ? ` messageId=${res.messageId || "—"}` : ""),
+        (SEND ? ` messageId=${res.messageId || "—"}` : "")
     );
   }
 
@@ -609,9 +604,7 @@ async function main(): Promise<void> {
   const failed = results.length - passed;
 
   console.log(`\n──────────────────────────────────────────────`);
-  console.log(
-    `RESULT: ${passed}/${results.length} passed${failed ? `, ${failed} FAILED` : ""}`,
-  );
+  console.log(`RESULT: ${passed}/${results.length} passed${failed ? `, ${failed} FAILED` : ""}`);
 
   process.exit(failed ? 1 : 0);
 }

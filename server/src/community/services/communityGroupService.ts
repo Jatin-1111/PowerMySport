@@ -1,13 +1,6 @@
-import {
-  CommunityConversation,
-} from "../models/CommunityConversation";
-import {
-  CommunityGroup,
-  type CommunityGroupVisibility,
-} from "../models/CommunityGroup";
-import {
-  CommunityMessage,
-} from "../models/CommunityMessage";
+import { CommunityConversation } from "../models/CommunityConversation";
+import { CommunityGroup, type CommunityGroupVisibility } from "../models/CommunityGroup";
+import { CommunityMessage } from "../models/CommunityMessage";
 import {
   addMember,
   countMembers,
@@ -57,9 +50,7 @@ export const communityGroupService = {
 
     const normalizedQuery = query.trim();
     const safeLimit = Math.min(50, Math.max(1, limit));
-    const regex = normalizedQuery
-      ? new RegExp(escapeRegex(normalizedQuery), "i")
-      : null;
+    const regex = normalizedQuery ? new RegExp(escapeRegex(normalizedQuery), "i") : null;
 
     // PRIVATE groups are unlisted, so discovery only ever shows PUBLIC and
     // INVITE_ONLY. A private group the user is already in still reaches them
@@ -74,7 +65,7 @@ export const communityGroupService = {
 
     const groups = await CommunityGroup.find(filter)
       .select(
-        "name description visibility audience sport city createdBy profilePicture profilePictureKey memberCount memberAddPolicy",
+        "name description visibility audience sport city createdBy profilePicture profilePictureKey memberCount memberAddPolicy"
       )
       .sort({ updatedAt: -1 })
       .limit(safeLimit)
@@ -82,7 +73,7 @@ export const communityGroupService = {
 
     const membership = await membershipMapFor(
       userId,
-      groups.map((group) => String(group._id)),
+      groups.map((group) => String(group._id))
     );
 
     return Promise.all(
@@ -104,7 +95,7 @@ export const communityGroupService = {
           isOwner: userId ? String(group.createdBy) === userId : false,
           memberAddPolicy: group.memberAddPolicy || "ADMIN_ONLY",
         };
-      }),
+      })
     );
   },
 
@@ -119,7 +110,7 @@ export const communityGroupService = {
       profilePictureKey?: string;
       audience?: CommunityGroupAudience;
       visibility?: CommunityGroupVisibility;
-    },
+    }
   ) {
     await ensureProfile(userId);
 
@@ -148,7 +139,7 @@ export const communityGroupService = {
           inviteCode: generateInviteCode(),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
 
     // The creator is the first member and its first admin. `addMember` is a
@@ -175,7 +166,7 @@ export const communityGroupService = {
           lastMessageAt: new Date(),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
 
     return {
@@ -209,7 +200,7 @@ export const communityGroupService = {
       profilePictureKey?: string;
       audience?: CommunityGroupAudience;
       visibility?: CommunityGroupVisibility;
-    },
+    }
   ) {
     await ensureProfile(userId);
 
@@ -227,7 +218,8 @@ export const communityGroupService = {
     if (typeof payload.sport === "string") group.sport = payload.sport;
     if (typeof payload.city === "string") group.city = payload.city;
     if (typeof payload.profilePicture === "string") group.profilePicture = payload.profilePicture;
-    if (typeof payload.profilePictureKey === "string") group.profilePictureKey = payload.profilePictureKey;
+    if (typeof payload.profilePictureKey === "string")
+      group.profilePictureKey = payload.profilePictureKey;
     if (payload.audience) group.audience = payload.audience;
     if (payload.visibility) group.visibility = payload.visibility;
 
@@ -263,7 +255,7 @@ export const communityGroupService = {
     payload: {
       memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
       postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
-    },
+    }
   ) {
     await ensureProfile(userId);
 
@@ -303,8 +295,7 @@ export const communityGroupService = {
     }
 
     const groupAudience =
-      (group.audience as CommunityGroupAudience | undefined) ||
-      COMMUNITY_DEFAULT_GROUP_AUDIENCE;
+      (group.audience as CommunityGroupAudience | undefined) || COMMUNITY_DEFAULT_GROUP_AUDIENCE;
     if (!canJoinGroupAudience(groupAudience, userRole)) {
       throw new Error("This group is not available for your role");
     }
@@ -314,9 +305,7 @@ export const communityGroupService = {
     // needs a code or an admin; PRIVATE ones are not listed at all.
     const alreadyMember = await isGroupMember(groupId, userId);
     if (!alreadyMember && group.visibility !== "PUBLIC") {
-      throw new Error(
-        "This group is invite-only. Ask an admin for an invite link.",
-      );
+      throw new Error("This group is invite-only. Ask an admin for an invite link.");
     }
 
     if (!alreadyMember) {
@@ -344,13 +333,11 @@ export const communityGroupService = {
           participants: new mongoose.Types.ObjectId(userId),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
 
     if (!alreadyMember) {
-      const adminIds = (await listAdminIds(groupId)).filter(
-        (adminId) => adminId !== userId,
-      );
+      const adminIds = (await listAdminIds(groupId)).filter((adminId) => adminId !== userId);
 
       for (const adminId of adminIds) {
         sendCommunityNotification(
@@ -362,7 +349,7 @@ export const communityGroupService = {
             groupId: String(group._id),
             conversationId: String(conversation?._id || ""),
             actorUserId: userId,
-          },
+          }
         );
       }
     }
@@ -377,9 +364,7 @@ export const communityGroupService = {
   async deleteGroup(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId)
-      .select("createdBy")
-      .lean();
+    const group = await CommunityGroup.findById(groupId).select("createdBy").lean();
     if (!group) {
       throw new Error("Group not found");
     }
@@ -405,10 +390,7 @@ export const communityGroupService = {
       ]);
     }
 
-    await Promise.all([
-      CommunityGroup.deleteOne({ _id: group._id }),
-      removeAllMembers(groupId),
-    ]);
+    await Promise.all([CommunityGroup.deleteOne({ _id: group._id }), removeAllMembers(groupId)]);
 
     return { groupId: String(group._id), deletedGroup: true };
   },
@@ -416,9 +398,7 @@ export const communityGroupService = {
   async leaveGroup(userId: string, groupId: string) {
     await ensureProfile(userId);
 
-    const group = await CommunityGroup.findById(groupId)
-      .select("name")
-      .lean();
+    const group = await CommunityGroup.findById(groupId).select("name").lean();
     if (!group) {
       throw new Error("Group not found");
     }
@@ -440,7 +420,7 @@ export const communityGroupService = {
 
     if (groupConversation) {
       groupConversation.participants = groupConversation.participants.filter(
-        (participantId) => String(participantId) !== userId,
+        (participantId) => String(participantId) !== userId
       );
 
       if (!groupConversation.participants.length || remainingMembers === 0) {
@@ -456,38 +436,25 @@ export const communityGroupService = {
     }
 
     if (remainingMembers === 0) {
-      await Promise.all([
-        CommunityGroup.deleteOne({ _id: group._id }),
-        removeAllMembers(groupId),
-      ]);
+      await Promise.all([CommunityGroup.deleteOne({ _id: group._id }), removeAllMembers(groupId)]);
       return { groupId: String(group._id), removed: true, deletedGroup: true };
     }
 
-    const remainingAdminIds = (await listAdminIds(groupId)).filter(
-      (adminId) => adminId !== userId,
-    );
+    const remainingAdminIds = (await listAdminIds(groupId)).filter((adminId) => adminId !== userId);
 
     for (const adminId of remainingAdminIds) {
-      sendCommunityNotification(
-        adminId,
-        "Member left group",
-        `A member left ${group.name}.`,
-        {
-          event: "COMMUNITY_GROUP_LEFT",
-          groupId: String(group._id),
-          actorUserId: userId,
-        },
-      );
+      sendCommunityNotification(adminId, "Member left group", `A member left ${group.name}.`, {
+        event: "COMMUNITY_GROUP_LEFT",
+        groupId: String(group._id),
+        actorUserId: userId,
+      });
     }
 
     return { groupId: String(group._id), removed: true, deletedGroup: false };
   },
 
   async addGroupMember(userId: string, groupId: string, targetUserId: string) {
-    await Promise.all([
-      ensureProfile(userId),
-      ensureCommunityUser(targetUserId),
-    ]);
+    await Promise.all([ensureProfile(userId), ensureCommunityUser(targetUserId)]);
 
     if (userId === targetUserId) {
       throw new Error("Use join group to add yourself");
@@ -506,8 +473,7 @@ export const communityGroupService = {
     ]);
 
     const groupAudience =
-      (group.audience as CommunityGroupAudience | undefined) ||
-      COMMUNITY_DEFAULT_GROUP_AUDIENCE;
+      (group.audience as CommunityGroupAudience | undefined) || COMMUNITY_DEFAULT_GROUP_AUDIENCE;
     if (!canJoinGroupAudience(groupAudience, targetRole)) {
       throw new Error("This group is not available for the selected user role");
     }
@@ -515,7 +481,7 @@ export const communityGroupService = {
     if (isCrossRoleInteraction(requesterRole, targetRole)) {
       ensurePolicyAllowed(
         COMMUNITY_INTERACTION_POLICY.allowCrossRoleGroupMembership,
-        "Cross-role group membership is currently disabled",
+        "Cross-role group membership is currently disabled"
       );
       trackCommunityRoleMixEvent("group_cross_role_invite", {
         groupId,
@@ -561,7 +527,7 @@ export const communityGroupService = {
           participants: new mongoose.Types.ObjectId(targetUserId),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
 
     if (!alreadyMember && targetUserId !== userId) {
@@ -574,7 +540,7 @@ export const communityGroupService = {
           groupId: String(group._id),
           conversationId: String(conversation?._id || ""),
           actorUserId: userId,
-        },
+        }
       );
     }
 

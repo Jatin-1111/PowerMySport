@@ -1,10 +1,5 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import {
-  breadcrumbJsonLd,
-  clampText,
-  NOINDEX_METADATA,
-  sportsOrganizationJsonLd,
-} from "@/lib/seo";
+import { breadcrumbJsonLd, clampText, NOINDEX_METADATA, sportsOrganizationJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
@@ -70,13 +65,11 @@ export interface FederationDetail {
 // ─── Server fetch ─────────────────────────────────────────────────────────────
 
 async function fetchFederation(slug: string): Promise<FederationDetail | null> {
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
   try {
-    const res = await fetch(
-      `${apiBase}/federations/${encodeURIComponent(slug)}`,
-      { next: { revalidate: 3600 } },
-    );
+    const res = await fetch(`${apiBase}/federations/${encodeURIComponent(slug)}`, {
+      next: { revalidate: 3600 },
+    });
     if (!res.ok) return null;
     const body = await res.json();
     return body.success ? (body.data as FederationDetail) : null;
@@ -131,9 +124,7 @@ export default async function FederationDetailPage({
 
   const validTabs = ["overview", "tournaments", "calendar", "eligibility", "register"] as const;
   type TabId = (typeof validTabs)[number];
-  const initialTab: TabId = validTabs.includes(tab as TabId)
-    ? (tab as TabId)
-    : "overview";
+  const initialTab: TabId = validTabs.includes(tab as TabId) ? (tab as TabId) : "overview";
 
   return (
     <>
@@ -163,11 +154,7 @@ export default async function FederationDetailPage({
           ]),
         ]}
       />
-      <FederationDetailClient
-        federation={fed}
-        initialTab={initialTab}
-        hasPathway={hasPathway}
-      />
+      <FederationDetailClient federation={fed} initialTab={initialTab} hasPathway={hasPathway} />
     </>
   );
 }

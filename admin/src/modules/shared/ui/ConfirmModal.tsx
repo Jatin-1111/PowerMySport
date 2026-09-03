@@ -59,9 +59,7 @@ export function ConfirmModal({
         onClick={(event) => event.stopPropagation()}
       >
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-        {description && (
-          <p className="mt-2 text-sm text-slate-600">{description}</p>
-        )}
+        {description && <p className="mt-2 text-sm text-slate-600">{description}</p>}
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
@@ -78,7 +76,7 @@ export function ConfirmModal({
               "rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50",
               variant === "danger"
                 ? "bg-red-600 hover:bg-red-700"
-                : "bg-slate-900 hover:bg-slate-800",
+                : "bg-slate-900 hover:bg-slate-800"
             )}
           >
             {loading ? "Processing..." : confirmLabel}

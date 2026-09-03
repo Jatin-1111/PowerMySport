@@ -3,17 +3,10 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
-import {
-  DetailDrawer,
-  DetailRow,
-  DetailSection,
-} from "@/modules/shared/ui/DetailDrawer";
+import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
 import { Coach, CoachVerificationStatus } from "@/types";
@@ -189,8 +182,7 @@ export default function AdminCoachesPage() {
       }
       return (
         factor *
-        (new Date(left.createdAt || 0).getTime() -
-          new Date(right.createdAt || 0).getTime())
+        (new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime())
       );
     });
   }, [coaches, searchQuery, sortColumn, sortDirection]);
@@ -200,16 +192,12 @@ export default function AdminCoachesPage() {
       key: "name",
       header: "Coach",
       sortable: true,
-      render: (c) => (
-        <EntityBadge name={getCoachName(c)} email={getCoachEmail(c)} />
-      ),
+      render: (c) => <EntityBadge name={getCoachName(c)} email={getCoachEmail(c)} />,
     },
     {
       key: "verification",
       header: "Verification",
-      render: (c) => (
-        <StatusBadge status={c.verificationStatus || "UNVERIFIED"} />
-      ),
+      render: (c) => <StatusBadge status={c.verificationStatus || "UNVERIFIED"} />,
     },
     {
       key: "sports",
@@ -220,7 +208,7 @@ export default function AdminCoachesPage() {
             {c.sports.slice(0, 2).map((sport) => (
               <span
                 key={sport}
-                className="rounded-full bg-power-orange/10 px-2 py-0.5 text-xs font-medium text-power-orange"
+                className="bg-power-orange/10 text-power-orange rounded-full px-2 py-0.5 text-xs font-medium"
               >
                 {sport}
               </span>
@@ -257,9 +245,7 @@ export default function AdminCoachesPage() {
       key: "joined",
       header: "Joined",
       sortable: true,
-      render: (c) => (
-        <span className="text-slate-600">{formatDate(c.createdAt)}</span>
-      ),
+      render: (c) => <span className="text-slate-600">{formatDate(c.createdAt)}</span>,
     },
   ];
 
@@ -295,7 +281,7 @@ export default function AdminCoachesPage() {
         action={
           <Link
             href="/admin/coaches/add"
-            className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <Plus size={16} /> Add coach
           </Link>
@@ -347,8 +333,7 @@ export default function AdminCoachesPage() {
               { header: "Reviews", value: (c) => c.reviewCount ?? 0 },
               {
                 header: "Joined",
-                value: (c) =>
-                  c.createdAt ? new Date(c.createdAt).toISOString() : "",
+                value: (c) => (c.createdAt ? new Date(c.createdAt).toISOString() : ""),
               },
             ]}
           />
@@ -362,9 +347,7 @@ export default function AdminCoachesPage() {
         subtitle={selectedCoach ? getCoachEmail(selectedCoach) : undefined}
         headerExtra={
           selectedCoach ? (
-            <StatusBadge
-              status={selectedCoach.verificationStatus || "UNVERIFIED"}
-            />
+            <StatusBadge status={selectedCoach.verificationStatus || "UNVERIFIED"} />
           ) : null
         }
         footer={
@@ -390,7 +373,7 @@ export default function AdminCoachesPage() {
               <div className="flex justify-end">
                 <button
                   onClick={() => setEditing(true)}
-                  className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                  className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
                 >
                   Edit coach
                 </button>
@@ -402,27 +385,15 @@ export default function AdminCoachesPage() {
         {selectedCoach && !editing && (
           <>
             <DetailSection title="Overview">
-              <DetailRow
-                label="Service mode"
-                value={selectedCoach.serviceMode || "—"}
-              />
-              <DetailRow
-                label="Hourly rate"
-                value={`₹${selectedCoach.hourlyRate}`}
-              />
+              <DetailRow label="Service mode" value={selectedCoach.serviceMode || "—"} />
+              <DetailRow label="Hourly rate" value={`₹${selectedCoach.hourlyRate}`} />
               <DetailRow
                 label="Rating"
                 value={`${(selectedCoach.rating ?? 0).toFixed(1)} (${selectedCoach.reviewCount ?? 0} reviews)`}
               />
-              <DetailRow
-                label="Joined"
-                value={formatDate(selectedCoach.createdAt)}
-              />
+              <DetailRow label="Joined" value={formatDate(selectedCoach.createdAt)} />
               {selectedCoach.ownVenueDetails?.address && (
-                <DetailRow
-                  label="Own venue"
-                  value={selectedCoach.ownVenueDetails.address}
-                />
+                <DetailRow label="Own venue" value={selectedCoach.ownVenueDetails.address} />
               )}
             </DetailSection>
 
@@ -438,7 +409,7 @@ export default function AdminCoachesPage() {
                   {selectedCoach.sports.map((sport) => (
                     <span
                       key={sport}
-                      className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-medium text-power-orange"
+                      className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-medium"
                     >
                       {sport}
                       {selectedCoach.sportPricing?.[sport] != null
@@ -460,20 +431,14 @@ export default function AdminCoachesPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-slate-500">
-                  No certifications listed.
-                </p>
+                <p className="text-sm text-slate-500">No certifications listed.</p>
               )}
             </DetailSection>
 
             <DetailSection title="Verification">
               <DetailRow
                 label="Status"
-                value={
-                  <StatusBadge
-                    status={selectedCoach.verificationStatus || "UNVERIFIED"}
-                  />
-                }
+                value={<StatusBadge status={selectedCoach.verificationStatus || "UNVERIFIED"} />}
               />
               <DetailRow
                 label="Documents"
@@ -483,15 +448,9 @@ export default function AdminCoachesPage() {
                 label="Submitted"
                 value={formatDate(selectedCoach.verificationSubmittedAt)}
               />
-              <DetailRow
-                label="Verified"
-                value={formatDate(selectedCoach.verifiedAt)}
-              />
+              <DetailRow label="Verified" value={formatDate(selectedCoach.verifiedAt)} />
               {selectedCoach.verificationNotes && (
-                <DetailRow
-                  label="Notes"
-                  value={selectedCoach.verificationNotes}
-                />
+                <DetailRow label="Notes" value={selectedCoach.verificationNotes} />
               )}
             </DetailSection>
           </>
@@ -500,21 +459,19 @@ export default function AdminCoachesPage() {
         {selectedCoach && editing && (
           <div className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Bio
               </label>
               <textarea
                 rows={5}
                 value={editForm.bio}
-                onChange={(e) =>
-                  setEditForm((prev) => ({ ...prev, bio: e.target.value }))
-                }
+                onChange={(e) => setEditForm((prev) => ({ ...prev, bio: e.target.value }))}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Hourly rate (₹)
                 </label>
                 <input
@@ -530,7 +487,7 @@ export default function AdminCoachesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Verification status
                 </label>
                 <select
@@ -538,8 +495,7 @@ export default function AdminCoachesPage() {
                   onChange={(e) =>
                     setEditForm((prev) => ({
                       ...prev,
-                      verificationStatus: e.target
-                        .value as CoachVerificationStatus,
+                      verificationStatus: e.target.value as CoachVerificationStatus,
                     }))
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"

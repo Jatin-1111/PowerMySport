@@ -7,10 +7,6 @@ export const metadata: Metadata = {
   ...NOINDEX_METADATA,
 };
 
-export default function RegisterLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RegisterLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

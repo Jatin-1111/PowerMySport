@@ -1,10 +1,7 @@
 import { Suspense } from "react";
 import DiscoverPageClient from "@/modules/community/components/discover/DiscoverPageClient";
 import { buildMetadata } from "@/lib/seo";
-import {
-  breadcrumbSchema,
-  JsonLd,
-} from "@/modules/community/components/seo/JsonLd";
+import { breadcrumbSchema, JsonLd } from "@/modules/community/components/seo/JsonLd";
 
 export const metadata = buildMetadata({
   title: "Discover Groups, Topics & Parents",
@@ -27,11 +24,7 @@ export default function DiscoverPage() {
         ])}
       />
       <Suspense
-        fallback={
-          <div className="p-8 text-center text-slate-500">
-            Loading discover...
-          </div>
-        }
+        fallback={<div className="p-8 text-center text-slate-500">Loading discover...</div>}
       >
         <DiscoverPageClient />
       </Suspense>

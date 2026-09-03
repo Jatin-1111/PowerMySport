@@ -13,15 +13,8 @@ import DashboardLayoutShell from "./LayoutShell";
  * redundant: a disallowed URL that is linked from anywhere can still be indexed
  * URL-only, and it is the tag — not the disallow — that gets it dropped.
  */
-export const metadata: Metadata = noindexMetadata(
-  "Dashboard",
-  "Your PowerMySport dashboard.",
-);
+export const metadata: Metadata = noindexMetadata("Dashboard", "Your PowerMySport dashboard.");
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return <DashboardLayoutShell>{children}</DashboardLayoutShell>;
 }

@@ -172,8 +172,20 @@ function MiniSteps({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
           >
             {i + 1}
           </div>
-          <div className={cn("h-1.5 flex-1 rounded-full", i === 0 ? dotColor + " opacity-70" : "bg-slate-100")} />
-          <span className={cn("text-[10px]", i === 0 ? "font-semibold text-slate-600" : "text-slate-400")}>{s}</span>
+          <div
+            className={cn(
+              "h-1.5 flex-1 rounded-full",
+              i === 0 ? dotColor + " opacity-70" : "bg-slate-100"
+            )}
+          />
+          <span
+            className={cn(
+              "text-[10px]",
+              i === 0 ? "font-semibold text-slate-600" : "text-slate-400"
+            )}
+          >
+            {s}
+          </span>
         </div>
       ))}
     </div>
@@ -192,9 +204,7 @@ function MiniChat({ chipCls = "bg-orange-100 text-orange-700" }: { chipCls?: str
           <div
             className={cn(
               "max-w-[80%] rounded-2xl px-3 py-2 text-[10px] leading-tight",
-              b.isUser
-                ? "bg-slate-100 text-slate-600"
-                : cn(chipCls, "font-medium")
+              b.isUser ? "bg-slate-100 text-slate-600" : cn(chipCls, "font-medium")
             )}
           >
             {b.q}
@@ -217,8 +227,14 @@ function MiniMilestones({ dotColor = "bg-power-orange" }: { dotColor?: string })
             i === 0 ? "border-transparent bg-slate-100" : "border-slate-100 bg-white"
           )}
         >
-          <div className={cn("h-2 w-2 rounded-full shrink-0", i === 0 ? dotColor : "bg-slate-300")} />
-          <span className={cn("text-[10px] font-medium", i === 0 ? "text-slate-700" : "text-slate-400")}>{label}</span>
+          <div
+            className={cn("h-2 w-2 shrink-0 rounded-full", i === 0 ? dotColor : "bg-slate-300")}
+          />
+          <span
+            className={cn("text-[10px] font-medium", i === 0 ? "text-slate-700" : "text-slate-400")}
+          >
+            {label}
+          </span>
         </div>
       ))}
     </div>
@@ -229,20 +245,30 @@ function MiniTrialClass({ dotColor = "bg-power-orange" }: { dotColor?: string })
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3">
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white", dotColor)}>
+        <div
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white",
+            dotColor
+          )}
+        >
           <CalendarCheck className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold text-slate-700">Trial Session Booked</p>
           <p className="text-[9px] text-slate-400">Saturday, 10:00 AM · Sunrise Academy</p>
         </div>
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-semibold text-emerald-700">Confirmed</span>
+        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-semibold text-emerald-700">
+          Confirmed
+        </span>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {["Sport Matched", "Screening Done", "Trial Booked"].map((label, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-2 py-2">
+          <div
+            key={i}
+            className="flex flex-col items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-2 py-2"
+          >
             <div className={cn("h-2 w-2 rounded-full", i <= 2 ? dotColor : "bg-slate-200")} />
-            <span className="text-[8px] font-medium text-slate-500 text-center">{label}</span>
+            <span className="text-center text-[8px] font-medium text-slate-500">{label}</span>
           </div>
         ))}
       </div>
@@ -261,8 +287,15 @@ function MiniDashboard({ dotColor = "bg-power-orange" }: { dotColor?: string }) 
     <div className="grid grid-cols-2 gap-2">
       {stats.map((s, i) => (
         <div key={i} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-          <p className="text-[9px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
-          <p className={cn("text-sm font-bold", i === 0 ? dotColor.replace("bg-", "text-") : "text-slate-700")}>{s.val}</p>
+          <p className="text-[9px] font-medium tracking-wide text-slate-400 uppercase">{s.label}</p>
+          <p
+            className={cn(
+              "text-sm font-bold",
+              i === 0 ? dotColor.replace("bg-", "text-") : "text-slate-700"
+            )}
+          >
+            {s.val}
+          </p>
         </div>
       ))}
     </div>
@@ -276,17 +309,25 @@ function MiniBudget() {
       {bars.map((h, i) => (
         <div key={i} className="flex flex-1 flex-col items-center gap-1">
           <div
-            className={cn("w-full rounded-t-sm transition-all", i === 3 ? "bg-power-orange" : "bg-slate-200")}
+            className={cn(
+              "w-full rounded-t-sm transition-all",
+              i === 3 ? "bg-power-orange" : "bg-slate-200"
+            )}
             style={{ height: `${h * 0.6}px` }}
           />
-          <span className="text-[8px] text-slate-400">{["Jan", "Feb", "Mar", "Apr", "May"][i]}</span>
+          <span className="text-[8px] text-slate-400">
+            {["Jan", "Feb", "Mar", "Apr", "May"][i]}
+          </span>
         </div>
       ))}
     </div>
   );
 }
 
-const VISUALS_MAP: Record<string, React.FC<{ color?: string; dotColor?: string; chipCls?: string }>> = {
+const VISUALS_MAP: Record<
+  string,
+  React.FC<{ color?: string; dotColor?: string; chipCls?: string }>
+> = {
   roadmap: MiniRoadmap,
   steps: MiniSteps,
   chat: MiniChat,
@@ -296,7 +337,15 @@ const VISUALS_MAP: Record<string, React.FC<{ color?: string; dotColor?: string; 
   budget: MiniBudget,
 };
 
-const VISUALS_FALLBACK = [MiniRoadmap, MiniSteps, MiniChat, MiniTrialClass, MiniMilestones, MiniDashboard, MiniBudget];
+const VISUALS_FALLBACK = [
+  MiniRoadmap,
+  MiniSteps,
+  MiniChat,
+  MiniTrialClass,
+  MiniMilestones,
+  MiniDashboard,
+  MiniBudget,
+];
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
@@ -311,7 +360,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const features = tracks ? tracks[trackIdx].features : singleFeatures ?? [];
+  const features = tracks ? tracks[trackIdx].features : (singleFeatures ?? []);
 
   // Reset to the first step whenever the track changes
   useEffect(() => {
@@ -329,13 +378,15 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
 
   const feature = features[active];
   const pal = getPalette(feature, active);
-  const Visual = (feature.visual && VISUALS_MAP[feature.visual]) || VISUALS_FALLBACK[active % VISUALS_FALLBACK.length];
+  const Visual =
+    (feature.visual && VISUALS_MAP[feature.visual]) ||
+    VISUALS_FALLBACK[active % VISUALS_FALLBACK.length];
 
   return (
     <section className="relative py-16 sm:py-20 lg:py-24">
       {/* Ambient blobs */}
-      <div className="pointer-events-none absolute left-1/4 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-100/25 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 h-64 w-64 translate-x-1/2 rounded-full bg-orange-100/20 blur-3xl" />
+      <div className="pointer-events-none absolute top-0 left-1/4 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-100/25 blur-3xl" />
+      <div className="pointer-events-none absolute right-1/4 bottom-0 h-64 w-64 translate-x-1/2 rounded-full bg-orange-100/20 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section header ── */}
@@ -378,11 +429,14 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
               <button
                 key={t.key}
                 type="button"
-                onClick={() => { setTrackIdx(i); setPaused(true); }}
+                onClick={() => {
+                  setTrackIdx(i);
+                  setPaused(true);
+                }}
                 className={cn(
                   "rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
                   i === trackIdx
-                    ? "border-power-orange bg-orange-50 text-power-orange"
+                    ? "border-power-orange text-power-orange bg-orange-50"
                     : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
                 )}
               >
@@ -404,7 +458,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
         >
           {/* ── Left: Parent worry list ── */}
           <div className="flex flex-col gap-2">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+            <p className="mb-2 text-[11px] font-semibold tracking-[0.12em] text-slate-400 uppercase">
               Parents ask us…
             </p>
 
@@ -414,7 +468,10 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
               return (
                 <button
                   key={i}
-                  onClick={() => { setActive(i); setPaused(true); }}
+                  onClick={() => {
+                    setActive(i);
+                    setPaused(true);
+                  }}
                   className={cn(
                     "group relative flex w-full items-center gap-3 overflow-hidden rounded-xl border p-3.5 text-left transition-all duration-200",
                     isActive
@@ -426,10 +483,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                   {isActive && (
                     <motion.div
                       layoutId="activeBar"
-                      className={cn(
-                        "absolute inset-y-3 left-0 w-[3px] rounded-r-full",
-                        p.dot
-                      )}
+                      className={cn("absolute inset-y-3 left-0 w-[3px] rounded-r-full", p.dot)}
                       transition={{ type: "spring", stiffness: 320, damping: 28 }}
                     />
                   )}
@@ -449,9 +503,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                     <span
                       className={cn(
                         "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200",
-                        isActive
-                          ? p.iconBg
-                          : "bg-slate-100 text-slate-400"
+                        isActive ? p.iconBg : "bg-slate-100 text-slate-400"
                       )}
                     >
                       {f.icon}
@@ -462,7 +514,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                   <div className="min-w-0 flex-1">
                     <p
                       className={cn(
-                        "text-[11px] font-medium leading-snug transition-colors duration-200",
+                        "text-[11px] leading-snug font-medium transition-colors duration-200",
                         isActive ? p.numColor : "text-slate-400 group-hover:text-slate-500"
                       )}
                     >
@@ -470,7 +522,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                     </p>
                     <p
                       className={cn(
-                        "mt-0.5 text-sm font-semibold leading-snug transition-colors duration-200",
+                        "mt-0.5 text-sm leading-snug font-semibold transition-colors duration-200",
                         isActive ? "text-slate-900" : "text-slate-500 group-hover:text-slate-700"
                       )}
                     >
@@ -502,7 +554,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
                 "relative flex min-h-[460px] flex-col overflow-hidden rounded-2xl border border-slate-100",
-                "bg-gradient-to-br lg:min-h-0 lg:h-full",
+                "bg-gradient-to-br lg:h-full lg:min-h-0",
                 "from-white to-slate-50/40",
                 "shadow-[0_4px_32px_-4px_rgba(0,0,0,0.09)]"
               )}
@@ -512,7 +564,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
 
               {/* Radial glow top-right */}
               <div
-                className="pointer-events-none absolute right-0 top-0 h-80 w-80 rounded-full"
+                className="pointer-events-none absolute top-0 right-0 h-80 w-80 rounded-full"
                 style={{
                   background: `radial-gradient(circle at 100% 0%, ${pal.glowColor}, transparent 65%)`,
                 }}
@@ -520,7 +572,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
 
               {/* Big decorative step number */}
               <div
-                className="pointer-events-none absolute right-3 top-0 select-none text-[9rem] font-black leading-none"
+                className="pointer-events-none absolute top-0 right-3 text-[9rem] leading-none font-black select-none"
                 style={{ color: pal.stepHex, opacity: 0.55 }}
               >
                 {STEPS[active]}
@@ -599,11 +651,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                   transition={{ delay: 0.2 }}
                   className="mt-8 rounded-xl border border-slate-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm"
                 >
-                  <Visual
-                    color={pal.dot}
-                    dotColor={pal.dot}
-                    chipCls={pal.chip}
-                  />
+                  <Visual color={pal.dot} dotColor={pal.dot} chipCls={pal.chip} />
                 </motion.div>
 
                 {/* Bottom: progress dots + counter */}
@@ -612,7 +660,10 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                     {features.map((_, i) => (
                       <button
                         key={i}
-                        onClick={() => { setActive(i); setPaused(true); }}
+                        onClick={() => {
+                          setActive(i);
+                          setPaused(true);
+                        }}
                         aria-label={`Go to feature ${i + 1}`}
                         className={cn(
                           "h-1.5 rounded-full transition-all duration-300",
@@ -623,7 +674,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                       />
                     ))}
                   </div>
-                  <span className="text-xs font-medium tabular-nums text-slate-300">
+                  <span className="text-xs font-medium text-slate-300 tabular-nums">
                     {STEPS[active]}&nbsp;/&nbsp;{String(features.length).padStart(2, "0")}
                   </span>
                 </div>

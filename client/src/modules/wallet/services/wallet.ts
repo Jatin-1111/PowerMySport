@@ -27,14 +27,14 @@ export const walletApi = {
   },
 
   topUpWallet: async (
-    amount: number,
+    amount: number
   ): Promise<{ redirectUrl: string; merchantOrderId: string }> => {
     const response = await axiosInstance.post("/wallet/topup", { amount });
     return response.data.data;
   },
 
   verifyTopUp: async (
-    merchantOrderId: string,
+    merchantOrderId: string
   ): Promise<{ status: string; amount?: number; wallet: Wallet }> => {
     const response = await axiosInstance.post("/wallet/topup/verify", {
       merchantOrderId,

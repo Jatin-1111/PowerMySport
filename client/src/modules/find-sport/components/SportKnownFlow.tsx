@@ -21,7 +21,12 @@ import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
 import type { Dependent } from "@/types";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { roadmapHref } from "../../pathway/data/sports";
-import { getAmbitionOptions, getCurrentStandingLadder, getGoverningBodyName, deriveExperienceLevel } from "../data/sportArchetypes";
+import {
+  getAmbitionOptions,
+  getCurrentStandingLadder,
+  getGoverningBodyName,
+  deriveExperienceLevel,
+} from "../data/sportArchetypes";
 import { BinaryCards } from "./inputs/BinaryCards";
 import { FourContextCards } from "./inputs/FourContextCards";
 import { SportSearchInput } from "./inputs/SportSearchInput";
@@ -127,7 +132,8 @@ const STEPS: WizardStep[] = [
     kind: "question",
     id: "currentStandingTier",
     required: true,
-    heading: (f) => `What's ${f.childName || "your child"}'s current level in ${f.sport || "the sport"}?`,
+    heading: (f) =>
+      `What's ${f.childName || "your child"}'s current level in ${f.sport || "the sport"}?`,
     sub: (f) => {
       const body = getGoverningBodyName(f.sport);
       return body
@@ -139,7 +145,8 @@ const STEPS: WizardStep[] = [
     kind: "question",
     id: "yearsPlaying",
     required: false,
-    heading: (f) => `How many years has ${f.childName || "your child"} been playing ${f.sport || "this sport"}?`,
+    heading: (f) =>
+      `How many years has ${f.childName || "your child"} been playing ${f.sport || "this sport"}?`,
     sub: "Optional — helps us gauge their trajectory so far.",
   },
   // ─── Goals ──────────────────────────────────────────────────────────────
@@ -175,7 +182,7 @@ const KNOWN_SPORT_FLOW = buildStepGateFlow<KnownSportForm>(
     const step = STEPS[i];
     return step.kind !== "question" || !step.required || isAnswered(step.id, form);
   },
-  { isStepSkipped: (i, form) => shouldSkipStep(STEPS[i], form) },
+  { isStepSkipped: (i, form) => shouldSkipStep(STEPS[i], form) }
 );
 
 function questionNumberAt(steps: WizardStep[], index: number, form: KnownSportForm): number | null {
@@ -208,13 +215,7 @@ function QuestionInput({
 }) {
   switch (id) {
     case "sport":
-      return (
-        <SportSearchInput
-          value={form.sport}
-          onChange={(v) => set("sport", v)}
-          required
-        />
-      );
+      return <SportSearchInput value={form.sport} onChange={(v) => set("sport", v)} required />;
 
     case "childName":
       return (
@@ -235,8 +236,12 @@ function QuestionInput({
           autoFocus // eslint-disable-line jsx-a11y/no-autofocus
           value={form.dateOfBirth}
           onChange={(e) => set("dateOfBirth", e.target.value)}
-          max={new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().slice(0, 10)}
-          min={new Date(new Date().setFullYear(new Date().getFullYear() - 30)).toISOString().slice(0, 10)}
+          max={new Date(new Date().setFullYear(new Date().getFullYear() - 1))
+            .toISOString()
+            .slice(0, 10)}
+          min={new Date(new Date().setFullYear(new Date().getFullYear() - 30))
+            .toISOString()
+            .slice(0, 10)}
           className={textInputClass}
         />
       );
@@ -260,7 +265,11 @@ function QuestionInput({
       const ladder = getCurrentStandingLadder(form.sport || "");
       return (
         <FourContextCards
-          options={ladder.map((t) => ({ value: String(t.value), label: t.label, context: t.context ?? "" }))}
+          options={ladder.map((t) => ({
+            value: String(t.value),
+            label: t.label,
+            context: t.context ?? "",
+          }))}
           value={form.currentStandingTier !== null ? String(form.currentStandingTier) : null}
           onChange={(v) => set("currentStandingTier", Number(v))}
         />
@@ -276,7 +285,9 @@ function QuestionInput({
           autoFocus // eslint-disable-line jsx-a11y/no-autofocus
           placeholder="e.g., 3"
           value={form.yearsPlaying ?? ""}
-          onChange={(e) => set("yearsPlaying", e.target.value === "" ? null : parseFloat(e.target.value))}
+          onChange={(e) =>
+            set("yearsPlaying", e.target.value === "" ? null : parseFloat(e.target.value))
+          }
           className={textInputClass}
         />
       );
@@ -314,20 +325,16 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
   // step is linkable, and a mid-flow deep link is gated to the first unanswered
   // question and hops any skipped branch.
   const flow = useMemo(() => KNOWN_SPORT_FLOW, []);
-  const {
-    index: idx,
-    direction: dir,
-    next: goToNext,
-    back: goToPrev,
-  } = useFlow(flow, form);
+  const { index: idx, direction: dir, next: goToNext, back: goToPrev } = useFlow(flow, form);
   const [dependents, setDependents] = useState<any[]>([]);
   const [matchedDep, setMatchedDep] = useState<any | null>(null);
 
   // Fetch logged-in user's dependents once on mount
   useEffect(() => {
     if (!token) return;
-    api.get<{ success: boolean; data: any[] }>("/auth/players")
-      .then(res => {
+    api
+      .get<{ success: boolean; data: any[] }>("/auth/players")
+      .then((res) => {
         if (!res.data.success) return;
         setDependents((res.data.data || []).filter((p: any) => p.type === "DEPENDENT"));
       })
@@ -343,22 +350,27 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
     const normName = form.childName.trim().toLowerCase();
     // Prefer name + dob match
     if (form.dateOfBirth) {
-      const withDob = dependents.find(d => {
+      const withDob = dependents.find((d) => {
         const dDob = d.dob ? new Date(d.dob).toISOString().slice(0, 10) : null;
         return d.name?.toLowerCase() === normName && dDob === form.dateOfBirth;
       });
-      if (withDob) { setMatchedDep(withDob); return; }
+      if (withDob) {
+        setMatchedDep(withDob);
+        return;
+      }
     }
     // Fall back to name-only match
-    setMatchedDep(dependents.find(d => d.name?.toLowerCase() === normName) ?? null);
+    setMatchedDep(dependents.find((d) => d.name?.toLowerCase() === normName) ?? null);
   }, [form.childName, form.dateOfBirth, dependents]);
 
   // Pre-fill unanswered form fields when a match is found
   useEffect(() => {
     if (!matchedDep) return;
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      dateOfBirth: prev.dateOfBirth || (matchedDep.dob ? new Date(matchedDep.dob).toISOString().slice(0, 10) : ""),
+      dateOfBirth:
+        prev.dateOfBirth ||
+        (matchedDep.dob ? new Date(matchedDep.dob).toISOString().slice(0, 10) : ""),
       gender: prev.gender ?? matchedDep.gender ?? null,
       state: prev.state ?? matchedDep.location ?? null,
       ambition: prev.ambition ?? matchedDep.ambition ?? null,
@@ -397,7 +409,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
     try {
       localStorage.setItem(
         "pms_sport_profile",
-        JSON.stringify({ form, savedAt: new Date().toISOString() }),
+        JSON.stringify({ form, savedAt: new Date().toISOString() })
       );
     } catch {}
 
@@ -478,8 +490,8 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-        <div className="absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full bg-power-orange/8 blur-3xl" />
-        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
+        <div className="bg-power-orange/8 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
       </div>
 
       {/* Transition card */}
@@ -489,28 +501,26 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.25 }}
-          className="min-h-screen flex items-center justify-center px-4"
+          className="flex min-h-screen items-center justify-center px-4"
         >
-          <div className="text-center max-w-xs">
+          <div className="max-w-xs text-center">
             <button
               type="button"
               onClick={goPrev}
-              className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors"
+              className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-slate-700"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Back
             </button>
-            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-power-orange/10">
-              <Sparkles className="h-7 w-7 text-power-orange" />
+            <div className="bg-power-orange/10 mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl">
+              <Sparkles className="text-power-orange h-7 w-7" />
             </div>
-            <h2 className="font-title text-2xl font-bold text-slate-900 mb-2">
-              {current.text}
-            </h2>
-            <p className="text-slate-500 text-sm mb-8">{current.sub}</p>
+            <h2 className="font-title mb-2 text-2xl font-bold text-slate-900">{current.text}</h2>
+            <p className="mb-8 text-sm text-slate-500">{current.sub}</p>
             <button
               type="button"
               onClick={goNext}
-              className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
+              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
             >
               Continue
               <ChevronRight className="h-4 w-4" />
@@ -528,7 +538,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
               <button
                 type="button"
                 onClick={goPrev}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {idx === 0 ? "Back to options" : "Back"}
@@ -539,9 +549,9 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
             </div>
 
             {/* Progress bar */}
-            <div className="mb-6 h-1 rounded-full bg-slate-100 overflow-hidden">
+            <div className="mb-6 h-1 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-power-orange transition-all duration-500"
+                className="bg-power-orange h-full rounded-full transition-all duration-500"
                 style={{ width: `${((qNum ?? 0) / totalQuestions) * 100}%` }}
               />
             </div>
@@ -554,45 +564,45 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
               transition={{ duration: 0.22, ease: "easeOut" }}
               className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/[0.03] sm:p-7"
             >
-                {matchedDep && (
-                  <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 mb-4">
-                    <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                    Pre-filling from {matchedDep.name}&apos;s saved profile
-                  </div>
-                )}
-                <div className="mb-5">
-                  <h2 className="font-title text-xl font-bold text-slate-900 mb-1.5">
-                    {current.heading(form)}
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    {typeof current.sub === "function" ? current.sub(form) : current.sub}
-                  </p>
+              {matchedDep && (
+                <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                  Pre-filling from {matchedDep.name}&apos;s saved profile
                 </div>
+              )}
+              <div className="mb-5">
+                <h2 className="font-title mb-1.5 text-xl font-bold text-slate-900">
+                  {current.heading(form)}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {typeof current.sub === "function" ? current.sub(form) : current.sub}
+                </p>
+              </div>
 
-                <QuestionInput id={current.id} form={form} set={set} />
+              <QuestionInput id={current.id} form={form} set={set} />
 
-                <div className="mt-7 flex items-center justify-between gap-3">
-                  {!current.required ? (
-                    <button
-                      type="button"
-                      onClick={goNext}
-                      className="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                      Skip
-                    </button>
-                  ) : (
-                    <div />
-                  )}
+              <div className="mt-7 flex items-center justify-between gap-3">
+                {!current.required ? (
                   <button
                     type="button"
                     onClick={goNext}
-                    disabled={!canAdvance}
-                    className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                    className="text-sm font-medium text-slate-400 transition-colors hover:text-slate-600"
                   >
-                    {qNum === totalQuestions ? "Build my profile" : "Continue"}
-                    <ChevronRight className="h-4 w-4" />
+                    Skip
                   </button>
-                </div>
+                ) : (
+                  <div />
+                )}
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={!canAdvance}
+                  className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                >
+                  {qNum === totalQuestions ? "Build my profile" : "Continue"}
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -642,11 +652,18 @@ function NavigateResultsScreen({
       if (dependentId) {
         localStorage.setItem(
           "pms_expert_brief",
-          JSON.stringify({ dependentId, issueLabel, sport: form.sport, savedAt: new Date().toISOString() }),
+          JSON.stringify({
+            dependentId,
+            issueLabel,
+            sport: form.sport,
+            savedAt: new Date().toISOString(),
+          })
         );
       }
     } catch {}
-    router.push(`/booking?tab=experts${form.sport ? `&sport=${encodeURIComponent(form.sport)}` : ""}`);
+    router.push(
+      `/booking?tab=experts${form.sport ? `&sport=${encodeURIComponent(form.sport)}` : ""}`
+    );
   };
 
   const cards = [
@@ -673,21 +690,21 @@ function NavigateResultsScreen({
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-16">
+    <div className="flex min-h-screen items-center justify-center px-4 py-16">
       <div className="w-full max-w-2xl">
         <button
           type="button"
           onClick={onBack}
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </button>
-        <div className="text-center mb-8">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-power-orange/10">
-            <CheckCircle2 className="h-7 w-7 text-power-orange" />
+        <div className="mb-8 text-center">
+          <div className="bg-power-orange/10 mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
+            <CheckCircle2 className="text-power-orange h-7 w-7" />
           </div>
-          <h1 className="font-title text-2xl font-bold text-slate-900 mb-2">
+          <h1 className="font-title mb-2 text-2xl font-bold text-slate-900">
             {form.childName ? `${form.childName}'s profile is ready` : "Profile ready"}
           </h1>
           <p className="text-sm text-slate-500">
@@ -701,16 +718,16 @@ function NavigateResultsScreen({
               key={card.title}
               type="button"
               onClick={card.onClick}
-              className="w-full text-left flex items-start gap-4 rounded-2xl border-2 border-slate-200 bg-white p-5 transition-all duration-150 hover:border-power-orange hover:shadow-sm active:scale-[0.99]"
+              className="hover:border-power-orange flex w-full items-start gap-4 rounded-2xl border-2 border-slate-200 bg-white p-5 text-left transition-all duration-150 hover:shadow-sm active:scale-[0.99]"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange/10 text-power-orange">
+              <div className="bg-power-orange/10 text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
                 <card.icon className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-[15px] text-slate-900">{card.title}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{card.description}</p>
+                <p className="text-[15px] font-semibold text-slate-900">{card.title}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{card.description}</p>
               </div>
-              <ChevronRight className="h-4 w-4 text-slate-300 mt-2.5 shrink-0" />
+              <ChevronRight className="mt-2.5 h-4 w-4 shrink-0 text-slate-300" />
             </button>
           ))}
         </div>

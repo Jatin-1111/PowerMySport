@@ -72,9 +72,10 @@ export default function HomeClient() {
     dependents[0];
   // `chosenSport` is the assessment's own pick; `sportsFocus[0]` is what the
   // parent told us directly. Either is "the sport" for hero purposes.
-  const effectiveSport = primaryDependent?.sport?.chosenSport || primaryDependent?.sport?.sportsFocus?.[0];
+  const effectiveSport =
+    primaryDependent?.sport?.chosenSport || primaryDependent?.sport?.sportsFocus?.[0];
   const chosenMatch = primaryDependent?.sport?.sportMatches?.find(
-    (m) => m.sport === primaryDependent.sport?.chosenSport,
+    (m) => m.sport === primaryDependent.sport?.chosenSport
   );
   // The greeting rides on the CTA prompt line rather than a separate badge —
   // "Jatin, ready to find Aarav's sport?" instead of "Does your child...".
@@ -238,10 +239,7 @@ export default function HomeClient() {
             viewport={{ once: true, margin: "-80px" }}
             className="mx-auto max-w-2xl text-center"
           >
-            <motion.div
-              variants={itemVariants}
-              className="mb-4 flex justify-center"
-            >
+            <motion.div variants={itemVariants} className="mb-4 flex justify-center">
               <SectionLabel label="Sound Familiar?" color="slate" />
             </motion.div>
             <motion.h2
@@ -250,13 +248,10 @@ export default function HomeClient() {
             >
               Youth sports is challenging. You&apos;re not alone.
             </motion.h2>
-            <motion.p
-              variants={itemVariants}
-              className="text-lg text-slate-600"
-            >
-              Every parent wants the best for their child. But between scattered
-              advice, endless options, and no clear path, it&apos;s hard to know
-              if you&apos;re making the right call.
+            <motion.p variants={itemVariants} className="text-lg text-slate-600">
+              Every parent wants the best for their child. But between scattered advice, endless
+              options, and no clear path, it&apos;s hard to know if you&apos;re making the right
+              call.
             </motion.p>
           </motion.div>
 
@@ -273,10 +268,10 @@ export default function HomeClient() {
                 variants={cardVariants}
                 className="group flex items-start gap-3 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors duration-300 group-hover:bg-power-orange/10 group-hover:text-power-orange">
+                <span className="group-hover:bg-power-orange/10 group-hover:text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors duration-300">
                   {p.icon}
                 </span>
-                <p className="text-sm font-medium leading-snug text-slate-700">
+                <p className="text-sm leading-snug font-medium text-slate-700">
                   &ldquo;{p.text}&rdquo;
                 </p>
               </motion.div>
@@ -291,8 +286,7 @@ export default function HomeClient() {
             className="mx-auto mt-12 max-w-2xl text-center text-lg font-medium text-slate-800"
           >
             PowerMySport turns that confusion into one{" "}
-            <span className="text-power-orange">clear, personalised plan</span>{" "}
-            for your child.
+            <span className="text-power-orange">clear, personalised plan</span> for your child.
           </motion.p>
         </div>
       </section>
@@ -310,7 +304,7 @@ export default function HomeClient() {
 
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-orange-100/30 blur-3xl" />
+        <div className="pointer-events-none absolute top-1/4 -left-32 h-80 w-80 rounded-full bg-orange-100/30 blur-3xl" />
         <div className="pointer-events-none absolute -right-32 bottom-1/4 h-80 w-80 rounded-full bg-indigo-100/25 blur-3xl" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -331,12 +325,8 @@ export default function HomeClient() {
               >
                 Know more before you decide
               </motion.h2>
-              <motion.p
-                variants={itemVariants}
-                className="mb-8 text-lg text-slate-600"
-              >
-                Free resources to explore right now—no commitment, no account
-                needed.
+              <motion.p variants={itemVariants} className="mb-8 text-lg text-slate-600">
+                Free resources to explore right now—no commitment, no account needed.
               </motion.p>
 
               <motion.div variants={sectionVariants} className="space-y-4">
@@ -369,12 +359,8 @@ export default function HomeClient() {
                       {item.icon}
                     </div>
                     <div className="flex-1">
-                      <h3 className="mb-1 font-bold text-slate-900">
-                        {item.title}
-                      </h3>
-                      <p className="text-sm leading-relaxed text-slate-600">
-                        {item.desc}
-                      </p>
+                      <h3 className="mb-1 font-bold text-slate-900">{item.title}</h3>
+                      <p className="text-sm leading-relaxed text-slate-600">{item.desc}</p>
                     </div>
                     <Link
                       href={item.cta.href}
@@ -399,17 +385,17 @@ export default function HomeClient() {
                 damping: 26,
                 delay: 0.15,
               }}
-              className="relative hidden w-full max-w-[612px] mx-auto lg:block"
+              className="relative mx-auto hidden w-full max-w-[612px] lg:block"
             >
               {/* Offset backdrop panel */}
               <div
                 aria-hidden
-                className="absolute -inset-x-6 -bottom-6 top-10 rounded-[2.5rem] bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-indigo-50/40"
+                className="absolute -inset-x-6 top-10 -bottom-6 rounded-[2.5rem] bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-indigo-50/40"
               />
               {/* Dotted accent */}
               <div
                 aria-hidden
-                className="absolute -right-7 -top-7 h-28 w-28 opacity-50"
+                className="absolute -top-7 -right-7 h-28 w-28 opacity-50"
                 style={{
                   backgroundImage:
                     "radial-gradient(circle, rgba(233,115,22,0.35) 1.5px, transparent 1.5px)",
@@ -417,7 +403,7 @@ export default function HomeClient() {
                 }}
               />
 
-              <div className="group relative aspect-[3/2] overflow-hidden rounded-[2rem] shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
+              <div className="group relative aspect-[3/2] overflow-hidden rounded-[2rem] shadow-2xl ring-1 shadow-slate-900/10 ring-slate-900/5">
                 <Image
                   src="https://media.istockphoto.com/id/1496936307/photo/young-boy-watching-british-indian-mother-working-at-home.jpg?s=612x612&w=0&k=20&c=KOg86wvMpgJe42K-2i3UKdcuOD7egEWcxHO1n3WHtl8="
                   alt="Parent planning their child's sports journey"
@@ -434,18 +420,14 @@ export default function HomeClient() {
                 />
 
                 {/* Glass caption — single, integrated overlay */}
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+                <div className="absolute right-4 bottom-4 left-4 flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white shadow-lg shadow-orange-950/40">
+                    <div className="bg-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg shadow-orange-950/40">
                       <Map size={17} />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-white">
-                        Learn before you decide
-                      </p>
-                      <p className="text-[11px] text-white/60">
-                        Pathways · Community
-                      </p>
+                      <p className="text-sm font-bold text-white">Learn before you decide</p>
+                      <p className="text-[11px] text-white/60">Pathways · Community</p>
                     </div>
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200">
@@ -470,7 +452,10 @@ export default function HomeClient() {
           label: user ? "Go to Roadmap" : "Explore Your Roadmap",
           href: "/roadmap",
         }}
-        secondaryCTA={{ label: "Chat on WhatsApp", href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child." }}
+        secondaryCTA={{
+          label: "Chat on WhatsApp",
+          href: "https://wa.me/918968582443?text=Hi%21%20I%20found%20PowerMySport%20and%20would%20like%20to%20know%20more%20about%20sports%20guidance%20for%20my%20child.",
+        }}
       />
     </main>
   );

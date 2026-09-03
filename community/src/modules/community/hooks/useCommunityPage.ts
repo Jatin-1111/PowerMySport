@@ -30,10 +30,7 @@ import {
   BlockedUser,
 } from "@/modules/community/types";
 import { GroupMember } from "@/modules/community/components/GroupMembersList";
-import {
-  getAvatarCharacter,
-  isWithinMessageEditWindow,
-} from "@/modules/community/utils/chatUtils";
+import { getAvatarCharacter, isWithinMessageEditWindow } from "@/modules/community/utils/chatUtils";
 import {
   COMMUNITY_ACTIVE_TAB_KEY,
   COMMUNITY_WORKSPACE_VIEW_KEY,
@@ -53,9 +50,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
-export function useCommunityPage(options?: {
-  forceView?: "community-overview" | "conversations";
-}) {
+export function useCommunityPage(options?: { forceView?: "community-overview" | "conversations" }) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const pathname = usePathname();
@@ -64,67 +59,52 @@ export function useCommunityPage(options?: {
   const lastAppliedQueryRef = useRef("");
   const hasHydratedUrlRef = useRef(false);
 
-  const [activeSidebarTab, setActiveSidebarTab] = useState<
-    "community-overview" | "conversations"
-  >(() => {
-    if (typeof window === "undefined") return "community-overview";
-    const stored = window.localStorage.getItem(COMMUNITY_ACTIVE_TAB_KEY);
-    return isValidSidebarTab(stored) ? stored : "community-overview";
-  });
-  const [workspaceView, setWorkspaceView] = useState<
-    "CHAT" | "DIRECTORY" | "PRIVACY"
-  >(() => {
+  const [activeSidebarTab, setActiveSidebarTab] = useState<"community-overview" | "conversations">(
+    () => {
+      if (typeof window === "undefined") return "community-overview";
+      const stored = window.localStorage.getItem(COMMUNITY_ACTIVE_TAB_KEY);
+      return isValidSidebarTab(stored) ? stored : "community-overview";
+    }
+  );
+  const [workspaceView, setWorkspaceView] = useState<"CHAT" | "DIRECTORY" | "PRIVACY">(() => {
     if (typeof window === "undefined") return "CHAT";
     const stored = window.localStorage.getItem(COMMUNITY_WORKSPACE_VIEW_KEY);
     return isValidWorkspaceView(stored) ? stored : "CHAT";
   });
-  const [directoryView, setDirectoryView] = useState<"CONTACTS" | "GROUPS">(
-    () => {
-      if (typeof window === "undefined") return "CONTACTS";
-      const stored = window.localStorage.getItem(COMMUNITY_DIRECTORY_VIEW_KEY);
-      return isValidDirectoryView(stored)
-        ? stored === "GROUPS"
-          ? "GROUPS"
-          : "CONTACTS"
-        : "CONTACTS";
-    },
-  );
+  const [directoryView, setDirectoryView] = useState<"CONTACTS" | "GROUPS">(() => {
+    if (typeof window === "undefined") return "CONTACTS";
+    const stored = window.localStorage.getItem(COMMUNITY_DIRECTORY_VIEW_KEY);
+    return isValidDirectoryView(stored)
+      ? stored === "GROUPS"
+        ? "GROUPS"
+        : "CONTACTS"
+      : "CONTACTS";
+  });
   const [sidebarMode, setSidebarMode] = useState<"INBOX" | "TOOLS">(() => {
     if (typeof window === "undefined") return "INBOX";
-    return window.localStorage.getItem(COMMUNITY_SIDEBAR_MODE_KEY) === "TOOLS"
-      ? "TOOLS"
-      : "INBOX";
+    return window.localStorage.getItem(COMMUNITY_SIDEBAR_MODE_KEY) === "TOOLS" ? "TOOLS" : "INBOX";
   });
 
-  const [conversationMode, setConversationMode] = useState<
-    "ALL" | "UNREAD" | "REQUESTS"
-  >("ALL");
-  const [groupMode, setGroupMode] = useState<"ALL" | "JOINED" | "DISCOVER">(
-    "ALL",
+  const [conversationMode, setConversationMode] = useState<"ALL" | "UNREAD" | "REQUESTS">("ALL");
+  const [groupMode, setGroupMode] = useState<"ALL" | "JOINED" | "DISCOVER">("ALL");
+  const [groupToolsMode, setGroupToolsMode] = useState<"DISCOVER" | "MANAGE" | "INVITE">(
+    "DISCOVER"
   );
-  const [groupToolsMode, setGroupToolsMode] = useState<
-    "DISCOVER" | "MANAGE" | "INVITE"
-  >("DISCOVER");
   const [conversationFilterQuery, setConversationFilterQuery] = useState("");
 
   const [profile, setProfile] = useState<CommunityProfile | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [conversationPage, setConversationPage] = useState(1);
   const [hasMoreConversations, setHasMoreConversations] = useState(false);
-  const [isLoadingMoreConversations, setIsLoadingMoreConversations] =
-    useState(false);
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(null);
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [messagePage, setMessagePage] = useState(1);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
   const [playerSearchQuery, setPlayerSearchQuery] = useState("");
-  const [playerSearchResults, setPlayerSearchResults] = useState<
-    CommunityUserSearchResult[]
-  >([]);
+  const [playerSearchResults, setPlayerSearchResults] = useState<CommunityUserSearchResult[]>([]);
   const [isSearchingPlayers, setIsSearchingPlayers] = useState(false);
   const [groupSearchQuery, setGroupSearchQuery] = useState("");
   const [groupResults, setGroupResults] = useState<CommunityGroupSummary[]>([]);
@@ -141,21 +121,12 @@ export function useCommunityPage(options?: {
 
   const [inviteGroupId, setInviteGroupId] = useState<string | null>(null);
   const [inviteSearchQuery, setInviteSearchQuery] = useState("");
-  const [inviteSearchResults, setInviteSearchResults] = useState<
-    CommunityUserSearchResult[]
-  >([]);
-  const [isSearchingInvitePlayers, setIsSearchingInvitePlayers] =
-    useState(false);
-  const [isAddingMemberUserId, setIsAddingMemberUserId] = useState<
-    string | null
-  >(null);
-  const [isUpdatingGroupPolicyId, setIsUpdatingGroupPolicyId] = useState<
-    string | null
-  >(null);
+  const [inviteSearchResults, setInviteSearchResults] = useState<CommunityUserSearchResult[]>([]);
+  const [isSearchingInvitePlayers, setIsSearchingInvitePlayers] = useState(false);
+  const [isAddingMemberUserId, setIsAddingMemberUserId] = useState<string | null>(null);
+  const [isUpdatingGroupPolicyId, setIsUpdatingGroupPolicyId] = useState<string | null>(null);
   const [isLeavingGroupId, setIsLeavingGroupId] = useState<string | null>(null);
-  const [isDeletingGroupId, setIsDeletingGroupId] = useState<string | null>(
-    null,
-  );
+  const [isDeletingGroupId, setIsDeletingGroupId] = useState<string | null>(null);
 
   const [reportModal, setReportModal] = useState<{
     targetType: "MESSAGE" | "GROUP";
@@ -168,51 +139,41 @@ export function useCommunityPage(options?: {
   const [isSending, setIsSending] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageDraft, setEditingMessageDraft] = useState("");
-  const [isMutatingMessageId, setIsMutatingMessageId] = useState<string | null>(
-    null,
-  );
+  const [isMutatingMessageId, setIsMutatingMessageId] = useState<string | null>(null);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
-  const [mobileActionMessageId, setMobileActionMessageId] = useState<
-    string | null
-  >(null);
+  const [mobileActionMessageId, setMobileActionMessageId] = useState<string | null>(null);
   const [isTogglingBlockUser, setIsTogglingBlockUser] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isConversationSidebarOpen, setIsConversationSidebarOpen] =
-    useState(true);
+  const [isConversationSidebarOpen, setIsConversationSidebarOpen] = useState(true);
   const [showGroupMembersPanel, setShowGroupMembersPanel] = useState(false);
   const [isMemberProfileOpen, setIsMemberProfileOpen] = useState(false);
   const [isLoadingMemberProfile, setIsLoadingMemberProfile] = useState(false);
-  const [memberProfileError, setMemberProfileError] = useState<string | null>(
-    null,
+  const [memberProfileError, setMemberProfileError] = useState<string | null>(null);
+  const [selectedMemberProfile, setSelectedMemberProfile] = useState<CommunityMemberProfile | null>(
+    null
   );
-  const [selectedMemberProfile, setSelectedMemberProfile] =
-    useState<CommunityMemberProfile | null>(null);
   const [typingUsers, setTypingUsers] = useState<Record<string, string[]>>({});
 
   // ── Chat Enhancement State (client-side, localStorage-backed) ──
-  const [pinnedConversationIds, setPinnedConversationIds] = useState<string[]>(
-    () => {
-      if (typeof window === "undefined") return [];
-      try {
-        return JSON.parse(localStorage.getItem(COMMUNITY_PINNED_KEY) || "[]");
-      } catch {
-        return [];
-      }
-    },
-  );
-  const [mutedConversationIds, setMutedConversationIds] = useState<string[]>(
-    () => {
-      if (typeof window === "undefined") return [];
-      try {
-        return JSON.parse(localStorage.getItem(COMMUNITY_MUTED_KEY) || "[]");
-      } catch {
-        return [];
-      }
-    },
-  );
+  const [pinnedConversationIds, setPinnedConversationIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem(COMMUNITY_PINNED_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  });
+  const [mutedConversationIds, setMutedConversationIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem(COMMUNITY_MUTED_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  });
   const mutedConversationIdsRef = useRef<string[]>(mutedConversationIds);
   useEffect(() => {
     mutedConversationIdsRef.current = mutedConversationIds;
@@ -238,45 +199,35 @@ export function useCommunityPage(options?: {
       const users = await communityService.getBlockedUsers();
       setBlockedUsersList(users);
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to load blocked users",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to load blocked users");
     } finally {
       setIsLoadingBlockedUsers(false);
     }
   }, []);
 
-  const handleUnblockUserById = useCallback(
-    async (targetUserId: string) => {
-      try {
-        await communityService.unblockUser(targetUserId);
-        setBlockedUsersList((current) =>
-          current.filter((user) => user.id !== targetUserId),
-        );
-        setProfile((current) =>
-          current
-            ? {
-                ...current,
-                blockedUsers: (current.blockedUsers || []).filter(
-                  (id) => id !== targetUserId,
-                ),
-              }
-            : current,
-        );
-        toast.success("User unblocked");
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed to unblock user");
-      }
-    },
-    [],
-  );
+  const handleUnblockUserById = useCallback(async (targetUserId: string) => {
+    try {
+      await communityService.unblockUser(targetUserId);
+      setBlockedUsersList((current) => current.filter((user) => user.id !== targetUserId));
+      setProfile((current) =>
+        current
+          ? {
+              ...current,
+              blockedUsers: (current.blockedUsers || []).filter((id) => id !== targetUserId),
+            }
+          : current
+      );
+      toast.success("User unblocked");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to unblock user");
+    }
+  }, []);
 
   useEffect(() => {
     if (showBlockedUsersModal) {
       void loadBlockedUsers();
     }
   }, [showBlockedUsersModal, loadBlockedUsers]);
-
 
   /**
    * Pins a message for the whole group. This used to write to localStorage, so
@@ -290,9 +241,7 @@ export function useCommunityPage(options?: {
       queueConversationRefresh();
       toast.success(result.pinned ? "Message pinned" : "Message unpinned");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to pin message",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to pin message");
     }
   };
 
@@ -312,13 +261,12 @@ export function useCommunityPage(options?: {
   // loaded. Reading `profile` from their closure therefore compares against
   // undefined forever, so "is this mine?" checks go through this ref.
   const profileUserIdRef = useRef<string | undefined>(undefined);
-  const typingTimeoutsRef = useRef<
-    Record<string, ReturnType<typeof setTimeout>>
-  >({});
+  const typingTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const memberProfileRequestIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const [selectedConversationPinnedId, setSelectedConversationPinnedId] =
-    useState<string | null>(null);
+  const [selectedConversationPinnedId, setSelectedConversationPinnedId] = useState<string | null>(
+    null
+  );
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
@@ -332,7 +280,7 @@ export function useCommunityPage(options?: {
 
   const safeConversations = useMemo(
     () => (Array.isArray(conversations) ? conversations : []),
-    [conversations],
+    [conversations]
   );
   const safeConversationsRef = useRef(safeConversations);
   useEffect(() => {
@@ -340,7 +288,7 @@ export function useCommunityPage(options?: {
   }, [safeConversations]);
   const safeGroupResults = useMemo(
     () => (Array.isArray(groupResults) ? groupResults : []),
-    [groupResults],
+    [groupResults]
   );
 
   const getConversationById = useCallback(
@@ -348,43 +296,46 @@ export function useCommunityPage(options?: {
       if (!conversationId) return null;
       return safeConversations.find((c) => c.id === conversationId) || null;
     },
-    [safeConversations],
+    [safeConversations]
   );
 
   const getGroupConversationByGroupId = useCallback(
     (groupId: string) => {
       return safeConversations.find((c) => c.group?.id === groupId) || null;
     },
-    [safeConversations],
+    [safeConversations]
   );
 
   const selectedConversation = useMemo(
     () => getConversationById(selectedConversationId),
-    [getConversationById, selectedConversationId],
+    [getConversationById, selectedConversationId]
   );
   const mobileActionMessage = useMemo(() => {
     if (!mobileActionMessageId) return null;
     return messages.find((m) => m.id === mobileActionMessageId) || null;
   }, [messages, mobileActionMessageId]);
 
-  const optimisticUpdateConversationLatestMessage = useCallback((chatId: string, content: string, type: string = "TEXT") => {
-    setConversations((prev) =>
-      prev.map((c) => {
-        if (c.id === chatId) {
-          return {
-            ...c,
-            latestMessage: {
-              content,
-              createdAt: new Date().toISOString(),
-              senderId: profile?.userId || "me",
-              type,
-            },
-          };
-        }
-        return c;
-      })
-    );
-  }, [profile?.userId]);
+  const optimisticUpdateConversationLatestMessage = useCallback(
+    (chatId: string, content: string, type: string = "TEXT") => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id === chatId) {
+            return {
+              ...c,
+              latestMessage: {
+                content,
+                createdAt: new Date().toISOString(),
+                senderId: profile?.userId || "me",
+                type,
+              },
+            };
+          }
+          return c;
+        })
+      );
+    },
+    [profile?.userId]
+  );
 
   const appendMessage = (incoming: ConversationMessage) => {
     setMessages((current) => {
@@ -409,13 +360,11 @@ export function useCommunityPage(options?: {
 
   const updateMessageById = (
     messageId: string,
-    updater: (m: ConversationMessage) => ConversationMessage,
+    updater: (m: ConversationMessage) => ConversationMessage
   ) => {
     setMessages((current) => {
       const safeCurrent = Array.isArray(current) ? current : [];
-      const updated = safeCurrent.map((m) =>
-        m.id === messageId ? updater(m) : m,
-      );
+      const updated = safeCurrent.map((m) => (m.id === messageId ? updater(m) : m));
       if (selectedConversationIdRef.current) {
         void setCachedMessages(selectedConversationIdRef.current, updated);
       }
@@ -424,16 +373,14 @@ export function useCommunityPage(options?: {
   };
 
   const totalUnread = useMemo(
-    () =>
-      safeConversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
-    [safeConversations],
+    () => safeConversations.reduce((sum, item) => sum + (item.unreadCount || 0), 0),
+    [safeConversations]
   );
   const pendingRequestsCount = useMemo(
     () =>
-      safeConversations.filter(
-        (c) => c.status === "PENDING" && c.conversationType !== "GROUP",
-      ).length,
-    [safeConversations],
+      safeConversations.filter((c) => c.status === "PENDING" && c.conversationType !== "GROUP")
+        .length,
+    [safeConversations]
   );
 
   const mainAppUrl = useMemo(() => getMainAppUrl(), []);
@@ -443,11 +390,8 @@ export function useCommunityPage(options?: {
   const selectedConversationIsBlocked =
     selectedConversation?.conversationType !== "GROUP" &&
     !!selectedConversation?.otherParticipant?.id &&
-    (profile?.blockedUsers || []).includes(
-      selectedConversation.otherParticipant.id,
-    );
-  const selectedConversationRequestedByMe =
-    selectedConversation?.requestedBy === profile?.userId;
+    (profile?.blockedUsers || []).includes(selectedConversation.otherParticipant.id);
+  const selectedConversationRequestedByMe = selectedConversation?.requestedBy === profile?.userId;
   const selectedConversationNeedsMyApproval =
     selectedConversationIsPending && !selectedConversationRequestedByMe;
   const canSendSelectedConversationMessage =
@@ -468,38 +412,30 @@ export function useCommunityPage(options?: {
     selectedConversation?.conversationType === "GROUP";
   const selectedConversationDisplayName = selectedConversation
     ? selectedConversation.conversationType === "GROUP"
-      ? selectedConversation.group?.name ||
-        selectedConversation.otherParticipant.displayName
+      ? selectedConversation.group?.name || selectedConversation.otherParticipant.displayName
       : selectedConversation.otherParticipant.displayName
     : "No conversation selected";
   const selectedConversationPhotoUrl =
     selectedConversation?.conversationType === "GROUP"
       ? null
       : (selectedConversation?.otherParticipant?.photoUrl ?? null);
-  const selectedConversationAvatarChar = getAvatarCharacter(
-    selectedConversationDisplayName,
-  );
+  const selectedConversationAvatarChar = getAvatarCharacter(selectedConversationDisplayName);
   const activeMobileDockTab: "CHAT" | "LIST" | "TOOLS" =
-    sidebarMode === "TOOLS"
-      ? "TOOLS"
-      : workspaceView === "CHAT"
-        ? "CHAT"
-        : "LIST";
+    sidebarMode === "TOOLS" ? "TOOLS" : workspaceView === "CHAT" ? "CHAT" : "LIST";
   const groupsJoinedCount = useMemo(
     () => safeGroupResults.filter((g) => g.isMember).length,
-    [safeGroupResults],
+    [safeGroupResults]
   );
   const contactConversations = useMemo(
     () => safeConversations.filter((c) => c.conversationType !== "GROUP"),
-    [safeConversations],
+    [safeConversations]
   );
   const groupConversations = useMemo(
     () => safeConversations.filter((c) => c.conversationType === "GROUP"),
-    [safeConversations],
+    [safeConversations]
   );
   const visibleConversations = useMemo(() => {
-    const source =
-      directoryView === "GROUPS" ? groupConversations : contactConversations;
+    const source = directoryView === "GROUPS" ? groupConversations : contactConversations;
     // Apply both the old filter query and the new search query
     const oldQuery = conversationFilterQuery.trim().toLowerCase();
     const searchQuery = conversationSearchQuery.trim().toLowerCase();
@@ -510,9 +446,7 @@ export function useCommunityPage(options?: {
       const groupName = c.group?.name?.toLowerCase() || "";
       const latestMessage = c.latestMessage?.content?.toLowerCase() || "";
       return (
-        displayName.includes(query) ||
-        groupName.includes(query) ||
-        latestMessage.includes(query)
+        displayName.includes(query) || groupName.includes(query) || latestMessage.includes(query)
       );
     });
   }, [
@@ -529,7 +463,7 @@ export function useCommunityPage(options?: {
         ? visibleConversations.filter((c) => c.unreadCount > 0)
         : conversationMode === "REQUESTS"
           ? visibleConversations.filter(
-              (c) => c.status === "PENDING" && c.conversationType !== "GROUP",
+              (c) => c.status === "PENDING" && c.conversationType !== "GROUP"
             )
           : visibleConversations;
 
@@ -544,18 +478,13 @@ export function useCommunityPage(options?: {
       if (a.status !== "PENDING" && b.status === "PENDING") return 1;
       if ((a.unreadCount || 0) !== (b.unreadCount || 0))
         return (b.unreadCount || 0) - (a.unreadCount || 0);
-      const aTime = a.latestMessage?.createdAt
-        ? new Date(a.latestMessage.createdAt).getTime()
-        : 0;
-      const bTime = b.latestMessage?.createdAt
-        ? new Date(b.latestMessage.createdAt).getTime()
-        : 0;
+      const aTime = a.latestMessage?.createdAt ? new Date(a.latestMessage.createdAt).getTime() : 0;
+      const bTime = b.latestMessage?.createdAt ? new Date(b.latestMessage.createdAt).getTime() : 0;
       return bTime - aTime;
     });
   }, [visibleConversations, conversationMode, pinnedConversationIds]);
 
-  const hasConversationFilters =
-    conversationMode !== "ALL" || !!conversationFilterQuery.trim();
+  const hasConversationFilters = conversationMode !== "ALL" || !!conversationFilterQuery.trim();
   const isGroupsDirectory = directoryView === "GROUPS";
   const conversationModeOptions: Array<{
     value: "ALL" | "UNREAD" | "REQUESTS";
@@ -572,19 +501,14 @@ export function useCommunityPage(options?: {
       ];
 
   const visibleGroups = useMemo(() => {
-    if (groupMode === "JOINED")
-      return safeGroupResults.filter((g) => g.isMember);
-    if (groupMode === "DISCOVER")
-      return safeGroupResults.filter((g) => !g.isMember);
+    if (groupMode === "JOINED") return safeGroupResults.filter((g) => g.isMember);
+    if (groupMode === "DISCOVER") return safeGroupResults.filter((g) => !g.isMember);
     return safeGroupResults;
   }, [safeGroupResults, groupMode]);
 
   const toolVisibleGroups = useMemo(
-    () =>
-      visibleGroups.filter((g) =>
-        groupToolsMode === "DISCOVER" ? !g.isMember : !!g.isMember,
-      ),
-    [visibleGroups, groupToolsMode],
+    () => visibleGroups.filter((g) => (groupToolsMode === "DISCOVER" ? !g.isMember : !!g.isMember)),
+    [visibleGroups, groupToolsMode]
   );
 
   const toolsSteps = useMemo(() => {
@@ -618,7 +542,7 @@ export function useCommunityPage(options?: {
   const applyConversationPage = useCallback(
     (
       response: ConversationListResponse,
-      options?: { append?: boolean; preserveSelection?: boolean },
+      options?: { append?: boolean; preserveSelection?: boolean }
     ) => {
       const append = options?.append || false;
       const preserveSelection = options?.preserveSelection ?? true;
@@ -632,8 +556,10 @@ export function useCommunityPage(options?: {
 
       setConversations((current) => {
         const safeCurrent = Array.isArray(current) ? current : [];
-        const processedItems = safeItems.map((c) => 
-          c.id === selectedConversationIdRef.current && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c
+        const processedItems = safeItems.map((c) =>
+          c.id === selectedConversationIdRef.current && c.unreadCount !== 0
+            ? { ...c, unreadCount: 0 }
+            : c
         );
         if (!append) return processedItems;
         const existingIds = new Set(safeCurrent.map((c) => c.id));
@@ -647,17 +573,13 @@ export function useCommunityPage(options?: {
       if (!append) {
         setSelectedConversationId((current) => {
           if (!safeItems.length) return null;
-          if (
-            preserveSelection &&
-            current &&
-            safeItems.some((c) => c.id === current)
-          )
+          if (preserveSelection && current && safeItems.some((c) => c.id === current))
             return current;
           return null;
         });
       }
     },
-    [],
+    []
   );
 
   const refreshConversationsNow = useCallback(async () => {
@@ -667,10 +589,7 @@ export function useCommunityPage(options?: {
     }
     isRefreshingConversationsRef.current = true;
     try {
-      const updated = await communityService.listConversations(
-        1,
-        CONVERSATION_PAGE_SIZE,
-      );
+      const updated = await communityService.listConversations(1, CONVERSATION_PAGE_SIZE);
       applyConversationPage(updated, { preserveSelection: true });
     } catch {
     } finally {
@@ -690,7 +609,7 @@ export function useCommunityPage(options?: {
         void refreshConversationsNow();
       }, delayMs);
     },
-    [refreshConversationsNow],
+    [refreshConversationsNow]
   );
 
   const featuredGroups = useMemo(() => {
@@ -708,9 +627,7 @@ export function useCommunityPage(options?: {
     try {
       const session = await communityService.ensureSession();
       if (!isCommunityEligibleRole(session.role)) {
-        toast.error(
-          "Community chat is unavailable for this account",
-        );
+        toast.error("Community chat is unavailable for this account");
         redirectToMainLogin();
         return;
       }
@@ -724,8 +641,7 @@ export function useCommunityPage(options?: {
       applyConversationPage(conversationData, { preserveSelection: true });
       setGroupResults(groupData);
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to load community";
+      const message = e instanceof Error ? e.message : "Failed to load community";
       setError(message);
       toast.error(message);
     } finally {
@@ -733,32 +649,27 @@ export function useCommunityPage(options?: {
     }
   }, [applyConversationPage]);
 
-  const markNotificationsForConversationAsRead = useCallback(
-    async (conversationId: string) => {
-      try {
-        const allNotifications =
-          await communityService.listCommunityNotifications(
-            1,
-            100,
-            false, // unread only
-          );
+  const markNotificationsForConversationAsRead = useCallback(async (conversationId: string) => {
+    try {
+      const allNotifications = await communityService.listCommunityNotifications(
+        1,
+        100,
+        false // unread only
+      );
 
-        const relatedNotifications = allNotifications.items.filter(
-          (item) =>
-            item.data?.conversationId === conversationId && !item.isRead,
-        );
+      const relatedNotifications = allNotifications.items.filter(
+        (item) => item.data?.conversationId === conversationId && !item.isRead
+      );
 
-        await Promise.all(
-          relatedNotifications.map((notification) =>
-            communityService.markCommunityNotificationRead(notification.id),
-          ),
-        );
-      } catch (error) {
-        console.debug("Failed to mark notifications as read:", error);
-      }
-    },
-    [],
-  );
+      await Promise.all(
+        relatedNotifications.map((notification) =>
+          communityService.markCommunityNotificationRead(notification.id)
+        )
+      );
+    } catch (error) {
+      console.debug("Failed to mark notifications as read:", error);
+    }
+  }, []);
 
   const loadMessages = useCallback(
     async (conversationId: string) => {
@@ -773,17 +684,13 @@ export function useCommunityPage(options?: {
         }
 
         const response = await communityService.getMessages(conversationId, 1);
-        const serverMessages = Array.isArray(response.messages)
-          ? response.messages
-          : [];
+        const serverMessages = Array.isArray(response.messages) ? response.messages : [];
         setMessages(serverMessages);
         void setCachedMessages(conversationId, serverMessages);
 
         setMessagePage(1);
         if (response.pagination) {
-          setHasMoreMessages(
-            response.pagination.page < response.pagination.totalPages,
-          );
+          setHasMoreMessages(response.pagination.page < response.pagination.totalPages);
         } else {
           setHasMoreMessages(false);
         }
@@ -795,9 +702,9 @@ export function useCommunityPage(options?: {
         setConversations((current) =>
           Array.isArray(current)
             ? current.map((c) =>
-                c.id === conversationId && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c,
+                c.id === conversationId && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c
               )
-            : current,
+            : current
         );
 
         const socket = getCommunitySocket();
@@ -808,29 +715,22 @@ export function useCommunityPage(options?: {
         // Defer refresh to allow backend to process markRead
         setTimeout(() => refreshConversationsNow(), 500);
       } catch (e) {
-        const message =
-          e instanceof Error ? e.message : "Failed to load messages";
+        const message = e instanceof Error ? e.message : "Failed to load messages";
         setError(message);
         toast.error(message);
       }
     },
-    [refreshConversationsNow, markNotificationsForConversationAsRead],
+    [refreshConversationsNow, markNotificationsForConversationAsRead]
   );
 
   const loadMoreMessages = useCallback(async () => {
-    if (!selectedConversationId || isLoadingMoreMessages || !hasMoreMessages)
-      return;
+    if (!selectedConversationId || isLoadingMoreMessages || !hasMoreMessages) return;
     setIsLoadingMoreMessages(true);
     try {
       const nextPage = messagePage + 1;
-      const response = await communityService.getMessages(
-        selectedConversationId,
-        nextPage,
-      );
+      const response = await communityService.getMessages(selectedConversationId, nextPage);
 
-      const newMessages = Array.isArray(response.messages)
-        ? response.messages
-        : [];
+      const newMessages = Array.isArray(response.messages) ? response.messages : [];
       setMessages((current) => {
         // Prepend new messages, filtering out any duplicates
         const currentIds = new Set(current.map((m) => m.id));
@@ -842,25 +742,16 @@ export function useCommunityPage(options?: {
 
       setMessagePage(nextPage);
       if (response.pagination) {
-        setHasMoreMessages(
-          response.pagination.page < response.pagination.totalPages,
-        );
+        setHasMoreMessages(response.pagination.page < response.pagination.totalPages);
       } else {
         setHasMoreMessages(false);
       }
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to load older messages",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to load older messages");
     } finally {
       setIsLoadingMoreMessages(false);
     }
-  }, [
-    selectedConversationId,
-    messagePage,
-    hasMoreMessages,
-    isLoadingMoreMessages,
-  ]);
+  }, [selectedConversationId, messagePage, hasMoreMessages, isLoadingMoreMessages]);
 
   useEffect(() => {
     void loadBootstrap();
@@ -882,12 +773,12 @@ export function useCommunityPage(options?: {
       setMessages([]);
       return;
     }
-    
+
     // Clear messages if switching to a new conversation to prevent stale data leaking
     if (selectedConversationIdRef.current !== selectedConversationId) {
       setMessages([]);
     }
-    
+
     loadMessages(selectedConversationId);
   }, [loadMessages, selectedConversation, selectedConversationId]);
 
@@ -921,17 +812,13 @@ export function useCommunityPage(options?: {
   useEffect(() => {
     const currentQuery = urlSearchParams.toString();
 
-    if (
-      hasHydratedUrlRef.current &&
-      currentQuery === lastAppliedQueryRef.current
-    ) {
+    if (hasHydratedUrlRef.current && currentQuery === lastAppliedQueryRef.current) {
       return;
     }
 
     const queryParams = new URLSearchParams(currentQuery);
     const sidebarState = resolveSidebarQueryState(queryParams.get("sidebar"));
-    const urlDirectoryView =
-      queryParams.get("directory")?.toUpperCase() || null;
+    const urlDirectoryView = queryParams.get("directory")?.toUpperCase() || null;
     const urlGroupToolsMode = queryParams.get("panel")?.toUpperCase() || null;
     const urlConversationId = queryParams.get("conversation") || null;
     const urlQuery = queryParams.get("q") || null;
@@ -939,19 +826,13 @@ export function useCommunityPage(options?: {
     if (sidebarState.mode)
       setSidebarMode((c) => (c === sidebarState.mode ? c : sidebarState.mode!));
     if (sidebarState.tab)
-      setActiveSidebarTab((c) =>
-        c === sidebarState.tab ? c : sidebarState.tab!,
-      );
+      setActiveSidebarTab((c) => (c === sidebarState.tab ? c : sidebarState.tab!));
     if (isValidDirectoryView(urlDirectoryView))
       setDirectoryView((c) => (c === urlDirectoryView ? c : urlDirectoryView));
     if (isValidGroupToolsMode(urlGroupToolsMode))
-      setGroupToolsMode((c) =>
-        c === urlGroupToolsMode ? c : urlGroupToolsMode,
-      );
+      setGroupToolsMode((c) => (c === urlGroupToolsMode ? c : urlGroupToolsMode));
     if (typeof urlConversationId === "string" && urlConversationId.trim()) {
-      setSelectedConversationId((c) =>
-        c === urlConversationId ? c : urlConversationId,
-      );
+      setSelectedConversationId((c) => (c === urlConversationId ? c : urlConversationId));
       setActiveSidebarTab("conversations");
       setWorkspaceView("CHAT");
     }
@@ -977,8 +858,7 @@ export function useCommunityPage(options?: {
     if (sidebarMode === "TOOLS" && directoryView === "GROUPS")
       params.set("panel", groupToolsMode.toLowerCase());
     else params.delete("panel");
-    if (selectedConversationId)
-      params.set("conversation", selectedConversationId);
+    if (selectedConversationId) params.set("conversation", selectedConversationId);
     else params.delete("conversation");
 
     const nextQuery = params.toString();
@@ -1027,8 +907,7 @@ export function useCommunityPage(options?: {
       return;
     }
     if (sidebarMode !== "TOOLS") return;
-    if (activeSidebarTab !== "conversations")
-      setActiveSidebarTab("conversations");
+    if (activeSidebarTab !== "conversations") setActiveSidebarTab("conversations");
     if (workspaceView !== "DIRECTORY") setWorkspaceView("DIRECTORY");
     if (!isConversationSidebarOpen) setIsConversationSidebarOpen(true);
   }, [sidebarMode, activeSidebarTab, workspaceView, isConversationSidebarOpen]);
@@ -1036,8 +915,7 @@ export function useCommunityPage(options?: {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const isMobileViewport = window.matchMedia("(max-width: 1279px)").matches;
-    if (!isMobileViewport || !isConversationsView || selectedConversationId)
-      return;
+    if (!isMobileViewport || !isConversationsView || selectedConversationId) return;
     if (workspaceView !== "DIRECTORY") setWorkspaceView("DIRECTORY");
     if (sidebarMode !== "INBOX") setSidebarMode("INBOX");
     if (!isConversationSidebarOpen) setIsConversationSidebarOpen(true);
@@ -1052,16 +930,12 @@ export function useCommunityPage(options?: {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (selectedConversationId)
-      window.localStorage.setItem(
-        COMMUNITY_SELECTED_CONVERSATION_KEY,
-        selectedConversationId,
-      );
+      window.localStorage.setItem(COMMUNITY_SELECTED_CONVERSATION_KEY, selectedConversationId);
     else window.localStorage.removeItem(COMMUNITY_SELECTED_CONVERSATION_KEY);
   }, [selectedConversationId]);
 
   useEffect(() => {
-    if (selectedConversation?.conversationType !== "GROUP")
-      setShowGroupMembersPanel(false);
+    if (selectedConversation?.conversationType !== "GROUP") setShowGroupMembersPanel(false);
   }, [selectedConversation?.conversationType]);
 
   useEffect(() => {
@@ -1096,9 +970,7 @@ export function useCommunityPage(options?: {
     const timeout = setTimeout(async () => {
       try {
         setIsSearchingGroups(true);
-        const groups = await communityService.listGroups(
-          groupSearchQuery.trim(),
-        );
+        const groups = await communityService.listGroups(groupSearchQuery.trim());
         setGroupResults(groups);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load groups");
@@ -1141,7 +1013,10 @@ export function useCommunityPage(options?: {
     const handleConnect = () => {
       setIsSocketConnected(true);
       const currentConversationId = selectedConversationIdRef.current;
-      if (currentConversationId && safeConversationsRef.current.find((c) => c.id === currentConversationId)) {
+      if (
+        currentConversationId &&
+        safeConversationsRef.current.find((c) => c.id === currentConversationId)
+      ) {
         socket.emit("community:joinConversation", {
           conversationId: currentConversationId,
         });
@@ -1207,9 +1082,7 @@ export function useCommunityPage(options?: {
         return updated;
       });
     };
-    const handleConversationUpdated = (payload?: {
-      conversationId?: string;
-    }) => {
+    const handleConversationUpdated = (payload?: { conversationId?: string }) => {
       if (payload?.conversationId && socket.connected) {
         socket.emit("community:joinConversation", {
           conversationId: payload.conversationId,
@@ -1248,12 +1121,10 @@ export function useCommunityPage(options?: {
       updateMessageById(message.id, (current) => ({ ...current, ...message }));
       queueConversationRefresh(120);
     };
-    const handleCommunityError = (payload: { message: string }) =>
-      setError(payload.message);
+    const handleCommunityError = (payload: { message: string }) => setError(payload.message);
     const handleConnectError = (connectError: Error) => {
       setIsSocketConnected(false);
-      if (/unauthorized|authentication/i.test(connectError.message))
-        redirectToMainLogin();
+      if (/unauthorized|authentication/i.test(connectError.message)) redirectToMainLogin();
     };
 
     const handleUserTyping = (payload: {
@@ -1324,11 +1195,7 @@ export function useCommunityPage(options?: {
         refreshTimeoutRef.current = null;
       }
     };
-  }, [
-    queueConversationRefresh,
-    loadMessages,
-    refreshConversationsNow,
-  ]);
+  }, [queueConversationRefresh, loadMessages, refreshConversationsNow]);
 
   useEffect(() => {
     if (!selectedConversationId || !selectedConversation) return;
@@ -1358,11 +1225,7 @@ export function useCommunityPage(options?: {
             communityService.getMessages(selectedConversationId),
             communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
           ]);
-          setMessages(
-            Array.isArray(messageResponse.messages)
-              ? messageResponse.messages
-              : [],
-          );
+          setMessages(Array.isArray(messageResponse.messages) ? messageResponse.messages : []);
           applyConversationPage(conversationResponse, {
             preserveSelection: true,
           });
@@ -1370,7 +1233,7 @@ export function useCommunityPage(options?: {
         } catch {
           disconnectedPollDelayRef.current = Math.min(
             DISCONNECTED_POLL_MAX_MS,
-            Math.ceil(disconnectedPollDelayRef.current * 1.8),
+            Math.ceil(disconnectedPollDelayRef.current * 1.8)
           );
         } finally {
           const jitter = Math.floor(Math.random() * 500);
@@ -1383,12 +1246,7 @@ export function useCommunityPage(options?: {
       isStopped = true;
       if (timeoutHandle) clearTimeout(timeoutHandle);
     };
-  }, [
-    applyConversationPage,
-    isSocketConnected,
-    selectedConversation,
-    selectedConversationId,
-  ]);
+  }, [applyConversationPage, isSocketConnected, selectedConversation, selectedConversationId]);
 
   useEffect(() => {
     if (!selectedConversationId) return;
@@ -1423,32 +1281,24 @@ export function useCommunityPage(options?: {
       if (!targetUserId.trim()) return;
       setError(null);
       try {
-        const conversation = await communityService.startConversation(
-          targetUserId.trim(),
-        );
+        const conversation = await communityService.startConversation(targetUserId.trim());
         setPlayerSearchQuery("");
         setPlayerSearchResults([]);
-        const updated = await communityService.listConversations(
-          1,
-          CONVERSATION_PAGE_SIZE,
-        );
+        const updated = await communityService.listConversations(1, CONVERSATION_PAGE_SIZE);
         applyConversationPage(updated, { preserveSelection: true });
         setSelectedConversationId(conversation.id);
         setActiveSidebarTab("conversations");
         setWorkspaceView("CHAT");
         toast.success(
-          conversation.status === "PENDING"
-            ? "Message request sent"
-            : "Conversation started",
+          conversation.status === "PENDING" ? "Message request sent" : "Conversation started"
         );
       } catch (e) {
-        const message =
-          e instanceof Error ? e.message : "Failed to start conversation";
+        const message = e instanceof Error ? e.message : "Failed to start conversation";
         setError(message);
         toast.error(message);
       }
     },
-    [applyConversationPage],
+    [applyConversationPage]
   );
 
   const refreshGroupDirectoryState = useCallback(
@@ -1469,7 +1319,7 @@ export function useCommunityPage(options?: {
       const updatedGroups = await communityService.listGroups(groupQuery);
       setGroupResults(updatedGroups);
     },
-    [applyConversationPage, groupSearchQuery],
+    [applyConversationPage, groupSearchQuery]
   );
 
   const handleCreateGroup = async () => {
@@ -1554,10 +1404,7 @@ export function useCommunityPage(options?: {
     }
   };
 
-  const handleOpenReportModal = (
-    targetType: "MESSAGE" | "GROUP",
-    targetId: string,
-  ) => {
+  const handleOpenReportModal = (targetType: "MESSAGE" | "GROUP", targetId: string) => {
     setReportModal({ targetType, targetId });
   };
 
@@ -1580,23 +1427,15 @@ export function useCommunityPage(options?: {
     }
   };
 
-  const handleAddMemberToGroup = async (
-    groupId: string,
-    targetUserId: string,
-  ) => {
+  const handleAddMemberToGroup = async (groupId: string, targetUserId: string) => {
     try {
       setIsAddingMemberUserId(targetUserId);
-      const response = await communityService.addGroupMember(
-        groupId,
-        targetUserId,
-      );
+      const response = await communityService.addGroupMember(groupId, targetUserId);
       await refreshGroupDirectoryState({ refreshConversations: false });
       setInviteSearchQuery("");
       setInviteSearchResults([]);
       toast.success(
-        response.alreadyMember
-          ? "User is already in this group"
-          : "Member added to group",
+        response.alreadyMember ? "User is already in this group" : "Member added to group"
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to add member");
@@ -1607,7 +1446,7 @@ export function useCommunityPage(options?: {
 
   const handleUpdateGroupMemberAddPolicy = async (
     groupId: string,
-    memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER",
+    memberAddPolicy: "ADMIN_ONLY" | "ANY_MEMBER"
   ) => {
     try {
       setIsUpdatingGroupPolicyId(groupId);
@@ -1615,9 +1454,7 @@ export function useCommunityPage(options?: {
       await refreshGroupDirectoryState({ refreshConversations: false });
       toast.success("Group settings updated");
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to update group settings",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to update group settings");
     } finally {
       setIsUpdatingGroupPolicyId(null);
     }
@@ -1625,9 +1462,7 @@ export function useCommunityPage(options?: {
 
   const getFeaturedGroupActionLabel = (group: CommunityGroupSummary) => {
     if (!group.isMember) return "Join";
-    return getGroupConversationByGroupId(group.id)
-      ? "Open chat"
-      : "View groups";
+    return getGroupConversationByGroupId(group.id) ? "Open chat" : "View groups";
   };
 
   const handleFeaturedGroupAction = async (group: CommunityGroupSummary) => {
@@ -1651,10 +1486,7 @@ export function useCommunityPage(options?: {
     if (!selectedConversation) return;
     try {
       await communityService.acceptRequest(selectedConversation.id);
-      const updated = await communityService.listConversations(
-        1,
-        CONVERSATION_PAGE_SIZE,
-      );
+      const updated = await communityService.listConversations(1, CONVERSATION_PAGE_SIZE);
       applyConversationPage(updated, { preserveSelection: true });
       await loadMessages(selectedConversation.id);
       toast.success("Message request accepted");
@@ -1667,14 +1499,9 @@ export function useCommunityPage(options?: {
     if (!selectedConversation) return;
     try {
       await communityService.rejectRequest(selectedConversation.id);
-      const updated = await communityService.listConversations(
-        1,
-        CONVERSATION_PAGE_SIZE,
-      );
+      const updated = await communityService.listConversations(1, CONVERSATION_PAGE_SIZE);
       applyConversationPage(updated, { preserveSelection: true });
-      setSelectedConversationId(
-        updated.items.length ? updated.items[0].id : null,
-      );
+      setSelectedConversationId(updated.items.length ? updated.items[0].id : null);
       toast.success("Message request rejected");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to reject request");
@@ -1684,9 +1511,7 @@ export function useCommunityPage(options?: {
   const handleToggleConversationBlock = async () => {
     const targetUserId = selectedConversation?.otherParticipant?.id;
     if (!targetUserId) return;
-    const currentlyBlocked = (profile?.blockedUsers || []).includes(
-      targetUserId,
-    );
+    const currentlyBlocked = (profile?.blockedUsers || []).includes(targetUserId);
     const actionLabel = currentlyBlocked ? "unblock" : "block";
 
     setIsTogglingBlockUser(true);
@@ -1697,11 +1522,9 @@ export function useCommunityPage(options?: {
           current
             ? {
                 ...current,
-                blockedUsers: (current.blockedUsers || []).filter(
-                  (id) => id !== targetUserId,
-                ),
+                blockedUsers: (current.blockedUsers || []).filter((id) => id !== targetUserId),
               }
-            : current,
+            : current
         );
         toast.success("User unblocked");
       } else {
@@ -1712,19 +1535,17 @@ export function useCommunityPage(options?: {
                 ...current,
                 blockedUsers: [...(current.blockedUsers || []), targetUserId],
               }
-            : current,
+            : current
         );
         toast.success("User blocked");
       }
       const updatedConversations = await communityService.listConversations(
         1,
-        CONVERSATION_PAGE_SIZE,
+        CONVERSATION_PAGE_SIZE
       );
       applyConversationPage(updatedConversations, { preserveSelection: true });
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : `Failed to ${actionLabel} user`,
-      );
+      toast.error(e instanceof Error ? e.message : `Failed to ${actionLabel} user`);
     } finally {
       setIsTogglingBlockUser(false);
     }
@@ -1762,33 +1583,24 @@ export function useCommunityPage(options?: {
 
     try {
       const profileData = await communityService.getPlayerProfile(memberId);
-      if (memberProfileRequestIdRef.current === memberId)
-        setSelectedMemberProfile(profileData);
+      if (memberProfileRequestIdRef.current === memberId) setSelectedMemberProfile(profileData);
     } catch (e) {
       if (memberProfileRequestIdRef.current === memberId) {
-        setMemberProfileError(
-          e instanceof Error ? e.message : "Failed to load profile",
-        );
+        setMemberProfileError(e instanceof Error ? e.message : "Failed to load profile");
         toast.error(e instanceof Error ? e.message : "Failed to load profile");
       }
     } finally {
-      if (memberProfileRequestIdRef.current === memberId)
-        setIsLoadingMemberProfile(false);
+      if (memberProfileRequestIdRef.current === memberId) setIsLoadingMemberProfile(false);
     }
   }, []);
 
-  const handleMemberClick = (member: GroupMember) =>
-    router.push(`/members/${member.id}`);
+  const handleMemberClick = (member: GroupMember) => router.push(`/members/${member.id}`);
 
   const handleMessageSelectedMember = useCallback(() => {
     if (!selectedMemberProfile) return;
     handleCloseMemberProfile();
     void handleStartConversation(selectedMemberProfile.id);
-  }, [
-    handleCloseMemberProfile,
-    handleStartConversation,
-    selectedMemberProfile,
-  ]);
+  }, [handleCloseMemberProfile, handleStartConversation, selectedMemberProfile]);
 
   const handleLoadMoreConversations = async () => {
     if (isLoadingMoreConversations || !hasMoreConversations) return;
@@ -1796,13 +1608,11 @@ export function useCommunityPage(options?: {
     try {
       const next = await communityService.listConversations(
         conversationPage + 1,
-        CONVERSATION_PAGE_SIZE,
+        CONVERSATION_PAGE_SIZE
       );
       applyConversationPage(next, { append: true });
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to load more conversations",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to load more conversations");
     } finally {
       setIsLoadingMoreConversations(false);
     }
@@ -1812,18 +1622,16 @@ export function useCommunityPage(options?: {
     async (
       conversationId: string,
       content: string,
-      replyToId?: string,
+      replyToId?: string
     ): Promise<ConversationMessage> => {
       const socket = getCommunitySocket();
       if (socket.connected) {
         const ack = await new Promise<
-          | { success: true; data: ConversationMessage }
-          | { success: false; message?: string }
+          { success: true; data: ConversationMessage } | { success: false; message?: string }
         >((resolve) => {
           const timeoutId = setTimeout(
-            () =>
-              resolve({ success: false, message: "Message send timed out" }),
-            8000,
+            () => resolve({ success: false, message: "Message send timed out" }),
+            8000
           );
           socket.emit(
             "community:sendMessage",
@@ -1834,64 +1642,49 @@ export function useCommunityPage(options?: {
                 (result as any) || {
                   success: false,
                   message: "Invalid server response",
-                },
+                }
               );
-            },
+            }
           );
         });
-        if (!ack.success)
-          throw new Error(ack.message || "Failed to send message");
+        if (!ack.success) throw new Error(ack.message || "Failed to send message");
         return { ...ack.data, messageStatus: "SENT" };
       }
       return {
-        ...(await communityService.sendMessage(
-          conversationId,
-          content,
-          replyToId,
-        )),
+        ...(await communityService.sendMessage(conversationId, content, replyToId)),
         messageStatus: "SENT",
       };
     },
-    [],
+    []
   );
 
   const editMessageWithTransport = useCallback(
-    async (
-      messageId: string,
-      content: string,
-    ): Promise<ConversationMessage> => {
+    async (messageId: string, content: string): Promise<ConversationMessage> => {
       const socket = getCommunitySocket();
       if (socket.connected) {
         const ack = await new Promise<
-          | { success: true; data: ConversationMessage }
-          | { success: false; message?: string }
+          { success: true; data: ConversationMessage } | { success: false; message?: string }
         >((resolve) => {
           const timeoutId = setTimeout(
-            () =>
-              resolve({ success: false, message: "Message edit timed out" }),
-            8000,
+            () => resolve({ success: false, message: "Message edit timed out" }),
+            8000
           );
-          socket.emit(
-            "community:editMessage",
-            { messageId, content },
-            (result: unknown) => {
-              clearTimeout(timeoutId);
-              resolve(
-                (result as any) || {
-                  success: false,
-                  message: "Invalid server response",
-                },
-              );
-            },
-          );
+          socket.emit("community:editMessage", { messageId, content }, (result: unknown) => {
+            clearTimeout(timeoutId);
+            resolve(
+              (result as any) || {
+                success: false,
+                message: "Invalid server response",
+              }
+            );
+          });
         });
-        if (!ack.success)
-          throw new Error(ack.message || "Failed to edit message");
+        if (!ack.success) throw new Error(ack.message || "Failed to edit message");
         return ack.data;
       }
       return communityService.editMessage(messageId, content);
     },
-    [],
+    []
   );
 
   const deleteMessageWithTransport = useCallback(
@@ -1899,35 +1692,28 @@ export function useCommunityPage(options?: {
       const socket = getCommunitySocket();
       if (socket.connected) {
         const ack = await new Promise<
-          | { success: true; data: ConversationMessage }
-          | { success: false; message?: string }
+          { success: true; data: ConversationMessage } | { success: false; message?: string }
         >((resolve) => {
           const timeoutId = setTimeout(
-            () =>
-              resolve({ success: false, message: "Message delete timed out" }),
-            8000,
+            () => resolve({ success: false, message: "Message delete timed out" }),
+            8000
           );
-          socket.emit(
-            "community:deleteMessage",
-            { messageId },
-            (result: unknown) => {
-              clearTimeout(timeoutId);
-              resolve(
-                (result as any) || {
-                  success: false,
-                  message: "Invalid server response",
-                },
-              );
-            },
-          );
+          socket.emit("community:deleteMessage", { messageId }, (result: unknown) => {
+            clearTimeout(timeoutId);
+            resolve(
+              (result as any) || {
+                success: false,
+                message: "Invalid server response",
+              }
+            );
+          });
         });
-        if (!ack.success)
-          throw new Error(ack.message || "Failed to delete message");
+        if (!ack.success) throw new Error(ack.message || "Failed to delete message");
         return ack.data;
       }
       return communityService.deleteMessage(messageId);
     },
-    [],
+    []
   );
 
   const retryFailedMessage = useCallback(
@@ -1941,7 +1727,7 @@ export function useCommunityPage(options?: {
       try {
         const confirmedMessage = await sendMessageWithTransport(
           message.conversationId,
-          message.content,
+          message.content
         );
         updateMessageById(message.id, (current) => ({
           ...current,
@@ -1953,14 +1739,12 @@ export function useCommunityPage(options?: {
           ...current,
           messageStatus: "FAILED",
         }));
-        toast.error(
-          e instanceof Error ? e.message : "Failed to resend message",
-        );
+        toast.error(e instanceof Error ? e.message : "Failed to resend message");
       } finally {
         setIsSending(false);
       }
     },
-    [applyConversationPage, sendMessageWithTransport],
+    [applyConversationPage, sendMessageWithTransport]
   );
 
   const handleBeginEditMessage = (message: ConversationMessage) => {
@@ -1985,10 +1769,7 @@ export function useCommunityPage(options?: {
     if (!nextContent) return toast.error("Message content cannot be empty");
     setIsMutatingMessageId(editingMessageId);
     try {
-      const updated = await editMessageWithTransport(
-        editingMessageId,
-        nextContent,
-      );
+      const updated = await editMessageWithTransport(editingMessageId, nextContent);
       updateMessageById(editingMessageId, (current) => ({
         ...current,
         ...updated,
@@ -2040,7 +1821,11 @@ export function useCommunityPage(options?: {
     try {
       for (const chatId of chatIds) {
         for (const msg of forwardingMessages) {
-          optimisticUpdateConversationLatestMessage(chatId, msg.type === "IMAGE" ? "Image message" : msg.content, msg.type);
+          optimisticUpdateConversationLatestMessage(
+            chatId,
+            msg.type === "IMAGE" ? "Image message" : msg.content,
+            msg.type
+          );
           if (msg.type === "IMAGE") {
             await communityService.sendImageMessage(chatId, msg.content, msg.metadata as any);
           } else {
@@ -2087,19 +1872,16 @@ export function useCommunityPage(options?: {
       setReplyTarget(
         message && selectedConversationId
           ? { conversationId: selectedConversationId, message }
-          : null,
+          : null
       );
     },
-    [selectedConversationId],
+    [selectedConversationId]
   );
 
   // A plain function like the other message handlers here: the values it needs
   // are not memoized, so a useCallback would buy nothing and only add a
   // stale-closure warning.
-  const handleReactToMessage = async (
-    message: ConversationMessage,
-    emoji: string,
-  ) => {
+  const handleReactToMessage = async (message: ConversationMessage, emoji: string) => {
     const socket = getCommunitySocket();
     if (!socket.connected) {
       // Reactions are socket-only — there is no HTTP fallback route, and
@@ -2108,26 +1890,22 @@ export function useCommunityPage(options?: {
       return;
     }
 
-    socket.emit(
-      "community:reactToMessage",
-      { messageId: message.id, emoji },
-      (result: unknown) => {
-        const ack = result as
-          | {
-              success: true;
-              data: { messageId: string; reactions: MessageReaction[] };
-            }
-          | { success: false; message?: string };
-        if (!ack?.success) {
-          toast.error(ack?.message || "Failed to react");
-          return;
-        }
-        updateMessageById(ack.data.messageId, (current) => ({
-          ...current,
-          reactions: ack.data.reactions,
-        }));
-      },
-    );
+    socket.emit("community:reactToMessage", { messageId: message.id, emoji }, (result: unknown) => {
+      const ack = result as
+        | {
+            success: true;
+            data: { messageId: string; reactions: MessageReaction[] };
+          }
+        | { success: false; message?: string };
+      if (!ack?.success) {
+        toast.error(ack?.message || "Failed to react");
+        return;
+      }
+      updateMessageById(ack.data.messageId, (current) => ({
+        ...current,
+        reactions: ack.data.reactions,
+      }));
+    });
   };
 
   const handleSendMessage = async () => {
@@ -2147,10 +1925,7 @@ export function useCommunityPage(options?: {
       createdAt: new Date().toISOString(),
       messageStatus: "SENDING",
       readBy: profile?.userId ? [profile.userId] : [],
-      participantIds: [
-        profile?.userId || "me",
-        selectedConversation.otherParticipant.id,
-      ],
+      participantIds: [profile?.userId || "me", selectedConversation.otherParticipant.id],
       ...(replyingTo
         ? {
             replyTo: {
@@ -2159,9 +1934,7 @@ export function useCommunityPage(options?: {
               senderDisplayName: replyingTo.senderDisplayName,
               type: replyingTo.type || "TEXT",
               content:
-                replyingTo.type === "IMAGE"
-                  ? "Photo"
-                  : (replyingTo.content || "").slice(0, 140),
+                replyingTo.type === "IMAGE" ? "Photo" : (replyingTo.content || "").slice(0, 140),
               isDeleted: Boolean(replyingTo.isDeleted),
             },
           }
@@ -2178,7 +1951,7 @@ export function useCommunityPage(options?: {
       const confirmedMessage = await sendMessageWithTransport(
         selectedConversation.id,
         content,
-        replyToId,
+        replyToId
       );
       removeMessageById(optimisticMessageId);
       if (confirmedMessage.conversationId === selectedConversation.id)
@@ -2225,10 +1998,7 @@ export function useCommunityPage(options?: {
       createdAt: new Date().toISOString(),
       messageStatus: "SENDING" as const,
       readBy: profile?.userId ? [profile.userId] : [],
-      participantIds: [
-        profile?.userId || "me",
-        selectedConversation.otherParticipant.id,
-      ],
+      participantIds: [profile?.userId || "me", selectedConversation.otherParticipant.id],
     };
 
     appendMessage(optimisticMessage);
@@ -2236,10 +2006,7 @@ export function useCommunityPage(options?: {
     setIsUploadingImage(true);
 
     try {
-      const { s3Key, width, height } = await uploadChatImage(
-        file,
-        selectedConversation.id,
-      );
+      const { s3Key, width, height } = await uploadChatImage(file, selectedConversation.id);
 
       const socket = getCommunitySocket();
       let confirmedMessage;
@@ -2253,7 +2020,7 @@ export function useCommunityPage(options?: {
         >((resolve) => {
           const timeoutId = setTimeout(
             () => resolve({ success: false, message: "Image send timed out" }),
-            12000,
+            12000
           );
           socket.emit(
             "community:sendMessage",
@@ -2269,20 +2036,19 @@ export function useCommunityPage(options?: {
                 (result as any) || {
                   success: false,
                   message: "Invalid server response",
-                },
+                }
               );
-            },
+            }
           );
         });
-        if (!ack.success)
-          throw new Error(ack.message || "Failed to send image");
+        if (!ack.success) throw new Error(ack.message || "Failed to send image");
         confirmedMessage = { ...ack.data, messageStatus: "SENT" as const };
       } else {
-        const sent = await communityService.sendImageMessage(
-          selectedConversation.id,
-          s3Key,
-          { width, height, caption },
-        );
+        const sent = await communityService.sendImageMessage(selectedConversation.id, s3Key, {
+          width,
+          height,
+          caption,
+        });
         confirmedMessage = { ...sent, messageStatus: "SENT" as const };
       }
 
@@ -2315,7 +2081,7 @@ export function useCommunityPage(options?: {
     file: File,
     kind: "FILE" | "VOICE",
     durationMs?: number,
-    waveform?: number[],
+    waveform?: number[]
   ) => {
     if (!selectedConversation) return;
 
@@ -2338,10 +2104,7 @@ export function useCommunityPage(options?: {
       createdAt: new Date().toISOString(),
       messageStatus: "SENDING",
       readBy: profile?.userId ? [profile.userId] : [],
-      participantIds: [
-        profile?.userId || "me",
-        selectedConversation.otherParticipant.id,
-      ],
+      participantIds: [profile?.userId || "me", selectedConversation.otherParticipant.id],
     };
 
     appendMessage(optimisticMessage);
@@ -2351,7 +2114,7 @@ export function useCommunityPage(options?: {
       const presign = await communityService.getAttachmentUploadUrl(
         selectedConversation.id,
         file.type,
-        kind,
+        kind
       );
 
       const form = new FormData();
@@ -2379,12 +2142,11 @@ export function useCommunityPage(options?: {
       let confirmedMessage: ConversationMessage;
       if (socket.connected) {
         const ack = await new Promise<
-          | { success: true; data: ConversationMessage }
-          | { success: false; message?: string }
+          { success: true; data: ConversationMessage } | { success: false; message?: string }
         >((resolve) => {
           const timeoutId = setTimeout(
             () => resolve({ success: false, message: "Send timed out" }),
-            15000,
+            15000
           );
           socket.emit(
             "community:sendMessage",
@@ -2402,9 +2164,9 @@ export function useCommunityPage(options?: {
                   | { success: false; message?: string }) || {
                   success: false,
                   message: "Invalid server response",
-                },
+                }
               );
-            },
+            }
           );
         });
         if (!ack.success) {
@@ -2416,7 +2178,7 @@ export function useCommunityPage(options?: {
           selectedConversation.id,
           presign.key,
           kind,
-          metadata,
+          metadata
         );
         confirmedMessage = { ...sent, messageStatus: "SENT" as const };
       }
@@ -2431,9 +2193,7 @@ export function useCommunityPage(options?: {
         ...msg,
         messageStatus: "FAILED" as const,
       }));
-      toast.error(
-        e instanceof Error ? e.message : "Failed to send attachment",
-      );
+      toast.error(e instanceof Error ? e.message : "Failed to send attachment");
     } finally {
       setIsUploadingImage(false);
     }
@@ -2461,9 +2221,7 @@ export function useCommunityPage(options?: {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       // Safari does not produce audio/webm; letting the browser pick and
       // reading back what it chose keeps the MIME honest for the allowlist.
-      const preferred = MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/mp4";
+      const preferred = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
       const recorder = new MediaRecorder(stream, { mimeType: preferred });
 
       recordingChunksRef.current = [];
@@ -2477,30 +2235,29 @@ export function useCommunityPage(options?: {
 
       recorder.onstop = () => {
         void (async () => {
-        // Release the mic straight away — a live indicator lingering after the
-        // clip is sent reads as the app still listening.
-        stream.getTracks().forEach((track) => track.stop());
-        setIsRecording(false);
+          // Release the mic straight away — a live indicator lingering after the
+          // clip is sent reads as the app still listening.
+          stream.getTracks().forEach((track) => track.stop());
+          setIsRecording(false);
 
-        const durationMs = Date.now() - recordingStartedAtRef.current;
-        const blob = new Blob(recordingChunksRef.current, {
-          type: preferred,
-        });
-        recordingChunksRef.current = [];
+          const durationMs = Date.now() - recordingStartedAtRef.current;
+          const blob = new Blob(recordingChunksRef.current, {
+            type: preferred,
+          });
+          recordingChunksRef.current = [];
 
-        if (durationMs < 700 || blob.size === 0) {
-          toast.error("That was too short to send");
-          return;
-        }
+          if (durationMs < 700 || blob.size === 0) {
+            toast.error("That was too short to send");
+            return;
+          }
 
-
-        const extension = preferred === "audio/webm" ? "webm" : "m4a";
-        const file = new File([blob], `voice-message.${extension}`, {
-          type: preferred,
-        });
-        // Peaks are computed here, once, by the device that recorded the clip.
-        const waveform = await computeWaveform(blob);
-        void handleSendAttachment(file, "VOICE", durationMs, waveform);
+          const extension = preferred === "audio/webm" ? "webm" : "m4a";
+          const file = new File([blob], `voice-message.${extension}`, {
+            type: preferred,
+          });
+          // Peaks are computed here, once, by the device that recorded the clip.
+          const waveform = await computeWaveform(blob);
+          void handleSendAttachment(file, "VOICE", durationMs, waveform);
         })();
       };
 
@@ -2524,7 +2281,7 @@ export function useCommunityPage(options?: {
       } catch {}
       toast.success("Chat cleared");
     },
-    [selectedConversationId],
+    [selectedConversationId]
   );
 
   const handleDeleteChat = useCallback(
@@ -2539,68 +2296,56 @@ export function useCommunityPage(options?: {
       } catch {}
       toast.success("Chat deleted");
     },
-    [selectedConversationId],
+    [selectedConversationId]
   );
 
-  const handleTogglePinConversation = useCallback(
-    (conversationId: string) => {
-      setPinnedConversationIds((prev) => {
-        const next = prev.includes(conversationId)
-          ? prev.filter((id) => id !== conversationId)
-          : [...prev, conversationId];
-        try {
-          localStorage.setItem(COMMUNITY_PINNED_KEY, JSON.stringify(next));
-        } catch {}
-        return next;
-      });
-    },
-    [],
-  );
+  const handleTogglePinConversation = useCallback((conversationId: string) => {
+    setPinnedConversationIds((prev) => {
+      const next = prev.includes(conversationId)
+        ? prev.filter((id) => id !== conversationId)
+        : [...prev, conversationId];
+      try {
+        localStorage.setItem(COMMUNITY_PINNED_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
-  const handleToggleMuteConversation = useCallback(
-    (conversationId: string) => {
-      setMutedConversationIds((prev) => {
-        const next = prev.includes(conversationId)
-          ? prev.filter((id) => id !== conversationId)
-          : [...prev, conversationId];
-        try {
-          localStorage.setItem(COMMUNITY_MUTED_KEY, JSON.stringify(next));
-        } catch {}
-        toast.success(
-          next.includes(conversationId)
-            ? "Notifications muted"
-            : "Notifications unmuted",
-        );
-        return next;
-      });
-    },
-    [],
-  );
+  const handleToggleMuteConversation = useCallback((conversationId: string) => {
+    setMutedConversationIds((prev) => {
+      const next = prev.includes(conversationId)
+        ? prev.filter((id) => id !== conversationId)
+        : [...prev, conversationId];
+      try {
+        localStorage.setItem(COMMUNITY_MUTED_KEY, JSON.stringify(next));
+      } catch {}
+      toast.success(
+        next.includes(conversationId) ? "Notifications muted" : "Notifications unmuted"
+      );
+      return next;
+    });
+  }, []);
 
   const handleMarkAllAsRead = useCallback(() => {
     if (!selectedConversation) return;
     // Optimistically set unread count to 0
     setConversations((current) =>
       (Array.isArray(current) ? current : []).map((c) =>
-        c.id === selectedConversation.id && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c,
-      ),
+        c.id === selectedConversation.id && c.unreadCount !== 0 ? { ...c, unreadCount: 0 } : c
+      )
     );
     toast.success("Marked all as read");
   }, [selectedConversation]);
 
   const handleMarkConversationAsUnread = useCallback((conversationId: string) => {
     setConversations((prev) =>
-      prev.map((c) =>
-        c.id === conversationId ? { ...c, unreadCount: 1 } : c,
-      ),
+      prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 1 } : c))
     );
     toast.success("Marked as unread");
   }, []);
 
   const showDetailsSidebar =
-    isConversationsView &&
-    showChatDetailsSidebar &&
-    !!selectedConversation;
+    isConversationsView && showChatDetailsSidebar && !!selectedConversation;
 
   return {
     prefersReducedMotion,

@@ -57,12 +57,17 @@ async function main(): Promise<void> {
 
     if (missing.length === 0) {
       alreadyComplete++;
-      console.log(`OK ${String(admin.email).padEnd(32)} ${held.length}/${template.length}` + (extra.length ? `  (+${extra.length} ad-hoc, kept)` : ""));
+      console.log(
+        `OK ${String(admin.email).padEnd(32)} ${held.length}/${template.length}` +
+          (extra.length ? `  (+${extra.length} ad-hoc, kept)` : "")
+      );
       continue;
     }
 
     changed++;
-    console.log(`>> ${String(admin.email).padEnd(32)} ${held.length}/${template.length} — adding ${missing.length}`);
+    console.log(
+      `>> ${String(admin.email).padEnd(32)} ${held.length}/${template.length} — adding ${missing.length}`
+    );
     for (const p of missing) console.log(`      + ${p}`);
     if (extra.length) console.log(`      (keeping ${extra.length} ad-hoc: ${extra.join(", ")})`);
 
@@ -72,7 +77,9 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log(`\n─── ${changed} admin(s) ${APPLY ? "updated" : "would change"}, ${alreadyComplete} already complete ───`);
+  console.log(
+    `\n─── ${changed} admin(s) ${APPLY ? "updated" : "would change"}, ${alreadyComplete} already complete ───`
+  );
   if (!APPLY && changed > 0) console.log("Report only — nothing written. Re-run with --apply.");
 
   await mongoose.disconnect();

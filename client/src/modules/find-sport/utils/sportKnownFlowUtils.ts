@@ -1,4 +1,8 @@
-import { getAmbitionOptions, getBestResultLadder, getCurrentStandingLadder } from "../data/sportArchetypes";
+import {
+  getAmbitionOptions,
+  getBestResultLadder,
+  getCurrentStandingLadder,
+} from "../data/sportArchetypes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -116,7 +120,7 @@ export function buildProfileChips(form: KnownSportForm): string[] {
   const standingLadder = form.sport ? getCurrentStandingLadder(form.sport) : [];
   const standingLabel =
     form.currentStandingTier != null
-      ? standingLadder.find((t) => t.value === form.currentStandingTier)?.label ?? null
+      ? (standingLadder.find((t) => t.value === form.currentStandingTier)?.label ?? null)
       : null;
 
   return [
@@ -124,7 +128,9 @@ export function buildProfileChips(form: KnownSportForm): string[] {
     age !== null ? `Age ${age}` : null,
     form.state ?? null,
     standingLabel,
-    form.yearsPlaying !== null ? `${form.yearsPlaying} yr${form.yearsPlaying === 1 ? "" : "s"} playing` : null,
+    form.yearsPlaying !== null
+      ? `${form.yearsPlaying} yr${form.yearsPlaying === 1 ? "" : "s"} playing`
+      : null,
     TRAINING_TYPE_DISPLAY[form.trainingType ?? ""] ?? null,
     form.academyName.trim() || null,
     form.sessionsPerWeek !== null ? `${form.sessionsPerWeek}x/week` : null,
@@ -135,18 +141,18 @@ export function buildAchievementChips(form: KnownSportForm): string[] {
   const ladder = form.sport ? getBestResultLadder(form.sport) : [];
   const bestResultLabel =
     form.bestResultTier != null
-      ? ladder.find((t) => t.value === form.bestResultTier)?.label ?? null
+      ? (ladder.find((t) => t.value === form.bestResultTier)?.label ?? null)
       : null;
 
   return [bestResultLabel, form.achievementsNote.trim() || null].filter(
-    (v): v is string => v !== null && v.length > 0,
+    (v): v is string => v !== null && v.length > 0
   );
 }
 
 export function buildGoalChips(form: KnownSportForm): string[] {
   const ambitionOptions = form.sport ? getAmbitionOptions(form.sport) : [];
   const ambitionLabel = form.ambition
-    ? ambitionOptions.find((o) => o.value === form.ambition)?.label ?? null
+    ? (ambitionOptions.find((o) => o.value === form.ambition)?.label ?? null)
     : null;
 
   return [
@@ -155,4 +161,3 @@ export function buildGoalChips(form: KnownSportForm): string[] {
     BUDGET_DISPLAY[form.budgetRange ?? ""] ?? null,
   ].filter((v): v is string => v !== null);
 }
-

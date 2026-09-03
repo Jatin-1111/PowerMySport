@@ -40,8 +40,8 @@ export function TrustMarquee({
 
   return (
     <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
-      <div className="pointer-events-none absolute left-0 top-1/4 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-100/40 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-1/4 right-0 h-72 w-72 translate-x-1/2 rounded-full bg-indigo-100/30 blur-3xl" />
+      <div className="pointer-events-none absolute top-1/4 left-0 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-100/40 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-1/4 h-72 w-72 translate-x-1/2 rounded-full bg-indigo-100/30 blur-3xl" />
 
       {(title || subtitle) && (
         <motion.div
@@ -52,10 +52,7 @@ export function TrustMarquee({
           className="relative mb-10 text-center sm:mb-14"
         >
           {subtitle && (
-            <motion.div
-              variants={headerItemVariants}
-              className="mb-4 flex justify-center"
-            >
+            <motion.div variants={headerItemVariants} className="mb-4 flex justify-center">
               <SectionLabel label={subtitle} color="orange" />
             </motion.div>
           )}
@@ -70,12 +67,7 @@ export function TrustMarquee({
         </motion.div>
       )}
 
-      <InfiniteMovingCards
-        items={items}
-        direction="left"
-        speed="slow"
-        className="relative"
-      />
+      <InfiniteMovingCards items={items} direction="left" speed="slow" className="relative" />
     </section>
   );
 }

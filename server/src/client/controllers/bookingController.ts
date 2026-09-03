@@ -11,10 +11,7 @@ import {
   type InvoiceDetailField,
   type InvoiceLineItem,
 } from "../../shared/services/InvoiceService";
-import {
-  formatStateWithGstCode,
-  guessPlaceOfSupply,
-} from "../../shared/utils/invoiceGst";
+import { formatStateWithGstCode, guessPlaceOfSupply } from "../../shared/utils/invoiceGst";
 import { extractPhonePePaymentMethodLabel } from "../../shared/utils/paymentMethod";
 import { recordBookingEventFor } from "../services/BookingEventService";
 import { WalletService } from "../services/WalletService";
@@ -64,10 +61,7 @@ const log = __rootLog.child("booking");
  * Initiate a new booking
  * POST /api/bookings/initiate
  */
-export const initiateNewBooking = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const initiateNewBooking = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -107,8 +101,7 @@ export const initiateNewBooking = async (
     });
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to initiate booking",
+      message: error instanceof Error ? error.message : "Failed to initiate booking",
     });
   }
 };
@@ -121,10 +114,7 @@ export const initiateNewBooking = async (
  * Get user's bookings
  * GET /api/bookings/my-bookings
  */
-export const getMyBookings = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getMyBookings = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -136,12 +126,7 @@ export const getMyBookings = async (
 
     const userId = req.user.id;
 
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
 
     let result;
 
@@ -168,8 +153,7 @@ export const getMyBookings = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch bookings",
+      message: error instanceof Error ? error.message : "Failed to fetch bookings",
     });
   }
 };
@@ -178,10 +162,7 @@ export const getMyBookings = async (
  * Get booking by ID
  * GET /api/bookings/:bookingId
  */
-export const getBookingById = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getBookingById = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -191,8 +172,7 @@ export const getBookingById = async (
       return;
     }
 
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
 
     const booking = await Booking.findById(bookingId)
       .select("+checkInCode")
@@ -231,9 +211,7 @@ export const getBookingById = async (
       // venueId is already fully populated above (line ~201) — no need to
       // re-fetch it just to read ownerId off the same document.
       const venueOwnerId = (booking.venueId as any)?.ownerId;
-      isVenueOwner = Boolean(
-        venueOwnerId && venueOwnerId.toString() === req.user.id,
-      );
+      isVenueOwner = Boolean(venueOwnerId && venueOwnerId.toString() === req.user.id);
     }
 
     if (!isAdmin && !isBookingOwner && !isVenueOwner) {
@@ -255,8 +233,7 @@ export const getBookingById = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch booking",
+      message: error instanceof Error ? error.message : "Failed to fetch booking",
     });
   }
 };
@@ -303,18 +280,14 @@ const diffMinutes = (startTime: string, endTime: string): number => {
  * Download booking invoice PDF (venue / coach / academy bookings)
  * GET /api/bookings/:bookingId/invoice/pdf
  */
-export const downloadBookingInvoicePdf = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const downloadBookingInvoicePdf = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
 
     const booking = await Booking.findById(bookingId)
       .select("+checkInCode")
@@ -335,8 +308,7 @@ export const downloadBookingInvoicePdf = async (
     }
 
     const isAdmin = req.user.role === "Admin";
-    const bookingOwnerId =
-      getReferenceId(booking.userId) || String(booking.userId);
+    const bookingOwnerId = getReferenceId(booking.userId) || String(booking.userId);
     const isBookingOwner = bookingOwnerId === req.user.id;
 
     let isVenueOwner = false;
@@ -344,9 +316,7 @@ export const downloadBookingInvoicePdf = async (
       // venueId is already fully populated above — no need to re-fetch it
       // just to read ownerId off the same document.
       const venueOwnerId = (booking.venueId as any)?.ownerId;
-      isVenueOwner = Boolean(
-        venueOwnerId && venueOwnerId.toString() === req.user.id,
-      );
+      isVenueOwner = Boolean(venueOwnerId && venueOwnerId.toString() === req.user.id);
     }
 
     if (!isAdmin && !isBookingOwner && !isVenueOwner) {
@@ -357,8 +327,7 @@ export const downloadBookingInvoicePdf = async (
     if (!canGenerateInvoiceForStatus(booking.status)) {
       res.status(409).json({
         success: false,
-        message:
-          "Invoice will be available after the coach confirms your booking.",
+        message: "Invoice will be available after the coach confirms your booking.",
       });
       return;
     }
@@ -371,22 +340,15 @@ export const downloadBookingInvoicePdf = async (
     const coach = booking.coachId as any;
     const academy = booking.academyId as any;
 
-    const kind: "VENUE" | "COACH" | "ACADEMY" = academy
-      ? "ACADEMY"
-      : coach
-        ? "COACH"
-        : "VENUE";
+    const kind: "VENUE" | "COACH" | "ACADEMY" = academy ? "ACADEMY" : coach ? "COACH" : "VENUE";
 
     const serviceFee = booking.serviceFee || 0;
     const taxAmount = booking.taxAmount || 0;
     const discountAmount = booking.discountAmount || 0;
-    const baseAmount =
-      booking.totalAmount - serviceFee - taxAmount + discountAmount;
+    const baseAmount = booking.totalAmount - serviceFee - taxAmount + discountAmount;
     const subtotalForGst = baseAmount + serviceFee - discountAmount;
     const gstRatePercent =
-      subtotalForGst > 0 && taxAmount > 0
-        ? Math.round((taxAmount / subtotalForGst) * 100)
-        : 0;
+      subtotalForGst > 0 && taxAmount > 0 ? Math.round((taxAmount / subtotalForGst) * 100) : 0;
 
     const durationMinutes = diffMinutes(booking.startTime, booking.endTime);
 
@@ -443,9 +405,7 @@ export const downloadBookingInvoicePdf = async (
         ? [deliveredAddress]
         : [
             academy?.address,
-            [academy?.city, academy?.state, academy?.pincode]
-              .filter(Boolean)
-              .join(", "),
+            [academy?.city, academy?.state, academy?.pincode].filter(Boolean).join(", "),
           ].filter((line): line is string => Boolean(line));
       providerGst = academy?.gstNumber;
       placeOfSupply = academy?.state
@@ -520,9 +480,7 @@ export const downloadBookingInvoicePdf = async (
       placeOfSupply,
       serviceProvider: {
         name: providerName,
-        addressLines: providerAddressLines.length
-          ? providerAddressLines
-          : ["-"],
+        addressLines: providerAddressLines.length ? providerAddressLines : ["-"],
         gstin: providerGst,
       },
       detailsSectionTitle,
@@ -545,16 +503,12 @@ export const downloadBookingInvoicePdf = async (
     const pdfBuffer = await renderInvoicePdf(invoiceData);
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${invoiceNumber}.pdf"`,
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${invoiceNumber}.pdf"`);
     res.status(200).send(pdfBuffer);
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to generate invoice",
+      message: error instanceof Error ? error.message : "Failed to generate invoice",
     });
   }
 };
@@ -563,10 +517,7 @@ export const downloadBookingInvoicePdf = async (
  * Get venue availability
  * GET /api/bookings/availability/:venueId
  */
-export const getVenueAvailability = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getVenueAvailability = async (req: Request, res: Response): Promise<void> => {
   try {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
     const { date } = req.query;
@@ -589,10 +540,7 @@ export const getVenueAvailability = async (
     }
 
     // Get all bookings for this venue on the specified date
-    const bookedSlots = await getVenueBookingsForDate(
-      venueId,
-      new Date(date as string),
-    );
+    const bookedSlots = await getVenueBookingsForDate(venueId, new Date(date as string));
 
     // Map to simple {startTime, endTime} objects if not already (select already does partial)
     // But result is Mongoose documents, safest to map explicitly just in case
@@ -628,39 +576,28 @@ export const getVenueAvailability = async (
       const closeMinute = parseInt(closeMinuteRaw || "0", 10);
 
       const slotStartHour = Number.isFinite(openHour) ? openHour : 0;
-      const slotEndHour =
-        (Number.isFinite(closeHour) ? closeHour : 0) +
-        (closeMinute > 0 ? 1 : 0);
+      const slotEndHour = (Number.isFinite(closeHour) ? closeHour : 0) + (closeMinute > 0 ? 1 : 0);
 
       const intervalMinutes = (venue as any).minimumBookingDuration || 60;
-      allSlots = generateDynamicSlots(
-        slotStartHour,
-        slotEndHour,
-        intervalMinutes,
-      ).filter((slot) => {
-        const slotHour = parseInt(slot.split(":")[0] || "0", 10);
-        const slotMin = parseInt(slot.split(":")[1] || "0", 10);
+      allSlots = generateDynamicSlots(slotStartHour, slotEndHour, intervalMinutes).filter(
+        (slot) => {
+          const slotHour = parseInt(slot.split(":")[0] || "0", 10);
+          const slotMin = parseInt(slot.split(":")[1] || "0", 10);
 
-        let endMin = slotMin + intervalMinutes;
-        let endHour = slotHour + Math.floor(endMin / 60);
-        endMin = endMin % 60;
+          let endMin = slotMin + intervalMinutes;
+          let endHour = slotHour + Math.floor(endMin / 60);
+          endMin = endMin % 60;
 
-        const slotEnd = `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")}`;
-        return isWithinOpeningHours(
-          targetDate,
-          slot,
-          slotEnd,
-          venue.openingHours,
-        ).isValid;
-      });
+          const slotEnd = `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")}`;
+          return isWithinOpeningHours(targetDate, slot, slotEnd, venue.openingHours).isValid;
+        }
+      );
     }
 
     const now = new Date();
     // "Today" in IST terms, not the server's local date — a slot's date and
     // "now" are compared as real UTC instants below regardless.
-    const nowIstDateKey = new Date(
-      now.getTime() + IST_OFFSET_MINUTES * 60 * 1000,
-    )
+    const nowIstDateKey = new Date(now.getTime() + IST_OFFSET_MINUTES * 60 * 1000)
       .toISOString()
       .slice(0, 10);
     const targetIstDateKey = targetDate.toISOString().slice(0, 10);
@@ -688,21 +625,12 @@ export const getVenueAvailability = async (
     });
 
     const preferredStart =
-      typeof req.query.preferredStartTime === "string"
-        ? req.query.preferredStartTime
-        : "";
+      typeof req.query.preferredStartTime === "string" ? req.query.preferredStartTime : "";
     const preferredEnd =
-      typeof req.query.preferredEndTime === "string"
-        ? req.query.preferredEndTime
-        : "";
+      typeof req.query.preferredEndTime === "string" ? req.query.preferredEndTime : "";
     const alternateSlots =
       preferredStart && preferredEnd
-        ? getAlternateVenueSlots(
-            bookedTimeSlots,
-            preferredStart,
-            preferredEnd,
-            4,
-          )
+        ? getAlternateVenueSlots(bookedTimeSlots, preferredStart, preferredEnd, 4)
         : [];
 
     res.status(200).json({
@@ -717,8 +645,7 @@ export const getVenueAvailability = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch availability",
+      message: error instanceof Error ? error.message : "Failed to fetch availability",
     });
   }
 };
@@ -733,10 +660,7 @@ export const getVenueAvailability = async (
  * displays what this returns, so there is one source for what a customer is
  * shown and what they are charged.
  */
-export const getBookingQuote = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getBookingQuote = async (req: Request, res: Response): Promise<void> => {
   try {
     const { subtotal, discount } = req.body as {
       subtotal: number;
@@ -744,9 +668,7 @@ export const getBookingQuote = async (
     };
 
     if (!Number.isFinite(subtotal) || subtotal < 0) {
-      res
-        .status(400)
-        .json({ success: false, message: "A non-negative subtotal is required" });
+      res.status(400).json({ success: false, message: "A non-negative subtotal is required" });
       return;
     }
 
@@ -765,10 +687,7 @@ export const getBookingQuote = async (
   }
 };
 
-export const validateBookingPromoCode = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const validateBookingPromoCode = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -781,12 +700,7 @@ export const validateBookingPromoCode = async (
       hasCoach?: boolean;
     };
 
-    const result = await validatePromoCodeForUser(
-      code,
-      req.user.id,
-      subtotal,
-      Boolean(hasCoach),
-    );
+    const result = await validatePromoCodeForUser(code, req.user.id, subtotal, Boolean(hasCoach));
 
     res.status(200).json({
       success: true,
@@ -796,31 +710,19 @@ export const validateBookingPromoCode = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to validate promo",
+      message: error instanceof Error ? error.message : "Failed to validate promo",
     });
   }
 };
 
-export const joinBookingWaitlist = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const joinBookingWaitlist = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
-    const {
-      venueId,
-      coachId,
-      sport,
-      date,
-      startTime,
-      endTime,
-      alternateSlots,
-    } = req.body as {
+    const { venueId, coachId, sport, date, startTime, endTime, alternateSlots } = req.body as {
       venueId?: string;
       coachId?: string;
       sport: string;
@@ -852,8 +754,7 @@ export const joinBookingWaitlist = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to join waitlist",
+      message: error instanceof Error ? error.message : "Failed to join waitlist",
     });
   }
 };
@@ -862,13 +763,9 @@ export const joinBookingWaitlist = async (
  * Cancel a booking
  * DELETE /api/bookings/:bookingId
  */
-export const cancelBookingById = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const cancelBookingById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
     const { cancellationReason } = (req.body ?? {}) as {
       cancellationReason?: string;
     };
@@ -882,11 +779,7 @@ export const cancelBookingById = async (
       return;
     }
 
-    const result = await cancelBooking(
-      bookingId,
-      requesterId,
-      cancellationReason,
-    );
+    const result = await cancelBooking(bookingId, requesterId, cancellationReason);
 
     if (!result.booking) {
       res.status(404).json({
@@ -908,8 +801,7 @@ export const cancelBookingById = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to cancel booking",
+      message: error instanceof Error ? error.message : "Failed to cancel booking",
     });
   }
 };
@@ -918,13 +810,9 @@ export const cancelBookingById = async (
  * Retry a failed refund — player-initiated
  * POST /api/bookings/:bookingId/retry-refund
  */
-export const retryBookingRefund = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const retryBookingRefund = async (req: Request, res: Response): Promise<void> => {
   try {
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -957,7 +845,7 @@ export const retryBookingRefund = async (
     const result = await processBookingRefund(
       bookingId,
       refundPercentage,
-      "Player-initiated refund retry",
+      "Player-initiated refund retry"
     );
 
     res.status(200).json({
@@ -982,7 +870,7 @@ export const retryBookingRefund = async (
  */
 export const confirmBookingByProviderHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -993,8 +881,7 @@ export const confirmBookingByProviderHandler = async (
       return;
     }
 
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
 
     const booking = await confirmBookingByProvider(bookingId, req.user.id);
 
@@ -1006,8 +893,7 @@ export const confirmBookingByProviderHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to confirm booking",
+      message: error instanceof Error ? error.message : "Failed to confirm booking",
     });
   }
 };
@@ -1018,7 +904,7 @@ export const confirmBookingByProviderHandler = async (
  */
 export const rejectBookingByProviderHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -1029,15 +915,10 @@ export const rejectBookingByProviderHandler = async (
       return;
     }
 
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
     const { reason } = (req.body ?? {}) as { reason?: string };
 
-    const result = await rejectBookingByProvider(
-      bookingId,
-      req.user.id,
-      reason,
-    );
+    const result = await rejectBookingByProvider(bookingId, req.user.id, reason);
 
     res.status(200).json({
       success: true,
@@ -1051,8 +932,7 @@ export const rejectBookingByProviderHandler = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reject booking",
+      message: error instanceof Error ? error.message : "Failed to reject booking",
     });
   }
 };
@@ -1061,10 +941,7 @@ export const rejectBookingByProviderHandler = async (
  * Check-in to booking using random check-in code
  * POST /api/bookings/check-in/code
  */
-export const checkInBookingWithCode = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const checkInBookingWithCode = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1076,11 +953,7 @@ export const checkInBookingWithCode = async (
 
     const { checkInCode } = req.body as { checkInCode: string };
 
-    const booking = await checkInBookingByCode(
-      checkInCode,
-      req.user.id,
-      req.user.role,
-    );
+    const booking = await checkInBookingByCode(checkInCode, req.user.id, req.user.role);
 
     res.status(200).json({
       success: true,
@@ -1099,10 +972,7 @@ export const checkInBookingWithCode = async (
  * Confirm mock payment success for a booking
  * POST /api/bookings/:bookingId/mock-payment-success
  */
-export const confirmMockPaymentSuccessById = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const confirmMockPaymentSuccessById = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1112,8 +982,7 @@ export const confirmMockPaymentSuccessById = async (
       return;
     }
 
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
 
     const booking = await confirmMockPaymentSuccess(bookingId, req.user.id);
 
@@ -1125,10 +994,7 @@ export const confirmMockPaymentSuccessById = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to confirm mock payment",
+      message: error instanceof Error ? error.message : "Failed to confirm mock payment",
     });
   }
 };
@@ -1136,7 +1002,7 @@ export const confirmMockPaymentSuccessById = async (
 const getBookingPaymentAmount = (booking: any, userId: string): number => {
   if (booking.payments && booking.payments.length > 0) {
     const userPayment = booking.payments.find(
-      (payment: any) => payment.userId.toString() === userId,
+      (payment: any) => payment.userId.toString() === userId
     );
 
     if (!userPayment) {
@@ -1163,7 +1029,7 @@ const getBookingPaymentAmount = (booking: any, userId: string): number => {
  */
 export const initiatePhonePePaymentForBooking = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const authUser = req.user;
@@ -1177,10 +1043,9 @@ export const initiatePhonePePaymentForBooking = async (
 
     const userId = authUser.id;
 
-    const bookingId = (req.params as Record<string, unknown>)
-      .bookingId as string;
+    const bookingId = (req.params as Record<string, unknown>).bookingId as string;
     const booking = await Booking.findById(bookingId).select(
-      "userId totalAmount payments bookingType paymentType status paymentConfirmedAt",
+      "userId totalAmount payments bookingType paymentType status paymentConfirmedAt"
     );
 
     if (!booking) {
@@ -1225,9 +1090,7 @@ export const initiatePhonePePaymentForBooking = async (
 
     const merchantOrderId = `bk_${bookingId}_${Date.now()}`;
     const redirectBase =
-      process.env.FRONTEND_URL ||
-      process.env.PHONEPE_REDIRECT_URL_BASE ||
-      "http://localhost:3000";
+      process.env.FRONTEND_URL || process.env.PHONEPE_REDIRECT_URL_BASE || "http://localhost:3000";
     const redirectUrl = new URL("/payment", redirectBase);
     redirectUrl.searchParams.set("status", "pending");
     redirectUrl.searchParams.set("bookingId", bookingId);
@@ -1305,10 +1168,7 @@ export const initiatePhonePePaymentForBooking = async (
 
     res.status(statusCode).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to initiate PhonePe payment",
+      message: error instanceof Error ? error.message : "Failed to initiate PhonePe payment",
       ...(isPhonePeGatewayError(error)
         ? { data: { code: error.code, retryable: error.retryable } }
         : {}),
@@ -1320,10 +1180,7 @@ export const initiatePhonePePaymentForBooking = async (
  * Handle PhonePe callback
  * POST /api/bookings/phonepe/callback
  */
-export const handlePhonePeCallback = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const handlePhonePeCallback = async (req: Request, res: Response): Promise<void> => {
   try {
     const authorizationHeader = req.headers["authorization"] as string;
     if (!authorizationHeader) {
@@ -1377,7 +1234,7 @@ export const handlePhonePeCallback = async (
             gatewayState: payload.state,
             source: "phonepe_callback",
           },
-        },
+        }
       );
     } else if (payload.state === "FAILED") {
       transaction.status = "FAILED";
@@ -1394,7 +1251,7 @@ export const handlePhonePeCallback = async (
             gatewayState: payload.state,
             source: "phonepe_callback",
           },
-        },
+        }
       );
     }
 
@@ -1409,10 +1266,7 @@ export const handlePhonePeCallback = async (
 
     res.status(statusCode).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to process PhonePe callback",
+      message: error instanceof Error ? error.message : "Failed to process PhonePe callback",
       ...(isPhonePeGatewayError(error)
         ? { data: { code: error.code, retryable: error.retryable } }
         : {}),
@@ -1424,10 +1278,7 @@ export const handlePhonePeCallback = async (
  * Verify PhonePe order status
  * GET /api/bookings/phonepe/status/:merchantOrderId
  */
-export const verifyPhonePeOrderStatus = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const verifyPhonePeOrderStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1491,7 +1342,7 @@ export const verifyPhonePeOrderStatus = async (
             // rather than the webhook arriving first.
             source: "phonepe_status_poll",
           },
-        },
+        }
       );
     } else if (status.state === "FAILED" && transaction.status !== "FAILED") {
       transaction.status = "FAILED";
@@ -1508,7 +1359,7 @@ export const verifyPhonePeOrderStatus = async (
             gatewayState: status.state,
             source: "phonepe_status_poll",
           },
-        },
+        }
       );
     }
 
@@ -1527,10 +1378,7 @@ export const verifyPhonePeOrderStatus = async (
 
     res.status(statusCode).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to verify PhonePe order status",
+      message: error instanceof Error ? error.message : "Failed to verify PhonePe order status",
       ...(isPhonePeGatewayError(error)
         ? { data: { code: error.code, retryable: error.retryable } }
         : {}),
@@ -1546,10 +1394,7 @@ export const verifyPhonePeOrderStatus = async (
  * Initiate a group booking with friends
  * POST /api/bookings/initiate-group
  */
-export const initiateNewGroupBooking = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const initiateNewGroupBooking = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1583,10 +1428,7 @@ export const initiateNewGroupBooking = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to initiate group booking",
+      message: error instanceof Error ? error.message : "Failed to initiate group booking",
     });
   }
 };
@@ -1595,10 +1437,7 @@ export const initiateNewGroupBooking = async (
  * Respond to a booking invitation
  * POST /api/bookings/invitations/:invitationId/respond
  */
-export const respondToInvitation = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const respondToInvitation = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1627,26 +1466,17 @@ export const respondToInvitation = async (
       return;
     }
 
-    const booking = await respondToBookingInvitation(
-      req.user.id,
-      invitationId as string,
-      accept,
-    );
+    const booking = await respondToBookingInvitation(req.user.id, invitationId as string, accept);
 
     res.status(200).json({
       success: true,
-      message: accept
-        ? "Invitation accepted successfully"
-        : "Invitation declined",
+      message: accept ? "Invitation accepted successfully" : "Invitation declined",
       data: booking,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to respond to invitation",
+      message: error instanceof Error ? error.message : "Failed to respond to invitation",
     });
   }
 };
@@ -1655,10 +1485,7 @@ export const respondToInvitation = async (
  * Get booking invitations for the current user
  * GET /api/bookings/invitations
  */
-export const getMyInvitations = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getMyInvitations = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1670,14 +1497,9 @@ export const getMyInvitations = async (
 
     const { status } = req.query;
     const validStatus =
-      status === "PENDING" || status === "ACCEPTED" || status === "DECLINED"
-        ? status
-        : undefined;
+      status === "PENDING" || status === "ACCEPTED" || status === "DECLINED" ? status : undefined;
 
-    const invitations = await getUserBookingInvitations(
-      req.user.id,
-      validStatus,
-    );
+    const invitations = await getUserBookingInvitations(req.user.id, validStatus);
 
     res.status(200).json({
       success: true,
@@ -1687,8 +1509,7 @@ export const getMyInvitations = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get invitations",
+      message: error instanceof Error ? error.message : "Failed to get invitations",
     });
   }
 };
@@ -1697,10 +1518,7 @@ export const getMyInvitations = async (
  * Organizer covers unpaid shares in a split payment booking
  * POST /api/bookings/:bookingId/cover-payments
  */
-export const coverUnpaidPayments = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const coverUnpaidPayments = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1730,10 +1548,7 @@ export const coverUnpaidPayments = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to cover unpaid shares",
+      message: error instanceof Error ? error.message : "Failed to cover unpaid shares",
     });
   }
 };
@@ -1745,10 +1560,7 @@ export const createNewBooking = initiateNewBooking;
  * Get count of pending booking invitations
  * GET /api/bookings/invitations/pending-count
  */
-export const getPendingInvitationsCount = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPendingInvitationsCount = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -1767,10 +1579,7 @@ export const getPendingInvitationsCount = async (
   } catch (error) {
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to get invitations count",
+      message: error instanceof Error ? error.message : "Failed to get invitations count",
     });
   }
 };
@@ -1779,10 +1588,7 @@ export const getPendingInvitationsCount = async (
  * Pay for a booking using Wallet Balance
  * POST /api/bookings/:bookingId/wallet/pay
  */
-export const payBookingWithWallet = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const payBookingWithWallet = async (req: Request, res: Response): Promise<void> => {
   try {
     const bookingId = req.params.bookingId as string;
     const user = req.user;
@@ -1801,10 +1607,7 @@ export const payBookingWithWallet = async (
     // Only a booking still awaiting payment can be paid for. AWAITING_PROVIDER
     // means the money already landed, so accepting another payment there would
     // charge the customer twice.
-    if (
-      booking.status !== "AWAITING_PAYMENT" &&
-      booking.status !== "PENDING_INVITES"
-    ) {
+    if (booking.status !== "AWAITING_PAYMENT" && booking.status !== "PENDING_INVITES") {
       res.status(400).json({
         success: false,
         message: "Booking cannot be paid for in its current state",
@@ -1813,14 +1616,9 @@ export const payBookingWithWallet = async (
     }
 
     // Verify user is part of the booking (organizer or participant)
-    if (
-      booking.userId.toString() !== user.id &&
-      booking.organizerId?.toString() !== user.id
-    ) {
+    if (booking.userId.toString() !== user.id && booking.organizerId?.toString() !== user.id) {
       // Find if they are a participant
-      const isParticipant = booking.payments?.some(
-        (p) => p.userId.toString() === user.id,
-      );
+      const isParticipant = booking.payments?.some((p) => p.userId.toString() === user.id);
       if (!isParticipant) {
         res.status(403).json({
           success: false,
@@ -1831,9 +1629,7 @@ export const payBookingWithWallet = async (
     }
 
     // Calculate user's share
-    const paymentShare = booking.payments?.find(
-      (p) => p.userId.toString() === user.id,
-    );
+    const paymentShare = booking.payments?.find((p) => p.userId.toString() === user.id);
 
     const amount = paymentShare ? paymentShare.amount : booking.totalAmount;
 
@@ -1854,12 +1650,7 @@ export const payBookingWithWallet = async (
     }
 
     // Deduct from wallet
-    await WalletService.debitWallet(
-      user.id,
-      amount,
-      `Booking Payment: ${bookingId}`,
-      bookingId,
-    );
+    await WalletService.debitWallet(user.id, amount, `Booking Payment: ${bookingId}`, bookingId);
 
     const merchantOrderId = `WALLET-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
@@ -1906,8 +1697,7 @@ export const payBookingWithWallet = async (
     log.error("[payBookingWithWallet]", error);
     res.status(400).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to pay via wallet",
+      message: error instanceof Error ? error.message : "Failed to pay via wallet",
     });
   }
 };
@@ -1916,10 +1706,7 @@ export const payBookingWithWallet = async (
  * Reschedule a confirmed booking — coach only
  * POST /api/bookings/:bookingId/reschedule
  */
-export const rescheduleBookingHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const rescheduleBookingHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -1969,7 +1756,7 @@ export const rescheduleBookingHandler = async (
       req.user.id,
       parsedDate,
       newStartTime,
-      newEndTime,
+      newEndTime
     );
 
     res.status(200).json({
@@ -1980,14 +1767,12 @@ export const rescheduleBookingHandler = async (
   } catch (error) {
     const status =
       error instanceof Error &&
-      (error.message.includes("Not authorized") ||
-        error.message.includes("not found"))
+      (error.message.includes("Not authorized") || error.message.includes("not found"))
         ? 403
         : 400;
     res.status(status).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reschedule booking",
+      message: error instanceof Error ? error.message : "Failed to reschedule booking",
     });
   }
 };

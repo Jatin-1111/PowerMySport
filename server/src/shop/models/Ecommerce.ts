@@ -53,8 +53,7 @@ export interface ProductDocument extends Document {
   totalReviews: number;
   seller?: mongoose.Types.ObjectId;
   sellerName?: string;
-  sellerType?:
-    "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
+  sellerType?: "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
   condition?: "NEW" | "USED";
   createdAt: Date;
   updatedAt: Date;
@@ -112,7 +111,7 @@ const productVariantSchema = new Schema<ProductVariantDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 const productSchema = new Schema<ProductDocument>(
@@ -324,7 +323,7 @@ const productSchema = new Schema<ProductDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 // Update totalStock on variant change
@@ -334,10 +333,7 @@ productSchema.pre("save", function () {
 
 productSchema.index({ isActive: 1, category: 1 });
 
-export const Product = mongoose.model<ProductDocument>(
-  "Product",
-  productSchema,
-);
+export const Product = mongoose.model<ProductDocument>("Product", productSchema);
 
 // ============ INVENTORY MODEL ============
 
@@ -388,7 +384,7 @@ const inventorySchema = new Schema<InventoryDocument>(
       default: Date.now,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Ensure quantityAvailable is always up-to-date
@@ -399,10 +395,7 @@ inventorySchema.pre("save", function () {
   }
 });
 
-export const Inventory = mongoose.model<InventoryDocument>(
-  "Inventory",
-  inventorySchema,
-);
+export const Inventory = mongoose.model<InventoryDocument>("Inventory", inventorySchema);
 
 // ============ CART MODELS ============
 
@@ -509,7 +502,7 @@ const cartSchema = new Schema<CartDocument>(
       index: { expireAfterSeconds: 0 }, // TTL index for automatic cleanup
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 export const Cart = mongoose.model<CartDocument>("Cart", cartSchema);
@@ -634,7 +627,7 @@ const orderItemSchema = new Schema<OrderItemDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 const orderSchema = new Schema<OrderDocument>(
@@ -817,7 +810,7 @@ const orderSchema = new Schema<OrderDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 // Index for user orders sorted by date
@@ -860,13 +853,10 @@ const wishlistSchema = new Schema<WishlistDocument>(
       },
     ],
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-export const Wishlist = mongoose.model<WishlistDocument>(
-  "Wishlist",
-  wishlistSchema,
-);
+export const Wishlist = mongoose.model<WishlistDocument>("Wishlist", wishlistSchema);
 
 // ============ PAYMENT TRANSACTION MODEL ============
 
@@ -954,7 +944,7 @@ const paymentTransactionSchema = new Schema<PaymentTransactionDocument>(
       type: Date,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Index for retry logic
@@ -962,5 +952,5 @@ paymentTransactionSchema.index({ status: 1, lastRetryAt: 1 });
 
 export const PaymentTransaction = mongoose.model<PaymentTransactionDocument>(
   "PaymentTransaction",
-  paymentTransactionSchema,
+  paymentTransactionSchema
 );

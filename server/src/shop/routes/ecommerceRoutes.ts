@@ -2,10 +2,7 @@ import { Request, Response, Router } from "express";
 import { authMiddleware, requirePermission } from "../../middleware/auth";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
 import { WebhookController } from "../../shared/controllers/WebhookController";
-import {
-  AdminEcommerceController,
-  EcommerceController,
-} from "../controllers/EcommerceController";
+import { AdminEcommerceController, EcommerceController } from "../controllers/EcommerceController";
 import { SellerController } from "../controllers/SellerController";
 import { joinWaitlist } from "../controllers/WaitlistController";
 
@@ -22,7 +19,7 @@ const webhookController = new WebhookController();
  * List products
  */
 router.get("/products", cacheResponse(300), (req: Request, res: Response) =>
-  controller.listProducts(req, res),
+  controller.listProducts(req, res)
 );
 
 /**
@@ -36,17 +33,15 @@ router.post("/waitlist", joinWaitlist);
  * Get product details
  */
 router.get("/products/:id", cacheResponse(300), (req: Request, res: Response) =>
-  controller.getProduct(req, res),
+  controller.getProduct(req, res)
 );
 
 /**
  * GET /api/v1/products/:id/related
  * Get related products
  */
-router.get(
-  "/products/:id/related",
-  cacheResponse(300),
-  (req: Request, res: Response) => controller.getRelatedProducts(req, res),
+router.get("/products/:id/related", cacheResponse(300), (req: Request, res: Response) =>
+  controller.getRelatedProducts(req, res)
 );
 
 // ============ AUTHENTICATED CUSTOMER ROUTES ============
@@ -55,26 +50,22 @@ router.get(
  * GET /api/v1/cart
  * Get current user's cart
  */
-router.get("/cart", authMiddleware, (req: Request, res: Response) =>
-  controller.getCart(req, res),
-);
+router.get("/cart", authMiddleware, (req: Request, res: Response) => controller.getCart(req, res));
 
 /**
  * POST /api/v1/cart/add-item
  * Add item to cart
  */
 router.post("/cart/add-item", authMiddleware, (req: Request, res: Response) =>
-  controller.addToCart(req, res),
+  controller.addToCart(req, res)
 );
 
 /**
  * POST /api/v1/cart/remove-item
  * Remove item from cart
  */
-router.post(
-  "/cart/remove-item",
-  authMiddleware,
-  (req: Request, res: Response) => controller.removeFromCart(req, res),
+router.post("/cart/remove-item", authMiddleware, (req: Request, res: Response) =>
+  controller.removeFromCart(req, res)
 );
 
 /**
@@ -82,17 +73,15 @@ router.post(
  * Clear entire cart
  */
 router.post("/cart/clear", authMiddleware, (req: Request, res: Response) =>
-  controller.clearCart(req, res),
+  controller.clearCart(req, res)
 );
 
 /**
  * POST /api/v1/cart/apply-promo
  * Apply promo code
  */
-router.post(
-  "/cart/apply-promo",
-  authMiddleware,
-  (req: Request, res: Response) => controller.applyPromo(req, res),
+router.post("/cart/apply-promo", authMiddleware, (req: Request, res: Response) =>
+  controller.applyPromo(req, res)
 );
 
 // ============ CHECKOUT & PAYMENT ROUTES ============
@@ -101,30 +90,24 @@ router.post(
  * POST /api/v1/orders/create-from-cart
  * Create order and initiate payment
  */
-router.post(
-  "/orders/create-from-cart",
-  authMiddleware,
-  (req: Request, res: Response) => controller.createOrderFromCart(req, res),
+router.post("/orders/create-from-cart", authMiddleware, (req: Request, res: Response) =>
+  controller.createOrderFromCart(req, res)
 );
 
 /**
  * POST /api/v1/orders/:orderId/verify-payment
  * Verify payment signature and confirm order
  */
-router.post(
-  "/orders/:orderId/verify-payment",
-  authMiddleware,
-  (req: Request, res: Response) => controller.verifyPayment(req, res),
+router.post("/orders/:orderId/verify-payment", authMiddleware, (req: Request, res: Response) =>
+  controller.verifyPayment(req, res)
 );
 
 /**
  * POST /api/v1/orders/:orderId/sync-payment
  * Reconcile payment status by polling the gateway (post-redirect fallback)
  */
-router.post(
-  "/orders/:orderId/sync-payment",
-  authMiddleware,
-  (req: Request, res: Response) => controller.syncPayment(req, res),
+router.post("/orders/:orderId/sync-payment", authMiddleware, (req: Request, res: Response) =>
+  controller.syncPayment(req, res)
 );
 
 // ============ ORDER ROUTES ============
@@ -134,41 +117,35 @@ router.post(
  * Get order details
  */
 router.get("/orders/:orderId", authMiddleware, (req: Request, res: Response) =>
-  controller.getOrder(req, res),
+  controller.getOrder(req, res)
 );
 
 /**
  * GET /api/v1/orders/:orderId/invoice/pdf
  * Download order invoice PDF
  */
-router.get(
-  "/orders/:orderId/invoice/pdf",
-  authMiddleware,
-  (req: Request, res: Response) => controller.downloadOrderInvoice(req, res),
+router.get("/orders/:orderId/invoice/pdf", authMiddleware, (req: Request, res: Response) =>
+  controller.downloadOrderInvoice(req, res)
 );
 
 // ============ REVIEWS ROUTES ============
 
-router.get(
-  "/products/:id/reviews",
-  cacheResponse(300),
-  (req: Request, res: Response) => controller.getProductReviews(req, res),
+router.get("/products/:id/reviews", cacheResponse(300), (req: Request, res: Response) =>
+  controller.getProductReviews(req, res)
 );
 
-router.post(
-  "/products/:id/reviews",
-  authMiddleware,
-  (req: Request, res: Response) => controller.submitProductReview(req, res),
+router.post("/products/:id/reviews", authMiddleware, (req: Request, res: Response) =>
+  controller.submitProductReview(req, res)
 );
 
 // ============ WISHLIST ROUTES ============
 
 router.get("/wishlist", authMiddleware, (req: Request, res: Response) =>
-  controller.getWishlist(req, res),
+  controller.getWishlist(req, res)
 );
 
 router.post("/wishlist/toggle", authMiddleware, (req: Request, res: Response) =>
-  controller.toggleWishlist(req, res),
+  controller.toggleWishlist(req, res)
 );
 
 /**
@@ -176,17 +153,15 @@ router.post("/wishlist/toggle", authMiddleware, (req: Request, res: Response) =>
  * List user's orders
  */
 router.get("/orders", authMiddleware, (req: Request, res: Response) =>
-  controller.listOrders(req, res),
+  controller.listOrders(req, res)
 );
 
 /**
  * POST /api/v1/orders/:orderId/cancel
  * Cancel order
  */
-router.post(
-  "/orders/:orderId/cancel",
-  authMiddleware,
-  (req: Request, res: Response) => controller.cancelOrder(req, res),
+router.post("/orders/:orderId/cancel", authMiddleware, (req: Request, res: Response) =>
+  controller.cancelOrder(req, res)
 );
 
 // ============ ADMIN PRODUCT MANAGEMENT ROUTES ============
@@ -199,8 +174,7 @@ router.post(
   "/admin/products/upload-url",
   authMiddleware,
   requirePermission("products:create"),
-  (req: Request, res: Response) =>
-    adminController.generateImageUploadUrl(req, res),
+  (req: Request, res: Response) => adminController.generateImageUploadUrl(req, res)
 );
 
 /**
@@ -211,7 +185,7 @@ router.post(
   "/admin/products",
   authMiddleware,
   requirePermission("products:create"),
-  (req: Request, res: Response) => adminController.createProduct(req, res),
+  (req: Request, res: Response) => adminController.createProduct(req, res)
 );
 
 /**
@@ -222,7 +196,7 @@ router.patch(
   "/admin/products/:productId",
   authMiddleware,
   requirePermission("products:manage"),
-  (req: Request, res: Response) => adminController.updateProduct(req, res),
+  (req: Request, res: Response) => adminController.updateProduct(req, res)
 );
 
 /**
@@ -233,7 +207,7 @@ router.get(
   "/admin/products",
   authMiddleware,
   requirePermission("products:view"),
-  (req: Request, res: Response) => adminController.listAllProducts(req, res),
+  (req: Request, res: Response) => adminController.listAllProducts(req, res)
 );
 
 /**
@@ -244,7 +218,7 @@ router.delete(
   "/admin/products/:productId",
   authMiddleware,
   requirePermission("products:manage"),
-  (req: Request, res: Response) => adminController.deleteProduct(req, res),
+  (req: Request, res: Response) => adminController.deleteProduct(req, res)
 );
 
 // ============ ADMIN ORDER MANAGEMENT ROUTES ============
@@ -257,7 +231,7 @@ router.get(
   "/admin/orders",
   authMiddleware,
   requirePermission("orders:view"),
-  (req: Request, res: Response) => adminController.listAllOrders(req, res),
+  (req: Request, res: Response) => adminController.listAllOrders(req, res)
 );
 
 /**
@@ -268,7 +242,7 @@ router.get(
   "/admin/orders/:orderId",
   authMiddleware,
   requirePermission("orders:view"),
-  (req: Request, res: Response) => adminController.getOrderDetail(req, res),
+  (req: Request, res: Response) => adminController.getOrderDetail(req, res)
 );
 
 /**
@@ -279,8 +253,7 @@ router.patch(
   "/admin/orders/:orderId/fulfillment-status",
   authMiddleware,
   requirePermission("orders:manage"),
-  (req: Request, res: Response) =>
-    adminController.updateFulfillmentStatus(req, res),
+  (req: Request, res: Response) => adminController.updateFulfillmentStatus(req, res)
 );
 
 /**
@@ -291,7 +264,7 @@ router.post(
   "/admin/orders/:orderId/refund",
   authMiddleware,
   requirePermission("orders:refund"),
-  (req: Request, res: Response) => adminController.initiateRefund(req, res),
+  (req: Request, res: Response) => adminController.initiateRefund(req, res)
 );
 
 // ============ WEBHOOK ROUTES ============
@@ -311,7 +284,7 @@ router.post("/webhooks/phonepe", (req: Request, res: Response) => {
  * List logged-in seller's products
  */
 router.get("/seller/products", authMiddleware, (req: Request, res: Response) =>
-  sellerController.listSellerProducts(req, res),
+  sellerController.listSellerProducts(req, res)
 );
 
 /**
@@ -319,29 +292,23 @@ router.get("/seller/products", authMiddleware, (req: Request, res: Response) =>
  * List a new product for sale (merchant or P2P)
  */
 router.post("/seller/products", authMiddleware, (req: Request, res: Response) =>
-  sellerController.createSellerProduct(req, res),
+  sellerController.createSellerProduct(req, res)
 );
 
 /**
  * PATCH /api/v1/seller/products/:productId
  * Update a seller's product listing
  */
-router.patch(
-  "/seller/products/:productId",
-  authMiddleware,
-  (req: Request, res: Response) =>
-    sellerController.updateSellerProduct(req, res),
+router.patch("/seller/products/:productId", authMiddleware, (req: Request, res: Response) =>
+  sellerController.updateSellerProduct(req, res)
 );
 
 /**
  * DELETE /api/v1/seller/products/:productId
  * Deactivate a seller's product listing
  */
-router.delete(
-  "/seller/products/:productId",
-  authMiddleware,
-  (req: Request, res: Response) =>
-    sellerController.deleteSellerProduct(req, res),
+router.delete("/seller/products/:productId", authMiddleware, (req: Request, res: Response) =>
+  sellerController.deleteSellerProduct(req, res)
 );
 
 /**
@@ -349,7 +316,7 @@ router.delete(
  * List orders received for seller's items
  */
 router.get("/seller/orders", authMiddleware, (req: Request, res: Response) =>
-  sellerController.listSellerOrders(req, res),
+  sellerController.listSellerOrders(req, res)
 );
 
 /**
@@ -359,8 +326,7 @@ router.get("/seller/orders", authMiddleware, (req: Request, res: Response) =>
 router.patch(
   "/seller/orders/:orderId/items/:productVariantId/fulfillment",
   authMiddleware,
-  (req: Request, res: Response) =>
-    sellerController.updateSellerOrderItemFulfillment(req, res),
+  (req: Request, res: Response) => sellerController.updateSellerOrderItemFulfillment(req, res)
 );
 
 export default router;

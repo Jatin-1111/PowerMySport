@@ -12,11 +12,7 @@ import {
   updatePathwayGuide,
   updatePathwayStage,
 } from "../controllers/pathwayGuideAdminController";
-import {
-  adminMiddleware,
-  authMiddleware,
-  requirePermission,
-} from "../../middleware/auth";
+import { adminMiddleware, authMiddleware, requirePermission } from "../../middleware/auth";
 
 const router = Router();
 

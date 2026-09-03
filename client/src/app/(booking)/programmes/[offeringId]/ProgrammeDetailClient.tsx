@@ -42,9 +42,7 @@ export const ProgrammeDetailClient = () => {
         // The browse endpoint is the public read surface; find this programme
         // within it rather than adding a second, near-identical endpoint.
         const response = await coachProgramsApi.browse();
-        const match = (response.data?.offerings ?? []).find(
-          (item) => item.id === offeringId,
-        );
+        const match = (response.data?.offerings ?? []).find((item) => item.id === offeringId);
         if (!cancelled) setOffering(match ?? null);
       } catch {
         if (!cancelled) toast.error("Could not load this programme");
@@ -73,8 +71,8 @@ export const ProgrammeDetailClient = () => {
       router.push("/my-classes");
     } catch (error) {
       const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Could not join the waiting list";
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not join the waiting list";
       toast.error(message);
     } finally {
       setJoining(false);
@@ -96,9 +94,7 @@ export const ProgrammeDetailClient = () => {
     try {
       const response = await coachProgramsApi.enroll(offering.id, {
         studentName: studentName.trim(),
-        ...(address.trim()
-          ? { deliveryAddress: { addressSnapshot: address.trim() } }
-          : {}),
+        ...(address.trim() ? { deliveryAddress: { addressSnapshot: address.trim() } } : {}),
       });
 
       const redirectUrl = response.data?.redirectUrl;
@@ -113,8 +109,8 @@ export const ProgrammeDetailClient = () => {
       window.location.href = redirectUrl;
     } catch (error) {
       const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Could not join this programme";
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not join this programme";
       toast.error(message);
     } finally {
       setJoining(false);
@@ -134,9 +130,7 @@ export const ProgrammeDetailClient = () => {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-8">
         <h1 className="text-xl font-semibold">Programme not found</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          It may have been paused or filled up.
-        </p>
+        <p className="text-muted-foreground mt-2 text-sm">It may have been paused or filled up.</p>
         <Button className="mt-4" variant="outline" onClick={() => router.push("/programmes")}>
           Back to programmes
         </Button>
@@ -144,8 +138,7 @@ export const ProgrammeDetailClient = () => {
     );
   }
 
-  const coach =
-    typeof offering.coachId === "object" ? offering.coachId : undefined;
+  const coach = typeof offering.coachId === "object" ? offering.coachId : undefined;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8">
@@ -154,21 +147,17 @@ export const ProgrammeDetailClient = () => {
           <h1 className="text-2xl font-bold tracking-tight">{offering.title}</h1>
           <DeliveryBadge
             kind={offering.deliveryKind}
-            {...(offering.onlinePlatform
-              ? { platform: offering.onlinePlatform }
-              : {})}
+            {...(offering.onlinePlatform ? { platform: offering.onlinePlatform } : {})}
           />
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mt-1 text-sm">
           {offering.sport}
           {coach?.userId?.name ? ` · ${coach.userId.name}` : ""}
         </p>
       </header>
 
       <Card className="mb-6 space-y-3 p-4">
-        {offering.description ? (
-          <p className="text-sm">{offering.description}</p>
-        ) : null}
+        {offering.description ? <p className="text-sm">{offering.description}</p> : null}
         <p className="text-sm">
           <span className="font-medium">When: </span>
           {formatSchedule(offering.schedule, offering.timezone)}
@@ -179,9 +168,9 @@ export const ProgrammeDetailClient = () => {
       {offering.isFull ? (
         <Card className="space-y-3 p-4">
           <h2 className="font-semibold">This programme is full</h2>
-          <p className="text-sm text-muted-foreground">
-            Join the waiting list and we&apos;ll email you the moment a place
-            opens. Places go to whoever books first, so be quick when it does.
+          <p className="text-muted-foreground text-sm">
+            Join the waiting list and we&apos;ll email you the moment a place opens. Places go to
+            whoever books first, so be quick when it does.
           </p>
 
           <label className="block text-sm">
@@ -212,9 +201,7 @@ export const ProgrammeDetailClient = () => {
 
           {offering.deliveryKind === "STUDENT_LOCATION" ? (
             <label className="block text-sm">
-              <span className="mb-1 block font-medium">
-                Where should the coach come?
-              </span>
+              <span className="mb-1 block font-medium">Where should the coach come?</span>
               <Input
                 value={address}
                 onChange={(event) => setAddress(event.target.value)}
@@ -223,9 +210,9 @@ export const ProgrammeDetailClient = () => {
             </label>
           ) : null}
 
-          <p className="text-xs text-muted-foreground">
-            You&apos;ll be taken to payment next. Classes you don&apos;t use are
-            refundable if you leave.
+          <p className="text-muted-foreground text-xs">
+            You&apos;ll be taken to payment next. Classes you don&apos;t use are refundable if you
+            leave.
           </p>
 
           <Button fullWidth loading={joining} onClick={join}>

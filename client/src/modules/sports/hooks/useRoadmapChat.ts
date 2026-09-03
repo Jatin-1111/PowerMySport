@@ -4,8 +4,7 @@ import type { SessionSummary } from "@/modules/guidance/components/chat/ChatDraw
 import { authHeaders, useChatCore } from "@/modules/guidance/hooks/useChatCore";
 import { useCallback, useRef, useState } from "react";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 interface ChatSessionMeta {
   dailyRemaining: number;
@@ -50,7 +49,7 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
     try {
       const res = await fetch(
         `${API_BASE_URL}/roadmap-chat/sessions?sportSlug=${encodeURIComponent(sportSlug)}`,
-        { headers: authHeaders(), credentials: "include" },
+        { headers: authHeaders(), credentials: "include" }
       );
       const data = await res.json();
       if (data.success) setSessions(data.data);
@@ -68,10 +67,10 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
     setIsInitializing(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/roadmap-chat/${encodeURIComponent(sportSlug)}`,
-        { headers: authHeaders(), credentials: "include" },
-      );
+      const res = await fetch(`${API_BASE_URL}/roadmap-chat/${encodeURIComponent(sportSlug)}`, {
+        headers: authHeaders(),
+        credentials: "include",
+      });
       const data = await res.json();
       if (data.success) {
         setMessages(data.data.messages);
@@ -145,10 +144,10 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
       setIsInitializing(true);
       setError(null);
       try {
-        const res = await fetch(
-          `${API_BASE_URL}/roadmap-chat/sessions/${sessionId}`,
-          { headers: authHeaders(), credentials: "include" },
-        );
+        const res = await fetch(`${API_BASE_URL}/roadmap-chat/sessions/${sessionId}`, {
+          headers: authHeaders(),
+          credentials: "include",
+        });
         const data = await res.json();
         if (data.success) {
           setMessages(data.data.messages);
@@ -168,7 +167,7 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
         setIsInitializing(false);
       }
     },
-    [currentSessionId, setMessages, setError],
+    [currentSessionId, setMessages, setError]
   );
 
   // ── Send a message ────────────────────────────────────────────────────────
@@ -204,8 +203,8 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
                           (userContent.trim().length > 60 ? "…" : ""),
                       updatedAt: new Date().toISOString(),
                     }
-                  : s,
-              ),
+                  : s
+              )
             );
           }
         },
@@ -215,7 +214,7 @@ export function useRoadmapChat({ sportSlug, level }: UseRoadmapChatOptions) {
         setMeta((m) => ({ ...m, dailyRemaining: 0 }));
       }
     },
-    [sendCore, currentSessionId, sportSlug],
+    [sendCore, currentSessionId, sportSlug]
   );
 
   return {

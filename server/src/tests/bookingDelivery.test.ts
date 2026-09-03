@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import mongoose from "mongoose";
-import {
-  deliveryAddressLine,
-  resolveBookingDelivery,
-} from "../client/services/BookingDelivery";
+import { deliveryAddressLine, resolveBookingDelivery } from "../client/services/BookingDelivery";
 
 /**
  * `resolveBookingDelivery` is the single answer to "where does this session
@@ -52,10 +49,7 @@ test("a venue booking is delivered at that venue, snapshotted", () => {
   assert.equal(delivery?.kind, "PLATFORM_VENUE");
   assert.equal(delivery?.venueId, venueId);
   assert.equal(delivery?.nameSnapshot, "Baseline Sports Arena");
-  assert.equal(
-    delivery?.addressSnapshot,
-    "44 MG Road, Bengaluru, Karnataka 560001",
-  );
+  assert.equal(delivery?.addressSnapshot, "44 MG Road, Bengaluru, Karnataka 560001");
   assert.deepEqual(delivery?.coordinates, [77.5946, 12.9716]);
 });
 
@@ -78,10 +72,7 @@ test("an OWN_VENUE coach is delivered at the coach's own venue", () => {
   const delivery = resolveBookingDelivery({ coach: ownVenueCoach });
 
   assert.equal(delivery?.kind, "PROVIDER_VENUE");
-  assert.equal(
-    delivery?.addressSnapshot,
-    "12 Residency Road, Bengaluru, Karnataka 560025",
-  );
+  assert.equal(delivery?.addressSnapshot, "12 Residency Road, Bengaluru, Karnataka 560025");
 });
 
 test("an OWN_VENUE coach ignores the student's location, matching the booking flow", () => {
@@ -164,10 +155,7 @@ test("an academy's four address fields are composed into one invoice line", () =
   });
 
   assert.equal(delivery?.kind, "PROVIDER_VENUE");
-  assert.equal(
-    delivery?.addressSnapshot,
-    "7 Hosur Road, Bengaluru, Karnataka, 560029",
-  );
+  assert.equal(delivery?.addressSnapshot, "7 Hosur Road, Bengaluru, Karnataka, 560029");
 });
 
 test("an academy with partial address fields skips the blanks", () => {
@@ -200,12 +188,9 @@ test("the resolved delivery does not track later edits to the provider profile",
 test("deliveryAddressLine returns undefined rather than an empty string", () => {
   assert.equal(deliveryAddressLine(undefined), undefined);
   assert.equal(deliveryAddressLine({ kind: "PROVIDER_VENUE" }), undefined);
-  assert.equal(
-    deliveryAddressLine({ kind: "PROVIDER_VENUE", addressSnapshot: "   " }),
-    undefined,
-  );
+  assert.equal(deliveryAddressLine({ kind: "PROVIDER_VENUE", addressSnapshot: "   " }), undefined);
   assert.equal(
     deliveryAddressLine({ kind: "PROVIDER_VENUE", addressSnapshot: "1 Old St" }),
-    "1 Old St",
+    "1 Old St"
   );
 });

@@ -14,13 +14,9 @@ export interface VenueEarningsData {
   recentBookings: any[];
 }
 
-export const getVenueEarnings = async (
-  ownerUserId: string,
-): Promise<VenueEarningsData> => {
+export const getVenueEarnings = async (ownerUserId: string): Promise<VenueEarningsData> => {
   // Find all venues owned by this user
-  const venues = await Venue.find({ ownerId: ownerUserId })
-    .select("_id")
-    .lean();
+  const venues = await Venue.find({ ownerId: ownerUserId }).select("_id").lean();
   if (venues.length === 0) {
     // Return empty data structure
     return {
@@ -38,50 +34,35 @@ export const getVenueEarnings = async (
   const now = new Date();
   const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const endOfLastMonth = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    0,
-    23,
-    59,
-    59,
-  );
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-  const [completedBookings, pendingBookings, recentBookings] =
-    await Promise.all([
-      Booking.find({ venueId: { $in: venueIds }, status: "COMPLETED" }).lean(),
-      Booking.find({
-        venueId: { $in: venueIds },
-        status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
-      }).lean(),
-      Booking.find({ venueId: { $in: venueIds }, status: "COMPLETED" })
-        .sort({ date: -1 })
-        .limit(10)
-        .populate("userId", "name photoUrl")
-        .lean(),
-    ]);
+  const [completedBookings, pendingBookings, recentBookings] = await Promise.all([
+    Booking.find({ venueId: { $in: venueIds }, status: "COMPLETED" }).lean(),
+    Booking.find({
+      venueId: { $in: venueIds },
+      status: { $in: ["CONFIRMED", "IN_PROGRESS"] },
+    }).lean(),
+    Booking.find({ venueId: { $in: venueIds }, status: "COMPLETED" })
+      .sort({ date: -1 })
+      .limit(10)
+      .populate("userId", "name photoUrl")
+      .lean(),
+  ]);
 
   const getVenueAmount = (b: any): number => {
     if (Array.isArray(b.payments)) {
-      const vp = b.payments.find(
-        (p: any) => p.userType === "VenueLister" && p.status === "PAID",
-      );
+      const vp = b.payments.find((p: any) => p.userType === "VenueLister" && p.status === "PAID");
       if (vp) return vp.amount;
     }
     return b.totalAmount ?? 0;
   };
 
   const allTime = {
-    total: completedBookings.reduce(
-      (s: number, b: any) => s + getVenueAmount(b),
-      0,
-    ),
+    total: completedBookings.reduce((s: number, b: any) => s + getVenueAmount(b), 0),
     sessions: completedBookings.length,
   };
-  const thisMonthB = completedBookings.filter(
-    (b: any) => new Date(b.date) >= startOfThisMonth,
-  );
+  const thisMonthB = completedBookings.filter((b: any) => new Date(b.date) >= startOfThisMonth);
   const lastMonthB = completedBookings.filter((b: any) => {
     const d = new Date(b.date);
     return d >= startOfLastMonth && d <= endOfLastMonth;
@@ -95,10 +76,7 @@ export const getVenueEarnings = async (
     sessions: lastMonthB.length,
   };
   const pending = {
-    total: pendingBookings.reduce(
-      (s: number, b: any) => s + getVenueAmount(b),
-      0,
-    ),
+    total: pendingBookings.reduce((s: number, b: any) => s + getVenueAmount(b), 0),
     sessions: pendingBookings.length,
   };
 
@@ -111,7 +89,7 @@ export const getVenueEarnings = async (
         month: "short",
         year: "numeric",
       }),
-      { total: 0, sessions: 0 },
+      { total: 0, sessions: 0 }
     );
   }
   completedBookings
@@ -175,12 +153,8 @@ export interface VenueAnalyticsData {
   customerRetention: { newCustomers: number; returningCustomers: number };
 }
 
-export const getVenueAnalytics = async (
-  ownerUserId: string,
-): Promise<VenueAnalyticsData> => {
-  const venues = await Venue.find({ ownerId: ownerUserId })
-    .select("_id rating reviewCount")
-    .lean();
+export const getVenueAnalytics = async (ownerUserId: string): Promise<VenueAnalyticsData> => {
+  const venues = await Venue.find({ ownerId: ownerUserId }).select("_id rating reviewCount").lean();
   if (venues.length === 0) {
     return {
       overview: {
@@ -200,13 +174,8 @@ export const getVenueAnalytics = async (
     };
   }
   const venueIds = venues.map((v: any) => v._id);
-  const avgRating =
-    venues.reduce((s: number, v: any) => s + (v.rating ?? 0), 0) /
-    venues.length;
-  const reviewCount = venues.reduce(
-    (s: number, v: any) => s + (v.reviewCount ?? 0),
-    0,
-  );
+  const avgRating = venues.reduce((s: number, v: any) => s + (v.rating ?? 0), 0) / venues.length;
+  const reviewCount = venues.reduce((s: number, v: any) => s + (v.reviewCount ?? 0), 0);
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -229,16 +198,12 @@ export const getVenueAnalytics = async (
 
   const completed = allBookings.filter((b: any) => b.status === "COMPLETED");
   const terminal = allBookings.filter((b: any) =>
-    ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status),
+    ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(b.status)
   );
   const completionRate =
-    terminal.length > 0
-      ? Math.round((completed.length / terminal.length) * 100)
-      : 0;
+    terminal.length > 0 ? Math.round((completed.length / terminal.length) * 100) : 0;
 
-  const allCustomerIds = [
-    ...new Set(allBookings.map((b: any) => b.userId.toString())),
-  ];
+  const allCustomerIds = [...new Set(allBookings.map((b: any) => b.userId.toString()))];
   const countMap = new Map<string, number>();
   allBookings.forEach((b: any) => {
     const id = b.userId.toString();
@@ -249,9 +214,7 @@ export const getVenueAnalytics = async (
     if (c > 1) returningSet.add(id);
   });
   const retentionRate =
-    allCustomerIds.length > 0
-      ? Math.round((returningSet.size / allCustomerIds.length) * 100)
-      : 0;
+    allCustomerIds.length > 0 ? Math.round((returningSet.size / allCustomerIds.length) * 100) : 0;
 
   const trendMap = new Map<string, number>();
   for (let i = 29; i >= 0; i--) {
@@ -261,8 +224,7 @@ export const getVenueAnalytics = async (
   }
   recentBookings.forEach((b: any) => {
     const key = new Date(b.date).toISOString().split("T")[0] ?? "";
-    if (key && trendMap.has(key))
-      trendMap.set(key, (trendMap.get(key) ?? 0) + 1);
+    if (key && trendMap.has(key)) trendMap.set(key, (trendMap.get(key) ?? 0) + 1);
   });
   const sessionsTrend = Array.from(trendMap.entries()).map(([date, count]) => ({
     label: new Date(date).toLocaleDateString("en-IN", {

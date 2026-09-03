@@ -54,25 +54,16 @@ export function DetailDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div
-        className="absolute inset-0 bg-slate-900/50"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} aria-hidden="true" />
       <div
         role="dialog"
         aria-modal="true"
-        className={cn(
-          "relative flex h-full w-full flex-col bg-white shadow-2xl",
-          widthClass,
-        )}
+        className={cn("relative flex h-full w-full flex-col bg-white shadow-2xl", widthClass)}
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
           <div className="min-w-0">
             <div className="text-lg font-bold text-slate-900">{title}</div>
-            {subtitle && (
-              <div className="mt-0.5 text-sm text-slate-500">{subtitle}</div>
-            )}
+            {subtitle && <div className="mt-0.5 text-sm text-slate-500">{subtitle}</div>}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {headerExtra}
@@ -87,15 +78,9 @@ export function DetailDrawer({
           </div>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
-          {children}
-        </div>
+        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">{children}</div>
 
-        {footer && (
-          <div className="border-t border-slate-200 bg-slate-50 px-5 py-3">
-            {footer}
-          </div>
-        )}
+        {footer && <div className="border-t border-slate-200 bg-slate-50 px-5 py-3">{footer}</div>}
       </div>
     </div>
   );
@@ -115,9 +100,7 @@ export function DetailSection({
 }) {
   return (
     <section className={className}>
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        {title}
-      </h4>
+      <h4 className="mb-2 text-xs font-semibold tracking-wide text-slate-400 uppercase">{title}</h4>
       <div className="space-y-2">{children}</div>
     </section>
   );
@@ -136,14 +119,9 @@ export function DetailRow({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        "flex items-start justify-between gap-4 text-sm",
-        className,
-      )}
-    >
+    <div className={cn("flex items-start justify-between gap-4 text-sm", className)}>
       <span className="shrink-0 text-slate-500">{label}</span>
-      <span className="min-w-0 break-words text-right font-medium text-slate-900">
+      <span className="min-w-0 text-right font-medium break-words text-slate-900">
         {value ?? "—"}
       </span>
     </div>

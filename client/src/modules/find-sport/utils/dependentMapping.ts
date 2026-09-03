@@ -9,7 +9,7 @@ import type { Dependent } from "@/types";
 import { EMPTY_ANSWERS, type SportFitResult, type SportResult, type WizardAnswers } from "../types";
 
 export function budgetRangeToTier(
-  range: WizardAnswers["budget"],
+  range: WizardAnswers["budget"]
 ): "Budget" | "Moderate" | "Premium" {
   if (range === "under-3k" || range === "3k-7k") return "Budget";
   if (range === "7k-15k") return "Moderate";
@@ -23,15 +23,13 @@ export function cmToFeetInches(cm: number): string {
   return `${feet}′ ${inches}″`;
 }
 
-export function weeklyHoursToNumber(
-  h: WizardAnswers["weeklyHours"],
-): number | undefined {
+export function weeklyHoursToNumber(h: WizardAnswers["weeklyHours"]): number | undefined {
   if (!h) return undefined;
   return h === "1-3" ? 2 : h === "4-7" ? 5 : h === "8-12" ? 10 : 15;
 }
 
 export function ambitionToObjective(
-  ambition: WizardAnswers["ambition"],
+  ambition: WizardAnswers["ambition"]
 ): "Recreational" | "Fitness" | "Compete" {
   if (ambition === "fun") return "Recreational";
   if (ambition === "competitive") return "Fitness";
@@ -40,7 +38,7 @@ export function ambitionToObjective(
 
 export function deriveHeightCategoryFromCm(
   cm: number,
-  age: number | null,
+  age: number | null
 ): "short" | "average" | "tall" {
   const avg = age ? Math.min(175, 85 + age * 5.5) : 140;
   if (cm < avg * 0.93) return "short";
@@ -48,11 +46,8 @@ export function deriveHeightCategoryFromCm(
   return "average";
 }
 
-export function deriveBuild(
-  weightKg: number,
-  heightCm: number,
-): "lean" | "average" | "stocky" {
-  const bmi = weightKg / ((heightCm / 100) ** 2);
+export function deriveBuild(weightKg: number, heightCm: number): "lean" | "average" | "stocky" {
+  const bmi = weightKg / (heightCm / 100) ** 2;
   if (bmi < 17) return "lean";
   if (bmi > 22) return "stocky";
   return "average";
@@ -67,7 +62,7 @@ export function deriveBuild(
  */
 function mergeSportMatches(
   scored: SportResult[],
-  chosen: SportFitResult[],
+  chosen: SportFitResult[]
 ): Array<{ sport: string; fitLabel: string; score: number }> {
   const seen = new Set<string>();
   const out: Array<{ sport: string; fitLabel: string; score: number }> = [];
@@ -90,13 +85,16 @@ export function buildDependentPayload(
    * nowhere to live until the dependent exists, so it rides in on creation.
    * Omitted on a normal save so a later retake never wipes an earlier decision.
    */
-  chosenSport?: string,
+  chosenSport?: string
 ): Partial<Dependent> {
   const genderMap =
-    answers.gender === "boy" ? "MALE"
-    : answers.gender === "girl" ? "FEMALE"
-    : answers.gender === "prefer-not" ? "OTHER"
-    : undefined;
+    answers.gender === "boy"
+      ? "MALE"
+      : answers.gender === "girl"
+        ? "FEMALE"
+        : answers.gender === "prefer-not"
+          ? "OTHER"
+          : undefined;
   return {
     ...(name ? { name } : {}),
     dob: answers.dob ?? undefined,
@@ -114,8 +112,11 @@ export function buildDependentPayload(
     physical: {
       heightCm: answers.height ?? undefined,
       weightKg: answers.weight ?? undefined,
-      heightCategory: answers.height ? deriveHeightCategoryFromCm(answers.height, answers.age) : undefined,
-      build: answers.height && answers.weight ? deriveBuild(answers.weight, answers.height) : undefined,
+      heightCategory: answers.height
+        ? deriveHeightCategoryFromCm(answers.height, answers.age)
+        : undefined,
+      build:
+        answers.height && answers.weight ? deriveBuild(answers.weight, answers.height) : undefined,
       energyType: answers.energyType ?? undefined,
       motorType: answers.motorType ?? undefined,
       visualTracking: answers.visualTracking ?? undefined,
@@ -246,13 +247,16 @@ export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAn
 export function dependentToWizardAnswers(
   dep: WizardSourceProfile,
   childName: string,
-  age: number | null,
+  age: number | null
 ): WizardAnswers {
   const genderMap =
-    dep.gender === "MALE" ? ("boy" as const)
-    : dep.gender === "FEMALE" ? ("girl" as const)
-    : dep.gender === "OTHER" ? ("prefer-not" as const)
-    : null;
+    dep.gender === "MALE"
+      ? ("boy" as const)
+      : dep.gender === "FEMALE"
+        ? ("girl" as const)
+        : dep.gender === "OTHER"
+          ? ("prefer-not" as const)
+          : null;
 
   return {
     ...EMPTY_ANSWERS,
@@ -290,7 +294,12 @@ export function dependentToWizardAnswers(
 export function hasWizardSignal(dep: WizardSourceProfile, age: number | null): boolean {
   if (!age) return false;
   return Boolean(
-    dep.energyType || dep.ambition || dep.teamIndividual !== undefined ||
-    dep.contactComfort || dep.budgetRange || dep.focusStyle || dep.decisionStyle,
+    dep.energyType ||
+    dep.ambition ||
+    dep.teamIndividual !== undefined ||
+    dep.contactComfort ||
+    dep.budgetRange ||
+    dep.focusStyle ||
+    dep.decisionStyle
   );
 }

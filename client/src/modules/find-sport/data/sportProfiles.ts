@@ -304,8 +304,16 @@ export const SPORT_PROFILES: SportProfile[] = [
 ];
 
 export const PRIOR_SPORTS_OPTIONS = [
-  "Badminton", "Tennis", "Cricket", "Football", "Swimming",
-  "Chess", "Table Tennis", "Basketball", "Volleyball", "Hockey",
+  "Badminton",
+  "Tennis",
+  "Cricket",
+  "Football",
+  "Swimming",
+  "Chess",
+  "Table Tennis",
+  "Basketball",
+  "Volleyball",
+  "Hockey",
 ];
 
 export const CITIES: { name: string; tier: 1 | 2 | 3; state: string | null }[] = [

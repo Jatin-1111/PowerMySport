@@ -30,7 +30,7 @@ const analyticsEventSchema = new Schema<AnalyticsEventDocument>(
       index: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 analyticsEventSchema.index({ eventName: 1, createdAt: -1 });
@@ -42,5 +42,5 @@ analyticsEventSchema.index({ guestId: 1, createdAt: -1 });
 
 export const AnalyticsEvent = mongoose.model<AnalyticsEventDocument>(
   "AnalyticsEvent",
-  analyticsEventSchema,
+  analyticsEventSchema
 );

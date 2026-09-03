@@ -8,7 +8,7 @@ export const getPaginationParams = (
   rawPage: unknown,
   rawLimit: unknown,
   defaultLimit: number,
-  maxLimit: number,
+  maxLimit: number
 ): PaginationParams => {
   const parsedPage = parseInt(String(rawPage ?? "1"), 10);
   const parsedLimit = parseInt(String(rawLimit ?? String(defaultLimit)), 10);

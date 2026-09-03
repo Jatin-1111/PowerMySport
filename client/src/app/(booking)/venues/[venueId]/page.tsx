@@ -28,11 +28,7 @@ import { VenueDetailClient } from "./VenueDetailClient";
  */
 export const metadata: Metadata = noindexMetadata("Venue");
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ venueId: string }>;
-}) {
+export default async function Page({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
 
   const queryClient = new QueryClient();

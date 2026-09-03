@@ -47,8 +47,7 @@ export function ProductReviews({ productId }: { productId: string }) {
         review: reviewText,
       });
 
-      if (!res.data?.ok)
-        throw new Error(res.data?.error?.message || "Failed to submit review");
+      if (!res.data?.ok) throw new Error(res.data?.error?.message || "Failed to submit review");
 
       setSubmitSuccess(true);
       setReviewText("");
@@ -60,17 +59,16 @@ export function ProductReviews({ productId }: { productId: string }) {
     }
   };
 
-  if (isLoading)
-    return <div className="animate-pulse h-40 bg-slate-100 rounded-2xl" />;
+  if (isLoading) return <div className="h-40 animate-pulse rounded-2xl bg-slate-100" />;
 
   return (
-    <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+    <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
       <h2 className="text-2xl font-black text-slate-950">Customer Reviews</h2>
 
       {/* Stats Summary */}
       {stats && (
-        <div className="mt-6 flex flex-col md:flex-row gap-8 items-start border-b border-slate-100 pb-8">
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 p-6 min-w-[200px]">
+        <div className="mt-6 flex flex-col items-start gap-8 border-b border-slate-100 pb-8 md:flex-row">
+          <div className="flex min-w-[200px] flex-col items-center justify-center rounded-2xl bg-slate-50 p-6">
             <span className="text-5xl font-black text-slate-900">
               {stats.averageRating.toFixed(1)}
             </span>
@@ -82,7 +80,7 @@ export function ProductReviews({ productId }: { productId: string }) {
                     "h-5 w-5",
                     s <= Math.round(stats.averageRating)
                       ? "fill-amber-400 text-amber-400"
-                      : "fill-slate-200 text-slate-200",
+                      : "fill-slate-200 text-slate-200"
                   )}
                 />
               ))}
@@ -92,20 +90,16 @@ export function ProductReviews({ productId }: { productId: string }) {
             </span>
           </div>
 
-          <div className="flex-1 w-full space-y-2">
+          <div className="w-full flex-1 space-y-2">
             {[5, 4, 3, 2, 1].map((star) => {
               const count = stats.ratingDistribution[star] || 0;
-              const percentage =
-                stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0;
+              const percentage = stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0;
               return (
-                <div
-                  key={star}
-                  className="flex items-center gap-3 text-sm font-medium"
-                >
+                <div key={star} className="flex items-center gap-3 text-sm font-medium">
                   <span className="w-12 text-slate-600">{star} stars</span>
-                  <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className="h-full bg-amber-400 rounded-full"
+                      className="h-full rounded-full bg-amber-400"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
@@ -119,32 +113,29 @@ export function ProductReviews({ productId }: { productId: string }) {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_2fr]">
         {/* Write a review form */}
-        <div className="rounded-2xl border border-slate-200 p-6 bg-slate-50 self-start sticky top-24">
-          <h3 className="font-bold text-slate-900 text-lg">Write a Review</h3>
-          <p className="text-sm text-slate-500 mt-1">
-            Share your experience with other athletes. Only verified buyers can
-            leave reviews.
+        <div className="sticky top-24 self-start rounded-2xl border border-slate-200 bg-slate-50 p-6">
+          <h3 className="text-lg font-bold text-slate-900">Write a Review</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Share your experience with other athletes. Only verified buyers can leave reviews.
           </p>
 
           <form onSubmit={submitReview} className="mt-5 space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Rating
-              </label>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Rating</label>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <button
                     type="button"
                     key={s}
                     onClick={() => setRating(s)}
-                    className="focus:outline-none transition-transform hover:scale-110"
+                    className="transition-transform hover:scale-110 focus:outline-none"
                   >
                     <Star
                       className={cn(
                         "h-8 w-8",
                         s <= rating
                           ? "fill-amber-400 text-amber-400"
-                          : "fill-slate-200 text-slate-200",
+                          : "fill-slate-200 text-slate-200"
                       )}
                     />
                   </button>
@@ -153,25 +144,21 @@ export function ProductReviews({ productId }: { productId: string }) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Review (optional)
               </label>
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                className="w-full rounded-xl border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-[#ff5722] focus:ring-1 focus:ring-[#ff5722]"
+                className="w-full rounded-xl border-slate-200 bg-white p-3 text-sm transition outline-none focus:border-[#ff5722] focus:ring-1 focus:ring-[#ff5722]"
                 rows={4}
                 placeholder="What did you like or dislike?"
               />
             </div>
 
-            {submitError && (
-              <p className="text-sm text-red-500 font-medium">{submitError}</p>
-            )}
+            {submitError && <p className="text-sm font-medium text-red-500">{submitError}</p>}
             {submitSuccess && (
-              <p className="text-sm text-emerald-600 font-medium">
-                Review submitted successfully!
-              </p>
+              <p className="text-sm font-medium text-emerald-600">Review submitted successfully!</p>
             )}
 
             <button
@@ -190,16 +177,11 @@ export function ProductReviews({ productId }: { productId: string }) {
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <MessageCircle className="h-12 w-12 text-slate-200" />
               <h4 className="mt-4 font-bold text-slate-900">No reviews yet</h4>
-              <p className="mt-1 text-sm text-slate-500">
-                Be the first to review this product!
-              </p>
+              <p className="mt-1 text-sm text-slate-500">Be the first to review this product!</p>
             </div>
           ) : (
             reviews.map((rev) => (
-              <div
-                key={rev._id}
-                className="border-b border-slate-100 pb-6 last:border-0 last:pb-0"
-              >
+              <div key={rev._id} className="border-b border-slate-100 pb-6 last:border-0 last:pb-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
@@ -214,10 +196,10 @@ export function ProductReviews({ productId }: { productId: string }) {
                       )}
                     </div>
                     <div>
-                      <p className="font-bold text-slate-900 flex items-center gap-2">
+                      <p className="flex items-center gap-2 font-bold text-slate-900">
                         {rev.userId?.name || "Anonymous User"}
                         {rev.isVerified && (
-                          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                          <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-black tracking-widest text-emerald-600 uppercase">
                             Verified Buyer
                           </span>
                         )}
@@ -235,16 +217,14 @@ export function ProductReviews({ productId }: { productId: string }) {
                           "h-4 w-4",
                           s <= rev.rating
                             ? "fill-amber-400 text-amber-400"
-                            : "fill-slate-200 text-slate-200",
+                            : "fill-slate-200 text-slate-200"
                         )}
                       />
                     ))}
                   </div>
                 </div>
                 {rev.review && (
-                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                    {rev.review}
-                  </p>
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">{rev.review}</p>
                 )}
               </div>
             ))

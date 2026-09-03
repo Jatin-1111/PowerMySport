@@ -52,9 +52,7 @@ function ToolbarButton({
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
       className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-30 ${
-        active
-          ? "bg-power-orange/10 text-power-orange"
-          : "text-slate-600 hover:bg-slate-100"
+        active ? "bg-power-orange/10 text-power-orange" : "text-slate-600 hover:bg-slate-100"
       }`}
     >
       {children}
@@ -100,9 +98,7 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
 
   const onPickImage = () => fileInputRef.current?.click();
 
-  const onImageSelected = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const onImageSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -115,9 +111,7 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
         .setImage({ src: url, alt: file.name, key } as never)
         .run();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Image upload failed",
-      );
+      toast.error(error instanceof Error ? error.message : "Image upload failed");
     } finally {
       setUploadingImage(false);
     }
@@ -261,7 +255,7 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
           {editor.isActive("link") ? <Unlink size={16} /> : <Link2 size={16} />}
         </ToolbarButton>
         {linkPopoverOpen ? (
-          <div className="absolute left-0 top-9 z-20 flex w-64 items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+          <div className="absolute top-9 left-0 z-20 flex w-64 items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
             <input
               autoFocus
               value={linkValue}
@@ -275,12 +269,12 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
                 }
               }}
               placeholder="Paste a URL"
-              className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-power-orange"
+              className="focus:border-power-orange w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none"
             />
             <button
               type="button"
               onClick={submitLink}
-              className="shrink-0 rounded-lg bg-power-orange px-2.5 py-1.5 text-xs font-semibold text-white"
+              className="bg-power-orange shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white"
             >
               Add
             </button>
@@ -288,16 +282,8 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
         ) : null}
       </div>
 
-      <ToolbarButton
-        label="Insert image"
-        onClick={onPickImage}
-        disabled={uploadingImage}
-      >
-        {uploadingImage ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <ImagePlus size={16} />
-        )}
+      <ToolbarButton label="Insert image" onClick={onPickImage} disabled={uploadingImage}>
+        {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <ImagePlus size={16} />}
       </ToolbarButton>
       <input
         ref={fileInputRef}
@@ -318,9 +304,7 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
 
       <ToolbarButton
         label="Clear formatting"
-        onClick={() =>
-          editor.chain().focus().unsetAllMarks().clearNodes().run()
-        }
+        onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
       >
         <Eraser size={16} />
       </ToolbarButton>

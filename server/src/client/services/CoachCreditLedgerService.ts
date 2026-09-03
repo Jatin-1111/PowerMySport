@@ -1,8 +1,5 @@
 import mongoose from "mongoose";
-import {
-  CoachSessionCredit,
-  CoachSessionCreditDocument,
-} from "../models/CoachSessionCredit";
+import { CoachSessionCredit, CoachSessionCreditDocument } from "../models/CoachSessionCredit";
 import { log as __rootLog } from "../../utils/logger";
 
 const log = __rootLog.child("coachCredits");
@@ -21,10 +18,7 @@ const log = __rootLog.child("coachCredits");
  * student, forever. The remainder is instead handed out one paisa at a time to
  * the earliest credits.
  */
-export const allocateCreditValues = (
-  totalPaise: number,
-  count: number,
-): number[] => {
+export const allocateCreditValues = (totalPaise: number, count: number): number[] => {
   if (!Number.isFinite(totalPaise) || totalPaise < 0) {
     throw new Error("Credit allocation needs a non-negative total in paise");
   }
@@ -39,9 +33,7 @@ export const allocateCreditValues = (
   const base = Math.floor(totalPaise / count);
   const residue = totalPaise - base * count;
 
-  return Array.from({ length: count }, (_unused, index) =>
-    index < residue ? base + 1 : base,
-  );
+  return Array.from({ length: count }, (_unused, index) => (index < residue ? base + 1 : base));
 };
 
 export interface GrantCreditsPayload {
@@ -66,16 +58,9 @@ export interface GrantCreditsPayload {
  * short-circuits.
  */
 export const grantCreditsForPeriod = async (
-  payload: GrantCreditsPayload,
+  payload: GrantCreditsPayload
 ): Promise<CoachSessionCreditDocument[]> => {
-  const {
-    enrollmentId,
-    periodStart,
-    periodEnd,
-    sessionCount,
-    feePaise,
-    session,
-  } = payload;
+  const { enrollmentId, periodStart, periodEnd, sessionCount, feePaise, session } = payload;
 
   if (sessionCount <= 0) return [];
 
@@ -90,7 +75,7 @@ export const grantCreditsForPeriod = async (
   if (existing.length > 0) {
     log.info(
       `grantCreditsForPeriod: enrollment ${enrollmentId.toString()} already has ` +
-        `${existing.length} credit(s) for this period — not re-granting`,
+        `${existing.length} credit(s) for this period — not re-granting`
     );
     return existing;
   }
@@ -174,7 +159,7 @@ export const consumeCreditForOccurrence = async (params: {
       sort: { periodEnd: 1, createdAt: 1 },
       new: true,
       session: session ?? null,
-    },
+    }
   ).exec();
 };
 
@@ -194,7 +179,7 @@ export const releaseCreditsForOccurrence = async (params: {
       $set: { status: "AVAILABLE" },
       $unset: { consumedByOccurrenceId: "", consumedAt: "" },
     },
-    params.session ? { session: params.session } : {},
+    params.session ? { session: params.session } : {}
   ).exec();
 
   return result.modifiedCount ?? 0;
@@ -206,7 +191,7 @@ export const releaseCreditsForOccurrence = async (params: {
  * elapsed time.
  */
 export const refundBasisPaiseForEnrollment = async (
-  enrollmentId: mongoose.Types.ObjectId,
+  enrollmentId: mongoose.Types.ObjectId
 ): Promise<{ creditCount: number; amountPaise: number }> => {
   const rows = await CoachSessionCredit.aggregate<{
     _id: null;
@@ -252,7 +237,7 @@ export const freezeCreditsForRefund = async (params: {
   await CoachSessionCredit.updateMany(
     { enrollmentId: params.enrollmentId, status: "AVAILABLE" },
     { $set: { status: "REFUND_PENDING" } },
-    params.session ? { session: params.session } : {},
+    params.session ? { session: params.session } : {}
   ).exec();
 
   return {
@@ -267,7 +252,7 @@ export const unfreezeCreditsForRefund = async (params: {
 }): Promise<number> => {
   const result = await CoachSessionCredit.updateMany(
     { enrollmentId: params.enrollmentId, status: "REFUND_PENDING" },
-    { $set: { status: "AVAILABLE" } },
+    { $set: { status: "AVAILABLE" } }
   ).exec();
 
   return result.modifiedCount ?? 0;
@@ -285,7 +270,7 @@ export const markCreditsRefunded = async (params: {
       status: { $in: ["AVAILABLE", "REFUND_PENDING"] },
     },
     { $set: { status: "REFUNDED", refundedAt: params.at ?? new Date() } },
-    params.session ? { session: params.session } : {},
+    params.session ? { session: params.session } : {}
   ).exec();
 
   return result.modifiedCount ?? 0;
@@ -299,16 +284,18 @@ export const markCreditsRefunded = async (params: {
  * could accumulate a year of credits and claim the lot on cancellation. If the
  * business wants roll-over, this is the single place that changes.
  */
-export const expireCreditsPastPeriod = async (params: {
-  asOf?: Date;
-  session?: mongoose.ClientSession;
-} = {}): Promise<number> => {
+export const expireCreditsPastPeriod = async (
+  params: {
+    asOf?: Date;
+    session?: mongoose.ClientSession;
+  } = {}
+): Promise<number> => {
   const asOf = params.asOf ?? new Date();
 
   const result = await CoachSessionCredit.updateMany(
     { status: "AVAILABLE", periodEnd: { $lt: asOf } },
     { $set: { status: "EXPIRED", expiredAt: asOf } },
-    params.session ? { session: params.session } : {},
+    params.session ? { session: params.session } : {}
   ).exec();
 
   if ((result.modifiedCount ?? 0) > 0) {
@@ -320,7 +307,7 @@ export const expireCreditsPastPeriod = async (params: {
 
 /** Ledger summary for a student's enrollment, for the dashboard. */
 export const creditSummaryForEnrollment = async (
-  enrollmentId: mongoose.Types.ObjectId,
+  enrollmentId: mongoose.Types.ObjectId
 ): Promise<Record<string, { count: number; amountPaise: number }>> => {
   const rows = await CoachSessionCredit.aggregate<{
     _id: string;
@@ -338,9 +325,6 @@ export const creditSummaryForEnrollment = async (
   ]);
 
   return Object.fromEntries(
-    rows.map((row) => [
-      row._id,
-      { count: row.count, amountPaise: row.amountPaise },
-    ]),
+    rows.map((row) => [row._id, { count: row.count, amountPaise: row.amountPaise }])
   );
 };

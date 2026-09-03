@@ -66,7 +66,7 @@ export function MultiCheckboxDropdown({
           {icon}
           {label}
           {count > 0 ? (
-            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-power-orange px-1 text-[10px] font-bold text-white">
+            <span className="bg-power-orange inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
               {count}
             </span>
           ) : null}
@@ -80,9 +80,7 @@ export function MultiCheckboxDropdown({
       {open ? (
         <div className="absolute left-0 z-40 mt-2 max-h-64 w-full min-w-[13rem] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
           {options.length === 0 ? (
-            <p className="px-2 py-3 text-center text-xs text-slate-400">
-              {emptyHint}
-            </p>
+            <p className="px-2 py-3 text-center text-xs text-slate-400">{emptyHint}</p>
           ) : (
             options.map((option) => {
               const active = selected.includes(option);
@@ -139,8 +137,7 @@ export function SelectDropdown({
 }: SelectDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(() => setOpen(false));
-  const current =
-    options.find((option) => option.value === value) ?? options[0];
+  const current = options.find((option) => option.value === value) ?? options[0];
 
   return (
     <div ref={ref} className={`relative ${className}`}>
@@ -153,9 +150,7 @@ export function SelectDropdown({
         <span className="flex items-center gap-1.5 truncate">
           {icon}
           {label ? <span className="text-slate-400">{label}:</span> : null}
-          <span className="font-semibold text-slate-800">
-            {current?.label ?? "All"}
-          </span>
+          <span className="font-semibold text-slate-800">{current?.label ?? "All"}</span>
         </span>
         <ChevronDown
           size={15}
@@ -169,10 +164,7 @@ export function SelectDropdown({
             const active = option.value === value;
             const suffix = renderSuffix ? renderSuffix(option.value) : null;
             return (
-              <div
-                key={option.value || "all"}
-                className="flex items-center gap-1"
-              >
+              <div key={option.value || "all"} className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -181,7 +173,7 @@ export function SelectDropdown({
                   }}
                   className={`flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition ${
                     active
-                      ? "bg-power-orange/10 font-semibold text-power-orange"
+                      ? "bg-power-orange/10 text-power-orange font-semibold"
                       : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
@@ -190,9 +182,7 @@ export function SelectDropdown({
                       active ? "border-power-orange" : "border-slate-300"
                     }`}
                   >
-                    {active ? (
-                      <span className="h-1.5 w-1.5 rounded-full bg-power-orange" />
-                    ) : null}
+                    {active ? <span className="bg-power-orange h-1.5 w-1.5 rounded-full" /> : null}
                   </span>
                   <span className="truncate">{option.label}</span>
                 </button>

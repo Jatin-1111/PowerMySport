@@ -16,10 +16,7 @@ import {
   getCoachSubscriptionRevenue,
 } from "../services/CoachSubscriptionService";
 import { Coach } from "../models/Coach";
-import {
-  getPhonePeOrderStatus,
-  isPhonePeGatewayError,
-} from "../../shared/services/PhonePeService";
+import { getPhonePeOrderStatus, isPhonePeGatewayError } from "../../shared/services/PhonePeService";
 import { CoachSubscriptionPackage } from "../models/CoachSubscriptionPackage";
 import { User } from "../models/User";
 import { CoachSubscriptionPaymentTransaction } from "../models/CoachSubscriptionPayment";
@@ -34,10 +31,7 @@ import { computeSubscriptionFees } from "../services/PricingRates";
 /**
  * Create a new subscription package (Coach endpoint)
  */
-export const createCoachPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createCoachPackageHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
@@ -56,15 +50,7 @@ export const createCoachPackageHandler = async (
       return;
     }
 
-    const {
-      name,
-      description,
-      frequency,
-      price,
-      features,
-      maxStudents,
-      maxSessions,
-    } = req.body;
+    const { name, description, frequency, price, features, maxStudents, maxSessions } = req.body;
 
     if (!name || !frequency || price === undefined) {
       res.status(400).json({
@@ -93,8 +79,7 @@ export const createCoachPackageHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to create package";
+    const message = error instanceof Error ? error.message : "Failed to create package";
     res.status(400).json({
       success: false,
       message,
@@ -105,10 +90,7 @@ export const createCoachPackageHandler = async (
 /**
  * Get coach's subscription packages
  */
-export const getCoachPackagesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCoachPackagesHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
@@ -137,8 +119,7 @@ export const getCoachPackagesHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to retrieve packages";
+    const message = error instanceof Error ? error.message : "Failed to retrieve packages";
     res.status(400).json({
       success: false,
       message,
@@ -149,10 +130,7 @@ export const getCoachPackagesHandler = async (
 /**
  * Get coach's packages by another user (public view)
  */
-export const getCoachPublicPackagesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCoachPublicPackagesHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const rawCoachId = req.params.coachId;
     const coachId = Array.isArray(rawCoachId) ? rawCoachId[0] : rawCoachId;
@@ -177,8 +155,7 @@ export const getCoachPublicPackagesHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to retrieve packages";
+    const message = error instanceof Error ? error.message : "Failed to retrieve packages";
     res.status(400).json({
       success: false,
       message,
@@ -189,10 +166,7 @@ export const getCoachPublicPackagesHandler = async (
 /**
  * Update a subscription package (Coach endpoint)
  */
-export const updateCoachPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateCoachPackageHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
@@ -212,9 +186,7 @@ export const updateCoachPackageHandler = async (
     }
 
     const rawPackageId = req.params.packageId;
-    const packageId = Array.isArray(rawPackageId)
-      ? rawPackageId[0]
-      : rawPackageId;
+    const packageId = Array.isArray(rawPackageId) ? rawPackageId[0] : rawPackageId;
 
     if (typeof packageId !== "string" || !packageId) {
       res.status(400).json({
@@ -225,10 +197,7 @@ export const updateCoachPackageHandler = async (
     }
 
     // Verify ownership
-    const isOwner = await validateCoachOwnsPackage(
-      coach._id.toString(),
-      packageId,
-    );
+    const isOwner = await validateCoachOwnsPackage(coach._id.toString(), packageId);
     if (!isOwner) {
       res.status(403).json({
         success: false,
@@ -237,10 +206,7 @@ export const updateCoachPackageHandler = async (
       return;
     }
 
-    const updatedPackage = await updateCoachSubscriptionPackage(
-      packageId,
-      req.body,
-    );
+    const updatedPackage = await updateCoachSubscriptionPackage(packageId, req.body);
 
     if (!updatedPackage) {
       res.status(404).json({
@@ -258,8 +224,7 @@ export const updateCoachPackageHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to update package";
+    const message = error instanceof Error ? error.message : "Failed to update package";
     res.status(400).json({
       success: false,
       message,
@@ -270,10 +235,7 @@ export const updateCoachPackageHandler = async (
 /**
  * Delete a subscription package (Coach endpoint)
  */
-export const deleteCoachPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteCoachPackageHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id || req.user.role !== "Coach") {
       res.status(403).json({
@@ -293,9 +255,7 @@ export const deleteCoachPackageHandler = async (
     }
 
     const rawPackageId = req.params.packageId;
-    const packageId = Array.isArray(rawPackageId)
-      ? rawPackageId[0]
-      : rawPackageId;
+    const packageId = Array.isArray(rawPackageId) ? rawPackageId[0] : rawPackageId;
 
     if (typeof packageId !== "string" || !packageId) {
       res.status(400).json({
@@ -306,10 +266,7 @@ export const deleteCoachPackageHandler = async (
     }
 
     // Verify ownership
-    const isOwner = await validateCoachOwnsPackage(
-      coach._id.toString(),
-      packageId,
-    );
+    const isOwner = await validateCoachOwnsPackage(coach._id.toString(), packageId);
     if (!isOwner) {
       res.status(403).json({
         success: false,
@@ -333,8 +290,7 @@ export const deleteCoachPackageHandler = async (
       message: "Package deleted successfully",
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to delete package";
+    const message = error instanceof Error ? error.message : "Failed to delete package";
     res.status(400).json({
       success: false,
       message,
@@ -352,10 +308,7 @@ export const deleteCoachPackageHandler = async (
  * copies. Same problem as the booking quote: two independently-configured
  * sources for the number shown versus the number charged.
  */
-export const getSubscriptionQuoteHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getSubscriptionQuoteHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { basePaise } = req.body as { basePaise: number };
 
@@ -381,15 +334,14 @@ export const getSubscriptionQuoteHandler = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to price subscription",
+      message: error instanceof Error ? error.message : "Failed to price subscription",
     });
   }
 };
 
 export const subscribeToCoachPackageHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -459,9 +411,7 @@ export const subscribeToCoachPackageHandler = async (
     }
 
     if (transaction.linkedSubscriptionId) {
-      const existing = await CoachSubscription.findById(
-        transaction.linkedSubscriptionId,
-      )
+      const existing = await CoachSubscription.findById(transaction.linkedSubscriptionId)
         .populate("packageId")
         .populate("coachId", "bio sports rating reviewCount");
 
@@ -494,8 +444,7 @@ export const subscribeToCoachPackageHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to create subscription";
+    const message = error instanceof Error ? error.message : "Failed to create subscription";
     res.status(400).json({
       success: false,
       message,
@@ -508,7 +457,7 @@ export const subscribeToCoachPackageHandler = async (
  */
 export const getUserCoachSubscriptionsHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -542,10 +491,7 @@ export const getUserCoachSubscriptionsHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to retrieve subscriptions";
+    const message = error instanceof Error ? error.message : "Failed to retrieve subscriptions";
     res.status(400).json({
       success: false,
       message,
@@ -556,10 +502,7 @@ export const getUserCoachSubscriptionsHandler = async (
 /**
  * Cancel a subscription
  */
-export const cancelSubscriptionHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const cancelSubscriptionHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({
@@ -576,9 +519,7 @@ export const cancelSubscriptionHandler = async (
     const { reason } = req.body;
 
     if (typeof subscriptionId !== "string" || !subscriptionId) {
-      res
-        .status(400)
-        .json({ success: false, message: "subscriptionId is required" });
+      res.status(400).json({ success: false, message: "subscriptionId is required" });
       return;
     }
 
@@ -597,8 +538,7 @@ export const cancelSubscriptionHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to cancel subscription";
+    const message = error instanceof Error ? error.message : "Failed to cancel subscription";
     res.status(400).json({
       success: false,
       message,
@@ -611,7 +551,7 @@ export const cancelSubscriptionHandler = async (
  */
 export const getCoachActiveSubscriptionsHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id || req.user.role !== "Coach") {
@@ -631,9 +571,7 @@ export const getCoachActiveSubscriptionsHandler = async (
       return;
     }
 
-    const subscriptions = await getCoachActiveSubscriptions(
-      coach._id.toString(),
-    );
+    const subscriptions = await getCoachActiveSubscriptions(coach._id.toString());
 
     res.status(200).json({
       success: true,
@@ -643,10 +581,7 @@ export const getCoachActiveSubscriptionsHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to retrieve subscriptions";
+    const message = error instanceof Error ? error.message : "Failed to retrieve subscriptions";
     res.status(400).json({
       success: false,
       message,
@@ -659,7 +594,7 @@ export const getCoachActiveSubscriptionsHandler = async (
  */
 export const getCoachSubscriptionRevenueHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id || req.user.role !== "Coach") {
@@ -691,8 +626,7 @@ export const getCoachSubscriptionRevenueHandler = async (
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to retrieve revenue";
+    const message = error instanceof Error ? error.message : "Failed to retrieve revenue";
     res.status(400).json({
       success: false,
       message,
@@ -706,7 +640,7 @@ export const getCoachSubscriptionRevenueHandler = async (
  */
 export const initiateCoachSubscriptionPaymentHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -739,8 +673,7 @@ export const initiateCoachSubscriptionPaymentHandler = async (
       return;
     }
 
-    const packageDoc =
-      await CoachSubscriptionPackage.findById(packageId).lean();
+    const packageDoc = await CoachSubscriptionPackage.findById(packageId).lean();
     if (!packageDoc) {
       res.status(404).json({
         success: false,
@@ -792,10 +725,7 @@ export const initiateCoachSubscriptionPaymentHandler = async (
     const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
     res.status(statusCode).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to initiate subscription payment",
+      message: error instanceof Error ? error.message : "Failed to initiate subscription payment",
       ...(isPhonePeGatewayError(error)
         ? { data: { code: error.code, retryable: error.retryable } }
         : {}),
@@ -809,7 +739,7 @@ export const initiateCoachSubscriptionPaymentHandler = async (
  */
 export const verifyCoachSubscriptionPaymentStatusHandler = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     if (!req.user?.id) {
@@ -864,8 +794,7 @@ export const verifyCoachSubscriptionPaymentStatusHandler = async (
 
     const effectiveTransaction = reconciled || transaction;
     const activationPending =
-      effectiveTransaction.status === "COMPLETED" &&
-      !effectiveTransaction.linkedSubscriptionId;
+      effectiveTransaction.status === "COMPLETED" && !effectiveTransaction.linkedSubscriptionId;
 
     res.status(200).json({
       success: true,
@@ -888,9 +817,7 @@ export const verifyCoachSubscriptionPaymentStatusHandler = async (
     res.status(statusCode).json({
       success: false,
       message:
-        error instanceof Error
-          ? error.message
-          : "Failed to verify subscription payment status",
+        error instanceof Error ? error.message : "Failed to verify subscription payment status",
       ...(isPhonePeGatewayError(error)
         ? { data: { code: error.code, retryable: error.retryable } }
         : {}),

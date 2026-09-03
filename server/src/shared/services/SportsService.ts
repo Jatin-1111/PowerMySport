@@ -125,7 +125,7 @@ Examples of invalid: "xyz123", "not a sport", nonsensical words`;
   async addCustomSport(
     sportName: string,
     coachId: string,
-    isVerified: boolean = true,
+    isVerified: boolean = true
   ): Promise<SportDocument> {
     try {
       // Check if sport already exists

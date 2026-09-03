@@ -1,9 +1,5 @@
 import crypto from "crypto";
-import {
-  PaymentGateway,
-  PaymentStatus,
-  ApiResponse,
-} from "../../types/ecommerce";
+import { PaymentGateway, PaymentStatus, ApiResponse } from "../../types/ecommerce";
 import {
   PaymentTransaction as PaymentTransactionModel,
   PaymentTransactionDocument,
@@ -30,20 +26,12 @@ export interface IPaymentGatewayService {
       name: string;
       email: string;
       phone: string;
-    },
+    }
   ): Promise<any>;
 
-  verifyPayment(
-    paymentId: string,
-    orderId: string,
-    signature: string,
-  ): Promise<boolean>;
+  verifyPayment(paymentId: string, orderId: string, signature: string): Promise<boolean>;
 
-  initiateRefund(
-    paymentId: string,
-    amount: number,
-    reason: string,
-  ): Promise<string>;
+  initiateRefund(paymentId: string, amount: number, reason: string): Promise<string>;
 
   getPaymentStatus(paymentId: string): Promise<PaymentStatus>;
 }
@@ -67,7 +55,7 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
       name: string;
       email: string;
       phone: string;
-    },
+    }
   ): Promise<any> {
     const merchantOrderId = `O_${orderId}_${Date.now()}`;
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
@@ -92,11 +80,7 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
     };
   }
 
-  verifyPaymentSignature(
-    orderId: string,
-    paymentId: string,
-    signature: string,
-  ): boolean {
+  verifyPaymentSignature(orderId: string, paymentId: string, signature: string): boolean {
     return true; // We rely on getPaymentStatus polling for definitive truth
   }
 
@@ -107,7 +91,7 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
   async verifyPayment(
     merchantOrderId: string,
     _orderId: string,
-    _signature: string,
+    _signature: string
   ): Promise<boolean> {
     const status = await this.getPaymentStatus(merchantOrderId);
     return status === PaymentStatus.CAPTURED;
@@ -118,11 +102,7 @@ export class PhonePeGatewayService implements IPaymentGatewayService {
    * merchantOrderId must be the merchantOrderId sent during order creation, not the PhonePe payment ID.
    * amount is in paise; this function converts to rupees for the PhonePe SDK.
    */
-  async initiateRefund(
-    merchantOrderId: string,
-    amount: number,
-    reason: string,
-  ): Promise<string> {
+  async initiateRefund(merchantOrderId: string, amount: number, reason: string): Promise<string> {
     const result = await initiatePhonePeRefund({
       merchantRefundId: `R_${merchantOrderId}_${Date.now()}`,
       originalMerchantOrderId: merchantOrderId,
@@ -178,7 +158,7 @@ export class PaymentService {
       name: string;
       email: string;
       phone: string;
-    },
+    }
   ): Promise<PaymentTransactionDocument> {
     // Check for duplicate using idempotency key
     const existingTransaction = await PaymentTransactionModel.findOne({
@@ -195,15 +175,14 @@ export class PaymentService {
       amount,
       currency,
       `Order #${orderId}`,
-      customer,
+      customer
     );
 
     // Record transaction
     const transaction = new PaymentTransactionModel({
       orderId: new mongoose.Types.ObjectId(orderId),
       paymentGateway,
-      gatewayOrderId:
-        gatewayOrder.id || gatewayOrder.data?.merchantTransactionId,
+      gatewayOrderId: gatewayOrder.id || gatewayOrder.data?.merchantTransactionId,
       amount,
       currency,
       status: PaymentStatus.PENDING,
@@ -224,7 +203,7 @@ export class PaymentService {
     orderId: string,
     paymentId: string,
     _phonepeOrderId: string,
-    _signature: string,
+    _signature: string
   ): Promise<PaymentTransactionDocument> {
     // SECURITY: the client-supplied phonepeOrderId/signature are NOT trusted.
     // We locate the transaction by our own orderId link, then re-poll PhonePe
@@ -238,18 +217,13 @@ export class PaymentService {
       throw new Error("Payment transaction not found");
     }
 
-    const gatewayStatus = await getPhonePeOrderStatus(
-      transaction.gatewayOrderId,
-    );
+    const gatewayStatus = await getPhonePeOrderStatus(transaction.gatewayOrderId);
 
     if (gatewayStatus.state !== "COMPLETED") {
       throw new Error("Payment not completed");
     }
 
-    if (
-      typeof gatewayStatus.amount !== "number" ||
-      gatewayStatus.amount !== transaction.amount
-    ) {
+    if (typeof gatewayStatus.amount !== "number" || gatewayStatus.amount !== transaction.amount) {
       throw new Error("Payment amount mismatch");
     }
 
@@ -259,7 +233,7 @@ export class PaymentService {
         gatewayPaymentId: paymentId,
         status: PaymentStatus.CAPTURED,
       },
-      { new: true },
+      { new: true }
     );
 
     return updated || transaction;
@@ -271,7 +245,7 @@ export class PaymentService {
   async recordPaymentFailure(
     orderId: string,
     gatewayOrderId: string,
-    failureReason: string,
+    failureReason: string
   ): Promise<PaymentTransactionDocument> {
     const transaction = await PaymentTransactionModel.findOneAndUpdate(
       {
@@ -282,7 +256,7 @@ export class PaymentService {
         status: PaymentStatus.FAILED,
         gatewayResponse: { failure_reason: failureReason },
       },
-      { new: true },
+      { new: true }
     );
 
     if (!transaction) {
@@ -299,7 +273,7 @@ export class PaymentService {
   async processWebhookPaymentEvent(
     eventId: string,
     eventType: string,
-    payload: any,
+    payload: any
   ): Promise<PaymentTransactionDocument> {
     // Check for duplicate event
     const existingTransaction = await PaymentTransactionModel.findOne({
@@ -312,10 +286,7 @@ export class PaymentService {
 
     let transaction: PaymentTransactionDocument | null = null;
 
-    if (
-      eventType === "payment.authorized" ||
-      eventType === "payment.captured"
-    ) {
+    if (eventType === "payment.authorized" || eventType === "payment.captured") {
       const payment = payload.payload.payment;
 
       transaction = await PaymentTransactionModel.findOneAndUpdate(
@@ -328,7 +299,7 @@ export class PaymentService {
           webhookData: payload,
           idempotencyKey: `webhook-${eventId}`, // Update idempotency key
         },
-        { new: true },
+        { new: true }
       );
 
       if (!transaction) {
@@ -346,7 +317,7 @@ export class PaymentService {
           webhookData: payload,
           idempotencyKey: `webhook-${eventId}`,
         },
-        { new: true },
+        { new: true }
       );
 
       if (!transaction) {
@@ -383,7 +354,7 @@ export class RefundService {
     orderId: string,
     merchantOrderId: string,
     refundAmount: number,
-    reason: string,
+    reason: string
   ): Promise<string> {
     // Validate order exists
     const order = await OrderModel.findById(orderId);
@@ -416,7 +387,7 @@ export class RefundService {
     const refundId = await new PhonePeGatewayService().initiateRefund(
       merchantOrderId,
       refundAmount,
-      reason,
+      reason
     );
 
     // Update order status
@@ -429,10 +400,7 @@ export class RefundService {
   /**
    * Confirm refund completion
    */
-  async confirmRefundCompletion(
-    orderId: string,
-    refundId: string,
-  ): Promise<void> {
+  async confirmRefundCompletion(orderId: string, refundId: string): Promise<void> {
     const order = await OrderModel.findById(orderId);
 
     if (!order) {
@@ -468,9 +436,7 @@ export class RefundService {
     }
 
     // Find associated order
-    const order = await OrderModel.findById(
-      paymentTransaction.orderId.toString(),
-    );
+    const order = await OrderModel.findById(paymentTransaction.orderId.toString());
 
     if (!order) {
       throw new Error("Order not found for refund");

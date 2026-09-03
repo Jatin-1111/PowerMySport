@@ -18,7 +18,7 @@ const fail = (res: Response, error: unknown, code = 400) =>
  */
 async function resolveEditionFederation(
   sportSlug: string,
-  editionName: string,
+  editionName: string
 ): Promise<{ slug: string; name: string; acronym: string } | null> {
   const federations = await Federation.find({ sportSlug, isActive: true })
     .select("slug name acronym")
@@ -35,10 +35,7 @@ async function resolveEditionFederation(
  * GET /api/tournament-editions/:slug
  * One dated edition, for the public /tournaments/[slug] page.
  */
-export const getTournamentEdition = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getTournamentEdition = async (req: Request, res: Response): Promise<void> => {
   try {
     const slug = typeof req.params.slug === "string" ? req.params.slug.toLowerCase() : "";
     if (!slug) {
@@ -83,10 +80,7 @@ export const getTournamentEdition = async (
  * Slug + timestamp only — this exists to feed the sitemap, so it deliberately
  * returns no content fields and skips editions that have already finished.
  */
-export const listTournamentEditionSlugs = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listTournamentEditionSlugs = async (req: Request, res: Response): Promise<void> => {
   try {
     const limit = Math.min(5000, Math.max(1, parseInt((req.query.limit as string) || "2000", 10)));
     const startOfToday = new Date();

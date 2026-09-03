@@ -1,14 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import {
-    Calendar,
-    ChevronDown,
-    History,
-    Loader2,
-    Trash2,
-    Trophy,
-} from "lucide-react";
+import { Calendar, ChevronDown, History, Loader2, Trash2, Trophy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { GuidanceSubmission } from "../../types";
 
@@ -28,8 +21,7 @@ export function PastRoadmapsDropdown({
 
   useEffect(() => {
     const fn = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
@@ -42,10 +34,10 @@ export function PastRoadmapsDropdown({
         onClick={() => setOpen(!open)}
         className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
       >
-        <History className="h-3.5 w-3.5 text-power-orange" />
+        <History className="text-power-orange h-3.5 w-3.5" />
         <span className="hidden sm:inline">Past Roadmaps</span>
         <span className="inline sm:hidden">History</span>
-        <span className="rounded-full bg-power-orange/10 px-1.5 py-0.5 text-[10px] font-bold text-power-orange">
+        <span className="bg-power-orange/10 text-power-orange rounded-full px-1.5 py-0.5 text-[10px] font-bold">
           {history.length}
         </span>
         <ChevronDown
@@ -59,9 +51,9 @@ export function PastRoadmapsDropdown({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.96 }}
             transition={{ duration: 0.13 }}
-            className="absolute right-0 top-full mt-2 z-50 w-72 rounded-2xl border border-slate-100 bg-white shadow-xl p-2 max-h-72 overflow-y-auto"
+            className="absolute top-full right-0 z-50 mt-2 max-h-72 w-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-2 shadow-xl"
           >
-            <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <p className="px-3 pt-1 pb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
               {history.length} saved roadmaps
             </p>
             {history.map((h) => (
@@ -74,16 +66,16 @@ export function PastRoadmapsDropdown({
                     onSelect(h);
                     setOpen(false);
                   }}
-                  className="flex flex-1 min-w-0 items-start gap-3 rounded-lg px-1 py-1.5 text-left"
+                  className="flex min-w-0 flex-1 items-start gap-3 rounded-lg px-1 py-1.5 text-left"
                 >
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-power-orange/10 text-power-orange">
+                  <div className="bg-power-orange/10 text-power-orange mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg">
                     <Trophy className="h-3.5 w-3.5" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-800">
                       {h.query.primary_objective} · Age {h.query.child_age}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400">
                       <Calendar className="h-3 w-3" />
                       {new Date(h.createdAt).toLocaleDateString(undefined, {
                         month: "short",

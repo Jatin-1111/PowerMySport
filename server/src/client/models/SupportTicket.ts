@@ -1,7 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type SupportTicketStatus =
-  "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+export type SupportTicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 
 export type SupportTicketPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -10,8 +9,7 @@ export interface SupportTicketDocument extends Document {
   requesterName?: string;
   requesterEmail?: string;
   requesterPhone?: string;
-  requesterType?:
-    "player" | "venue_owner" | "coach" | "academy_owner" | "other";
+  requesterType?: "player" | "venue_owner" | "coach" | "academy_owner" | "other";
   subject: string;
   description: string;
   category: "BOOKING" | "PAYMENT" | "ACCOUNT" | "TECHNICAL" | "OTHER";
@@ -120,7 +118,7 @@ const supportTicketSchema = new Schema<SupportTicketDocument>(
       },
     ],
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 supportTicketSchema.index({ createdAt: -1 });
@@ -136,5 +134,5 @@ supportTicketSchema.index({ userId: 1, status: 1, updatedAt: -1 });
 
 export const SupportTicket = mongoose.model<SupportTicketDocument>(
   "SupportTicket",
-  supportTicketSchema,
+  supportTicketSchema
 );

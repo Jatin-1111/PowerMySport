@@ -5,30 +5,23 @@ import { OnboardingAcademy } from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import {
-    BadgeCheck,
-    CalendarDays,
-    Clock3,
-    IndianRupee,
-    Mail,
-    MapPin,
-    Phone,
-    Users,
+  BadgeCheck,
+  CalendarDays,
+  Clock3,
+  IndianRupee,
+  Mail,
+  MapPin,
+  Phone,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type TabKey =
-  | "overview"
-  | "coaches"
-  | "venues"
-  | "subscriptions"
-  | "packages"
-  | "gallery"
-  | "reviews";
+  "overview" | "coaches" | "venues" | "subscriptions" | "packages" | "gallery" | "reviews";
 
-type MaybePopulated =
-  string | { _id?: string; id?: string; [key: string]: unknown };
+type MaybePopulated = string | { _id?: string; id?: string; [key: string]: unknown };
 
 type AcademyProfile = OnboardingAcademy & {
   ownerId?: { _id?: string; name?: string; email?: string; phone?: string };
@@ -77,15 +70,7 @@ const formatAgeGroup = (group: string) => {
   return group;
 };
 
-const dayOrder = [
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-  "sunday",
-];
+const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
 export function AcademyProfileClient() {
   const params = useParams();
@@ -101,8 +86,7 @@ export function AcademyProfileClient() {
       setLoading(true);
       try {
         const response = await academyOnboardingApi.getAcademyProfile(slug);
-        if (response.success && response.data)
-          setAcademy(response.data as AcademyProfile);
+        if (response.success && response.data) setAcademy(response.data as AcademyProfile);
         else setAcademy(null);
       } catch {
         setAcademy(null);
@@ -115,33 +99,23 @@ export function AcademyProfileClient() {
 
   const galleryImages = useMemo(() => {
     if (!academy) return [] as string[];
-    const allImages = [
-      academy.coverPhotoUrl,
-      academy.logoUrl,
-      ...(academy.photos || []),
-    ];
-    return Array.from(
-      new Set(
-        allImages.map((image) => normalizeImageUrl(image)).filter(Boolean),
-      ),
-    );
+    const allImages = [academy.coverPhotoUrl, academy.logoUrl, ...(academy.photos || [])];
+    return Array.from(new Set(allImages.map((image) => normalizeImageUrl(image)).filter(Boolean)));
   }, [academy]);
 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-power-orange" />
+        <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2" />
       </div>
     );
   }
 
   if (!academy) {
     return (
-      <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)] flex flex-col items-center justify-center">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
         <Card className="w-full max-w-md rounded-2xl border-slate-200 bg-white/90 p-8 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">
-            Academy not found
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">Academy not found</h1>
           <p className="mt-2 text-sm text-slate-600">
             This academy profile may be unavailable or not publicly visible yet.
           </p>
@@ -155,12 +129,8 @@ export function AcademyProfileClient() {
     );
   }
 
-  const academyMongoId = String(
-    (academy as any)._id || (academy as any).id || "",
-  );
-  const coverImage =
-    normalizeImageUrl(academy.coverPhotoUrl) ||
-    normalizeImageUrl(academy.logoUrl);
+  const academyMongoId = String((academy as any)._id || (academy as any).id || "");
+  const coverImage = normalizeImageUrl(academy.coverPhotoUrl) || normalizeImageUrl(academy.logoUrl);
   const logoImage = normalizeImageUrl(academy.logoUrl);
   const sessionRate = toRupees(academy.sessionRatePerHour);
 
@@ -177,7 +147,7 @@ export function AcademyProfileClient() {
         <div className="mb-4">
           <Link
             href="/booking?tab=academies"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-power-orange hover:text-orange-700"
+            className="text-power-orange inline-flex items-center gap-1 text-sm font-semibold hover:text-orange-700"
           >
             ← Back to academies
           </Link>
@@ -185,13 +155,9 @@ export function AcademyProfileClient() {
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm">
           <div className="relative h-60 w-full bg-slate-200 sm:h-72 lg:h-80">
             {coverImage ? (
-              <img
-                src={coverImage}
-                alt={academy.name}
-                className="h-full w-full object-cover"
-              />
+              <img src={coverImage} alt={academy.name} className="h-full w-full object-cover" />
             ) : (
-              <div className="bg-linear-to-br from-slate-200 to-slate-300 flex h-full items-center justify-center text-slate-600">
+              <div className="flex h-full items-center justify-center bg-linear-to-br from-slate-200 to-slate-300 text-slate-600">
                 No cover photo
               </div>
             )}
@@ -234,15 +200,10 @@ export function AcademyProfileClient() {
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700">
                       <IndianRupee size={14} />
-                      {typeof sessionRate === "number"
-                        ? `${sessionRate}/hr`
-                        : "Price on request"}
+                      {typeof sessionRate === "number" ? `${sessionRate}/hr` : "Price on request"}
                     </p>
                     <p className="text-sm font-semibold text-slate-700">
-                      ⭐{" "}
-                      {typeof academy.rating === "number"
-                        ? academy.rating.toFixed(1)
-                        : "New"}
+                      ⭐ {typeof academy.rating === "number" ? academy.rating.toFixed(1) : "New"}
                       <span className="ml-1 font-normal text-slate-500">
                         ({academy.reviewCount || 0} reviews)
                       </span>
@@ -284,15 +245,13 @@ export function AcademyProfileClient() {
           {activeTab === "overview" && (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               <Card className="rounded-2xl border-slate-200 bg-white/90 lg:col-span-2">
-                <h2 className="text-lg font-bold text-slate-900">
-                  About Academy
-                </h2>
+                <h2 className="text-lg font-bold text-slate-900">About Academy</h2>
                 <p className="mt-3 text-sm leading-relaxed text-slate-700">
                   {academy.description || "No description provided yet."}
                 </p>
                 <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Age Groups
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -306,23 +265,20 @@ export function AcademyProfileClient() {
                           </span>
                         ))
                       ) : (
-                        <span className="text-sm text-slate-500">
-                          Not provided
-                        </span>
+                        <span className="text-sm text-slate-500">Not provided</span>
                       )}
                     </div>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Languages
                     </p>
                     <p className="mt-2 text-sm text-slate-700">
-                      {(academy.languagesSpoken || []).join(", ") ||
-                        "Not provided"}
+                      {(academy.languagesSpoken || []).join(", ") || "Not provided"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Established
                     </p>
                     <p className="mt-2 text-sm text-slate-700">
@@ -330,31 +286,22 @@ export function AcademyProfileClient() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Batch Size
                     </p>
                     <p className="mt-2 text-sm text-slate-700">
-                      {academy.maxBatchSize
-                        ? `${academy.maxBatchSize} students`
-                        : "Not provided"}
+                      {academy.maxBatchSize ? `${academy.maxBatchSize} students` : "Not provided"}
                     </p>
                   </div>
                 </div>
               </Card>
 
               <Card className="rounded-2xl border-slate-200 bg-white/90">
-                <h2 className="text-lg font-bold text-slate-900">
-                  Contact & Location
-                </h2>
+                <h2 className="text-lg font-bold text-slate-900">Contact & Location</h2>
                 <div className="mt-4 space-y-3 text-sm text-slate-700">
                   <p className="inline-flex items-center gap-2">
                     <MapPin size={14} className="text-slate-500" />
-                    {[
-                      academy.address,
-                      academy.city,
-                      academy.state,
-                      academy.pincode,
-                    ]
+                    {[academy.address, academy.city, academy.state, academy.pincode]
                       .filter(Boolean)
                       .join(", ") || "Address unavailable"}
                   </p>
@@ -368,9 +315,7 @@ export function AcademyProfileClient() {
                   </p>
                   <p className="inline-flex items-center gap-2">
                     <Phone size={14} className="text-slate-500" />
-                    {academy.contactPhone ||
-                      academy.whatsappNumber ||
-                      "Phone unavailable"}
+                    {academy.contactPhone || academy.whatsappNumber || "Phone unavailable"}
                   </p>
                 </div>
                 {academy.placeId && (
@@ -399,7 +344,7 @@ export function AcademyProfileClient() {
                         key={day}
                         className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
                       >
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                           {label}
                         </p>
                         <p className="mt-1 text-sm font-medium text-slate-700">
@@ -431,24 +376,17 @@ export function AcademyProfileClient() {
                         : null;
                     const key = coachObj?._id || coachObj?.id || `${index}`;
                     return (
-                      <div
-                        key={key}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-                      >
+                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="text-sm font-semibold text-slate-800">
                           {coachObj?.name || `Coach ${index + 1}`}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Assigned to academy
-                        </p>
+                        <p className="mt-1 text-xs text-slate-500">Assigned to academy</p>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-slate-600">
-                  No coaches linked yet.
-                </p>
+                <p className="mt-3 text-sm text-slate-600">No coaches linked yet.</p>
               )}
             </Card>
           )}
@@ -469,35 +407,25 @@ export function AcademyProfileClient() {
                         : null;
                     const key = venueObj?._id || venueObj?.id || `${index}`;
                     return (
-                      <div
-                        key={key}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-                      >
+                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="text-sm font-semibold text-slate-800">
                           {venueObj?.name || `Venue ${index + 1}`}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Managed by academy
-                        </p>
+                        <p className="mt-1 text-xs text-slate-500">Managed by academy</p>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-slate-600">
-                  No venues linked yet.
-                </p>
+                <p className="mt-3 text-sm text-slate-600">No venues linked yet.</p>
               )}
             </Card>
           )}
 
           {activeTab === "subscriptions" && (
             <Card className="rounded-2xl border-slate-200 bg-white/90">
-              <h2 className="text-lg font-bold text-slate-900">
-                Subscription Plans
-              </h2>
-              {academy.subscriptionPlans &&
-              academy.subscriptionPlans.length > 0 ? (
+              <h2 className="text-lg font-bold text-slate-900">Subscription Plans</h2>
+              {academy.subscriptionPlans && academy.subscriptionPlans.length > 0 ? (
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {academy.subscriptionPlans.map((plan, index) => {
                     const planObj =
@@ -511,39 +439,28 @@ export function AcademyProfileClient() {
                         : null;
                     const key = planObj?._id || planObj?.id || `${index}`;
                     const price =
-                      typeof planObj?.price === "number"
-                        ? Math.round(planObj.price / 100)
-                        : null;
+                      typeof planObj?.price === "number" ? Math.round(planObj.price / 100) : null;
                     return (
-                      <div
-                        key={key}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-                      >
+                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="text-sm font-semibold text-slate-800">
                           {planObj?.name || `Plan ${index + 1}`}
                         </p>
                         <p className="mt-1 text-xs text-slate-600">
-                          {typeof price === "number"
-                            ? `₹${price}`
-                            : "Price available on request"}
+                          {typeof price === "number" ? `₹${price}` : "Price available on request"}
                         </p>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-slate-600">
-                  No subscription plans published yet.
-                </p>
+                <p className="mt-3 text-sm text-slate-600">No subscription plans published yet.</p>
               )}
             </Card>
           )}
 
           {activeTab === "packages" && (
             <Card className="rounded-2xl border-slate-200 bg-white/90">
-              <h2 className="text-lg font-bold text-slate-900">
-                Session Packages
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Session Packages</h2>
               {academy.sessionPackages && academy.sessionPackages.length > 0 ? (
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {academy.sessionPackages.map((pkg, index) => {
@@ -562,26 +479,19 @@ export function AcademyProfileClient() {
                         ? Math.round(packageObj.price / 100)
                         : null;
                     return (
-                      <div
-                        key={key}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-                      >
+                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="text-sm font-semibold text-slate-800">
                           {packageObj?.name || `Package ${index + 1}`}
                         </p>
                         <p className="mt-1 text-xs text-slate-600">
-                          {typeof price === "number"
-                            ? `₹${price}`
-                            : "Price available on request"}
+                          {typeof price === "number" ? `₹${price}` : "Price available on request"}
                         </p>
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-slate-600">
-                  No session packages published yet.
-                </p>
+                <p className="mt-3 text-sm text-slate-600">No session packages published yet.</p>
               )}
             </Card>
           )}
@@ -605,9 +515,7 @@ export function AcademyProfileClient() {
                   ))}
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-slate-600">
-                  No gallery photos available.
-                </p>
+                <p className="mt-3 text-sm text-slate-600">No gallery photos available.</p>
               )}
             </Card>
           )}
@@ -617,17 +525,15 @@ export function AcademyProfileClient() {
               <h2 className="text-lg font-bold text-slate-900">Reviews</h2>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Average Rating
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
-                    {typeof academy.rating === "number"
-                      ? academy.rating.toFixed(1)
-                      : "0.0"}
+                    {typeof academy.rating === "number" ? academy.rating.toFixed(1) : "0.0"}
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Total Reviews
                   </p>
                   <p className="mt-1 text-2xl font-bold text-slate-900">
@@ -636,8 +542,7 @@ export function AcademyProfileClient() {
                 </div>
               </div>
               <p className="mt-5 text-sm text-slate-600">
-                Detailed review feed will be connected in the reviews module
-                integration.
+                Detailed review feed will be connected in the reviews module integration.
               </p>
             </Card>
           )}
@@ -650,8 +555,8 @@ export function AcademyProfileClient() {
               Ready to train?
             </h2>
             <p className="mt-2 text-sm text-slate-600">
-              Book a session directly or contact the academy to discuss batches,
-              schedules, and trials.
+              Book a session directly or contact the academy to discuss batches, schedules, and
+              trials.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Button variant="primary" onClick={handleBookSession}>

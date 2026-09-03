@@ -98,7 +98,7 @@ describe("C4 — only the booking organizer can cancel", () => {
 
     await assert.rejects(
       cancelBooking(id.toString(), attacker.toString()),
-      /not found or already cancelled/i,
+      /not found or already cancelled/i
     );
 
     const after = await Booking.collection.findOne({ _id: id });
@@ -207,7 +207,7 @@ describe("C3 — wallet top-up only credits the amount actually paid", () => {
 
     await assert.rejects(
       WalletService.verifyTopUp(userId.toString(), "M_MISMATCH"),
-      /amount mismatch/i,
+      /amount mismatch/i
     );
 
     const w = await Wallet.collection.findOne({ userId });
@@ -259,7 +259,7 @@ describe("C6 — order payment is confirmed only for the exact amount", () => {
 
     await assert.rejects(
       svc.confirmPayment(orderId.toString(), "pay1", "O_UNDER"),
-      /amount mismatch/i,
+      /amount mismatch/i
     );
 
     const o = await Order.collection.findOne({ _id: orderId });
@@ -273,7 +273,7 @@ describe("C6 — order payment is confirmed only for the exact amount", () => {
 
     await assert.rejects(
       svc.confirmPayment(orderId.toString(), "pay1", "O_PENDING"),
-      /not completed/i,
+      /not completed/i
     );
   });
 });
@@ -297,7 +297,7 @@ describe("H7 — refunds only on a captured order (blocks repeat refunds)", () =
     const svc = new RefundService();
     await assert.rejects(
       svc.initiateRefund(orderId.toString(), "O_REFUND", 100, "test"),
-      /refundable \(captured\) state/i,
+      /refundable \(captured\) state/i
     );
   });
 });

@@ -21,7 +21,7 @@ const chatMessageSchema = new Schema<ChatMessage>(
     content: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const guidanceChatSessionSchema = new Schema<GuidanceChatSessionDocument>(
@@ -39,16 +39,13 @@ const guidanceChatSessionSchema = new Schema<GuidanceChatSessionDocument>(
     messages: { type: [chatMessageSchema], default: [] },
     totalMessageCount: { type: Number, default: 0 },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Unique: one chat thread per (submission, user)
-guidanceChatSessionSchema.index(
-  { submissionId: 1, userId: 1 },
-  { unique: true },
-);
+guidanceChatSessionSchema.index({ submissionId: 1, userId: 1 }, { unique: true });
 
 export const GuidanceChatSession = mongoose.model<GuidanceChatSessionDocument>(
   "GuidanceChatSession",
-  guidanceChatSessionSchema,
+  guidanceChatSessionSchema
 );

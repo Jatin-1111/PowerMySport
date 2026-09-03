@@ -43,9 +43,7 @@ export default function ProgrammesPage() {
 
 function ProgrammesBrowser() {
   const searchParams = useSearchParams();
-  const [onlineOnly, setOnlineOnly] = useState(
-    searchParams.get("online") === "true",
-  );
+  const [onlineOnly, setOnlineOnly] = useState(searchParams.get("online") === "true");
   const [sport, setSport] = useState<string>(searchParams.get("sport") ?? "");
 
   const { data: offerings = [], isPending } = useBrowseProgrammes({
@@ -57,9 +55,9 @@ function ProgrammesBrowser() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Coaching programmes</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Regular classes with the same coach every week — one-to-one or in a
-          small batch, in person or online.
+        <p className="text-muted-foreground mt-1 text-sm">
+          Regular classes with the same coach every week — one-to-one or in a small batch, in person
+          or online.
         </p>
       </header>
 
@@ -129,8 +127,7 @@ function ProgrammesBrowser() {
 }
 
 const ProgrammeCard = ({ offering }: { offering: CoachOffering }) => {
-  const coach =
-    typeof offering.coachId === "object" ? offering.coachId : undefined;
+  const coach = typeof offering.coachId === "object" ? offering.coachId : undefined;
   const coachName = coach?.userId?.name;
 
   return (
@@ -138,28 +135,22 @@ const ProgrammeCard = ({ offering }: { offering: CoachOffering }) => {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="truncate font-semibold">{offering.title}</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {offering.sport}
             {coachName ? ` · ${coachName}` : ""}
           </p>
         </div>
         <DeliveryBadge
           kind={offering.deliveryKind}
-          {...(offering.onlinePlatform
-            ? { platform: offering.onlinePlatform }
-            : {})}
+          {...(offering.onlinePlatform ? { platform: offering.onlinePlatform } : {})}
         />
       </div>
 
       {offering.description ? (
-        <p className="line-clamp-2 text-sm text-muted-foreground">
-          {offering.description}
-        </p>
+        <p className="text-muted-foreground line-clamp-2 text-sm">{offering.description}</p>
       ) : null}
 
-      <p className="text-sm">
-        {formatSchedule(offering.schedule, offering.timezone)}
-      </p>
+      <p className="text-sm">{formatSchedule(offering.schedule, offering.timezone)}</p>
 
       <div className="mt-auto flex items-center justify-between gap-2 pt-2">
         <SeatsLabel offering={offering} />
@@ -169,9 +160,7 @@ const ProgrammeCard = ({ offering }: { offering: CoachOffering }) => {
           disabled={offering.isFull}
           variant={offering.isFull ? "outline" : "primary"}
         >
-          <Link href={`/programmes/${offering.id}`}>
-            {offering.isFull ? "Full" : "View"}
-          </Link>
+          <Link href={`/programmes/${offering.id}`}>{offering.isFull ? "Full" : "View"}</Link>
         </Button>
       </div>
     </Card>

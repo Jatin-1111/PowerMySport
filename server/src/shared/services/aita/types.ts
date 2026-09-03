@@ -33,9 +33,7 @@ export type AitaCategory = (typeof AITA_CATEGORIES)[number];
 
 /** The `category` query value on the new platform. */
 export type AitaListCode =
-  | "BS12" | "BS14" | "BS16" | "BS18"
-  | "GS12" | "GS14" | "GS16" | "GS18"
-  | "MS" | "MD" | "WS" | "WD";
+  "BS12" | "BS14" | "BS16" | "BS18" | "GS12" | "GS14" | "GS16" | "GS18" | "MS" | "MD" | "WS" | "WD";
 
 export interface AitaList {
   /** What `/ranking-view?category=` takes. */
@@ -61,18 +59,54 @@ export interface AitaList {
  * Verified live 2026-08-29: all twelve return rows for wid 1786300200.
  */
 export const AITA_LISTS: readonly AitaList[] = [
-  { code: "BS12", categoryId: 16, category: "Boys",  subcategory: "U-12",    label: "Boys 12 & Under" },
-  { code: "BS14", categoryId: 17, category: "Boys",  subcategory: "U-14",    label: "Boys 14 & Under" },
-  { code: "BS16", categoryId: 18, category: "Boys",  subcategory: "U-16",    label: "Boys 16 & Under" },
-  { code: "BS18", categoryId: 19, category: "Boys",  subcategory: "U-18",    label: "Boys 18 & Under" },
-  { code: "GS12", categoryId: 21, category: "Girls", subcategory: "U-12",    label: "Girls 12 & Under" },
-  { code: "GS14", categoryId: 22, category: "Girls", subcategory: "U-14",    label: "Girls 14 & Under" },
-  { code: "GS16", categoryId: 23, category: "Girls", subcategory: "U-16",    label: "Girls 16 & Under" },
-  { code: "GS18", categoryId: 24, category: "Girls", subcategory: "U-18",    label: "Girls 18 & Under" },
-  { code: "MS",   categoryId: 20, category: "Men",   subcategory: "Singles", label: "Men's Singles" },
-  { code: "MD",   categoryId: 30, category: "Men",   subcategory: "Doubles", label: "Men's Doubles" },
-  { code: "WS",   categoryId: 25, category: "Women", subcategory: "Singles", label: "Women's Singles" },
-  { code: "WD",   categoryId: 35, category: "Women", subcategory: "Doubles", label: "Women's Doubles" },
+  { code: "BS12", categoryId: 16, category: "Boys", subcategory: "U-12", label: "Boys 12 & Under" },
+  { code: "BS14", categoryId: 17, category: "Boys", subcategory: "U-14", label: "Boys 14 & Under" },
+  { code: "BS16", categoryId: 18, category: "Boys", subcategory: "U-16", label: "Boys 16 & Under" },
+  { code: "BS18", categoryId: 19, category: "Boys", subcategory: "U-18", label: "Boys 18 & Under" },
+  {
+    code: "GS12",
+    categoryId: 21,
+    category: "Girls",
+    subcategory: "U-12",
+    label: "Girls 12 & Under",
+  },
+  {
+    code: "GS14",
+    categoryId: 22,
+    category: "Girls",
+    subcategory: "U-14",
+    label: "Girls 14 & Under",
+  },
+  {
+    code: "GS16",
+    categoryId: 23,
+    category: "Girls",
+    subcategory: "U-16",
+    label: "Girls 16 & Under",
+  },
+  {
+    code: "GS18",
+    categoryId: 24,
+    category: "Girls",
+    subcategory: "U-18",
+    label: "Girls 18 & Under",
+  },
+  { code: "MS", categoryId: 20, category: "Men", subcategory: "Singles", label: "Men's Singles" },
+  { code: "MD", categoryId: 30, category: "Men", subcategory: "Doubles", label: "Men's Doubles" },
+  {
+    code: "WS",
+    categoryId: 25,
+    category: "Women",
+    subcategory: "Singles",
+    label: "Women's Singles",
+  },
+  {
+    code: "WD",
+    categoryId: 35,
+    category: "Women",
+    subcategory: "Doubles",
+    label: "Women's Doubles",
+  },
 ];
 
 /**
@@ -94,9 +128,8 @@ export function listForCombo(category: string, subcategory: string): AitaList | 
   const c = category.trim().toLowerCase();
   const s = subcategory.trim().toLowerCase();
   return (
-    AITA_LISTS.find(
-      (l) => l.category.toLowerCase() === c && l.subcategory.toLowerCase() === s,
-    ) ?? null
+    AITA_LISTS.find((l) => l.category.toLowerCase() === c && l.subcategory.toLowerCase() === s) ??
+    null
   );
 }
 

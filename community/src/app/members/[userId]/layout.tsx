@@ -9,31 +9,24 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { userId } = await params;
   const profile = await fetchPublicData<CommunityMemberProfile>(
-    `/community/players/${userId}/profile`,
+    `/community/players/${userId}/profile`
   );
 
   const name = profile?.isIdentityPublic
     ? profile.displayName
     : profile?.alias || "Community Member";
 
-  const sports = profile?.sports?.length
-    ? ` — ${profile.sports.slice(0, 3).join(", ")}`
-    : "";
+  const sports = profile?.sports?.length ? ` — ${profile.sports.slice(0, 3).join(", ")}` : "";
 
   // Member profiles carry personal data, so they are intentionally noindex.
   return buildMetadata({
     title: `${name}${sports}`,
-    description:
-      "View a PowerMySport community member's profile, sports, and activity.",
+    description: "View a PowerMySport community member's profile, sports, and activity.",
     path: `/members/${userId}`,
     noindex: true,
   });
 }
 
-export default function MemberLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function MemberLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

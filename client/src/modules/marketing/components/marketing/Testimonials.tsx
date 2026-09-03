@@ -55,13 +55,7 @@ const cardVariants: Variants = {
 
 // ─── Testimonial Card ─────────────────────────────────────────────────────────
 
-function TestimonialCard({
-  testimonial,
-  index,
-}: {
-  testimonial: Testimonial;
-  index: number;
-}) {
+function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; index: number }) {
   const isHighlighted = index === 1;
 
   return (
@@ -72,22 +66,20 @@ function TestimonialCard({
       className={cn(
         "group relative flex h-full flex-col overflow-hidden rounded-2xl p-6 will-change-transform",
         isHighlighted
-          ? "border-2 border-power-orange/30 bg-gradient-to-br from-orange-50/80 to-amber-50/60 shadow-[0_8px_40px_-8px_rgba(233,115,22,0.18)] backdrop-blur-md"
-          : "border border-white/70 bg-white/80 shadow-sm backdrop-blur-md premium-shadow",
+          ? "border-power-orange/30 border-2 bg-gradient-to-br from-orange-50/80 to-amber-50/60 shadow-[0_8px_40px_-8px_rgba(233,115,22,0.18)] backdrop-blur-md"
+          : "premium-shadow border border-white/70 bg-white/80 shadow-sm backdrop-blur-md"
       )}
     >
       {/* Left accent stripe for highlighted card */}
       {isHighlighted && (
-        <div className="absolute left-0 top-6 bottom-6 w-1 rounded-full bg-gradient-to-b from-power-orange to-amber-400" />
+        <div className="from-power-orange absolute top-6 bottom-6 left-0 w-1 rounded-full bg-gradient-to-b to-amber-400" />
       )}
 
       {/* Quote icon */}
       <div
         className={cn(
           "mb-4 flex h-8 w-8 items-center justify-center rounded-lg",
-          isHighlighted
-            ? "bg-power-orange/10 text-power-orange"
-            : "bg-slate-100 text-slate-400",
+          isHighlighted ? "bg-power-orange/10 text-power-orange" : "bg-slate-100 text-slate-400"
         )}
       >
         <Quote className="h-4 w-4" />
@@ -114,7 +106,7 @@ function TestimonialCard({
                   "h-4 w-4",
                   i < testimonial.rating!
                     ? "fill-amber-400 text-amber-400"
-                    : "fill-slate-200 text-slate-200",
+                    : "fill-slate-200 text-slate-200"
                 )}
               />
             </motion.div>
@@ -129,7 +121,7 @@ function TestimonialCard({
 
       {/* Author */}
       <div className="flex items-center gap-3">
-        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-power-orange to-amber-500 text-sm font-bold text-white shadow-sm transition-transform group-hover:scale-110">
+        <div className="from-power-orange relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br to-amber-500 text-sm font-bold text-white shadow-sm transition-transform group-hover:scale-110">
           {testimonial.avatar ? (
             <Image
               src={testimonial.avatar}
@@ -143,9 +135,7 @@ function TestimonialCard({
           )}
         </div>
         <div>
-          <p className="text-sm font-bold text-slate-900">
-            {testimonial.author}
-          </p>
+          <p className="text-sm font-bold text-slate-900">{testimonial.author}</p>
           <p className="text-xs text-slate-500">{testimonial.role}</p>
         </div>
       </div>
@@ -155,11 +145,7 @@ function TestimonialCard({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-export const Testimonials: React.FC<TestimonialsProps> = ({
-  title,
-  subtitle,
-  testimonials,
-}) => {
+export const Testimonials: React.FC<TestimonialsProps> = ({ title, subtitle, testimonials }) => {
   return (
     <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
       {/* Blurred sports backdrop for depth */}
@@ -175,8 +161,8 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
       </div>
 
       {/* Ambient blobs */}
-      <div className="pointer-events-none absolute left-0 top-1/4 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-100/40 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-1/4 right-0 h-72 w-72 translate-x-1/2 rounded-full bg-indigo-100/30 blur-3xl" />
+      <div className="pointer-events-none absolute top-1/4 left-0 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-100/40 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-1/4 h-72 w-72 translate-x-1/2 rounded-full bg-indigo-100/30 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}
@@ -189,10 +175,7 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
             className="mb-12 text-center sm:mb-16"
           >
             {subtitle && (
-              <motion.div
-                variants={headerItemVariants}
-                className="mb-4 flex justify-center"
-              >
+              <motion.div variants={headerItemVariants} className="mb-4 flex justify-center">
                 <SectionLabel label={subtitle} color="orange" />
               </motion.div>
             )}
@@ -213,14 +196,10 @@ export const Testimonials: React.FC<TestimonialsProps> = ({
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 gap-5 md:grid-cols-3 sm:gap-6"
+          className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3"
         >
           {testimonials.map((testimonial, index) => (
-            <TestimonialCard
-              key={index}
-              testimonial={testimonial}
-              index={index}
-            />
+            <TestimonialCard key={index} testimonial={testimonial} index={index} />
           ))}
         </motion.div>
       </div>

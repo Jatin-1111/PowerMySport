@@ -8,11 +8,9 @@ import "dotenv/config";
 
 const region = process.env.AWS_REGION || "ap-south-1";
 const imagesBucket = process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
-const documentsBucket =
-  process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-verification";
+const documentsBucket = process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-verification";
 
-const normalizeOrigin = (origin: string): string =>
-  origin.trim().replace(/\/$/, "");
+const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, "");
 
 const envOrigins = [process.env.FRONTEND_URL, process.env.FRONTEND_URLS]
   .filter(Boolean)
@@ -28,9 +26,7 @@ const defaultOrigins = [
   "http://localhost:3001",
 ];
 
-const allowedOrigins = Array.from(
-  new Set([...defaultOrigins, ...envOrigins].map(normalizeOrigin)),
-);
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins].map(normalizeOrigin)));
 
 // Configure S3 client
 const s3Client = new S3Client({
@@ -66,7 +62,7 @@ async function configureBucketCors(bucketName: string) {
     await s3Client.send(command);
     console.log(`✅ CORS configured successfully for ${bucketName}`);
     console.log(
-      `   Allowed origins: ${corsConfiguration.CORSRules[0]?.AllowedOrigins?.join(", ") || "N/A"}`,
+      `   Allowed origins: ${corsConfiguration.CORSRules[0]?.AllowedOrigins?.join(", ") || "N/A"}`
     );
   } catch (error: any) {
     console.error(`❌ Failed to configure CORS for ${bucketName}:`);
@@ -75,9 +71,7 @@ async function configureBucketCors(bucketName: string) {
     if (error.name === "NoSuchBucket") {
       console.error(`   → Bucket does not exist. Please create it first.`);
     } else if (error.name === "AccessDenied") {
-      console.error(
-        `   → Access denied. Check IAM permissions for PutBucketCors action.`,
-      );
+      console.error(`   → Access denied. Check IAM permissions for PutBucketCors action.`);
     }
   }
 }

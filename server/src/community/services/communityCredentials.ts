@@ -25,7 +25,7 @@ export interface CommunityCredential {
  * stricter review.
  */
 export const resolveCommunityCredentials = async (
-  userIds: string[],
+  userIds: string[]
 ): Promise<Map<string, CommunityCredential>> => {
   const unique = [...new Set(userIds.filter(Boolean))];
   if (unique.length === 0) {

@@ -33,12 +33,9 @@ export const setupBookingSocket = (io: Server): void => {
 
 export const emitSlotLocked = (
   venueId: string,
-  payload: { slotStartTime: string; dateKey: string },
+  payload: { slotStartTime: string; dateKey: string }
 ): void => {
   if (ioInstance) {
-    ioInstance
-      .of("/bookings")
-      .to(`venue:${venueId}`)
-      .emit("slot_locked", payload);
+    ioInstance.of("/bookings").to(`venue:${venueId}`).emit("slot_locked", payload);
   }
 };

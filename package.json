@@ -1,13 +1,31 @@
 {
-    "name": "Powermysport",
-    "private": true,
-    "packageManager": "npm@11.14.1",
-    "workspaces": [
-        "admin",
-        "client",
-        "community"
+  "name": "Powermysport",
+  "private": true,
+  "packageManager": "npm@11.14.1",
+  "workspaces": [
+    "admin",
+    "client",
+    "community"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.16",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.12",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx}": [
+      "prettier --write",
+      "eslint --fix --no-warn-ignored"
     ],
-    "devDependencies": {
-        "turbo": "^2.9.16"
-    }
+    "**/*.{json,css,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
 }

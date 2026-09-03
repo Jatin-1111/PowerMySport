@@ -13,11 +13,7 @@ import { IST_OFFSET_MINUTES } from "./openingHours";
  */
 
 export type ExpertSessionStatus =
-  | "PENDING_PAYMENT"
-  | "PAID"
-  | "SCHEDULED"
-  | "COMPLETED"
-  | "CANCELLED";
+  "PENDING_PAYMENT" | "PAID" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
 export type ExpertAcceptance = "PENDING" | "ACCEPTED" | "DECLINED";
 
@@ -64,9 +60,7 @@ export const HOLD_EXPIRY_REASON = "Payment not completed in time";
  * flattened into one status — and EXPIRED is what the booking side has always
  * called the former.
  */
-export const mapExpertStatusToBookingStatus = (
-  session: ExpertSessionLike,
-): BookingStatus => {
+export const mapExpertStatusToBookingStatus = (session: ExpertSessionLike): BookingStatus => {
   switch (session.status) {
     case "PENDING_PAYMENT":
       return "AWAITING_PAYMENT";
@@ -83,8 +77,7 @@ export const mapExpertStatusToBookingStatus = (
       return "COMPLETED";
 
     case "CANCELLED":
-      return session.cancelledBy === "SYSTEM" &&
-        session.cancelReason === HOLD_EXPIRY_REASON
+      return session.cancelledBy === "SYSTEM" && session.cancelReason === HOLD_EXPIRY_REASON
         ? "EXPIRED"
         : "CANCELLED";
 
@@ -133,7 +126,7 @@ export const mapBookingStatusToExpertStatus = (booking: {
 
 /** ExpertSession's canceller vocabulary uses EXPERT where Booking uses PROVIDER. */
 export const mapExpertCanceller = (
-  cancelledBy: ExpertSessionCanceller | null | undefined,
+  cancelledBy: ExpertSessionCanceller | null | undefined
 ): "CLIENT" | "PROVIDER" | "ADMIN" | "SYSTEM" | undefined => {
   if (!cancelledBy) return undefined;
   return cancelledBy === "EXPERT" ? "PROVIDER" : cancelledBy;
@@ -156,20 +149,16 @@ const pad = (value: number): string => String(value).padStart(2, "0");
  */
 export const deriveSlotFromInstant = (
   scheduledAt: Date,
-  durationMinutes: number,
+  durationMinutes: number
 ): { date: Date; startTime: string; endTime: string } => {
   const istMs = scheduledAt.getTime() + IST_OFFSET_MINUTES * 60 * 1000;
   const ist = new Date(istMs);
 
-  const date = new Date(
-    Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()),
-  );
+  const date = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()));
 
   const startMinutes = ist.getUTCHours() * 60 + ist.getUTCMinutes();
   const safeDuration =
-    Number.isFinite(durationMinutes) && durationMinutes > 0
-      ? Math.round(durationMinutes)
-      : 60;
+    Number.isFinite(durationMinutes) && durationMinutes > 0 ? Math.round(durationMinutes) : 60;
 
   // A session may run past midnight IST. The booking model's endTime is a
   // wall-clock string with no day component, so it is clamped to 23:59 rather
@@ -186,10 +175,7 @@ export const deriveSlotFromInstant = (
 };
 
 /** True when the derived endTime had to be clamped — the session crosses IST midnight. */
-export const slotCrossesMidnightIST = (
-  scheduledAt: Date,
-  durationMinutes: number,
-): boolean => {
+export const slotCrossesMidnightIST = (scheduledAt: Date, durationMinutes: number): boolean => {
   const istMs = scheduledAt.getTime() + IST_OFFSET_MINUTES * 60 * 1000;
   const ist = new Date(istMs);
   const startMinutes = ist.getUTCHours() * 60 + ist.getUTCMinutes();
@@ -258,7 +244,7 @@ export type ProjectedExpertBooking = Record<string, unknown> & {
 export const projectExpertSessionAsBooking = (
   session: ExpertSessionForProjection,
   /** The populated expert, passed through for display. */
-  expert?: unknown,
+  expert?: unknown
 ): ProjectedExpertBooking => {
   const duration =
     Number.isFinite(session.durationMinutes) && session.durationMinutes > 0
@@ -293,17 +279,11 @@ export const projectExpertSessionAsBooking = (
     ...(session.playerId ? { participantId: session.playerId } : {}),
     ...(session.paidAt ? { paymentConfirmedAt: session.paidAt } : {}),
     ...(session.holdExpiresAt ? { expiresAt: session.holdExpiresAt } : {}),
-    ...(session.expertAcceptance
-      ? { providerAcceptance: session.expertAcceptance }
-      : {}),
-    ...(session.expertRespondedAt
-      ? { providerRespondedAt: session.expertRespondedAt }
-      : {}),
+    ...(session.expertAcceptance ? { providerAcceptance: session.expertAcceptance } : {}),
+    ...(session.expertRespondedAt ? { providerRespondedAt: session.expertRespondedAt } : {}),
     ...(session.completedAt ? { completedAt: session.completedAt } : {}),
     ...(session.cancelledAt ? { cancelledAt: session.cancelledAt } : {}),
-    ...(session.cancelReason
-      ? { cancellationReason: session.cancelReason }
-      : {}),
+    ...(session.cancelReason ? { cancellationReason: session.cancelReason } : {}),
     ...(canceller ? { cancelledBy: canceller } : {}),
     ...(typeof session.cancellationNoticeHours === "number"
       ? { cancellationNoticeHours: session.cancellationNoticeHours }
@@ -316,15 +296,9 @@ export const projectExpertSessionAsBooking = (
       ...(session.momNotes ? { momNotes: session.momNotes } : {}),
       ...(session.momAddedAt ? { momAddedAt: session.momAddedAt } : {}),
       ...(session.autoCompleted ? { autoCompleted: true } : {}),
-      ...(session.refundStatus
-        ? { manualRefundStatus: session.refundStatus }
-        : {}),
-      ...(session.merchantOrderId
-        ? { merchantOrderId: session.merchantOrderId }
-        : {}),
-      ...(session.phonepeOrderId
-        ? { phonepeOrderId: session.phonepeOrderId }
-        : {}),
+      ...(session.refundStatus ? { manualRefundStatus: session.refundStatus } : {}),
+      ...(session.merchantOrderId ? { merchantOrderId: session.merchantOrderId } : {}),
+      ...(session.phonepeOrderId ? { phonepeOrderId: session.phonepeOrderId } : {}),
     },
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,

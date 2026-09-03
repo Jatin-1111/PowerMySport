@@ -1,17 +1,20 @@
 # PowerMySport — Master Documentation
 
 ## What This System Does
+
 PowerMySport is a comprehensive platform connecting athletes, coaches, and sports venues. It enables players to discover facilities and trainers, book and split payments for sessions, and engage in community discussions. End-to-end, it serves as a marketplace and management tool handling scheduling, verified coach onboarding, real-time messaging, and multi-party payouts.
 
 ## Projects in This Repo
-| Project | Folder | Purpose | Who Uses It |
-|---------|--------|---------|-------------|
-| **Server** | `/server` | Central REST API, WebSocket hub, background workers | All frontends (Client, Admin, Community) |
-| **Client** | `/client` | Primary consumer app (Bookings, Wallet, Discovery, Expert Sessions, Shop) | Players, Parents, Coaches, Venue Listers |
-| **Community** | `/community` | Social hub (Q&A, DMs, Groups, Activity Feeds) | Players, Coaches |
-| **Admin** | `/admin` | Back-office dashboard (Verification, Analytics, Moderation) | Platform Administrators |
+
+| Project       | Folder       | Purpose                                                                   | Who Uses It                              |
+| ------------- | ------------ | ------------------------------------------------------------------------- | ---------------------------------------- |
+| **Server**    | `/server`    | Central REST API, WebSocket hub, background workers                       | All frontends (Client, Admin, Community) |
+| **Client**    | `/client`    | Primary consumer app (Bookings, Wallet, Discovery, Expert Sessions, Shop) | Players, Parents, Coaches, Venue Listers |
+| **Community** | `/community` | Social hub (Q&A, DMs, Groups, Activity Feeds)                             | Players, Coaches                         |
+| **Admin**     | `/admin`     | Back-office dashboard (Verification, Analytics, Moderation)               | Platform Administrators                  |
 
 ## Architecture Overview
+
 The system follows a hub-and-spoke architecture where a single monolithic Node.js backend (`server`) serves three independent Next.js frontend applications (`client`, `community`, `admin`). The frontends do not communicate directly with each other; all data synchronization and cross-domain actions are mediated through the shared MongoDB database and Redis pub/sub channels on the server.
 
 ```text
@@ -23,19 +26,22 @@ powermysport/
 ```
 
 ## Tech Stack
-| Layer | Technology | Used In | Why |
-|-------|------------|---------|-----|
-| Frontend | Next.js (React), Tailwind CSS | Admin, Client, Community | Fast rendering, SEO optimization, App Router structure |
-| Backend | Node.js, Express, TypeScript | Server | High throughput API, strong typing |
-| Database | MongoDB (Mongoose) | Server | Flexible schema for complex user types and bookings |
-| Caching & Realtime | Redis | Server | Socket.IO multi-instance adapter, slot locking, rate limiting |
-| Realtime Comms | Socket.IO | Server, Community, Client | Live chat, presence tracking, instant booking locks |
-| Payments | PhonePe SDK | Server, Client | Processing transactions in India |
-| Cloud Storage | AWS S3 | Server, Frontends | Presigned URLs for direct image/document uploads |
+
+| Layer              | Technology                    | Used In                   | Why                                                           |
+| ------------------ | ----------------------------- | ------------------------- | ------------------------------------------------------------- |
+| Frontend           | Next.js (React), Tailwind CSS | Admin, Client, Community  | Fast rendering, SEO optimization, App Router structure        |
+| Backend            | Node.js, Express, TypeScript  | Server                    | High throughput API, strong typing                            |
+| Database           | MongoDB (Mongoose)            | Server                    | Flexible schema for complex user types and bookings           |
+| Caching & Realtime | Redis                         | Server                    | Socket.IO multi-instance adapter, slot locking, rate limiting |
+| Realtime Comms     | Socket.IO                     | Server, Community, Client | Live chat, presence tracking, instant booking locks           |
+| Payments           | PhonePe SDK                   | Server, Client            | Processing transactions in India                              |
+| Cloud Storage      | AWS S3                        | Server, Frontends         | Presigned URLs for direct image/document uploads              |
 
 ## Shared Infrastructure
-While this is a monorepo, there are no explicit shared npm workspace packages (like a `/packages/shared` folder). 
+
+While this is a monorepo, there are no explicit shared npm workspace packages (like a `/packages/shared` folder).
 Instead, "shared infrastructure" exists logically at the root and via conventions:
+
 - **`turbo.json`**: Turborepo is used to orchestrate build and lint scripts across the three frontend workspaces (`admin`, `client`, `community`).
 - **Database Schema**: The Mongoose models in `server/src/models` act as the single source of truth for the data shapes. Types are currently duplicated across the frontend `types` directories.
 - **Authentication**: JWT tokens are generated by `server` and passed via HTTP-only cookies. Since the frontends typically run on subdomains (e.g., `community.powermysport.com`, `admin.powermysport.com`), the cookie domain is shared, allowing seamless SSO between apps.
@@ -43,6 +49,7 @@ Instead, "shared infrastructure" exists logically at the root and via convention
 ## Cross-Project Data Flows
 
 **Example 1: Player books a coach and payment is confirmed**
+
 1. **Client**: Player discovers a Coach and initiates a booking checkout via PhonePe.
 2. **Server**: Receives the PhonePe webhook, verifies HMAC, and marks the `BookingPaymentTransaction` as Paid.
 3. **Server**: Triggers `NotificationService` which creates a MongoDB Notification and fires a Socket.IO event.
@@ -50,31 +57,33 @@ Instead, "shared infrastructure" exists logically at the root and via convention
 5. **Admin**: An admin can log into the `admin` app and see the transaction reflected in `/admin/stats` and `/admin/bookings`.
 
 **Example 3: A player books a 1:1 expert guidance session**
+
 1. **Client**: Player opens the Experts tab at `/booking?tab=experts` (browse all active experts, filter by sport / session mode / fee / rating — `/experts` 308s here), opens an expert at `/experts/[expertId]`, picks an open slot from the expert's published availability, and pays the session fee via PhonePe.
 2. **Server**: Payment settles via the PhonePe webhook (idempotent, `EXP_` merchant-order prefix, reconciled through the Outbox worker) — with a client-side reconcile fallback on redirect — and the `ExpertSession` becomes `SCHEDULED`. Both parties are notified.
 3. **Client**: Player can reschedule to another open slot or cancel at `/experts/sessions/[sessionId]`; once the session is `COMPLETED` (marked by the expert, or auto-completed after its end time), they leave a star rating + written feedback (optionally anonymous), updating the expert's aggregate `rating`/`reviewCount`.
-4. **Expert**: On `/expert/dashboard` the `EXPERT`-role user manages sessions (add meeting link, mark complete, cancel) and edits their profile + weekly availability. **Admin**: manages experts under `/admin/experts` (create, edit, activate/deactivate, per-expert earnings, and review moderation). Unpaid holds expire and review reminders are sent by background jobs. *(Automated expert payouts are not yet implemented.)*
+4. **Expert**: On `/expert/dashboard` the `EXPERT`-role user manages sessions (add meeting link, mark complete, cancel) and edits their profile + weekly availability. **Admin**: manages experts under `/admin/experts` (create, edit, activate/deactivate, per-expert earnings, and review moderation). Unpaid holds expire and review reminders are sent by background jobs. _(Automated expert payouts are not yet implemented.)_
 
 **Example 2: A user is banned by an admin**
+
 1. **Admin**: Administrator navigates to `/admin/user-safety`, selects a reported user, and issues a "Ban".
 2. **Server**: Updates the user's safety status in MongoDB.
 3. **Client / Community**: Next time the banned user's frontend attempts to fetch data or connect a socket, the `authMiddleware` on the server rejects the token (or checks the status), and the user is forcefully logged out or restricted from posting.
 
 ## Environment Variables — Full List
 
-| Variable | Used In | Purpose | Required |
-|----------|---------|---------|----------|
-| `MONGODB_URI` | Server | MongoDB connection string | Yes |
-| `JWT_SECRET` | Server | Signing auth tokens | Yes |
-| `REDIS_URL` | Server | Socket.IO adapter & rate limiting | Yes |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET` | Server | S3 presigned URL generation | Yes |
-| `PHONEPE_CLIENT_ID`, `PHONEPE_CLIENT_SECRET`, `PHONEPE_ENV`, etc. | Server | Payment Gateway configuration | Yes |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Server | Push notifications | No |
-| `GEMINI_API_KEY` | Server | AI-generated sports pathways | No |
-| `EMAIL_USER`, `EMAIL_PASSWORD`, `EMAIL_HOST` | Server | SMTP credentials for Nodemailer | Yes |
-| `NEXT_PUBLIC_API_URL` | Admin, Client, Community | Pointer to backend REST API | Yes |
-| `NEXT_PUBLIC_MAIN_APP_URL` | Community | Pointer to Client app for login redirects | Yes |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Client | Google OAuth initialization | No |
+| Variable                                                                    | Used In                  | Purpose                                   | Required |
+| --------------------------------------------------------------------------- | ------------------------ | ----------------------------------------- | -------- |
+| `MONGODB_URI`                                                               | Server                   | MongoDB connection string                 | Yes      |
+| `JWT_SECRET`                                                                | Server                   | Signing auth tokens                       | Yes      |
+| `REDIS_URL`                                                                 | Server                   | Socket.IO adapter & rate limiting         | Yes      |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET` | Server                   | S3 presigned URL generation               | Yes      |
+| `PHONEPE_CLIENT_ID`, `PHONEPE_CLIENT_SECRET`, `PHONEPE_ENV`, etc.           | Server                   | Payment Gateway configuration             | Yes      |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`                                     | Server                   | Push notifications                        | No       |
+| `GEMINI_API_KEY`                                                            | Server                   | AI-generated sports pathways              | No       |
+| `EMAIL_USER`, `EMAIL_PASSWORD`, `EMAIL_HOST`                                | Server                   | SMTP credentials for Nodemailer           | Yes      |
+| `NEXT_PUBLIC_API_URL`                                                       | Admin, Client, Community | Pointer to backend REST API               | Yes      |
+| `NEXT_PUBLIC_MAIN_APP_URL`                                                  | Community                | Pointer to Client app for login redirects | Yes      |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`                                              | Client                   | Google OAuth initialization               | No       |
 
 ## How to Run Everything
 
@@ -87,45 +96,48 @@ To run the entire platform locally, you will need 4 separate terminal windows.
    npm install
    npm run dev
    ```
-   *(Runs on http://localhost:5000)*
+   _(Runs on http://localhost:5000)_
 3. **Client**:
    ```bash
    cd client
    npm install
    npm run dev
    ```
-   *(Runs on http://localhost:3000)*
+   _(Runs on http://localhost:3000)_
 4. **Admin**:
    ```bash
    cd admin
    npm install
    npm run dev -p 3001
    ```
-   *(Runs on http://localhost:3001)*
+   _(Runs on http://localhost:3001)_
 5. **Community**:
    ```bash
    cd community
    npm install
    npm run dev -p 3002
    ```
-   *(Runs on http://localhost:3002)*
+   _(Runs on http://localhost:3002)_
 
-*(Note: Turborepo can also be used at the root via `npx turbo run dev` to start the frontends simultaneously, but the backend must be started independently as it is not in the workspaces array).*
+_(Note: Turborepo can also be used at the root via `npx turbo run dev` to start the frontends simultaneously, but the backend must be started independently as it is not in the workspaces array)._
 
 ## Deployment
+
 1. **Server**: Typically deployed to AWS Elastic Beanstalk or a containerized environment (Docker file exists). It must have access to Elasticache (Redis) and MongoDB Atlas.
 2. **Client**: Deployed to Vercel (or similar Edge network).
 3. **Community**: Deployed to Vercel.
 4. **Admin**: Deployed to Vercel.
 
-*Order of deployment*: Deploy the `server` first to ensure all API routes and database schemas are up to date. Once the backend is healthy, deploy the frontends.
+_Order of deployment_: Deploy the `server` first to ensure all API routes and database schemas are up to date. Once the backend is healthy, deploy the frontends.
 
 ## Known Gotchas
+
 - **Cookie Domains**: Localhost cross-port cookies can be finicky. Ensure you are accessing all local environments via `localhost` (not `127.0.0.1` mixed with `localhost`) so the session cookie attaches properly across all three apps.
 - **Outbox Worker**: The `server` runs an internal Outbox worker to retry failed integrations. If the server crashes during a payment callback, the outbox ensures the notification/email is sent on reboot.
 - **Type Duplication**: Because there are no shared NPM workspaces, modifying a Mongoose schema in `server` requires manually updating the TypeScript interfaces in `client/src/types`, `admin/src/types`, and `community/src/types`.
 
 ## Last Updated
+
 2026-07-03 — Completed the Expert Sessions feature end-to-end: availability + slot booking, reliable PhonePe settlement (webhook + reconcile), full session lifecycle (schedule/reschedule/complete/cancel), notifications, expert self-service profile/availability, and admin management (edit, activate, earnings, review moderation). Expert payouts deferred.
 2026-07-03 — Documented the client Expert Sessions journey (browse `/experts` → book & pay `/experts/[expertId]` → schedule & rate `/experts/sessions/[sessionId]`), with the expert-side dashboard at `/expert/dashboard`.
 2026-06-22 — Initial documentation generated.

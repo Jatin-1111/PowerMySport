@@ -1,31 +1,15 @@
-import {
-  User,
-} from "../../client/models/User";
-import {
-  CommunityAnswer,
-} from "../models/CommunityAnswer";
+import { User } from "../../client/models/User";
+import { CommunityAnswer } from "../models/CommunityAnswer";
 import {
   CommunityConversation,
   CommunityConversationDocument,
 } from "../models/CommunityConversation";
-import {
-  CommunityGroup,
-} from "../models/CommunityGroup";
-import {
-  CommunityGroupMember,
-} from "../models/CommunityGroupMember";
-import {
-  CommunityMessage,
-} from "../models/CommunityMessage";
-import {
-  CommunityPost,
-} from "../models/CommunityPost";
-import {
-  CommunityProfile,
-} from "../models/CommunityProfile";
-import {
-  CommunityReport,
-} from "../models/CommunityReport";
+import { CommunityGroup } from "../models/CommunityGroup";
+import { CommunityGroupMember } from "../models/CommunityGroupMember";
+import { CommunityMessage } from "../models/CommunityMessage";
+import { CommunityPost } from "../models/CommunityPost";
+import { CommunityProfile } from "../models/CommunityProfile";
+import { CommunityReport } from "../models/CommunityReport";
 import {
   addMember,
   countMembers,
@@ -74,7 +58,7 @@ export const CommunityService = {
       targetId: string;
       reason: string;
       details?: string;
-    },
+    }
   ) {
     await ensureProfile(userId);
 
@@ -108,23 +92,17 @@ export const CommunityService = {
         wasDeleted: Boolean(message.isDeleted),
       };
     } else if (payload.targetType === "GROUP") {
-      const group = await CommunityGroup.findById(payload.targetId)
-        .select("_id")
-        .lean();
+      const group = await CommunityGroup.findById(payload.targetId).select("_id").lean();
       if (!group) {
         throw new Error("group not found");
       }
     } else if (payload.targetType === "POST") {
-      const post = await CommunityPost.findById(payload.targetId)
-        .select("_id")
-        .lean();
+      const post = await CommunityPost.findById(payload.targetId).select("_id").lean();
       if (!post) {
         throw new Error("post not found");
       }
     } else {
-      const answer = await CommunityAnswer.findById(payload.targetId)
-        .select("_id")
-        .lean();
+      const answer = await CommunityAnswer.findById(payload.targetId).select("_id").lean();
       if (!answer) {
         throw new Error("answer not found");
       }
@@ -177,9 +155,7 @@ export const CommunityService = {
         reviewedAt: item.reviewedAt || null,
         messageAudit: item.messageAudit
           ? {
-              senderId: item.messageAudit.senderId
-                ? String(item.messageAudit.senderId)
-                : undefined,
+              senderId: item.messageAudit.senderId ? String(item.messageAudit.senderId) : undefined,
               createdAt: item.messageAudit.createdAt || null,
               updatedAt: item.messageAudit.updatedAt || null,
               editedAt: item.messageAudit.editedAt || null,
@@ -201,7 +177,7 @@ export const CommunityService = {
     await CommunityProfile.updateOne(
       { userId },
       { $set: { lastSeenAt: new Date() } },
-      { upsert: true },
+      { upsert: true }
     );
   },
 
@@ -222,23 +198,16 @@ export const CommunityService = {
         lastSeenVisible: boolean;
         lastSeenAt?: Date;
       };
-    },
+    }
   ) {
     return formatParticipant(selfId, participant);
   },
 
   async getParticipantIds(conversation: CommunityConversationDocument) {
-    return conversation.participants.map((participantId) =>
-      String(participantId),
-    );
+    return conversation.participants.map((participantId) => String(participantId));
   },
 
-  async getGroupMembers(
-    userId: string,
-    groupId: string,
-    page = 1,
-    limit = 200,
-  ) {
+  async getGroupMembers(userId: string, groupId: string, page = 1, limit = 200) {
     await ensureProfile(userId);
 
     const group = await CommunityGroup.findById(groupId).select("_id").lean();
@@ -271,16 +240,12 @@ export const CommunityService = {
         .select("_id name photoUrl photoS3Key")
         .lean(),
       CommunityProfile.find({ userId: { $in: memberIds } })
-        .select(
-          "userId anonymousAlias isIdentityPublic photoUrl photoS3Key lastSeenAt",
-        )
+        .select("userId anonymousAlias isIdentityPublic photoUrl photoS3Key lastSeenAt")
         .lean(),
     ]);
 
     const userMap = new Map(users.map((user) => [String(user._id), user]));
-    const profileMap = new Map(
-      memberProfiles.map((profile) => [String(profile.userId), profile]),
-    );
+    const profileMap = new Map(memberProfiles.map((profile) => [String(profile.userId), profile]));
 
     const items = await Promise.all(
       memberRows.map(async (row) => {
@@ -295,15 +260,12 @@ export const CommunityService = {
           displayName: isIdentityPublic
             ? member?.name || "Unknown"
             : profile?.anonymousAlias || "Anonymous",
-          photoUrl:
-            isIdentityPublic && member
-              ? await resolveUserPhotoUrl(member)
-              : null,
+          photoUrl: isIdentityPublic && member ? await resolveUserPhotoUrl(member) : null,
           isIdentityPublic,
           alias: profile?.anonymousAlias || "Anonymous",
           role: row.role,
         };
-      }),
+      })
     );
 
     return {
@@ -363,12 +325,10 @@ export const CommunityService = {
           participants: new mongoose.Types.ObjectId(userId),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
 
-    const adminIds = (await listAdminIds(groupId)).filter(
-      (adminId) => adminId !== userId,
-    );
+    const adminIds = (await listAdminIds(groupId)).filter((adminId) => adminId !== userId);
 
     for (const adminId of adminIds) {
       sendCommunityNotification(
@@ -380,7 +340,7 @@ export const CommunityService = {
           groupId: String(group._id),
           conversationId: String(conversation?._id || ""),
           actorUserId: userId,
-        },
+        }
       );
     }
 
@@ -404,8 +364,7 @@ export const CommunityService = {
       throw new Error("Only group admins can get invite code");
     }
 
-    let inviteCode =
-      typeof group.inviteCode === "string" ? group.inviteCode.trim() : "";
+    let inviteCode = typeof group.inviteCode === "string" ? group.inviteCode.trim() : "";
     if (!inviteCode) {
       do {
         inviteCode = generateInviteCode();

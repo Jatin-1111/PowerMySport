@@ -9,9 +9,7 @@ const { after, before, beforeEach, describe, it } = require("node:test");
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
-const {
-  CommunityReputation,
-} = require("../community/models/CommunityReputation");
+const { CommunityReputation } = require("../community/models/CommunityReputation");
 const { CommunityProfile } = require("../community/models/CommunityProfile");
 const { CommunityService } = require("../community/services/CommunityService");
 const { User } = require("../client/models/User");
@@ -34,7 +32,7 @@ const createUser = async (name: string, role = "Parent") => {
 const giveReputation = async (
   userId: string,
   totalPoints: number,
-  extra: Record<string, number> = {},
+  extra: Record<string, number> = {}
 ) => {
   await CommunityReputation.create({
     userId,
@@ -74,16 +72,13 @@ describe("community leaderboard", () => {
     const { items } = await CommunityService.listLeaderboard(viewer, 10);
 
     assert.deepEqual(
-      items.map((item: { name: string; rank: number }) => [
-        item.name,
-        item.rank,
-      ]),
+      items.map((item: { name: string; rank: number }) => [item.name, item.rank]),
       [
         ["Top", 1],
         ["Middle", 2],
         // Own row carries the real name; the UI adds the "You" pill.
         ["Viewer", 3],
-      ],
+      ]
     );
   });
 
@@ -101,7 +96,7 @@ describe("community leaderboard", () => {
     assert.equal(items.length, 5);
     assert.ok(
       !items.some((item: { id: string }) => item.id === viewer),
-      "viewer should not be in the top five",
+      "viewer should not be in the top five"
     );
     // 20 people are ahead, so the viewer is 21st — not "6th of the 5 we loaded".
     assert.equal(me.rank, 21);

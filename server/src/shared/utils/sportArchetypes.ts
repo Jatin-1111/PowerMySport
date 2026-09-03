@@ -44,11 +44,7 @@ const DEFAULT_ARCHETYPE_INFO: SportArchetypeInfo = { archetype: "federation" };
  * copy's behaviour in client/src/modules/sports/config/sportArchetypes.ts.
  */
 export function getSportArchetypeInfo(sportNameOrSlug: string): SportArchetypeInfo {
-  const key = sportNameOrSlug
-    .trim()
-    .toLowerCase()
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ");
+  const key = sportNameOrSlug.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
   return SPORT_ARCHETYPE[key] ?? DEFAULT_ARCHETYPE_INFO;
 }
 
@@ -106,11 +102,23 @@ export function getLevelLabelFallbacks(sportName: string): string[] {
 
   switch (archetype) {
     case "ranking":
-      return ["Beginner", "State Ranking", "National Ranking", "Nationally Ranked", "International Circuit"];
+      return [
+        "Beginner",
+        "State Ranking",
+        "National Ranking",
+        "Nationally Ranked",
+        "International Circuit",
+      ];
     case "rating":
       return ["Beginner", "State-Rated", "Nationally Rated", "Internationally Rated", "Titled"];
     case "standard":
-      return ["Beginner", "Club / District", "State Qualifier", "National Qualifier", "International Qualifier"];
+      return [
+        "Beginner",
+        "Club / District",
+        "State Qualifier",
+        "National Qualifier",
+        "International Qualifier",
+      ];
     case "federation":
     default:
       return ["Beginner", "District", "State", "National", "International"];

@@ -125,7 +125,7 @@ export default function AdminVenueDetailPage() {
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-power-orange"></div>
+        <div className="border-t-power-orange h-8 w-8 animate-spin rounded-full border-4 border-slate-200"></div>
       </div>
     );
   }
@@ -133,23 +133,18 @@ export default function AdminVenueDetailPage() {
   if (error || !venue) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-4 transition-colors">
+        <div className="mb-4 flex items-center gap-2 text-slate-500 transition-colors hover:text-slate-900">
           <ArrowLeft size={20} />
-          <button
-            onClick={() => router.push("/admin/venues")}
-            className="font-semibold"
-          >
+          <button onClick={() => router.push("/admin/venues")} className="font-semibold">
             Back to Venues
           </button>
         </div>
         <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">
-              {error || "Venue not found"}
-            </p>
+          <div className="space-y-3 py-10 text-center">
+            <p className="font-semibold text-red-600">{error || "Venue not found"}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
             >
               Retry
             </button>
@@ -159,8 +154,7 @@ export default function AdminVenueDetailPage() {
     );
   }
 
-  const imageUrl =
-    venue.coverPhotoUrl || (venue.images && venue.images[0]) || null;
+  const imageUrl = venue.coverPhotoUrl || (venue.images && venue.images[0]) || null;
   const joinedDate = venue.createdAt
     ? new Date(venue.createdAt).toLocaleDateString("en-IN", {
         day: "numeric",
@@ -171,10 +165,10 @@ export default function AdminVenueDetailPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex items-center justify-between">
         <Link
           href="/admin/venues"
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+          className="flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900"
         >
           <ArrowLeft size={16} />
           Back to Venues
@@ -201,35 +195,28 @@ export default function AdminVenueDetailPage() {
       </div>
 
       {/* Hero Banner */}
-      <div className="relative h-64 md:h-80 w-full overflow-hidden rounded-2xl bg-slate-100 shadow-sm border border-slate-200">
+      <div className="relative h-64 w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm md:h-80">
         {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={venue.name}
-            fill
-            className="object-cover"
-          />
+          <Image src={imageUrl} alt={venue.name} fill className="object-cover" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
             <ImageIcon className="h-16 w-16 text-slate-300" />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="absolute bottom-0 left-0 flex w-full flex-col justify-between gap-4 p-6 md:flex-row md:items-end md:p-8">
           <div className="text-white">
-            <h1 className="text-3xl md:text-4xl font-extrabold mb-2 text-white drop-shadow-md">
+            <h1 className="mb-2 text-3xl font-extrabold text-white drop-shadow-md md:text-4xl">
               {venue.name}
             </h1>
-            <p className="flex items-center gap-2 text-sm md:text-base font-medium text-white/90">
+            <p className="flex items-center gap-2 text-sm font-medium text-white/90 md:text-base">
               <MapPin size={18} />
               {venue.address || "Location not provided"}
             </p>
           </div>
           <div className="shrink-0">
-            <div className="inline-flex items-center gap-2 rounded-xl bg-white/20 backdrop-blur-md px-4 py-2 text-white shadow-lg border border-white/30">
-              <span className="text-sm font-semibold uppercase tracking-wider">
-                Base Price
-              </span>
+            <div className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/20 px-4 py-2 text-white shadow-lg backdrop-blur-md">
+              <span className="text-sm font-semibold tracking-wider uppercase">Base Price</span>
               <span className="text-2xl font-bold">₹{venue.pricePerHour}</span>
               <span className="text-xs font-medium opacity-80">/hr</span>
             </div>
@@ -237,46 +224,42 @@ export default function AdminVenueDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main Content - Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
+        <div className="space-y-6 lg:col-span-2">
+          <Card className="border-slate-200 bg-white shadow-sm">
+            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
               <FileText className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">
-                About this Venue
-              </h2>
+              <h2 className="text-xl font-bold text-slate-900">About this Venue</h2>
             </div>
-            <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+            <p className="leading-relaxed whitespace-pre-line text-slate-600">
               {venue.description || "No description provided."}
             </p>
           </Card>
 
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
+          <Card className="border-slate-200 bg-white shadow-sm">
+            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
               <Activity className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">
-                Sports Available
-              </h2>
+              <h2 className="text-xl font-bold text-slate-900">Sports Available</h2>
             </div>
             {venue.sports && venue.sports.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {venue.sports.map((sport) => (
                   <div
                     key={sport}
-                    className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700"
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700"
                   >
                     {sport}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 italic text-sm">No sports listed.</p>
+              <p className="text-sm text-slate-500 italic">No sports listed.</p>
             )}
           </Card>
 
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
+          <Card className="border-slate-200 bg-white shadow-sm">
+            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
               <CheckCircle2 className="text-power-orange" size={24} />
               <h2 className="text-xl font-bold text-slate-900">Amenities</h2>
             </div>
@@ -285,64 +268,50 @@ export default function AdminVenueDetailPage() {
                 {venue.amenities.map((amenity) => (
                   <div
                     key={amenity}
-                    className="px-3 py-1.5 bg-power-orange/10 text-power-orange rounded-full text-xs font-semibold"
+                    className="bg-power-orange/10 text-power-orange rounded-full px-3 py-1.5 text-xs font-semibold"
                   >
                     {amenity}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 italic text-sm">
-                No amenities listed.
-              </p>
+              <p className="text-sm text-slate-500 italic">No amenities listed.</p>
             )}
           </Card>
         </div>
 
         {/* Sidebar - Right Column */}
         <div className="space-y-6">
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
+          <Card className="border-slate-200 bg-white shadow-sm">
+            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
               <Info className="text-slate-700" size={20} />
               <h2 className="text-lg font-bold text-slate-900">Quick Stats</h2>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">
-                  Rating
-                </span>
+                <span className="text-sm font-medium text-slate-500">Rating</span>
                 <div className="flex items-center gap-1 font-bold text-amber-600">
                   <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
                   {venue.rating ? venue.rating.toFixed(1) : "New"}
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">
-                  Reviews
-                </span>
-                <span className="font-semibold text-slate-900">
-                  {venue.reviewCount || 0}
-                </span>
+                <span className="text-sm font-medium text-slate-500">Reviews</span>
+                <span className="font-semibold text-slate-900">{venue.reviewCount || 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">
-                  Listed On
-                </span>
-                <span className="font-semibold text-slate-900 text-sm">
-                  {joinedDate}
-                </span>
+                <span className="text-sm font-medium text-slate-500">Listed On</span>
+                <span className="text-sm font-semibold text-slate-900">{joinedDate}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">
-                  External Coaches
-                </span>
-                <span className="font-semibold text-slate-900 text-sm">
+                <span className="text-sm font-medium text-slate-500">External Coaches</span>
+                <span className="text-sm font-semibold text-slate-900">
                   {venue.allowExternalCoaches ? (
-                    <span className="text-emerald-600 flex items-center gap-1">
+                    <span className="flex items-center gap-1 text-emerald-600">
                       <CheckCircle2 size={14} /> Allowed
                     </span>
                   ) : (
-                    <span className="text-red-500 flex items-center gap-1">
+                    <span className="flex items-center gap-1 text-red-500">
                       <XCircle size={14} /> Not Allowed
                     </span>
                   )}
@@ -351,37 +320,35 @@ export default function AdminVenueDetailPage() {
             </div>
           </Card>
 
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
+          <Card className="border-slate-200 bg-white shadow-sm">
+            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
               <Clock className="text-slate-700" size={20} />
-              <h2 className="text-lg font-bold text-slate-900">
-                Location Data
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Location Data</h2>
             </div>
             <div className="space-y-3">
               <div>
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">
+                <span className="mb-1 block text-xs font-medium tracking-wider text-slate-500 uppercase">
                   Coordinates
                 </span>
-                <p className="text-sm font-mono bg-slate-50 p-2 rounded border border-slate-100 text-slate-700">
+                <p className="rounded border border-slate-100 bg-slate-50 p-2 font-mono text-sm text-slate-700">
                   {venue.location?.coordinates
                     ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
                     : "N/A"}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">
+                <span className="mb-1 block text-xs font-medium tracking-wider text-slate-500 uppercase">
                   Venue ID
                 </span>
-                <p className="text-xs font-mono text-slate-500 break-all">
+                <p className="font-mono text-xs break-all text-slate-500">
                   {venue.id || venue._id}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
+          <Card className="border-slate-200 bg-white shadow-sm">
+            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
               <Info className="text-slate-700" size={20} />
               <h2 className="text-lg font-bold text-slate-900">Owner</h2>
             </div>
@@ -391,7 +358,7 @@ export default function AdminVenueDetailPage() {
                   {(venue.ownerId as { name?: string }).name || "Unknown"}
                 </p>
                 {(venue.ownerId as { email?: string }).email && (
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="mt-1 text-xs text-slate-500">
                     {(venue.ownerId as { email?: string }).email}
                   </p>
                 )}
@@ -429,62 +396,51 @@ export default function AdminVenueDetailPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Name
                 </label>
                 <input
                   value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm(
-                      (prev) => prev && { ...prev, name: e.target.value },
-                    )
-                  }
+                  onChange={(e) => setEditForm((prev) => prev && { ...prev, name: e.target.value })}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Description
                 </label>
                 <textarea
                   rows={3}
                   value={editForm.description}
                   onChange={(e) =>
-                    setEditForm(
-                      (prev) =>
-                        prev && { ...prev, description: e.target.value },
-                    )
+                    setEditForm((prev) => prev && { ...prev, description: e.target.value })
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Sports (comma separated)
                 </label>
                 <input
                   value={editForm.sports}
                   onChange={(e) =>
-                    setEditForm(
-                      (prev) => prev && { ...prev, sports: e.target.value },
-                    )
+                    setEditForm((prev) => prev && { ...prev, sports: e.target.value })
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Amenities (comma separated)
                 </label>
                 <input
                   value={editForm.amenities}
                   onChange={(e) =>
-                    setEditForm(
-                      (prev) => prev && { ...prev, amenities: e.target.value },
-                    )
+                    setEditForm((prev) => prev && { ...prev, amenities: e.target.value })
                   }
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
@@ -492,7 +448,7 @@ export default function AdminVenueDetailPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Price per hour (₹)
                   </label>
                   <input
@@ -504,14 +460,14 @@ export default function AdminVenueDetailPage() {
                           prev && {
                             ...prev,
                             pricePerHour: Number(e.target.value),
-                          },
+                          }
                       )
                     }
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Approval status
                   </label>
                   <select
@@ -521,9 +477,8 @@ export default function AdminVenueDetailPage() {
                         (prev) =>
                           prev && {
                             ...prev,
-                            approvalStatus: e.target
-                              .value as VenueEditForm["approvalStatus"],
-                          },
+                            approvalStatus: e.target.value as VenueEditForm["approvalStatus"],
+                          }
                       )
                     }
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -546,7 +501,7 @@ export default function AdminVenueDetailPage() {
                         prev && {
                           ...prev,
                           allowExternalCoaches: e.target.checked,
-                        },
+                        }
                     )
                   }
                   className="h-4 w-4 rounded"

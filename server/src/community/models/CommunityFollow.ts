@@ -39,20 +39,17 @@ const communityFollowSchema = new Schema<CommunityFollowDocument>(
       maxlength: 80,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Following the same thing twice is a no-op, not a second row. The toggle
 // endpoint relies on this to stay idempotent under a double-tap.
-communityFollowSchema.index(
-  { userId: 1, kind: 1, targetId: 1 },
-  { unique: true },
-);
+communityFollowSchema.index({ userId: 1, kind: 1, targetId: 1 }, { unique: true });
 
 // Serves the "what do I follow" list, which is the only read path.
 communityFollowSchema.index({ userId: 1, createdAt: -1 });
 
 export const CommunityFollow = mongoose.model<CommunityFollowDocument>(
   "CommunityFollow",
-  communityFollowSchema,
+  communityFollowSchema
 );

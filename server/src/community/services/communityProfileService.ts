@@ -1,10 +1,5 @@
-import {
-  User,
-} from "../../client/models/User";
-import {
-  CommunityMessagePrivacy,
-  CommunityProfile,
-} from "../models/CommunityProfile";
+import { User } from "../../client/models/User";
+import { CommunityMessagePrivacy, CommunityProfile } from "../models/CommunityProfile";
 import {
   COMMUNITY_ALLOWED_ROLES,
   calculateAge,
@@ -22,12 +17,7 @@ import {
  * unchanged.
  */
 export const communityProfileService = {
-  async searchPlayers(
-    userId: string,
-    query: string,
-    limit = 10,
-    roleFilter?: string,
-  ) {
+  async searchPlayers(userId: string, query: string, limit = 10, roleFilter?: string) {
     const normalizedQuery = query.trim();
     if (!normalizedQuery && !roleFilter) {
       return [];
@@ -39,9 +29,7 @@ export const communityProfileService = {
     // create a profile. `ensureProfile`'s upsert-write would otherwise fire
     // on every debounced keystroke of an as-you-type search.
     await ensureCommunityUser(userId);
-    const myProfile = await CommunityProfile.findOne({ userId })
-      .select("blockedUsers")
-      .lean();
+    const myProfile = await CommunityProfile.findOne({ userId }).select("blockedUsers").lean();
     const myBlockedUsers = myProfile?.blockedUsers || [];
 
     const userMatchCriteria: any = {
@@ -54,10 +42,7 @@ export const communityProfileService = {
 
     const profileMatchCriteria: any = { userId: { $ne: userId } };
     if (normalizedQuery) {
-      profileMatchCriteria.anonymousAlias = new RegExp(
-        escapeRegex(normalizedQuery),
-        "i",
-      );
+      profileMatchCriteria.anonymousAlias = new RegExp(escapeRegex(normalizedQuery), "i");
     }
 
     const [nameMatches, aliasMatches] = await Promise.all([
@@ -109,8 +94,8 @@ export const communityProfileService = {
           const candidateProfile = profileMap.get(candidateId);
           const blockedMe = Boolean(
             candidateProfile?.blockedUsers?.some(
-              (blockedUserId) => String(blockedUserId) === userId,
-            ),
+              (blockedUserId) => String(blockedUserId) === userId
+            )
           );
 
           return !blockedMe;
@@ -136,18 +121,16 @@ export const communityProfileService = {
           };
         })
         .sort((a, b) => a.displayName.localeCompare(b.displayName))
-        .slice(0, safeLimit),
+        .slice(0, safeLimit)
     ).then((items) =>
       Promise.all(
         items.map(async (item) => ({
           ...item,
           photoUrl: item.id
-            ? await resolveUserPhotoUrl(
-                users.find((user) => String(user._id) === item.id),
-              )
+            ? await resolveUserPhotoUrl(users.find((user) => String(user._id) === item.id))
             : null,
-        })),
-      ),
+        }))
+      )
     );
 
     return items;
@@ -162,33 +145,22 @@ export const communityProfileService = {
 
     const [targetUser, targetProfile] = await Promise.all([
       User.findById(targetUserId)
-        .select(
-          "_id name photoUrl photoS3Key role dob city createdAt lastActiveAt",
-        )
+        .select("_id name photoUrl photoS3Key role dob city createdAt lastActiveAt")
         .lean(),
       CommunityProfile.findOne({ userId: targetUserId })
         .select(
-          "userId anonymousAlias isIdentityPublic messagePrivacy readReceiptsEnabled lastSeenVisible lastSeenAt blockedUsers",
+          "userId anonymousAlias isIdentityPublic messagePrivacy readReceiptsEnabled lastSeenVisible lastSeenAt blockedUsers"
         )
         .lean(),
     ]);
 
-    const targetRole = targetUser?.role as
-      (typeof COMMUNITY_ALLOWED_ROLES)[number] | undefined;
+    const targetRole = targetUser?.role as (typeof COMMUNITY_ALLOWED_ROLES)[number] | undefined;
 
-    if (
-      !targetUser ||
-      !targetRole ||
-      !COMMUNITY_ALLOWED_ROLES.includes(targetRole)
-    ) {
+    if (!targetUser || !targetRole || !COMMUNITY_ALLOWED_ROLES.includes(targetRole)) {
       throw new Error("Player not found");
     }
 
-    if (
-      targetProfile?.blockedUsers?.some(
-        (blockedId) => String(blockedId) === viewerId,
-      )
-    ) {
+    if (targetProfile?.blockedUsers?.some((blockedId) => String(blockedId) === viewerId)) {
       throw new Error("Access denied");
     }
 
@@ -241,7 +213,7 @@ export const communityProfileService = {
       readReceiptsEnabled?: boolean;
       lastSeenVisible?: boolean;
       anonymousAlias?: string;
-    },
+    }
   ) {
     const profile = await ensureProfile(userId);
 
@@ -274,15 +246,9 @@ export const communityProfileService = {
       throw new Error("You cannot block yourself");
     }
 
-    await Promise.all([
-      ensureProfile(userId),
-      ensureCommunityUser(targetUserId),
-    ]);
+    await Promise.all([ensureProfile(userId), ensureCommunityUser(targetUserId)]);
 
-    await CommunityProfile.updateOne(
-      { userId },
-      { $addToSet: { blockedUsers: targetUserId } },
-    );
+    await CommunityProfile.updateOne({ userId }, { $addToSet: { blockedUsers: targetUserId } });
 
     return { blockedUserId: targetUserId };
   },
@@ -290,10 +256,7 @@ export const communityProfileService = {
   async unblockUser(userId: string, targetUserId: string) {
     await ensureProfile(userId);
 
-    await CommunityProfile.updateOne(
-      { userId },
-      { $pull: { blockedUsers: targetUserId } },
-    );
+    await CommunityProfile.updateOne({ userId }, { $pull: { blockedUsers: targetUserId } });
 
     return { unblockedUserId: targetUserId };
   },
@@ -309,7 +272,7 @@ export const communityProfileService = {
         id: String(user._id),
         name: user.name,
         photoUrl: await resolveUserPhotoUrl(user),
-      })),
+      }))
     );
   },
 };

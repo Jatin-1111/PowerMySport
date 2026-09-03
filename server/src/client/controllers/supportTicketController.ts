@@ -2,10 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { SupportTicket } from "../models/SupportTicket";
 import { User } from "../models/User";
-import {
-  sendSupportTicketReceivedEmail,
-  sendSupportTicketStatusEmail,
-} from "../../utils/email";
+import { sendSupportTicketReceivedEmail, sendSupportTicketStatusEmail } from "../../utils/email";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("supportTicket");
 
@@ -17,10 +14,7 @@ const parsePagination = (pageRaw: unknown, limitRaw: unknown) => {
   return { page, limit, skip };
 };
 
-export const createSupportTicket = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createSupportTicket = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -34,23 +28,18 @@ export const createSupportTicket = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create ticket",
+      message: error instanceof Error ? error.message : "Failed to create ticket",
     });
   }
 };
 
-export const createPublicSupportTicket = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createPublicSupportTicket = async (req: Request, res: Response): Promise<void> => {
   try {
     await createTicketFromRequest(req, res, { requireAuth: false });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create ticket",
+      message: error instanceof Error ? error.message : "Failed to create ticket",
     });
   }
 };
@@ -58,7 +47,7 @@ export const createPublicSupportTicket = async (
 const createTicketFromRequest = async (
   req: Request,
   res: Response,
-  options: { requireAuth: boolean; authorId?: string },
+  options: { requireAuth: boolean; authorId?: string }
 ): Promise<void> => {
   const {
     subject,
@@ -79,8 +68,7 @@ const createTicketFromRequest = async (
     requesterName?: string;
     requesterEmail?: string;
     requesterPhone?: string;
-    requesterType?:
-      "player" | "venue_owner" | "coach" | "academy_owner" | "other";
+    requesterType?: "player" | "venue_owner" | "coach" | "academy_owner" | "other";
   } = req.body;
 
   if (!subject?.trim() || !description?.trim()) {
@@ -104,9 +92,7 @@ const createTicketFromRequest = async (
   const notes = initialNote?.trim()
     ? [
         {
-          authorType: options.requireAuth
-            ? ("USER" as const)
-            : ("Admin" as const),
+          authorType: options.requireAuth ? ("USER" as const) : ("Admin" as const),
           authorId: options.authorId
             ? new mongoose.Types.ObjectId(options.authorId)
             : new mongoose.Types.ObjectId(),
@@ -121,21 +107,15 @@ const createTicketFromRequest = async (
       ? { userId: new mongoose.Types.ObjectId(options.authorId) }
       : {}),
     ...(requesterName?.trim() ? { requesterName: requesterName.trim() } : {}),
-    ...(requesterEmail?.trim()
-      ? { requesterEmail: requesterEmail.trim().toLowerCase() }
-      : {}),
-    ...(requesterPhone?.trim()
-      ? { requesterPhone: requesterPhone.trim() }
-      : {}),
+    ...(requesterEmail?.trim() ? { requesterEmail: requesterEmail.trim().toLowerCase() } : {}),
+    ...(requesterPhone?.trim() ? { requesterPhone: requesterPhone.trim() } : {}),
     ...(requesterType ? { requesterType } : {}),
     subject: subject.trim(),
     description: description.trim(),
     category: category || "OTHER",
     priority: priority || "MEDIUM",
     notes,
-    ...(options.authorId
-      ? { lastUpdatedBy: new mongoose.Types.ObjectId(options.authorId) }
-      : {}),
+    ...(options.authorId ? { lastUpdatedBy: new mongoose.Types.ObjectId(options.authorId) } : {}),
   });
 
   // Acknowledge the ticket by email (fire-and-forget). Prefer the explicit
@@ -145,9 +125,7 @@ const createTicketFromRequest = async (
       let toEmail = ticket.requesterEmail;
       let toName = ticket.requesterName;
       if (!toEmail && ticket.userId) {
-        const owner = await User.findById(ticket.userId)
-          .select("name email")
-          .lean();
+        const owner = await User.findById(ticket.userId).select("name email").lean();
         toEmail = owner?.email;
         toName = toName || owner?.name;
       }
@@ -172,23 +150,16 @@ const createTicketFromRequest = async (
   });
 };
 
-export const getMySupportTickets = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getMySupportTickets = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
       return;
     }
 
-    const { page, limit, skip } = parsePagination(
-      req.query.page,
-      req.query.limit,
-    );
+    const { page, limit, skip } = parsePagination(req.query.page, req.query.limit);
 
-    const status =
-      typeof req.query.status === "string" ? req.query.status : undefined;
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
 
     const query: Record<string, unknown> = {
       userId: new mongoose.Types.ObjectId(req.user.id),
@@ -199,11 +170,7 @@ export const getMySupportTickets = async (
     }
 
     const [tickets, total] = await Promise.all([
-      SupportTicket.find(query)
-        .sort({ updatedAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      SupportTicket.find(query).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean(),
       SupportTicket.countDocuments(query),
     ]);
 
@@ -220,27 +187,16 @@ export const getMySupportTickets = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve support tickets",
+      message: error instanceof Error ? error.message : "Failed to retrieve support tickets",
     });
   }
 };
 
-export const getSupportTicketsForAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getSupportTicketsForAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { page, limit, skip } = parsePagination(
-      req.query.page,
-      req.query.limit,
-    );
-    const status =
-      typeof req.query.status === "string" ? req.query.status : undefined;
-    const priority =
-      typeof req.query.priority === "string" ? req.query.priority : undefined;
+    const { page, limit, skip } = parsePagination(req.query.page, req.query.limit);
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const priority = typeof req.query.priority === "string" ? req.query.priority : undefined;
 
     const query: Record<string, unknown> = {};
     if (status) {
@@ -274,18 +230,12 @@ export const getSupportTicketsForAdmin = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve support tickets",
+      message: error instanceof Error ? error.message : "Failed to retrieve support tickets",
     });
   }
 };
 
-export const updateSupportTicketByAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateSupportTicketByAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -348,7 +298,7 @@ export const updateSupportTicketByAdmin = async (
             }
           : {}),
       },
-      { new: true },
+      { new: true }
     )
       .populate("userId", "name email role")
       .populate("assignedAdminId", "name email role");
@@ -374,9 +324,7 @@ export const updateSupportTicketByAdmin = async (
           subject: ticket.subject,
           status,
           note: note?.trim() || undefined,
-        }).catch((error) =>
-          log.error("Failed to send support ticket status email:", error),
-        );
+        }).catch((error) => log.error("Failed to send support ticket status email:", error));
       }
     }
 
@@ -388,8 +336,7 @@ export const updateSupportTicketByAdmin = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update ticket",
+      message: error instanceof Error ? error.message : "Failed to update ticket",
     });
   }
 };

@@ -126,22 +126,26 @@ const BADMINTON: SportLadder = {
     {
       value: 2,
       label: "District / state ranking",
-      context: "Registered with the state association and playing district or state ranking tournaments",
+      context:
+        "Registered with the state association and playing district or state ranking tournaments",
     },
     {
       value: 3,
       label: "All India Ranking — qualifying",
-      context: "Has a BAI ID and plays All India Sub-Junior / Junior Ranking events through the qualifying draw",
+      context:
+        "Has a BAI ID and plays All India Sub-Junior / Junior Ranking events through the qualifying draw",
     },
     {
       value: 4,
       label: "All India main draw / Nationals",
-      context: "Ranked high enough for direct main-draw entry, or plays the Zonal and National Championships",
+      context:
+        "Ranked high enough for direct main-draw entry, or plays the Zonal and National Championships",
     },
     {
       value: 5,
       label: "BWF junior circuit",
-      context: "Competing internationally — Badminton Asia Junior or the BWF World Junior Championships",
+      context:
+        "Competing internationally — Badminton Asia Junior or the BWF World Junior Championships",
     },
   ],
   bestResult: [
@@ -183,7 +187,8 @@ const TABLE_TENNIS: SportLadder = {
     {
       value: 3,
       label: "National Ranking Championships",
-      context: "State ranking is high enough to enter the UTT National Ranking Championships in their zone",
+      context:
+        "State ranking is high enough to enter the UTT National Ranking Championships in their zone",
     },
     {
       value: 4,
@@ -254,15 +259,22 @@ const CHESS: SportLadder = {
     {
       value: 5,
       label: "Titled, or National Youth level",
-      context: "Holds a FIDE title, or plays the National Youth and Asian/World Youth championships",
+      context:
+        "Holds a FIDE title, or plays the National Youth and Asian/World Youth championships",
     },
   ],
   bestResult: [
     { value: 1, label: "None yet — unrated" },
     { value: 2, label: "Played the state age-group championship" },
     { value: 3, label: "Qualified onward from the state championship, or earned an AICF rating" },
-    { value: 4, label: "Played the National Youth / Sub-Junior championships, or earned a FIDE rating" },
-    { value: 5, label: "Earned a FIDE title (CM/FM/IM), or played an Asian / World Youth championship" },
+    {
+      value: 4,
+      label: "Played the National Youth / Sub-Junior championships, or earned a FIDE rating",
+    },
+    {
+      value: 5,
+      label: "Earned a FIDE title (CM/FM/IM), or played an Asian / World Youth championship",
+    },
   ],
 };
 
@@ -300,7 +312,8 @@ const SQUASH: SportLadder = {
     {
       value: 3,
       label: "SRFI ranked — Slams & Khelo India",
-      context: "Ranked on the National Junior Circuit, playing the 5-star SRFI Slams or Khelo India Youth Games",
+      context:
+        "Ranked on the National Junior Circuit, playing the 5-star SRFI Slams or Khelo India Youth Games",
     },
     {
       value: 4,

@@ -32,14 +32,14 @@ export function BlockedUsersModal({
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col max-h-[80vh]"
+          className="relative flex max-h-[80vh] w-full max-w-sm flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 shrink-0">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
             <h3 className="text-lg font-bold text-slate-900">Blocked Users</h3>
             <button
               onClick={onClose}
-              className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+              className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
             >
               <X size={18} />
             </button>
@@ -49,7 +49,7 @@ export function BlockedUsersModal({
           <div className="flex-1 overflow-y-auto p-2">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <Loader2 size={22} className="animate-spin text-power-orange" />
+                <Loader2 size={22} className="text-power-orange animate-spin" />
               </div>
             ) : blockedUsers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -62,10 +62,10 @@ export function BlockedUsersModal({
               blockedUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 hover:bg-slate-50 transition"
+                  className="flex items-center justify-between gap-3 rounded-xl px-4 py-3 transition hover:bg-slate-50"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-power-orange/10 text-sm font-bold text-power-orange">
+                    <div className="bg-power-orange/10 text-power-orange flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold">
                       {user.photoUrl ? (
                         <img
                           src={user.photoUrl}
@@ -76,13 +76,11 @@ export function BlockedUsersModal({
                         getAvatarCharacter(user.name)
                       )}
                     </div>
-                    <span className="truncate text-sm font-medium text-slate-700">
-                      {user.name}
-                    </span>
+                    <span className="truncate text-sm font-medium text-slate-700">{user.name}</span>
                   </div>
                   <button
                     onClick={() => onUnblock(user.id)}
-                    className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
+                    className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 active:scale-95"
                   >
                     Unblock
                   </button>

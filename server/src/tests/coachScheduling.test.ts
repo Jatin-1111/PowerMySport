@@ -27,7 +27,7 @@ test("credit values always sum to exactly the fee charged", () => {
     assert.equal(
       values.reduce((sum, v) => sum + v, 0),
       total,
-      `allocation of ${total} over ${count} did not sum back to the total`,
+      `allocation of ${total} over ${count} did not sum back to the total`
     );
   }
 });
@@ -59,9 +59,7 @@ test("allocation refuses a negative fee", () => {
 
 // ───────────────── schedule materialisation ─────────────────
 
-const offering = (
-  overrides: Partial<Parameters<typeof scheduledInstantsBetween>[0]> = {},
-) =>
+const offering = (overrides: Partial<Parameters<typeof scheduledInstantsBetween>[0]> = {}) =>
   ({
     // Tuesday and Thursday, 18:00 IST, one hour.
     schedule: [
@@ -78,7 +76,7 @@ test("a twice-weekly pattern yields two sessions per week", () => {
   const instants = scheduledInstantsBetween(
     offering(),
     new Date("2026-09-01T00:00:00.000Z"),
-    new Date("2026-09-15T00:00:00.000Z"),
+    new Date("2026-09-15T00:00:00.000Z")
   );
 
   // Two weeks: Tue 1, Thu 3, Tue 8, Thu 10.
@@ -89,7 +87,7 @@ test("sessions are stored as instants, not wall-clock", () => {
   const instants = scheduledInstantsBetween(
     offering(),
     new Date("2026-09-01T00:00:00.000Z"),
-    new Date("2026-09-03T00:00:00.000Z"),
+    new Date("2026-09-03T00:00:00.000Z")
   );
 
   // 18:00 IST on Tue 1 Sep 2026 is 12:30 UTC — the offset is applied, not the
@@ -108,23 +106,26 @@ test("results are ordered by time", () => {
   const instants = scheduledInstantsBetween(
     offering(),
     new Date("2026-09-01T00:00:00.000Z"),
-    new Date("2026-09-30T00:00:00.000Z"),
+    new Date("2026-09-30T00:00:00.000Z")
   );
 
   const times = instants.map((i) => i.scheduledAt.getTime());
-  assert.deepEqual(times, [...times].sort((a, b) => a - b));
+  assert.deepEqual(
+    times,
+    [...times].sort((a, b) => a - b)
+  );
 });
 
 test("nothing is generated before the offering starts", () => {
   const instants = scheduledInstantsBetween(
     offering({ startDate: new Date("2026-09-10T00:00:00.000Z") }),
     new Date("2026-09-01T00:00:00.000Z"),
-    new Date("2026-09-15T00:00:00.000Z"),
+    new Date("2026-09-15T00:00:00.000Z")
   );
 
   assert.ok(
     instants.every((i) => i.scheduledAt >= new Date("2026-09-10T00:00:00.000Z")),
-    "generated a session before the start date",
+    "generated a session before the start date"
   );
 });
 
@@ -132,12 +133,12 @@ test("nothing is generated after the offering ends", () => {
   const instants = scheduledInstantsBetween(
     offering({ endDate: new Date("2026-09-08T00:00:00.000Z") }),
     new Date("2026-09-01T00:00:00.000Z"),
-    new Date("2026-09-30T00:00:00.000Z"),
+    new Date("2026-09-30T00:00:00.000Z")
   );
 
   assert.ok(
     instants.every((i) => i.scheduledAt <= new Date("2026-09-08T00:00:00.000Z")),
-    "generated a session after the end date",
+    "generated a session after the end date"
   );
 });
 
@@ -145,7 +146,7 @@ test("an empty window yields nothing", () => {
   const instants = scheduledInstantsBetween(
     offering(),
     new Date("2026-09-10T00:00:00.000Z"),
-    new Date("2026-09-10T00:00:00.000Z"),
+    new Date("2026-09-10T00:00:00.000Z")
   );
   assert.equal(instants.length, 0);
 });
@@ -159,12 +160,12 @@ test("each generated session carries its slot's duration", () => {
       ],
     }),
     new Date("2026-09-01T00:00:00.000Z"),
-    new Date("2026-09-05T00:00:00.000Z"),
+    new Date("2026-09-05T00:00:00.000Z")
   );
 
   assert.deepEqual(
     instants.map((i) => i.durationMinutes),
-    [45, 90],
+    [45, 90]
   );
 });
 
@@ -176,7 +177,7 @@ test("an early-morning slot is not pulled into the previous UTC day", () => {
       schedule: [{ dayOfWeek: 2, startTime: "05:00", durationMinutes: 60 }],
     }),
     new Date("2026-09-01T00:00:00.000Z"),
-    new Date("2026-09-08T00:00:00.000Z"),
+    new Date("2026-09-08T00:00:00.000Z")
   );
 
   assert.equal(instants.length, 1);

@@ -40,12 +40,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import React, { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 type StoredAdmin = {
   name?: string;
@@ -80,29 +75,20 @@ const NAV_BADGE_KEYS: Record<string, keyof PendingCounts> = {
   "/admin/data-sources": "dataSourcesPending",
 };
 
-const getNavBadgeCount = (
-  href: string,
-  pendingCounts: PendingCounts | null,
-): number => {
+const getNavBadgeCount = (href: string, pendingCounts: PendingCounts | null): number => {
   if (!pendingCounts) return 0;
   const key = NAV_BADGE_KEYS[href];
   return key ? pendingCounts[key] : 0;
 };
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
   const isLoginPage = pathname === "/admin/login";
   const isChangePasswordPage = pathname === "/admin/change-password";
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [pendingCounts, setPendingCounts] = useState<PendingCounts | null>(
-    null,
-  );
+  const [pendingCounts, setPendingCounts] = useState<PendingCounts | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const storedAdminRaw = useSyncExternalStore(
@@ -124,7 +110,7 @@ export default function AdminLayout({
 
       return localStorage.getItem("admin");
     },
-    () => null,
+    () => null
   );
 
   const storedAdmin = useMemo<StoredAdmin | null>(() => {
@@ -287,9 +273,9 @@ export default function AdminLayout({
           label: item.label,
           group: group.title,
           icon: item.icon,
-        })),
+        }))
       ),
-    [navGroups],
+    [navGroups]
   );
 
   useEffect(() => {
@@ -402,7 +388,7 @@ export default function AdminLayout({
   const isMounted = useSyncExternalStore(
     () => () => {},
     () => true,
-    () => false,
+    () => false
   );
 
   useEffect(() => {
@@ -422,12 +408,10 @@ export default function AdminLayout({
             <div className="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                  <p className="text-[11px] tracking-wide text-slate-500 uppercase">
                     Admin Dashboard
                   </p>
-                  <p className="text-sm font-semibold text-slate-900">
-                    PowerMySport
-                  </p>
+                  <p className="text-sm font-semibold text-slate-900">PowerMySport</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -438,9 +422,7 @@ export default function AdminLayout({
                   </button>
                   <button
                     type="button"
-                    aria-label={
-                      isMobileNavOpen ? "Close navigation" : "Open navigation"
-                    }
+                    aria-label={isMobileNavOpen ? "Close navigation" : "Open navigation"}
                     aria-expanded={isMobileNavOpen}
                     onClick={() => setIsMobileNavOpen((prev) => !prev)}
                     className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50"
@@ -461,17 +443,15 @@ export default function AdminLayout({
             )}
 
             {isMounted && isMobileNavOpen && (
-              <aside className="fixed right-0 top-0 z-40 h-screen w-[88vw] max-w-sm border-l border-slate-200 bg-white shadow-xl lg:hidden">
+              <aside className="fixed top-0 right-0 z-40 h-screen w-[88vw] max-w-sm border-l border-slate-200 bg-white shadow-xl lg:hidden">
                 <div className="flex h-full flex-col">
                   <div className="border-b border-slate-200 p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                        <p className="text-[11px] tracking-wide text-slate-500 uppercase">
                           Navigation
                         </p>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {adminName}
-                        </p>
+                        <p className="text-sm font-semibold text-slate-900">{adminName}</p>
                       </div>
                       <button
                         type="button"
@@ -487,16 +467,13 @@ export default function AdminLayout({
                   <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
                     {navGroups.map((group) => (
                       <div key={`mobile-group-${group.title}`}>
-                        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="mb-2 px-2 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                           {group.title}
                         </p>
                         <div className="space-y-1">
                           {group.items.map((item) => {
                             const Icon = item.icon;
-                            const isActive = isAdminRouteActive(
-                              pathname,
-                              item.href,
-                            );
+                            const isActive = isAdminRouteActive(pathname, item.href);
 
                             return (
                               <Link
@@ -510,11 +487,8 @@ export default function AdminLayout({
                                 }`}
                               >
                                 <Icon size={17} />
-                                <span className="text-sm font-semibold">
-                                  {item.label}
-                                </span>
-                                {getNavBadgeCount(item.href, pendingCounts) >
-                                  0 && (
+                                <span className="text-sm font-semibold">{item.label}</span>
+                                {getNavBadgeCount(item.href, pendingCounts) > 0 && (
                                   <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">
                                     {getNavBadgeCount(item.href, pendingCounts)}
                                   </span>
@@ -541,7 +515,7 @@ export default function AdminLayout({
 
             {isMounted && !isMobile && (
               <aside
-                className={`fixed left-0 top-0 hidden h-screen flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white shadow-sm transition-[width] duration-200 lg:flex ${
+                className={`fixed top-0 left-0 hidden h-screen flex-col overflow-x-hidden overflow-y-auto border-r border-slate-200 bg-white shadow-sm transition-[width] duration-200 lg:flex ${
                   isSidebarCollapsed ? "w-20" : "w-72"
                 }`}
               >
@@ -552,9 +526,7 @@ export default function AdminLayout({
                 <div className={isSidebarCollapsed ? "p-3" : "p-6"}>
                   <div
                     className={`rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 text-white ${
-                      isSidebarCollapsed
-                        ? "flex h-14 items-center justify-center"
-                        : "p-5"
+                      isSidebarCollapsed ? "flex h-14 items-center justify-center" : "p-5"
                     }`}
                   >
                     {isSidebarCollapsed ? (
@@ -563,12 +535,10 @@ export default function AdminLayout({
                       </span>
                     ) : (
                       <>
-                        <p className="text-xs uppercase tracking-wide text-slate-300">
+                        <p className="text-xs tracking-wide text-slate-300 uppercase">
                           Admin Dashboard
                         </p>
-                        <h1 className="mt-2 text-2xl font-bold text-white">
-                          PowerMySport
-                        </h1>
+                        <h1 className="mt-2 text-2xl font-bold text-white">PowerMySport</h1>
                         <p className="mt-1 text-sm text-slate-200">{adminName}</p>
                       </>
                     )}
@@ -580,13 +550,9 @@ export default function AdminLayout({
                   <button
                     type="button"
                     onClick={toggleSidebar}
-                    aria-label={
-                      isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
-                    }
+                    aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     aria-expanded={!isSidebarCollapsed}
-                    title={
-                      isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
-                    }
+                    title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100 ${
                       isSidebarCollapsed ? "justify-center" : ""
                     }`}
@@ -628,37 +594,24 @@ export default function AdminLayout({
                   </button>
                 </div>
 
-                <nav
-                  className={`mt-2 space-y-5 pb-6 ${
-                    isSidebarCollapsed ? "px-2" : "px-4"
-                  }`}
-                >
+                <nav className={`mt-2 space-y-5 pb-6 ${isSidebarCollapsed ? "px-2" : "px-4"}`}>
                   {navGroups.map((group) => (
                     <div key={group.title}>
                       {/* Collapsed, the group heading becomes a rule. The grouping
                           is still worth showing, but 11px of truncated text in an
                           80px rail is not readable. */}
                       {isSidebarCollapsed ? (
-                        <div
-                          aria-hidden
-                          className="mx-3 mb-2 border-t border-slate-200"
-                        />
+                        <div aria-hidden className="mx-3 mb-2 border-t border-slate-200" />
                       ) : (
-                        <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="mb-2 px-4 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                           {group.title}
                         </p>
                       )}
                       <div className="space-y-1">
                         {group.items.map((item) => {
                           const Icon = item.icon;
-                          const isActive = isAdminRouteActive(
-                            pathname,
-                            item.href,
-                          );
-                          const badgeCount = getNavBadgeCount(
-                            item.href,
-                            pendingCounts,
-                          );
+                          const isActive = isAdminRouteActive(pathname, item.href);
+                          const badgeCount = getNavBadgeCount(item.href, pendingCounts);
 
                           return (
                             <Link
@@ -675,13 +628,9 @@ export default function AdminLayout({
                                     : item.label
                                   : undefined
                               }
-                              aria-label={
-                                isSidebarCollapsed ? item.label : undefined
-                              }
+                              aria-label={isSidebarCollapsed ? item.label : undefined}
                               className={`relative flex items-center rounded-xl transition-colors ${
-                                isSidebarCollapsed
-                                  ? "justify-center px-0 py-3"
-                                  : "gap-3 px-4 py-3"
+                                isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3"
                               } ${
                                 isActive
                                   ? "bg-power-orange text-white shadow-sm"
@@ -695,18 +644,16 @@ export default function AdminLayout({
                                 badgeCount > 0 && (
                                   <span
                                     aria-hidden
-                                    className={`absolute right-2 top-2 h-2 w-2 rounded-full ${
+                                    className={`absolute top-2 right-2 h-2 w-2 rounded-full ${
                                       isActive ? "bg-white" : "bg-power-orange"
                                     }`}
                                   />
                                 )
                               ) : (
                                 <>
-                                  <span className="text-sm font-semibold">
-                                    {item.label}
-                                  </span>
+                                  <span className="text-sm font-semibold">{item.label}</span>
                                   {badgeCount > 0 && (
-                                    <span className="ml-auto rounded-full bg-power-orange px-2 py-0.5 text-[11px] font-bold text-white">
+                                    <span className="bg-power-orange ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold text-white">
                                       {badgeCount}
                                     </span>
                                   )}
@@ -741,11 +688,7 @@ export default function AdminLayout({
 
         <main
           className={`min-w-0 flex-1 transition-[margin] duration-200 ${
-            isLoginPage || isChangePasswordPage
-              ? ""
-              : isSidebarCollapsed
-                ? "lg:ml-20"
-                : "lg:ml-72"
+            isLoginPage || isChangePasswordPage ? "" : isSidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
           }`}
         >
           <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">

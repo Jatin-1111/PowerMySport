@@ -1,15 +1,13 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "check-client-errors",
-			"type": "shell",
-			"command": "npx next lint",
-			"isBackground": false,
-			"problemMatcher": [
-				"$eslint-stylish"
-			],
-			"group": "build"
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "check-client-errors",
+      "type": "shell",
+      "command": "npx next lint",
+      "isBackground": false,
+      "problemMatcher": ["$eslint-stylish"],
+      "group": "build"
+    }
+  ]
 }

@@ -203,9 +203,7 @@ export const expertApi = {
     return res.data;
   },
 
-  getExpertReviews: async (
-    expertId: string,
-  ): Promise<ApiResponse<ExpertReview[]>> => {
+  getExpertReviews: async (expertId: string): Promise<ApiResponse<ExpertReview[]>> => {
     const res = await axiosInstance.get(`/experts/${expertId}/reviews`);
     return res.data;
   },
@@ -213,14 +211,12 @@ export const expertApi = {
   // Open bookable slots for an expert over an optional date range.
   getAvailability: async (
     expertId: string,
-    params?: { from?: string; to?: string },
+    params?: { from?: string; to?: string }
   ): Promise<ApiResponse<OpenSlot[]>> => {
     const q = new URLSearchParams();
     if (params?.from) q.append("from", params.from);
     if (params?.to) q.append("to", params.to);
-    const res = await axiosInstance.get(
-      `/experts/${expertId}/availability?${q.toString()}`,
-    );
+    const res = await axiosInstance.get(`/experts/${expertId}/availability?${q.toString()}`);
     return res.data;
   },
 
@@ -232,90 +228,68 @@ export const expertApi = {
       clientNote?: string;
       mode?: ExpertSessionMode;
       playerId?: string;
-    },
+    }
   ): Promise<ApiResponse<{ sessionId: string; redirectUrl: string }>> => {
-    const res = await axiosInstance.post(
-      `/experts/${expertId}/sessions`,
-      payload,
-    );
+    const res = await axiosInstance.post(`/experts/${expertId}/sessions`, payload);
     return res.data;
   },
 
-  reconcileSession: async (
-    sessionId: string,
-  ): Promise<ApiResponse<ExpertSession>> => {
-    const res = await axiosInstance.post(
-      `/experts/sessions/${sessionId}/reconcile`,
-    );
+  reconcileSession: async (sessionId: string): Promise<ApiResponse<ExpertSession>> => {
+    const res = await axiosInstance.post(`/experts/sessions/${sessionId}/reconcile`);
     return res.data;
   },
 
-  getSession: async (
-    sessionId: string,
-  ): Promise<ApiResponse<ExpertSession>> => {
+  getSession: async (sessionId: string): Promise<ApiResponse<ExpertSession>> => {
     const res = await axiosInstance.get(`/experts/sessions/${sessionId}`);
     return res.data;
   },
 
   downloadSessionInvoicePdf: async (sessionId: string): Promise<Blob> => {
-    const res = await axiosInstance.get(
-      `/experts/sessions/${sessionId}/invoice/pdf`,
-      { responseType: "blob" },
-    );
+    const res = await axiosInstance.get(`/experts/sessions/${sessionId}/invoice/pdf`, {
+      responseType: "blob",
+    });
     return res.data as Blob;
   },
 
   // Full child profile + AI guidance narrative — expert-only booking-detail page.
   getSessionPlayerDetail: async (
-    sessionId: string,
+    sessionId: string
   ): Promise<ApiResponse<ExpertSessionPlayerDetailResponse>> => {
-    const res = await axiosInstance.get(
-      `/experts/sessions/${sessionId}/player-detail`,
-    );
+    const res = await axiosInstance.get(`/experts/sessions/${sessionId}/player-detail`);
     return res.data;
   },
 
   scheduleSession: async (
     sessionId: string,
-    payload: { scheduledAt: string; mode?: ExpertSessionMode },
+    payload: { scheduledAt: string; mode?: ExpertSessionMode }
   ): Promise<ApiResponse<ExpertSession>> => {
-    const res = await axiosInstance.patch(
-      `/experts/sessions/${sessionId}/schedule`,
-      payload,
-    );
+    const res = await axiosInstance.patch(`/experts/sessions/${sessionId}/schedule`, payload);
     return res.data;
   },
 
   setMeetingLink: async (
     sessionId: string,
-    meetingLink: string,
+    meetingLink: string
   ): Promise<ApiResponse<ExpertSession>> => {
-    const res = await axiosInstance.patch(
-      `/experts/sessions/${sessionId}/meeting-link`,
-      { meetingLink },
-    );
+    const res = await axiosInstance.patch(`/experts/sessions/${sessionId}/meeting-link`, {
+      meetingLink,
+    });
     return res.data;
   },
 
   completeSession: async (
     sessionId: string,
-    momNotes: string,
+    momNotes: string
   ): Promise<ApiResponse<ExpertSession>> => {
-    const res = await axiosInstance.post(
-      `/experts/sessions/${sessionId}/complete`,
-      { momNotes },
-    );
+    const res = await axiosInstance.post(`/experts/sessions/${sessionId}/complete`, { momNotes });
     return res.data;
   },
 
   updateSessionMom: async (
     sessionId: string,
-    momNotes: string,
+    momNotes: string
   ): Promise<ApiResponse<ExpertSession>> => {
-    const res = await axiosInstance.patch(
-      `/experts/sessions/${sessionId}/mom`,
-      { momNotes },
-    );
+    const res = await axiosInstance.patch(`/experts/sessions/${sessionId}/mom`, { momNotes });
     return res.data;
   },
 
@@ -326,34 +300,25 @@ export const expertApi = {
       action: "ACCEPT" | "DECLINE" | "RESCHEDULE";
       scheduledAt?: string;
       reason?: string;
-    },
+    }
   ): Promise<ApiResponse<ExpertSession>> => {
-    const res = await axiosInstance.post(
-      `/experts/sessions/${sessionId}/respond`,
-      payload,
-    );
+    const res = await axiosInstance.post(`/experts/sessions/${sessionId}/respond`, payload);
     return res.data;
   },
 
   cancelSession: async (
     sessionId: string,
-    reason?: string,
+    reason?: string
   ): Promise<ApiResponse<ExpertSession>> => {
-    const res = await axiosInstance.post(
-      `/experts/sessions/${sessionId}/cancel`,
-      { reason },
-    );
+    const res = await axiosInstance.post(`/experts/sessions/${sessionId}/cancel`, { reason });
     return res.data;
   },
 
   reviewSession: async (
     sessionId: string,
-    payload: { rating: number; review?: string; anonymous?: boolean },
+    payload: { rating: number; review?: string; anonymous?: boolean }
   ): Promise<ApiResponse<ExpertSession>> => {
-    const res = await axiosInstance.post(
-      `/experts/sessions/${sessionId}/review`,
-      payload,
-    );
+    const res = await axiosInstance.post(`/experts/sessions/${sessionId}/review`, payload);
     return res.data;
   },
 
@@ -396,7 +361,7 @@ export const expertApi = {
         | "panNumber"
         | "gstNumber"
       >
-    >,
+    >
   ): Promise<ApiResponse<Expert>> => {
     const res = await axiosInstance.patch(`/experts/me`, patch);
     return res.data;

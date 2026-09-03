@@ -7,10 +7,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { Input } from "@/modules/shared/ui/Input";
 import { Textarea } from "@/modules/shared/ui/Textarea";
-import type {
-  CoachOfferingDeliveryKind,
-  CoachOfferingSlot,
-} from "@/types/coachPrograms";
+import type { CoachOfferingDeliveryKind, CoachOfferingSlot } from "@/types/coachPrograms";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -74,8 +71,7 @@ export const CreateProgrammeForm = ({
   const [title, setTitle] = useState("");
   const [sport, setSport] = useState("Chess");
   const [description, setDescription] = useState("");
-  const [deliveryKind, setDeliveryKind] =
-    useState<CoachOfferingDeliveryKind>("ONLINE");
+  const [deliveryKind, setDeliveryKind] = useState<CoachOfferingDeliveryKind>("ONLINE");
   const [onlinePlatform, setOnlinePlatform] = useState("Zoom");
   const [meetingLink, setMeetingLink] = useState("");
   const [capacity, setCapacity] = useState(1);
@@ -87,14 +83,10 @@ export const CreateProgrammeForm = ({
   const [saving, setSaving] = useState(false);
 
   const activePackages = packages.filter((pkg) => pkg.isActive);
-  const selected = activePackages.find(
-    (pkg) => (pkg.id ?? pkg._id) === packageId,
-  );
+  const selected = activePackages.find((pkg) => (pkg.id ?? pkg._id) === packageId);
 
   const updateSlot = (index: number, patch: Partial<CoachOfferingSlot>) =>
-    setSlots((current) =>
-      current.map((slot, i) => (i === index ? { ...slot, ...patch } : slot)),
-    );
+    setSlots((current) => current.map((slot, i) => (i === index ? { ...slot, ...patch } : slot)));
 
   const submit = async () => {
     if (!title.trim()) return toast.error("Give the programme a name");
@@ -107,12 +99,12 @@ export const CreateProgrammeForm = ({
     }
     if (deliveryKind === "STUDENT_LOCATION" && capacity > 1) {
       return toast.error(
-        "A batch can't be taught at a student's home — use online or your own venue",
+        "A batch can't be taught at a student's home — use online or your own venue"
       );
     }
     if (selected?.maxStudents != null && capacity > selected.maxStudents) {
       return toast.error(
-        `Your "${selected.name}" package allows at most ${selected.maxStudents} students`,
+        `Your "${selected.name}" package allows at most ${selected.maxStudents} students`
       );
     }
 
@@ -130,9 +122,7 @@ export const CreateProgrammeForm = ({
         sport: sport.trim(),
         ...(description.trim() ? { description: description.trim() } : {}),
         deliveryKind,
-        ...(deliveryKind === "ONLINE"
-          ? { onlinePlatform: onlinePlatform.trim() }
-          : {}),
+        ...(deliveryKind === "ONLINE" ? { onlinePlatform: onlinePlatform.trim() } : {}),
         ...(deliveryKind === "ONLINE" && meetingLink.trim()
           ? { defaultMeetingLink: meetingLink.trim() }
           : {}),
@@ -146,8 +136,8 @@ export const CreateProgrammeForm = ({
       await onCreated();
     } catch (error) {
       const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Could not create the programme";
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not create the programme";
       toast.error(message);
     } finally {
       setSaving(false);
@@ -205,9 +195,7 @@ export const CreateProgrammeForm = ({
               }`}
             >
               <span className="block font-medium">{option.label}</span>
-              <span className="block text-xs text-muted-foreground">
-                {option.hint}
-              </span>
+              <span className="text-muted-foreground block text-xs">{option.hint}</span>
             </button>
           ))}
         </div>
@@ -245,22 +233,16 @@ export const CreateProgrammeForm = ({
             max={100}
             value={capacity}
             disabled={deliveryKind === "STUDENT_LOCATION"}
-            onChange={(e) =>
-              setCapacity(Math.max(1, Number(e.target.value) || 1))
-            }
+            onChange={(e) => setCapacity(Math.max(1, Number(e.target.value) || 1))}
           />
-          <span className="mt-1 block text-xs text-muted-foreground">
+          <span className="text-muted-foreground mt-1 block text-xs">
             {capacity === 1 ? "One-to-one" : `Batch of up to ${capacity}`}
           </span>
         </label>
 
         <label className="block text-sm">
           <span className="mb-1 block font-medium">Starts</span>
-          <Input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
+          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </label>
       </div>
 
@@ -286,12 +268,10 @@ export const CreateProgrammeForm = ({
           {slots.map((slot, index) => (
             <li key={index} className="flex flex-wrap items-end gap-2">
               <label className="text-sm">
-                <span className="mb-1 block text-xs text-muted-foreground">Day</span>
+                <span className="text-muted-foreground mb-1 block text-xs">Day</span>
                 <select
                   value={slot.dayOfWeek}
-                  onChange={(e) =>
-                    updateSlot(index, { dayOfWeek: Number(e.target.value) })
-                  }
+                  onChange={(e) => updateSlot(index, { dayOfWeek: Number(e.target.value) })}
                   className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 >
                   {DAYS.map((day) => (
@@ -303,7 +283,7 @@ export const CreateProgrammeForm = ({
               </label>
 
               <label className="text-sm">
-                <span className="mb-1 block text-xs text-muted-foreground">Time</span>
+                <span className="text-muted-foreground mb-1 block text-xs">Time</span>
                 <Input
                   type="time"
                   value={slot.startTime}
@@ -312,9 +292,7 @@ export const CreateProgrammeForm = ({
               </label>
 
               <label className="text-sm">
-                <span className="mb-1 block text-xs text-muted-foreground">
-                  Minutes
-                </span>
+                <span className="text-muted-foreground mb-1 block text-xs">Minutes</span>
                 <Input
                   type="number"
                   min={15}
@@ -334,9 +312,7 @@ export const CreateProgrammeForm = ({
                   size="sm"
                   variant="ghost"
                   aria-label="Remove this class"
-                  onClick={() =>
-                    setSlots((current) => current.filter((_, i) => i !== index))
-                  }
+                  onClick={() => setSlots((current) => current.filter((_, i) => i !== index))}
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </Button>
@@ -344,20 +320,20 @@ export const CreateProgrammeForm = ({
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Times are in your timezone. Classes are scheduled about 8 weeks ahead
-          and roll forward automatically.
+        <p className="text-muted-foreground mt-2 text-xs">
+          Times are in your timezone. Classes are scheduled about 8 weeks ahead and roll forward
+          automatically.
         </p>
       </div>
 
       <label className="block text-sm">
         <span className="mb-1 block font-medium">Billing</span>
         {loadingPackages ? (
-          <span className="text-sm text-muted-foreground">Loading…</span>
+          <span className="text-muted-foreground text-sm">Loading…</span>
         ) : activePackages.length === 0 ? (
           <span className="block rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-            You have no active pricing packages. Create one first — it sets the
-            price, the billing period and how many classes it includes.
+            You have no active pricing packages. Create one first — it sets the price, the billing
+            period and how many classes it includes.
           </span>
         ) : (
           <select
@@ -370,8 +346,7 @@ export const CreateProgrammeForm = ({
               const id = pkg.id ?? pkg._id ?? "";
               return (
                 <option key={id} value={id}>
-                  {pkg.name} · ₹{(pkg.price / 100).toFixed(0)} /{" "}
-                  {pkg.frequency.toLowerCase()}
+                  {pkg.name} · ₹{(pkg.price / 100).toFixed(0)} / {pkg.frequency.toLowerCase()}
                   {pkg.maxSessions ? ` · ${pkg.maxSessions} classes` : ""}
                 </option>
               );

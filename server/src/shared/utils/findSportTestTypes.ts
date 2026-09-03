@@ -36,20 +36,29 @@ export type WizardAnswers = {
 export type SportProfile = {
   id: string;
   name: string;
-  category: "racket" | "field" | "water" | "combat" | "precision" | "mind" | "gymnastics" | "athletics" | "indoor";
+  category:
+    | "racket"
+    | "field"
+    | "water"
+    | "combat"
+    | "precision"
+    | "mind"
+    | "gymnastics"
+    | "athletics"
+    | "indoor";
   // Scoring dimensions — what the sport REQUIRES (1=low, 5=high)
-  individual: number;          // 1=very team, 5=very individual
+  individual: number; // 1=very team, 5=very individual
   explosive: number;
   endurance: number;
   visualTracking: number;
-  reactFast: number;           // 1=strategic preferred, 5=fast reaction needed
+  reactFast: number; // 1=strategic preferred, 5=fast reaction needed
   sustainedFocus: number;
   pressureTolerance: number;
   repetitionNeed: number;
-  contactRequired: number;     // 1=none, 5=full contact
-  visionDemand: number;        // 1=vision irrelevant, 5=precision-critical eyesight
-  agilityNeed: number;         // 1=none, 5=extreme agility & flexibility
-  minWeeklyHours: number;      // minimum hours/week for meaningful training
+  contactRequired: number; // 1=none, 5=full contact
+  visionDemand: number; // 1=vision irrelevant, 5=precision-critical eyesight
+  agilityNeed: number; // 1=none, 5=extreme agility & flexibility
+  minWeeklyHours: number; // minimum hours/week for meaningful training
   // Physical preferences
   buildPreference: "lean" | "stocky" | "any";
   heightAdvantage: "short" | "tall" | "any";
@@ -59,23 +68,23 @@ export type SportProfile = {
   requiresContact: boolean; // contact avoidance is a deal-breaker
   // Indian context
   minBudgetTier: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  minCityTier: 1 | 2 | 3;   // 1=all cities, 3=only tier-1 metros
+  minCityTier: 1 | 2 | 3; // 1=all cities, 3=only tier-1 metros
   ageStartSensitivity: "critical" | "moderate" | "flexible";
   ageWindowIdeal: [number, number];
-  ageWindowCutoff: number;    // hard cutoff for professional ambition
+  ageWindowCutoff: number; // hard cutoff for professional ambition
   // How concentrated/relocation-dependent serious training is in India
   specializationIntensity: "low" | "moderate" | "high";
   // Display
   costRange: string;
-  tagline: string;            // one short phrase for results page
+  tagline: string; // one short phrase for results page
 };
 
 export type FitLabel = "Strong fit" | "Good fit" | "Worth exploring";
 
 export type SportResult = {
   sport: SportProfile;
-  score: number;              // 0–100
+  score: number; // 0–100
   fitLabel: FitLabel;
-  reasons: string[];          // 2–3 specific sentences referencing the child
+  reasons: string[]; // 2–3 specific sentences referencing the child
   isWildcard: boolean;
 };

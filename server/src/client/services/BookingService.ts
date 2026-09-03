@@ -26,14 +26,8 @@ import {
 } from "../../utils/openingHours";
 import friendService from "./FriendService";
 import BookingInvitation from "../models/BookingInvitation";
-import {
-  BookingWaitlist,
-  BookingWaitlistDocument,
-} from "../models/BookingWaitlist";
-import {
-  calculateGroupPaymentSplits,
-  calculateSplitAmounts,
-} from "../../utils/payment";
+import { BookingWaitlist, BookingWaitlistDocument } from "../models/BookingWaitlist";
+import { calculateGroupPaymentSplits, calculateSplitAmounts } from "../../utils/payment";
 import { generateDynamicSlots } from "../../utils/booking";
 import {
   projectExpertSessionAsBooking,
@@ -41,10 +35,7 @@ import {
   type ProjectedExpertBooking,
 } from "../../utils/expertSessionMapping";
 import { recordBookingEventFor } from "./BookingEventService";
-import type {
-  BookingEventActorType,
-  BookingEventChannel,
-} from "../models/BookingEvent";
+import type { BookingEventActorType, BookingEventChannel } from "../models/BookingEvent";
 import { emitSlotLocked } from "../sockets/bookingSocket";
 import { NotificationService } from "./NotificationService";
 import { ScheduledNotificationService } from "./ScheduledNotificationService";
@@ -170,9 +161,7 @@ const normalizeTimeToHHmm = (value: string): string => {
 // regardless of the server process's local timezone (see combineDateAndTimeIST
 // in utils/openingHours.ts, used below, for the fuller explanation).
 const toDayRange = (date: Date): { start: Date; end: Date } => {
-  const start = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
+  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
   return { start, end };
@@ -209,7 +198,7 @@ const hasConflictingVenueBooking = async (
   startTime: string,
   endTime: string,
   userId?: string | null,
-  session?: ClientSession,
+  session?: ClientSession
 ): Promise<boolean> => {
   const { start, end } = toDayRange(date);
   const query = Booking.findOne({
@@ -219,13 +208,7 @@ const hasConflictingVenueBooking = async (
       $lt: end,
     },
     status: {
-      $in: [
-        "AWAITING_PAYMENT",
-        "AWAITING_PROVIDER",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-      ],
+      $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "PENDING_INVITES", "CONFIRMED", "IN_PROGRESS"],
     },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
@@ -245,13 +228,11 @@ const hasConflictingVenueBooking = async (
     if (
       userId &&
       conflicts.userId.toString() === userId &&
-      (conflicts.status === "AWAITING_PAYMENT" ||
-        conflicts.status === "PENDING_INVITES") &&
+      (conflicts.status === "AWAITING_PAYMENT" || conflicts.status === "PENDING_INVITES") &&
       !conflicts.paymentConfirmedAt
     ) {
       conflicts.status = "CANCELLED";
-      conflicts.cancellationReason =
-        "Overwritten by a new booking attempt from the same user";
+      conflicts.cancellationReason = "Overwritten by a new booking attempt from the same user";
       if (session) {
         await conflicts.save({ session });
       } else {
@@ -270,7 +251,7 @@ const hasConflictingCoachBooking = async (
   startTime: string,
   endTime: string,
   userId?: string | null,
-  session?: ClientSession,
+  session?: ClientSession
 ): Promise<boolean> => {
   const { start, end } = toDayRange(date);
   const query = Booking.findOne({
@@ -280,13 +261,7 @@ const hasConflictingCoachBooking = async (
       $lt: end,
     },
     status: {
-      $in: [
-        "AWAITING_PAYMENT",
-        "AWAITING_PROVIDER",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-      ],
+      $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "PENDING_INVITES", "CONFIRMED", "IN_PROGRESS"],
     },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
@@ -306,13 +281,11 @@ const hasConflictingCoachBooking = async (
     if (
       userId &&
       conflicts.userId.toString() === userId &&
-      (conflicts.status === "AWAITING_PAYMENT" ||
-        conflicts.status === "PENDING_INVITES") &&
+      (conflicts.status === "AWAITING_PAYMENT" || conflicts.status === "PENDING_INVITES") &&
       !conflicts.paymentConfirmedAt
     ) {
       conflicts.status = "CANCELLED";
-      conflicts.cancellationReason =
-        "Overwritten by a new booking attempt from the same user";
+      conflicts.cancellationReason = "Overwritten by a new booking attempt from the same user";
       if (session) {
         await conflicts.save({ session });
       } else {
@@ -335,10 +308,9 @@ const hasAcademyCapacity = async (
   startTime: string,
   endTime: string,
   maxBatchSize?: number,
-  session?: ClientSession,
+  session?: ClientSession
 ): Promise<boolean> => {
-  const capacity =
-    typeof maxBatchSize === "number" && maxBatchSize > 0 ? maxBatchSize : 1;
+  const capacity = typeof maxBatchSize === "number" && maxBatchSize > 0 ? maxBatchSize : 1;
 
   const { start, end } = toDayRange(date);
   const query = Booking.countDocuments({
@@ -348,13 +320,7 @@ const hasAcademyCapacity = async (
       $lt: end,
     },
     status: {
-      $in: [
-        "AWAITING_PAYMENT",
-        "AWAITING_PROVIDER",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-      ],
+      $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "PENDING_INVITES", "CONFIRMED", "IN_PROGRESS"],
     },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
@@ -376,12 +342,10 @@ const acquireResourceSlotLock = async (
   resourceId: string,
   date: Date,
   startTime: string,
-  session: ClientSession,
+  session: ClientSession
 ): Promise<void> => {
   if (!mongoose.Types.ObjectId.isValid(resourceId)) {
-    throw new Error(
-      `Invalid resource ID format for ${resourceType}: ${resourceId}`,
-    );
+    throw new Error(`Invalid resource ID format for ${resourceType}: ${resourceId}`);
   }
   await BookingSlotLock.findOneAndUpdate(
     {
@@ -398,13 +362,11 @@ const acquireResourceSlotLock = async (
       new: true,
       session,
       setDefaultsOnInsert: true,
-    },
+    }
   );
 };
 
-const createBookingAtomically = async (
-  payload: BookingCreatePayload,
-): Promise<BookingDocument> => {
+const createBookingAtomically = async (payload: BookingCreatePayload): Promise<BookingDocument> => {
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= MAX_TRANSACTION_RETRIES; attempt += 1) {
@@ -420,7 +382,7 @@ const createBookingAtomically = async (
             payload.venueId,
             payload.date,
             payload.startTime,
-            session,
+            session
           );
 
           emitSlotLocked(payload.venueId, {
@@ -434,13 +396,11 @@ const createBookingAtomically = async (
             payload.startTime,
             payload.endTime,
             payload.userId,
-            session,
+            session
           );
 
           if (hasVenueConflict) {
-            throw new Error(
-              "Selected time slot is already booked for this venue",
-            );
+            throw new Error("Selected time slot is already booked for this venue");
           }
         }
 
@@ -450,7 +410,7 @@ const createBookingAtomically = async (
             payload.coachId,
             payload.date,
             payload.startTime,
-            session,
+            session
           );
 
           const hasCoachConflict = await hasConflictingCoachBooking(
@@ -459,13 +419,11 @@ const createBookingAtomically = async (
             payload.startTime,
             payload.endTime,
             payload.userId,
-            session,
+            session
           );
 
           if (hasCoachConflict) {
-            throw new Error(
-              "Coach is not available for the selected time slot",
-            );
+            throw new Error("Coach is not available for the selected time slot");
           }
         }
 
@@ -478,7 +436,7 @@ const createBookingAtomically = async (
             payload.academyId,
             payload.date,
             payload.startTime,
-            session,
+            session
           );
 
           // Re-read maxBatchSize inside the transaction rather than trusting
@@ -493,13 +451,11 @@ const createBookingAtomically = async (
             payload.startTime,
             payload.endTime,
             academy?.maxBatchSize,
-            session,
+            session
           );
 
           if (!academyHasRoom) {
-            throw new Error(
-              "This academy batch is already full for the selected time slot",
-            );
+            throw new Error("This academy batch is already full for the selected time slot");
           }
         }
 
@@ -515,16 +471,12 @@ const createBookingAtomically = async (
           "participantId:",
           JSON.stringify(payload.participantId?.toString()),
           "payments:",
-          JSON.stringify(payload.payments),
+          JSON.stringify(payload.payments)
         );
         const booking = new Booking({
           userId: new mongoose.Types.ObjectId(payload.userId),
-          ...(payload.venueId
-            ? { venueId: new mongoose.Types.ObjectId(payload.venueId) }
-            : {}),
-          ...(payload.coachId
-            ? { coachId: new mongoose.Types.ObjectId(payload.coachId) }
-            : {}),
+          ...(payload.venueId ? { venueId: new mongoose.Types.ObjectId(payload.venueId) } : {}),
+          ...(payload.coachId ? { coachId: new mongoose.Types.ObjectId(payload.coachId) } : {}),
           ...(payload.academyId
             ? { academyId: new mongoose.Types.ObjectId(payload.academyId) }
             : {}),
@@ -536,9 +488,7 @@ const createBookingAtomically = async (
           serviceFee: payload.serviceFee,
           taxAmount: payload.taxAmount,
           ...(payload.promoCode ? { promoCode: payload.promoCode } : {}),
-          ...(payload.discountAmount
-            ? { discountAmount: payload.discountAmount }
-            : {}),
+          ...(payload.discountAmount ? { discountAmount: payload.discountAmount } : {}),
           status: "AWAITING_PAYMENT",
           expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes expiry
           checkInCode: payload.checkInCode,
@@ -564,10 +514,7 @@ const createBookingAtomically = async (
       return createdBooking;
     } catch (error) {
       lastError = error;
-      if (
-        !isRetryableTransactionError(error) ||
-        attempt === MAX_TRANSACTION_RETRIES
-      ) {
+      if (!isRetryableTransactionError(error) || attempt === MAX_TRANSACTION_RETRIES) {
         throw error;
       }
     } finally {
@@ -582,10 +529,7 @@ const createBookingAtomically = async (
 
 const toRadians = (value: number): number => (value * Math.PI) / 180;
 
-const calculateDistanceKm = (
-  from: [number, number],
-  to: [number, number],
-): number => {
+const calculateDistanceKm = (from: [number, number], to: [number, number]): number => {
   const [fromLng, fromLat] = from;
   const [toLng, toLat] = to;
 
@@ -612,14 +556,9 @@ export const isSlotAvailable = async (
   venueId: string,
   date: Date,
   startTime: string,
-  endTime: string,
+  endTime: string
 ): Promise<boolean> => {
-  const hasConflict = await hasConflictingVenueBooking(
-    venueId,
-    date,
-    startTime,
-    endTime,
-  );
+  const hasConflict = await hasConflictingVenueBooking(venueId, date, startTime, endTime);
   return !hasConflict;
 };
 
@@ -627,7 +566,7 @@ export const validatePromoCodeForUser = async (
   code: string,
   userId: string,
   subtotal: number,
-  hasCoach: boolean,
+  hasCoach: boolean
 ): Promise<{ isValid: boolean; discountAmount: number; message?: string }> => {
   return validatePromoCode(code, userId, subtotal, {
     hasCoach,
@@ -639,19 +578,15 @@ export const getAlternateVenueSlots = (
   bookedSlots: { startTime: string; endTime: string }[],
   preferredStartTime: string,
   preferredEndTime: string,
-  limit: number = 4,
+  limit: number = 4
 ): string[] => {
   const requestedDurationMinutes = Math.max(
     30,
     ((): number => {
-      const [startHour = 0, startMinute = 0] = preferredStartTime
-        .split(":")
-        .map(Number);
-      const [endHour = 0, endMinute = 0] = preferredEndTime
-        .split(":")
-        .map(Number);
+      const [startHour = 0, startMinute = 0] = preferredStartTime.split(":").map(Number);
+      const [endHour = 0, endMinute = 0] = preferredEndTime.split(":").map(Number);
       return endHour * 60 + endMinute - (startHour * 60 + startMinute);
-    })(),
+    })()
   );
 
   const booked = bookedSlots;
@@ -673,9 +608,7 @@ export const getAlternateVenueSlots = (
     });
   };
 
-  const preferredIndex = allSlots.findIndex(
-    (slot) => slot === preferredStartTime,
-  );
+  const preferredIndex = allSlots.findIndex((slot) => slot === preferredStartTime);
   const sorted = allSlots
     .map((slot, index) => ({
       slot,
@@ -688,7 +621,7 @@ export const getAlternateVenueSlots = (
 };
 
 export const createBookingWaitlistEntry = async (
-  payload: CreateBookingWaitlistPayload,
+  payload: CreateBookingWaitlistPayload
 ): Promise<BookingWaitlistDocument> => {
   const waitlist = await BookingWaitlist.findOneAndUpdate(
     {
@@ -712,7 +645,7 @@ export const createBookingWaitlistEntry = async (
         status: "ACTIVE",
       },
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
   return waitlist;
@@ -723,20 +656,14 @@ export const createBookingWaitlistEntry = async (
  * This creates the booking in CONFIRMED status
  */
 export const initiateBooking = async (
-  payload: InitiateBookingPayload,
+  payload: InitiateBookingPayload
 ): Promise<InitiateBookingResponse> => {
   try {
     const normalizedStartTime = normalizeTimeToHHmm(payload.startTime);
     const normalizedEndTime = normalizeTimeToHHmm(payload.endTime);
 
-    const requestedStartAt = combineDateAndTimeIST(
-      payload.date,
-      normalizedStartTime,
-    );
-    const requestedEndAt = combineDateAndTimeIST(
-      payload.date,
-      normalizedEndTime,
-    );
+    const requestedStartAt = combineDateAndTimeIST(payload.date, normalizedStartTime);
+    const requestedEndAt = combineDateAndTimeIST(payload.date, normalizedEndTime);
     const now = new Date();
 
     if (requestedEndAt <= requestedStartAt) {
@@ -755,13 +682,9 @@ export const initiateBooking = async (
         userIdType: typeof payload.userId,
         userIdIsValid: mongoose.Types.ObjectId.isValid(payload.userId),
         venueId: payload.venueId,
-        venueIdIsValid: payload.venueId
-          ? mongoose.Types.ObjectId.isValid(payload.venueId)
-          : "N/A",
+        venueIdIsValid: payload.venueId ? mongoose.Types.ObjectId.isValid(payload.venueId) : "N/A",
         coachId: payload.coachId,
-        coachIdIsValid: payload.coachId
-          ? mongoose.Types.ObjectId.isValid(payload.coachId)
-          : "N/A",
+        coachIdIsValid: payload.coachId ? mongoose.Types.ObjectId.isValid(payload.coachId) : "N/A",
         sport: payload.sport,
         date: payload.date,
         startTime: payload.startTime,
@@ -771,7 +694,7 @@ export const initiateBooking = async (
           ? mongoose.Types.ObjectId.isValid(payload.dependentId)
           : "N/A",
         hasPlayerLocation: Boolean(payload.playerLocation),
-      }),
+      })
     );
     // --- BOOKING DEBUG LOG END ---
 
@@ -780,7 +703,7 @@ export const initiateBooking = async (
       "[initiateBooking] STEP 1: validating userId =",
       JSON.stringify(payload.userId),
       "type:",
-      typeof payload.userId,
+      typeof payload.userId
     );
     if (!mongoose.Types.ObjectId.isValid(payload.userId)) {
       throw new Error("Invalid user ID format");
@@ -794,11 +717,7 @@ export const initiateBooking = async (
     // Clean up any existing abandoned booking for this exact same slot by this user
     // This allows them to "try again" immediately without hitting "Coach/Venue is not available"
     const startOfDay = new Date(
-      Date.UTC(
-        payload.date.getUTCFullYear(),
-        payload.date.getUTCMonth(),
-        payload.date.getUTCDate(),
-      ),
+      Date.UTC(payload.date.getUTCFullYear(), payload.date.getUTCMonth(), payload.date.getUTCDate())
     );
 
     const cleanupQuery: any = {
@@ -817,7 +736,7 @@ export const initiateBooking = async (
     const deletedAbandoned = await Booking.deleteMany(cleanupQuery);
     if (deletedAbandoned.deletedCount > 0) {
       log.info(
-        `[initiateBooking] Cleaned up ${deletedAbandoned.deletedCount} abandoned booking(s) for user ${user._id} attempting to re-book`,
+        `[initiateBooking] Cleaned up ${deletedAbandoned.deletedCount} abandoned booking(s) for user ${user._id} attempting to re-book`
       );
     }
 
@@ -829,7 +748,7 @@ export const initiateBooking = async (
     if (payload.dependentId) {
       log.info(
         "[initiateBooking] STEP 2: validating dependentId =",
-        JSON.stringify(payload.dependentId),
+        JSON.stringify(payload.dependentId)
       );
       if (
         payload.dependentId === "undefined" ||
@@ -861,7 +780,7 @@ export const initiateBooking = async (
         "participantId type:",
         typeof participantId,
         "value:",
-        participantId?.toString(),
+        participantId?.toString()
       );
 
       // Validate minimum age (must be at least 3 years old)
@@ -871,26 +790,21 @@ export const initiateBooking = async (
 
       // Validate maximum age for dependents (must be under 18)
       if (participantAge >= 18) {
-        throw new Error(
-          "Dependents must be under 18 years old. Please book as an adult.",
-        );
+        throw new Error("Dependents must be under 18 years old. Please book as an adult.");
       }
     } else {
       // Booking is for the parent/user themselves
       participantId = user._id;
       log.info(
         "[initiateBooking] STEP 2: no dependent, participantId =",
-        participantId?.toString(),
+        participantId?.toString()
       );
     }
 
     let venue: VenueDocument | null = null;
 
     if (payload.venueId) {
-      log.info(
-        "[initiateBooking] STEP 3: validating venueId =",
-        JSON.stringify(payload.venueId),
-      );
+      log.info("[initiateBooking] STEP 3: validating venueId =", JSON.stringify(payload.venueId));
       if (!mongoose.Types.ObjectId.isValid(payload.venueId)) {
         throw new Error("Invalid venue ID format");
       }
@@ -904,14 +818,14 @@ export const initiateBooking = async (
         "ownerId raw =",
         JSON.stringify(venue.ownerId),
         "ownerId type:",
-        typeof venue.ownerId,
+        typeof venue.ownerId
       );
 
       const venueAvailable = await isSlotAvailable(
         payload.venueId,
         payload.date,
         normalizedStartTime,
-        normalizedEndTime,
+        normalizedEndTime
       );
 
       if (!venueAvailable) {
@@ -928,14 +842,11 @@ export const initiateBooking = async (
           payload.date,
           normalizedStartTime,
           normalizedEndTime,
-          venue.openingHours,
+          venue.openingHours
         );
 
         if (!hoursCheck.isValid) {
-          throw new Error(
-            hoursCheck.message ||
-              "Booking time is outside venue operating hours",
-          );
+          throw new Error(hoursCheck.message || "Booking time is outside venue operating hours");
         }
       }
     }
@@ -956,9 +867,7 @@ export const initiateBooking = async (
     if (venue) {
       const sportPrice = venue.sportPricing?.[payload.sport];
       const basePrice =
-        typeof sportPrice === "number" && sportPrice >= 0
-          ? sportPrice
-          : venue.pricePerHour;
+        typeof sportPrice === "number" && sportPrice >= 0 ? sportPrice : venue.pricePerHour;
       if (basePrice <= 0) {
         throw new Error("Venue pricing is not configured for this sport");
       }
@@ -986,7 +895,7 @@ export const initiateBooking = async (
         "userId raw =",
         JSON.stringify((coach as any).userId),
         "serviceMode:",
-        coach.serviceMode,
+        coach.serviceMode
       );
 
       if (COACH_SUBSCRIPTIONS_ENFORCE_BOOKING) {
@@ -1012,7 +921,7 @@ export const initiateBooking = async (
           throw new Error(
             payload.dependentId
               ? "No active coach subscription found for this dependent"
-              : "No active coach subscription found for your account",
+              : "No active coach subscription found for your account"
           );
         }
 
@@ -1026,7 +935,7 @@ export const initiateBooking = async (
           throw new Error(
             payload.dependentId
               ? "No active coach subscription found for this dependent"
-              : "No active coach subscription found for your account",
+              : "No active coach subscription found for your account"
           );
         }
       }
@@ -1046,22 +955,18 @@ export const initiateBooking = async (
 
         const distanceKm = calculateDistanceKm(
           coachBaseCoordinates,
-          payload.playerLocation.coordinates,
+          payload.playerLocation.coordinates
         );
         const serviceRadiusKm = coach.serviceRadiusKm || 10;
 
         if (distanceKm > serviceRadiusKm) {
           throw new Error(
-            `Coach is out of range. This coach serves up to ${serviceRadiusKm} km from their base location.`,
+            `Coach is out of range. This coach serves up to ${serviceRadiusKm} km from their base location.`
           );
         }
       }
 
-      if (
-        venue &&
-        coach.serviceMode !== "OWN_VENUE" &&
-        !venue.allowExternalCoaches
-      ) {
+      if (venue && coach.serviceMode !== "OWN_VENUE" && !venue.allowExternalCoaches) {
         throw new Error("This venue does not allow external coaches");
       }
 
@@ -1071,7 +976,7 @@ export const initiateBooking = async (
         payload.date,
         normalizedStartTime,
         normalizedEndTime,
-        payload.sport,
+        payload.sport
       );
 
       if (!coachAvailable) {
@@ -1112,7 +1017,7 @@ export const initiateBooking = async (
       // confirm the session). Better to decline than to sell an unpayable slot.
       if (!academy.ownerId) {
         throw new Error(
-          "This academy is not yet set up to accept bookings. Please contact support.",
+          "This academy is not yet set up to accept bookings. Please contact support."
         );
       }
       academyOwnerIdStr = academy.ownerId.toString();
@@ -1128,13 +1033,13 @@ export const initiateBooking = async (
           payload.date,
           normalizedStartTime,
           normalizedEndTime,
-          academy.operatingHours,
+          academy.operatingHours
         );
 
         if (!hoursCheck.isValid) {
           throw new Error(
             (hoursCheck.message || "").replace(/^Venue/, "Academy") ||
-              "Booking time is outside academy operating hours",
+              "Booking time is outside academy operating hours"
           );
         }
       }
@@ -1146,13 +1051,11 @@ export const initiateBooking = async (
         payload.date,
         normalizedStartTime,
         normalizedEndTime,
-        academy.maxBatchSize,
+        academy.maxBatchSize
       );
 
       if (!academyAvailable) {
-        throw new Error(
-          "This academy batch is already full for the selected time slot",
-        );
+        throw new Error("This academy batch is already full for the selected time slot");
       }
 
       // sessionRatePerHour is stored in paise — convert to rupees
@@ -1171,15 +1074,10 @@ export const initiateBooking = async (
 
     // Validate and apply promo code if provided
     if (payload.promoCode) {
-      const promoValidation = await validatePromoCode(
-        payload.promoCode,
-        payload.userId,
-        subtotal,
-        {
-          hasCoach: Boolean(payload.coachId),
-          context: "BOOKING",
-        },
-      );
+      const promoValidation = await validatePromoCode(payload.promoCode, payload.userId, subtotal, {
+        hasCoach: Boolean(payload.coachId),
+        context: "BOOKING",
+      });
 
       if (!promoValidation.isValid) {
         throw new Error(promoValidation.message || "Invalid promo code");
@@ -1189,10 +1087,7 @@ export const initiateBooking = async (
       validPromoCode = payload.promoCode.toUpperCase();
     }
 
-    const totalAmount = Math.max(
-      0,
-      subtotal + serviceFee + taxAmount - discountAmount,
-    );
+    const totalAmount = Math.max(0, subtotal + serviceFee + taxAmount - discountAmount);
 
     const checkInCode = await generateUniqueCheckInCode();
 
@@ -1213,15 +1108,11 @@ export const initiateBooking = async (
         "[initiateBooking] STEP 5 splits input: venueOwnerIdStr =",
         JSON.stringify(venueOwnerIdStr),
         "venueOwnerIdValid:",
-        venueOwnerIdStr
-          ? mongoose.Types.ObjectId.isValid(venueOwnerIdStr)
-          : false,
+        venueOwnerIdStr ? mongoose.Types.ObjectId.isValid(venueOwnerIdStr) : false,
         "coachUserIdStr =",
         JSON.stringify(coachUserIdStr),
         "coachUserIdValid:",
-        coachUserIdStr
-          ? mongoose.Types.ObjectId.isValid(coachUserIdStr)
-          : false,
+        coachUserIdStr ? mongoose.Types.ObjectId.isValid(coachUserIdStr) : false,
         "payerUserId =",
         JSON.stringify(payload.userId),
         "venuePrice =",
@@ -1229,7 +1120,7 @@ export const initiateBooking = async (
         "coachPrice =",
         coachPrice,
         "totalAmount =",
-        totalAmount,
+        totalAmount
       );
 
       const calculatedSplits = calculateSplitAmounts(
@@ -1240,13 +1131,10 @@ export const initiateBooking = async (
         payload.userId,
         totalAmount,
         academyPrice > 0 ? academyPrice : undefined,
-        academyOwnerIdStr,
+        academyOwnerIdStr
       );
 
-      log.info(
-        "[initiateBooking] STEP 5 calculatedSplits:",
-        JSON.stringify(calculatedSplits),
-      );
+      log.info("[initiateBooking] STEP 5 calculatedSplits:", JSON.stringify(calculatedSplits));
 
       singlePaymentSplits = calculatedSplits
         .filter((p) => p.userId && mongoose.Types.ObjectId.isValid(p.userId))
@@ -1259,7 +1147,7 @@ export const initiateBooking = async (
 
       log.info(
         "[initiateBooking] STEP 5 singlePaymentSplits after filter:",
-        JSON.stringify(singlePaymentSplits),
+        JSON.stringify(singlePaymentSplits)
       );
     }
 
@@ -1303,18 +1191,14 @@ export const initiateBooking = async (
         venueId: bookingPayload.venueId,
         coachId: bookingPayload.coachId,
         organizerId: bookingPayload.organizerId,
-        organizerIdValid: mongoose.Types.ObjectId.isValid(
-          bookingPayload.organizerId,
-        ),
+        organizerIdValid: mongoose.Types.ObjectId.isValid(bookingPayload.organizerId),
         participantId: bookingPayload.participantId?.toString(),
         participantIdValid: bookingPayload.participantId
-          ? mongoose.Types.ObjectId.isValid(
-              bookingPayload.participantId.toString(),
-            )
+          ? mongoose.Types.ObjectId.isValid(bookingPayload.participantId.toString())
           : false,
         paymentsCount: bookingPayload.payments?.length,
         payments: bookingPayload.payments,
-      }),
+      })
     );
 
     const booking =
@@ -1335,9 +1219,7 @@ export const initiateBooking = async (
             totalAmount: bookingPayload.totalAmount,
             serviceFee: bookingPayload.serviceFee,
             taxAmount: bookingPayload.taxAmount,
-            ...(bookingPayload.promoCode
-              ? { promoCode: bookingPayload.promoCode }
-              : {}),
+            ...(bookingPayload.promoCode ? { promoCode: bookingPayload.promoCode } : {}),
             ...(bookingPayload.discountAmount
               ? { discountAmount: bookingPayload.discountAmount }
               : {}),
@@ -1350,13 +1232,9 @@ export const initiateBooking = async (
             ...(bookingPayload.participantAge !== undefined
               ? { participantAge: bookingPayload.participantAge }
               : {}),
-            organizerId: new mongoose.Types.ObjectId(
-              bookingPayload.organizerId,
-            ),
+            organizerId: new mongoose.Types.ObjectId(bookingPayload.organizerId),
             payments: bookingPayload.payments || [],
-            ...(bookingPayload.delivery
-              ? { delivery: bookingPayload.delivery }
-              : {}),
+            ...(bookingPayload.delivery ? { delivery: bookingPayload.delivery } : {}),
           });
 
     // Record promo code usage after successful booking
@@ -1366,7 +1244,7 @@ export const initiateBooking = async (
         payload.userId,
         booking._id.toString(),
         null,
-        discountAmount,
+        discountAmount
       );
     }
 
@@ -1400,7 +1278,7 @@ export const initiateBooking = async (
   } catch (error) {
     log.error("[initiateBooking] error:", error);
     throw new Error(
-      `Failed to initiate booking: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to initiate booking: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 };
@@ -1476,7 +1354,7 @@ const createdAtOf = (row: UserBookingRow): number => {
 export const getUserBookings = async (
   userId: string,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   bookings: UserBookingRow[];
   total: number;
@@ -1522,7 +1400,7 @@ export const getUserBookings = async (
     bookings
       .map((b) => b.expert?.legacySessionId)
       .filter((id): id is string => Boolean(id))
-      .map(String),
+      .map(String)
   );
 
   const projected = sessions
@@ -1530,13 +1408,11 @@ export const getUserBookings = async (
     .map((session) =>
       projectExpertSessionAsBooking(
         session.toObject() as unknown as ExpertSessionForProjection,
-        expertDisplayFields(session.expertId),
-      ),
+        expertDisplayFields(session.expertId)
+      )
     );
 
-  const merged = [...bookings, ...projected].sort(
-    (a, b) => createdAtOf(b) - createdAtOf(a),
-  );
+  const merged = [...bookings, ...projected].sort((a, b) => createdAtOf(b) - createdAtOf(a));
 
   const total = merged.length;
   const start = (page - 1) * limit;
@@ -1555,7 +1431,7 @@ export const getUserBookings = async (
 export const getVenueBookings = async (
   venueId: string,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   bookings: BookingDocument[];
   total: number;
@@ -1593,13 +1469,13 @@ export const getVenueBookings = async (
  */
 export const getVenueBookingsForDate = async (
   venueId: string,
-  date: Date,
+  date: Date
 ): Promise<Array<{ startTime: string; endTime: string }>> => {
   // UTC accessors — see toDayRange above / combineDateAndTimeIST for why:
   // `date` is UTC-midnight-anchored and Date#setHours reads/writes in the
   // server process's local timezone.
   const startOfDay = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
   );
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
 
@@ -1610,15 +1486,11 @@ export const getVenueBookingsForDate = async (
       $lte: endOfDay,
     },
     status: {
-      $in: [
-        "AWAITING_PAYMENT",
-        "AWAITING_PROVIDER",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-      ],
+      $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "PENDING_INVITES", "CONFIRMED", "IN_PROGRESS"],
     },
-  }).select("startTime endTime").lean();
+  })
+    .select("startTime endTime")
+    .lean();
 };
 
 /**
@@ -1627,7 +1499,7 @@ export const getVenueBookingsForDate = async (
 export const getVenueListerBookings = async (
   ownerId: string,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   bookings: any[];
   total: number;
@@ -1683,7 +1555,7 @@ export const getVenueListerBookings = async (
 export const getCoachBookings = async (
   userId: string,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   bookings: any[];
   total: number;
@@ -1739,16 +1611,12 @@ const getBookingParticipantIds = (booking: BookingDocument): string[] => {
     .filter((participant) => participant.status === "ACCEPTED")
     .map((participant) => participant.userId.toString());
 
-  return Array.from(
-    new Set([booking.organizerId.toString(), ...acceptedParticipants]),
-  );
+  return Array.from(new Set([booking.organizerId.toString(), ...acceptedParticipants]));
 };
 
 const getBookingLifecycleRecipients = async (
-  booking: BookingDocument,
-): Promise<
-  Array<{ name: string; email: string; role: "Player" | "PROVIDER" }>
-> => {
+  booking: BookingDocument
+): Promise<Array<{ name: string; email: string; role: "Player" | "PROVIDER" }>> => {
   const recipients: Array<{
     name: string;
     email: string;
@@ -1768,8 +1636,7 @@ const getBookingLifecycleRecipients = async (
     const coach = await Coach.findById(booking.coachId)
       .populate("userId", "name email")
       .select("userId");
-    const coachUser = coach?.userId as
-      { name?: string; email?: string } | undefined;
+    const coachUser = coach?.userId as { name?: string; email?: string } | undefined;
     if (coachUser?.email) {
       recipients.push({
         name: coachUser.name || "Coach",
@@ -1783,8 +1650,7 @@ const getBookingLifecycleRecipients = async (
     const venue = await Venue.findById(booking.venueId)
       .populate("ownerId", "name email")
       .select("ownerId");
-    const venueOwner = venue?.ownerId as
-      { name?: string; email?: string } | undefined;
+    const venueOwner = venue?.ownerId as { name?: string; email?: string } | undefined;
     if (venueOwner?.email) {
       recipients.push({
         name: venueOwner.name || "Venue Owner",
@@ -1812,11 +1678,10 @@ const sendBookingLifecycleEmails = async (
     refundAmount?: number;
     refundPercentage?: number;
     cancellationReason?: string;
-  } = {},
+  } = {}
 ): Promise<void> => {
   const recipients = await getBookingLifecycleRecipients(booking);
-  const venueName =
-    (await Venue.findById(booking.venueId).select("name"))?.name || "Venue";
+  const venueName = (await Venue.findById(booking.venueId).select("name"))?.name || "Venue";
 
   await Promise.all(
     recipients.map(async (recipient) => {
@@ -1832,32 +1697,27 @@ const sendBookingLifecycleEmails = async (
           totalAmount: booking.totalAmount,
           state,
           recipientRole: recipient.role,
-          ...(booking.checkInCode &&
-          state === "CONFIRMED" &&
-          recipient.role === "Player"
+          ...(booking.checkInCode && state === "CONFIRMED" && recipient.role === "Player"
             ? { checkInCode: booking.checkInCode }
             : {}),
           ...extra,
         });
       } catch (error) {
-        log.error(
-          `Failed to send booking lifecycle email to ${recipient.email}:`,
-          error,
-        );
+        log.error(`Failed to send booking lifecycle email to ${recipient.email}:`, error);
       }
-    }),
+    })
   );
 };
 
 const buildRefundTargets = (
   booking: BookingDocument,
-  refundPercentage: number,
+  refundPercentage: number
 ): Array<{ userId: string; amountPaise: number }> => {
   const percent = Math.max(0, Math.min(100, refundPercentage));
 
   if (booking.payments && booking.payments.length > 0) {
     const playerPayments = booking.payments.filter(
-      (payment) => payment.userType === "Player" && payment.status === "PAID",
+      (payment) => payment.userType === "Player" && payment.status === "PAID"
     );
 
     if (playerPayments.length > 0) {
@@ -1879,13 +1739,13 @@ const buildRefundTargets = (
 const initiateBookingRefunds = async (
   booking: BookingDocument,
   refundPercentage: number,
-  reason: string,
+  reason: string
 ): Promise<{
   refundStatus: "PENDING" | "PROCESSED" | "REJECTED";
   refundAmount: number;
 }> => {
   const targets = buildRefundTargets(booking, refundPercentage).filter(
-    (target) => target.amountPaise >= 100,
+    (target) => target.amountPaise >= 100
   );
 
   if (targets.length === 0) {
@@ -1956,7 +1816,7 @@ const initiateBookingRefunds = async (
       totalRefundPaise += target.amountPaise;
       log.error(
         `[initiateBookingRefunds] PhonePe call failed for booking ${booking._id}, will retry:`,
-        err,
+        err
       );
     }
   }
@@ -1968,7 +1828,7 @@ const initiateBookingRefunds = async (
       refundAmount:
         skippedRefundPaise > 0
           ? skippedRefundPaise / 100
-          : booking.refundAmount ?? Math.round((booking.totalAmount * refundPercentage) / 100),
+          : (booking.refundAmount ?? Math.round((booking.totalAmount * refundPercentage) / 100)),
     };
   }
 
@@ -1981,7 +1841,7 @@ const initiateBookingRefunds = async (
 export const processBookingRefund = async (
   bookingId: string,
   refundPercentage: number,
-  reason: string,
+  reason: string
 ): Promise<{
   booking: BookingDocument;
   refundAmount: number;
@@ -2008,7 +1868,9 @@ export const processBookingRefund = async (
       refundState: "INITIATED",
     });
     if (inFlight) {
-      throw new Error("Refund already submitted to PhonePe and is awaiting confirmation. No further action needed.");
+      throw new Error(
+        "Refund already submitted to PhonePe and is awaiting confirmation. No further action needed."
+      );
     }
   }
 
@@ -2067,7 +1929,7 @@ export const processBookingRefund = async (
 };
 
 export const getBookingPhonePeRefundStatus = async (
-  bookingId: string,
+  bookingId: string
 ): Promise<{
   bookingId: string;
   refundStatus: "PENDING" | "PROCESSED" | "REJECTED";
@@ -2080,9 +1942,7 @@ export const getBookingPhonePeRefundStatus = async (
     amount: number;
   }>;
 }> => {
-  const booking = await Booking.findById(bookingId).select(
-    "refundStatus refundAmount",
-  );
+  const booking = await Booking.findById(bookingId).select("refundStatus refundAmount");
 
   if (!booking) {
     throw new Error("Booking not found");
@@ -2119,12 +1979,9 @@ export const getBookingPhonePeRefundStatus = async (
     }
 
     const refundStatus = await getPhonePeRefundStatus(merchantRefundId);
-    const latestState =
-      refundStatus.state || transaction.refundState || "PENDING";
+    const latestState = refundStatus.state || transaction.refundState || "PENDING";
     const latestAmount =
-      typeof refundStatus.amount === "number"
-        ? refundStatus.amount
-        : transaction.refundAmount || 0;
+      typeof refundStatus.amount === "number" ? refundStatus.amount : transaction.refundAmount || 0;
     const refundId = refundStatus.refundId ?? transaction.refundId;
 
     if (refundId) {
@@ -2185,7 +2042,7 @@ export const getBookingPhonePeRefundStatus = async (
 export const cancelBooking = async (
   bookingId: string,
   requesterId: string,
-  cancellationReason?: string,
+  cancellationReason?: string
 ): Promise<{
   booking: BookingDocument | null;
   refundAmount: number;
@@ -2197,13 +2054,7 @@ export const cancelBooking = async (
     _id: bookingId,
     organizerId: requesterId,
     status: {
-      $in: [
-        "AWAITING_PAYMENT",
-        "AWAITING_PROVIDER",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-      ],
+      $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "PENDING_INVITES", "CONFIRMED", "IN_PROGRESS"],
     },
   });
 
@@ -2212,14 +2063,10 @@ export const cancelBooking = async (
   }
 
   // Calculate booking start time (UTC-safe — see combineDateAndTimeIST)
-  const bookingStartTime = combineDateAndTimeIST(
-    booking.date,
-    booking.startTime,
-  );
+  const bookingStartTime = combineDateAndTimeIST(booking.date, booking.startTime);
 
   const now = new Date();
-  const hoursUntilBooking =
-    (bookingStartTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+  const hoursUntilBooking = (bookingStartTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
   // Determine refund percentage based on cancellation policy
   let refundPercentage = 0;
@@ -2231,9 +2078,7 @@ export const cancelBooking = async (
     refundPercentage = 0; // No refund
   }
 
-  const refundAmount = Math.round(
-    (booking.totalAmount * refundPercentage) / 100,
-  );
+  const refundAmount = Math.round((booking.totalAmount * refundPercentage) / 100);
 
   // Update booking status
   const updatedBooking = await Booking.findOneAndUpdate(
@@ -2261,7 +2106,7 @@ export const cancelBooking = async (
         // after the gateway responds; the catch block sets REJECTED on failure.
       },
     },
-    { new: true },
+    { new: true }
   );
 
   if (updatedBooking) {
@@ -2318,10 +2163,7 @@ export const cancelBooking = async (
             refundPercentage,
           },
         }).catch((err: Error) =>
-          log.error(
-            `Failed to send booking cancellation notification to ${participantId}:`,
-            err,
-          ),
+          log.error(`Failed to send booking cancellation notification to ${participantId}:`, err)
         );
 
         NotificationService.send({
@@ -2337,18 +2179,12 @@ export const cancelBooking = async (
             endTime: updatedBooking.endTime,
           },
         }).catch(() => {});
-
       }
     }
 
     // Cancel all pending reminders for this booking
-    ScheduledNotificationService.cancelBookingReminders(
-      updatedBooking._id,
-    ).catch((err: Error) =>
-      log.error(
-        `Failed to cancel booking reminders for ${updatedBooking._id}:`,
-        err,
-      ),
+    ScheduledNotificationService.cancelBookingReminders(updatedBooking._id).catch((err: Error) =>
+      log.error(`Failed to cancel booking reminders for ${updatedBooking._id}:`, err)
     );
 
     if (refundAmount > 0) {
@@ -2356,7 +2192,7 @@ export const cancelBooking = async (
         const refundResult = await initiateBookingRefunds(
           updatedBooking,
           refundPercentage,
-          cancellationReason || "Cancelled by user",
+          cancellationReason || "Cancelled by user"
         );
         updatedBooking.refundStatus = refundResult.refundStatus;
         updatedBooking.refundAmount = refundResult.refundAmount;
@@ -2375,13 +2211,11 @@ export const cancelBooking = async (
             refundPercentage,
             cancellationReason: cancellationReason || "Cancelled by user",
           },
-        }).catch((err: Error) =>
-          log.error(`Failed to send refund notification:`, err),
-        );
+        }).catch((err: Error) => log.error(`Failed to send refund notification:`, err));
       } catch (refundError) {
         log.error(
           `Failed to initiate refund for booking ${updatedBooking._id.toString()}:`,
-          refundError,
+          refundError
         );
         // Keep as PENDING so the retry job can attempt it — never auto-reject.
         updatedBooking.refundStatus = "PENDING";
@@ -2409,7 +2243,7 @@ export const cancelBooking = async (
 export const checkInBookingByCode = async (
   checkInCode: string,
   requesterUserId: string,
-  requesterRole: string,
+  requesterRole: string
 ): Promise<BookingDocument> => {
   const normalizedCode = checkInCode.trim().toUpperCase();
 
@@ -2417,9 +2251,7 @@ export const checkInBookingByCode = async (
     throw new Error("Check-in code must be 8 characters");
   }
 
-  const booking = await Booking.findOne({ checkInCode: normalizedCode }).select(
-    "+checkInCode",
-  );
+  const booking = await Booking.findOne({ checkInCode: normalizedCode }).select("+checkInCode");
 
   if (!booking) {
     throw new Error("Invalid check-in code");
@@ -2457,38 +2289,27 @@ export const checkInBookingByCode = async (
   const startHour = timeParts[0];
   const startMin = timeParts[1];
 
-  if (
-    startHour === undefined ||
-    startMin === undefined ||
-    isNaN(startHour) ||
-    isNaN(startMin)
-  ) {
+  if (startHour === undefined || startMin === undefined || isNaN(startHour) || isNaN(startMin)) {
     throw new Error("Invalid booking time format");
   }
 
   // UTC-safe — see combineDateAndTimeIST
-  const bookingDateTime = combineDateAndTimeIST(
-    booking.date,
-    booking.startTime,
-  );
+  const bookingDateTime = combineDateAndTimeIST(booking.date, booking.startTime);
 
   // Check-in window: 15 minutes before start time
   const checkInWindow = new Date(bookingDateTime.getTime() - 15 * 60 * 1000);
   if (now < checkInWindow) {
     throw new Error(
-      "Check-in not yet available. You can check in 15 minutes before the booking starts.",
+      "Check-in not yet available. You can check in 15 minutes before the booking starts."
     );
   }
 
   // Check-in code expiration: exactly at booking end time
-  const bookingEndDateTime = combineDateAndTimeIST(
-    booking.date,
-    booking.endTime,
-  );
+  const bookingEndDateTime = combineDateAndTimeIST(booking.date, booking.endTime);
 
   if (now > bookingEndDateTime) {
     throw new Error(
-      "Check-in code has expired. Check-in is allowed only till the booking end time.",
+      "Check-in code has expired. Check-in is allowed only till the booking end time."
     );
   }
 
@@ -2500,7 +2321,7 @@ export const checkInBookingByCode = async (
     {
       $set: { status: "IN_PROGRESS" },
     },
-    { new: true },
+    { new: true }
   );
 
   if (!updatedBooking) {
@@ -2517,9 +2338,7 @@ export const checkInBookingByCode = async (
     summary: "Checked in with the booking's check-in code",
     metadata: {
       requesterRole,
-      minutesFromScheduledStart: Math.round(
-        (now.getTime() - bookingDateTime.getTime()) / 60000,
-      ),
+      minutesFromScheduledStart: Math.round((now.getTime() - bookingDateTime.getTime()) / 60000),
     },
   });
 
@@ -2549,7 +2368,7 @@ const checkCoachAvailabilityForBooking = async (
   date: Date,
   startTime: string,
   endTime: string,
-  sport?: string,
+  sport?: string
 ): Promise<boolean> => {
   const coach = await Coach.findById(coachId);
   if (!coach) return false;
@@ -2559,24 +2378,16 @@ const checkCoachAvailabilityForBooking = async (
   // Resolve slots: prefer sport-specific availability, fall back to generic availability.
   // availabilityBySport is stored as a Mongoose Map — always use Map API.
   const availabilityBySport = (coach as any).availabilityBySport as
-    | Map<
-        string,
-        Array<{ dayOfWeek: number; startTime: string; endTime: string }>
-      >
-    | undefined;
+    Map<string, Array<{ dayOfWeek: number; startTime: string; endTime: string }>> | undefined;
 
   const sportSlots =
-    sport && availabilityBySport instanceof Map
-      ? availabilityBySport.get(sport)
-      : undefined;
+    sport && availabilityBySport instanceof Map ? availabilityBySport.get(sport) : undefined;
 
   const sourceSlots: Array<{
     dayOfWeek: number;
     startTime: string;
     endTime: string;
-  }> =
-    (sportSlots && sportSlots.length > 0 ? sportSlots : coach.availability) ||
-    [];
+  }> = (sportSlots && sportSlots.length > 0 ? sportSlots : coach.availability) || [];
 
   // Filter all slots for this day (a coach may have multiple windows per day).
   const daySlots = sourceSlots.filter((a) => a.dayOfWeek === dayOfWeek);
@@ -2593,8 +2404,7 @@ const checkCoachAvailabilityForBooking = async (
 
   // The requested time must fit within at least one of the day's availability windows.
   const isWithinAnySlot = daySlots.some(
-    (slot) =>
-      normStart >= norm(slot.startTime) && normEnd <= norm(slot.endTime),
+    (slot) => normStart >= norm(slot.startTime) && normEnd <= norm(slot.endTime)
   );
   if (!isWithinAnySlot) return false;
 
@@ -2607,13 +2417,7 @@ const checkCoachAvailabilityForBooking = async (
       $lt: dayEnd,
     },
     status: {
-      $in: [
-        "AWAITING_PAYMENT",
-        "AWAITING_PROVIDER",
-        "PENDING_INVITES",
-        "CONFIRMED",
-        "IN_PROGRESS",
-      ],
+      $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "PENDING_INVITES", "CONFIRMED", "IN_PROGRESS"],
     },
     $or: [
       { startTime: { $lte: startTime }, endTime: { $gt: startTime } },
@@ -2629,7 +2433,7 @@ const checkCoachAvailabilityForBooking = async (
  */
 export const confirmMockPaymentSuccess = async (
   bookingId: string,
-  userId: string,
+  userId: string
 ): Promise<BookingDocument> => {
   const booking = await Booking.findById(bookingId).select("+checkInCode");
 
@@ -2654,7 +2458,7 @@ export const confirmMockPaymentSuccess = async (
     },
     {
       $set: { paymentConfirmedAt: new Date() },
-    },
+    }
   );
 
   const emailClaimedBooking = await Booking.findOneAndUpdate(
@@ -2667,20 +2471,17 @@ export const confirmMockPaymentSuccess = async (
     {
       $set: { confirmationEmailSentAt: new Date() },
     },
-    { new: true },
+    { new: true }
   ).select("+checkInCode");
 
   if (emailClaimedBooking) {
     await sendBookingLifecycleEmails(
       emailClaimedBooking,
-      emailClaimedBooking.status === "CONFIRMED"
-        ? "CONFIRMED"
-        : "AWAITING_PROVIDER",
+      emailClaimedBooking.status === "CONFIRMED" ? "CONFIRMED" : "AWAITING_PROVIDER"
     );
   }
 
-  const updatedBooking =
-    await Booking.findById(bookingId).select("+checkInCode");
+  const updatedBooking = await Booking.findById(bookingId).select("+checkInCode");
   if (!updatedBooking) {
     throw new Error("Booking not found");
   }
@@ -2702,10 +2503,7 @@ export const confirmMockPaymentSuccess = async (
       totalAmount: updatedBooking.totalAmount,
     },
   }).catch((err: Error) =>
-    log.error(
-      `Failed to send payment confirmation notification to ${userId}:`,
-      err,
-    ),
+    log.error(`Failed to send payment confirmation notification to ${userId}:`, err)
   );
   if (updatedBooking.status !== "CONFIRMED") {
     NotificationService.send({
@@ -2740,9 +2538,7 @@ export const confirmMockPaymentSuccess = async (
   }).catch(() => {});
 
   // Create booking reminders
-  const user = await User.findById(userId).select(
-    "reminderPreferences notificationPreferences",
-  );
+  const user = await User.findById(userId).select("reminderPreferences notificationPreferences");
   if (user && user.reminderPreferences?.bookingReminders?.enabled) {
     ScheduledNotificationService.createBookingReminders(
       {
@@ -2760,18 +2556,14 @@ export const confirmMockPaymentSuccess = async (
         email: user.notificationPreferences?.email?.bookingReminders ?? true,
         push: user.notificationPreferences?.push?.bookingReminders ?? true,
         inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
-      },
-    ).catch((err: Error) =>
-      log.error(`Failed to create booking reminders for ${userId}:`, err),
-    );
+      }
+    ).catch((err: Error) => log.error(`Failed to create booking reminders for ${userId}:`, err));
   }
 
   return updatedBooking;
 };
 
-const sendBookingPaymentConfirmation = async (
-  bookingId: string,
-): Promise<void> => {
+const sendBookingPaymentConfirmation = async (bookingId: string): Promise<void> => {
   const booking = await Booking.findById(bookingId).select("+checkInCode");
 
   if (!booking) {
@@ -2786,15 +2578,13 @@ const sendBookingPaymentConfirmation = async (
     {
       $set: { confirmationEmailSentAt: new Date() },
     },
-    { new: true },
+    { new: true }
   ).select("+checkInCode");
 
   if (emailClaimedBooking) {
     await sendBookingLifecycleEmails(
       emailClaimedBooking,
-      emailClaimedBooking.status === "CONFIRMED"
-        ? "CONFIRMED"
-        : "AWAITING_PROVIDER",
+      emailClaimedBooking.status === "CONFIRMED" ? "CONFIRMED" : "AWAITING_PROVIDER"
     );
   }
 
@@ -2816,8 +2606,8 @@ const sendBookingPaymentConfirmation = async (
   }).catch((err: Error) =>
     log.error(
       `Failed to send payment confirmation notification to ${booking.userId.toString()}:`,
-      err,
-    ),
+      err
+    )
   );
 
   if (booking.status !== "CONFIRMED") {
@@ -2853,7 +2643,7 @@ const sendBookingPaymentConfirmation = async (
   }).catch(() => {});
 
   const user = await User.findById(booking.userId).select(
-    "reminderPreferences notificationPreferences",
+    "reminderPreferences notificationPreferences"
   );
   if (user && user.reminderPreferences?.bookingReminders?.enabled) {
     ScheduledNotificationService.createBookingReminders(
@@ -2872,12 +2662,9 @@ const sendBookingPaymentConfirmation = async (
         email: user.notificationPreferences?.email?.bookingReminders ?? true,
         push: user.notificationPreferences?.push?.bookingReminders ?? true,
         inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
-      },
+      }
     ).catch((err: Error) =>
-      log.error(
-        `Failed to create booking reminders for ${booking.userId.toString()}:`,
-        err,
-      ),
+      log.error(`Failed to create booking reminders for ${booking.userId.toString()}:`, err)
     );
   }
 };
@@ -2899,7 +2686,7 @@ export const updatePaymentStatus = async (
     channel?: BookingEventChannel;
     actorUserId?: string;
     metadata?: Record<string, unknown>;
-  },
+  }
 ): Promise<BookingDocument> => {
   const bookingQuery = Booking.findById(bookingId);
   if (session) {
@@ -2922,9 +2709,7 @@ export const updatePaymentStatus = async (
 
       // Use toObject() to safely spread Mongoose subdocuments
       const plain =
-        typeof (payment as any).toObject === "function"
-          ? (payment as any).toObject()
-          : payment;
+        typeof (payment as any).toObject === "function" ? (payment as any).toObject() : payment;
       return {
         ...plain,
         status,
@@ -2962,9 +2747,7 @@ export const updatePaymentStatus = async (
     await booking.save();
   }
 
-  const payerShare = booking.payments?.find(
-    (payment) => payment.userId.toString() === payerUserId,
-  );
+  const payerShare = booking.payments?.find((payment) => payment.userId.toString() === payerUserId);
   const eventActorType = context?.actorType ?? "GATEWAY";
   const eventChannel = context?.channel ?? "WEBHOOK";
 
@@ -3003,8 +2786,7 @@ export const updatePaymentStatus = async (
       actorUserId: context?.actorUserId ?? payerUserId,
       channel: eventChannel,
       amountPaise: toPaise(payerShare?.amount ?? booking.totalAmount),
-      summary:
-        "Payment failed — booking document hard-deleted by updatePaymentStatus",
+      summary: "Payment failed — booking document hard-deleted by updatePaymentStatus",
       metadata: {
         payerUserId,
         bookingDeleted: true,
@@ -3037,15 +2819,10 @@ export const updatePaymentStatus = async (
         date: booking.date.toISOString(),
         startTime: booking.startTime,
         endTime: booking.endTime,
-        amount:
-          booking.payments.find((p) => p.userId.toString() === payerUserId)
-            ?.amount || 0,
+        amount: booking.payments.find((p) => p.userId.toString() === payerUserId)?.amount || 0,
       },
     }).catch((err: Error) =>
-      log.error(
-        `Failed to send payment failed notification to ${payerUserId}:`,
-        err,
-      ),
+      log.error(`Failed to send payment failed notification to ${payerUserId}:`, err)
     );
   }
 
@@ -3065,7 +2842,7 @@ export interface InitiateGroupBookingPayload extends InitiateBookingPayload {
  * Initiate a group booking with friends
  */
 export const initiateGroupBooking = async (
-  payload: InitiateGroupBookingPayload,
+  payload: InitiateGroupBookingPayload
 ): Promise<InitiateBookingResponse> => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -3078,10 +2855,7 @@ export const initiateGroupBooking = async (
 
     // Verify all invitees are accepted friends
     for (const friendId of payload.invitedFriendIds) {
-      const areFriends = await friendService.areFriends(
-        payload.userId,
-        friendId,
-      );
+      const areFriends = await friendService.areFriends(payload.userId, friendId);
       if (!areFriends) {
         const friendUser = await User.findById(friendId);
         throw new Error(`${friendUser?.name || "User"} is not your friend`);
@@ -3157,9 +2931,7 @@ export const initiateGroupBooking = async (
             (booking.taxAmount || 0) +
             (booking.discountAmount || 0);
           if (booking.coachId) {
-            const coach = await Coach.findById(booking.coachId).populate(
-              "userId",
-            );
+            const coach = await Coach.findById(booking.coachId).populate("userId");
             if (coach && coach.userId) {
               coachUserId = (coach.userId as any)._id.toString();
               // Rough estimation: split subtotal proportionally
@@ -3183,7 +2955,7 @@ export const initiateGroupBooking = async (
           venueOwnerId,
           allParticipantIds,
           coachPrice > 0 ? coachPrice : undefined,
-          coachUserId,
+          coachUserId
         );
 
         // Convert IPayment[] to BookingPayment[] (string userId to ObjectId)
@@ -3212,16 +2984,12 @@ export const initiateGroupBooking = async (
       endTime: booking.endTime,
       estimatedAmount:
         payload.paymentType === "SPLIT"
-          ? Math.round((booking.totalAmount / (invitees.length + 1)) * 100) /
-            100
+          ? Math.round((booking.totalAmount / (invitees.length + 1)) * 100) / 100
           : 0,
       status: "PENDING",
     }));
 
-    const insertedInvitations = await BookingInvitation.insertMany(
-      invitations,
-      { session },
-    );
+    const insertedInvitations = await BookingInvitation.insertMany(invitations, { session });
 
     // Send invitation emails/notifications
     const venue = await Venue.findById(booking.venueId).session(session);
@@ -3231,7 +2999,7 @@ export const initiateGroupBooking = async (
       // Send emails to all invitees (async, don't wait)
       for (const invitee of invitees) {
         const invitation = insertedInvitations.find(
-          (inv) => inv.inviteeId.toString() === invitee._id.toString(),
+          (inv) => inv.inviteeId.toString() === invitee._id.toString()
         );
         if (invitation) {
           sendBookingInvitationEmail({
@@ -3245,10 +3013,7 @@ export const initiateGroupBooking = async (
             endTime: booking.endTime,
             estimatedAmount: invitation.estimatedAmount,
           }).catch((err: Error) =>
-            log.error(
-              `Failed to send booking invitation email to ${invitee.email}:`,
-              err,
-            ),
+            log.error(`Failed to send booking invitation email to ${invitee.email}:`, err)
           );
 
           // Send real-time notification
@@ -3269,10 +3034,7 @@ export const initiateGroupBooking = async (
               estimatedAmount: invitation.estimatedAmount,
             },
           }).catch((err: Error) =>
-            log.error(
-              `Failed to send booking invitation notification to ${invitee._id}:`,
-              err,
-            ),
+            log.error(`Failed to send booking invitation notification to ${invitee._id}:`, err)
           );
         }
       }
@@ -3305,7 +3067,7 @@ export const initiateGroupBooking = async (
     await session.abortTransaction();
     session.endSession();
     throw new Error(
-      `Failed to initiate group booking: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to initiate group booking: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 };
@@ -3316,14 +3078,13 @@ export const initiateGroupBooking = async (
 export const respondToBookingInvitation = async (
   userId: string,
   invitationId: string,
-  accept: boolean,
+  accept: boolean
 ): Promise<BookingDocument> => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const invitation =
-      await BookingInvitation.findById(invitationId).session(session);
+    const invitation = await BookingInvitation.findById(invitationId).session(session);
 
     if (!invitation) {
       throw new Error("Invitation not found");
@@ -3343,16 +3104,12 @@ export const respondToBookingInvitation = async (
     await invitation.save({ session });
 
     // Update booking participant status
-    const booking = await Booking.findById(invitation.bookingId).session(
-      session,
-    );
+    const booking = await Booking.findById(invitation.bookingId).session(session);
     if (!booking) {
       throw new Error("Booking not found");
     }
 
-    const participant = booking.participants.find(
-      (p) => p.userId.toString() === userId,
-    );
+    const participant = booking.participants.find((p) => p.userId.toString() === userId);
 
     if (!participant) {
       throw new Error("Participant not found in booking");
@@ -3365,44 +3122,30 @@ export const respondToBookingInvitation = async (
     if (!accept && booking.paymentType === "SPLIT") {
       // Remove this user's payment
       booking.payments = booking.payments.filter(
-        (p) => p.userId.toString() !== userId || p.userType !== "Player",
+        (p) => p.userId.toString() !== userId || p.userType !== "Player"
       );
 
       // Recalculate split among remaining accepted participants
-      const acceptedParticipants = booking.participants.filter(
-        (p) => p.status === "ACCEPTED",
-      );
+      const acceptedParticipants = booking.participants.filter((p) => p.status === "ACCEPTED");
 
       if (acceptedParticipants.length > 0) {
-        const playerPayments = booking.payments.filter(
-          (p) => p.userType === "Player",
-        );
-        const totalPlayerAmount = playerPayments.reduce(
-          (sum, p) => sum + p.amount,
-          0,
-        );
+        const playerPayments = booking.payments.filter((p) => p.userType === "Player");
+        const totalPlayerAmount = playerPayments.reduce((sum, p) => sum + p.amount, 0);
 
         // Redistribute total among accepted participants
         const amountPerPerson =
-          Math.round((totalPlayerAmount / acceptedParticipants.length) * 100) /
-          100;
+          Math.round((totalPlayerAmount / acceptedParticipants.length) * 100) / 100;
         const sumOfSplits = amountPerPerson * (acceptedParticipants.length - 1);
-        const lastPersonAmount =
-          Math.round((totalPlayerAmount - sumOfSplits) * 100) / 100;
+        const lastPersonAmount = Math.round((totalPlayerAmount - sumOfSplits) * 100) / 100;
 
         // Update player payments
-        const nonPlayerPayments = booking.payments.filter(
-          (p) => p.userType !== "Player",
-        );
+        const nonPlayerPayments = booking.payments.filter((p) => p.userType !== "Player");
         booking.payments = [
           ...nonPlayerPayments,
           ...acceptedParticipants.map((p, index) => ({
             userId: p.userId,
             userType: "Player" as const,
-            amount:
-              index === acceptedParticipants.length - 1
-                ? lastPersonAmount
-                : amountPerPerson,
+            amount: index === acceptedParticipants.length - 1 ? lastPersonAmount : amountPerPerson,
             status: "PENDING" as const,
           })),
         ];
@@ -3414,14 +3157,10 @@ export const respondToBookingInvitation = async (
       bookingId: booking._id,
     }).session(session);
 
-    const allResponded = allInvitations.every(
-      (inv: any) => inv.status !== "PENDING",
-    );
+    const allResponded = allInvitations.every((inv: any) => inv.status !== "PENDING");
 
     const anyAccepted = booking.participants.some(
-      (p) =>
-        p.status === "ACCEPTED" &&
-        p.userId.toString() !== booking.organizerId.toString(),
+      (p) => p.status === "ACCEPTED" && p.userId.toString() !== booking.organizerId.toString()
     );
 
     const statusBeforeResponse = booking.status;
@@ -3497,18 +3236,13 @@ export const respondToBookingInvitation = async (
           endTime: booking.endTime,
         },
       }).catch((err: Error) =>
-        log.error(
-          `Failed to send booking acceptance notification to organizer:`,
-          err,
-        ),
+        log.error(`Failed to send booking acceptance notification to organizer:`, err)
       );
 
       // If booking is now pending confirmation, notify all accepted participants
       if (booking.status === "AWAITING_PAYMENT") {
         const acceptedParticipants = booking.participants.filter(
-          (p) =>
-            p.status === "ACCEPTED" &&
-            p.userId.toString() !== booking.organizerId.toString(),
+          (p) => p.status === "ACCEPTED" && p.userId.toString() !== booking.organizerId.toString()
         );
 
         for (const participant of acceptedParticipants) {
@@ -3531,8 +3265,8 @@ export const respondToBookingInvitation = async (
             }).catch((err: Error) =>
               log.error(
                 `Failed to send booking pending notification to ${participant.userId}:`,
-                err,
-              ),
+                err
+              )
             );
           }
         }
@@ -3544,14 +3278,14 @@ export const respondToBookingInvitation = async (
     await session.abortTransaction();
     session.endSession();
     throw new Error(
-      `Failed to respond to invitation: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to respond to invitation: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 };
 
 const isProviderAuthorizedForBooking = async (
   booking: BookingDocument,
-  providerUserId: string,
+  providerUserId: string
 ): Promise<boolean> => {
   const checks: Array<Promise<boolean>> = [];
 
@@ -3559,7 +3293,7 @@ const isProviderAuthorizedForBooking = async (
     checks.push(
       Coach.findById(booking.coachId)
         .select("userId")
-        .then((coach) => coach?.userId?.toString() === providerUserId),
+        .then((coach) => coach?.userId?.toString() === providerUserId)
     );
   }
 
@@ -3567,7 +3301,7 @@ const isProviderAuthorizedForBooking = async (
     checks.push(
       Venue.findById(booking.venueId)
         .select("ownerId")
-        .then((venue) => venue?.ownerId?.toString() === providerUserId),
+        .then((venue) => venue?.ownerId?.toString() === providerUserId)
     );
   }
 
@@ -3581,7 +3315,7 @@ const isProviderAuthorizedForBooking = async (
 
 export const confirmBookingByProvider = async (
   bookingId: string,
-  providerUserId: string,
+  providerUserId: string
 ): Promise<BookingDocument> => {
   const booking = await Booking.findById(bookingId).select("+checkInCode");
 
@@ -3593,10 +3327,7 @@ export const confirmBookingByProvider = async (
     throw new Error("Booking is not awaiting confirmation");
   }
 
-  const isAuthorized = await isProviderAuthorizedForBooking(
-    booking,
-    providerUserId,
-  );
+  const isAuthorized = await isProviderAuthorizedForBooking(booking, providerUserId);
   if (!isAuthorized) {
     throw new Error("Not authorized to confirm this booking");
   }
@@ -3643,7 +3374,7 @@ export const confirmBookingByProvider = async (
   await sendBookingLifecycleEmails(booking, "CONFIRMED");
 
   const user = await User.findById(booking.userId).select(
-    "reminderPreferences notificationPreferences",
+    "reminderPreferences notificationPreferences"
   );
   if (user && user.reminderPreferences?.bookingReminders?.enabled) {
     ScheduledNotificationService.createBookingReminders(
@@ -3662,12 +3393,9 @@ export const confirmBookingByProvider = async (
         email: user.notificationPreferences?.email?.bookingReminders ?? true,
         push: user.notificationPreferences?.push?.bookingReminders ?? true,
         inApp: user.notificationPreferences?.inApp?.bookingReminders ?? true,
-      },
+      }
     ).catch((err: Error) =>
-      log.error(
-        `Failed to create booking reminders for ${booking.userId.toString()}:`,
-        err,
-      ),
+      log.error(`Failed to create booking reminders for ${booking.userId.toString()}:`, err)
     );
   }
 
@@ -3683,7 +3411,7 @@ export const rescheduleBookingByCoach = async (
   coachUserId: string,
   newDate: Date,
   newStartTime: string,
-  newEndTime: string,
+  newEndTime: string
 ): Promise<BookingDocument> => {
   if (!mongoose.Types.ObjectId.isValid(bookingId)) {
     throw new Error("Invalid booking ID");
@@ -3710,20 +3438,13 @@ export const rescheduleBookingByCoach = async (
     coachId: coach._id,
     date: newDate,
     status: {
-      $in: [
-        "CONFIRMED",
-        "IN_PROGRESS",
-        "AWAITING_PAYMENT",
-        "AWAITING_PROVIDER",
-      ],
+      $in: ["CONFIRMED", "IN_PROGRESS", "AWAITING_PAYMENT", "AWAITING_PROVIDER"],
     },
     $or: [{ startTime: { $lt: newEndTime }, endTime: { $gt: newStartTime } }],
   });
 
   if (conflict) {
-    throw new Error(
-      "The requested time slot conflicts with an existing booking",
-    );
+    throw new Error("The requested time slot conflicts with an existing booking");
   }
 
   const previousSlot = {
@@ -3761,7 +3482,7 @@ export const rescheduleBookingByCoach = async (
 export const rejectBookingByProvider = async (
   bookingId: string,
   providerUserId: string,
-  reason?: string,
+  reason?: string
 ): Promise<{
   booking: BookingDocument;
   refundAmount: number;
@@ -3777,10 +3498,7 @@ export const rejectBookingByProvider = async (
     throw new Error("Booking is not awaiting confirmation");
   }
 
-  const isAuthorized = await isProviderAuthorizedForBooking(
-    booking,
-    providerUserId,
-  );
+  const isAuthorized = await isProviderAuthorizedForBooking(booking, providerUserId);
   if (!isAuthorized) {
     throw new Error("Not authorized to reject this booking");
   }
@@ -3809,11 +3527,7 @@ export const rejectBookingByProvider = async (
   let refundStatus: "PENDING" | "PROCESSED" | "REJECTED" | undefined;
   if (booking.paymentConfirmedAt) {
     try {
-      const refund = await processBookingRefund(
-        bookingId,
-        100,
-        booking.cancellationReason,
-      );
+      const refund = await processBookingRefund(bookingId, 100, booking.cancellationReason);
       refundAmount = refund.refundAmount;
       refundStatus = refund.refundStatus;
     } catch (error) {
@@ -3844,9 +3558,7 @@ export const rejectBookingByProvider = async (
     }).catch(() => {});
   }
 
-  ScheduledNotificationService.cancelBookingReminders(booking._id).catch(
-    () => {},
-  );
+  ScheduledNotificationService.cancelBookingReminders(booking._id).catch(() => {});
 
   await sendBookingLifecycleEmails(booking, "CANCELLED", {
     cancellationReason: booking.cancellationReason,
@@ -3866,7 +3578,7 @@ export const rejectBookingByProvider = async (
  */
 export const coverUnpaidShares = async (
   bookingId: string,
-  organizerId: string,
+  organizerId: string
 ): Promise<BookingDocument> => {
   const booking = await Booking.findById(bookingId);
 
@@ -3887,7 +3599,7 @@ export const coverUnpaidShares = async (
 
   // Find all unpaid player payments
   const unpaidPlayerPayments = booking.payments.filter(
-    (p) => p.userType === "Player" && p.status === "PENDING",
+    (p) => p.userType === "Player" && p.status === "PENDING"
   );
 
   if (unpaidPlayerPayments.length === 0) {
@@ -3898,14 +3610,11 @@ export const coverUnpaidShares = async (
   const coveredUserIds = unpaidPlayerPayments.map((p) => p.userId.toString());
 
   // Calculate total unpaid amount
-  const totalUnpaid = unpaidPlayerPayments.reduce(
-    (sum, p) => sum + p.amount,
-    0,
-  );
+  const totalUnpaid = unpaidPlayerPayments.reduce((sum, p) => sum + p.amount, 0);
 
   // Find organizer's payment
   const organizerPayment = booking.payments.find(
-    (p) => p.userId.toString() === organizerId && p.userType === "Player",
+    (p) => p.userId.toString() === organizerId && p.userType === "Player"
   );
 
   if (organizerPayment) {
@@ -3924,11 +3633,7 @@ export const coverUnpaidShares = async (
   // Remove unpaid payments from other users
   booking.payments = booking.payments.filter(
     (p) =>
-      !(
-        p.userType === "Player" &&
-        p.status === "PENDING" &&
-        p.userId.toString() !== organizerId
-      ),
+      !(p.userType === "Player" && p.status === "PENDING" && p.userId.toString() !== organizerId)
   );
 
   await booking.save();
@@ -3950,10 +3655,8 @@ export const coverUnpaidShares = async (
       coveredCount: unpaidPlayerPayments.length,
       organizerShareAfterPaise: toPaise(
         booking.payments.find(
-          (payment) =>
-            payment.userId.toString() === organizerId &&
-            payment.userType === "Player",
-        )?.amount ?? 0,
+          (payment) => payment.userId.toString() === organizerId && payment.userType === "Player"
+        )?.amount ?? 0
       ),
     },
   });
@@ -3979,10 +3682,7 @@ export const coverUnpaidShares = async (
         organizerId: organizerId,
       },
     }).catch((err: Error) =>
-      log.error(
-        `Failed to send payment split received notification to ${userId}:`,
-        err,
-      ),
+      log.error(`Failed to send payment split received notification to ${userId}:`, err)
     );
   }
 
@@ -3994,7 +3694,7 @@ export const coverUnpaidShares = async (
  */
 export const getUserBookingInvitations = async (
   userId: string,
-  status?: "PENDING" | "ACCEPTED" | "DECLINED",
+  status?: "PENDING" | "ACCEPTED" | "DECLINED"
 ): Promise<any[]> => {
   const query: any = { inviteeId: userId };
   if (status) {
@@ -4017,7 +3717,7 @@ export const getUserBookingInvitations = async (
  *  `.length`. */
 export const countUserBookingInvitations = async (
   userId: string,
-  status?: "PENDING" | "ACCEPTED" | "DECLINED",
+  status?: "PENDING" | "ACCEPTED" | "DECLINED"
 ): Promise<number> => {
   const query: any = { inviteeId: userId };
   if (status) {
@@ -4039,9 +3739,7 @@ export const cleanupStaleBookingLocks = async (): Promise<number> => {
   // "Today" in IST — dateKey values are IST calendar dates (see
   // combineDateAndTimeIST), so the cutoff must be computed the same way
   // rather than the server process's local midnight.
-  const todayKey = new Date(Date.now() + IST_OFFSET_MINUTES * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const todayKey = new Date(Date.now() + IST_OFFSET_MINUTES * 60 * 1000).toISOString().slice(0, 10);
 
   // Delete locks with dateKey < today (past dates)
   const result = await BookingSlotLock.deleteMany({
@@ -4072,7 +3770,7 @@ export const cleanupExpiredBookings = async (): Promise<number> => {
   // event the abandoned checkout leaves no trace at all — and the aggregate of
   // these events is the checkout-abandonment signal.
   const expiring = await Booking.find(filter).select(
-    "_id venueId coachId academyId status sport date startTime endTime totalAmount organizerId expiresAt",
+    "_id venueId coachId academyId status sport date startTime endTime totalAmount organizerId expiresAt"
   );
 
   if (expiring.length === 0) {
@@ -4087,8 +3785,7 @@ export const cleanupExpiredBookings = async (): Promise<number> => {
       channel: "CRON",
       amountPaise: toPaise(booking.totalAmount),
       occurredAt: booking.expiresAt ?? now,
-      summary:
-        "Unpaid booking passed its hold expiry and was deleted by the cleanup job",
+      summary: "Unpaid booking passed its hold expiry and was deleted by the cleanup job",
       metadata: {
         bookingDeleted: true,
         organizerId: booking.organizerId?.toString(),
@@ -4136,7 +3833,7 @@ const asRec = (v: unknown): Record<string, unknown> =>
  * Returns the updated transaction, or null if no matching booking transaction was found.
  */
 export const reconcileBookingPaymentFromWebhookPayload = async (
-  rawPayload: unknown,
+  rawPayload: unknown
 ): Promise<any> => {
   const payload = asRec(rawPayload);
   const inner = asRec(payload.payload);
@@ -4150,7 +3847,7 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
     data.originalMerchantOrderId,
     data.merchantOrderId,
     asRec(inner.paymentDetails).merchantOrderId,
-    asRec(data.paymentDetails).merchantOrderId,
+    asRec(data.paymentDetails).merchantOrderId
   );
 
   if (!merchantOrderId) {
@@ -4175,7 +3872,7 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
     inner.state,
     data.state,
     asRec(inner.paymentDetails).state,
-    asRec(data.paymentDetails).state,
+    asRec(data.paymentDetails).state
   );
 
   const normalizeState = (s?: string): string => {
@@ -4203,10 +3900,10 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
         actorType: "GATEWAY",
         channel: "WEBHOOK",
         metadata: { merchantOrderId, gatewayState: state, source: "webhook" },
-      },
+      }
     );
     log.info(
-      `[BookingWebhook] Payment confirmed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,
+      `[BookingWebhook] Payment confirmed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`
     );
   } else if (state === "FAILED" && transaction.status !== "FAILED") {
     transaction.status = "FAILED";
@@ -4219,10 +3916,10 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
         actorType: "GATEWAY",
         channel: "WEBHOOK",
         metadata: { merchantOrderId, gatewayState: state, source: "webhook" },
-      },
+      }
     );
     log.info(
-      `[BookingWebhook] Payment failed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`,
+      `[BookingWebhook] Payment failed for booking ${transaction.bookingId}, merchantOrderId=${merchantOrderId}`
     );
   }
 
@@ -4235,9 +3932,7 @@ export const reconcileBookingPaymentFromWebhookPayload = async (
  * coach/venue + date + start time) by email, then mark their waitlist entry
  * NOTIFIED so they are not pinged repeatedly. Best-effort; never throws.
  */
-const notifyWaitlistForFreedSlot = async (
-  booking: BookingDocument,
-): Promise<void> => {
+const notifyWaitlistForFreedSlot = async (booking: BookingDocument): Promise<void> => {
   try {
     const match: Record<string, unknown> = {
       status: "ACTIVE",
@@ -4265,9 +3960,7 @@ const notifyWaitlistForFreedSlot = async (
 
     for (const entry of entries) {
       try {
-        const user = await User.findById(entry.userId)
-          .select("name email")
-          .lean();
+        const user = await User.findById(entry.userId).select("name email").lean();
         if (user?.email) {
           await sendWaitlistSlotAvailableEmail({
             name: user.name,
@@ -4282,11 +3975,7 @@ const notifyWaitlistForFreedSlot = async (
         entry.status = "NOTIFIED";
         await entry.save();
       } catch (perEntryError) {
-        log.error(
-          "Failed to notify waitlist entry",
-          entry._id?.toString(),
-          perEntryError,
-        );
+        log.error("Failed to notify waitlist entry", entry._id?.toString(), perEntryError);
       }
     }
   } catch (error) {

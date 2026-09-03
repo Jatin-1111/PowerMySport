@@ -105,10 +105,7 @@ async function main() {
 
   await chrome.kill().catch(() => {});
 
-  fs.writeFileSync(
-    path.join(OUT_DIR, "summary.json"),
-    JSON.stringify(summary, null, 2)
-  );
+  fs.writeFileSync(path.join(OUT_DIR, "summary.json"), JSON.stringify(summary, null, 2));
 
   console.log(JSON.stringify(summary, null, 2));
 }

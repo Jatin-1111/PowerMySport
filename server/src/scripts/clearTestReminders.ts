@@ -14,8 +14,7 @@ async function clearTestReminders() {
     console.log("🗑️  Clearing test reminders...");
 
     // Connect to MongoDB
-    const mongoUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
+    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
     await mongoose.connect(mongoUri);
     console.log("✅ Connected to MongoDB");
 

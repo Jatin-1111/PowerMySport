@@ -34,10 +34,7 @@ type FormSnapshot = {
   content: string;
 };
 
-export default function WriteBlogClient({
-  mode,
-  blogId,
-}: WriteBlogClientProps) {
+export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) {
   const router = useRouter();
 
   const [title, setTitle] = useState("");
@@ -54,16 +51,12 @@ export default function WriteBlogClient({
   // autosave/draft-save creates a real post to keep saving into.
   const [activeBlogId, setActiveBlogId] = useState<string | undefined>(blogId);
   // null until the post has been saved at least once.
-  const [postStatus, setPostStatus] = useState<"DRAFT" | "PUBLISHED" | null>(
-    null,
-  );
+  const [postStatus, setPostStatus] = useState<"DRAFT" | "PUBLISHED" | null>(null);
 
   const [isLoading, setIsLoading] = useState(mode === "edit");
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
-  const [autosaveState, setAutosaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
+  const [autosaveState, setAutosaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -122,9 +115,7 @@ export default function WriteBlogClient({
         };
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load editor",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load editor");
     } finally {
       setIsLoading(false);
     }
@@ -151,7 +142,7 @@ export default function WriteBlogClient({
       content,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [title, excerpt, topic, tagsInput, coverImageKey, content],
+    [title, excerpt, topic, tagsInput, coverImageKey, content]
   );
 
   const markSaved = useCallback(() => {
@@ -219,38 +210,18 @@ export default function WriteBlogClient({
     } finally {
       autosavingRef.current = false;
     }
-  }, [
-    activeBlogId,
-    postStatus,
-    title,
-    isPublishing,
-    isSavingDraft,
-    buildPayload,
-    markSaved,
-  ]);
+  }, [activeBlogId, postStatus, title, isPublishing, isSavingDraft, buildPayload, markSaved]);
 
   useEffect(() => {
     if (isLoading || !isDirty) return;
     if (title.trim().length < MIN_TITLE_LENGTH) return;
     const timer = setTimeout(() => void autosave(), AUTOSAVE_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [
-    title,
-    excerpt,
-    topic,
-    tagsInput,
-    coverImageKey,
-    content,
-    isDirty,
-    isLoading,
-    autosave,
-  ]);
+  }, [title, excerpt, topic, tagsInput, coverImageKey, content, isDirty, isLoading, autosave]);
 
   const saveDraft = async () => {
     if (title.trim().length < MIN_TITLE_LENGTH) {
-      toast.error(
-        `Title must be at least ${MIN_TITLE_LENGTH} characters`,
-      );
+      toast.error(`Title must be at least ${MIN_TITLE_LENGTH} characters`);
       return;
     }
     setIsSavingDraft(true);
@@ -269,9 +240,7 @@ export default function WriteBlogClient({
       setAutosaveState("saved");
       toast.success("Draft saved");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save draft",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save draft");
     } finally {
       setIsSavingDraft(false);
     }
@@ -306,9 +275,7 @@ export default function WriteBlogClient({
 
   const handleBackClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isDirty) return;
-    const proceed = window.confirm(
-      "You have unsaved changes. Leave without saving?",
-    );
+    const proceed = window.confirm("You have unsaved changes. Leave without saving?");
     if (!proceed) event.preventDefault();
   };
 
@@ -350,7 +317,7 @@ export default function WriteBlogClient({
                 {saveIndicator}
               </span>
             )}
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
               {postStatus === "PUBLISHED"
                 ? "Editing story"
                 : postStatus === "DRAFT"
@@ -389,7 +356,7 @@ export default function WriteBlogClient({
             event.target.style.height = `${event.target.scrollHeight}px`;
           }}
           placeholder="Story title"
-          className="font-title mt-5 w-full resize-none bg-transparent text-3xl font-bold leading-tight tracking-tight text-slate-900 outline-none placeholder:text-slate-300 sm:text-4xl"
+          className="font-title mt-5 w-full resize-none bg-transparent text-3xl leading-tight font-bold tracking-tight text-slate-900 outline-none placeholder:text-slate-300 sm:text-4xl"
         />
 
         {/* Excerpt / subtitle */}
@@ -400,7 +367,7 @@ export default function WriteBlogClient({
             maxLength={EXCERPT_MAX_LENGTH}
             onChange={(event) => setExcerpt(event.target.value)}
             placeholder="A one or two line subtitle — shown on blog cards and previews (optional, auto-generated from your content if left blank)"
-            className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none placeholder:text-slate-300 focus:border-power-orange"
+            className="focus:border-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none placeholder:text-slate-300"
           />
           <p className="mt-1 text-right text-[11px] text-slate-400">
             {excerpt.length}/{EXCERPT_MAX_LENGTH}
@@ -410,13 +377,13 @@ export default function WriteBlogClient({
         {/* Topic + tags */}
         <div className="mt-1 grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-400 uppercase">
               Topic
             </label>
             <select
               value={topic}
               onChange={(event) => setTopic(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-power-orange"
+              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none"
             >
               {BLOG_TOPICS.map((option) => (
                 <option key={option.slug} value={option.slug}>
@@ -426,14 +393,14 @@ export default function WriteBlogClient({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-400 uppercase">
               Tags (comma separated)
             </label>
             <input
               value={tagsInput}
               onChange={(event) => setTagsInput(event.target.value)}
               placeholder="e.g. footwork, endurance"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-power-orange"
+              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none"
             />
           </div>
         </div>
@@ -460,22 +427,16 @@ export default function WriteBlogClient({
               disabled={isSavingDraft || isPublishing}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
             >
-              {isSavingDraft ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : null}
+              {isSavingDraft ? <Loader2 size={16} className="animate-spin" /> : null}
               Save draft
             </button>
           )}
           <button
             onClick={() => void publish()}
             disabled={isPublishing || isSavingDraft}
-            className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-power-orange/20 transition hover:bg-[#d96610] disabled:opacity-60"
+            className="bg-power-orange shadow-power-orange/20 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
           >
-            {isPublishing ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Send size={16} />
-            )}
+            {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {postStatus === "PUBLISHED" ? "Update" : "Publish"}
           </button>
         </div>

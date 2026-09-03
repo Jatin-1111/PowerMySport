@@ -1,162 +1,160 @@
 @import "tailwindcss";
 
 :root {
-    --power-orange: #E97316;
-    --deep-slate: #0F172A;
-    --ghost-white: #F8FAFC;
-    --turf-green: #22C55E;
-    --error-red: #EF4444;
-    --background: #f4f7ff;
-    --foreground: #111827;
-    --surface: #ffffff;
-    --card: rgba(255, 255, 255, 0.92);
-    --card-foreground: #111827;
-    --muted: #eef2f7;
-    --muted-foreground: #64748b;
-    --border: rgba(148, 163, 184, 0.28);
-    --ring: #f59e0b;
-    color-scheme: light;
+  --power-orange: #e97316;
+  --deep-slate: #0f172a;
+  --ghost-white: #f8fafc;
+  --turf-green: #22c55e;
+  --error-red: #ef4444;
+  --background: #f4f7ff;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --card: rgba(255, 255, 255, 0.92);
+  --card-foreground: #111827;
+  --muted: #eef2f7;
+  --muted-foreground: #64748b;
+  --border: rgba(148, 163, 184, 0.28);
+  --ring: #f59e0b;
+  color-scheme: light;
 }
 
 @theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --color-surface: var(--surface);
-    --color-power-orange: var(--power-orange);
-    --color-deep-slate: var(--deep-slate);
-    --color-ghost-white: var(--ghost-white);
-    --color-turf-green: var(--turf-green);
-    --color-error-red: var(--error-red);
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-border: var(--border);
-    --color-ring: var(--ring);
-    --font-sans: var(--font-space-grotesk);
-    --font-title: var(--font-space-grotesk);
-    --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-power-orange: var(--power-orange);
+  --color-deep-slate: var(--deep-slate);
+  --color-ghost-white: var(--ghost-white);
+  --color-turf-green: var(--turf-green);
+  --color-error-red: var(--error-red);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-space-grotesk);
+  --font-title: var(--font-space-grotesk);
+  --font-mono: var(--font-geist-mono);
 }
 
 @layer base {
-    html {
-        scroll-behavior: smooth;
-        -webkit-text-size-adjust: 100%;
-    }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
 
-    * {
-        @apply border-border outline-ring/50;
-    }
+  * {
+    @apply border-border outline-ring/50;
+  }
 
-    body {
-        @apply bg-background text-foreground antialiased;
-        min-height: 100vh;
-        text-rendering: optimizeLegibility;
-        background:
-            radial-gradient(1100px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
-            radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 34%),
-            var(--background);
-    }
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100vh;
+    text-rendering: optimizeLegibility;
+    background:
+      radial-gradient(1100px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
+      radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 34%), var(--background);
+  }
 
-    ::selection {
-        background: color-mix(in oklab, var(--power-orange) 28%, white);
-        color: var(--deep-slate);
-    }
+  ::selection {
+    background: color-mix(in oklab, var(--power-orange) 28%, white);
+    color: var(--deep-slate);
+  }
 
-    input,
-    select,
-    button,
-    textarea {
-        font: inherit;
-    }
+  input,
+  select,
+  button,
+  textarea {
+    font: inherit;
+  }
 
-    button {
-        @apply cursor-pointer;
-        touch-action: manipulation;
-    }
+  button {
+    @apply cursor-pointer;
+    touch-action: manipulation;
+  }
 
-    ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-    }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
 
-    ::-webkit-scrollbar-track {
-        background: transparent;
-    }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-    ::-webkit-scrollbar-thumb {
-        background: rgba(148, 163, 184, 0.35);
-        border-radius: 999px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-    }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
 
-    ::-webkit-scrollbar-thumb:hover {
-        background: rgba(233, 115, 22, 0.45);
-        border: 2px solid transparent;
-        background-clip: content-box;
-    }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(233, 115, 22, 0.45);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
 }
 
 @layer components {
-    .community-page-shell {
-        @apply min-h-screen px-3 py-4 sm:px-4 sm:py-6 lg:px-6;
-    }
+  .community-page-shell {
+    @apply min-h-screen px-3 py-4 sm:px-4 sm:py-6 lg:px-6;
+  }
 
-    .community-content-wrap {
-        @apply mx-auto w-full max-w-6xl;
-    }
+  .community-content-wrap {
+    @apply mx-auto w-full max-w-6xl;
+  }
 
-    .community-content-wrap-narrow {
-        @apply mx-auto w-full max-w-4xl;
-    }
+  .community-content-wrap-narrow {
+    @apply mx-auto w-full max-w-4xl;
+  }
 
-    .community-back-link {
-        @apply inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-border bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
-    }
+  .community-back-link {
+    @apply border-border inline-flex min-h-10 items-center gap-1.5 rounded-lg border bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
+  }
 
+  .community-card {
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: #ffffff;
+    padding: 16px;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+
+  @media (min-width: 640px) {
     .community-card {
-        border-radius: 16px;
-        border: 1px solid var(--border);
-        background: #ffffff;
-        padding: 16px;
-        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      padding: 24px;
     }
+  }
 
-    @media (min-width: 640px) {
-        .community-card {
-            padding: 24px;
-        }
-    }
+  .community-section-title {
+    @apply text-lg font-semibold text-slate-900 sm:text-xl;
+  }
 
-    .community-section-title {
-        @apply text-lg font-semibold text-slate-900 sm:text-xl;
-    }
-
-    .community-section-copy {
-        @apply mt-1 text-sm leading-6 text-slate-500 sm:text-base;
-    }
+  .community-section-copy {
+    @apply mt-1 text-sm leading-6 text-slate-500 sm:text-base;
+  }
 }
 
 @layer utilities {
-    .font-title {
-        font-family: var(--font-title), sans-serif;
-    }
+  .font-title {
+    font-family: var(--font-title), sans-serif;
+  }
 
-    .bg-app {
-        background:
-            radial-gradient(1200px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
-            radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 36%),
-            var(--background);
-    }
+  .bg-app {
+    background:
+      radial-gradient(1200px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
+      radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 36%), var(--background);
+  }
 
-    .nav-link {
-        @apply rounded-xl px-3 py-2 text-slate-700 transition-colors hover:bg-indigo-50 hover:text-slate-900;
-    }
+  .nav-link {
+    @apply rounded-xl px-3 py-2 text-slate-700 transition-colors hover:bg-indigo-50 hover:text-slate-900;
+  }
 
-    .shop-surface {
-        @apply border border-white/60 bg-white/80 backdrop-blur-md;
-    }
+  .shop-surface {
+    @apply border border-white/60 bg-white/80 backdrop-blur-md;
+  }
 }
 
 /* ── Blog rich text (Tiptap editor + rendered post body) ─────────────────── */
@@ -164,257 +162,263 @@
    both the live editor and the read-only renderer restore it here from the
    same class for WYSIWYG parity ("what you preview is what you publish"). */
 .blog-prose {
-    color: #334155;
-    font-size: 1rem;
-    line-height: 1.75;
+  color: #334155;
+  font-size: 1rem;
+  line-height: 1.75;
 }
 
 .blog-prose > * + * {
-    margin-top: 1.1em;
+  margin-top: 1.1em;
 }
 
 .blog-prose h1,
 .blog-prose h2,
 .blog-prose h3 {
-    font-family: var(--font-title), sans-serif;
-    font-weight: 700;
-    line-height: 1.25;
-    color: #0f172a;
+  font-family: var(--font-title), sans-serif;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #0f172a;
 }
 
 .blog-prose h1 {
-    font-size: 1.75rem;
+  font-size: 1.75rem;
 }
 
 .blog-prose h2 {
-    font-size: 1.5rem;
+  font-size: 1.5rem;
 }
 
 .blog-prose h3 {
-    font-size: 1.25rem;
+  font-size: 1.25rem;
 }
 
 .blog-prose ul,
 .blog-prose ol {
-    padding-left: 1.5rem;
+  padding-left: 1.5rem;
 }
 
 .blog-prose ul {
-    list-style: disc;
+  list-style: disc;
 }
 
 .blog-prose ol {
-    list-style: decimal;
+  list-style: decimal;
 }
 
 .blog-prose li + li {
-    margin-top: 0.35em;
+  margin-top: 0.35em;
 }
 
 .blog-prose blockquote {
-    border-left: 4px solid color-mix(in oklab, var(--power-orange) 60%, transparent);
-    background: color-mix(in oklab, var(--power-orange) 5%, transparent);
-    padding: 0.75rem 1.25rem;
-    font-style: italic;
-    border-radius: 0 0.5rem 0.5rem 0;
+  border-left: 4px solid color-mix(in oklab, var(--power-orange) 60%, transparent);
+  background: color-mix(in oklab, var(--power-orange) 5%, transparent);
+  padding: 0.75rem 1.25rem;
+  font-style: italic;
+  border-radius: 0 0.5rem 0.5rem 0;
 }
 
 .blog-prose a {
-    color: var(--power-orange);
-    text-decoration: underline;
-    text-underline-offset: 2px;
+  color: var(--power-orange);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .blog-prose img {
-    width: 100%;
-    border-radius: 1rem;
-    border: 1px solid #e2e8f0;
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
 }
 
 .blog-prose hr {
-    border: none;
-    border-top: 1px solid #e2e8f0;
-    margin: 1.5rem 0;
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 1.5rem 0;
 }
 
 .blog-prose code {
-    background: #f1f5f9;
-    color: #be123c;
-    padding: 0.15em 0.4em;
-    border-radius: 0.35em;
-    font-size: 0.9em;
+  background: #f1f5f9;
+  color: #be123c;
+  padding: 0.15em 0.4em;
+  border-radius: 0.35em;
+  font-size: 0.9em;
 }
 
 .blog-prose pre {
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    overflow-x: auto;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
 }
 
 .blog-prose pre code {
-    background: none;
-    color: inherit;
-    padding: 0;
+  background: none;
+  color: inherit;
+  padding: 0;
 }
 
 .blog-prose mark,
 .blog-prose span[style*="background"] {
-    border-radius: 2px;
-    padding: 0 1px;
+  border-radius: 2px;
+  padding: 0 1px;
 }
 
 /* Editor-only affordances */
 .tiptap.blog-prose:focus {
-    outline: none;
+  outline: none;
 }
 
 .tiptap p.is-editor-empty:first-child::before {
-    content: attr(data-placeholder);
-    float: left;
-    color: #cbd5e1;
-    pointer-events: none;
-    height: 0;
+  content: attr(data-placeholder);
+  float: left;
+  color: #cbd5e1;
+  pointer-events: none;
+  height: 0;
 }
 
 .tiptap.blog-prose ::selection {
-    background: #e2e8f0;
-    color: inherit;
+  background: #e2e8f0;
+  color: inherit;
 }
 
 /* ── Chat Background Pattern ── */
 .chat-bg {
-    background-color: #f0f2f5;
-    background-image:
-        radial-gradient(circle at 20% 50%, rgba(233, 115, 22, 0.02) 0%, transparent 50%),
-        radial-gradient(circle at 80% 50%, rgba(37, 99, 235, 0.02) 0%, transparent 50%),
-        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23cbd5e1' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-color: #f0f2f5;
+  background-image:
+    radial-gradient(circle at 20% 50%, rgba(233, 115, 22, 0.02) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, rgba(37, 99, 235, 0.02) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23cbd5e1' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 /* ── Emoji Picker Scroll ── */
 .emoji-picker-scroll::-webkit-scrollbar {
-    width: 4px;
+  width: 4px;
 }
 
 .emoji-picker-scroll::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 
 .emoji-picker-scroll::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 4px;
+  background: #e2e8f0;
+  border-radius: 4px;
 }
 
 .emoji-picker-scroll::-webkit-scrollbar-thumb:hover {
-    background: #cbd5e1;
+  background: #cbd5e1;
 }
 
 /* ── Chat scrollbar ── */
 .overflow-y-auto::-webkit-scrollbar {
-    width: 5px;
+  width: 5px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-    background: transparent;
+  background: transparent;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, 0.2);
-    border-radius: 10px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-    background: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.35);
 }
 
 /* ── Discover Page Utilities ── */
 .discover-card {
-    position: relative;
-    overflow: hidden;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 8px 30px rgb(0 0 0 / 0.04);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
 }
 
 .discover-card:hover {
-    border-color: #e2e8f0;
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 8px 30px rgba(148, 163, 184, 0.15);
-    transform: translateY(-4px);
+  border-color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 30px rgba(148, 163, 184, 0.15);
+  transform: translateY(-4px);
 }
 
 .discover-avatar-ring {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9999px;
-    background: #f8fafc;
-    padding: 4px;
-    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-    outline: 1px solid #f1f5f9;
-    transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #f8fafc;
+  padding: 4px;
+  box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+  outline: 1px solid #f1f5f9;
+  transition: all 0.3s ease;
 }
 
 .discover-card:hover .discover-avatar-ring {
-    background: #f1f5f9;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    outline-color: #e2e8f0;
-    padding: 2px;
+  background: #f1f5f9;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  outline-color: #e2e8f0;
+  padding: 2px;
 }
 
 .discover-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    border-radius: 9999px;
-    border: 1px solid rgba(226, 232, 240, 0.5);
-    background: #f8fafc;
-    padding: 2px 8px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  background: #f8fafc;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
 }
 
 .discover-search {
-    width: 100%;
-    border-radius: 9999px;
-    border: 1px solid rgba(226, 232, 240, 0.7);
-    background: rgba(255, 255, 255, 0.85);
-    padding: 12px 40px 12px 44px;
-    font-size: 13.5px;
-    font-weight: 500;
-    color: #0f172a;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  width: 100%;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 232, 240, 0.7);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 12px 40px 12px 44px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #0f172a;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    border-color 0.25s ease,
+    background-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
 }
 
 .discover-search:hover {
-    border-color: rgba(203, 213, 225, 0.9);
-    background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(203, 213, 225, 0.9);
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .discover-search::placeholder {
-    color: #94a3b8;
+  color: #94a3b8;
 }
 
 .discover-search:focus {
-    border-color: rgba(233, 115, 22, 0.4);
-    background: #ffffff;
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(233, 115, 22, 0.1), 0 4px 16px -4px rgba(233, 115, 22, 0.15);
-    transform: translateY(-1px);
+  border-color: rgba(233, 115, 22, 0.4);
+  background: #ffffff;
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgba(233, 115, 22, 0.1),
+    0 4px 16px -4px rgba(233, 115, 22, 0.15);
+  transform: translateY(-1px);
 }

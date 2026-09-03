@@ -4,11 +4,7 @@ import path from "path";
 import mongoose from "mongoose";
 import { Booking } from "../client/models/Booking";
 import { BookingPaymentTransaction } from "../client/models/BookingPayment";
-import {
-  classifyAmount,
-  nearlyEqual,
-  toPaise,
-} from "../utils/walletPaiseClassifier";
+import { classifyAmount, nearlyEqual, toPaise } from "../utils/walletPaiseClassifier";
 
 /**
  * Migration 20: Re-denominate historical wallet payment transactions to paise.
@@ -104,11 +100,9 @@ const expectedRupeesFor = (
   booking: { payments?: Array<{ userId: unknown; amount: number }> } & {
     totalAmount: number;
   },
-  payerUserId: string,
+  payerUserId: string
 ): number => {
-  const share = booking.payments?.find(
-    (payment) => payment.userId?.toString() === payerUserId,
-  );
+  const share = booking.payments?.find((payment) => payment.userId?.toString() === payerUserId);
   return share ? share.amount : booking.totalAmount;
 };
 
@@ -118,7 +112,7 @@ export const up = async (options: { apply?: boolean } = {}) => {
   console.log(
     `Starting migration 20: wallet transaction paise re-denomination (${
       apply ? "APPLY" : "DRY RUN"
-    })...`,
+    })...`
   );
 
   const transactions = await BookingPaymentTransaction.find({
@@ -150,9 +144,7 @@ export const up = async (options: { apply?: boolean } = {}) => {
 
     // The booking is the anchor. Without it there is no trustworthy way to
     // tell rupees from paise, so we refuse to touch the row.
-    const booking = await Booking.findById(bookingId).select(
-      "totalAmount payments",
-    );
+    const booking = await Booking.findById(bookingId).select("totalAmount payments");
 
     if (!booking) {
       unclassified.push({
@@ -237,19 +229,17 @@ export const up = async (options: { apply?: boolean } = {}) => {
     console.log(apply ? "CONVERTED:" : "WOULD CONVERT:");
     for (const row of changed) {
       console.log(
-        `  ${row.transactionId}  ${row.before} -> ${row.after} paise  (booking ${row.bookingId})`,
+        `  ${row.transactionId}  ${row.before} -> ${row.after} paise  (booking ${row.bookingId})`
       );
     }
   }
 
   if (unclassified.length > 0) {
     console.log();
-    console.log(
-      "UNCLASSIFIED — left untouched, these need a human to look at them:",
-    );
+    console.log("UNCLASSIFIED — left untouched, these need a human to look at them:");
     for (const row of unclassified) {
       console.log(
-        `  ${row.transactionId}  amount=${row.amount}  expected=${row.expectedRupees ?? "n/a"}  — ${row.reason}`,
+        `  ${row.transactionId}  amount=${row.amount}  expected=${row.expectedRupees ?? "n/a"}  — ${row.reason}`
       );
     }
   }
@@ -258,31 +248,19 @@ export const up = async (options: { apply?: boolean } = {}) => {
     const totalOwed = shortfalls.reduce((sum, row) => sum + row.owedRupees, 0);
     console.log();
     console.log("=".repeat(60));
-    console.log(
-      `SHORTFALL: ${shortfalls.length} customer(s) were under-refunded.`,
-    );
-    console.log(
-      "These bookings expired unconfirmed and were auto-refunded through",
-    );
-    console.log(
-      "timer.ts using the corrupt amount, so PhonePe actually paid out",
-    );
-    console.log(
-      "1/100th of what was owed. This migration does NOT alter these rows —",
-    );
-    console.log(
-      "refundAmount records what was really paid. They need a genuine",
-    );
+    console.log(`SHORTFALL: ${shortfalls.length} customer(s) were under-refunded.`);
+    console.log("These bookings expired unconfirmed and were auto-refunded through");
+    console.log("timer.ts using the corrupt amount, so PhonePe actually paid out");
+    console.log("1/100th of what was owed. This migration does NOT alter these rows —");
+    console.log("refundAmount records what was really paid. They need a genuine");
     console.log("top-up refund.");
     console.log("=".repeat(60));
     for (const row of shortfalls) {
       console.log(
-        `  booking ${row.bookingId}  user ${row.userId}  refunded ₹${row.refundedRupees}  STILL OWED ₹${row.owedRupees}  (${row.refundState})`,
+        `  booking ${row.bookingId}  user ${row.userId}  refunded ₹${row.refundedRupees}  STILL OWED ₹${row.owedRupees}  (${row.refundState})`
       );
     }
-    console.log(
-      `  TOTAL OUTSTANDING: ₹${Math.round(totalOwed * 100) / 100}`,
-    );
+    console.log(`  TOTAL OUTSTANDING: ₹${Math.round(totalOwed * 100) / 100}`);
   }
 
   if (apply && changed.length > 0) {
@@ -296,12 +274,9 @@ export const up = async (options: { apply?: boolean } = {}) => {
     fs.mkdirSync(reportDir, { recursive: true });
     const reportPath = path.join(
       reportDir,
-      `migration-20-wallet-paise-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
+      `migration-20-wallet-paise-${new Date().toISOString().replace(/[:.]/g, "-")}.json`
     );
-    fs.writeFileSync(
-      reportPath,
-      JSON.stringify({ changed, shortfalls, unclassified }, null, 2),
-    );
+    fs.writeFileSync(reportPath, JSON.stringify({ changed, shortfalls, unclassified }, null, 2));
     console.log();
     console.log(`Rollback report written to ${reportPath}`);
     console.log("Keep this file — down() requires it.");
@@ -318,16 +293,14 @@ export const up = async (options: { apply?: boolean } = {}) => {
   return { changed, shortfalls, unclassified, alreadyPaise };
 };
 
-export const down = async (
-  options: { reportPath?: string | undefined } = {},
-) => {
+export const down = async (options: { reportPath?: string | undefined } = {}) => {
   const { reportPath } = options;
 
   if (!reportPath) {
     throw new Error(
       "down() requires --report=<file> — the JSON report written by the --apply run. " +
         "Migrated rows cannot be told apart from correctly-written ones after conversion, " +
-        "so rollback will not guess.",
+        "so rollback will not guess."
     );
   }
 
@@ -341,9 +314,7 @@ export const down = async (
   let mismatched = 0;
 
   for (const row of report.changed) {
-    const transaction = await BookingPaymentTransaction.findById(
-      row.transactionId,
-    );
+    const transaction = await BookingPaymentTransaction.findById(row.transactionId);
 
     if (!transaction) {
       console.warn(`  transaction ${row.transactionId} no longer exists`);
@@ -355,7 +326,7 @@ export const down = async (
     // something changed it since and we'd be clobbering newer data.
     if (transaction.amount !== row.after) {
       console.warn(
-        `  transaction ${row.transactionId} is ${transaction.amount}, expected ${row.after} — changed since migration, skipping`,
+        `  transaction ${row.transactionId} is ${transaction.amount}, expected ${row.after} — changed since migration, skipping`
       );
       mismatched++;
       continue;
@@ -372,7 +343,7 @@ export const down = async (
   }
   console.log(
     "Note: the code fix in bookingController.ts must also be reverted, or new " +
-      "wallet payments will keep writing paise.",
+      "wallet payments will keep writing paise."
   );
   console.log("Rollback completed.");
 };
@@ -380,9 +351,7 @@ export const down = async (
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const rollback = process.argv.includes("--down");
   const apply = process.argv.includes("--apply");

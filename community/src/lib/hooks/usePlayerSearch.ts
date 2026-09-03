@@ -20,11 +20,8 @@ interface UsePlayerSearchOptions {
  * Prevents hallucination by only showing results for the most recent search query.
  */
 export function usePlayerSearch(
-  searchFn: (
-    query: string,
-    signal: AbortSignal,
-  ) => Promise<PlayerSearchResult[]>,
-  options: UsePlayerSearchOptions = {},
+  searchFn: (query: string, signal: AbortSignal) => Promise<PlayerSearchResult[]>,
+  options: UsePlayerSearchOptions = {}
 ) {
   const { debounceMs = 300, minChars = 2 } = options;
 
@@ -84,7 +81,7 @@ export function usePlayerSearch(
         }
       }
     },
-    [searchFn, minChars],
+    [searchFn, minChars]
   );
 
   // Debounce input changes

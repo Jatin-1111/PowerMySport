@@ -12,8 +12,7 @@ import { CONSOLE_POLICIES, resolveAccess } from "../src/flow/policy";
  */
 
 /** `/coach/:path*` → `/coach` */
-const prefixOf = (matcher: string): string =>
-  matcher.replace(/\/:path\*$/, "");
+const prefixOf = (matcher: string): string => matcher.replace(/\/:path\*$/, "");
 
 describe("proxy matcher", () => {
   const matchers = config.matcher;
@@ -23,7 +22,7 @@ describe("proxy matcher", () => {
     for (const policy of CONSOLE_POLICIES) {
       expect(
         prefixes,
-        `${policy.prefix} is governed by policy but the proxy never runs on it`,
+        `${policy.prefix} is governed by policy but the proxy never runs on it`
       ).toContain(policy.prefix);
     }
   });
@@ -33,8 +32,7 @@ describe("proxy matcher", () => {
     // nothing.
     const governed = CONSOLE_POLICIES.map((p) => p.prefix);
     for (const prefix of prefixes) {
-      expect(governed, `the proxy runs on ${prefix} but no policy covers it`)
-        .toContain(prefix);
+      expect(governed, `the proxy runs on ${prefix} but no policy covers it`).toContain(prefix);
     }
   });
 
@@ -59,7 +57,7 @@ describe("proxy matcher", () => {
       "/federations",
     ]) {
       const claimed = prefixes.some(
-        (prefix) => publicPath === prefix || publicPath.startsWith(`${prefix}/`),
+        (prefix) => publicPath === prefix || publicPath.startsWith(`${prefix}/`)
       );
       expect(claimed, `the proxy should not run on ${publicPath}`).toBe(false);
     }
@@ -68,11 +66,7 @@ describe("proxy matcher", () => {
   it("still lets policy exempt public paths inside a matched console", () => {
     // /academy/onboarding is inside a matched prefix, so the proxy DOES run on
     // it — the exemption has to come from the policy, not the matcher.
-    expect(
-      prefixes.some((prefix) => "/academy/onboarding".startsWith(prefix)),
-    ).toBe(true);
-    expect(
-      resolveAccess("/academy/onboarding", { status: "anonymous" }).kind,
-    ).toBe("allow");
+    expect(prefixes.some((prefix) => "/academy/onboarding".startsWith(prefix))).toBe(true);
+    expect(resolveAccess("/academy/onboarding", { status: "anonymous" }).kind).toBe("allow");
   });
 });

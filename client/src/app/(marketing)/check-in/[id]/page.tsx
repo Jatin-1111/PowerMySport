@@ -3,13 +3,7 @@
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  MessageCircle,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, MessageCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -56,7 +50,11 @@ export default function CheckInPage() {
       .get<{ success: boolean; data: PlanCheckIn }>(`/plan-checkins/${id}`)
       .then((res) => {
         setCheckIn(res.data.data);
-        setPhase(res.data.data.status === "active" || res.data.data.status === "due" ? "ready" : "submitted");
+        setPhase(
+          res.data.data.status === "active" || res.data.data.status === "due"
+            ? "ready"
+            : "submitted"
+        );
       })
       .catch(() => setPhase("error"));
   }, [token, id]);
@@ -67,7 +65,7 @@ export default function CheckInPage() {
     try {
       const res = await api.post<{ success: boolean; data: { followUp: FollowUp } }>(
         `/plan-checkins/${id}/respond`,
-        { status: selected, outcomeNote: note || undefined },
+        { status: selected, outcomeNote: note || undefined }
       );
       setFollowUp(res.data.data.followUp);
       setPhase("submitted");
@@ -80,15 +78,13 @@ export default function CheckInPage() {
 
   if (!token) {
     return (
-      <div className="relative min-h-screen flex items-center justify-center px-4">
+      <div className="relative flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
-          <h1 className="font-title text-xl font-bold text-slate-900 mb-2">Log in to continue</h1>
-          <p className="text-sm text-slate-500 mb-6">
-            This check-in is tied to your account.
-          </p>
+          <h1 className="font-title mb-2 text-xl font-bold text-slate-900">Log in to continue</h1>
+          <p className="mb-6 text-sm text-slate-500">This check-in is tied to your account.</p>
           <Link
             href={`/login?redirect=${encodeURIComponent(`/check-in/${id}`)}`}
-            className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange-600 transition"
+            className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
           >
             Log in <ArrowRight className="h-4 w-4" />
           </Link>
@@ -99,15 +95,15 @@ export default function CheckInPage() {
 
   if (phase === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-power-orange" />
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="text-power-orange h-6 w-6 animate-spin" />
       </div>
     );
   }
 
   if (phase === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 text-center">
+      <div className="flex min-h-screen items-center justify-center px-4 text-center">
         <p className="text-sm text-slate-500">
           Couldn&apos;t load this check-in — it may not belong to your account.
         </p>
@@ -117,22 +113,22 @@ export default function CheckInPage() {
 
   if (phase === "submitted") {
     return (
-      <div className="relative min-h-screen flex items-center justify-center px-4">
+      <div className="relative flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
             <CheckCircle2 className="h-7 w-7 text-emerald-600" />
           </div>
-          <h1 className="font-title text-xl font-bold text-slate-900 mb-2">
+          <h1 className="font-title mb-2 text-xl font-bold text-slate-900">
             Thanks for letting us know
           </h1>
-          <p className="text-sm text-slate-500 mb-7 leading-relaxed">
+          <p className="mb-7 text-sm leading-relaxed text-slate-500">
             {followUp?.message ?? "Your answer has been recorded."}
           </p>
 
           {followUp?.kind === "try_next_sport" && (
             <Link
               href="/assessment/discover"
-              className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange-600 transition"
+              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
             >
               Explore other sports <ArrowRight className="h-4 w-4" />
             </Link>
@@ -140,7 +136,7 @@ export default function CheckInPage() {
           {followUp?.kind === "re_diagnose" && (
             <Link
               href={checkIn ? `/guidance?sport=${encodeURIComponent(checkIn.sport)}` : "/guidance"}
-              className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white hover:bg-orange-600 transition"
+              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
             >
               Take another look <ArrowRight className="h-4 w-4" />
             </Link>
@@ -150,7 +146,7 @@ export default function CheckInPage() {
               href={followUp.whatsappUrl ?? "https://wa.me/918968582443"}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-6 py-3 text-sm font-bold text-white hover:bg-[#1ebe5d] transition"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#1ebe5d]"
             >
               <MessageCircle className="h-4 w-4" /> Talk to our team
             </a>
@@ -161,25 +157,23 @@ export default function CheckInPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-16">
+    <div className="relative flex min-h-screen items-center justify-center px-4 py-16">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-power-orange/10">
-            <Sparkles className="h-6 w-6 text-power-orange" />
+          <div className="bg-power-orange/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl">
+            <Sparkles className="text-power-orange h-6 w-6" />
           </div>
-          <h1 className="font-title text-2xl font-bold text-slate-900 mb-2">
-            {checkIn?.title}
-          </h1>
+          <h1 className="font-title mb-2 text-2xl font-bold text-slate-900">{checkIn?.title}</h1>
         </div>
 
         {checkIn && checkIn.signals.length > 0 && (
           <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+            <p className="mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
               What we asked you to watch for
             </p>
             <ul className="space-y-1.5">
               {checkIn.signals.map((s, i) => (
-                <li key={i} className="text-sm text-slate-600 leading-relaxed">
+                <li key={i} className="text-sm leading-relaxed text-slate-600">
                   • {s}
                 </li>
               ))}
@@ -187,7 +181,7 @@ export default function CheckInPage() {
           </div>
         )}
 
-        <div className="space-y-2.5 mb-4">
+        <div className="mb-4 space-y-2.5">
           {RESPONSE_OPTIONS.map((opt) => (
             <motion.button
               key={opt.value}
@@ -196,7 +190,7 @@ export default function CheckInPage() {
               whileTap={{ scale: 0.98 }}
               className={`w-full rounded-xl border-2 px-4 py-3 text-left text-sm font-semibold transition-colors ${
                 selected === opt.value
-                  ? "border-power-orange bg-orange-50 text-power-orange"
+                  ? "border-power-orange text-power-orange bg-orange-50"
                   : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
               }`}
             >
@@ -210,16 +204,22 @@ export default function CheckInPage() {
           onChange={(e) => setNote(e.target.value)}
           placeholder="Anything else worth mentioning? (optional)"
           rows={3}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 resize-none mb-5"
+          className="focus:border-power-orange focus:ring-power-orange/20 mb-5 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
         />
 
         <button
           type="button"
           onClick={submit}
           disabled={!selected || submitting}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+          className="bg-power-orange inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Submit <ArrowRight className="h-4 w-4" /></>}
+          {submitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              Submit <ArrowRight className="h-4 w-4" />
+            </>
+          )}
         </button>
       </div>
     </div>

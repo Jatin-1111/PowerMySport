@@ -46,9 +46,7 @@ When declining, always stay in character: "I'm the PowerMySport assistant, not a
 function buildRetrievedKnowledgeBlock(chunks: RetrievedChunk[]): string {
   if (chunks.length === 0) return "";
 
-  const entries = chunks
-    .map((c) => `Q: ${c.title}\nA: ${c.content}`)
-    .join("\n\n");
+  const entries = chunks.map((c) => `Q: ${c.title}\nA: ${c.content}`).join("\n\n");
 
   return `
 

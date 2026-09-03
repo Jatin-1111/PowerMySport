@@ -9,8 +9,7 @@ export interface ChatMessage {
 }
 
 export function authHeaders(): Record<string, string> {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -39,7 +38,7 @@ export function useChatCore() {
   const sendMessage = useCallback(
     async (
       userContent: string,
-      { endpoint, body, onDone }: SendChatMessageOptions,
+      { endpoint, body, onDone }: SendChatMessageOptions
     ): Promise<SendChatMessageResult | undefined> => {
       const trimmed = userContent.trim();
       if (!trimmed || isStreaming) return;
@@ -133,7 +132,7 @@ export function useChatCore() {
 
       return { rateLimitHit };
     },
-    [isStreaming],
+    [isStreaming]
   );
 
   const clearError = useCallback(() => setError(null), []);

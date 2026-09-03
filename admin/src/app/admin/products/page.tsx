@@ -7,10 +7,7 @@ import {
   adminEcommerceApi,
 } from "@/modules/admin/services/ecommerce";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
 import { X } from "lucide-react";
@@ -32,9 +29,7 @@ type SortBy = "name" | "basePrice" | "totalStock" | "createdAt";
 
 export default function AdminProductsPage() {
   return (
-    <Suspense
-      fallback={<div className="text-center py-12">Loading products...</div>}
-    >
+    <Suspense fallback={<div className="py-12 text-center">Loading products...</div>}>
       <AdminProductsPageContent />
     </Suspense>
   );
@@ -63,8 +58,7 @@ function AdminProductsPageContent() {
   const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState<SortBy>("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [editingProduct, setEditingProduct] =
-    useState<AdminProductRecord | null>(null);
+  const [editingProduct, setEditingProduct] = useState<AdminProductRecord | null>(null);
   const [editForm, setEditForm] = useState<ProductEditableFields>({});
   const [saving, setSaving] = useState(false);
 
@@ -123,10 +117,7 @@ function AdminProductsPageContent() {
     if (!editingProduct) return;
     setSaving(true);
     try {
-      const response = await adminEcommerceApi.updateProduct(
-        editingProduct.id,
-        editForm,
-      );
+      const response = await adminEcommerceApi.updateProduct(editingProduct.id, editForm);
       if (response.ok && response.data) {
         toast.success("Product updated.");
         closeEdit();
@@ -156,9 +147,7 @@ function AdminProductsPageContent() {
       key: "name",
       header: "Name",
       sortable: true,
-      render: (product) => (
-        <span className="font-medium text-slate-900">{product.name}</span>
-      ),
+      render: (product) => <span className="font-medium text-slate-900">{product.name}</span>,
     },
     { key: "sku", header: "SKU", render: (product) => product.sku },
     {
@@ -209,9 +198,7 @@ function AdminProductsPageContent() {
           <div className="flex items-center gap-3">
             <select
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as typeof statusFilter)
-              }
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
               className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
             >
               <option value="">All statuses</option>
@@ -267,8 +254,7 @@ function AdminProductsPageContent() {
                   },
                   {
                     header: "Sale Price (INR)",
-                    value: (p) =>
-                      p.salePrice ? (p.salePrice / 100).toFixed(2) : "",
+                    value: (p) => (p.salePrice ? (p.salePrice / 100).toFixed(2) : ""),
                   },
                   { header: "Stock", value: (p) => p.totalStock },
                   {
@@ -293,12 +279,8 @@ function AdminProductsPageContent() {
           >
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">
-                  Edit product
-                </h2>
-                <p className="text-sm text-slate-500">
-                  SKU: {editingProduct.sku}
-                </p>
+                <h2 className="text-lg font-bold text-slate-900">Edit product</h2>
+                <p className="text-sm text-slate-500">SKU: {editingProduct.sku}</p>
               </div>
               <button
                 onClick={closeEdit}
@@ -310,20 +292,18 @@ function AdminProductsPageContent() {
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Name
                 </label>
                 <input
                   value={editForm.name ?? ""}
-                  onChange={(e) =>
-                    setEditForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Short description
                 </label>
                 <input
@@ -339,7 +319,7 @@ function AdminProductsPageContent() {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Description
                 </label>
                 <textarea
@@ -357,7 +337,7 @@ function AdminProductsPageContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Category
                   </label>
                   <select
@@ -378,7 +358,7 @@ function AdminProductsPageContent() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Status
                   </label>
                   <select
@@ -399,7 +379,7 @@ function AdminProductsPageContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Base price (paise)
                   </label>
                   <input
@@ -415,7 +395,7 @@ function AdminProductsPageContent() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Sale price (paise, optional)
                   </label>
                   <input
@@ -424,9 +404,7 @@ function AdminProductsPageContent() {
                     onChange={(e) =>
                       setEditForm((prev) => ({
                         ...prev,
-                        salePrice: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
+                        salePrice: e.target.value ? Number(e.target.value) : undefined,
                       }))
                     }
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"

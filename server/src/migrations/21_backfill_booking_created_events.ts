@@ -74,7 +74,7 @@ const toPaise = (rupees: number): number =>
  */
 const loadAlreadyBackfilled = async (
   subjectType: "BOOKING" | "EXPERT_SESSION",
-  subjectIds: mongoose.Types.ObjectId[],
+  subjectIds: mongoose.Types.ObjectId[]
 ): Promise<Set<string>> => {
   if (subjectIds.length === 0) return new Set();
 
@@ -89,16 +89,12 @@ const loadAlreadyBackfilled = async (
   return new Set(existing.map((event) => event.subjectId.toString()));
 };
 
-export const up = async (
-  options: { apply?: boolean; report?: boolean } = {},
-) => {
+export const up = async (options: { apply?: boolean; report?: boolean } = {}) => {
   const apply = Boolean(options.apply);
   // See migration 25: only the CLI writes report files.
   const writeReport = Boolean(options.report);
 
-  console.log(
-    `Starting migration 21: backfill CREATED events (${apply ? "APPLY" : "DRY RUN"})...`,
-  );
+  console.log(`Starting migration 21: backfill CREATED events (${apply ? "APPLY" : "DRY RUN"})...`);
 
   const planned: PlannedEvent[] = [];
   const skipped: SkippedSubject[] = [];
@@ -106,7 +102,9 @@ export const up = async (
 
   // ───────────── Booking (venue / coach / academy) ─────────────
   const bookings = await Booking.find({})
-    .select("_id userId organizerId venueId coachId academyId status totalAmount sport date startTime endTime createdAt bookingType")
+    .select(
+      "_id userId organizerId venueId coachId academyId status totalAmount sport date startTime endTime createdAt bookingType"
+    )
     .sort({ createdAt: 1 })
     .lean();
 
@@ -114,7 +112,7 @@ export const up = async (
 
   const bookingsDone = await loadAlreadyBackfilled(
     "BOOKING",
-    bookings.map((booking) => booking._id),
+    bookings.map((booking) => booking._id)
   );
 
   const bookingDocs: Record<string, unknown>[] = [];
@@ -200,7 +198,7 @@ export const up = async (
 
   const sessionsDone = await loadAlreadyBackfilled(
     "EXPERT_SESSION",
-    sessions.map((session) => session._id),
+    sessions.map((session) => session._id)
   );
 
   const sessionDocs: Record<string, unknown>[] = [];
@@ -253,9 +251,7 @@ export const up = async (
         backfillMigration: "21_backfill_booking_created_events",
         statusAtBackfill: session.status,
         mode: session.mode,
-        scheduledAt: session.scheduledAt
-          ? new Date(session.scheduledAt).toISOString()
-          : null,
+        scheduledAt: session.scheduledAt ? new Date(session.scheduledAt).toISOString() : null,
       },
       occurredAt: session.createdAt,
     });
@@ -280,9 +276,7 @@ export const up = async (
       // batch; every insert is independent.
       const result = await BookingEvent.insertMany(batch, { ordered: false });
       inserted += result.length;
-      console.log(
-        `  inserted ${inserted}/${allDocs.length} event(s)...`,
-      );
+      console.log(`  inserted ${inserted}/${allDocs.length} event(s)...`);
     }
   }
 
@@ -312,25 +306,20 @@ export const up = async (
     fs.mkdirSync(reportDir, { recursive: true });
     const reportPath = path.join(
       reportDir,
-      `migration-21-backfill-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
+      `migration-21-backfill-${new Date().toISOString().replace(/[:.]/g, "-")}.json`
     );
-    fs.writeFileSync(
-      reportPath,
-      JSON.stringify({ planned, skipped, inserted }, null, 2),
-    );
+    fs.writeFileSync(reportPath, JSON.stringify({ planned, skipped, inserted }, null, 2));
     console.log();
     console.log(`Report written to ${reportPath}`);
     console.log(
-      "Keep it: these events CANNOT be deleted, so this file is the only record of what this run added.",
+      "Keep it: these events CANNOT be deleted, so this file is the only record of what this run added."
     );
   }
 
   if (!apply) {
     console.log();
     console.log("Dry run — nothing was written. Re-run with --apply to commit.");
-    console.log(
-      "Note: BookingEvent is append-only. Applying this is IRREVERSIBLE.",
-    );
+    console.log("Note: BookingEvent is append-only. Applying this is IRREVERSIBLE.");
   }
 
   console.log();
@@ -348,16 +337,14 @@ export const down = async () => {
   throw new Error(
     "Migration 21 cannot be rolled back: BookingEvent is append-only and blocks deletes. " +
       "Backfilled events are identifiable by channel:'BACKFILL' and metadata.backfilled === true " +
-      "if you need to filter them out of a query.",
+      "if you need to filter them out of a query."
   );
 };
 
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const apply = process.argv.includes("--apply");
 

@@ -41,13 +41,13 @@ export function FilterBar({
     <>
       {/* ── Premium Compact Filter Bar ────────────────────────── */}
       <div className="border-b border-slate-100 bg-white">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="max-w-8xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
           <form onSubmit={onSubmit} className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               {/* Search input - takes most space */}
               <div className="relative min-w-0 flex-1">
                 <Search
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-slate-400"
                   size={16}
                 />
                 <input
@@ -55,13 +55,13 @@ export function FilterBar({
                   value={searchValue}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder={searchPlaceholder}
-                  className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-10 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20 transition-all"
+                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pr-10 pl-10 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:outline-none"
                 />
                 {searchValue && (
                   <button
                     type="button"
                     onClick={onSearchClear}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                    className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
                   >
                     <X size={15} />
                   </button>
@@ -72,27 +72,27 @@ export function FilterBar({
               <button
                 type="button"
                 onClick={() => onModalOpenChange(true)}
-                className="relative flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-300"
+                className="relative flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
               >
                 <SlidersHorizontal size={16} />
                 <span className="hidden sm:inline">Filters</span>
                 {hasFilters && (
-                  <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-power-orange ring-2 ring-white" />
+                  <span className="bg-power-orange absolute top-2 right-2 h-2.5 w-2.5 rounded-full ring-2 ring-white" />
                 )}
               </button>
             </div>
 
             {/* Active Filter Badges */}
             {hasFilters && (
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">
+              <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1 whitespace-nowrap">
+                <span className="mr-1 text-xs font-semibold tracking-wider text-slate-400 uppercase">
                   Active:
                 </span>
 
                 {activeFilters.map((filter) => (
                   <span
                     key={filter.id}
-                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${filter.badgeClassName || "bg-orange-50 border-orange-100 text-power-orange"}`}
+                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${filter.badgeClassName || "text-power-orange border-orange-100 bg-orange-50"}`}
                   >
                     {filter.label}
                     <button
@@ -108,7 +108,7 @@ export function FilterBar({
                 <button
                   type="button"
                   onClick={onClearAll}
-                  className="text-xs font-bold text-slate-400 hover:text-slate-700 transition ml-2 underline underline-offset-2"
+                  className="ml-2 text-xs font-bold text-slate-400 underline underline-offset-2 transition hover:text-slate-700"
                 >
                   Clear All
                 </button>
@@ -128,18 +128,18 @@ export function FilterBar({
         <div className="p-1">
           <div className="space-y-6">{children}</div>
 
-          <div className="mt-8 flex items-center gap-3 pt-5 border-t border-slate-100">
+          <div className="mt-8 flex items-center gap-3 border-t border-slate-100 pt-5">
             <button
               type="button"
               onClick={onClearAll}
-              className="flex-1 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-600 underline underline-offset-2 hover:text-slate-900 transition-colors"
+              className="flex-1 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-600 underline underline-offset-2 transition-colors hover:text-slate-900"
             >
               Clear all
             </button>
             <button
               type="button"
               onClick={() => onModalOpenChange(false)}
-              className="flex-1 rounded-xl bg-power-orange px-4 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600"
+              className="bg-power-orange flex-1 rounded-xl px-4 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600"
             >
               Show Results
             </button>

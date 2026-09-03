@@ -25,10 +25,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function LoginLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function LoginLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

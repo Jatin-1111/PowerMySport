@@ -1,13 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  CalendarDays,
-  CheckCircle2,
-  ChevronDown,
-  Clock3,
-  Target,
-} from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronDown, Clock3, Target } from "lucide-react";
 import { useState } from "react";
 import type { PlanSession, ShortTermPlan } from "../../types";
 
@@ -37,9 +31,7 @@ function SessionRow({ session }: { session: PlanSession | string }) {
     return (
       <li className="flex items-start gap-2 px-3.5 py-2.5">
         <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-300" />
-        <span className="text-[13px] leading-relaxed text-slate-600">
-          {session}
-        </span>
+        <span className="text-[13px] leading-relaxed text-slate-600">{session}</span>
       </li>
     );
   }
@@ -52,13 +44,11 @@ function SessionRow({ session }: { session: PlanSession | string }) {
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left"
       >
-        <span className="flex items-center gap-2 min-w-0">
+        <span className="flex min-w-0 items-center gap-2">
           <CheckCircle2
             className={`h-3.5 w-3.5 shrink-0 ${open ? "text-power-orange" : "text-slate-300"}`}
           />
-          <span className="truncate text-[13px] font-semibold text-slate-800">
-            {session.name}
-          </span>
+          <span className="truncate text-[13px] font-semibold text-slate-800">{session.name}</span>
         </span>
         <span className="flex shrink-0 items-center gap-2">
           {session.minutes ? (
@@ -79,15 +69,11 @@ function SessionRow({ session }: { session: PlanSession | string }) {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15 }}
         >
-          <div className="border-t border-slate-100 px-3.5 py-3 space-y-2">
-            <p className="text-[13px] leading-relaxed text-slate-600">
-              {session.how}
-            </p>
+          <div className="space-y-2 border-t border-slate-100 px-3.5 py-3">
+            <p className="text-[13px] leading-relaxed text-slate-600">{session.how}</p>
             {session.doneRight && (
               <p className="text-xs leading-relaxed text-emerald-700">
-                <span className="font-bold uppercase tracking-wide">
-                  Done right:{" "}
-                </span>
+                <span className="font-bold tracking-wide uppercase">Done right: </span>
                 {session.doneRight}
               </p>
             )}
@@ -103,16 +89,16 @@ export function ShortTermPlanCard({ plan }: { plan: ShortTermPlan }) {
   const [openWeek, setOpenWeek] = useState(0);
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
-      <div className="flex items-center gap-3 mb-5">
+    <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-5 flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50">
-          <CalendarDays className="h-5 w-5 text-power-orange" />
+          <CalendarDays className="text-power-orange h-5 w-5" />
         </div>
         <div>
-          <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+          <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
             Your {plan.durationWeeks}-Week Plan
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="mt-0.5 text-xs text-slate-500">
             One focus per week — tap a drill to see how to run it
           </p>
         </div>
@@ -136,11 +122,11 @@ export function ShortTermPlanCard({ plan }: { plan: ShortTermPlan }) {
                 aria-expanded={isOpen}
                 className="flex w-full items-start justify-between gap-3 p-4 text-left"
               >
-                <span className="flex items-baseline gap-2.5 min-w-0">
-                  <span className="shrink-0 rounded-lg bg-power-orange/10 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-power-orange">
+                <span className="flex min-w-0 items-baseline gap-2.5">
+                  <span className="bg-power-orange/10 text-power-orange shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase">
                     {week.label}
                   </span>
-                  <span className="text-sm font-semibold text-slate-800 leading-snug">
+                  <span className="text-sm leading-snug font-semibold text-slate-800">
                     {week.focus}
                   </span>
                 </span>
@@ -161,7 +147,7 @@ export function ShortTermPlanCard({ plan }: { plan: ShortTermPlan }) {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <ul className="px-4 pb-4 space-y-2">
+                  <ul className="space-y-2 px-4 pb-4">
                     {week.sessions.map((session, j) => (
                       <SessionRow key={j} session={session} />
                     ))}
@@ -179,12 +165,10 @@ export function ShortTermPlanCard({ plan }: { plan: ShortTermPlan }) {
             <Target className="h-4 w-4 text-emerald-600" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-emerald-700 mb-0.5">
+            <p className="mb-0.5 text-xs font-bold tracking-wide text-emerald-700 uppercase">
               How you&apos;ll know it worked
             </p>
-            <p className="text-sm leading-relaxed text-emerald-900/90">
-              {plan.successCheck}
-            </p>
+            <p className="text-sm leading-relaxed text-emerald-900/90">{plan.successCheck}</p>
           </div>
         </div>
       )}

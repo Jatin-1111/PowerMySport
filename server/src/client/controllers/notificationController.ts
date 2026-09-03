@@ -14,7 +14,7 @@ const log = __rootLog.child("notification");
 export const getNotifications = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -22,21 +22,12 @@ export const getNotifications = async (
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const category = req.query.category as NotificationCategory | undefined;
     const isRead =
-      req.query.isRead === "true"
-        ? true
-        : req.query.isRead === "false"
-          ? false
-          : undefined;
+      req.query.isRead === "true" ? true : req.query.isRead === "false" ? false : undefined;
 
-    const result = await NotificationService.getUserNotifications(
-      userId,
-      page,
-      limit,
-      {
-        ...(category && { category }),
-        ...(isRead !== undefined && { isRead }),
-      },
-    );
+    const result = await NotificationService.getUserNotifications(userId, page, limit, {
+      ...(category && { category }),
+      ...(isRead !== undefined && { isRead }),
+    });
 
     res.json({
       success: true,
@@ -60,7 +51,7 @@ export const getNotifications = async (
 export const getUnreadCount = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -84,7 +75,7 @@ export const getUnreadCount = async (
 export const markNotificationRead = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -98,10 +89,7 @@ export const markNotificationRead = async (
       return;
     }
 
-    const notification = await NotificationService.markRead(
-      notificationId,
-      userId,
-    );
+    const notification = await NotificationService.markRead(notificationId, userId);
 
     if (!notification) {
       res.status(404).json({
@@ -127,7 +115,7 @@ export const markNotificationRead = async (
 export const markAllNotificationsRead = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -151,7 +139,7 @@ export const markAllNotificationsRead = async (
 export const deleteNotification = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -165,10 +153,7 @@ export const deleteNotification = async (
       return;
     }
 
-    const notification = await NotificationService.deleteNotification(
-      notificationId,
-      userId,
-    );
+    const notification = await NotificationService.deleteNotification(notificationId, userId);
 
     if (!notification) {
       res.status(404).json({
@@ -194,7 +179,7 @@ export const deleteNotification = async (
 export const getNotificationPreferences = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -267,7 +252,7 @@ const notificationPreferencesSchema = z.object({
 export const updateNotificationPreferences = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -282,7 +267,7 @@ export const updateNotificationPreferences = async (
           "notificationPreferences.inApp": preferences.inApp,
         },
       },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     ).select("notificationPreferences");
 
     if (!user) {
@@ -318,7 +303,7 @@ export const updateNotificationPreferences = async (
 export const subscribeToPush = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -345,7 +330,7 @@ export const subscribeToPush = async (
     }
 
     const existingSubscription = user.pushSubscriptions?.find(
-      (sub) => sub.endpoint === subscription.endpoint,
+      (sub) => sub.endpoint === subscription.endpoint
     );
 
     if (existingSubscription) {
@@ -370,15 +355,13 @@ export const subscribeToPush = async (
           },
         },
       },
-      { new: true },
+      { new: true }
     ).select("pushSubscriptions");
 
     res.status(201).json({
       success: true,
       message: "Push subscription created successfully",
-      data: updatedUser?.pushSubscriptions?.[
-        updatedUser.pushSubscriptions.length - 1
-      ],
+      data: updatedUser?.pushSubscriptions?.[updatedUser.pushSubscriptions.length - 1],
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -400,7 +383,7 @@ export const subscribeToPush = async (
 export const unsubscribeFromPush = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -418,7 +401,7 @@ export const unsubscribeFromPush = async (
           pushSubscriptions: { endpoint },
         },
       },
-      { new: true },
+      { new: true }
     ).select("pushSubscriptions");
 
     if (!updatedUser) {
@@ -454,7 +437,7 @@ export const unsubscribeFromPush = async (
 export const getPushSubscriptions = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -485,7 +468,7 @@ export const getPushSubscriptions = async (
 export const sendTestPushNotification = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const pushService = pushNotificationService;
@@ -503,15 +486,10 @@ export const sendTestPushNotification = async (
     // Get user's push subscriptions
     const user = await User.findById(userId).select("pushSubscriptions");
 
-    if (
-      !user ||
-      !user.pushSubscriptions ||
-      user.pushSubscriptions.length === 0
-    ) {
+    if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) {
       res.status(400).json({
         success: false,
-        message:
-          "No push subscriptions found. Please enable push notifications first.",
+        message: "No push subscriptions found. Please enable push notifications first.",
       });
       return;
     }
@@ -530,7 +508,7 @@ export const sendTestPushNotification = async (
 
     const result = await pushService.sendPushNotificationToMultiple(
       user.pushSubscriptions as any[],
-      payload,
+      payload
     );
 
     // Remove expired subscriptions from database
@@ -567,7 +545,7 @@ export const sendTestPushNotification = async (
 export const getVapidStatus = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const pushService = pushNotificationService;

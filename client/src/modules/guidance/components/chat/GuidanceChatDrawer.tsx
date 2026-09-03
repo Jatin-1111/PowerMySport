@@ -25,11 +25,7 @@ interface GuidanceChatDrawerProps {
   submission: GuidanceSubmission;
 }
 
-export function GuidanceChatDrawer({
-  isOpen,
-  onClose,
-  submission,
-}: GuidanceChatDrawerProps) {
+export function GuidanceChatDrawer({ isOpen, onClose, submission }: GuidanceChatDrawerProps) {
   const { submissionId, query } = {
     submissionId: submission.id,
     query: submission.query,

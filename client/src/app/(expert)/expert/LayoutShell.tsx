@@ -5,24 +5,15 @@ import { authApi } from "@/modules/auth/services/auth";
 import { expertApi } from "@/modules/expert/services/expert";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
-    DashboardShell,
-    type DashboardNavItem,
+  DashboardShell,
+  type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
-import {
-    BadgeIndianRupee,
-    CalendarCheck,
-    LayoutDashboard,
-    Settings,    UserCog,
-} from "lucide-react";
+import { BadgeIndianRupee, CalendarCheck, LayoutDashboard, Settings, UserCog } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect } from "react";
 
-export default function ExpertLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ExpertLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -39,13 +30,16 @@ export default function ExpertLayout({
     // security boundary since the real gate is server-side regardless.
     if (!user || user.role !== "EXPERT") return;
     if (pathname === "/expert/onboarding") return;
-    expertApi.getMyProfile().then((res) => {
-      if (res.success && res.data) {
-        if (res.data.verificationStatus !== "APPROVED") {
-          router.replace("/expert/onboarding");
+    expertApi
+      .getMyProfile()
+      .then((res) => {
+        if (res.success && res.data) {
+          if (res.data.verificationStatus !== "APPROVED") {
+            router.replace("/expert/onboarding");
+          }
         }
-      }
-    }).catch(() => {});
+      })
+      .catch(() => {});
   }, [user, pathname, router]);
 
   const handleLogout = async () => {

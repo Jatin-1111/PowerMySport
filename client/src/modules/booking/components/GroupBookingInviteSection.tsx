@@ -53,30 +53,24 @@ export function GroupBookingInviteSection({
           "flex w-full items-center justify-between rounded-xl border-2 px-4 py-4 transition-all",
           isGroupBooking
             ? "border-power-orange bg-power-orange/5"
-            : "border-slate-200 bg-white hover:border-slate-300",
+            : "border-slate-200 bg-white hover:border-slate-300"
         )}
       >
         <div className="flex items-center gap-3">
           <div
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-lg",
-              isGroupBooking
-                ? "bg-power-orange text-white"
-                : "bg-slate-100 text-slate-600",
+              isGroupBooking ? "bg-power-orange text-white" : "bg-slate-100 text-slate-600"
             )}
           >
             <Users size={20} />
           </div>
           <div className="text-left">
-            <p className="font-semibold text-slate-900">
-              Book with friends (Group Booking)
-            </p>
-            <p className="text-sm text-slate-600 line-clamp-1">
+            <p className="font-semibold text-slate-900">Book with friends (Group Booking)</p>
+            <p className="line-clamp-1 text-sm text-slate-600">
               {isGroupBooking
                 ? selectedFriends.length > 0
-                  ? selectedFriends
-                      .map((f) => f.name || f.anonymousAlias || "Friend")
-                      .join(", ")
+                  ? selectedFriends.map((f) => f.name || f.anonymousAlias || "Friend").join(", ")
                   : `${selectedFriendIds.length} ${selectedFriendIds.length === 1 ? "friend" : "friends"} invited`
                 : "Invite friends to join this booking"}
             </p>
@@ -84,7 +78,7 @@ export function GroupBookingInviteSection({
         </div>
         <div className="flex items-center gap-2">
           {isGroupBooking && (
-            <span className="rounded-full bg-power-orange px-3 py-1 text-xs font-semibold text-white">
+            <span className="bg-power-orange rounded-full px-3 py-1 text-xs font-semibold text-white">
               ON
             </span>
           )}

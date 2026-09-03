@@ -2,15 +2,15 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-    AlertCircle,
-    ChevronLeft,
-    Clock,
-    Loader2,
-    MessageCircle,
-    Plus,
-    Send,
-    X,
-    Zap,
+  AlertCircle,
+  ChevronLeft,
+  Clock,
+  Loader2,
+  MessageCircle,
+  Plus,
+  Send,
+  X,
+  Zap,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -26,50 +26,38 @@ function MarkdownContent({ content }: { content: string }) {
       components={{
         // Headings
         h1: ({ children }) => (
-          <h1 className="text-sm font-bold text-slate-900 mt-3 mb-1.5 first:mt-0">
-            {children}
-          </h1>
+          <h1 className="mt-3 mb-1.5 text-sm font-bold text-slate-900 first:mt-0">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-sm font-bold text-slate-900 mt-3 mb-1 first:mt-0">
-            {children}
-          </h2>
+          <h2 className="mt-3 mb-1 text-sm font-bold text-slate-900 first:mt-0">{children}</h2>
         ),
         h3: ({ children }) => (
-          <h3 className="text-[13px] font-semibold text-slate-800 mt-2.5 mb-1 first:mt-0">
+          <h3 className="mt-2.5 mb-1 text-[13px] font-semibold text-slate-800 first:mt-0">
             {children}
           </h3>
         ),
         h4: ({ children }) => (
-          <h4 className="text-[13px] font-semibold text-slate-700 mt-2 mb-0.5 first:mt-0">
+          <h4 className="mt-2 mb-0.5 text-[13px] font-semibold text-slate-700 first:mt-0">
             {children}
           </h4>
         ),
         // Paragraphs
         p: ({ children }) => (
-          <p className="text-sm text-slate-800 leading-relaxed mb-2 last:mb-0">
-            {children}
-          </p>
+          <p className="mb-2 text-sm leading-relaxed text-slate-800 last:mb-0">{children}</p>
         ),
         // Bold / Italic
         strong: ({ children }) => (
           <strong className="font-semibold text-slate-900">{children}</strong>
         ),
-        em: ({ children }) => (
-          <em className="italic text-slate-700">{children}</em>
-        ),
+        em: ({ children }) => <em className="text-slate-700 italic">{children}</em>,
         // Unordered list
-        ul: ({ children }) => (
-          <ul className="my-1.5 space-y-1 pl-4">{children}</ul>
-        ),
+        ul: ({ children }) => <ul className="my-1.5 space-y-1 pl-4">{children}</ul>,
         // Ordered list
-        ol: ({ children }) => (
-          <ol className="my-1.5 space-y-1 pl-5 list-decimal">{children}</ol>
-        ),
+        ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-1 pl-5">{children}</ol>,
         // List items
         li: ({ children }) => (
-          <li className="text-sm text-slate-800 leading-relaxed flex gap-2 items-start">
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-power-orange" />
+          <li className="flex items-start gap-2 text-sm leading-relaxed text-slate-800">
+            <span className="bg-power-orange mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
             <span className="flex-1">{children}</span>
           </li>
         ),
@@ -78,20 +66,20 @@ function MarkdownContent({ content }: { content: string }) {
           const isBlock = className?.includes("language-");
           if (isBlock) {
             return (
-              <code className="block w-full overflow-x-auto rounded-lg bg-slate-100 p-3 text-[12px] font-mono text-slate-700 leading-relaxed">
+              <code className="block w-full overflow-x-auto rounded-lg bg-slate-100 p-3 font-mono text-[12px] leading-relaxed text-slate-700">
                 {children}
               </code>
             );
           }
           return (
-            <code className="rounded bg-orange-50 px-1 py-0.5 text-[12px] font-mono text-orange-700">
+            <code className="rounded bg-orange-50 px-1 py-0.5 font-mono text-[12px] text-orange-700">
               {children}
             </code>
           );
         },
         // Block quote
         blockquote: ({ children }) => (
-          <blockquote className="my-2 border-l-2 border-orange-300 pl-3 text-sm italic text-slate-600">
+          <blockquote className="my-2 border-l-2 border-orange-300 pl-3 text-sm text-slate-600 italic">
             {children}
           </blockquote>
         ),
@@ -103,7 +91,7 @@ function MarkdownContent({ content }: { content: string }) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-power-orange underline underline-offset-2 hover:text-orange-600"
+            className="text-power-orange font-medium underline underline-offset-2 hover:text-orange-600"
           >
             {children}
           </a>
@@ -111,23 +99,15 @@ function MarkdownContent({ content }: { content: string }) {
         // Tables (remark-gfm)
         table: ({ children }) => (
           <div className="my-2 overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full text-[12px] text-slate-700">
-              {children}
-            </table>
+            <table className="w-full text-[12px] text-slate-700">{children}</table>
           </div>
         ),
         thead: ({ children }) => (
-          <thead className="bg-slate-50 font-semibold text-slate-600">
-            {children}
-          </thead>
+          <thead className="bg-slate-50 font-semibold text-slate-600">{children}</thead>
         ),
         tbody: ({ children }) => <tbody>{children}</tbody>,
-        tr: ({ children }) => (
-          <tr className="border-t border-slate-100">{children}</tr>
-        ),
-        th: ({ children }) => (
-          <th className="px-3 py-1.5 text-left font-semibold">{children}</th>
-        ),
+        tr: ({ children }) => <tr className="border-t border-slate-100">{children}</tr>,
+        th: ({ children }) => <th className="px-3 py-1.5 text-left font-semibold">{children}</th>,
         td: ({ children }) => <td className="px-3 py-1.5">{children}</td>,
       }}
     >
@@ -158,22 +138,20 @@ function MessageBubble({
       className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}
     >
       {!isUser && (
-        <div className="mr-2 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-100 ring-1 ring-orange-200">
-          <Zap className="h-3.5 w-3.5 text-power-orange" aria-hidden="true" />
+        <div className="mt-0.5 mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-100 ring-1 ring-orange-200">
+          <Zap className="text-power-orange h-3.5 w-3.5" aria-hidden="true" />
         </div>
       )}
       <div
         className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm ${
           isUser
-            ? "rounded-tr-sm bg-power-orange text-white"
+            ? "bg-power-orange rounded-tr-sm text-white"
             : "rounded-tl-sm border border-slate-200/80 bg-white text-slate-800 shadow-sm"
         }`}
       >
         {isUser ? (
           /* User messages: plain text */
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-white">
-            {content}
-          </p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap text-white">{content}</p>
         ) : content ? (
           /* Assistant messages: rendered markdown */
           <div className="prose-chat">
@@ -187,7 +165,7 @@ function MessageBubble({
           </div>
         ) : isStreaming ? (
           /* Empty placeholder while first tokens arrive */
-          <span aria-hidden="true" className="flex items-center gap-1.5 text-slate-400 py-0.5">
+          <span aria-hidden="true" className="flex items-center gap-1.5 py-0.5 text-slate-400">
             <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:0ms] motion-reduce:animate-none" />
             <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:150ms] motion-reduce:animate-none" />
             <span className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-300 [animation-delay:300ms] motion-reduce:animate-none" />
@@ -322,8 +300,8 @@ export function ChatDrawer({
       if (!container) return;
       const focusable = Array.from(
         container.querySelectorAll<HTMLElement>(
-          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])',
-        ),
+          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
+        )
       ).filter((el) => !el.hasAttribute("disabled"));
       if (focusable.length === 0) return;
 
@@ -368,7 +346,7 @@ export function ChatDrawer({
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend]
   );
 
   const handleQuickReply = useCallback(
@@ -376,11 +354,10 @@ export function ChatDrawer({
       if (isStreaming) return;
       sendMessage(text);
     },
-    [isStreaming, sendMessage],
+    [isStreaming, sendMessage]
   );
 
-  const rateLimitHit =
-    meta.dailyRemaining === 0 || meta.lifetimeRemaining === 0;
+  const rateLimitHit = meta.dailyRemaining === 0 || meta.lifetimeRemaining === 0;
 
   return (
     <AnimatePresence>
@@ -413,7 +390,7 @@ export function ChatDrawer({
                 ? { duration: 0.01 }
                 : { type: "spring", damping: 28, stiffness: 280 }
             }
-            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200/80 bg-white shadow-[−8px_0_30px_-10px_rgba(15,23,42,0.15)] sm:max-w-[560px]"
+            className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200/80 bg-white shadow-[−8px_0_30px_-10px_rgba(15,23,42,0.15)] sm:max-w-[560px]"
           >
             {/* Screen-reader-only status announcements (streaming state, not per-chunk) */}
             <div role="status" aria-live="polite" className="sr-only">
@@ -432,14 +409,17 @@ export function ChatDrawer({
                 </button>
               ) : (
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 ring-1 ring-orange-100">
-                  <MessageCircle className="h-[18px] w-[18px] text-power-orange" aria-hidden="true" />
+                  <MessageCircle
+                    className="text-power-orange h-[18px] w-[18px]"
+                    aria-hidden="true"
+                  />
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p id={titleId} className="text-sm font-bold text-slate-900 leading-tight truncate">
+                <p id={titleId} className="truncate text-sm leading-tight font-bold text-slate-900">
                   {showHistory ? "Chat History" : title}
                 </p>
-                <p className="text-[11px] text-slate-400 truncate">
+                <p className="truncate text-[11px] text-slate-400">
                   {showHistory ? "All your past conversations" : subtitle}
                 </p>
               </div>
@@ -470,9 +450,7 @@ export function ChatDrawer({
 
             {/* Header addon area for disclaimers/badges (hidden in history view) */}
             {children && !showHistory && (
-              <div className="bg-slate-50 border-b border-slate-100 px-4 py-2">
-                {children}
-              </div>
+              <div className="border-b border-slate-100 bg-slate-50 px-4 py-2">{children}</div>
             )}
 
             {/* ── History panel ── */}
@@ -485,7 +463,7 @@ export function ChatDrawer({
                       onNewChat?.();
                       setShowHistory(false);
                     }}
-                    className="flex w-full items-center gap-2.5 rounded-xl border border-dashed border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold text-power-orange transition hover:bg-orange-100 cursor-pointer"
+                    className="text-power-orange flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-dashed border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold transition hover:bg-orange-100"
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
                     New Chat
@@ -493,7 +471,7 @@ export function ChatDrawer({
                 </div>
 
                 {/* Session list */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                <div className="flex-1 space-y-1 overflow-y-auto p-3">
                   {isLoadingSessions ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-5 w-5 animate-spin text-slate-300" aria-hidden="true" />
@@ -514,17 +492,21 @@ export function ChatDrawer({
                             onSelectSession?.(s._id);
                             setShowHistory(false);
                           }}
-                          className={`w-full rounded-xl px-3 py-2.5 text-left transition cursor-pointer ${
+                          className={`w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition ${
                             isActive
-                              ? "bg-orange-50 border border-orange-200"
-                              : "hover:bg-slate-50 border border-transparent"
+                              ? "border border-orange-200 bg-orange-50"
+                              : "border border-transparent hover:bg-slate-50"
                           }`}
                         >
-                          <p className={`text-sm font-medium leading-snug truncate ${isActive ? "text-power-orange" : "text-slate-800"}`}>
+                          <p
+                            className={`truncate text-sm leading-snug font-medium ${isActive ? "text-power-orange" : "text-slate-800"}`}
+                          >
                             {s.title ?? "New conversation"}
                           </p>
                           <p className="mt-0.5 text-[11px] text-slate-400">
-                            {s.totalMessageCount} {s.totalMessageCount === 1 ? "message" : "messages"} · {timeAgo(s.updatedAt)}
+                            {s.totalMessageCount}{" "}
+                            {s.totalMessageCount === 1 ? "message" : "messages"} ·{" "}
+                            {timeAgo(s.updatedAt)}
                           </p>
                         </button>
                       );
@@ -535,57 +517,62 @@ export function ChatDrawer({
             )}
 
             {/* ── Messages area ── */}
-            {!showHistory && <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-              {isInitializing ? (
-                <div className="flex h-full items-center justify-center">
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-power-orange" aria-hidden="true" />
-                    <p className="text-sm text-slate-500" role="status">
-                      Loading your conversation…
-                    </p>
+            {!showHistory && (
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+                {isInitializing ? (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <Loader2
+                        className="text-power-orange h-6 w-6 animate-spin"
+                        aria-hidden="true"
+                      />
+                      <p className="text-sm text-slate-500" role="status">
+                        Loading your conversation…
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  <AnimatePresence initial={false}>
-                    {messages.map((msg, idx) => {
-                      const isLastAssistant =
-                        msg.role === "assistant" && idx === messages.length - 1;
-                      return (
-                        <MessageBubble
-                          key={idx}
-                          role={msg.role}
-                          content={msg.content}
-                          isStreaming={isLastAssistant && isStreaming}
-                        />
-                      );
-                    })}
-                  </AnimatePresence>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    <AnimatePresence initial={false}>
+                      {messages.map((msg, idx) => {
+                        const isLastAssistant =
+                          msg.role === "assistant" && idx === messages.length - 1;
+                        return (
+                          <MessageBubble
+                            key={idx}
+                            role={msg.role}
+                            content={msg.content}
+                            isStreaming={isLastAssistant && isStreaming}
+                          />
+                        );
+                      })}
+                    </AnimatePresence>
 
-                  {/* Error banner */}
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      role="alert"
-                      className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700"
-                    >
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                      <span className="flex-1 leading-snug">{error}</span>
-                      <button
-                        onClick={clearError}
-                        aria-label="Dismiss error"
-                        className="shrink-0 text-rose-400 hover:text-rose-600"
+                    {/* Error banner */}
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        role="alert"
+                        className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700"
                       >
-                        <X className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                    </motion.div>
-                  )}
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="flex-1 leading-snug">{error}</span>
+                        <button
+                          onClick={clearError}
+                          aria-label="Dismiss error"
+                          className="shrink-0 text-rose-400 hover:text-rose-600"
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      </motion.div>
+                    )}
 
-                  <div ref={bottomRef} />
-                </div>
-              )}
-            </div>}
+                    <div ref={bottomRef} />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ── Quick reply chips (shown before first user turn) ── */}
             {!showHistory &&
@@ -594,7 +581,7 @@ export function ChatDrawer({
               messages.filter((m) => m.role === "user").length === 0 &&
               !rateLimitHit && (
                 <div className="border-t border-slate-100 px-4 py-3">
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  <p className="mb-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
                     Quick questions
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -615,7 +602,7 @@ export function ChatDrawer({
             {/* ── Rate limit message ── */}
             {!showHistory && rateLimitHit && !isInitializing && (
               <div className="border-t border-amber-100 bg-amber-50 px-4 py-3" role="status">
-                <p className="text-xs text-amber-700 text-center leading-snug">
+                <p className="text-center text-xs leading-snug text-amber-700">
                   {meta.lifetimeRemaining === 0
                     ? "You've explored this thoroughly! Come back with a fresh question soon."
                     : "Daily message limit reached — come back tomorrow to continue the conversation."}
@@ -638,7 +625,7 @@ export function ChatDrawer({
                     disabled={isStreaming}
                     aria-label="Chat message input"
                     aria-describedby={hintId}
-                    className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-200/60 disabled:opacity-50 leading-relaxed"
+                    className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:ring-2 focus:ring-orange-200/60 focus:outline-none disabled:opacity-50"
                     style={{ minHeight: "42px", maxHeight: "120px" }}
                     onInput={(e) => {
                       const el = e.currentTarget;
@@ -651,7 +638,7 @@ export function ChatDrawer({
                     id="chat-send-btn"
                     disabled={!inputValue.trim() || isStreaming}
                     aria-label="Send message"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:shadow-none"
+                    className="bg-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:shadow-none"
                   >
                     {isStreaming ? (
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

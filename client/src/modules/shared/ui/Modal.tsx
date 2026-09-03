@@ -68,15 +68,13 @@ export const Modal: React.FC<ModalProps> = ({
     if (event.key !== "Tab") return;
 
     const focusableElements = modalRef.current?.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
 
     if (!focusableElements || focusableElements.length === 0) return;
 
     const firstElement = focusableElements[0] as HTMLElement;
-    const lastElement = focusableElements[
-      focusableElements.length - 1
-    ] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
     if (event.shiftKey && document.activeElement === firstElement) {
       event.preventDefault();
@@ -122,7 +120,7 @@ export const Modal: React.FC<ModalProps> = ({
                 {title && (
                   <h2
                     id="modal-title"
-                    className="text-lg font-semibold text-slate-900 tracking-tight"
+                    className="text-lg font-semibold tracking-tight text-slate-900"
                   >
                     {title}
                   </h2>
@@ -131,7 +129,7 @@ export const Modal: React.FC<ModalProps> = ({
                 {closeButton && (
                   <button
                     onClick={onClose}
-                    className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                    className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                     aria-label="Close modal"
                   >
                     <X size={18} strokeWidth={2.5} />

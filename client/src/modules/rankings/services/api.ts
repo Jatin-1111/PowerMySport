@@ -232,20 +232,17 @@ export interface RankingDate {
 export function fetchRankingDates(
   category: string,
   subcategory: string,
-  sport = "tennis",
+  sport = "tennis"
 ): Promise<RankingDate[] | null> {
   const query = new URLSearchParams({ sport, category, subcategory });
   return get<RankingDate[]>(`/rankings/dates?${query.toString()}`, 1800);
 }
 
-export function fetchPlayer(
-  regNo: string,
-  sport = "tennis",
-): Promise<PlayerResult | null> {
+export function fetchPlayer(regNo: string, sport = "tennis"): Promise<PlayerResult | null> {
   const query = new URLSearchParams({ sport });
   return get<PlayerResult>(
     `/rankings/players/${encodeURIComponent(regNo)}?${query.toString()}`,
-    1800,
+    1800
   );
 }
 

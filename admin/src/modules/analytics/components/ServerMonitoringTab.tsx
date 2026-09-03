@@ -48,20 +48,10 @@ function colorAccent(color?: string): {
   }
 }
 
-function MetricCard({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail?: string;
-}) {
+function MetricCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
+      <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
       {detail ? <p className="mt-1 text-sm text-slate-500">{detail}</p> : null}
     </div>
@@ -112,24 +102,12 @@ function TrendChart({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fill: "#475569", fontSize: 11 }}
-                  minTickGap={24}
-                />
+                <XAxis dataKey="label" tick={{ fill: "#475569", fontSize: 11 }} minTickGap={24} />
                 <YAxis tick={{ fill: "#475569", fontSize: 11 }} />
                 <Tooltip
-                  formatter={(value) =>
-                    `${formatNumber(Number(value))}${unit ? ` ${unit}` : ""}`
-                  }
+                  formatter={(value) => `${formatNumber(Number(value))}${unit ? ` ${unit}` : ""}`}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={color}
-                  strokeWidth={2}
-                  dot={false}
-                />
+                <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -169,7 +147,7 @@ export function ServerMonitoringTab() {
         if (!silent) setLoadingMetrics(false);
       }
     },
-    [hours],
+    [hours]
   );
 
   useEffect(() => {
@@ -195,11 +173,11 @@ export function ServerMonitoringTab() {
 
   // Live updates over websocket (primary path).
   useEffect(() => {
-    const origin = (
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
-    ).replace(/\/api\/?$/, "");
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const origin = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api").replace(
+      /\/api\/?$/,
+      ""
+    );
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     const socket = io(`${origin}/infra`, {
       transports: ["websocket", "polling"],
@@ -234,8 +212,7 @@ export function ServerMonitoringTab() {
   // REST fallback polling — only while the websocket is NOT connected.
   useEffect(() => {
     if (live) return;
-    const visible = () =>
-      typeof document === "undefined" || document.visibilityState === "visible";
+    const visible = () => typeof document === "undefined" || document.visibilityState === "visible";
 
     const overviewTimer = window.setInterval(() => {
       if (visible()) void loadOverview(true);
@@ -279,10 +256,8 @@ export function ServerMonitoringTab() {
             </p>
             {overview?.runtime ? (
               <p className="text-xs text-slate-400">
-                {overview.runtime.hostname} · up{" "}
-                {Math.floor(overview.runtime.uptimeSec / 3600)}h · load{" "}
-                {overview.runtime.loadAvg[0] ?? 0} · {overview.runtime.cpuCount}{" "}
-                vCPU
+                {overview.runtime.hostname} · up {Math.floor(overview.runtime.uptimeSec / 3600)}h ·
+                load {overview.runtime.loadAvg[0] ?? 0} · {overview.runtime.cpuCount} vCPU
               </p>
             ) : null}
           </div>
@@ -290,9 +265,7 @@ export function ServerMonitoringTab() {
         <div className="flex items-center gap-3">
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-              live
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-slate-100 text-slate-500"
+              live ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
             }`}
             title={
               live
@@ -325,9 +298,7 @@ export function ServerMonitoringTab() {
       </div>
 
       {loadingOverview && !overview ? (
-        <div className="py-10 text-center text-slate-500">
-          Loading server health...
-        </div>
+        <div className="py-10 text-center text-slate-500">Loading server health...</div>
       ) : !overview?.available ? (
         <Card className="bg-white">
           <div className="space-y-1">
@@ -383,9 +354,7 @@ export function ServerMonitoringTab() {
           {/* Environment causes */}
           {env?.causes && env.causes.length > 0 ? (
             <Card className="bg-amber-50">
-              <p className="mb-1 text-sm font-semibold text-amber-800">
-                Health causes
-              </p>
+              <p className="mb-1 text-sm font-semibold text-amber-800">Health causes</p>
               <ul className="list-disc space-y-1 pl-5 text-sm text-amber-700">
                 {env.causes.map((cause, i) => (
                   <li key={i}>{cause}</li>
@@ -401,30 +370,19 @@ export function ServerMonitoringTab() {
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50">
                   <tr>
-                    {[
-                      "Instance",
-                      "Health",
-                      "CPU",
-                      "Load (1/5/15m)",
-                      "Version",
-                      "Launched",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left font-semibold text-slate-700"
-                      >
-                        {h}
-                      </th>
-                    ))}
+                    {["Instance", "Health", "CPU", "Load (1/5/15m)", "Version", "Launched"].map(
+                      (h) => (
+                        <th key={h} className="px-4 py-3 text-left font-semibold text-slate-700">
+                          {h}
+                        </th>
+                      )
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {overview.instances.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-8 text-center text-slate-500"
-                      >
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                         No instance data reported.
                       </td>
                     </tr>
@@ -438,27 +396,17 @@ export function ServerMonitoringTab() {
                           </td>
                           <td className="px-4 py-3">
                             <span className="inline-flex items-center gap-2 text-slate-700">
-                              <span
-                                className={`h-2.5 w-2.5 rounded-full ${dot}`}
-                              />
+                              <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
                               {inst.health || "Unknown"}
                             </span>
                           </td>
+                          <td className="px-4 py-3 text-slate-600">{inst.cpuBusyPct}%</td>
                           <td className="px-4 py-3 text-slate-600">
-                            {inst.cpuBusyPct}%
+                            {inst.loadAvg.length ? inst.loadAvg.join(" / ") : "—"}
                           </td>
+                          <td className="px-4 py-3 text-slate-600">{inst.version || "—"}</td>
                           <td className="px-4 py-3 text-slate-600">
-                            {inst.loadAvg.length
-                              ? inst.loadAvg.join(" / ")
-                              : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-slate-600">
-                            {inst.version || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-slate-600">
-                            {inst.launchedAt
-                              ? new Date(inst.launchedAt).toLocaleString()
-                              : "—"}
+                            {inst.launchedAt ? new Date(inst.launchedAt).toLocaleString() : "—"}
                           </td>
                         </tr>
                       );
@@ -483,9 +431,7 @@ export function ServerMonitoringTab() {
                 </option>
               ))}
             </select>
-            {loadingMetrics ? (
-              <span className="text-sm text-slate-400">Loading…</span>
-            ) : null}
+            {loadingMetrics ? <span className="text-sm text-slate-400">Loading…</span> : null}
           </div>
 
           {metrics && !metrics.available ? (
@@ -531,26 +477,19 @@ export function ServerMonitoringTab() {
 
           {/* Recent EB events */}
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-slate-900">
-              Recent environment events
-            </h3>
+            <h3 className="text-lg font-semibold text-slate-900">Recent environment events</h3>
             <div className="space-y-2">
               {overview.events.length === 0 ? (
                 <p className="text-sm text-slate-500">No recent events.</p>
               ) : (
                 overview.events.map((event, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2"
-                  >
+                  <div key={i} className="rounded-lg border border-slate-200 bg-white px-4 py-2">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-semibold uppercase text-slate-400">
+                      <span className="text-xs font-semibold text-slate-400 uppercase">
                         {event.severity || "INFO"}
                       </span>
                       <span className="text-xs text-slate-400">
-                        {event.date
-                          ? new Date(event.date).toLocaleString()
-                          : ""}
+                        {event.date ? new Date(event.date).toLocaleString() : ""}
                       </span>
                     </div>
                     <p className="text-sm text-slate-700">{event.message}</p>

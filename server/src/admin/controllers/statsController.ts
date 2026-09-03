@@ -13,10 +13,7 @@ import { ConciergeRequest } from "../../shared/models/ConciergeRequest";
 import Academy from "../models/Academy";
 import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { WebhookRecoveryService } from "../../shared/controllers/WebhookController";
-import {
-  getLatencyProfiles,
-  getObservabilitySnapshot,
-} from "../../middleware/observability";
+import { getLatencyProfiles, getObservabilitySnapshot } from "../../middleware/observability";
 import { transformDocuments } from "../../middleware/responseTransform";
 import { areUsersOnline } from "../../shared/services/UserPresenceService";
 import { getAllVenues as getAllVenuesService } from "../../client/services/VenueService";
@@ -34,11 +31,7 @@ const USER_ROLE_SET: ReadonlySet<AdminUserRole> = new Set([
   "Parent",
 ]);
 
-const FUNNEL_SOURCE_SET: ReadonlySet<FunnelSource> = new Set([
-  "WEB",
-  "MOBILE",
-  "SERVER",
-]);
+const FUNNEL_SOURCE_SET: ReadonlySet<FunnelSource> = new Set(["WEB", "MOBILE", "SERVER"]);
 
 const MONTH_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -52,9 +45,7 @@ const DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
 
 const getRoleFromQuery = (value: unknown): AdminUserRole | null => {
   if (typeof value !== "string") return null;
-  return USER_ROLE_SET.has(value as AdminUserRole)
-    ? (value as AdminUserRole)
-    : null;
+  return USER_ROLE_SET.has(value as AdminUserRole) ? (value as AdminUserRole) : null;
 };
 
 const getStartOfCurrentMonth = (): Date => {
@@ -87,9 +78,7 @@ const getDayLabel = (date: Date): string => {
   return DAY_FORMATTER.format(date);
 };
 
-const buildMonthSeries = (
-  months: number,
-): Array<{ key: string; label: string }> => {
+const buildMonthSeries = (months: number): Array<{ key: string; label: string }> => {
   const series: Array<{ key: string; label: string }> = [];
   const current = new Date();
   current.setDate(1);
@@ -103,9 +92,7 @@ const buildMonthSeries = (
   return series;
 };
 
-const buildDaySeries = (
-  days: number,
-): Array<{ key: string; label: string }> => {
+const buildDaySeries = (days: number): Array<{ key: string; label: string }> => {
   const series: Array<{ key: string; label: string }> = [];
   const start = new Date();
   start.setDate(start.getDate() - (days - 1));
@@ -120,10 +107,7 @@ const buildDaySeries = (
   return series;
 };
 
-export const getPublicPlatformStats = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPublicPlatformStats = async (req: Request, res: Response): Promise<void> => {
   try {
     const [totalUsers, roleCounts] = await Promise.all([
       User.countDocuments(),
@@ -171,32 +155,24 @@ export const getPublicPlatformStats = async (
 };
 
 // Get platform statistics
-export const getPlatformStats = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPlatformStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const [
-      totalUsers,
-      totalVenues,
-      totalBookings,
-      pendingInquiries,
-      revenueResult,
-    ] = await Promise.all([
-      User.countDocuments(),
-      Venue.countDocuments(),
-      Booking.countDocuments(),
-      VenueInquiry.countDocuments({ status: "PENDING" }),
-      Booking.aggregate([
-        { $match: { status: "CONFIRMED" } },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: "$totalAmount" },
+    const [totalUsers, totalVenues, totalBookings, pendingInquiries, revenueResult] =
+      await Promise.all([
+        User.countDocuments(),
+        Venue.countDocuments(),
+        Booking.countDocuments(),
+        VenueInquiry.countDocuments({ status: "PENDING" }),
+        Booking.aggregate([
+          { $match: { status: "CONFIRMED" } },
+          {
+            $group: {
+              _id: null,
+              totalRevenue: { $sum: "$totalAmount" },
+            },
           },
-        },
-      ]),
-    ]);
+        ]),
+      ]);
 
     const revenue = revenueResult[0]?.totalRevenue || 0;
 
@@ -220,18 +196,10 @@ export const getPlatformStats = async (
 };
 
 // Get all users
-export const getAllUsers = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
   try {
     const role = getRoleFromQuery(req.query.role);
-    const { page, limit, skip } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      15,
-      100,
-    );
+    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
 
     const query = role ? { role } : {};
     const [total, users] = await Promise.all([
@@ -272,12 +240,7 @@ const makeRoleUsersHandler =
   (role: AdminUserRole) =>
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { page, limit, skip } = getPaginationParams(
-        req.query.page,
-        req.query.limit,
-        15,
-        100,
-      );
+      const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
       const [total, users] = await Promise.all([
         User.countDocuments({ role }),
         User.find({ role })
@@ -308,10 +271,7 @@ const makeRoleUsersHandler =
 export const getExpertUsers = makeRoleUsersHandler("EXPERT");
 export const getParentUsers = makeRoleUsersHandler("Parent");
 
-export const getUserRoleSummary = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getUserRoleSummary = async (req: Request, res: Response): Promise<void> => {
   try {
     const roleCounts = await User.aggregate<{ _id: string; count: number }>([
       {
@@ -349,18 +309,12 @@ export const getUserRoleSummary = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve user role summary",
+      message: error instanceof Error ? error.message : "Failed to retrieve user role summary",
     });
   }
 };
 
-export const getUserGrowthAnalytics = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getUserGrowthAnalytics = async (req: Request, res: Response): Promise<void> => {
   try {
     const months = Math.min(12, Math.max(3, Number(req.query.months) || 6));
     const start = new Date();
@@ -405,7 +359,7 @@ export const getUserGrowthAnalytics = async (
       monthSeries.map((item) => [
         item.key,
         { ...item, total: 0, Player: 0, Coach: 0, VenueLister: 0 },
-      ]),
+      ])
     );
 
     for (const row of growth) {
@@ -430,25 +384,14 @@ export const getUserGrowthAnalytics = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve user growth analytics",
+      message: error instanceof Error ? error.message : "Failed to retrieve user growth analytics",
     });
   }
 };
 
-export const getPlayersUsers = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPlayersUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { page, limit, skip } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      15,
-      100,
-    );
+    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
 
     const query = { role: "Player" };
     const [total, users] = await Promise.all([
@@ -475,17 +418,13 @@ export const getPlayersUsers = async (
       profilesByUserId.get(uidStr)!.push(profile);
     }
 
-    const onlineByUserId = await areUsersOnline(
-      users.map((user) => user._id.toString()),
-    );
+    const onlineByUserId = await areUsersOnline(users.map((user) => user._id.toString()));
 
     const data = users.map((user) => {
       const userProfiles = profilesByUserId.get(user._id.toString()) || [];
 
       const selfProfile = userProfiles.find((p) => p.type === "SELF");
-      const dependentsProfiles = userProfiles.filter(
-        (p) => p.type === "DEPENDENT",
-      );
+      const dependentsProfiles = userProfiles.filter((p) => p.type === "DEPENDENT");
 
       const sports = selfProfile?.sportsFocus || [];
       const sportsCount = sports.length;
@@ -531,23 +470,14 @@ export const getPlayersUsers = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to retrieve players",
+      message: error instanceof Error ? error.message : "Failed to retrieve players",
     });
   }
 };
 
-export const getCoachUsers = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCoachUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { page, limit, skip } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      15,
-      100,
-    );
+    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
 
     const query = { role: "Coach" };
     const total = await User.countDocuments(query);
@@ -561,17 +491,15 @@ export const getCoachUsers = async (
     const userIds = users.map((user) => user._id);
     const coachProfiles = await Coach.find({ userId: { $in: userIds } })
       .select(
-        "userId sports hourlyRate serviceMode verificationStatus isVerified rating reviewCount",
+        "userId sports hourlyRate serviceMode verificationStatus isVerified rating reviewCount"
       )
       .lean();
 
     const coachByUserId = new Map(
-      coachProfiles.map((profile) => [profile.userId.toString(), profile]),
+      coachProfiles.map((profile) => [profile.userId.toString(), profile])
     );
 
-    const onlineByUserId = await areUsersOnline(
-      users.map((user) => user._id.toString()),
-    );
+    const onlineByUserId = await areUsersOnline(users.map((user) => user._id.toString()));
 
     const data = users.map((user) => {
       const profile = coachByUserId.get(user._id.toString());
@@ -608,23 +536,14 @@ export const getCoachUsers = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to retrieve coaches",
+      message: error instanceof Error ? error.message : "Failed to retrieve coaches",
     });
   }
 };
 
-export const getVenueListerUsers = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getVenueListerUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { page, limit, skip } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      15,
-      100,
-    );
+    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
 
     const query = { role: "VenueLister" };
     const total = await User.countDocuments(query);
@@ -658,24 +577,16 @@ export const getVenueListerUsers = async (
           },
           pendingVenueCount: {
             $sum: {
-              $cond: [
-                { $in: ["$approvalStatus", ["PENDING", "REVIEW"]] },
-                1,
-                0,
-              ],
+              $cond: [{ $in: ["$approvalStatus", ["PENDING", "REVIEW"]] }, 1, 0],
             },
           },
         },
       },
     ]);
 
-    const venueCountByOwnerId = new Map(
-      venueCounts.map((item) => [String(item._id), item]),
-    );
+    const venueCountByOwnerId = new Map(venueCounts.map((item) => [String(item._id), item]));
 
-    const onlineByUserId = await areUsersOnline(
-      users.map((user) => user._id.toString()),
-    );
+    const onlineByUserId = await areUsersOnline(users.map((user) => user._id.toString()));
 
     const data = users.map((user) => {
       const counts = venueCountByOwnerId.get(user._id.toString());
@@ -709,47 +620,36 @@ export const getVenueListerUsers = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve venue listers",
+      message: error instanceof Error ? error.message : "Failed to retrieve venue listers",
     });
   }
 };
 
-export const getPlayersAnalytics = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPlayersAnalytics = async (req: Request, res: Response): Promise<void> => {
   try {
     const monthStart = getStartOfCurrentMonth();
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
-    const [
-      totalPlayers,
-      newThisMonth,
-      withSportsProfile,
-      withDependents,
-      newAccountsLast24Hours,
-    ] = await Promise.all([
-      User.countDocuments({ role: "Player" }),
-      User.countDocuments({
-        role: "Player",
-        createdAt: { $gte: monthStart },
-      }),
-      User.countDocuments({
-        role: "Player",
-        "playerProfile.sports.0": { $exists: true },
-      }),
-      User.countDocuments({
-        role: "Player",
-        "dependents.0": { $exists: true },
-      }),
-      User.countDocuments({
-        role: "Player",
-        createdAt: { $gte: twentyFourHoursAgo },
-      }),
-    ]);
+    const [totalPlayers, newThisMonth, withSportsProfile, withDependents, newAccountsLast24Hours] =
+      await Promise.all([
+        User.countDocuments({ role: "Player" }),
+        User.countDocuments({
+          role: "Player",
+          createdAt: { $gte: monthStart },
+        }),
+        User.countDocuments({
+          role: "Player",
+          "playerProfile.sports.0": { $exists: true },
+        }),
+        User.countDocuments({
+          role: "Player",
+          "dependents.0": { $exists: true },
+        }),
+        User.countDocuments({
+          role: "Player",
+          createdAt: { $gte: twentyFourHoursAgo },
+        }),
+      ]);
 
     res.status(200).json({
       success: true,
@@ -765,18 +665,12 @@ export const getPlayersAnalytics = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve players analytics",
+      message: error instanceof Error ? error.message : "Failed to retrieve players analytics",
     });
   }
 };
 
-export const getFunnelTrends = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getFunnelTrends = async (req: Request, res: Response): Promise<void> => {
   try {
     const days = Math.min(90, Math.max(7, Number(req.query.days) || 30));
     const start = new Date();
@@ -817,10 +711,7 @@ export const getFunnelTrends = async (
 
     const daySeries = buildDaySeries(days);
     const dayBuckets = new Map(
-      daySeries.map((item) => [
-        item.key,
-        { ...item, total: 0, WEB: 0, MOBILE: 0, SERVER: 0 },
-      ]),
+      daySeries.map((item) => [item.key, { ...item, total: 0, WEB: 0, MOBILE: 0, SERVER: 0 }])
     );
 
     const sourceTotals: Record<FunnelSource, number> = {
@@ -844,29 +735,21 @@ export const getFunnelTrends = async (
       data: {
         days,
         dailyActivity: Array.from(dayBuckets.values()),
-        sourceBreakdown: (Object.keys(sourceTotals) as FunnelSource[]).map(
-          (source) => ({
-            source,
-            count: sourceTotals[source],
-          }),
-        ),
+        sourceBreakdown: (Object.keys(sourceTotals) as FunnelSource[]).map((source) => ({
+          source,
+          count: sourceTotals[source],
+        })),
       },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve funnel trends",
+      message: error instanceof Error ? error.message : "Failed to retrieve funnel trends",
     });
   }
 };
 
-export const getCoachesAnalytics = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCoachesAnalytics = async (req: Request, res: Response): Promise<void> => {
   try {
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
@@ -910,64 +793,53 @@ export const getCoachesAnalytics = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve coaches analytics",
+      message: error instanceof Error ? error.message : "Failed to retrieve coaches analytics",
     });
   }
 };
 
-export const getVenueListersAnalytics = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getVenueListersAnalytics = async (req: Request, res: Response): Promise<void> => {
   try {
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
-    const [totalVenueListers, newAccountsLast24Hours, venueCountAggregates] =
-      await Promise.all([
-        User.countDocuments({ role: "VenueLister" }),
-        User.countDocuments({
-          role: "VenueLister",
-          createdAt: { $gte: twentyFourHoursAgo },
-        }),
-        Venue.aggregate<{
-          _id: null;
-          withAtLeastOneVenue: number;
-          approvedVenuesCount: number;
-          pendingVenuesCount: number;
-        }>([
-          {
-            $group: {
-              _id: "$ownerId",
-              venueCount: { $sum: 1 },
-              approvedVenuesCount: {
-                $sum: {
-                  $cond: [{ $eq: ["$approvalStatus", "APPROVED"] }, 1, 0],
-                },
+    const [totalVenueListers, newAccountsLast24Hours, venueCountAggregates] = await Promise.all([
+      User.countDocuments({ role: "VenueLister" }),
+      User.countDocuments({
+        role: "VenueLister",
+        createdAt: { $gte: twentyFourHoursAgo },
+      }),
+      Venue.aggregate<{
+        _id: null;
+        withAtLeastOneVenue: number;
+        approvedVenuesCount: number;
+        pendingVenuesCount: number;
+      }>([
+        {
+          $group: {
+            _id: "$ownerId",
+            venueCount: { $sum: 1 },
+            approvedVenuesCount: {
+              $sum: {
+                $cond: [{ $eq: ["$approvalStatus", "APPROVED"] }, 1, 0],
               },
-              pendingVenuesCount: {
-                $sum: {
-                  $cond: [
-                    { $in: ["$approvalStatus", ["PENDING", "REVIEW"]] },
-                    1,
-                    0,
-                  ],
-                },
+            },
+            pendingVenuesCount: {
+              $sum: {
+                $cond: [{ $in: ["$approvalStatus", ["PENDING", "REVIEW"]] }, 1, 0],
               },
             },
           },
-          {
-            $group: {
-              _id: null,
-              withAtLeastOneVenue: { $sum: 1 },
-              approvedVenuesCount: { $sum: "$approvedVenuesCount" },
-              pendingVenuesCount: { $sum: "$pendingVenuesCount" },
-            },
+        },
+        {
+          $group: {
+            _id: null,
+            withAtLeastOneVenue: { $sum: 1 },
+            approvedVenuesCount: { $sum: "$approvedVenuesCount" },
+            pendingVenuesCount: { $sum: "$pendingVenuesCount" },
           },
-        ]),
-      ]);
+        },
+      ]),
+    ]);
 
     const aggregates = venueCountAggregates[0];
 
@@ -986,34 +858,19 @@ export const getVenueListersAnalytics = async (
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve venue listers analytics",
+        error instanceof Error ? error.message : "Failed to retrieve venue listers analytics",
     });
   }
 };
 
 // Get all venues
-export const getAllVenues = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAllVenues = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
-    const search =
-      typeof req.query.search === "string" ? req.query.search : undefined;
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
 
     // Using the service method matching the new signature
-    const result = await getAllVenuesService(
-      search ? { search } : {},
-      page,
-      limit,
-    );
+    const result = await getAllVenuesService(search ? { search } : {}, page, limit);
 
     res.status(200).json({
       success: true,
@@ -1028,23 +885,14 @@ export const getAllVenues = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch venues",
+      message: error instanceof Error ? error.message : "Failed to fetch venues",
     });
   }
 };
 
-export const getAllBookings = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAllBookings = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { page, limit, skip } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
 
     const total = await Booking.countDocuments();
     const bookings = await Booking.find()
@@ -1070,8 +918,7 @@ export const getAllBookings = async (
         if (typeof candidate.id === "string") return candidate.id;
         if (
           candidate._id &&
-          typeof (candidate._id as { toString?: () => string }).toString ===
-            "function"
+          typeof (candidate._id as { toString?: () => string }).toString === "function"
         ) {
           return (candidate._id as { toString: () => string }).toString();
         }
@@ -1128,11 +975,7 @@ export const getAllBookings = async (
         academyId: normalizeEntity(plain.academyId),
         playerName: playerRecord?.name || playerRecord?.email || "",
         venueName: venueRecord?.name || "",
-        coachName:
-          coachUserRecord?.name ||
-          coachUserRecord?.email ||
-          coachRecord?.name ||
-          "",
+        coachName: coachUserRecord?.name || coachUserRecord?.email || coachRecord?.name || "",
         academyName: academyRecord?.name || "",
       };
     });
@@ -1150,16 +993,12 @@ export const getAllBookings = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch bookings",
+      message: error instanceof Error ? error.message : "Failed to fetch bookings",
     });
   }
 };
 
-export const trackFunnelEvent = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const trackFunnelEvent = async (req: Request, res: Response): Promise<void> => {
   try {
     const { eventName, entityType, entityId, metadata, source } = req.body as {
       eventName: string;
@@ -1190,10 +1029,7 @@ export const trackFunnelEvent = async (
   }
 };
 
-export const getFunnelSummary = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getFunnelSummary = async (req: Request, res: Response): Promise<void> => {
   try {
     const days = Math.min(90, Math.max(1, Number(req.query.days) || 30));
     const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -1235,18 +1071,12 @@ export const getFunnelSummary = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch funnel summary",
+      message: error instanceof Error ? error.message : "Failed to fetch funnel summary",
     });
   }
 };
 
-export const getFinanceReconciliation = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getFinanceReconciliation = async (req: Request, res: Response): Promise<void> => {
   try {
     // Run entirely in MongoDB – no data pulled into Node memory. Both the
     // summary counts and the sample mismatches need the same
@@ -1328,28 +1158,19 @@ export const getFinanceReconciliation = async (
         totalBookingsChecked: totals.total,
         matched: totals.matched,
         mismatched: totals.mismatched,
-        mismatchRate:
-          totals.total > 0
-            ? Number((totals.mismatched / totals.total).toFixed(4))
-            : 0,
+        mismatchRate: totals.total > 0 ? Number((totals.mismatched / totals.total).toFixed(4)) : 0,
         sampleMismatches: mismatches,
       },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate reconciliation",
+      message: error instanceof Error ? error.message : "Failed to generate reconciliation",
     });
   }
 };
 
-export const getObservabilityStats = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getObservabilityStats = async (req: Request, res: Response): Promise<void> => {
   try {
     res.status(200).json({
       success: true,
@@ -1359,24 +1180,17 @@ export const getObservabilityStats = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve observability stats",
+      message: error instanceof Error ? error.message : "Failed to retrieve observability stats",
     });
   }
 };
-
 
 /**
  * Lifetime per-route p50/p95/p99 plus budget status. Kept separate from
  * getObservabilityStats so that payload's shape stays frozen for the
  * existing admin Server tab.
  */
-export const getLatencyProfileStats = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getLatencyProfileStats = async (req: Request, res: Response): Promise<void> => {
   try {
     res.status(200).json({
       success: true,
@@ -1389,10 +1203,7 @@ export const getLatencyProfileStats = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve latency profiles",
+      message: error instanceof Error ? error.message : "Failed to retrieve latency profiles",
     });
   }
 };
@@ -1409,10 +1220,7 @@ const GUEST_EVENT_MATCH = { guestId: { $exists: true, $nin: [null, ""] } };
  * guestId plus event names/paths/metadata. No IP, no headers, no personal data
  * is stored here.
  */
-export const trackGuestEvents = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const trackGuestEvents = async (req: Request, res: Response): Promise<void> => {
   try {
     const { guestId, events } = req.body as {
       guestId: string;
@@ -1442,132 +1250,127 @@ export const trackGuestEvents = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to track guest events",
+      message: error instanceof Error ? error.message : "Failed to track guest events",
     });
   }
 };
 
-export const getGuestActivity = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getGuestActivity = async (req: Request, res: Response): Promise<void> => {
   try {
     const days = Math.min(90, Math.max(1, Number(req.query.days) || 30));
     const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const match = { ...GUEST_EVENT_MATCH, createdAt: { $gte: start } };
 
-    const [totalsAgg, topPages, topEvents, dailyAgg, engagementAgg] =
-      await Promise.all([
-        AnalyticsEvent.aggregate<{
-          events: number;
-          uniqueGuests: number;
-          pageViews: number;
-        }>([
-          { $match: match },
-          {
-            $group: {
-              _id: null,
-              events: { $sum: 1 },
-              guests: { $addToSet: "$guestId" },
-              pageViews: {
-                $sum: { $cond: [{ $eq: ["$eventName", "page_view"] }, 1, 0] },
-              },
+    const [totalsAgg, topPages, topEvents, dailyAgg, engagementAgg] = await Promise.all([
+      AnalyticsEvent.aggregate<{
+        events: number;
+        uniqueGuests: number;
+        pageViews: number;
+      }>([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            events: { $sum: 1 },
+            guests: { $addToSet: "$guestId" },
+            pageViews: {
+              $sum: { $cond: [{ $eq: ["$eventName", "page_view"] }, 1, 0] },
             },
           },
-          {
-            $project: {
-              _id: 0,
-              events: 1,
-              pageViews: 1,
-              uniqueGuests: { $size: "$guests" },
-            },
+        },
+        {
+          $project: {
+            _id: 0,
+            events: 1,
+            pageViews: 1,
+            uniqueGuests: { $size: "$guests" },
           },
-        ]),
-        AnalyticsEvent.aggregate<{
-          path: string;
-          views: number;
-          uniqueGuests: number;
-        }>([
-          { $match: { ...match, eventName: "page_view" } },
-          {
-            $group: {
-              _id: "$entityId",
-              views: { $sum: 1 },
-              guests: { $addToSet: "$guestId" },
-            },
+        },
+      ]),
+      AnalyticsEvent.aggregate<{
+        path: string;
+        views: number;
+        uniqueGuests: number;
+      }>([
+        { $match: { ...match, eventName: "page_view" } },
+        {
+          $group: {
+            _id: "$entityId",
+            views: { $sum: 1 },
+            guests: { $addToSet: "$guestId" },
           },
-          {
-            $project: {
-              _id: 0,
-              path: { $ifNull: ["$_id", "(unknown)"] },
-              views: 1,
-              uniqueGuests: { $size: "$guests" },
-            },
+        },
+        {
+          $project: {
+            _id: 0,
+            path: { $ifNull: ["$_id", "(unknown)"] },
+            views: 1,
+            uniqueGuests: { $size: "$guests" },
           },
-          { $sort: { views: -1 } },
-          { $limit: 20 },
-        ]),
-        AnalyticsEvent.aggregate<{
-          eventName: string;
-          count: number;
-          uniqueGuests: number;
-        }>([
-          { $match: match },
-          {
-            $group: {
-              _id: "$eventName",
-              count: { $sum: 1 },
-              guests: { $addToSet: "$guestId" },
-            },
+        },
+        { $sort: { views: -1 } },
+        { $limit: 20 },
+      ]),
+      AnalyticsEvent.aggregate<{
+        eventName: string;
+        count: number;
+        uniqueGuests: number;
+      }>([
+        { $match: match },
+        {
+          $group: {
+            _id: "$eventName",
+            count: { $sum: 1 },
+            guests: { $addToSet: "$guestId" },
           },
-          {
-            $project: {
-              _id: 0,
-              eventName: "$_id",
-              count: 1,
-              uniqueGuests: { $size: "$guests" },
-            },
+        },
+        {
+          $project: {
+            _id: 0,
+            eventName: "$_id",
+            count: 1,
+            uniqueGuests: { $size: "$guests" },
           },
-          { $sort: { count: -1 } },
-          { $limit: 20 },
-        ]),
-        AnalyticsEvent.aggregate<{
-          day: string;
-          views: number;
-          uniqueGuests: number;
-        }>([
-          { $match: { ...match, eventName: "page_view" } },
-          {
-            $group: {
-              _id: {
-                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
-              },
-              views: { $sum: 1 },
-              guests: { $addToSet: "$guestId" },
+        },
+        { $sort: { count: -1 } },
+        { $limit: 20 },
+      ]),
+      AnalyticsEvent.aggregate<{
+        day: string;
+        views: number;
+        uniqueGuests: number;
+      }>([
+        { $match: { ...match, eventName: "page_view" } },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
             },
+            views: { $sum: 1 },
+            guests: { $addToSet: "$guestId" },
           },
-          {
-            $project: {
-              _id: 0,
-              day: "$_id",
-              views: 1,
-              uniqueGuests: { $size: "$guests" },
-            },
+        },
+        {
+          $project: {
+            _id: 0,
+            day: "$_id",
+            views: 1,
+            uniqueGuests: { $size: "$guests" },
           },
-          { $sort: { day: 1 } },
-        ]),
-        AnalyticsEvent.aggregate<{ avgScroll: number; avgTime: number }>([
-          { $match: { ...match, eventName: "page_exit" } },
-          {
-            $group: {
-              _id: null,
-              avgScroll: { $avg: "$metadata.scrollDepthPct" },
-              avgTime: { $avg: "$metadata.durationMs" },
-            },
+        },
+        { $sort: { day: 1 } },
+      ]),
+      AnalyticsEvent.aggregate<{ avgScroll: number; avgTime: number }>([
+        { $match: { ...match, eventName: "page_exit" } },
+        {
+          $group: {
+            _id: null,
+            avgScroll: { $avg: "$metadata.scrollDepthPct" },
+            avgTime: { $avg: "$metadata.durationMs" },
           },
-        ]),
-      ]);
+        },
+      ]),
+    ]);
 
     const totals = totalsAgg[0] ?? {
       events: 0,
@@ -1607,10 +1410,7 @@ export const getGuestActivity = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve guest activity",
+      message: error instanceof Error ? error.message : "Failed to retrieve guest activity",
     });
   }
 };
@@ -1619,10 +1419,7 @@ export const getGuestActivity = async (
  * Permanently delete every analytics event. Destructive and irreversible —
  * gated behind admin auth and a confirmation step in the admin UI.
  */
-export const clearAnalyticsData = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const clearAnalyticsData = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await AnalyticsEvent.deleteMany({});
     res.status(200).json({
@@ -1633,10 +1430,7 @@ export const clearAnalyticsData = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to clear analytics data",
+      message: error instanceof Error ? error.message : "Failed to clear analytics data",
     });
   }
 };
@@ -1645,10 +1439,7 @@ export const clearAnalyticsData = async (
  * Lightweight actionable-item counts for admin nav badges. Each count mirrors
  * the exact filter its own list page treats as "still needs admin action".
  */
-export const getPendingCounts = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPendingCounts = async (req: Request, res: Response): Promise<void> => {
   try {
     const [
       academyOnboarding,
@@ -1688,10 +1479,7 @@ export const getPendingCounts = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve pending counts",
+      message: error instanceof Error ? error.message : "Failed to retrieve pending counts",
     });
   }
 };
@@ -1700,10 +1488,7 @@ export const getPendingCounts = async (
  * GET /admin/stats/unsupported-sports
  * Returns the top unsupported sports searched by users, ranked by frequency.
  */
-export const getUnsupportedSportsStats = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getUnsupportedSportsStats = async (req: Request, res: Response): Promise<void> => {
   try {
     const days = Math.min(365, Math.max(7, Number(req.query.days) || 30));
     const since = new Date();
@@ -1752,9 +1537,7 @@ export const getUnsupportedSportsStats = async (
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve unsupported sports stats",
+        error instanceof Error ? error.message : "Failed to retrieve unsupported sports stats",
     });
   }
 };

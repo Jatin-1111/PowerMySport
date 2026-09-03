@@ -19,11 +19,7 @@ import {
   createSubscriptionPlanHandler,
   createSessionPackageHandler,
 } from "../../client/controllers/academyOnboardingController";
-import {
-  authMiddleware,
-  adminMiddleware,
-  requirePermission,
-} from "../../middleware/auth";
+import { authMiddleware, adminMiddleware, requirePermission } from "../../middleware/auth";
 import {
   getAcademyEarningsHandler,
   getAcademyAnalyticsHandler,
@@ -42,14 +38,8 @@ import {
 const router = Router();
 
 // Middleware to validate step-specific requests
-const validateAcademyStep = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  const stepNumber = parseInt(
-    (req.params as Record<string, unknown>).stepNumber as string,
-  );
+const validateAcademyStep = (req: Request, res: Response, next: NextFunction) => {
+  const stepNumber = parseInt((req.params as Record<string, unknown>).stepNumber as string);
 
   const stepSchemas: Record<number, any> = {
     2: academyOnboardingStep2Schema,
@@ -100,7 +90,7 @@ const validateAcademyStep = (
 router.post(
   "/onboarding/start",
   validateRequest(academyOnboardingStep1Schema),
-  startAcademyOnboardingHandler,
+  startAcademyOnboardingHandler
 );
 
 /**
@@ -113,20 +103,13 @@ router.get("/onboarding/:academyId/progress", getAcademyProgressHandler);
  * PUT: Save any step (2-7)
  * PUT /api/academies/onboarding/:academyId/step/:stepNumber
  */
-router.put(
-  "/onboarding/:academyId/step/:stepNumber",
-  validateAcademyStep,
-  saveAcademyStepHandler,
-);
+router.put("/onboarding/:academyId/step/:stepNumber", validateAcademyStep, saveAcademyStepHandler);
 
 /**
  * POST: Get image upload presigned URLs
  * POST /api/academies/onboarding/:academyId/image-upload-urls
  */
-router.post(
-  "/onboarding/:academyId/image-upload-urls",
-  getImageUploadUrlsHandler,
-);
+router.post("/onboarding/:academyId/image-upload-urls", getImageUploadUrlsHandler);
 
 /**
  * POST: Confirm images uploaded
@@ -138,19 +121,13 @@ router.post("/onboarding/:academyId/confirm-images", confirmImagesHandler);
  * POST: Get document upload presigned URLs
  * POST /api/academies/onboarding/:academyId/document-upload-urls
  */
-router.post(
-  "/onboarding/:academyId/document-upload-urls",
-  getDocumentUploadUrlsHandler,
-);
+router.post("/onboarding/:academyId/document-upload-urls", getDocumentUploadUrlsHandler);
 
 /**
  * POST: Confirm documents uploaded
  * POST /api/academies/onboarding/:academyId/confirm-documents
  */
-router.post(
-  "/onboarding/:academyId/confirm-documents",
-  confirmDocumentsHandler,
-);
+router.post("/onboarding/:academyId/confirm-documents", confirmDocumentsHandler);
 
 /**
  * POST: Submit academy for approval
@@ -185,7 +162,7 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("academies:view"),
-  listPendingAcademiesHandler,
+  listPendingAcademiesHandler
 );
 
 /**
@@ -197,7 +174,7 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("academies:view"),
-  getAcademyReviewDetailsHandler,
+  getAcademyReviewDetailsHandler
 );
 
 /**
@@ -209,7 +186,7 @@ router.put(
   authMiddleware,
   adminMiddleware,
   requirePermission("academies:manage"),
-  approveAcademyHandler,
+  approveAcademyHandler
 );
 
 /**
@@ -222,7 +199,7 @@ router.put(
   authMiddleware,
   adminMiddleware,
   requirePermission("academies:manage"),
-  rejectAcademyHandler,
+  rejectAcademyHandler
 );
 
 /**
@@ -234,7 +211,7 @@ router.put(
   authMiddleware,
   adminMiddleware,
   requirePermission("academies:manage"),
-  markKycVerifiedHandler,
+  markKycVerifiedHandler
 );
 
 /**
@@ -247,7 +224,7 @@ router.put(
   authMiddleware,
   adminMiddleware,
   requirePermission("academies:manage"),
-  suspendAcademyHandler,
+  suspendAcademyHandler
 );
 
 /**
@@ -261,22 +238,14 @@ router.put(
  * POST /api/academies/:academyId/subscriptions
  * Requires: authMiddleware (owner verification)
  */
-router.post(
-  "/:academyId/subscriptions",
-  authMiddleware,
-  createSubscriptionPlanHandler,
-);
+router.post("/:academyId/subscriptions", authMiddleware, createSubscriptionPlanHandler);
 
 /**
  * POST: Create session package
  * POST /api/academies/:academyId/packages
  * Requires: authMiddleware (owner verification)
  */
-router.post(
-  "/:academyId/packages",
-  authMiddleware,
-  createSessionPackageHandler,
-);
+router.post("/:academyId/packages", authMiddleware, createSessionPackageHandler);
 
 // Academy owner analytics (authenticated, not admin)
 router.get("/my/earnings", authMiddleware, getAcademyEarningsHandler);

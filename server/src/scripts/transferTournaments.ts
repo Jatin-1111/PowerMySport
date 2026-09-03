@@ -29,17 +29,13 @@ async function transferTournaments() {
     if (count > 0) {
       const documents = await sourceCollection.find({}).toArray();
 
-      console.log(
-        `Inserting ${documents.length} tournaments into 'test' database...`,
-      );
+      console.log(`Inserting ${documents.length} tournaments into 'test' database...`);
       // Use ordered: false to continue inserting even if some duplicate key errors happen (if they already exist)
       const result = await targetCollection
         .insertMany(documents, { ordered: false })
         .catch((err) => {
           if (err.code === 11000) {
-            console.log(
-              "Some documents already existed (duplicate keys), ignoring those.",
-            );
+            console.log("Some documents already existed (duplicate keys), ignoring those.");
             return err.result;
           }
           throw err;

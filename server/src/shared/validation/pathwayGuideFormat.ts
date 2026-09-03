@@ -74,10 +74,7 @@ export const PathwayActionSchema = z.object({
     .string()
     .trim()
     .max(300)
-    .refine(
-      (v) => v.startsWith("/") || /^https?:\/\//.test(v),
-      "must start with / or http(s)://",
-    )
+    .refine((v) => v.startsWith("/") || /^https?:\/\//.test(v), "must start with / or http(s)://")
     .optional(),
 });
 
@@ -154,9 +151,7 @@ export function findDuplicateStageKeys(stages: Array<{ key: string }>): string[]
   return [...duplicates];
 }
 
-export type PathwayGuideParse =
-  | { ok: true; guide: PathwayGuide }
-  | { ok: false; errors: string[] };
+export type PathwayGuideParse = { ok: true; guide: PathwayGuide } | { ok: false; errors: string[] };
 
 /**
  * Parse and cross-check in one call.
@@ -176,7 +171,7 @@ export function parsePathwayGuide(input: unknown): PathwayGuideParse {
     return {
       ok: false,
       errors: duplicates.map(
-        (key) => `stages: two stages share the key "${key}" — keys must be unique.`,
+        (key) => `stages: two stages share the key "${key}" — keys must be unique.`
       ),
     };
   }
@@ -197,7 +192,7 @@ export function formatPathwayIssues(error: z.ZodError): string[] {
 
 /** Validate a single stage on its own — what the per-stage CMS endpoints use. */
 export function parsePathwayStage(
-  input: unknown,
+  input: unknown
 ): { ok: true; stage: PathwayStage } | { ok: false; errors: string[] } {
   const parsed = PathwayStageSchema.safeParse(input);
   return parsed.success

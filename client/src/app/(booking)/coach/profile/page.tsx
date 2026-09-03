@@ -12,15 +12,7 @@ import { Card } from "@/modules/shared/ui/Card";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Booking, Coach, IAvailability, ServiceMode, User } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
-import {
-    AlertCircle,
-    CheckCircle,
-    Clock3,
-    LogOut,
-    Plus,
-    Trash2,
-    X,
-} from "lucide-react";
+import { AlertCircle, CheckCircle, Clock3, LogOut, Plus, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -56,9 +48,7 @@ const sortAvailabilitySlots = (slots: IAvailability[]) =>
 const normalizeSports = (sports: string[]) =>
   [...new Set(sports.map((sport) => sport.trim()).filter(Boolean))].sort();
 
-const normalizeAvailabilityBySport = (
-  bySport: Record<string, IAvailability[]>,
-) => {
+const normalizeAvailabilityBySport = (bySport: Record<string, IAvailability[]>) => {
   const normalized: Record<string, IAvailability[]> = {};
 
   Object.entries(bySport).forEach(([sport, slots]) => {
@@ -74,7 +64,7 @@ const normalizeAvailabilityBySport = (
 
 const isSameAvailabilityBySport = (
   first: Record<string, IAvailability[]>,
-  second: Record<string, IAvailability[]>,
+  second: Record<string, IAvailability[]>
 ) =>
   JSON.stringify(normalizeAvailabilityBySport(first)) ===
   JSON.stringify(normalizeAvailabilityBySport(second));
@@ -88,9 +78,9 @@ export default function CoachProfilePage() {
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [activeSportTab, setActiveSportTab] = useState("");
-  const [availabilityBySport, setAvailabilityBySport] = useState<
-    Record<string, IAvailability[]>
-  >({});
+  const [availabilityBySport, setAvailabilityBySport] = useState<Record<string, IAvailability[]>>(
+    {}
+  );
   const [savingAvailability, setSavingAvailability] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -111,9 +101,7 @@ export default function CoachProfilePage() {
   });
   const [isEditingCoaching, setIsEditingCoaching] = useState(false);
   const [isSavingCoaching, setIsSavingCoaching] = useState(false);
-  const [selectedVenueImage, setSelectedVenueImage] = useState<string | null>(
-    null,
-  );
+  const [selectedVenueImage, setSelectedVenueImage] = useState<string | null>(null);
   const [isEditingVenueImages, setIsEditingVenueImages] = useState(false);
   const [isUploadingVenueImages, setIsUploadingVenueImages] = useState(false);
   const [isSavingVenueImages, setIsSavingVenueImages] = useState(false);
@@ -137,9 +125,7 @@ export default function CoachProfilePage() {
   const [checkInCode, setCheckInCode] = useState("");
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkInMessage, setCheckInMessage] = useState<string | null>(null);
-  const [checkedInBooking, setCheckedInBooking] = useState<Booking | null>(
-    null,
-  );
+  const [checkedInBooking, setCheckedInBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -156,15 +142,13 @@ export default function CoachProfilePage() {
     }
 
     const status =
-      coachData.verificationStatus ||
-      (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
+      coachData.verificationStatus || (coachData.isVerified ? "VERIFIED" : "UNVERIFIED");
 
     switch (status) {
       case "VERIFIED":
         return {
           label: "Verified",
-          className:
-            "bg-emerald-100 text-emerald-700 border border-emerald-200",
+          className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
           icon: CheckCircle,
         };
       case "PENDING":
@@ -246,9 +230,7 @@ export default function CoachProfilePage() {
 
       setCheckInMessage(response.message || "Unable to verify check-in code.");
     } catch (error: any) {
-      setCheckInMessage(
-        error?.response?.data?.message || "Unable to verify check-in code.",
-      );
+      setCheckInMessage(error?.response?.data?.message || "Unable to verify check-in code.");
     } finally {
       setCheckInLoading(false);
     }
@@ -303,9 +285,7 @@ export default function CoachProfilePage() {
         throw new Error(response.message || "Failed to update profile");
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update profile",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update profile");
     } finally {
       setIsSavingProfile(false);
     }
@@ -354,11 +334,7 @@ export default function CoachProfilePage() {
       setIsEditingAbout(false);
       toast.success("About section updated.");
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update about section",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update about section");
     } finally {
       setIsSavingAbout(false);
     }
@@ -409,9 +385,7 @@ export default function CoachProfilePage() {
       setIsEditingTax(false);
       toast.success("Tax details updated.");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update tax details",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update tax details");
     } finally {
       setIsSavingTax(false);
     }
@@ -422,7 +396,7 @@ export default function CoachProfilePage() {
 
     const sports = coachProfile.sports || [];
     const pricingValues = Object.values(
-      (coachProfile.sportPricing || {}) as Record<string, number>,
+      (coachProfile.sportPricing || {}) as Record<string, number>
     );
     const hasPerSport = pricingValues.some((value) => value > 0);
     const allMatchHourly =
@@ -430,30 +404,23 @@ export default function CoachProfilePage() {
       typeof coachProfile.hourlyRate === "number" &&
       pricingValues.every((value) => value === coachProfile.hourlyRate);
 
-    const nextSportPricing = sports.reduce<Record<string, string>>(
-      (acc, sport) => {
-        const existingPrice = coachProfile.sportPricing?.[sport];
-        if (typeof existingPrice === "number" && existingPrice > 0) {
-          acc[sport] = String(existingPrice);
-        } else if (
-          typeof coachProfile.hourlyRate === "number" &&
-          coachProfile.hourlyRate > 0
-        ) {
-          acc[sport] = String(coachProfile.hourlyRate);
-        } else {
-          acc[sport] = "";
-        }
-        return acc;
-      },
-      {},
-    );
+    const nextSportPricing = sports.reduce<Record<string, string>>((acc, sport) => {
+      const existingPrice = coachProfile.sportPricing?.[sport];
+      if (typeof existingPrice === "number" && existingPrice > 0) {
+        acc[sport] = String(existingPrice);
+      } else if (typeof coachProfile.hourlyRate === "number" && coachProfile.hourlyRate > 0) {
+        acc[sport] = String(coachProfile.hourlyRate);
+      } else {
+        acc[sport] = "";
+      }
+      return acc;
+    }, {});
 
     setCoachingForm({
       selectedSports: sports,
       pricingMode: allMatchHourly ? "SAME" : "PER_SPORT",
       hourlyRateInput:
-        typeof coachProfile.hourlyRate === "number" &&
-        coachProfile.hourlyRate > 0
+        typeof coachProfile.hourlyRate === "number" && coachProfile.hourlyRate > 0
           ? String(coachProfile.hourlyRate)
           : "",
       sportPricing: nextSportPricing,
@@ -488,15 +455,11 @@ export default function CoachProfilePage() {
   const handleRemoveVenueImage = (index: number) => {
     setVenueImageDraft((prev) => ({
       images: prev.images.filter((_, currentIndex) => currentIndex !== index),
-      imageS3Keys: prev.imageS3Keys.filter(
-        (_, currentIndex) => currentIndex !== index,
-      ),
+      imageS3Keys: prev.imageS3Keys.filter((_, currentIndex) => currentIndex !== index),
     }));
   };
 
-  const handleVenueImagesSelected = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleVenueImagesSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
 
@@ -515,15 +478,11 @@ export default function CoachProfilePage() {
 
       for (const file of files) {
         if (file.size > MAX_FILE_SIZE) {
-          throw new Error(
-            `${file.name} exceeds 5MB. Please upload a smaller image.`,
-          );
+          throw new Error(`${file.name} exceeds 5MB. Please upload a smaller image.`);
         }
 
         if (!ALLOWED_IMAGE_FILE_TYPES.includes(file.type)) {
-          throw new Error(
-            `${file.name} is not supported. Upload JPG, PNG, or WebP only.`,
-          );
+          throw new Error(`${file.name} is not supported. Upload JPG, PNG, or WebP only.`);
         }
 
         const uploadResponse = await coachApi.getVerificationUploadUrl({
@@ -554,23 +513,13 @@ export default function CoachProfilePage() {
       }
 
       setVenueImageDraft((prev) => ({
-        images: [
-          ...prev.images,
-          ...uploadedImages.map((item) => item.imageUrl),
-        ],
-        imageS3Keys: [
-          ...prev.imageS3Keys,
-          ...uploadedImages.map((item) => item.key),
-        ],
+        images: [...prev.images, ...uploadedImages.map((item) => item.imageUrl)],
+        imageS3Keys: [...prev.imageS3Keys, ...uploadedImages.map((item) => item.key)],
       }));
 
       toast.success("Venue images uploaded.");
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to upload venue images",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to upload venue images");
     } finally {
       setIsUploadingVenueImages(false);
     }
@@ -591,10 +540,8 @@ export default function CoachProfilePage() {
     const existingImages = coachProfile.ownVenueDetails?.images || [];
     const existingKeys = coachProfile.ownVenueDetails?.imageS3Keys || [];
     if (
-      JSON.stringify(existingImages) ===
-        JSON.stringify(venueImageDraft.images) &&
-      JSON.stringify(existingKeys) ===
-        JSON.stringify(venueImageDraft.imageS3Keys)
+      JSON.stringify(existingImages) === JSON.stringify(venueImageDraft.images) &&
+      JSON.stringify(existingKeys) === JSON.stringify(venueImageDraft.imageS3Keys)
     ) {
       toast.info("No venue image changes to save.");
       setIsEditingVenueImages(false);
@@ -628,11 +575,7 @@ export default function CoachProfilePage() {
       setIsEditingVenueImages(false);
       toast.success("Venue images updated.");
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update venue images",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update venue images");
     } finally {
       setIsSavingVenueImages(false);
     }
@@ -714,23 +657,18 @@ export default function CoachProfilePage() {
         }, {});
 
     const currentPricing = normalizePricing(
-      (coachProfile.sportPricing || {}) as Record<string, number>,
+      (coachProfile.sportPricing || {}) as Record<string, number>
     );
     const nextPricing = normalizePricing(pricingPayload);
 
-    const hasSportsChange =
-      JSON.stringify(currentSports) !== JSON.stringify(nextSports);
+    const hasSportsChange = JSON.stringify(currentSports) !== JSON.stringify(nextSports);
     const hasHourlyRateChange = currentHourlyRate !== hourlyRate;
-    const hasServiceModeChange =
-      currentServiceMode !== coachingForm.serviceMode;
+    const hasServiceModeChange = currentServiceMode !== coachingForm.serviceMode;
     const hasServiceRadiusChange =
-      coachingForm.serviceMode !== "OWN_VENUE" &&
-      currentServiceRadius !== parsedServiceRadius;
+      coachingForm.serviceMode !== "OWN_VENUE" && currentServiceRadius !== parsedServiceRadius;
     const hasTravelBufferChange =
-      coachingForm.serviceMode !== "OWN_VENUE" &&
-      currentTravelBuffer !== parsedTravelBuffer;
-    const hasSportPricingChange =
-      JSON.stringify(currentPricing) !== JSON.stringify(nextPricing);
+      coachingForm.serviceMode !== "OWN_VENUE" && currentTravelBuffer !== parsedTravelBuffer;
+    const hasSportPricingChange = JSON.stringify(currentPricing) !== JSON.stringify(nextPricing);
 
     if (
       !hasSportsChange &&
@@ -761,23 +699,17 @@ export default function CoachProfilePage() {
       setIsSavingCoaching(true);
       const response = await coachApi.updateProfile(coachId, updates);
       if (!response.success || !response.data) {
-        throw new Error(
-          response.message || "Failed to update coaching details",
-        );
+        throw new Error(response.message || "Failed to update coaching details");
       }
 
       setCoachProfile(response.data);
       const sports = response.data.sports || [];
       const bySportFromApi = response.data.availabilityBySport || {};
-      const fallbackAvailability = sortAvailabilitySlots(
-        response.data.availability || [],
-      );
+      const fallbackAvailability = sortAvailabilitySlots(response.data.availability || []);
       const nextBySport: Record<string, IAvailability[]> = {};
 
       sports.forEach((sport) => {
-        nextBySport[sport] = sortAvailabilitySlots(
-          bySportFromApi[sport] || fallbackAvailability,
-        );
+        nextBySport[sport] = sortAvailabilitySlots(bySportFromApi[sport] || fallbackAvailability);
       });
 
       setAvailabilityBySport(nextBySport);
@@ -788,11 +720,7 @@ export default function CoachProfilePage() {
       setIsEditingCoaching(false);
       toast.success("Coaching details updated.");
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update coaching details",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to update coaching details");
     } finally {
       setIsSavingCoaching(false);
     }
@@ -804,15 +732,11 @@ export default function CoachProfilePage() {
       if (response.success && response.data) {
         const sports = response.data.sports || [];
         const bySportFromApi = response.data.availabilityBySport || {};
-        const fallbackAvailability = sortAvailabilitySlots(
-          response.data.availability || [],
-        );
+        const fallbackAvailability = sortAvailabilitySlots(response.data.availability || []);
         const nextBySport: Record<string, IAvailability[]> = {};
 
         sports.forEach((sport) => {
-          nextBySport[sport] = sortAvailabilitySlots(
-            bySportFromApi[sport] || fallbackAvailability,
-          );
+          nextBySport[sport] = sortAvailabilitySlots(bySportFromApi[sport] || fallbackAvailability);
         });
 
         setCoachProfile(response.data);
@@ -860,17 +784,11 @@ export default function CoachProfilePage() {
 
     setAvailabilityBySport((prev) => ({
       ...prev,
-      [activeSportTab]: (prev[activeSportTab] || []).filter(
-        (_, i) => i !== index,
-      ),
+      [activeSportTab]: (prev[activeSportTab] || []).filter((_, i) => i !== index),
     }));
   };
 
-  const updateTimeSlot = (
-    index: number,
-    key: keyof IAvailability,
-    value: number | string,
-  ) => {
+  const updateTimeSlot = (index: number, key: keyof IAvailability, value: number | string) => {
     if (!activeSportTab) {
       return;
     }
@@ -878,14 +796,12 @@ export default function CoachProfilePage() {
     setAvailabilityBySport((prev) => ({
       ...prev,
       [activeSportTab]: (prev[activeSportTab] || []).map((slot, i) =>
-        i === index ? { ...slot, [key]: value } : slot,
+        i === index ? { ...slot, [key]: value } : slot
       ),
     }));
   };
 
-  const validateAvailabilityBySport = (
-    bySport: Record<string, IAvailability[]>,
-  ) => {
+  const validateAvailabilityBySport = (bySport: Record<string, IAvailability[]>) => {
     for (const [sport, slots] of Object.entries(bySport)) {
       for (const slot of slots) {
         if (!slot.startTime || !slot.endTime) {
@@ -926,9 +842,7 @@ export default function CoachProfilePage() {
         currentBySport[sport] = sortAvailabilitySlots(slots || []);
       });
 
-      if (
-        isSameAvailabilityBySport(sortedAvailabilityBySport, currentBySport)
-      ) {
+      if (isSameAvailabilityBySport(sortedAvailabilityBySport, currentBySport)) {
         toast.info("No time slot changes to save.");
         return;
       }
@@ -943,15 +857,11 @@ export default function CoachProfilePage() {
       setCoachProfile(response.data);
       const sports = response.data.sports || [];
       const bySportFromApi = response.data.availabilityBySport || {};
-      const fallbackAvailability = sortAvailabilitySlots(
-        response.data.availability || [],
-      );
+      const fallbackAvailability = sortAvailabilitySlots(response.data.availability || []);
       const nextBySport: Record<string, IAvailability[]> = {};
 
       sports.forEach((sport) => {
-        nextBySport[sport] = sortAvailabilitySlots(
-          bySportFromApi[sport] || fallbackAvailability,
-        );
+        nextBySport[sport] = sortAvailabilitySlots(bySportFromApi[sport] || fallbackAvailability);
       });
 
       setAvailabilityBySport(nextBySport);
@@ -960,9 +870,7 @@ export default function CoachProfilePage() {
       }
       toast.success("Time slots updated successfully.");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save time slots",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save time slots");
     } finally {
       setSavingAvailability(false);
     }
@@ -978,24 +886,18 @@ export default function CoachProfilePage() {
 
   const badge = getVerificationBadge(coachProfile);
   const status =
-    coachProfile?.verificationStatus ||
-    (coachProfile?.isVerified ? "VERIFIED" : "UNVERIFIED");
+    coachProfile?.verificationStatus || (coachProfile?.isVerified ? "VERIFIED" : "UNVERIFIED");
   const guidance = getStatusGuidance(status);
   const BadgeIcon = badge.icon;
   const sportsCount = coachProfile?.sports?.length || 0;
-  const pricingValues = coachProfile?.sportPricing
-    ? Object.values(coachProfile.sportPricing)
-    : [];
+  const pricingValues = coachProfile?.sportPricing ? Object.values(coachProfile.sportPricing) : [];
   const basePrice =
-    pricingValues.length > 0
-      ? Math.min(...pricingValues)
-      : (coachProfile?.hourlyRate ?? 0);
+    pricingValues.length > 0 ? Math.min(...pricingValues) : (coachProfile?.hourlyRate ?? 0);
   const totalSlots =
-    coachProfile?.availabilityBySport &&
-    Object.keys(coachProfile.availabilityBySport).length > 0
+    coachProfile?.availabilityBySport && Object.keys(coachProfile.availabilityBySport).length > 0
       ? Object.values(coachProfile.availabilityBySport).reduce(
           (count, slots) => count + (slots?.length || 0),
-          0,
+          0
         )
       : (coachProfile?.availability?.length ?? 0);
 
@@ -1013,7 +915,7 @@ export default function CoachProfilePage() {
                 size="xl"
               />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Coach Dashboard
                 </p>
                 <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">
@@ -1021,13 +923,9 @@ export default function CoachProfilePage() {
                 </h2>
                 <div className="mt-2 space-y-1">
                   {user?.email && (
-                    <p className="break-all text-sm font-medium text-slate-600">
-                      {user.email}
-                    </p>
+                    <p className="text-sm font-medium break-all text-slate-600">{user.email}</p>
                   )}
-                  {user?.phone && (
-                    <p className="text-sm text-slate-600">{user.phone}</p>
-                  )}
+                  {user?.phone && <p className="text-sm text-slate-600">{user.phone}</p>}
                 </div>
               </div>
             </div>
@@ -1048,23 +946,19 @@ export default function CoachProfilePage() {
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Sports
-              </p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                {sportsCount}
-              </p>
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Sports</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{sportsCount}</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Starting Price
               </p>
-              <p className="mt-1 text-xl font-bold text-power-orange sm:text-2xl">
+              <p className="text-power-orange mt-1 text-xl font-bold sm:text-2xl">
                 ₹{basePrice || 0}/hr
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Service Mode
               </p>
               <p className="mt-1 text-2xl font-bold text-slate-900">
@@ -1076,12 +970,10 @@ export default function CoachProfilePage() {
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Time Slots
               </p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">
-                {totalSlots}
-              </p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{totalSlots}</p>
             </div>
           </div>
 
@@ -1099,9 +991,7 @@ export default function CoachProfilePage() {
           <div className="space-y-6 xl:col-span-8">
             <Card className="border border-slate-200 bg-white shadow-sm">
               <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  About You
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900">About You</h3>
                 {!isEditingAbout && (
                   <Button
                     type="button"
@@ -1118,11 +1008,9 @@ export default function CoachProfilePage() {
                 <div className="space-y-3">
                   <textarea
                     value={aboutForm.bio}
-                    onChange={(event) =>
-                      setAboutForm({ bio: event.target.value })
-                    }
+                    onChange={(event) => setAboutForm({ bio: event.target.value })}
                     rows={5}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                    className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                     placeholder="Tell players about your experience and coaching style"
                   />
                   <div className="grid gap-2 sm:flex">
@@ -1148,7 +1036,7 @@ export default function CoachProfilePage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
                   {coachProfile.bio || "No bio added yet"}
                 </p>
               )}
@@ -1156,9 +1044,7 @@ export default function CoachProfilePage() {
 
             <Card className="border border-slate-200 bg-white shadow-sm">
               <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Tax Details
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900">Tax Details</h3>
                 {!isEditingTax && (
                   <Button
                     type="button"
@@ -1174,7 +1060,7 @@ export default function CoachProfilePage() {
               {isEditingTax ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       GST Number (optional)
                     </label>
                     <input
@@ -1182,15 +1068,12 @@ export default function CoachProfilePage() {
                       autoComplete="off"
                       value={taxForm.gstNumber}
                       maxLength={15}
-                      onChange={(e) =>
-                        setTaxForm({ gstNumber: e.target.value.toUpperCase() })
-                      }
+                      onChange={(e) => setTaxForm({ gstNumber: e.target.value.toUpperCase() })}
                       placeholder="e.g. 22AAAAA0000A1Z5"
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                      className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                     />
                     <p className="mt-1 text-xs text-slate-500">
-                      Only if you&apos;re GST-registered — shown on your
-                      booking invoices.
+                      Only if you&apos;re GST-registered — shown on your booking invoices.
                     </p>
                   </div>
                   <div className="grid gap-2 sm:flex">
@@ -1224,9 +1107,7 @@ export default function CoachProfilePage() {
 
             <Card className="border border-slate-200 bg-white shadow-sm">
               <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Coaching Details
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900">Coaching Details</h3>
                 {!isEditingCoaching && (
                   <Button
                     type="button"
@@ -1242,7 +1123,7 @@ export default function CoachProfilePage() {
               {isEditingCoaching ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Sports You Can Coach
                     </label>
                     <SportsMultiSelect
@@ -1276,9 +1157,7 @@ export default function CoachProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-slate-900">
-                      Pricing
-                    </p>
+                    <p className="text-sm font-semibold text-slate-900">Pricing</p>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
                         <input
@@ -1292,8 +1171,7 @@ export default function CoachProfilePage() {
                                 ...prev.sportPricing,
                               };
                               prev.selectedSports.forEach((sport) => {
-                                updatedPricing[sport] =
-                                  prev.hourlyRateInput || "";
+                                updatedPricing[sport] = prev.hourlyRateInput || "";
                               });
 
                               return {
@@ -1326,10 +1204,8 @@ export default function CoachProfilePage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        {coachingForm.pricingMode === "SAME"
-                          ? "Hourly Price"
-                          : "Base Hourly Rate"}
+                      <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        {coachingForm.pricingMode === "SAME" ? "Hourly Price" : "Base Hourly Rate"}
                       </label>
                       <input
                         type="number"
@@ -1354,13 +1230,13 @@ export default function CoachProfilePage() {
                             };
                           })
                         }
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                        className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                         placeholder="500"
                       />
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                         Service Mode
                       </label>
                       <select
@@ -1371,7 +1247,7 @@ export default function CoachProfilePage() {
                             serviceMode: event.target.value as ServiceMode,
                           }))
                         }
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                        className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                       >
                         <option value="FREELANCE">Freelance</option>
                         <option value="OWN_VENUE">Own Venue</option>
@@ -1383,13 +1259,11 @@ export default function CoachProfilePage() {
                   {coachingForm.pricingMode === "PER_SPORT" &&
                     coachingForm.selectedSports.length > 0 && (
                       <div className="space-y-3">
-                        <p className="text-sm font-semibold text-slate-900">
-                          Price per Sport
-                        </p>
+                        <p className="text-sm font-semibold text-slate-900">Price per Sport</p>
                         <div className="grid gap-3 sm:grid-cols-2">
                           {coachingForm.selectedSports.map((sport) => (
                             <div key={sport}>
-                              <label className="mb-1 block text-xs font-semibold uppercase text-slate-600">
+                              <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase">
                                 {sport}
                               </label>
                               <input
@@ -1406,7 +1280,7 @@ export default function CoachProfilePage() {
                                     },
                                   }))
                                 }
-                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                                className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                                 placeholder="600"
                               />
                             </div>
@@ -1418,7 +1292,7 @@ export default function CoachProfilePage() {
                   {coachingForm.serviceMode !== "OWN_VENUE" && (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                           Service Radius (km)
                         </label>
                         <input
@@ -1432,12 +1306,12 @@ export default function CoachProfilePage() {
                               serviceRadiusKmInput: event.target.value,
                             }))
                           }
-                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                          className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                         />
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                           Travel Buffer (minutes)
                         </label>
                         <input
@@ -1451,7 +1325,7 @@ export default function CoachProfilePage() {
                               travelBufferTimeInput: event.target.value,
                             }))
                           }
-                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                          className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -1482,7 +1356,7 @@ export default function CoachProfilePage() {
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                    <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
                       Sports You Coach
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -1490,15 +1364,13 @@ export default function CoachProfilePage() {
                         coachProfile.sports.map((sport) => (
                           <span
                             key={sport}
-                            className="inline-flex items-center rounded-full bg-power-orange/10 px-3 py-1 text-sm font-medium text-power-orange border border-power-orange/20"
+                            className="bg-power-orange/10 text-power-orange border-power-orange/20 inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium"
                           >
                             {sport}
                           </span>
                         ))
                       ) : (
-                        <p className="text-sm text-slate-500">
-                          No sports added yet
-                        </p>
+                        <p className="text-sm text-slate-500">No sports added yet</p>
                       )}
                     </div>
                   </div>
@@ -1506,44 +1378,39 @@ export default function CoachProfilePage() {
                   {coachProfile.sportPricing &&
                     Object.keys(coachProfile.sportPricing).length > 0 && (
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+                        <p className="mb-2 text-xs tracking-wide text-slate-500 uppercase">
                           Pricing per Sport
                         </p>
                         <div className="grid gap-2 sm:grid-cols-2">
-                          {Object.entries(coachProfile.sportPricing).map(
-                            ([sport, price]) => (
-                              <div
-                                key={sport}
-                                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                              >
-                                <span className="text-sm font-medium text-slate-700">
-                                  {sport}
-                                </span>
-                                <span className="text-sm font-semibold text-slate-900">
-                                  ₹{price}/hr
-                                </span>
-                              </div>
-                            ),
-                          )}
+                          {Object.entries(coachProfile.sportPricing).map(([sport, price]) => (
+                            <div
+                              key={sport}
+                              className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                            >
+                              <span className="text-sm font-medium text-slate-700">{sport}</span>
+                              <span className="text-sm font-semibold text-slate-900">
+                                ₹{price}/hr
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
 
                   {coachProfile.hourlyRate &&
-                    Object.keys(coachProfile.sportPricing ?? {}).length ===
-                      0 && (
+                    Object.keys(coachProfile.sportPricing ?? {}).length === 0 && (
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                        <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
                           Hourly Rate
                         </p>
-                        <p className="text-2xl font-bold text-power-orange">
+                        <p className="text-power-orange text-2xl font-bold">
                           ₹{coachProfile.hourlyRate}/hr
                         </p>
                       </div>
                     )}
 
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                    <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
                       Service Mode
                     </p>
                     <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700">
@@ -1558,8 +1425,8 @@ export default function CoachProfilePage() {
                   {(coachProfile.serviceMode === "OWN_VENUE" ||
                     coachProfile.serviceMode === "HYBRID") &&
                     coachProfile.ownVenueDetails && (
-                      <div className="border-t border-slate-200 pt-4 mt-4">
-                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-3">
+                      <div className="mt-4 border-t border-slate-200 pt-4">
+                        <p className="mb-3 text-xs tracking-wide text-slate-500 uppercase">
                           Your Venue
                         </p>
                         <div className="space-y-3">
@@ -1575,7 +1442,7 @@ export default function CoachProfilePage() {
                           </div>
                           {coachProfile.ownVenueDetails.description && (
                             <div>
-                              <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                              <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
                                 Description
                               </p>
                               <p className="text-sm text-slate-700">
@@ -1585,7 +1452,7 @@ export default function CoachProfilePage() {
                           )}
                           {coachProfile.ownVenueDetails.openingHours && (
                             <div>
-                              <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                              <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
                                 Opening Hours
                               </p>
                               <p className="text-sm text-slate-700">
@@ -1596,7 +1463,7 @@ export default function CoachProfilePage() {
 
                           <div>
                             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                              <p className="text-xs uppercase tracking-wide text-slate-500">
+                              <p className="text-xs tracking-wide text-slate-500 uppercase">
                                 Venue Images
                               </p>
                               {!isEditingVenueImages ? (
@@ -1622,27 +1489,17 @@ export default function CoachProfilePage() {
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() =>
-                                      venueImageInputRef.current?.click()
-                                    }
-                                    disabled={
-                                      isUploadingVenueImages ||
-                                      isSavingVenueImages
-                                    }
+                                    onClick={() => venueImageInputRef.current?.click()}
+                                    disabled={isUploadingVenueImages || isSavingVenueImages}
                                   >
-                                    {isUploadingVenueImages
-                                      ? "Uploading..."
-                                      : "Add Images"}
+                                    {isUploadingVenueImages ? "Uploading..." : "Add Images"}
                                   </Button>
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
                                     onClick={handleCancelVenueImagesEdit}
-                                    disabled={
-                                      isUploadingVenueImages ||
-                                      isSavingVenueImages
-                                    }
+                                    disabled={isUploadingVenueImages || isSavingVenueImages}
                                   >
                                     Cancel
                                   </Button>
@@ -1651,10 +1508,7 @@ export default function CoachProfilePage() {
                                     variant="primary"
                                     size="sm"
                                     onClick={handleSaveVenueImages}
-                                    disabled={
-                                      isUploadingVenueImages ||
-                                      isSavingVenueImages
-                                    }
+                                    disabled={isUploadingVenueImages || isSavingVenueImages}
                                   >
                                     {isSavingVenueImages ? "Saving..." : "Save"}
                                   </Button>
@@ -1678,9 +1532,7 @@ export default function CoachProfilePage() {
                                   >
                                     <button
                                       type="button"
-                                      onClick={() =>
-                                        setSelectedVenueImage(imageUrl)
-                                      }
+                                      onClick={() => setSelectedVenueImage(imageUrl)}
                                       className="block w-full"
                                     >
                                       <img
@@ -1689,17 +1541,15 @@ export default function CoachProfilePage() {
                                         className="h-32 w-full object-cover"
                                       />
                                       <div className="pointer-events-none absolute inset-0 bg-slate-900/0 transition-colors group-hover:bg-slate-900/25" />
-                                      <span className="pointer-events-none absolute bottom-2 right-2 rounded-md bg-white/90 px-2 py-1 text-xs font-semibold text-slate-800 opacity-0 transition-opacity group-hover:opacity-100">
+                                      <span className="pointer-events-none absolute right-2 bottom-2 rounded-md bg-white/90 px-2 py-1 text-xs font-semibold text-slate-800 opacity-0 transition-opacity group-hover:opacity-100">
                                         View
                                       </span>
                                     </button>
                                     {isEditingVenueImages && (
                                       <button
                                         type="button"
-                                        onClick={() =>
-                                          handleRemoveVenueImage(index)
-                                        }
-                                        className="absolute left-2 top-2 rounded-md bg-white/90 p-1 text-red-600 shadow hover:bg-white"
+                                        onClick={() => handleRemoveVenueImage(index)}
+                                        className="absolute top-2 left-2 rounded-md bg-white/90 p-1 text-red-600 shadow hover:bg-white"
                                         aria-label={`Remove venue image ${index + 1}`}
                                       >
                                         <Trash2 className="h-4 w-4" />
@@ -1723,7 +1573,7 @@ export default function CoachProfilePage() {
                   {coachProfile.serviceMode !== "OWN_VENUE" && (
                     <>
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                        <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
                           Service Radius
                         </p>
                         <p className="text-sm font-medium text-slate-900">
@@ -1732,7 +1582,7 @@ export default function CoachProfilePage() {
                       </div>
 
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                        <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">
                           Travel Buffer Time
                         </p>
                         <p className="text-sm font-medium text-slate-900">
@@ -1747,9 +1597,7 @@ export default function CoachProfilePage() {
 
             <Card className="border border-slate-200 bg-white shadow-sm">
               <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Availability / Time Slots
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900">Availability / Time Slots</h3>
                 <Button
                   type="button"
                   variant="secondary"
@@ -1770,7 +1618,7 @@ export default function CoachProfilePage() {
                     onClick={() => setActiveSportTab(sport)}
                     className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
                       activeSportTab === sport
-                        ? "border-power-orange bg-orange-50 text-power-orange"
+                        ? "border-power-orange text-power-orange bg-orange-50"
                         : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                     }`}
                   >
@@ -1789,82 +1637,66 @@ export default function CoachProfilePage() {
                     No time slots added yet for {activeSportTab}.
                   </div>
                 ) : (
-                  (availabilityBySport[activeSportTab] || []).map(
-                    (slot, index) => (
-                      <div
-                        key={`${slot.dayOfWeek}-${slot.startTime}-${slot.endTime}-${index}`}
-                        className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
-                      >
-                        <div>
-                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Day
-                          </label>
-                          <select
-                            value={slot.dayOfWeek}
-                            onChange={(event) =>
-                              updateTimeSlot(
-                                index,
-                                "dayOfWeek",
-                                Number(event.target.value),
-                              )
-                            }
-                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-                          >
-                            {DAYS.map((day) => (
-                              <option key={day.value} value={day.value}>
-                                {day.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Start Time
-                          </label>
-                          <input
-                            type="time"
-                            value={slot.startTime}
-                            onChange={(event) =>
-                              updateTimeSlot(
-                                index,
-                                "startTime",
-                                event.target.value,
-                              )
-                            }
-                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            End Time
-                          </label>
-                          <input
-                            type="time"
-                            value={slot.endTime}
-                            onChange={(event) =>
-                              updateTimeSlot(
-                                index,
-                                "endTime",
-                                event.target.value,
-                              )
-                            }
-                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => removeTimeSlot(index)}
-                          className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-red-600 hover:bg-red-50"
-                          aria-label="Remove time slot"
+                  (availabilityBySport[activeSportTab] || []).map((slot, index) => (
+                    <div
+                      key={`${slot.dayOfWeek}-${slot.startTime}-${slot.endTime}-${index}`}
+                      className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
+                    >
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          Day
+                        </label>
+                        <select
+                          value={slot.dayOfWeek}
+                          onChange={(event) =>
+                            updateTimeSlot(index, "dayOfWeek", Number(event.target.value))
+                          }
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
                         >
-                          <Trash2 size={16} />
-                        </button>
+                          {DAYS.map((day) => (
+                            <option key={day.value} value={day.value}>
+                              {day.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    ),
-                  )
+
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          Start Time
+                        </label>
+                        <input
+                          type="time"
+                          value={slot.startTime}
+                          onChange={(event) =>
+                            updateTimeSlot(index, "startTime", event.target.value)
+                          }
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                          End Time
+                        </label>
+                        <input
+                          type="time"
+                          value={slot.endTime}
+                          onChange={(event) => updateTimeSlot(index, "endTime", event.target.value)}
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeTimeSlot(index)}
+                        className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-red-600 hover:bg-red-50"
+                        aria-label="Remove time slot"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))
                 )}
               </div>
 
@@ -1885,7 +1717,7 @@ export default function CoachProfilePage() {
             {coachProfile.verificationDocuments &&
               coachProfile.verificationDocuments.length > 0 && (
                 <Card className="border border-slate-200 bg-white shadow-sm">
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                  <h3 className="mb-4 text-lg font-semibold text-slate-900">
                     Verification Documents
                   </h3>
                   <div className="space-y-2">
@@ -1895,12 +1727,8 @@ export default function CoachProfilePage() {
                         className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
                       >
                         <div>
-                          <p className="text-sm font-medium text-slate-900">
-                            {doc.type}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {doc.fileName}
-                          </p>
+                          <p className="text-sm font-medium text-slate-900">{doc.type}</p>
+                          <p className="text-xs text-slate-500">{doc.fileName}</p>
                         </div>
                         <CheckCircle size={16} className="text-emerald-600" />
                       </div>
@@ -1910,12 +1738,10 @@ export default function CoachProfilePage() {
               )}
           </div>
 
-          <div className="space-y-6 xl:col-span-4 xl:sticky xl:top-6 xl:self-start">
+          <div className="space-y-6 xl:sticky xl:top-6 xl:col-span-4 xl:self-start">
             <Card className="border border-slate-200 bg-white shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Session Check-in
-              </h3>
-              <p className="text-xs text-slate-500 mb-3">
+              <h3 className="mb-2 text-lg font-semibold text-slate-900">Session Check-in</h3>
+              <p className="mb-3 text-xs text-slate-500">
                 Enter the player&#39;s 8-character code to start the session.
               </p>
               <div className="space-y-3">
@@ -1931,7 +1757,7 @@ export default function CoachProfilePage() {
                     setCheckInCode(nextValue);
                   }}
                   placeholder="Enter 8-character code"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm uppercase font-mono tracking-[0.35em] text-slate-900 focus:border-power-orange focus:outline-none"
+                  className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm tracking-[0.35em] text-slate-900 uppercase focus:outline-none"
                   autoComplete="one-time-code"
                 />
                 <Button
@@ -1958,39 +1784,32 @@ export default function CoachProfilePage() {
                 <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
                   <p className="font-semibold">Session started</p>
                   <p className="mt-1">
-                    {checkedInBooking.sport} -{" "}
-                    {formatDate(checkedInBooking.date)}
+                    {checkedInBooking.sport} - {formatDate(checkedInBooking.date)}
                   </p>
                   <p>
                     {formatTime(checkedInBooking.startTime)} -{" "}
                     {formatTime(checkedInBooking.endTime)}
                   </p>
                   {checkedInBooking.participantName && (
-                    <p className="mt-1">
-                      Player: {checkedInBooking.participantName}
-                    </p>
+                    <p className="mt-1">Player: {checkedInBooking.participantName}</p>
                   )}
                 </div>
               )}
               <Link
                 href="/coach/my-bookings"
-                className="mt-3 inline-flex text-xs font-semibold text-power-orange hover:text-orange-600"
+                className="text-power-orange mt-3 inline-flex text-xs font-semibold hover:text-orange-600"
               >
                 View upcoming bookings
               </Link>
             </Card>
 
             <Card className="border border-slate-200 bg-white shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                Verification Status
-              </h3>
+              <h3 className="mb-3 text-lg font-semibold text-slate-900">Verification Status</h3>
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
-                    Status
-                  </p>
+                  <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Status</p>
                   <span
-                    className={`inline-flex items-center gap-2 px-2 py-1 text-xs font-semibold rounded ${badge.className}`}
+                    className={`inline-flex items-center gap-2 rounded px-2 py-1 text-xs font-semibold ${badge.className}`}
                   >
                     <BadgeIcon size={12} />
                     {badge.label}
@@ -2001,7 +1820,7 @@ export default function CoachProfilePage() {
                 </div>
                 {status === "VERIFIED" && (
                   <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2">
-                    <p className="text-xs font-medium text-emerald-700 inline-flex items-center gap-1.5">
+                    <p className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                       <CheckCircle size={13} />
                       Profile verified and visible to players
                     </p>
@@ -2012,14 +1831,12 @@ export default function CoachProfilePage() {
 
             <Card className="border border-slate-200 bg-white shadow-sm">
               <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Profile Info
-                </h3>
+                <h3 className="text-lg font-semibold text-slate-900">Profile Info</h3>
                 {!isEditingProfile && (
                   <button
                     type="button"
                     onClick={handleEditProfileClick}
-                    className="px-3 py-1.5 bg-power-orange text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+                    className="bg-power-orange rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
                   >
                     Edit
                   </button>
@@ -2029,7 +1846,7 @@ export default function CoachProfilePage() {
               {isEditingProfile ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs uppercase tracking-wide text-slate-500 mb-1">
+                    <label className="mb-1 block text-xs tracking-wide text-slate-500 uppercase">
                       Name
                     </label>
                     <input
@@ -2041,12 +1858,12 @@ export default function CoachProfilePage() {
                           name: e.target.value,
                         }))
                       }
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                      className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                       placeholder="Your name"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs uppercase tracking-wide text-slate-500 mb-1">
+                    <label className="mb-1 block text-xs tracking-wide text-slate-500 uppercase">
                       Email
                     </label>
                     <input
@@ -2058,12 +1875,12 @@ export default function CoachProfilePage() {
                           email: e.target.value,
                         }))
                       }
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                      className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                       placeholder="Your email"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs uppercase tracking-wide text-slate-500 mb-1">
+                    <label className="mb-1 block text-xs tracking-wide text-slate-500 uppercase">
                       Phone
                     </label>
                     <input
@@ -2075,7 +1892,7 @@ export default function CoachProfilePage() {
                           phone: e.target.value,
                         }))
                       }
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-power-orange focus:outline-none"
+                      className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
                       placeholder="Your phone number"
                     />
                   </div>
@@ -2084,7 +1901,7 @@ export default function CoachProfilePage() {
                       type="button"
                       onClick={handleSaveProfile}
                       disabled={isSavingProfile}
-                      className="flex-1 rounded-lg bg-power-orange px-3 py-2 text-xs font-semibold text-white hover:bg-orange-600 disabled:opacity-60 transition-colors"
+                      className="bg-power-orange flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
                     >
                       {isSavingProfile ? "Saving..." : "Save"}
                     </button>
@@ -2092,7 +1909,7 @@ export default function CoachProfilePage() {
                       type="button"
                       onClick={handleCancelEdit}
                       disabled={isSavingProfile}
-                      className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 transition-colors"
+                      className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60"
                     >
                       Cancel
                     </button>
@@ -2101,33 +1918,19 @@ export default function CoachProfilePage() {
               ) : (
                 <div className="grid gap-3 text-sm sm:grid-cols-2">
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Name
-                    </p>
-                    <p className="font-medium text-slate-900">
-                      {user?.name || "Not provided"}
-                    </p>
+                    <p className="text-xs tracking-wide text-slate-500 uppercase">Name</p>
+                    <p className="font-medium text-slate-900">{user?.name || "Not provided"}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Email
-                    </p>
-                    <p className="break-all font-medium text-slate-900">
-                      {user?.email}
-                    </p>
+                    <p className="text-xs tracking-wide text-slate-500 uppercase">Email</p>
+                    <p className="font-medium break-all text-slate-900">{user?.email}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Phone
-                    </p>
-                    <p className="font-medium text-slate-900">
-                      {user?.phone || "Not provided"}
-                    </p>
+                    <p className="text-xs tracking-wide text-slate-500 uppercase">Phone</p>
+                    <p className="font-medium text-slate-900">{user?.phone || "Not provided"}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">
-                      Role
-                    </p>
+                    <p className="text-xs tracking-wide text-slate-500 uppercase">Role</p>
                     <p className="font-medium text-slate-900">Coach</p>
                   </div>
                 </div>
@@ -2135,15 +1938,13 @@ export default function CoachProfilePage() {
             </Card>
 
             <Card className="border border-slate-200 bg-white shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                Quick Actions
-              </h3>
+              <h3 className="mb-3 text-lg font-semibold text-slate-900">Quick Actions</h3>
               <div className="space-y-2">
                 <Button
                   type="button"
                   onClick={handleLogout}
                   variant="secondary"
-                  className="w-full flex items-center justify-center gap-2"
+                  className="flex w-full items-center justify-center gap-2"
                 >
                   <LogOut size={18} />
                   Logout
@@ -2154,14 +1955,12 @@ export default function CoachProfilePage() {
         </div>
       ) : (
         <Card className="bg-white">
-          <div className="text-center py-8">
+          <div className="py-8 text-center">
             <AlertCircle size={48} className="mx-auto mb-4 text-slate-400" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              No Coach Profile Yet
-            </h3>
-            <p className="text-sm text-slate-600 mb-4">
-              Complete the verification process to create your coach profile and
-              start accepting bookings.
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">No Coach Profile Yet</h3>
+            <p className="mb-4 text-sm text-slate-600">
+              Complete the verification process to create your coach profile and start accepting
+              bookings.
             </p>
             <Link href="/coach/verification">
               <Button type="button" variant="primary" className="mx-auto">
@@ -2177,14 +1976,11 @@ export default function CoachProfilePage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4"
           onClick={() => setSelectedVenueImage(null)}
         >
-          <div
-            className="relative w-full max-w-5xl"
-            onClick={(event) => event.stopPropagation()}
-          >
+          <div className="relative w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
             <button
               type="button"
               onClick={() => setSelectedVenueImage(null)}
-              className="absolute right-2 top-2 z-10 rounded-full bg-white/95 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white"
+              className="absolute top-2 right-2 z-10 rounded-full bg-white/95 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white"
               aria-label="Close image preview"
             >
               <X size={18} />

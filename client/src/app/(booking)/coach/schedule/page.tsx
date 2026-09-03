@@ -9,20 +9,20 @@ import { Booking, CoachCalendarData, IBlockedDate } from "@/types";
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    Ban,
-    CalendarCheck,
-    CalendarDays,
-    ChevronLeft,
-    ChevronRight,
-    Clock,
-    IndianRupee,
-    Loader2,
-    MapPin,
-    Pencil,
-    RefreshCw,
-    Trash2,
-    User,
-    X,
+  Ban,
+  CalendarCheck,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  IndianRupee,
+  Loader2,
+  MapPin,
+  Pencil,
+  RefreshCw,
+  Trash2,
+  User,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -45,10 +45,7 @@ const MONTH_NAMES = [
 ];
 const HOUR_START = 6;
 const HOUR_END = 22;
-const HOURS = Array.from(
-  { length: HOUR_END - HOUR_START },
-  (_, i) => HOUR_START + i,
-);
+const HOURS = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i);
 const ROW_HEIGHT = 64; // px per hour
 
 type CalendarView = "month" | "week" | "day";
@@ -89,10 +86,7 @@ function getWeekStart(d: Date): Date {
   return dt;
 }
 
-function getCalendarRange(
-  view: CalendarView,
-  current: Date,
-): { start: Date; end: Date } {
+function getCalendarRange(view: CalendarView, current: Date): { start: Date; end: Date } {
   if (view === "day") {
     const start = new Date(current);
     start.setHours(0, 0, 0, 0);
@@ -137,7 +131,6 @@ function bookingsForDay(day: Date, bookings: Booking[]): Booking[] {
   return bookings.filter((b) => sameDay(new Date(b.date), day));
 }
 
-
 const STATUS_LABEL: Record<string, string> = {
   AWAITING_PAYMENT: "Awaiting Payment",
   AWAITING_PROVIDER: "Awaiting Approval",
@@ -177,12 +170,7 @@ interface SessionModalProps {
   onClose: () => void;
   onApprove: (id: string) => Promise<void>;
   onReject: (id: string) => Promise<void>;
-  onReschedule: (
-    id: string,
-    date: string,
-    start: string,
-    end: string,
-  ) => Promise<void>;
+  onReschedule: (id: string, date: string, start: string, end: string) => Promise<void>;
   actionLoading: string | null;
 }
 
@@ -229,26 +217,16 @@ function SessionModal({
       toast.error("End time must be after start time.");
       return;
     }
-    await onReschedule(
-      booking.id,
-      rescheduleDate,
-      rescheduleStart,
-      rescheduleEnd,
-    );
+    await onReschedule(booking.id, rescheduleDate, rescheduleStart, rescheduleEnd);
     setShowReschedule(false);
   };
 
   return (
-    <Modal
-      isOpen={!!booking}
-      onClose={onClose}
-      title="Session Details"
-      size="md"
-    >
+    <Modal isOpen={!!booking} onClose={onClose} title="Session Details" size="md">
       <div className="space-y-5">
         {/* Player */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
             <User size={18} className="text-slate-500" />
           </div>
           <div>
@@ -258,7 +236,7 @@ function SessionModal({
           <span
             className={cn(
               "ml-auto rounded-full px-3 py-1 text-xs font-medium",
-              STATUS_BADGE[booking.status],
+              STATUS_BADGE[booking.status]
             )}
           >
             {STATUS_LABEL[booking.status] ?? booking.status}
@@ -270,33 +248,27 @@ function SessionModal({
         {/* Date / Time / Amount */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl bg-slate-50 px-4 py-3">
-            <div className="flex items-center gap-2 text-slate-500 mb-1">
+            <div className="mb-1 flex items-center gap-2 text-slate-500">
               <CalendarDays size={14} />
-              <span className="text-xs font-medium uppercase tracking-wide">
-                Date
-              </span>
+              <span className="text-xs font-medium tracking-wide uppercase">Date</span>
             </div>
             <p className="text-sm font-semibold text-slate-800">
               {formatFullDate(new Date(booking.date))}
             </p>
           </div>
           <div className="rounded-xl bg-slate-50 px-4 py-3">
-            <div className="flex items-center gap-2 text-slate-500 mb-1">
+            <div className="mb-1 flex items-center gap-2 text-slate-500">
               <Clock size={14} />
-              <span className="text-xs font-medium uppercase tracking-wide">
-                Time
-              </span>
+              <span className="text-xs font-medium tracking-wide uppercase">Time</span>
             </div>
             <p className="text-sm font-semibold text-slate-800">
               {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
             </p>
           </div>
           <div className="rounded-xl bg-slate-50 px-4 py-3">
-            <div className="flex items-center gap-2 text-slate-500 mb-1">
+            <div className="mb-1 flex items-center gap-2 text-slate-500">
               <IndianRupee size={14} />
-              <span className="text-xs font-medium uppercase tracking-wide">
-                Amount
-              </span>
+              <span className="text-xs font-medium tracking-wide uppercase">Amount</span>
             </div>
             <p className="text-sm font-semibold text-slate-800">
               ₹{booking.totalAmount.toLocaleString("en-IN")}
@@ -304,13 +276,11 @@ function SessionModal({
           </div>
           {(booking.venue || booking.coachId) && (
             <div className="rounded-xl bg-slate-50 px-4 py-3">
-              <div className="flex items-center gap-2 text-slate-500 mb-1">
+              <div className="mb-1 flex items-center gap-2 text-slate-500">
                 <MapPin size={14} />
-                <span className="text-xs font-medium uppercase tracking-wide">
-                  Location
-                </span>
+                <span className="text-xs font-medium tracking-wide uppercase">Location</span>
               </div>
-              <p className="text-sm font-semibold text-slate-800 truncate">
+              <p className="truncate text-sm font-semibold text-slate-800">
                 {typeof booking.venue === "object" && booking.venue
                   ? booking.venue.name
                   : "Coach venue"}
@@ -329,44 +299,36 @@ function SessionModal({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-                <p className="text-sm font-semibold text-slate-700">
-                  Reschedule to
-                </p>
+              <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-700">Reschedule to</p>
                 <div className="grid grid-cols-1 gap-2">
                   <div>
-                    <label className="text-xs text-slate-500 mb-1 block">
-                      Date
-                    </label>
+                    <label className="mb-1 block text-xs text-slate-500">Date</label>
                     <input
                       type="date"
                       min={today}
                       value={rescheduleDate}
                       onChange={(e) => setRescheduleDate(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs text-slate-500 mb-1 block">
-                        Start time
-                      </label>
+                      <label className="mb-1 block text-xs text-slate-500">Start time</label>
                       <input
                         type="time"
                         value={rescheduleStart}
                         onChange={(e) => setRescheduleStart(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-slate-500 mb-1 block">
-                        End time
-                      </label>
+                      <label className="mb-1 block text-xs text-slate-500">End time</label>
                       <input
                         type="time"
                         value={rescheduleEnd}
                         onChange={(e) => setRescheduleEnd(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                       />
                     </div>
                   </div>
@@ -380,11 +342,7 @@ function SessionModal({
                   >
                     Save
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setShowReschedule(false)}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => setShowReschedule(false)}>
                     Cancel
                   </Button>
                 </div>
@@ -477,17 +435,14 @@ function MonthView({
         {DAY_LABELS.map((l) => (
           <div
             key={l}
-            className="py-2 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide"
+            className="py-2 text-center text-xs font-semibold tracking-wide text-slate-400 uppercase"
           >
             {l}
           </div>
         ))}
       </div>
       {/* Grid */}
-      <div
-        className="grid grid-cols-7"
-        style={{ gridAutoRows: "minmax(100px, 1fr)" }}
-      >
+      <div className="grid grid-cols-7" style={{ gridAutoRows: "minmax(100px, 1fr)" }}>
         {days.map((day, i) => {
           const isCurrentMonth = day.getMonth() === current.getMonth();
           const isToday = sameDay(day, today);
@@ -501,14 +456,14 @@ function MonthView({
               key={i}
               onClick={() => onDayClick(day)}
               className={cn(
-                "relative border-b border-r border-slate-100 p-1.5 cursor-pointer transition-colors hover:bg-slate-50",
+                "relative cursor-pointer border-r border-b border-slate-100 p-1.5 transition-colors hover:bg-slate-50",
                 !isCurrentMonth && "opacity-40",
-                blocked && "bg-rose-50",
+                blocked && "bg-rose-50"
               )}
             >
               {blocked && (
                 <div
-                  className="absolute inset-0 pointer-events-none"
+                  className="pointer-events-none absolute inset-0"
                   style={{
                     backgroundImage:
                       "repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(244,63,94,0.06) 4px, rgba(244,63,94,0.06) 8px)",
@@ -520,7 +475,7 @@ function MonthView({
                   "relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
                   isToday && "bg-power-orange text-white",
                   !isToday && isCurrentMonth && "text-slate-800",
-                  !isToday && !isCurrentMonth && "text-slate-400",
+                  !isToday && !isCurrentMonth && "text-slate-400"
                 )}
               >
                 {day.getDate()}
@@ -534,8 +489,8 @@ function MonthView({
                       onBookingClick(b);
                     }}
                     className={cn(
-                      "w-full text-left rounded px-1.5 py-0.5 text-xs font-medium leading-tight truncate",
-                      BOOKING_BLOCK[b.status] ?? "bg-slate-100 text-slate-600",
+                      "w-full truncate rounded px-1.5 py-0.5 text-left text-xs leading-tight font-medium",
+                      BOOKING_BLOCK[b.status] ?? "bg-slate-100 text-slate-600"
                     )}
                   >
                     {formatTime(b.startTime)}{" "}
@@ -544,11 +499,7 @@ function MonthView({
                       : ""}
                   </button>
                 ))}
-                {overflow > 0 && (
-                  <p className="text-xs text-slate-400 px-1">
-                    +{overflow} more
-                  </p>
-                )}
+                {overflow > 0 && <p className="px-1 text-xs text-slate-400">+{overflow} more</p>}
               </div>
             </div>
           );
@@ -576,8 +527,7 @@ function TimeGrid({
   const todayStr = toISODate(now);
 
   // Current-time indicator position (minutes from HOUR_START)
-  const nowMinutesFromStart =
-    now.getHours() * 60 + now.getMinutes() - HOUR_START * 60;
+  const nowMinutesFromStart = now.getHours() * 60 + now.getMinutes() - HOUR_START * 60;
   const nowTop =
     nowMinutesFromStart >= 0 && nowMinutesFromStart <= HOURS.length * 60
       ? (nowMinutesFromStart / 60) * ROW_HEIGHT
@@ -587,7 +537,7 @@ function TimeGrid({
     <div className="flex-1 overflow-auto">
       {/* Day headers */}
       <div
-        className="sticky top-0 z-10 bg-white border-b border-slate-100 grid"
+        className="sticky top-0 z-10 grid border-b border-slate-100 bg-white"
         style={{ gridTemplateColumns: `64px repeat(${days.length}, 1fr)` }}
       >
         <div className="py-2" />
@@ -595,13 +545,13 @@ function TimeGrid({
           const isToday = sameDay(d, now);
           return (
             <div key={i} className="py-2 text-center">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
+              <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
                 {DAY_LABELS[d.getDay()]}
               </p>
               <p
                 className={cn(
                   "mx-auto mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
-                  isToday ? "bg-power-orange text-white" : "text-slate-700",
+                  isToday ? "bg-power-orange text-white" : "text-slate-700"
                 )}
               >
                 {d.getDate()}
@@ -621,10 +571,10 @@ function TimeGrid({
           {HOURS.map((h) => (
             <div
               key={h}
-              className="absolute w-full flex items-start justify-end pr-2"
+              className="absolute flex w-full items-start justify-end pr-2"
               style={{ top: (h - HOUR_START) * ROW_HEIGHT }}
             >
-              <span className="text-[11px] leading-none text-slate-400 font-medium -translate-y-1/2">
+              <span className="-translate-y-1/2 text-[11px] leading-none font-medium text-slate-400">
                 {h === 12 ? "12 PM" : h > 12 ? `${h - 12} PM` : `${h} AM`}
               </span>
             </div>
@@ -649,7 +599,7 @@ function TimeGrid({
                   key={h}
                   className={cn(
                     "absolute w-full border-t",
-                    h % 2 === 0 ? "border-slate-100" : "border-slate-50",
+                    h % 2 === 0 ? "border-slate-100" : "border-slate-50"
                   )}
                   style={{ top: (h - HOUR_START) * ROW_HEIGHT }}
                 />
@@ -667,7 +617,7 @@ function TimeGrid({
               {/* Blocked overlay */}
               {blocked && (
                 <div
-                  className="absolute inset-0 pointer-events-none z-0"
+                  className="pointer-events-none absolute inset-0 z-0"
                   style={{
                     backgroundImage:
                       "repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(244,63,94,0.08) 6px, rgba(244,63,94,0.08) 12px)",
@@ -678,11 +628,11 @@ function TimeGrid({
               {/* Current-time indicator */}
               {isToday && nowTop !== null && (
                 <div
-                  className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
+                  className="pointer-events-none absolute right-0 left-0 z-20 flex items-center"
                   style={{ top: nowTop }}
                 >
-                  <span className="h-2.5 w-2.5 rounded-full bg-power-orange shrink-0 -ml-1.5 shadow-sm" />
-                  <div className="flex-1 border-t-2 border-power-orange" />
+                  <span className="bg-power-orange -ml-1.5 h-2.5 w-2.5 shrink-0 rounded-full shadow-sm" />
+                  <div className="border-power-orange flex-1 border-t-2" />
                 </div>
               )}
 
@@ -691,10 +641,7 @@ function TimeGrid({
                 const startMins = timeToMinutes(b.startTime) - HOUR_START * 60;
                 const endMins = timeToMinutes(b.endTime) - HOUR_START * 60;
                 const top = Math.max(0, (startMins / 60) * ROW_HEIGHT);
-                const height = Math.max(
-                  28,
-                  ((endMins - startMins) / 60) * ROW_HEIGHT - 2,
-                );
+                const height = Math.max(28, ((endMins - startMins) / 60) * ROW_HEIGHT - 2);
                 const playerName =
                   typeof b.userId === "object" && b.userId
                     ? ((b.userId as { name?: string }).name ?? "")
@@ -706,27 +653,26 @@ function TimeGrid({
                     key={b.id}
                     onClick={() => onBookingClick(b)}
                     className={cn(
-                      "absolute left-0.5 right-0.5 rounded-lg border px-2 py-1 text-left overflow-hidden z-10",
-                      "transition-all hover:shadow-md hover:z-20 hover:scale-[1.01] active:scale-[0.99]",
-                      BOOKING_BLOCK[b.status] ??
-                        "bg-slate-100 border-slate-200 text-slate-600",
+                      "absolute right-0.5 left-0.5 z-10 overflow-hidden rounded-lg border px-2 py-1 text-left",
+                      "transition-all hover:z-20 hover:scale-[1.01] hover:shadow-md active:scale-[0.99]",
+                      BOOKING_BLOCK[b.status] ?? "border-slate-200 bg-slate-100 text-slate-600"
                     )}
                     style={{ top, height }}
                     title={`${playerName || b.sport} — ${formatTime(b.startTime)} to ${formatTime(b.endTime)}`}
                   >
                     {/* Sport tag */}
-                    <p className="text-[10px] font-bold uppercase tracking-wide opacity-60 leading-none truncate">
+                    <p className="truncate text-[10px] leading-none font-bold tracking-wide uppercase opacity-60">
                       {b.sport}
                     </p>
                     {/* Player name */}
                     {height > 24 && (
-                      <p className="text-xs font-semibold leading-tight truncate mt-0.5">
+                      <p className="mt-0.5 truncate text-xs leading-tight font-semibold">
                         {playerName || "Session"}
                       </p>
                     )}
                     {/* Time range — only if tall enough */}
                     {height > 44 && durationMins >= 30 && (
-                      <p className="text-[10px] opacity-60 leading-tight mt-0.5 truncate">
+                      <p className="mt-0.5 truncate text-[10px] leading-tight opacity-60">
                         {formatTime(b.startTime)}–{formatTime(b.endTime)}
                       </p>
                     )}
@@ -750,9 +696,7 @@ export default function CoachSchedulePage() {
     d.setHours(0, 0, 0, 0);
     return d;
   });
-  const [calendarData, setCalendarData] = useState<CoachCalendarData | null>(
-    null,
-  );
+  const [calendarData, setCalendarData] = useState<CoachCalendarData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -868,12 +812,7 @@ export default function CoachSchedulePage() {
     }
   };
 
-  const handleReschedule = async (
-    id: string,
-    date: string,
-    start: string,
-    end: string,
-  ) => {
+  const handleReschedule = async (id: string, date: string, start: string, end: string) => {
     setActionLoading(`reschedule-${id}`);
     try {
       const res = await bookingApi.rescheduleBooking(id, {
@@ -983,9 +922,7 @@ export default function CoachSchedulePage() {
 
   // Only paid bookings are actionable by the coach — an AWAITING_PAYMENT
   // booking is still the customer's to complete, not the coach's to approve.
-  const pendingBookings = bookings.filter(
-    (b) => b.status === "AWAITING_PROVIDER",
-  );
+  const pendingBookings = bookings.filter((b) => b.status === "AWAITING_PROVIDER");
 
   const today = toISODate(new Date());
 
@@ -1002,16 +939,14 @@ export default function CoachSchedulePage() {
           className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Schedule
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Schedule</h1>
             <p className="mt-0.5 text-sm text-slate-500">
               Manage your bookings, availability, and blocked dates
             </p>
           </div>
 
           {/* View switcher */}
-          <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm self-start sm:self-auto">
+          <div className="flex self-start rounded-xl border border-slate-200 bg-white p-1 shadow-sm sm:self-auto">
             {(["month", "week", "day"] as CalendarView[]).map((v) => (
               <button
                 key={v}
@@ -1020,7 +955,7 @@ export default function CoachSchedulePage() {
                   "rounded-lg px-4 py-1.5 text-sm font-medium capitalize transition-all",
                   view === v
                     ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-800",
+                    : "text-slate-500 hover:text-slate-800"
                 )}
               >
                 {v}
@@ -1035,7 +970,7 @@ export default function CoachSchedulePage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.05 }}
-            className="flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+            className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
             style={{ minHeight: view === "month" ? 600 : 680 }}
           >
             {/* Calendar toolbar */}
@@ -1043,29 +978,25 @@ export default function CoachSchedulePage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate(-1)}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 transition-colors"
+                  className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100"
                   aria-label="Previous"
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={() => navigate(1)}
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 transition-colors"
+                  className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100"
                   aria-label="Next"
                 >
                   <ChevronRight size={18} />
                 </button>
-                <h2 className="ml-1 text-base font-semibold text-slate-800">
-                  {headerLabel}
-                </h2>
+                <h2 className="ml-1 text-base font-semibold text-slate-800">{headerLabel}</h2>
               </div>
               <div className="flex items-center gap-2">
-                {isLoading && (
-                  <Loader2 size={16} className="animate-spin text-slate-400" />
-                )}
+                {isLoading && <Loader2 size={16} className="animate-spin text-slate-400" />}
                 <button
                   onClick={goToday}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
                 >
                   Today
                 </button>
@@ -1080,14 +1011,11 @@ export default function CoachSchedulePage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="flex flex-col flex-1 overflow-hidden"
+                className="flex flex-1 flex-col overflow-hidden"
               >
                 {isLoading && !calendarData ? (
                   <div className="flex flex-1 items-center justify-center">
-                    <Loader2
-                      size={28}
-                      className="animate-spin text-slate-300"
-                    />
+                    <Loader2 size={28} className="animate-spin text-slate-300" />
                   </div>
                 ) : view === "month" ? (
                   <MonthView
@@ -1109,7 +1037,7 @@ export default function CoachSchedulePage() {
             </AnimatePresence>
 
             {/* Legend */}
-            <div className="border-t border-slate-100 px-4 py-2.5 flex flex-wrap gap-x-4 gap-y-1">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-100 px-4 py-2.5">
               {[
                 { label: "Pending", cls: "bg-amber-400" },
                 { label: "Confirmed", cls: "bg-turf-green" },
@@ -1117,9 +1045,7 @@ export default function CoachSchedulePage() {
                 { label: "Completed", cls: "bg-slate-300" },
               ].map(({ label, cls }) => (
                 <div key={label} className="flex items-center gap-1.5">
-                  <span
-                    className={cn("inline-block h-2 w-2 rounded-full", cls)}
-                  />
+                  <span className={cn("inline-block h-2 w-2 rounded-full", cls)} />
                   <span className="text-xs text-slate-500">{label}</span>
                 </div>
               ))}
@@ -1143,19 +1069,17 @@ export default function CoachSchedulePage() {
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35, delay: 0.1 }}
-              className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
             >
-              <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Pending Approvals
-                </h3>
+              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
+                <h3 className="text-sm font-semibold text-slate-800">Pending Approvals</h3>
                 {pendingBookings.length > 0 && (
                   <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                     {pendingBookings.length}
                   </span>
                 )}
               </div>
-              <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+              <div className="max-h-72 divide-y divide-slate-100 overflow-y-auto">
                 {pendingBookings.length === 0 ? (
                   <div className="flex flex-col items-center py-8 text-slate-400">
                     <CalendarCheck size={28} strokeWidth={1.5} />
@@ -1168,28 +1092,22 @@ export default function CoachSchedulePage() {
                         ? ((b.userId as { name?: string }).name ?? "Player")
                         : "Player";
                     return (
-                      <div
-                        key={b.id}
-                        className="flex items-start gap-3 px-4 py-3"
-                      >
-                        <div className="mt-0.5 h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                      <div key={b.id} className="flex items-start gap-3 px-4 py-3">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100">
                           <User size={14} className="text-slate-500" />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-slate-800 truncate">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-slate-800">
                             {playerName}
                           </p>
-                          <p className="text-xs text-slate-500 capitalize">
-                            {b.sport}
-                          </p>
+                          <p className="text-xs text-slate-500 capitalize">{b.sport}</p>
                           <p className="text-xs text-slate-400">
-                            {formatFullDate(new Date(b.date))} ·{" "}
-                            {formatTime(b.startTime)}
+                            {formatFullDate(new Date(b.date))} · {formatTime(b.startTime)}
                           </p>
                         </div>
                         <button
                           onClick={() => setSelectedBooking(b)}
-                          className="shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium text-orange-600 border border-orange-200 hover:bg-orange-50 transition-colors"
+                          className="shrink-0 rounded-lg border border-orange-200 px-2.5 py-1 text-xs font-medium text-orange-600 transition-colors hover:bg-orange-50"
                         >
                           Review
                         </button>
@@ -1206,9 +1124,9 @@ export default function CoachSchedulePage() {
                 initial={{ opacity: 0, x: 12 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.35, delay: 0.15 }}
-                className="rounded-2xl border border-slate-200 bg-white shadow-sm px-4 py-3.5 flex items-center gap-3"
+                className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm"
               >
-                <div className="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50">
                   <Clock size={15} className="text-indigo-500" />
                 </div>
                 <div>
@@ -1225,46 +1143,40 @@ export default function CoachSchedulePage() {
               initial={{ opacity: 0, x: 12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.35, delay: 0.2 }}
-              className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
             >
-              <div className="px-4 py-3.5 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Block Time Off
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+              <div className="border-b border-slate-100 px-4 py-3.5">
+                <h3 className="text-sm font-semibold text-slate-800">Block Time Off</h3>
+                <p className="mt-0.5 text-xs text-slate-500">
                   Mark dates unavailable — holidays, personal time, etc.
                 </p>
               </div>
 
-              <div className="px-4 py-4 space-y-3">
+              <div className="space-y-3 px-4 py-4">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">
-                      From
-                    </label>
+                    <label className="mb-1 block text-xs font-medium text-slate-500">From</label>
                     <input
                       type="date"
                       min={today}
                       value={blockStart}
                       onChange={(e) => setBlockStart(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">
-                      To
-                    </label>
+                    <label className="mb-1 block text-xs font-medium text-slate-500">To</label>
                     <input
                       type="date"
                       min={blockStart || today}
                       value={blockEnd}
                       onChange={(e) => setBlockEnd(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">
+                  <label className="mb-1 block text-xs font-medium text-slate-500">
                     Reason (optional)
                   </label>
                   <input
@@ -1272,7 +1184,7 @@ export default function CoachSchedulePage() {
                     placeholder="Holiday, personal, travel..."
                     value={blockReason}
                     onChange={(e) => setBlockReason(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                   />
                 </div>
                 <Button
@@ -1291,53 +1203,55 @@ export default function CoachSchedulePage() {
               {blockedDates.length > 0 && (
                 <div className="border-t border-slate-100">
                   <div className="px-4 py-2.5">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Blocked periods
                     </p>
                   </div>
-                  <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                  <div className="max-h-64 divide-y divide-slate-100 overflow-y-auto">
                     {blockedDates.map((b) => {
                       const bid =
-                        (b as { _id?: string; id?: string })._id ??
-                        (b as { id?: string }).id ??
-                        "";
-                      const start = new Date(b.startDate).toLocaleDateString(
-                        "en-IN",
-                        { day: "numeric", month: "short" },
-                      );
-                      const end = new Date(b.endDate).toLocaleDateString(
-                        "en-IN",
-                        { day: "numeric", month: "short", year: "numeric" },
-                      );
+                        (b as { _id?: string; id?: string })._id ?? (b as { id?: string }).id ?? "";
+                      const start = new Date(b.startDate).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      });
+                      const end = new Date(b.endDate).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      });
                       const isSameDay =
-                        toISODate(new Date(b.startDate)) ===
-                        toISODate(new Date(b.endDate));
+                        toISODate(new Date(b.startDate)) === toISODate(new Date(b.endDate));
                       const isEditing = editingBlockId === bid;
 
                       return (
                         <div key={bid}>
                           {isEditing ? (
                             /* ── Inline edit form ── */
-                            <div className="px-4 py-3 space-y-2 bg-slate-50">
+                            <div className="space-y-2 bg-slate-50 px-4 py-3">
                               <p className="text-xs font-semibold text-slate-700">Edit block</p>
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <label className="text-[10px] font-medium text-slate-500 mb-0.5 block">From</label>
+                                  <label className="mb-0.5 block text-[10px] font-medium text-slate-500">
+                                    From
+                                  </label>
                                   <input
                                     type="date"
                                     value={editBlockStart}
                                     onChange={(e) => setEditBlockStart(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-[10px] font-medium text-slate-500 mb-0.5 block">To</label>
+                                  <label className="mb-0.5 block text-[10px] font-medium text-slate-500">
+                                    To
+                                  </label>
                                   <input
                                     type="date"
                                     min={editBlockStart}
                                     value={editBlockEnd}
                                     onChange={(e) => setEditBlockEnd(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                    className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                                   />
                                 </div>
                               </div>
@@ -1346,7 +1260,7 @@ export default function CoachSchedulePage() {
                                 placeholder="Reason (optional)"
                                 value={editBlockReason}
                                 onChange={(e) => setEditBlockReason(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-800 placeholder-slate-300 focus:ring-2 focus:ring-orange-400 focus:outline-none"
                               />
                               <div className="flex gap-2 pt-1">
                                 <Button
@@ -1369,14 +1283,12 @@ export default function CoachSchedulePage() {
                           ) : (
                             /* ── Read view ── */
                             <div className="flex items-center gap-2 px-4 py-2.5">
-                              <div className="flex-1 min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <p className="text-xs font-medium text-slate-700">
                                   {isSameDay ? start : `${start} – ${end}`}
                                 </p>
                                 {b.reason && (
-                                  <p className="text-xs text-slate-400 truncate">
-                                    {b.reason}
-                                  </p>
+                                  <p className="truncate text-xs text-slate-400">{b.reason}</p>
                                 )}
                               </div>
                               {/* Edit button */}
@@ -1387,7 +1299,7 @@ export default function CoachSchedulePage() {
                                   setEditBlockEnd(toISODate(new Date(b.endDate)));
                                   setEditBlockReason(b.reason ?? "");
                                 }}
-                                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:text-power-orange hover:bg-orange-50 transition-colors"
+                                className="hover:text-power-orange shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-orange-50"
                                 aria-label="Edit block"
                               >
                                 <Pencil size={13} />
@@ -1396,7 +1308,7 @@ export default function CoachSchedulePage() {
                               <button
                                 onClick={() => handleUnblock(bid)}
                                 disabled={removingBlockId === bid}
-                                className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                                className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-500 disabled:opacity-50"
                                 aria-label="Remove block"
                               >
                                 {removingBlockId === bid ? (

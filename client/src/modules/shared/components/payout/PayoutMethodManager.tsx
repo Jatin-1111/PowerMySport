@@ -6,18 +6,18 @@ import { Button } from "@/modules/shared/ui/Button";
 import { IPayoutMethod, PayoutMethodType } from "@/types";
 import { cn } from "@/utils/cn";
 import {
-    AlertTriangle,
-    BadgeCheck,
-    Banknote,
-    CreditCard,
-    Eye,
-    EyeOff,
-    Loader2,
-    Lock,
-    PencilLine,
-    Smartphone,
-    Trash2,
-    Wallet,
+  AlertTriangle,
+  BadgeCheck,
+  Banknote,
+  CreditCard,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  PencilLine,
+  Smartphone,
+  Trash2,
+  Wallet,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -29,9 +29,7 @@ interface PayoutMethodManagerProps {
   /** Load the existing payout method from backend */
   onLoad: () => Promise<IPayoutMethod | null>;
   /** Save (upsert) the payout method */
-  onSave: (
-    payload: Omit<IPayoutMethod, "addedAt" | "updatedAt">,
-  ) => Promise<IPayoutMethod>;
+  onSave: (payload: Omit<IPayoutMethod, "addedAt" | "updatedAt">) => Promise<IPayoutMethod>;
   /** Delete the payout method */
   onDelete: () => Promise<void>;
 }
@@ -45,21 +43,11 @@ const maskAccountNumber = (num: string) =>
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function FieldRow({
-  label,
-  value,
-  masked,
-}: {
-  label: string;
-  value: string;
-  masked?: boolean;
-}) {
+function FieldRow({ label, value, masked }: { label: string; value: string; masked?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <p className="text-xs text-slate-600 uppercase tracking-wider font-medium">
-        {label}
-      </p>
-      <p className="text-sm font-semibold text-slate-900 truncate text-right ml-3">
+      <p className="text-xs font-medium tracking-wider text-slate-600 uppercase">{label}</p>
+      <p className="ml-3 truncate text-right text-sm font-semibold text-slate-900">
         {masked ? maskAccountNumber(value) : value}
       </p>
     </div>
@@ -71,9 +59,7 @@ function StatusBadge({ hasMethod }: { hasMethod: boolean }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold",
-        hasMethod
-          ? "bg-emerald-100 text-emerald-700"
-          : "bg-amber-100 text-amber-700",
+        hasMethod ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
       )}
     >
       {hasMethod ? (
@@ -117,9 +103,7 @@ export function PayoutMethodManager({
   // UPI form state
   const [upiId, setUpiId] = useState("");
 
-  const confirmDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const confirmDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load existing method
   useEffect(() => {
@@ -238,9 +222,7 @@ export function PayoutMethodManager({
       setEditing(false);
       toast.success("Payout method saved");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to save payout method",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to save payout method");
     } finally {
       setSaving(false);
     }
@@ -264,9 +246,7 @@ export function PayoutMethodManager({
       resetForm();
       toast.success("Payout method removed");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to remove payout method",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to remove payout method");
     } finally {
       setDeleting(false);
       setConfirmDelete(false);
@@ -278,11 +258,10 @@ export function PayoutMethodManager({
   if (loading) {
     return (
       <div className="flex h-48 items-center justify-center">
-        <Loader2 className="animate-spin text-power-orange" size={28} />
+        <Loader2 className="text-power-orange animate-spin" size={28} />
       </div>
     );
   }
-
 
   return (
     <div className="space-y-6">
@@ -290,11 +269,9 @@ export function PayoutMethodManager({
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-2 flex items-center gap-2">
               <Wallet size={20} className="text-power-orange" />
-              <h2 className="text-lg font-bold text-slate-900">
-                Payout Method
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Payout Method</h2>
             </div>
             <p className="text-sm text-slate-600">
               Where you&apos;d like to receive your earnings from bookings.
@@ -308,33 +285,23 @@ export function PayoutMethodManager({
           <div className="mt-6 space-y-1">
             {current.type === "BANK_TRANSFER" ? (
               <>
-                <div className="flex items-center gap-2 mb-4">
+                <div className="mb-4 flex items-center gap-2">
                   <CreditCard size={16} className="text-power-orange" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <span className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
                     Bank Transfer
                   </span>
                 </div>
                 <div className="space-y-3 border-t border-slate-200 pt-4">
-                  <FieldRow
-                    label="Account Holder"
-                    value={current.accountHolderName!}
-                  />
-                  <FieldRow
-                    label="Account Number"
-                    value={current.accountNumber!}
-                    masked
-                  />
-                  <FieldRow
-                    label="Bank"
-                    value={`${current.bankName} — ${current.ifscCode}`}
-                  />
+                  <FieldRow label="Account Holder" value={current.accountHolderName!} />
+                  <FieldRow label="Account Number" value={current.accountNumber!} masked />
+                  <FieldRow label="Bank" value={`${current.bankName} — ${current.ifscCode}`} />
                 </div>
               </>
             ) : (
               <>
-                <div className="flex items-center gap-2 mb-4">
+                <div className="mb-4 flex items-center gap-2">
                   <Smartphone size={16} className="text-power-orange" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <span className="text-xs font-semibold tracking-wider text-slate-600 uppercase">
                     UPI
                   </span>
                 </div>
@@ -345,7 +312,7 @@ export function PayoutMethodManager({
             )}
 
             {current.updatedAt && (
-              <p className="pt-4 text-xs text-slate-500 border-t border-slate-200 mt-4">
+              <p className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-500">
                 Last updated:{" "}
                 {new Date(current.updatedAt).toLocaleDateString("en-IN", {
                   day: "numeric",
@@ -357,11 +324,7 @@ export function PayoutMethodManager({
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2 pt-4">
-              <Button
-                onClick={() => setEditing(true)}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={() => setEditing(true)} variant="outline" size="sm">
                 <PencilLine size={16} />
                 Edit
               </Button>
@@ -372,14 +335,10 @@ export function PayoutMethodManager({
                   "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
                   confirmDelete
                     ? "bg-red-600 text-white hover:bg-red-700"
-                    : "text-red-600 hover:bg-red-50",
+                    : "text-red-600 hover:bg-red-50"
                 )}
               >
-                {deleting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Trash2 size={16} />
-                )}
+                {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                 {confirmDelete ? "Confirm Remove" : "Remove"}
               </button>
             </div>
@@ -388,19 +347,15 @@ export function PayoutMethodManager({
 
         {/* ── No method CTA ── */}
         {!current && !editing && (
-          <div className="mt-6 text-center py-6">
+          <div className="mt-6 py-6 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
               <Banknote size={26} className="text-amber-600" />
             </div>
-            <p className="text-sm text-slate-600 mb-4">
-              You haven&apos;t added a payout method yet. Add one to start
-              receiving payments for your bookings.
+            <p className="mb-4 text-sm text-slate-600">
+              You haven&apos;t added a payout method yet. Add one to start receiving payments for
+              your bookings.
             </p>
-            <Button
-              onClick={() => setEditing(true)}
-              variant="primary"
-              size="md"
-            >
+            <Button onClick={() => setEditing(true)} variant="primary" size="md">
               <Wallet size={18} />
               Add Payout Method
             </Button>
@@ -410,30 +365,30 @@ export function PayoutMethodManager({
 
       {/* ── Edit / Add form ── */}
       {editing && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm duration-300">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <h3 className="text-base font-bold text-slate-900">
               {current ? "Update Payout Method" : "Add Payout Method"}
             </h3>
             <button
               onClick={resetForm}
-              className="text-sm text-slate-500 hover:text-slate-700 font-medium"
+              className="text-sm font-medium text-slate-500 hover:text-slate-700"
             >
               Cancel
             </button>
           </div>
 
           {/* Tab selector */}
-          <div className="flex rounded-lg bg-slate-100 p-1 gap-1">
+          <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
             {(["BANK_TRANSFER", "UPI"] as TabId[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2 rounded-md py-2 text-sm font-semibold transition-all",
+                  "flex flex-1 items-center justify-center gap-2 rounded-md py-2 text-sm font-semibold transition-all",
                   activeTab === tab
-                    ? "bg-white text-power-orange shadow-sm border border-power-orange/20"
-                    : "text-slate-600 hover:text-slate-900",
+                    ? "text-power-orange border-power-orange/20 border bg-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
                 )}
               >
                 {tab === "BANK_TRANSFER" ? (
@@ -501,24 +456,18 @@ export function PayoutMethodManager({
                 placeholder="yourname@okaxis"
                 hint="Format: name@bankname (e.g., john@okaxis)"
               />
-              <div className="flex items-start gap-2 rounded-lg bg-indigo-50 border border-indigo-200 p-4 text-sm text-blue-900">
+              <div className="flex items-start gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm text-blue-900">
                 <Lock size={16} className="mt-0.5 shrink-0 text-indigo-600" />
                 <p>
-                  We only store your UPI ID to process payouts. Your data is
-                  encrypted and we will never initiate unauthorized debits.
+                  We only store your UPI ID to process payouts. Your data is encrypted and we will
+                  never initiate unauthorized debits.
                 </p>
               </div>
             </div>
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              variant="primary"
-              fullWidth
-              size="lg"
-            >
+            <Button onClick={handleSave} disabled={saving} variant="primary" fullWidth size="lg">
               {saving ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
@@ -537,7 +486,7 @@ export function PayoutMethodManager({
           </div>
 
           <p className="text-center text-xs text-slate-500">
-            <Lock size={12} className="inline mr-1" />
+            <Lock size={12} className="mr-1 inline" />
             Your banking details are encrypted and stored securely
           </p>
         </div>
@@ -573,9 +522,7 @@ function FormFieldGroup({
 
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-semibold text-slate-700">
-        {label}
-      </label>
+      <label className="block text-sm font-semibold text-slate-700">{label}</label>
       <div className="relative">
         <Input
           type={inputType}
@@ -589,7 +536,7 @@ function FormFieldGroup({
           <button
             type="button"
             onClick={() => setShowPassword((s) => !s)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 transition-colors"
+            className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-700"
             tabIndex={-1}
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

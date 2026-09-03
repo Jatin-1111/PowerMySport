@@ -8,11 +8,7 @@ interface Props {
   disabled?: boolean;
 }
 
-export default function ProfilePictureUpload({
-  value,
-  onChange,
-  disabled = false,
-}: Props) {
+export default function ProfilePictureUpload({ value, onChange, disabled = false }: Props) {
   const [preview, setPreview] = useState<string | null>(value || null);
 
   const handleFile = (file?: File) => {
@@ -27,11 +23,7 @@ export default function ProfilePictureUpload({
     <div className="flex items-center gap-4">
       <div className="h-20 w-20 overflow-hidden rounded-md bg-slate-100">
         {preview ? (
-          <img
-            src={preview}
-            alt="preview"
-            className="h-full w-full object-cover"
-          />
+          <img src={preview} alt="preview" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">
             No image

@@ -30,7 +30,7 @@ describe("shortenPointLabel", () => {
     // The phrase has to be matched before "POINTS" is stripped, or the rule that
     // recognises it never fires and the label comes out as bare shouting.
     expect(shortenPointLabel("POINTS CUT FOR NO SHOW LATE WL")).toBe(
-      "No-show and late-withdrawal cut",
+      "No-show and late-withdrawal cut"
     );
   });
 
@@ -58,17 +58,13 @@ describe("shortenPointLabel", () => {
     // is the source's own doing and must survive intact.
     expect(shortenPointLabel("BEST Eight PTS.")).toBe("Best 8");
     expect(shortenPointLabel("27-Jul-25 ATP PTS.")).toBe("27-Jul-25 ATP");
-    expect(shortenPointLabel("27-Jul-25 ITF WTT MEN PTS. X 1")).toBe(
-      "27-Jul-25 ITF WTT men x 1",
-    );
+    expect(shortenPointLabel("27-Jul-25 ITF WTT MEN PTS. X 1")).toBe("27-Jul-25 ITF WTT men x 1");
   });
 
   it("leaves age brackets and dates exactly as printed", () => {
     // Real Boys U-14 column. Case-folding "U-14" to "u-14" reads as a typo, and
     // the source detaches the percent sign from its number.
-    expect(shortenPointLabel("27-Jul-25 25 % PTS. Asian U-14")).toBe(
-      "27-Jul-25 25% Asian U-14",
-    );
+    expect(shortenPointLabel("27-Jul-25 25 % PTS. Asian U-14")).toBe("27-Jul-25 25% Asian U-14");
   });
 
   it("falls back to the raw label rather than returning nothing", () => {
@@ -89,9 +85,7 @@ describe("plainPointLabel", () => {
     expect(plainPointLabel("25% BEST Eight DBLS. PTS.")).toBe("Doubles");
     // The raw column still has to be nameable wherever it does surface, and its
     // name has to say why its number is not in the total.
-    expect(plainPointLabel("BEST Eight DBLS. PTS.")).toBe(
-      "Doubles played (not counted)",
-    );
+    expect(plainPointLabel("BEST Eight DBLS. PTS.")).toBe("Doubles played (not counted)");
   });
 
   it("spells out the bracket in the derived roll-down label", () => {
@@ -102,15 +96,11 @@ describe("plainPointLabel", () => {
 
   it("drops the source's own file date from the international column", () => {
     // "03-Aug-25" is the list stamping itself, not a fact about the tournament.
-    expect(plainPointLabel("03-Aug-25 25 % PTS. Asian U-16")).toBe(
-      "Asian U-16 (international)",
-    );
+    expect(plainPointLabel("03-Aug-25 25 % PTS. Asian U-16")).toBe("Asian U-16 (international)");
   });
 
   it("says what the penalty column is in words a parent uses", () => {
-    expect(plainPointLabel("POINTS CUT FOR NO SHOW LATE WL")).toBe(
-      "Penalty for pulling out",
-    );
+    expect(plainPointLabel("POINTS CUT FOR NO SHOW LATE WL")).toBe("Penalty for pulling out");
   });
 
   it("marks the open-age and pro-tour columns as what they are", () => {
@@ -123,7 +113,7 @@ describe("plainPointLabel", () => {
     // Real Men's Singles column. "X 1" is a weighting the sheet applies to
     // itself; a reader cannot act on it, and "WTT" is not expandable on sight.
     expect(plainPointLabel("27-Jul-25 ITF WTT MEN PTS. X 1")).toBe(
-      "ITF World Tennis Tour (international)",
+      "ITF World Tennis Tour (international)"
     );
   });
 
@@ -179,9 +169,7 @@ describe("explainTotal", () => {
     // Paranjay Siwach: own columns 773.75, Under-18 209.75, cut 5 → 978.5.
     const result = explainTotal(u16(220, 215, 53.75, 5, 500), 978.5, "U-16");
     expect(result!.slices.at(-1)).toEqual({ label: "Playing up in U-18", value: 209.75 });
-    expect(result!.deductions).toEqual([
-      { label: "POINTS CUT FOR NO SHOW LATE WL", value: 5 },
-    ]);
+    expect(result!.deductions).toEqual([{ label: "POINTS CUT FOR NO SHOW LATE WL", value: 5 }]);
   });
 
   it("adds nothing on the open-age lists, where the columns already balance", () => {
@@ -193,7 +181,7 @@ describe("explainTotal", () => {
         { label: "POINTS CUT FOR NO SHOW LATE WL", average: 0, isDeduction: true },
       ],
       2230,
-      "Singles",
+      "Singles"
     );
     expect(result!.slices).toEqual([{ label: "03-Aug-25 ATP PTS.", value: 2230 }]);
   });
@@ -241,9 +229,7 @@ describe("nationalStandingPhrase", () => {
   it("stops quoting a percentile once it would read as praise for being last", () => {
     // "Top 80%" is true and insulting. Being ranked at all is the fact worth
     // naming down there.
-    expect(nationalStandingPhrase(1500, 1602)).toBe(
-      "ranked among the top 1,602 in India",
-    );
+    expect(nationalStandingPhrase(1500, 1602)).toBe("ranked among the top 1,602 in India");
   });
 
   it("withholds a phrase it cannot compute", () => {
@@ -273,7 +259,10 @@ describe("percentile helpers", () => {
 });
 
 describe("composition legend", () => {
-  const band = (label: string, composition: RankingBandProfile["composition"]): RankingBandProfile => ({
+  const band = (
+    label: string,
+    composition: RankingBandProfile["composition"]
+  ): RankingBandProfile => ({
     label,
     from: 1,
     to: 10,
@@ -352,9 +341,17 @@ describe("plainPointLabel on the post-cutover source", () => {
   it("never leaves a label as raw federation shorthand", () => {
     // The real slice sets from Boys U-12, Boys U-18 and Men's Singles.
     const live = [
-      "Best 8 Sngls", "Best 8 Dbls", "25% Best 8 Dbls", "Asian (25%)",
-      "14&Under", "Penalty Pts", "Itf X 2", "Under Mens", "Mens",
-      "ATP Points", "Itf Wtt Men X 1",
+      "Best 8 Sngls",
+      "Best 8 Dbls",
+      "25% Best 8 Dbls",
+      "Asian (25%)",
+      "14&Under",
+      "Penalty Pts",
+      "Itf X 2",
+      "Under Mens",
+      "Mens",
+      "ATP Points",
+      "Itf Wtt Men X 1",
     ];
     for (const label of live) {
       const plain = plainPointLabel(label);
@@ -401,8 +398,10 @@ describe("explainTotal on a sampled band", () => {
   });
 
   it("reconciles against the sampled total, not the whole-band average", () => {
-    const stacked = explainTotal(sampled, 894.1, "U-16", { deriveRollDown: false })!
-      .slices.reduce((sum, s) => sum + s.value, 0);
+    const stacked = explainTotal(sampled, 894.1, "U-16", { deriveRollDown: false })!.slices.reduce(
+      (sum, s) => sum + s.value,
+      0
+    );
     // 225.1 + 70 + 305.5 + 294 = 894.6, against a net total of 894.1 plus the
     // 0.5 penalty. Within the tenth-of-a-point rounding the server stores.
     expect(Math.abs(stacked - 894.6)).toBeLessThan(0.05);

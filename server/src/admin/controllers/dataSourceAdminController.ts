@@ -15,15 +15,16 @@ import {
   enrichEditionsWithDetailPages,
   ValidEdition,
 } from "../services/DataSourceExtractionService";
-import {
-  resolveEditionSlugsBatch,
-  EditionKey,
-} from "../../shared/services/editionSlug";
+import { resolveEditionSlugsBatch, EditionKey } from "../../shared/services/editionSlug";
 import { s3Service } from "../../shared/services/S3Service";
 import { recordAuditLog } from "../services/AuditLogService";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "../services/AdminService";
 import { sendDataSourceReadyForReviewEmail } from "../../utils/email";
-import { SUPPORTED_SPORTS, isSupportedSport, toSupportedSlug } from "../../shared/constants/supportedSports";
+import {
+  SUPPORTED_SPORTS,
+  isSupportedSport,
+  toSupportedSlug,
+} from "../../shared/constants/supportedSports";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("dataSourceAdmin");
 
@@ -65,8 +66,8 @@ async function notifyReviewers(submission: {
           sportSlug: submission.sportSlug,
           targetType: submission.targetType,
           reviewUrl,
-        }),
-      ),
+        })
+      )
     );
   } catch (error) {
     log.error("Failed to notify data-source reviewers:", error);
@@ -75,10 +76,7 @@ async function notifyReviewers(submission: {
 
 // ─── POST /api/admin/data-sources/upload-url ───────────────────────────────────
 
-export const getDataSourceUploadUrl = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getDataSourceUploadUrl = async (req: Request, res: Response): Promise<void> => {
   try {
     const { fileName, contentType, sportSlug } = req.body as {
       fileName?: string;
@@ -107,7 +105,7 @@ export const getDataSourceUploadUrl = async (
     const uploadData = await s3Service.generateDataSourceUploadUrl(
       fileName,
       contentType,
-      toSupportedSlug(sportSlug),
+      toSupportedSlug(sportSlug)
     );
     res.status(200).json({ success: true, data: uploadData });
   } catch (error) {
@@ -121,10 +119,7 @@ export const getDataSourceUploadUrl = async (
 // ─── GET /api/admin/data-sources/targets ───────────────────────────────────────
 // Backs the "pick an existing Federation/Tournament, or create new" selector.
 
-export const listDataSourceTargets = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listDataSourceTargets = async (req: Request, res: Response): Promise<void> => {
   try {
     const targetType = req.query.targetType as DataSourceTargetType | undefined;
     const rawSportSlug = req.query.sportSlug as string | undefined;
@@ -140,13 +135,20 @@ export const listDataSourceTargets = async (
 
     if (targetType === "FEDERATION") {
       const docs = await Federation.find({ sportSlug }).select("slug name acronym").lean();
-      res.status(200).json({ success: true, data: docs.map((d) => ({ slug: d.slug, name: `${d.name} (${d.acronym})` })) });
+      res
+        .status(200)
+        .json({
+          success: true,
+          data: docs.map((d) => ({ slug: d.slug, name: `${d.name} (${d.acronym})` })),
+        });
       return;
     }
 
     if (targetType === "CURATED_TOURNAMENT") {
       const docs = await Tournament.find({ sportSlug, isCurated: true }).select("slug name").lean();
-      res.status(200).json({ success: true, data: docs.map((d) => ({ slug: d.slug || "", name: d.name })) });
+      res
+        .status(200)
+        .json({ success: true, data: docs.map((d) => ({ slug: d.slug || "", name: d.name })) });
       return;
     }
 
@@ -165,10 +167,7 @@ export const listDataSourceTargets = async (
 // touched by an approved calendar source. Replaces the visibility the old
 // every-2-days cron gave for free; nothing here refreshes anything.
 
-export const getCalendarFreshness = async (
-  _req: Request,
-  res: Response,
-): Promise<void> => {
+export const getCalendarFreshness = async (_req: Request, res: Response): Promise<void> => {
   try {
     const rows = await Promise.all(
       SUPPORTED_SPORTS.map(async (sport) => {
@@ -181,7 +180,7 @@ export const getCalendarFreshness = async (
           sportName: sport.name,
           lastCheckedAt: latest?.lastCheckedAt ?? null,
         };
-      }),
+      })
     );
     res.status(200).json({ success: true, data: rows });
   } catch (error) {
@@ -206,7 +205,10 @@ async function getCurrentLiveData(submission: {
   }
   if (submission.targetType === "CURATED_TOURNAMENT") {
     if (!submission.tournamentSlug) return null;
-    return Tournament.findOne({ sportSlug: submission.sportSlug, slug: submission.tournamentSlug }).lean();
+    return Tournament.findOne({
+      sportSlug: submission.sportSlug,
+      slug: submission.tournamentSlug,
+    }).lean();
   }
   // TOURNAMENT_CALENDAR — no single target doc; show the nearest upcoming editions as context.
   return TournamentEdition.find({ sportSlug: submission.sportSlug })
@@ -217,10 +219,7 @@ async function getCurrentLiveData(submission: {
 
 // ─── POST /api/admin/data-sources ──────────────────────────────────────────────
 
-export const createDataSource = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createDataSource = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -240,7 +239,9 @@ export const createDataSource = async (
     };
 
     if (!body.targetType || !body.sportSlug || !body.sourceKind) {
-      res.status(400).json({ success: false, message: "targetType, sportSlug, and sourceKind are required" });
+      res
+        .status(400)
+        .json({ success: false, message: "targetType, sportSlug, and sourceKind are required" });
       return;
     }
     if (!isSupportedSport(body.sportSlug)) {
@@ -248,11 +249,21 @@ export const createDataSource = async (
       return;
     }
     if (body.targetType === "FEDERATION" && !body.federationSlug) {
-      res.status(400).json({ success: false, message: "federationSlug is required for a FEDERATION source" });
+      res
+        .status(400)
+        .json({ success: false, message: "federationSlug is required for a FEDERATION source" });
       return;
     }
-    if (body.targetType === "CURATED_TOURNAMENT" && (!body.federationSlug || !body.tournamentSlug)) {
-      res.status(400).json({ success: false, message: "federationSlug and tournamentSlug are required for a CURATED_TOURNAMENT source" });
+    if (
+      body.targetType === "CURATED_TOURNAMENT" &&
+      (!body.federationSlug || !body.tournamentSlug)
+    ) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "federationSlug and tournamentSlug are required for a CURATED_TOURNAMENT source",
+        });
       return;
     }
     if (body.sourceKind === "LINK" && !body.sourceUrl) {
@@ -260,7 +271,9 @@ export const createDataSource = async (
       return;
     }
     if (body.sourceKind === "PDF" && !body.s3Key) {
-      res.status(400).json({ success: false, message: "s3Key is required for a PDF source (upload it first)" });
+      res
+        .status(400)
+        .json({ success: false, message: "s3Key is required for a PDF source (upload it first)" });
       return;
     }
 
@@ -303,10 +316,7 @@ export const createDataSource = async (
 
 // ─── GET /api/admin/data-sources ───────────────────────────────────────────────
 
-export const listDataSources = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listDataSources = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt((req.query.limit as string) || "20", 10)));
@@ -341,10 +351,7 @@ export const listDataSources = async (
 
 // ─── GET /api/admin/data-sources/:id ────────────────────────────────────────────
 
-export const getDataSourceDetail = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getDataSourceDetail = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
@@ -373,10 +380,7 @@ export const getDataSourceDetail = async (
 // ─── PATCH /api/admin/data-sources/:id ──────────────────────────────────────────
 // Lets an admin edit the extracted payload before approving it.
 
-export const updateDataSource = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateDataSource = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -395,7 +399,7 @@ export const updateDataSource = async (
     const submission = await DataSourceSubmission.findByIdAndUpdate(
       id,
       { $set: { extractedData: req.body.extractedData } },
-      { new: true },
+      { new: true }
     );
     if (!submission) {
       res.status(404).json({ success: false, message: "Data source not found" });
@@ -421,10 +425,7 @@ export const updateDataSource = async (
 
 // ─── POST /api/admin/data-sources/:id/re-extract ────────────────────────────────
 
-export const reExtractDataSource = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const reExtractDataSource = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
@@ -470,10 +471,7 @@ export const reExtractDataSource = async (
 // pages: doing it inline would run the create/re-extract request past the load
 // balancer's timeout, and would spend AI quota on submissions that get rejected.
 
-export const enrichDataSourceDetails = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const enrichDataSourceDetails = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -544,10 +542,7 @@ export const enrichDataSourceDetails = async (
 
 // ─── POST /api/admin/data-sources/:id/reject ────────────────────────────────────
 
-export const rejectDataSource = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const rejectDataSource = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -574,7 +569,7 @@ export const rejectDataSource = async (
           reviewedAt: new Date(),
         },
       },
-      { new: true },
+      { new: true }
     );
     if (!submission) {
       res.status(404).json({ success: false, message: "Data source not found" });
@@ -603,10 +598,7 @@ export const rejectDataSource = async (
 // The only place extracted data is ever written into the live Federation /
 // Tournament / TournamentEdition collections.
 
-export const approveDataSource = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const approveDataSource = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -668,7 +660,7 @@ export const approveDataSource = async (
             ? { $addToSet: { sourceUrls: { $each: citedSourceUrls } } }
             : {}),
         },
-        { upsert: true, new: true, runValidators: true },
+        { upsert: true, new: true, runValidators: true }
       );
 
       // Resync the denormalized `federation` snapshot on every curated
@@ -731,7 +723,12 @@ export const approveDataSource = async (
                     name: federation.name,
                     acronym: federation.acronym,
                     website: federation.website,
-                    type: federation.type === "govt" ? "govt" : federation.type === "hybrid" ? "hybrid" : "private",
+                    type:
+                      federation.type === "govt"
+                        ? "govt"
+                        : federation.type === "hybrid"
+                          ? "hybrid"
+                          : "private",
                     about: federation.about,
                   },
                 }
@@ -741,7 +738,7 @@ export const approveDataSource = async (
             ? { $addToSet: { sourceUrls: { $each: citedSourceUrls } } }
             : {}),
         },
-        { upsert: true, runValidators: true },
+        { upsert: true, runValidators: true }
       );
     } else {
       const { valid, errors } = validateEditions(submission.extractedData);
@@ -763,9 +760,7 @@ export const approveDataSource = async (
       // Resolves every edition's slug in a handful of round trips instead of
       // 1-51 sequential queries PER edition — a full calendar approval can be
       // ~150 editions, so this keeps the admin request from timing out.
-      const slugsById = await resolveEditionSlugsBatch(
-        editionEntries.map((e) => e.key),
-      );
+      const slugsById = await resolveEditionSlugsBatch(editionEntries.map((e) => e.key));
 
       const editionKeyId = (key: EditionKey) =>
         `${key.sportSlug}|${key.name}|${key.startDate.toISOString()}`;
@@ -801,7 +796,7 @@ export const approveDataSource = async (
             },
             upsert: true,
           },
-        })),
+        }))
       );
     }
 
@@ -819,7 +814,9 @@ export const approveDataSource = async (
       metadata: { previousValue, newValue: submission.extractedData },
     });
 
-    res.status(200).json({ success: true, message: "Data source approved and published", data: submission });
+    res
+      .status(200)
+      .json({ success: true, message: "Data source approved and published", data: submission });
   } catch (error) {
     res.status(400).json({
       success: false,

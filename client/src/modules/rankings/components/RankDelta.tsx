@@ -26,7 +26,7 @@ export function RankDelta({
   if (delta === null || delta === undefined) {
     return (
       <span
-        className={`inline-flex items-center rounded px-1.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground ring-1 ring-border ${className}`}
+        className={`text-muted-foreground ring-border inline-flex items-center rounded px-1.5 py-0.5 text-[0.6875rem] font-semibold tracking-wide uppercase ring-1 ${className}`}
       >
         New
         <span className="sr-only"> to this list</span>
@@ -37,7 +37,7 @@ export function RankDelta({
   if (delta === 0) {
     return (
       <span
-        className={`inline-flex items-center gap-0.5 text-xs text-muted-foreground ${className}`}
+        className={`text-muted-foreground inline-flex items-center gap-0.5 text-xs ${className}`}
       >
         <Minus className="h-3 w-3" aria-hidden />
         <span className="sr-only">Unchanged</span>
@@ -56,8 +56,8 @@ export function RankDelta({
       <Icon className="h-3 w-3" aria-hidden />
       {Math.abs(delta)}
       <span className="sr-only">
-        {` ${Math.abs(delta) === 1 ? "place" : "places"} ${up ? "up" : "down"}`} since
-        the previous list
+        {` ${Math.abs(delta) === 1 ? "place" : "places"} ${up ? "up" : "down"}`} since the previous
+        list
       </span>
     </span>
   );

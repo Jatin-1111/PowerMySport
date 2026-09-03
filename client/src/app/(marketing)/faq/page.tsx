@@ -334,7 +334,7 @@ export default function FAQPage() {
 
   const toggleItem = (id: string) => {
     setOpenItems((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
 
@@ -360,80 +360,60 @@ export default function FAQPage() {
         }}
       />
       {/* Header Section */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
             <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="mb-2 flex items-center gap-3">
                 <HelpCircle size={32} className="text-power-orange" />
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/80 uppercase">
                   Support
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3">
-                Frequently Asked Questions
-              </h1>
-              <p className="text-slate-200 text-base sm:text-lg max-w-2xl">
-                Find answers to common questions about PowerMySport. Can&apos;t
-                find what you&apos;re looking for? Contact our support team.
+              <h1 className="mb-3 text-3xl font-bold sm:text-4xl">Frequently Asked Questions</h1>
+              <p className="max-w-2xl text-base text-slate-200 sm:text-lg">
+                Find answers to common questions about PowerMySport. Can&apos;t find what
+                you&apos;re looking for? Contact our support team.
               </p>
             </div>
-            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-power-orange/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-turf-green/20 blur-3xl" />
+            <div className="bg-power-orange/20 pointer-events-none absolute -top-16 -right-20 h-48 w-48 rounded-full blur-3xl" />
+            <div className="bg-turf-green/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Quick Links to Legal Pages */}
-        <div className="mb-12 p-6 bg-orange-50 rounded-lg border-2 border-orange-200">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">
+        <div className="mb-12 rounded-lg border-2 border-orange-200 bg-orange-50 p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">
             <span className="inline-flex items-center gap-2">
               <FileText size={18} /> For Detailed Legal Information
             </span>
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            <Link
-              href="/terms"
-              className="text-power-orange hover:underline font-medium"
-            >
+          <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+            <Link href="/terms" className="text-power-orange font-medium hover:underline">
               → Terms of Service
             </Link>
-            <Link
-              href="/privacy"
-              className="text-power-orange hover:underline font-medium"
-            >
+            <Link href="/privacy" className="text-power-orange font-medium hover:underline">
               → Privacy Policy
             </Link>
-            <Link
-              href="/refund-policy"
-              className="text-power-orange hover:underline font-medium"
-            >
+            <Link href="/refund-policy" className="text-power-orange font-medium hover:underline">
               → Full Refund Policy
             </Link>
-            <Link
-              href="/health-waiver"
-              className="text-power-orange hover:underline font-medium"
-            >
+            <Link href="/health-waiver" className="text-power-orange font-medium hover:underline">
               → Health & Safety Waiver
             </Link>
             <Link
               href="/parental-consent"
-              className="text-power-orange hover:underline font-medium"
+              className="text-power-orange font-medium hover:underline"
             >
               → Parental Consent Agreement
             </Link>
-            <Link
-              href="/content-policy"
-              className="text-power-orange hover:underline font-medium"
-            >
+            <Link href="/content-policy" className="text-power-orange font-medium hover:underline">
               → Content Moderation Policy
             </Link>
-            <Link
-              href="/cookies"
-              className="text-power-orange hover:underline font-medium"
-            >
+            <Link href="/cookies" className="text-power-orange font-medium hover:underline">
               → Cookie Policy
             </Link>
           </div>
@@ -442,9 +422,7 @@ export default function FAQPage() {
         <div className="space-y-8">
           {faqs.map((category, categoryIndex) => (
             <div key={categoryIndex}>
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">
-                {category.category}
-              </h2>
+              <h2 className="mb-4 text-2xl font-bold text-slate-900">{category.category}</h2>
               <div className="space-y-3">
                 {category.questions.map((faq, faqIndex) => {
                   const id = `${categoryIndex}-${faqIndex}`;
@@ -453,27 +431,25 @@ export default function FAQPage() {
                   return (
                     <Card
                       key={id}
-                      className="bg-white border-2 border-slate-100 hover:border-power-orange/30 transition-colors"
+                      className="hover:border-power-orange/30 border-2 border-slate-100 bg-white transition-colors"
                     >
                       <button
                         onClick={() => toggleItem(id)}
-                        className="w-full p-5 text-left flex items-start justify-between gap-4"
+                        className="flex w-full items-start justify-between gap-4 p-5 text-left"
                       >
-                        <h3 className="text-lg font-semibold text-slate-900 flex-1">
+                        <h3 className="flex-1 text-lg font-semibold text-slate-900">
                           {faq.question}
                         </h3>
                         <ChevronDown
                           size={24}
-                          className={`text-slate-400 shrink-0 transition-transform duration-200 ${
+                          className={`shrink-0 text-slate-400 transition-transform duration-200 ${
                             isOpen ? "rotate-180" : ""
                           }`}
                         />
                       </button>
                       {isOpen && (
                         <div className="px-5 pb-5">
-                          <p className="text-slate-600 leading-relaxed">
-                            {faq.answer}
-                          </p>
+                          <p className="leading-relaxed text-slate-600">{faq.answer}</p>
                         </div>
                       )}
                     </Card>
@@ -485,14 +461,12 @@ export default function FAQPage() {
         </div>
 
         {/* Contact Support Section */}
-        <Card className="bg-linear-to-br from-power-orange/5 to-turf-green/5 border-2 border-power-orange/20 mt-12 p-8 text-center">
-          <MessageCircle size={48} className="mx-auto mb-4 text-power-orange" />
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Still have questions?
-          </h2>
-          <p className="text-slate-600 mb-6 max-w-xl mx-auto">
-            Our support team is here to help. Reach out and we&apos;ll get back
-            to you as soon as possible.
+        <Card className="from-power-orange/5 to-turf-green/5 border-power-orange/20 mt-12 border-2 bg-linear-to-br p-8 text-center">
+          <MessageCircle size={48} className="text-power-orange mx-auto mb-4" />
+          <h2 className="mb-2 text-2xl font-bold text-slate-900">Still have questions?</h2>
+          <p className="mx-auto mb-6 max-w-xl text-slate-600">
+            Our support team is here to help. Reach out and we&apos;ll get back to you as soon as
+            possible.
           </p>
           <Link href="/contact">
             <Button variant="primary" size="lg">

@@ -1,14 +1,7 @@
 "use client";
 
-import {
-    ExpertSessionsList,
-    formatInr,
-} from "@/modules/expert/components/ExpertSessionsList";
-import {
-    expertApi,
-    type Expert,
-    type ExpertSession,
-} from "@/modules/expert/services/expert";
+import { ExpertSessionsList, formatInr } from "@/modules/expert/components/ExpertSessionsList";
+import { expertApi, type Expert, type ExpertSession } from "@/modules/expert/services/expert";
 import { AlertCircle, ArrowRight, CalendarClock, Clock, Star, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -63,11 +56,7 @@ export default function ExpertDashboardPage() {
 
   const updateOne = (updated: ExpertSession) =>
     setSessions((list) =>
-      list.map((s) =>
-        (s.id || s._id) === (updated.id || updated._id)
-          ? { ...s, ...updated }
-          : s,
-      ),
+      list.map((s) => ((s.id || s._id) === (updated.id || updated._id) ? { ...s, ...updated } : s))
     );
 
   return (
@@ -79,7 +68,9 @@ export default function ExpertDashboardPage() {
           <div>
             <p className="font-semibold text-amber-900 dark:text-amber-300">Profile under review</p>
             <p className="mt-0.5 text-sm text-amber-800 dark:text-amber-400">
-              Our team is reviewing your profile. You&apos;ll receive an email once it&apos;s approved (typically 1–2 business days). In the meantime, you can update your profile and set your availability.
+              Our team is reviewing your profile. You&apos;ll receive an email once it&apos;s
+              approved (typically 1–2 business days). In the meantime, you can update your profile
+              and set your availability.
             </p>
           </div>
         </div>
@@ -105,13 +96,11 @@ export default function ExpertDashboardPage() {
       )}
 
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full bg-power-orange/20 blur-3xl" />
-        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+        <div className="bg-power-orange/20 pointer-events-none absolute -top-12 -right-16 h-40 w-40 rounded-full blur-3xl" />
+        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/80 uppercase">
           Expert
         </span>
-        <h1 className="relative mt-3 text-2xl font-bold sm:text-3xl">
-          Your dashboard
-        </h1>
+        <h1 className="relative mt-3 text-2xl font-bold sm:text-3xl">Your dashboard</h1>
         <p className="relative mt-1 text-sm text-slate-200">
           Manage your upcoming and past sessions.
         </p>
@@ -139,11 +128,7 @@ export default function ExpertDashboardPage() {
         <StatCard
           icon={<Star className="h-4.5 w-4.5" />}
           label="Avg rating"
-          value={
-            stats.reviewCount
-              ? `${stats.avg.toFixed(1)} (${stats.reviewCount})`
-              : "—"
-          }
+          value={stats.reviewCount ? `${stats.avg.toFixed(1)} (${stats.reviewCount})` : "—"}
           tint="bg-amber-50 text-amber-600"
         />
       </div>
@@ -153,7 +138,7 @@ export default function ExpertDashboardPage() {
         {!loading && !error && sessions.length > 0 && (
           <Link
             href="/expert/sessions"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-power-orange hover:text-orange-600"
+            className="text-power-orange inline-flex items-center gap-1 text-sm font-semibold hover:text-orange-600"
           >
             View all sessions <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -186,12 +171,8 @@ function StatCard({
 }) {
   return (
     <div className="rounded-xl border-0 bg-white p-4 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
-      <div className={`flex h-9 w-9 items-center justify-center rounded-full ${tint}`}>
-        {icon}
-      </div>
-      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
+      <div className={`flex h-9 w-9 items-center justify-center rounded-full ${tint}`}>{icon}</div>
+      <p className="mt-3 text-xs font-semibold tracking-wide text-slate-500 uppercase">{label}</p>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
     </div>
   );

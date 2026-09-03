@@ -13,15 +13,12 @@ interface ContactInfoFormData {
 }
 
 interface Step1ContactInfoProps {
-  onContactInfoSubmit: (
-    data: ContactInfoFormData,
-  ) => Promise<{ venueId: string }>;
+  onContactInfoSubmit: (data: ContactInfoFormData) => Promise<{ venueId: string }>;
   loading?: boolean;
   onSkip?: () => Promise<void>;
 }
 
-const isDev =
-  typeof window !== "undefined" && process.env.NODE_ENV === "development";
+const isDev = typeof window !== "undefined" && process.env.NODE_ENV === "development";
 
 export default function Step1ContactInfo({
   onContactInfoSubmit,
@@ -53,10 +50,7 @@ export default function Step1ContactInfo({
       errors.ownerEmail = "Please enter a valid email address";
     }
 
-    if (
-      formData.ownerPhone.length < 10 ||
-      !/^[+]?[0-9\s().\-]+$/.test(formData.ownerPhone)
-    ) {
+    if (formData.ownerPhone.length < 10 || !/^[+]?[0-9\s().\-]+$/.test(formData.ownerPhone)) {
       errors.ownerPhone = "Please enter a valid phone number";
     }
 
@@ -91,9 +85,7 @@ export default function Step1ContactInfo({
     try {
       await onContactInfoSubmit(formData);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save contact info",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save contact info");
     } finally {
       setIsSubmitting(false);
     }
@@ -101,18 +93,14 @@ export default function Step1ContactInfo({
 
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">
-          Step 1: Tell us about you
-        </h2>
-        <p className="text-slate-600">
-          Let's start by getting your contact information
-        </p>
+      <div className="mb-8 text-center">
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 1: Tell us about you</h2>
+        <p className="text-slate-600">Let's start by getting your contact information</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Full Name <span className="text-error-red">*</span>
           </label>
           <input
@@ -125,17 +113,13 @@ export default function Step1ContactInfo({
             disabled={loading}
           />
           {fieldErrors.ownerName && (
-            <p className="text-error-red text-sm mt-1">
-              {fieldErrors.ownerName}
-            </p>
+            <p className="text-error-red mt-1 text-sm">{fieldErrors.ownerName}</p>
           )}
-          <p className="text-slate-600 text-sm mt-1">
-            This will be your primary contact name
-          </p>
+          <p className="mt-1 text-sm text-slate-600">This will be your primary contact name</p>
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Email Address <span className="text-error-red">*</span>
           </label>
           <input
@@ -148,17 +132,15 @@ export default function Step1ContactInfo({
             disabled={loading}
           />
           {fieldErrors.ownerEmail && (
-            <p className="text-error-red text-sm mt-1">
-              {fieldErrors.ownerEmail}
-            </p>
+            <p className="text-error-red mt-1 text-sm">{fieldErrors.ownerEmail}</p>
           )}
-          <p className="text-slate-600 text-sm mt-1">
+          <p className="mt-1 text-sm text-slate-600">
             We'll use this to communicate about your venue
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Phone Number <span className="text-error-red">*</span>
           </label>
           <input
@@ -171,44 +153,39 @@ export default function Step1ContactInfo({
             disabled={loading}
           />
           {fieldErrors.ownerPhone && (
-            <p className="text-error-red text-sm mt-1">
-              {fieldErrors.ownerPhone}
-            </p>
+            <p className="text-error-red mt-1 text-sm">{fieldErrors.ownerPhone}</p>
           )}
-          <p className="text-slate-600 text-sm mt-1">
+          <p className="mt-1 text-sm text-slate-600">
             We may need to contact you regarding your listing
           </p>
         </div>
 
         <Button
           type="submit"
-          className="w-full bg-power-orange hover:bg-orange-600 text-white py-2.5 text-base"
+          className="bg-power-orange w-full py-2.5 text-base text-white hover:bg-orange-600"
           disabled={loading || isSubmitting}
         >
-          {isSubmitting
-            ? "Sending verification code..."
-            : "Continue to Verification"}
+          {isSubmitting ? "Sending verification code..." : "Continue to Verification"}
         </Button>
         {isDev && onSkip && (
           <Button
             type="button"
             onClick={onSkip}
             disabled={loading || isSubmitting}
-            className="w-full bg-slate-600 hover:bg-slate-700 text-white py-2.5 text-base"
+            className="w-full bg-slate-600 py-2.5 text-base text-white hover:bg-slate-700"
           >
             Skip (Dev)
           </Button>
         )}
       </form>
 
-      <Card className="rounded-xl border border-power-orange/20 bg-power-orange/5 shadow-none">
-        <p className="text-sm text-slate-700 flex items-start gap-2">
-          <Lightbulb size={18} className="text-power-orange shrink-0 mt-0.5" />
+      <Card className="border-power-orange/20 bg-power-orange/5 rounded-xl border shadow-none">
+        <p className="flex items-start gap-2 text-sm text-slate-700">
+          <Lightbulb size={18} className="text-power-orange mt-0.5 shrink-0" />
           <span>
-            <span className="font-semibold">Tip:</span> Make sure to provide
-            accurate contact information. After your venue is approved, we'll
-            send you credentials and access to your vendor dashboard at this
-            email address.
+            <span className="font-semibold">Tip:</span> Make sure to provide accurate contact
+            information. After your venue is approved, we'll send you credentials and access to your
+            vendor dashboard at this email address.
           </span>
         </p>
       </Card>

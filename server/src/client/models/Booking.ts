@@ -107,10 +107,7 @@ export interface BookingExpertDetails {
  * when online coaching lands; nothing produces it yet.
  */
 export type BookingDeliveryKind =
-  | "PLATFORM_VENUE"
-  | "PROVIDER_VENUE"
-  | "STUDENT_LOCATION"
-  | "ONLINE";
+  "PLATFORM_VENUE" | "PROVIDER_VENUE" | "STUDENT_LOCATION" | "ONLINE";
 
 export interface BookingDelivery {
   kind: BookingDeliveryKind;
@@ -273,18 +270,12 @@ const bookingSchema = new Schema<BookingDocument>(
     startTime: {
       type: String,
       required: [true, "Start time is required"],
-      match: [
-        /^([01]\d|2[0-3]):([0-5]\d)$/,
-        "Start time must be in HH:mm format",
-      ],
+      match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "Start time must be in HH:mm format"],
     },
     endTime: {
       type: String,
       required: [true, "End time is required"],
-      match: [
-        /^([01]\d|2[0-3]):([0-5]\d)$/,
-        "End time must be in HH:mm format",
-      ],
+      match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "End time must be in HH:mm format"],
     },
     totalAmount: {
       type: Number,
@@ -490,7 +481,7 @@ const bookingSchema = new Schema<BookingDocument>(
           meetingLinkNudgeSentAt: { type: Date },
           startReminderSentAt: { type: Date },
         },
-        { _id: false },
+        { _id: false }
       ),
       required: false,
     },
@@ -499,12 +490,7 @@ const bookingSchema = new Schema<BookingDocument>(
         {
           kind: {
             type: String,
-            enum: [
-              "PLATFORM_VENUE",
-              "PROVIDER_VENUE",
-              "STUDENT_LOCATION",
-              "ONLINE",
-            ],
+            enum: ["PLATFORM_VENUE", "PROVIDER_VENUE", "STUDENT_LOCATION", "ONLINE"],
             required: true,
           },
           venueId: { type: Schema.Types.ObjectId, ref: "Venue" },
@@ -532,7 +518,7 @@ const bookingSchema = new Schema<BookingDocument>(
           platform: { type: String, trim: true },
           meetingLink: { type: String, trim: true },
         },
-        { _id: false },
+        { _id: false }
       ),
       required: false,
       validate: {
@@ -563,7 +549,7 @@ const bookingSchema = new Schema<BookingDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
 /**
@@ -654,7 +640,7 @@ bookingSchema.index(
   {
     name: "user_venue_booking_slot",
     partialFilterExpression: { venueId: { $exists: true } },
-  },
+  }
 );
 
 // Index for coach bookings only
@@ -663,7 +649,7 @@ bookingSchema.index(
   {
     name: "user_coach_booking_slot",
     partialFilterExpression: { coachId: { $exists: true } },
-  },
+  }
 );
 
 // --- Real-time Auto Updates ---
@@ -692,7 +678,4 @@ bookingSchema.post("updateMany", function () {
   // Can't easily get docs here, but usually updateMany isn't used for single user dashboard triggers
 });
 
-export const Booking = mongoose.model<BookingDocument>(
-  "Booking",
-  bookingSchema,
-);
+export const Booking = mongoose.model<BookingDocument>("Booking", bookingSchema);

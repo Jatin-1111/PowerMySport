@@ -183,7 +183,7 @@ export function normalizeDependent(wire: Partial<DependentWire>): Dependent {
  * that only touches `sport.chosenSport` produces a payload with just that one
  * field, so a save from one flow never clobbers fields another flow owns. */
 export function denormalizeDependent(
-  dep: Omit<Partial<Dependent>, "dob"> & { dob?: string | Date },
+  dep: Omit<Partial<Dependent>, "dob"> & { dob?: string | Date }
 ): Partial<DependentWire> {
   const out: Partial<DependentWire> = {};
 
@@ -268,7 +268,8 @@ export function denormalizeDependent(
 
   if (dep.pathwayState) {
     const p = dep.pathwayState;
-    if (p.satisfiedPrerequisites !== undefined) out.satisfiedPrerequisites = p.satisfiedPrerequisites;
+    if (p.satisfiedPrerequisites !== undefined)
+      out.satisfiedPrerequisites = p.satisfiedPrerequisites;
     if (p.currentGpa !== undefined) out.currentGpa = p.currentGpa;
     if (p.targetDivision !== undefined) out.targetDivision = p.targetDivision;
     if (p.graduationYear !== undefined) out.graduationYear = p.graduationYear;

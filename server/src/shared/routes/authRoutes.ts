@@ -54,10 +54,7 @@ const createRedisRateLimitStore = (prefix: string): Store => {
         const ttl = await redis.pttl(redisKey);
         return {
           totalHits,
-          resetTime:
-            ttl > 0
-              ? new Date(Date.now() + ttl)
-              : new Date(Date.now() + windowMs),
+          resetTime: ttl > 0 ? new Date(Date.now() + ttl) : new Date(Date.now() + windowMs),
         };
       } catch {
         return {
@@ -137,8 +134,7 @@ const resetPasswordRateLimiter = rateLimit({
   store: createRedisRateLimitStore("rl:auth:reset-password:"),
   message: {
     success: false,
-    message:
-      "Too many password reset attempts. Please try again in 15 minutes.",
+    message: "Too many password reset attempts. Please try again in 15 minutes.",
   },
 });
 
@@ -168,12 +164,7 @@ const deleteAccountRateLimiter = rateLimit({
   },
 });
 
-router.post(
-  "/register",
-  registerRateLimiter,
-  validateRequest(registerSchema),
-  register,
-);
+router.post("/register", registerRateLimiter, validateRequest(registerSchema), register);
 router.post("/login", loginRateLimiter, validateRequest(loginSchema), login);
 router.post("/logout", authMiddleware, logout);
 router.get("/profile", authMiddleware, getProfile);
@@ -184,50 +175,24 @@ router.post("/reset-password", resetPasswordRateLimiter, resetPasswordHandler);
 router.post("/google", googleAuth);
 router.post("/google/link", authMiddleware, linkGoogleHandler);
 router.post("/graduate", authMiddleware, graduateDependentHandler);
-router.put(
-  "/change-password",
-  authMiddleware,
-  changePasswordRateLimiter,
-  changePasswordHandler,
-);
-router.post(
-  "/delete-account",
-  authMiddleware,
-  deleteAccountRateLimiter,
-  deleteAccountHandler,
-);
+router.put("/change-password", authMiddleware, changePasswordRateLimiter, changePasswordHandler);
+router.post("/delete-account", authMiddleware, deleteAccountRateLimiter, deleteAccountHandler);
 
 // Profile picture endpoints
-router.post(
-  "/profile-picture/upload-url",
-  authMiddleware,
-  getProfilePictureUploadUrlHandler,
-);
-router.post(
-  "/profile-picture/confirm",
-  authMiddleware,
-  confirmProfilePictureUploadHandler,
-);
+router.post("/profile-picture/upload-url", authMiddleware, getProfilePictureUploadUrlHandler);
+router.post("/profile-picture/confirm", authMiddleware, confirmProfilePictureUploadHandler);
 
 // Dependent management endpoints
 router.get("/players", authMiddleware, getMyPlayersHandler);
 router.post("/dependents", authMiddleware, addDependentHandler);
 router.put("/dependents/:dependentId", authMiddleware, updateDependentHandler);
-router.delete(
-  "/dependents/:dependentId",
-  authMiddleware,
-  deleteDependentHandler,
-);
+router.delete("/dependents/:dependentId", authMiddleware, deleteDependentHandler);
 
 // Address management endpoints
 router.get("/addresses", authMiddleware, getAddressesHandler);
 router.post("/addresses", authMiddleware, addAddressHandler);
 router.put("/addresses/:addressId", authMiddleware, updateAddressHandler);
 router.delete("/addresses/:addressId", authMiddleware, deleteAddressHandler);
-router.patch(
-  "/addresses/:addressId/set-default",
-  authMiddleware,
-  setDefaultAddressHandler,
-);
+router.patch("/addresses/:addressId/set-default", authMiddleware, setDefaultAddressHandler);
 
 export default router;

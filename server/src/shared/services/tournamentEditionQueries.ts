@@ -11,7 +11,7 @@ import { TournamentEdition } from "../models/TournamentEdition";
 /** The chat-facing query: next upcoming editions for a sport, soonest first. */
 export async function getUpcomingEditions(
   sportSlug: string,
-  limit: number = 3,
+  limit: number = 3
 ): Promise<
   Array<{
     name: string;

@@ -28,10 +28,7 @@ const AdminSchema: Schema = new Schema(
       required: [true, "Email is required"],
       unique: true,
       lowercase: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        "Please provide a valid email",
-      ],
+      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email"],
     },
     password: {
       type: String,
@@ -71,7 +68,7 @@ const AdminSchema: Schema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Hash password before saving
@@ -89,9 +86,7 @@ AdminSchema.pre<IAdmin>("save", async function () {
 });
 
 // Method to compare passwords
-AdminSchema.methods.comparePassword = async function (
-  password: string,
-): Promise<boolean> {
+AdminSchema.methods.comparePassword = async function (password: string): Promise<boolean> {
   return bcrypt.compare(password, this.password);
 };
 

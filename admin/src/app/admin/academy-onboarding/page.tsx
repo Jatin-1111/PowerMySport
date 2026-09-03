@@ -1,10 +1,7 @@
 "use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import {
-  AcademyAdminQueueRecord,
-  adminApi,
-} from "@/modules/admin/services/admin";
+import { AcademyAdminQueueRecord, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
 import {
   BadgeCheck,
@@ -56,9 +53,7 @@ export default function AdminAcademyOnboardingPage() {
     approved: 0,
     rejected: 0,
   });
-  const [pendingAcademies, setPendingAcademies] = useState<
-    AcademyAdminQueueRecord[]
-  >([]);
+  const [pendingAcademies, setPendingAcademies] = useState<AcademyAdminQueueRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,35 +62,30 @@ export default function AdminAcademyOnboardingPage() {
     setError(null);
 
     try {
-      const [pendingResponse, approvedResponse, rejectedResponse] =
-        await Promise.all([
-          adminApi.getPendingAcademies({
-            page: 1,
-            limit: 6,
-            filter: "pending",
-          }),
-          adminApi.getPendingAcademies({
-            page: 1,
-            limit: 1,
-            filter: "approved",
-          }),
-          adminApi.getPendingAcademies({
-            page: 1,
-            limit: 1,
-            filter: "rejected",
-          }),
-        ]);
+      const [pendingResponse, approvedResponse, rejectedResponse] = await Promise.all([
+        adminApi.getPendingAcademies({
+          page: 1,
+          limit: 6,
+          filter: "pending",
+        }),
+        adminApi.getPendingAcademies({
+          page: 1,
+          limit: 1,
+          filter: "approved",
+        }),
+        adminApi.getPendingAcademies({
+          page: 1,
+          limit: 1,
+          filter: "rejected",
+        }),
+      ]);
 
       if (pendingResponse.success && pendingResponse.data) {
         setPendingAcademies(pendingResponse.data.academies || []);
         setStats({
           pending: pendingResponse.data.total || 0,
-          approved: approvedResponse.success
-            ? approvedResponse.data?.total || 0
-            : 0,
-          rejected: rejectedResponse.success
-            ? rejectedResponse.data?.total || 0
-            : 0,
+          approved: approvedResponse.success ? approvedResponse.data?.total || 0 : 0,
+          rejected: rejectedResponse.success ? rejectedResponse.data?.total || 0 : 0,
         });
         return;
       }
@@ -134,7 +124,7 @@ export default function AdminAcademyOnboardingPage() {
         accent: "text-red-600",
       },
     ],
-    [stats],
+    [stats]
   );
 
   return (
@@ -147,7 +137,7 @@ export default function AdminAcademyOnboardingPage() {
         />
         <Link
           href="/admin/academies/add"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          className="bg-power-orange inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
         >
           Create Academy
           <ChevronRight size={16} />
@@ -162,9 +152,7 @@ export default function AdminAcademyOnboardingPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm text-slate-600">{card.label}</p>
-                  <p className="mt-2 text-3xl font-bold text-slate-900">
-                    {card.value}
-                  </p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">{card.value}</p>
                 </div>
                 <div className={`rounded-2xl bg-slate-50 p-3 ${card.accent}`}>
                   <Icon size={20} />
@@ -176,18 +164,16 @@ export default function AdminAcademyOnboardingPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
-        <Card className="bg-white space-y-5">
+        <Card className="space-y-5 bg-white">
           <div className="flex items-start gap-3">
-            <div className="rounded-2xl bg-power-orange/10 p-3 text-power-orange">
+            <div className="bg-power-orange/10 text-power-orange rounded-2xl p-3">
               <BookOpen size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Onboarding flow
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900">Onboarding flow</h2>
               <p className="mt-1 text-sm text-slate-600">
-                Use this page as the admin entry point for academy onboarding
-                requests and move qualified accounts into the review queue.
+                Use this page as the admin entry point for academy onboarding requests and move
+                qualified accounts into the review queue.
               </p>
             </div>
           </div>
@@ -213,7 +199,7 @@ export default function AdminAcademyOnboardingPage() {
           <div className="flex flex-wrap gap-3">
             <Link
               href="/admin/academies"
-              className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
             >
               Open academy queue
               <ChevronRight size={16} />
@@ -227,23 +213,17 @@ export default function AdminAcademyOnboardingPage() {
           </div>
         </Card>
 
-        <Card className="bg-white space-y-4">
+        <Card className="space-y-4 bg-white">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Pending submissions
-              </h2>
-              <p className="text-sm text-slate-600">
-                Fresh academy requests awaiting review.
-              </p>
+              <h2 className="text-lg font-semibold text-slate-900">Pending submissions</h2>
+              <p className="text-sm text-slate-600">Fresh academy requests awaiting review.</p>
             </div>
             <Sparkles size={18} className="text-power-orange" />
           </div>
 
           {loading ? (
-            <div className="py-12 text-center text-slate-500">
-              Loading academy submissions...
-            </div>
+            <div className="py-12 text-center text-slate-500">Loading academy submissions...</div>
           ) : error ? (
             <div className="space-y-3 rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
               <p className="font-semibold text-red-700">{error}</p>
@@ -262,8 +242,8 @@ export default function AdminAcademyOnboardingPage() {
                 No pending academy submissions
               </h3>
               <p className="mt-2 text-sm text-slate-600">
-                The queue is clear right now. Check academy management for
-                approved or rejected profiles.
+                The queue is clear right now. Check academy management for approved or rejected
+                profiles.
               </p>
             </div>
           ) : (
@@ -276,9 +256,7 @@ export default function AdminAcademyOnboardingPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-slate-900">
-                          {academy.name}
-                        </h3>
+                        <h3 className="text-base font-semibold text-slate-900">{academy.name}</h3>
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs font-semibold ${queueBadge(academy)}`}
                         >
@@ -297,17 +275,13 @@ export default function AdminAcademyOnboardingPage() {
                       </p>
                       <div className="flex flex-wrap gap-4 text-xs text-slate-500">
                         <span>Owner: {academy.ownerEmail || "N/A"}</span>
-                        <span>
-                          Submitted: {formatDate(academy.submittedAt)}
-                        </span>
-                        <span>
-                          Reviewed: {formatDate(academy.lastReviewedAt)}
-                        </span>
+                        <span>Submitted: {formatDate(academy.submittedAt)}</span>
+                        <span>Reviewed: {formatDate(academy.lastReviewedAt)}</span>
                       </div>
                     </div>
                     <Link
                       href="/admin/academies"
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-power-orange hover:text-power-orange"
+                      className="hover:border-power-orange hover:text-power-orange inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors"
                     >
                       Review
                       <ChevronRight size={16} />

@@ -15,9 +15,7 @@ interface RecordAuditLogInput {
  * Fire-and-forget audit write. Never throws — a logging failure must not
  * fail the admin action it's recording.
  */
-export const recordAuditLog = async (
-  entry: RecordAuditLogInput,
-): Promise<void> => {
+export const recordAuditLog = async (entry: RecordAuditLogInput): Promise<void> => {
   try {
     await AdminAuditLog.create(entry);
   } catch (error) {
@@ -28,7 +26,7 @@ export const recordAuditLog = async (
 export const listAuditLogs = async (
   page = 1,
   limit = 25,
-  filters: { adminId?: string; targetType?: string } = {},
+  filters: { adminId?: string; targetType?: string } = {}
 ): Promise<{
   logs: Array<{
     id: string;

@@ -64,15 +64,13 @@ export default function BlogLandingClient() {
         setPage(targetPage);
         setHasMore(targetPage < (data.pagination?.totalPages || 0));
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to load stories",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to load stories");
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
       }
     },
-    [topic, q],
+    [topic, q]
   );
 
   useEffect(() => {
@@ -128,13 +126,10 @@ export default function BlogLandingClient() {
           ? {
               ...item,
               likedByMe: optimisticLiked,
-              likeCount: Math.max(
-                0,
-                item.likeCount + (optimisticLiked ? 1 : -1),
-              ),
+              likeCount: Math.max(0, item.likeCount + (optimisticLiked ? 1 : -1)),
             }
-          : item,
-      ),
+          : item
+      )
     );
     try {
       const result = await blogService.toggleLike("BLOG", blog.id);
@@ -142,8 +137,8 @@ export default function BlogLandingClient() {
         current.map((item) =>
           item.id === blog.id
             ? { ...item, likedByMe: result.liked, likeCount: result.likeCount }
-            : item,
-        ),
+            : item
+        )
       );
     } catch (error) {
       // Roll back.
@@ -155,8 +150,8 @@ export default function BlogLandingClient() {
                 likedByMe: blog.likedByMe,
                 likeCount: blog.likeCount,
               }
-            : item,
-        ),
+            : item
+        )
       );
       toast.error(error instanceof Error ? error.message : "Failed to react");
     } finally {
@@ -170,8 +165,8 @@ export default function BlogLandingClient() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <div className="absolute left-[-12%] top-[-8%] h-136 w-136 rounded-full bg-sky-300/25 blur-3xl" />
-        <div className="absolute right-[-16%] top-[14%] h-124 w-124 rounded-full bg-amber-200/25 blur-3xl" />
+        <div className="absolute top-[-8%] left-[-12%] h-136 w-136 rounded-full bg-sky-300/25 blur-3xl" />
+        <div className="absolute top-[14%] right-[-16%] h-124 w-124 rounded-full bg-amber-200/25 blur-3xl" />
       </div>
 
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
@@ -184,13 +179,13 @@ export default function BlogLandingClient() {
 
         <section className="space-y-4">
           {/* Search bar above the topics */}
-          <div className="mx-auto flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm backdrop-blur-sm focus-within:border-power-orange/40 focus-within:bg-white">
+          <div className="focus-within:border-power-orange/40 mx-auto flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm backdrop-blur-sm focus-within:bg-white">
             <Search size={18} className="text-slate-400" />
             <input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="Search stories, topics, tags..."
-              className="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 outline-none"
+              className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
             />
             {searchInput ? (
               <button

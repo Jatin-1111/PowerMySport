@@ -17,10 +17,7 @@ export const authApi = {
     return response.data;
   },
 
-  login: async (data: {
-    email: string;
-    password: string;
-  }): Promise<AuthResponse> => {
+  login: async (data: { email: string; password: string }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/login", data);
     return response.data;
   },
@@ -60,19 +57,14 @@ export const authApi = {
     return response.data;
   },
 
-  forgotPassword: async (
-    email: string,
-  ): Promise<ApiResponse<{ resetToken: string }>> => {
+  forgotPassword: async (email: string): Promise<ApiResponse<{ resetToken: string }>> => {
     const response = await axiosInstance.post("/auth/forgot-password", {
       email,
     });
     return response.data;
   },
 
-  resetPassword: async (
-    token: string,
-    newPassword: string,
-  ): Promise<ApiResponse<null>> => {
+  resetPassword: async (token: string, newPassword: string): Promise<ApiResponse<null>> => {
     const response = await axiosInstance.post("/auth/reset-password", {
       token,
       newPassword,
@@ -128,30 +120,25 @@ export const authApi = {
    * wire format the server actually stores — the one and only place a write
    * should do that conversion (see `dependentNormalize.ts`). */
   addDependent: async (
-    data: Partial<Omit<Dependent, "_id">> & { name: string; dob?: string | Date },
+    data: Partial<Omit<Dependent, "_id">> & { name: string; dob?: string | Date }
   ): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.post(
-      "/auth/dependents",
-      denormalizeDependent(data),
-    );
+    const response = await axiosInstance.post("/auth/dependents", denormalizeDependent(data));
     return response.data;
   },
 
   updateDependent: async (
     dependentId: string,
-    data: Partial<Omit<Dependent, "_id" | "dob">> & { dob?: string | Date },
+    data: Partial<Omit<Dependent, "_id" | "dob">> & { dob?: string | Date }
   ): Promise<ApiResponse<any>> => {
     const response = await axiosInstance.put(
       `/auth/dependents/${dependentId}`,
-      denormalizeDependent(data),
+      denormalizeDependent(data)
     );
     return response.data;
   },
 
   deleteDependent: async (dependentId: string): Promise<ApiResponse<null>> => {
-    const response = await axiosInstance.delete(
-      `/auth/dependents/${dependentId}`,
-    );
+    const response = await axiosInstance.delete(`/auth/dependents/${dependentId}`);
     return response.data;
   },
 
@@ -165,7 +152,7 @@ export const authApi = {
    */
   getProfilePictureUploadUrl: async (
     fileName: string,
-    contentType: string,
+    contentType: string
   ): Promise<
     ApiResponse<{
       uploadUrl: string;
@@ -173,13 +160,10 @@ export const authApi = {
       key: string;
     }>
   > => {
-    const response = await axiosInstance.post(
-      "/auth/profile-picture/upload-url",
-      {
-        fileName,
-        contentType,
-      },
-    );
+    const response = await axiosInstance.post("/auth/profile-picture/upload-url", {
+      fileName,
+      contentType,
+    });
     return response.data;
   },
 
@@ -188,7 +172,7 @@ export const authApi = {
    */
   confirmProfilePicture: async (
     photoUrl: string,
-    photoS3Key: string,
+    photoS3Key: string
   ): Promise<ApiResponse<User>> => {
     const response = await axiosInstance.post("/auth/profile-picture/confirm", {
       photoUrl,
@@ -204,7 +188,7 @@ export const authApi = {
   uploadProfilePictureToS3: async (
     file: File,
     uploadUrl: string,
-    contentType: string,
+    contentType: string
   ): Promise<void> => {
     const response = await fetch(uploadUrl, {
       method: "PUT",
@@ -215,15 +199,11 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `S3 upload failed: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`S3 upload failed: ${response.status} ${response.statusText}`);
     }
   },
 
-  linkGoogleAccount: async (
-    credential: string,
-  ): Promise<ApiResponse<{ user: User }>> => {
+  linkGoogleAccount: async (credential: string): Promise<ApiResponse<{ user: User }>> => {
     const response = await axiosInstance.post("/auth/google/link", {
       credential,
     });

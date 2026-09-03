@@ -98,7 +98,9 @@ async function main() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8)
     .forEach((s, i) => {
-      console.log(`#${i + 1} value=${s.value.toFixed(4)} time=${s.time.toFixed(0)}ms hadRecentInput=${s.hadRecentInput}`);
+      console.log(
+        `#${i + 1} value=${s.value.toFixed(4)} time=${s.time.toFixed(0)}ms hadRecentInput=${s.hadRecentInput}`
+      );
       s.sources.forEach((src) => {
         console.log(
           `   ${src.node} | prevRect top=${src.previousRect.top.toFixed(0)} h=${src.previousRect.height.toFixed(0)} -> currRect top=${src.currentRect.top.toFixed(0)} h=${src.currentRect.height.toFixed(0)}`

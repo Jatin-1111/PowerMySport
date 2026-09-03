@@ -50,10 +50,7 @@ const readRate = (raw: string | undefined, fallback: number): number => {
  * true sentence and nobody can say what any given partner is actually charged
  * without reading the environment.
  */
-export const COMMISSION_RATE = readRate(
-  process.env.PLATFORM_COMMISSION_RATE,
-  0.15,
-);
+export const COMMISSION_RATE = readRate(process.env.PLATFORM_COMMISSION_RATE, 0.15);
 
 /**
  * 18%, "the rate then in force" per the Partner Terms.
@@ -62,10 +59,7 @@ export const COMMISSION_RATE = readRate(
  * not a commercial term the platform chooses, and the two change for entirely
  * different reasons.
  */
-export const COMMISSION_GST_RATE = readRate(
-  process.env.COMMISSION_GST_RATE,
-  0.18,
-);
+export const COMMISSION_GST_RATE = readRate(process.env.COMMISSION_GST_RATE, 0.18);
 
 export interface CommissionBreakdown {
   /** What the partner earned before the platform's cut, in paise. */
@@ -86,9 +80,7 @@ export interface CommissionBreakdown {
  * exactly, with no stray paisa appearing or vanishing between the partner's
  * statement and the platform's books.
  */
-export const commissionOn = (
-  partnerFeePaise: number,
-): CommissionBreakdown => {
+export const commissionOn = (partnerFeePaise: number): CommissionBreakdown => {
   if (!Number.isFinite(partnerFeePaise) || partnerFeePaise < 0) {
     throw new Error("Commission needs a non-negative partner fee in paise");
   }
@@ -151,7 +143,7 @@ export const commissionAdjustmentForRefund = (params: {
 
 /** Human-readable line items, for an earnings statement or commission invoice. */
 export const describeCommission = (
-  breakdown: CommissionBreakdown,
+  breakdown: CommissionBreakdown
 ): Array<{ label: string; amountPaise: number; deduction: boolean }> => [
   {
     label: "Partner fee",

@@ -58,10 +58,8 @@ function MenuItem({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${
-        variant === "danger"
-          ? "text-rose-600 hover:bg-rose-50"
-          : "text-slate-700 hover:bg-slate-50"
+      className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+        variant === "danger" ? "text-rose-600 hover:bg-rose-50" : "text-slate-700 hover:bg-slate-50"
       } ${hasBorderBottom ? "border-b border-slate-100" : ""}`}
     >
       {icon}
@@ -90,7 +88,10 @@ export default function ChatHeaderMenu({
   onClearChat,
   onDeleteChat,
 }: Props) {
-  const wrap = (fn: () => void) => () => { fn(); onClose(); };
+  const wrap = (fn: () => void) => () => {
+    fn();
+    onClose();
+  };
 
   return (
     <motion.div
@@ -99,11 +100,17 @@ export default function ChatHeaderMenu({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -4 }}
       transition={{ duration: 0.12 }}
-      className="absolute right-0 top-full mt-1 z-50 w-56 rounded-xl border border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.1)] overflow-hidden"
+      className="absolute top-full right-0 z-50 mt-1 w-56 overflow-hidden rounded-xl border border-slate-200/60 bg-white/95 shadow-[0_4px_24px_rgba(0,0,0,0.1)] backdrop-blur-xl"
     >
       {/* Group 1 — Info / Search */}
       <MenuItem
-        icon={isGroup ? <Info size={15} className="text-slate-500" /> : <UserCircle2 size={15} className="text-slate-500" />}
+        icon={
+          isGroup ? (
+            <Info size={15} className="text-slate-500" />
+          ) : (
+            <UserCircle2 size={15} className="text-slate-500" />
+          )
+        }
         label={isGroup ? "Group Info" : "Contact Info"}
         onClick={wrap(onViewInfo)}
       />

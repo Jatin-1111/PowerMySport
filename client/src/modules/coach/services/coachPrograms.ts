@@ -29,20 +29,20 @@ export const coachProgramsApi = {
    * is a geospatial query over coaches with a base location, and an online-only
    * coach has none.
    */
-  browse: async (params: {
-    sport?: string;
-    deliveryKind?: CoachOffering["deliveryKind"];
-    online?: boolean;
-  } = {}): Promise<ApiResponse<{ offerings: CoachOffering[] }>> => {
+  browse: async (
+    params: {
+      sport?: string;
+      deliveryKind?: CoachOffering["deliveryKind"];
+      online?: boolean;
+    } = {}
+  ): Promise<ApiResponse<{ offerings: CoachOffering[] }>> => {
     const search = new URLSearchParams();
     if (params.sport) search.set("sport", params.sport);
     if (params.deliveryKind) search.set("deliveryKind", params.deliveryKind);
     if (params.online) search.set("online", "true");
 
     const query = search.toString();
-    const response = await axiosInstance.get(
-      `${BASE}/browse${query ? `?${query}` : ""}`,
-    );
+    const response = await axiosInstance.get(`${BASE}/browse${query ? `?${query}` : ""}`);
     return response.data;
   },
 
@@ -54,28 +54,26 @@ export const coachProgramsApi = {
   },
 
   create: async (
-    payload: CoachOfferingCreateInput,
+    payload: CoachOfferingCreateInput
   ): Promise<ApiResponse<{ offering: CoachOffering }>> => {
     const response = await axiosInstance.post(BASE, payload);
     return response.data;
   },
 
   activate: async (
-    offeringId: string,
+    offeringId: string
   ): Promise<ApiResponse<{ offering: CoachOffering; sessionsCreated: number }>> => {
     const response = await axiosInstance.post(`${BASE}/${offeringId}/activate`);
     return response.data;
   },
 
-  pause: async (
-    offeringId: string,
-  ): Promise<ApiResponse<{ offering: CoachOffering }>> => {
+  pause: async (offeringId: string): Promise<ApiResponse<{ offering: CoachOffering }>> => {
     const response = await axiosInstance.post(`${BASE}/${offeringId}/pause`);
     return response.data;
   },
 
   roster: async (
-    offeringId: string,
+    offeringId: string
   ): Promise<
     ApiResponse<{
       roster: CoachEnrollment[];
@@ -90,48 +88,39 @@ export const coachProgramsApi = {
 
   setProgramLink: async (
     offeringId: string,
-    meetingLink: string,
+    meetingLink: string
   ): Promise<ApiResponse<{ offering: CoachOffering }>> => {
-    const response = await axiosInstance.put(
-      `${BASE}/${offeringId}/meeting-link`,
-      { meetingLink },
-    );
+    const response = await axiosInstance.put(`${BASE}/${offeringId}/meeting-link`, { meetingLink });
     return response.data;
   },
 
   // ── coach: sessions ───────────────────────────────────────────────────────
 
-  mySessions: async (params: { from?: string; to?: string } = {}): Promise<
-    ApiResponse<{ sessions: CoachSessionOccurrence[] }>
-  > => {
+  mySessions: async (
+    params: { from?: string; to?: string } = {}
+  ): Promise<ApiResponse<{ sessions: CoachSessionOccurrence[] }>> => {
     const search = new URLSearchParams();
     if (params.from) search.set("from", params.from);
     if (params.to) search.set("to", params.to);
     const query = search.toString();
 
-    const response = await axiosInstance.get(
-      `${BASE}/sessions/mine${query ? `?${query}` : ""}`,
-    );
+    const response = await axiosInstance.get(`${BASE}/sessions/mine${query ? `?${query}` : ""}`);
     return response.data;
   },
 
-  makeupsOwed: async (): Promise<
-    ApiResponse<{ sessions: CoachSessionOccurrence[] }>
-  > => {
+  makeupsOwed: async (): Promise<ApiResponse<{ sessions: CoachSessionOccurrence[] }>> => {
     const response = await axiosInstance.get(`${BASE}/sessions/makeups-owed`);
     return response.data;
   },
 
-  earnings: async (): Promise<
-    ApiResponse<{ summary: CoachEarningsSummary }>
-  > => {
+  earnings: async (): Promise<ApiResponse<{ summary: CoachEarningsSummary }>> => {
     const response = await axiosInstance.get(`${BASE}/sessions/earnings`);
     return response.data;
   },
 
   completeSession: async (
     occurrenceId: string,
-    coachNotes?: string,
+    coachNotes?: string
   ): Promise<
     ApiResponse<{
       session: CoachSessionOccurrence;
@@ -142,18 +131,18 @@ export const coachProgramsApi = {
   > => {
     const response = await axiosInstance.post(
       `${BASE}/sessions/${occurrenceId}/complete`,
-      coachNotes ? { coachNotes } : {},
+      coachNotes ? { coachNotes } : {}
     );
     return response.data;
   },
 
   cancelSession: async (
     occurrenceId: string,
-    reason?: string,
+    reason?: string
   ): Promise<ApiResponse<{ session: CoachSessionOccurrence }>> => {
     const response = await axiosInstance.post(
       `${BASE}/sessions/${occurrenceId}/cancel`,
-      reason ? { reason } : {},
+      reason ? { reason } : {}
     );
     return response.data;
   },
@@ -161,35 +150,34 @@ export const coachProgramsApi = {
   scheduleMakeup: async (
     occurrenceId: string,
     scheduledAt: string,
-    durationMinutes?: number,
+    durationMinutes?: number
   ): Promise<ApiResponse<{ session: CoachSessionOccurrence }>> => {
-    const response = await axiosInstance.post(
-      `${BASE}/sessions/${occurrenceId}/makeup`,
-      { scheduledAt, ...(durationMinutes ? { durationMinutes } : {}) },
-    );
+    const response = await axiosInstance.post(`${BASE}/sessions/${occurrenceId}/makeup`, {
+      scheduledAt,
+      ...(durationMinutes ? { durationMinutes } : {}),
+    });
     return response.data;
   },
 
   markAttendance: async (
     occurrenceId: string,
     enrollmentId: string,
-    mark: "PENDING" | "PRESENT" | "ABSENT",
+    mark: "PENDING" | "PRESENT" | "ABSENT"
   ): Promise<ApiResponse<{ session: CoachSessionOccurrence }>> => {
-    const response = await axiosInstance.post(
-      `${BASE}/sessions/${occurrenceId}/attendance`,
-      { enrollmentId, mark },
-    );
+    const response = await axiosInstance.post(`${BASE}/sessions/${occurrenceId}/attendance`, {
+      enrollmentId,
+      mark,
+    });
     return response.data;
   },
 
   setSessionLink: async (
     occurrenceId: string,
-    meetingLink: string,
+    meetingLink: string
   ): Promise<ApiResponse<{ session: CoachSessionOccurrence }>> => {
-    const response = await axiosInstance.put(
-      `${BASE}/sessions/${occurrenceId}/meeting-link`,
-      { meetingLink },
-    );
+    const response = await axiosInstance.put(`${BASE}/sessions/${occurrenceId}/meeting-link`, {
+      meetingLink,
+    });
     return response.data;
   },
 
@@ -204,7 +192,7 @@ export const coachProgramsApi = {
    */
   enroll: async (
     offeringId: string,
-    payload: EnrollInput,
+    payload: EnrollInput
   ): Promise<
     ApiResponse<{
       enrollmentId: string;
@@ -219,10 +207,7 @@ export const coachProgramsApi = {
       };
     }>
   > => {
-    const response = await axiosInstance.post(
-      `${BASE}/${offeringId}/enroll`,
-      payload,
-    );
+    const response = await axiosInstance.post(`${BASE}/${offeringId}/enroll`, payload);
     return response.data;
   },
 
@@ -234,7 +219,7 @@ export const coachProgramsApi = {
    * as when they first joined.
    */
   renew: async (
-    enrollmentId: string,
+    enrollmentId: string
   ): Promise<
     ApiResponse<{
       redirectUrl: string;
@@ -247,9 +232,7 @@ export const coachProgramsApi = {
       };
     }>
   > => {
-    const response = await axiosInstance.post(
-      `${BASE}/enrollments/${enrollmentId}/renew`,
-    );
+    const response = await axiosInstance.post(`${BASE}/enrollments/${enrollmentId}/renew`);
     return response.data;
   },
 
@@ -263,19 +246,17 @@ export const coachProgramsApi = {
   joinWaitlist: async (
     offeringId: string,
     studentName: string,
-    playerId?: string,
+    playerId?: string
   ): Promise<ApiResponse<{ entry: { id: string; status: string } }>> => {
-    const response = await axiosInstance.post(
-      `${BASE}/${offeringId}/waitlist`,
-      { studentName, ...(playerId ? { playerId } : {}) },
-    );
+    const response = await axiosInstance.post(`${BASE}/${offeringId}/waitlist`, {
+      studentName,
+      ...(playerId ? { playerId } : {}),
+    });
     return response.data;
   },
 
   leaveWaitlist: async (entryId: string): Promise<ApiResponse<null>> => {
-    const response = await axiosInstance.post(
-      `${BASE}/waitlist/${entryId}/leave`,
-    );
+    const response = await axiosInstance.post(`${BASE}/waitlist/${entryId}/leave`);
     return response.data;
   },
 
@@ -293,23 +274,19 @@ export const coachProgramsApi = {
     return response.data;
   },
 
-  myEnrollments: async (): Promise<
-    ApiResponse<{ enrollments: CoachEnrollment[] }>
-  > => {
+  myEnrollments: async (): Promise<ApiResponse<{ enrollments: CoachEnrollment[] }>> => {
     const response = await axiosInstance.get(`${BASE}/my/enrollments`);
     return response.data;
   },
 
-  myUpcomingSessions: async (): Promise<
-    ApiResponse<{ sessions: CoachSessionOccurrence[] }>
-  > => {
+  myUpcomingSessions: async (): Promise<ApiResponse<{ sessions: CoachSessionOccurrence[] }>> => {
     const response = await axiosInstance.get(`${BASE}/my/sessions`);
     return response.data;
   },
 
   leave: async (
     enrollmentId: string,
-    reason?: string,
+    reason?: string
   ): Promise<
     ApiResponse<{
       enrollment: CoachEnrollment;
@@ -320,11 +297,7 @@ export const coachProgramsApi = {
        * and will be retried, not that the money is lost.
        */
       refund: {
-        status:
-          | "REFUNDED"
-          | "NOTHING_OWED"
-          | "NO_PAYMENT_FOUND"
-          | "FAILED";
+        status: "REFUNDED" | "NOTHING_OWED" | "NO_PAYMENT_FOUND" | "FAILED";
         amountPaise: number;
         refundId?: string;
       };
@@ -332,7 +305,7 @@ export const coachProgramsApi = {
   > => {
     const response = await axiosInstance.post(
       `${BASE}/enrollments/${enrollmentId}/leave`,
-      reason ? { reason } : {},
+      reason ? { reason } : {}
     );
     return response.data;
   },

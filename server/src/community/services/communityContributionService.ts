@@ -1,16 +1,7 @@
-import {
-  User,
-} from "../../client/models/User";
-import {
-  CommunityProfile,
-} from "../models/CommunityProfile";
-import {
-  CommunityReputation,
-} from "../models/CommunityReputation";
-import {
-  ensureProfile,
-  resolveUserPhotoUrl,
-} from "./communityShared";
+import { User } from "../../client/models/User";
+import { CommunityProfile } from "../models/CommunityProfile";
+import { CommunityReputation } from "../models/CommunityReputation";
+import { ensureProfile, resolveUserPhotoUrl } from "./communityShared";
 
 /**
  * Reputation totals and the contributor leaderboard.
@@ -33,7 +24,7 @@ export const communityContributionService = {
           receivedUpvotes: 0,
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     ).lean();
 
     return {
@@ -72,9 +63,7 @@ export const communityContributionService = {
     ]);
 
     const userById = new Map(users.map((user) => [String(user._id), user]));
-    const profileByUserId = new Map(
-      profiles.map((profile) => [String(profile.userId), profile]),
-    );
+    const profileByUserId = new Map(profiles.map((profile) => [String(profile.userId), profile]));
 
     const items = await Promise.all(
       top.map(async (row, index) => {
@@ -93,8 +82,7 @@ export const communityContributionService = {
             : isPublic
               ? user?.name || "Player"
               : profile?.anonymousAlias || "Anonymous Player",
-          photoUrl:
-            isPublic && user ? await resolveUserPhotoUrl(user) : null,
+          photoUrl: isPublic && user ? await resolveUserPhotoUrl(user) : null,
           isIdentityPublic: isPublic,
           rank: index + 1,
           posts: row.questionCount || 0,
@@ -102,7 +90,7 @@ export const communityContributionService = {
           upvotes: row.receivedUpvotes || 0,
           score: row.totalPoints || 0,
         };
-      }),
+      })
     );
 
     // The caller's own standing, resolved even when they sit outside the page

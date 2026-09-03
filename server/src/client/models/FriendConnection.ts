@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export type FriendConnectionStatus =
-  "PENDING" | "ACCEPTED" | "DECLINED" | "BLOCKED";
+export type FriendConnectionStatus = "PENDING" | "ACCEPTED" | "DECLINED" | "BLOCKED";
 
 export interface IFriendConnection extends Document {
   requesterId: mongoose.Types.ObjectId;
@@ -34,14 +33,11 @@ const friendConnectionSchema = new Schema<IFriendConnection>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Compound indexes for efficient queries
-friendConnectionSchema.index(
-  { requesterId: 1, recipientId: 1 },
-  { unique: true },
-);
+friendConnectionSchema.index({ requesterId: 1, recipientId: 1 }, { unique: true });
 friendConnectionSchema.index({ recipientId: 1, status: 1 });
 friendConnectionSchema.index({ requesterId: 1, status: 1 });
 // getFriends filters {requesterId|recipientId, status:"ACCEPTED"} via $or
@@ -63,7 +59,9 @@ friendConnectionSchema.pre("save", function () {
   }
 });
 
-const FriendConnection: Model<IFriendConnection> =
-  mongoose.model<IFriendConnection>("FriendConnection", friendConnectionSchema);
+const FriendConnection: Model<IFriendConnection> = mongoose.model<IFriendConnection>(
+  "FriendConnection",
+  friendConnectionSchema
+);
 
 export default FriendConnection;

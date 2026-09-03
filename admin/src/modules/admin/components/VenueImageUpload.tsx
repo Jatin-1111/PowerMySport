@@ -32,9 +32,7 @@ export default function VenueImageUpload({
   onImagesReady,
   disabled = false,
 }: VenueImageUploadProps) {
-  const [uploadedImages, setUploadedImages] = useState<
-    Record<string, UploadedImage>
-  >({});
+  const [uploadedImages, setUploadedImages] = useState<Record<string, UploadedImage>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
   const [presignedUrls, setPresignedUrls] = useState<any[]>([]);
@@ -48,10 +46,7 @@ export default function VenueImageUpload({
     const fetchUrls = async () => {
       setLoadingUrls(true);
       try {
-        const response = await onboardingApi.getImageUploadUrls(
-          venueId,
-          sports,
-        );
+        const response = await onboardingApi.getImageUploadUrls(venueId, sports);
         if (response.success && response.data) {
           setPresignedUrls(response.data.uploadUrls);
         }
@@ -96,11 +91,7 @@ export default function VenueImageUpload({
     setUploadErrors((prev) => ({ ...prev, [fieldName]: "" }));
 
     try {
-      await uploadFileToPresignedUrl(
-        file,
-        presignedUrl.uploadUrl,
-        presignedUrl.contentType,
-      );
+      await uploadFileToPresignedUrl(file, presignedUrl.uploadUrl, presignedUrl.contentType);
       setUploadedImages((prev) => ({
         ...prev,
         [fieldName]: {
@@ -137,23 +128,15 @@ export default function VenueImageUpload({
       return;
     }
 
-    const generalUrls = generalImages.map(
-      (u: any) => uploadedImages[u.field].url,
-    );
-    const generalKeys = generalImages.map(
-      (u: any) => uploadedImages[u.field].key,
-    );
+    const generalUrls = generalImages.map((u: any) => uploadedImages[u.field].url);
+    const generalKeys = generalImages.map((u: any) => uploadedImages[u.field].key);
 
     const sportImages: Record<string, string[]> = {};
     const sportImageKeys: Record<string, string[]> = {};
 
     for (const sport of sports) {
-      const sportUrls = presignedUrls.filter((u: any) =>
-        u.field.startsWith(`sport_${sport}_`),
-      );
-      const uploadedCount = sportUrls.filter(
-        (u: any) => uploadedImages[u.field],
-      ).length;
+      const sportUrls = presignedUrls.filter((u: any) => u.field.startsWith(`sport_${sport}_`));
+      const uploadedCount = sportUrls.filter((u: any) => uploadedImages[u.field]).length;
 
       if (uploadedCount !== 5) {
         toast.error(`All 5 images required for ${sport}`);
@@ -193,19 +176,13 @@ export default function VenueImageUpload({
 
   if (presignedUrls.length === 0) {
     return (
-      <div className="text-slate-500 text-sm py-4">
-        Select sports to start uploading images
-      </div>
+      <div className="py-4 text-sm text-slate-500">Select sports to start uploading images</div>
     );
   }
 
-  const generalUrls = presignedUrls.filter((u: any) =>
-    u.field.startsWith("general_"),
-  );
+  const generalUrls = presignedUrls.filter((u: any) => u.field.startsWith("general_"));
   const sportUrlsByType = sports.reduce((acc: Record<string, any[]>, sport) => {
-    acc[sport] = presignedUrls.filter((u: any) =>
-      u.field.startsWith(`sport_${sport}_`),
-    );
+    acc[sport] = presignedUrls.filter((u: any) => u.field.startsWith(`sport_${sport}_`));
     return acc;
   }, {});
 
@@ -213,9 +190,7 @@ export default function VenueImageUpload({
     <div className="space-y-6">
       {/* General Images */}
       <div>
-        <h3 className="font-semibold text-slate-900 mb-2">
-          Venue Images (3 required)
-        </h3>
+        <h3 className="mb-2 font-semibold text-slate-900">Venue Images (3 required)</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           {generalUrls.map((url: any) => {
             const uploaded = uploadedImages[url.field];
@@ -229,32 +204,29 @@ export default function VenueImageUpload({
                     <img
                       src={uploaded.url}
                       alt="General"
-                      className="w-full h-full object-cover rounded-lg border-2 border-green-300"
+                      className="h-full w-full rounded-lg border-2 border-green-300 object-cover"
                     />
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(url.field)}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600"
+                      className="absolute top-2 right-2 rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600"
                     >
                       <Trash2 size={16} />
                     </button>
                     {generalUrls.indexOf(url) === coverPhotoIndex && (
-                      <div className="absolute bottom-2 left-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-medium">
+                      <div className="absolute bottom-2 left-2 rounded bg-green-500 px-2 py-1 text-xs font-medium text-white">
                         Cover
                       </div>
                     )}
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-slate-300 rounded-lg hover:border-power-orange hover:bg-power-orange/5 transition-all cursor-pointer">
+                  <label className="hover:border-power-orange hover:bg-power-orange/5 flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 transition-all">
                     {isUploading ? (
-                      <Loader
-                        className="animate-spin text-power-orange"
-                        size={24}
-                      />
+                      <Loader className="text-power-orange animate-spin" size={24} />
                     ) : (
                       <>
-                        <Upload className="text-slate-400 mb-1" size={24} />
-                        <span className="text-xs text-slate-600 text-center">
+                        <Upload className="mb-1 text-slate-400" size={24} />
+                        <span className="text-center text-xs text-slate-600">
                           Image {generalUrls.indexOf(url) + 1}
                         </span>
                       </>
@@ -263,25 +235,24 @@ export default function VenueImageUpload({
                       type="file"
                       accept="image/*"
                       onChange={(e) =>
-                        e.target.files?.[0] &&
-                        handleImageSelect(e.target.files[0], url.field)
+                        e.target.files?.[0] && handleImageSelect(e.target.files[0], url.field)
                       }
                       className="hidden"
                       disabled={disabled || isUploading}
                     />
                   </label>
                 )}
-                {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+                {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
               </div>
             );
           })}
         </div>
-        <p className="text-xs text-slate-600 mt-2">
+        <p className="mt-2 text-xs text-slate-600">
           Set cover photo:{" "}
           <select
             value={coverPhotoIndex}
             onChange={(e) => setCoverPhotoIndex(Number(e.target.value))}
-            className="text-xs border border-slate-300 rounded px-2 py-1 ml-1"
+            className="ml-1 rounded border border-slate-300 px-2 py-1 text-xs"
           >
             {[0, 1, 2].map((i) => (
               <option key={i} value={i}>
@@ -295,13 +266,11 @@ export default function VenueImageUpload({
       {/* Sport-Specific Images */}
       {sports.map((sport) => {
         const sportUrls = sportUrlsByType[sport];
-        const uploadedCount = sportUrls.filter(
-          (u: any) => uploadedImages[u.field],
-        ).length;
+        const uploadedCount = sportUrls.filter((u: any) => uploadedImages[u.field]).length;
 
         return (
           <div key={sport}>
-            <h3 className="font-semibold text-slate-900 mb-2">
+            <h3 className="mb-2 font-semibold text-slate-900">
               {sport} Images ({uploadedCount}/5)
             </h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
@@ -317,23 +286,20 @@ export default function VenueImageUpload({
                         <img
                           src={uploaded.url}
                           alt={sport}
-                          className="w-full h-full object-cover rounded-lg border-2 border-green-300"
+                          className="h-full w-full rounded-lg border-2 border-green-300 object-cover"
                         />
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(url.field)}
-                          className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                          className="absolute top-1 right-1 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
                         >
                           <Trash2 size={14} />
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-slate-300 rounded-lg hover:border-power-orange hover:bg-power-orange/5 transition-all cursor-pointer">
+                      <label className="hover:border-power-orange hover:bg-power-orange/5 flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 transition-all">
                         {isUploading ? (
-                          <Loader
-                            className="animate-spin text-power-orange"
-                            size={20}
-                          />
+                          <Loader className="text-power-orange animate-spin" size={20} />
                         ) : (
                           <Camera className="text-slate-400" size={20} />
                         )}
@@ -341,17 +307,14 @@ export default function VenueImageUpload({
                           type="file"
                           accept="image/*"
                           onChange={(e) =>
-                            e.target.files?.[0] &&
-                            handleImageSelect(e.target.files[0], url.field)
+                            e.target.files?.[0] && handleImageSelect(e.target.files[0], url.field)
                           }
                           className="hidden"
                           disabled={disabled || isUploading}
                         />
                       </label>
                     )}
-                    {error && (
-                      <p className="text-red-500 text-xs mt-1">{error}</p>
-                    )}
+                    {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
                   </div>
                 );
               })}
@@ -365,7 +328,7 @@ export default function VenueImageUpload({
         type="button"
         onClick={handleConfirmImages}
         disabled={disabled || Object.keys(uploadedImages).length === 0}
-        className="w-full bg-power-orange hover:bg-orange-600 disabled:bg-slate-300 text-white py-3 rounded-lg font-medium transition-colors"
+        className="bg-power-orange w-full rounded-lg py-3 font-medium text-white transition-colors hover:bg-orange-600 disabled:bg-slate-300"
       >
         Confirm All Images
       </button>

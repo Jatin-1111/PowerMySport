@@ -3,29 +3,23 @@
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
-import {
-    ActiveFilter,
-    FilterBar,
-} from "@/modules/discovery/components/FilterBar";
+import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBar";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
-import {
-    StaggerContainer,
-    StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { Coach } from "@/types";
 import { cn } from "@/utils/cn";
 import {
-    ArrowRight,
-    Award,
-    Globe,
-    Bookmark,
-    ImageIcon,
-    MapPin,
-    MessageCircle,
-    Star,
-    Users,
+  ArrowRight,
+  Award,
+  Globe,
+  Bookmark,
+  ImageIcon,
+  MapPin,
+  MessageCircle,
+  Star,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -54,24 +48,20 @@ const toRadians = (value: number) => (value * Math.PI) / 180;
 
 const calculateDistanceKm = (
   from: { latitude: number; longitude: number },
-  to: { latitude: number; longitude: number },
+  to: { latitude: number; longitude: number }
 ) => {
   const R = 6371;
   const dLat = toRadians(to.latitude - from.latitude);
   const dLng = toRadians(to.longitude - from.longitude);
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRadians(from.latitude)) *
-      Math.cos(toRadians(to.latitude)) *
-      Math.sin(dLng / 2) ** 2;
+    Math.cos(toRadians(from.latitude)) * Math.cos(toRadians(to.latitude)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 const formatDistanceKm = (km: number) => {
   if (!Number.isFinite(km) || km < 0) return "";
-  return km < 1
-    ? `${Math.round(km * 1000)} m away`
-    : `${km.toFixed(1)} km away`;
+  return km < 1 ? `${Math.round(km * 1000)} m away` : `${km.toFixed(1)} km away`;
 };
 
 const parseCoordinates = (value: unknown) => {
@@ -85,25 +75,17 @@ const parseCoordinates = (value: unknown) => {
   };
   if (Array.isArray(c.coordinates) && c.coordinates.length === 2) {
     const [lng, lat] = c.coordinates.map(Number);
-    if (Number.isFinite(lng) && Number.isFinite(lat))
-      return { latitude: lat, longitude: lng };
+    if (Number.isFinite(lng) && Number.isFinite(lat)) return { latitude: lat, longitude: lng };
   }
   const lat = Number(c.latitude ?? c.lat);
   const lng = Number(c.longitude ?? c.lng);
-  if (Number.isFinite(lat) && Number.isFinite(lng))
-    return { latitude: lat, longitude: lng };
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return { latitude: lat, longitude: lng };
   return null;
 };
 
 const SERVICE_MODE_OPTIONS = ["ALL", "OWN_VENUE", "FREELANCE", "HYBRID"];
 const MIN_RATING_OPTIONS = ["0", "3", "4", "4.5"];
-const SORT_OPTIONS = [
-  "relevance",
-  "nearest",
-  "priceAsc",
-  "priceDesc",
-  "ratingDesc",
-];
+const SORT_OPTIONS = ["relevance", "nearest", "priceAsc", "priceDesc", "ratingDesc"];
 
 function CoachImageWithFallback({
   sources,
@@ -116,9 +98,7 @@ function CoachImageWithFallback({
   className: string;
   fallbackLabel: string;
 }) {
-  const cleaned = Array.from(
-    new Set(sources.map(normalizeImageUrl).filter(Boolean)),
-  );
+  const cleaned = Array.from(new Set(sources.map(normalizeImageUrl).filter(Boolean)));
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     setIdx(0);
@@ -134,14 +114,7 @@ function CoachImageWithFallback({
       </div>
     );
   }
-  return (
-    <img
-      src={src}
-      alt={alt}
-      className={className}
-      onError={() => setIdx((p) => p + 1)}
-    />
-  );
+  return <img src={src} alt={alt} className={className} onError={() => setIdx((p) => p + 1)} />;
 }
 
 function CoachesTabContent() {
@@ -184,9 +157,7 @@ function CoachesTabContent() {
   });
 
   const getVerificationBadge = (coach: Coach) => {
-    const status =
-      coach.verificationStatus ||
-      (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+    const status = coach.verificationStatus || (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
     if (status === "VERIFIED")
       return {
         label: "Verified",
@@ -200,16 +171,13 @@ function CoachesTabContent() {
 
   const getStartingRate = (coach: Coach) => {
     const values = Object.values(coach.sportPricing || {}).filter(
-      (v) => typeof v === "number" && v > 0,
+      (v) => typeof v === "number" && v > 0
     );
     return values.length > 0 ? Math.min(...values) : coach.hourlyRate;
   };
 
   const getCoachImages = (coach: Coach) => {
-    const u =
-      typeof coach.userId === "object" && coach.userId !== null
-        ? coach.userId
-        : undefined;
+    const u = typeof coach.userId === "object" && coach.userId !== null ? coach.userId : undefined;
     return [
       coach.photoUrl,
       coach.profileImage,
@@ -219,10 +187,7 @@ function CoachesTabContent() {
   };
 
   const getDisplayName = (coach: Coach) => {
-    const u =
-      typeof coach.userId === "object" && coach.userId !== null
-        ? coach.userId
-        : undefined;
+    const u = typeof coach.userId === "object" && coach.userId !== null ? coach.userId : undefined;
     const name = u?.name;
     return typeof name === "string" && name.trim()
       ? name.trim()
@@ -272,28 +237,17 @@ function CoachesTabContent() {
     const reviews = clamp01((coach.reviewCount || 0) / 50);
     const rate = Number(getStartingRate(coach));
     const price = clamp01(
-      1 -
-        Math.min(Number.isFinite(rate) && rate > 0 ? rate : 5000, 5000) / 5000,
+      1 - Math.min(Number.isFinite(rate) && rate > 0 ? rate : 5000, 5000) / 5000
     );
     let sportMatch = 0,
       nameMatch = 0;
     if (term) {
-      if (coach.sports.some((s) => normalizeSearchTerm(s) === term))
-        sportMatch = 1;
-      else if (coach.sports.some((s) => normalizeSearchTerm(s).includes(term)))
-        sportMatch = 0.6;
-      if (normalizeSearchTerm(getDisplayName(coach)).includes(term))
-        nameMatch = 0.6;
-      else if (normalizeSearchTerm(coach.bio || "").includes(term))
-        nameMatch = 0.4;
+      if (coach.sports.some((s) => normalizeSearchTerm(s) === term)) sportMatch = 1;
+      else if (coach.sports.some((s) => normalizeSearchTerm(s).includes(term))) sportMatch = 0.6;
+      if (normalizeSearchTerm(getDisplayName(coach)).includes(term)) nameMatch = 0.6;
+      else if (normalizeSearchTerm(coach.bio || "").includes(term)) nameMatch = 0.4;
     }
-    return (
-      rating * 0.4 +
-      reviews * 0.15 +
-      price * 0.15 +
-      sportMatch * 0.15 +
-      nameMatch * 0.05
-    );
+    return rating * 0.4 + reviews * 0.15 + price * 0.15 + sportMatch * 0.15 + nameMatch * 0.05;
   };
 
   const applyFilters = (base: Coach[]) => {
@@ -308,20 +262,14 @@ function CoachesTabContent() {
         coach.sports.some((s) => normalizeSearchTerm(s).includes(term)) ||
         name.includes(term) ||
         bio.includes(term);
-      const matchMode =
-        serviceModeFilter === "ALL" || coach.serviceMode === serviceModeFilter;
+      const matchMode = serviceModeFilter === "ALL" || coach.serviceMode === serviceModeFilter;
       const rate = getComparableRate(coach);
       const matchRate =
-        parsedMax === undefined ||
-        isNaN(parsedMax) ||
-        (rate !== null && rate <= parsedMax);
+        parsedMax === undefined || isNaN(parsedMax) || (rate !== null && rate <= parsedMax);
       const matchVerified =
-        !verifiedOnly ||
-        coach.isVerified ||
-        coach.verificationStatus === "VERIFIED";
+        !verifiedOnly || coach.isVerified || coach.verificationStatus === "VERIFIED";
       const matchCertified =
-        !certifiedOnly ||
-        (coach.certifications && coach.certifications.length > 0);
+        !certifiedOnly || (coach.certifications && coach.certifications.length > 0);
       return (
         matchSearch &&
         matchMode &&
@@ -360,9 +308,7 @@ function CoachesTabContent() {
         return da - db;
       });
     } else {
-      next = [...next].sort(
-        (a, b) => getRelevanceScore(b, term) - getRelevanceScore(a, term),
-      );
+      next = [...next].sort((a, b) => getRelevanceScore(b, term) - getRelevanceScore(a, term));
     }
     setFilteredCoaches(next);
   };
@@ -399,8 +345,7 @@ function CoachesTabContent() {
 
   useEffect(() => {
     if (sortBy !== "nearest" || userLocation || !navigator.geolocation) {
-      if (sortBy === "nearest" && !navigator.geolocation)
-        setHasLocationDenied(true);
+      if (sortBy === "nearest" && !navigator.geolocation) setHasLocationDenied(true);
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -412,7 +357,7 @@ function CoachesTabContent() {
         setHasLocationDenied(false);
       },
       () => setHasLocationDenied(true),
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
   }, [sortBy, userLocation]);
 
@@ -426,8 +371,7 @@ function CoachesTabContent() {
       const params: any = { limit: 100 };
       if (sportFilter) params.sport = sportFilter;
       const response = await discoveryApi.searchNearbyCoaches(params);
-      if (response.success && response.data)
-        setCoaches(response.data.coaches || []);
+      if (response.success && response.data) setCoaches(response.data.coaches || []);
     } catch {
       /* ignore */
     } finally {
@@ -532,9 +476,7 @@ function CoachesTabContent() {
       >
         {/* Service Mode */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Service Mode
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Service Mode</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { val: "ALL", label: "Any" },
@@ -549,8 +491,8 @@ function CoachesTabContent() {
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   serviceModeFilter === opt.val
-                    ? "border-turf-green bg-emerald-50 text-turf-green"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-turf-green text-turf-green bg-emerald-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -561,11 +503,11 @@ function CoachesTabContent() {
 
         {/* Max Rate */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
+          <label className="mb-3 block text-sm font-bold text-slate-900">
             Maximum Hourly Rate (₹)
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+            <span className="absolute top-1/2 left-3 -translate-y-1/2 text-sm text-slate-400">
               ₹
             </span>
             <input
@@ -574,14 +516,14 @@ function CoachesTabContent() {
               value={maxRate}
               onChange={(e) => setMaxRate(e.target.value)}
               placeholder="Max ₹/hr"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:border-turf-green focus:bg-white focus:outline-none"
+              className="focus:border-turf-green w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pr-3 pl-7 text-sm text-slate-900 focus:bg-white focus:outline-none"
             />
           </div>
         </div>
 
         {/* Industry Grade Filters: Verified and Certified */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
+          <label className="mb-3 block text-sm font-bold text-slate-900">
             Trust & Qualifications
           </label>
           <div className="flex flex-col gap-2">
@@ -589,30 +531,26 @@ function CoachesTabContent() {
               type="button"
               onClick={() => setVerifiedOnly(!verifiedOnly)}
               className={cn(
-                "w-full flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
+                "flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
                 verifiedOnly
                   ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
               )}
             >
-              {verifiedOnly && (
-                <span className="text-emerald-600 font-bold">✓</span>
-              )}
+              {verifiedOnly && <span className="font-bold text-emerald-600">✓</span>}
               Verified Coaches Only
             </button>
             <button
               type="button"
               onClick={() => setCertifiedOnly(!certifiedOnly)}
               className={cn(
-                "w-full flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
+                "flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
                 certifiedOnly
                   ? "border-indigo-300 bg-indigo-50 text-indigo-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
               )}
             >
-              {certifiedOnly && (
-                <span className="text-indigo-500 font-bold">✓</span>
-              )}
+              {certifiedOnly && <span className="font-bold text-indigo-500">✓</span>}
               Certified Coaches Only
             </button>
           </div>
@@ -620,9 +558,7 @@ function CoachesTabContent() {
 
         {/* Rating */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Minimum Rating
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Minimum Rating</label>
           <div className="grid grid-cols-3 gap-2">
             {[
               { val: "0", label: "Any" },
@@ -637,8 +573,8 @@ function CoachesTabContent() {
                 className={cn(
                   "rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   minRating === opt.val
-                    ? "border-turf-green bg-emerald-50 text-turf-green"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-turf-green text-turf-green bg-emerald-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -649,9 +585,7 @@ function CoachesTabContent() {
 
         {/* Sort */}
         <div>
-          <label className="block text-sm font-bold text-slate-900 mb-3">
-            Sort By
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Sort By</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { val: "relevance", label: "Recommended" },
@@ -665,11 +599,11 @@ function CoachesTabContent() {
                 type="button"
                 onClick={() => setSortBy(opt.val)}
                 className={cn(
-                  "rounded-xl border py-2.5 text-sm font-semibold transition-all col-span-1",
+                  "col-span-1 rounded-xl border py-2.5 text-sm font-semibold transition-all",
                   opt.val === "ratingDesc" && "col-span-2 sm:col-span-1",
                   sortBy === opt.val
-                    ? "border-turf-green bg-emerald-50 text-turf-green"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                    ? "border-turf-green text-turf-green bg-emerald-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
                 {opt.label}
@@ -680,12 +614,10 @@ function CoachesTabContent() {
       </FilterBar>
 
       {sortBy === "nearest" && hasLocationDenied && (
-        <p className="mt-2 text-xs text-slate-500">
-          Location access is off — showing all coaches.
-        </p>
+        <p className="mt-2 text-xs text-slate-500">Location access is off — showing all coaches.</p>
       )}
       {/* ── Content ─────────────────────────────────────────────── */}
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-8xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/*
           Coaches are found here by DISTANCE — the discovery query is a geospatial
           search over coaches with a base location. A coach who only teaches
@@ -694,31 +626,26 @@ function CoachesTabContent() {
         */}
         <Link
           href="/programmes?online=true"
-          className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-power-orange"
+          className="hover:border-power-orange mb-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors"
         >
           <span className="flex items-center gap-3">
-            <Globe className="h-5 w-5 shrink-0 text-power-orange" aria-hidden="true" />
+            <Globe className="text-power-orange h-5 w-5 shrink-0" aria-hidden="true" />
             <span>
               <span className="block text-sm font-bold text-slate-900">
                 Looking for online coaching?
               </span>
               <span className="block text-sm text-slate-500">
-                Chess and other online classes run as weekly programmes, not
-                one-off sessions.
+                Chess and other online classes run as weekly programmes, not one-off sessions.
               </span>
             </span>
           </span>
-          <span className="shrink-0 text-sm font-semibold text-power-orange">
-            Browse →
-          </span>
+          <span className="text-power-orange shrink-0 text-sm font-semibold">Browse →</span>
         </Link>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-100 border-t-turf-green" />
-            <p className="text-sm font-medium text-slate-500">
-              Loading coaches…
-            </p>
+          <div className="flex flex-col items-center justify-center gap-3 py-24">
+            <div className="border-t-turf-green h-10 w-10 animate-spin rounded-full border-2 border-slate-100" />
+            <p className="text-sm font-medium text-slate-500">Loading coaches…</p>
           </div>
         ) : filteredCoaches.length === 0 ? (
           <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center">
@@ -729,9 +656,7 @@ function CoachesTabContent() {
                 : "No coaches available"}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              {appliedSportFilter
-                ? "Try a different sport or clear filters."
-                : "Check back soon."}
+              {appliedSportFilter ? "Try a different sport or clear filters." : "Check back soon."}
             </p>
             <div className="mt-5 flex items-center justify-center gap-3">
               {hasFilters && (
@@ -763,9 +688,7 @@ function CoachesTabContent() {
           <>
             <div className="mb-5">
               <h2 className="font-title text-xl font-bold text-slate-900">
-                {appliedSportFilter
-                  ? `${appliedSportFilter} Coaches`
-                  : "All Coaches"}
+                {appliedSportFilter ? `${appliedSportFilter} Coaches` : "All Coaches"}
               </h2>
             </div>
 
@@ -774,14 +697,10 @@ function CoachesTabContent() {
                 const coachId = String(coach.id || coach._id || "");
                 const key = coachId || `${String(coach.userId)}-${idx}`;
                 const startingRate = Number(getStartingRate(coach));
-                const hasRate =
-                  Number.isFinite(startingRate) && startingRate > 0;
+                const hasRate = Number.isFinite(startingRate) && startingRate > 0;
                 const primarySport = coach.sports[0] || "General";
                 const dist = getDistanceFromUser(coach);
-                const showDist =
-                  sortBy === "nearest" &&
-                  userLocation !== null &&
-                  dist !== null;
+                const showDist = sortBy === "nearest" && userLocation !== null && dist !== null;
                 const coachRoute = `/coaches/${coachId}`;
                 const isFollowed = followedCoachIds.includes(coachId);
                 const badge = getVerificationBadge(coach);
@@ -799,9 +718,7 @@ function CoachesTabContent() {
                     subtitle: coach.sports.join(", "),
                     href: coachRoute,
                   });
-                  setFollowedCoachIds(
-                    clientFollowStore.getByKind("coach").map((i) => i.id),
-                  );
+                  setFollowedCoachIds(clientFollowStore.getByKind("coach").map((i) => i.id));
                 };
 
                 return (
@@ -832,37 +749,27 @@ function CoachesTabContent() {
                           type="button"
                           onClick={onToggleFollow}
                           className={cn(
-                            "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
+                            "absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
                             isFollowed
-                              ? "border-white bg-white text-power-orange"
-                              : "border-white/20 bg-black/20 text-white hover:bg-black/40",
+                              ? "text-power-orange border-white bg-white"
+                              : "border-white/20 bg-black/20 text-white hover:bg-black/40"
                           )}
-                          aria-label={
-                            isFollowed ? "Unsave coach" : "Save coach"
-                          }
+                          aria-label={isFollowed ? "Unsave coach" : "Save coach"}
                         >
-                          <Bookmark
-                            size={14}
-                            className={isFollowed ? "fill-current" : ""}
-                          />
+                          <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
                         </button>
                       </div>
 
                       <div className="flex flex-1 flex-col p-5">
-                        <h3 className="text-lg font-bold tracking-tight text-slate-900">
-                          {name}
-                        </h3>
+                        <h3 className="text-lg font-bold tracking-tight text-slate-900">{name}</h3>
 
                         {city && (
                           <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-                            <MapPin
-                              size={14}
-                              className="mt-0.5 shrink-0 text-slate-400"
-                            />
+                            <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
                             <span className="line-clamp-1">
                               {city}{" "}
                               {showDist && (
-                                <span className="font-semibold text-turf-green ml-1">
+                                <span className="text-turf-green ml-1 font-semibold">
                                   ({formatDistanceKm(dist!)})
                                 </span>
                               )}
@@ -872,18 +779,14 @@ function CoachesTabContent() {
 
                         {/* Badges */}
                         <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                          {Number.isFinite(Number(coach.rating)) &&
-                            Number(coach.rating) > 0 && (
-                              <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
-                                <Star
-                                  size={12}
-                                  className="fill-amber-400 text-amber-400"
-                                />
-                                {Number(coach.rating).toFixed(1)}
-                              </span>
-                            )}
+                          {Number.isFinite(Number(coach.rating)) && Number(coach.rating) > 0 && (
+                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
+                              <Star size={12} className="fill-amber-400 text-amber-400" />
+                              {Number(coach.rating).toFixed(1)}
+                            </span>
+                          )}
                           {badge.label === "Verified" && (
-                            <span className="flex items-center gap-1 rounded-full bg-indigo-50/50 px-2.5 py-1 text-xs font-semibold text-indigo-600 ring-1 ring-inset ring-blue-100/50">
+                            <span className="flex items-center gap-1 rounded-full bg-indigo-50/50 px-2.5 py-1 text-xs font-semibold text-indigo-600 ring-1 ring-blue-100/50 ring-inset">
                               <Award size={12} />
                               Verified
                             </span>
@@ -899,24 +802,20 @@ function CoachesTabContent() {
                             : "Professional coach available for focused skill development and training sessions."}
                         </p>
 
-                        <div className="mt-auto pt-5 flex items-center justify-between border-t border-slate-50">
+                        <div className="mt-auto flex items-center justify-between border-t border-slate-50 pt-5">
                           <div>
                             {hasRate ? (
                               <div className="flex items-baseline gap-1">
                                 <span className="text-xl font-black text-slate-900">
                                   ₹{startingRate}
                                 </span>
-                                <span className="text-sm font-medium text-slate-500">
-                                  /hr
-                                </span>
+                                <span className="text-sm font-medium text-slate-500">/hr</span>
                               </div>
                             ) : (
-                              <p className="text-sm font-bold text-slate-700">
-                                Contact Us
-                              </p>
+                              <p className="text-sm font-bold text-slate-700">Contact Us</p>
                             )}
                           </div>
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:bg-turf-green group-hover:text-white">
+                          <div className="group-hover:bg-turf-green flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:text-white">
                             <ArrowRight size={17} strokeWidth={2.5} />
                           </div>
                         </div>
@@ -937,8 +836,8 @@ export default function CoachesTab() {
   return (
     <Suspense
       fallback={
-        <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-100 border-t-turf-green" />
+        <div className="flex flex-col items-center justify-center gap-3 py-24">
+          <div className="border-t-turf-green h-10 w-10 animate-spin rounded-full border-2 border-slate-100" />
           <p className="text-sm font-medium text-slate-500">Loading coaches…</p>
         </div>
       }

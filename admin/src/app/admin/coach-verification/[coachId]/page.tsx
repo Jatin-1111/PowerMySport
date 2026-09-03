@@ -103,10 +103,7 @@ export default function AdminCoachVerificationDetailPage() {
         await adminApi.rejectCoachVerification(coachId, actionText.trim());
         toast.success("Coach rejected successfully.");
       } else {
-        await adminApi.markCoachVerificationForReview(
-          coachId,
-          actionText.trim() || undefined,
-        );
+        await adminApi.markCoachVerificationForReview(coachId, actionText.trim() || undefined);
         toast.success("Coach moved to review.");
       }
 
@@ -131,8 +128,8 @@ export default function AdminCoachVerificationDetailPage() {
     } catch (err) {
       console.error("Failed to send verification reminder:", err);
       const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Failed to send verification reminder.";
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "Failed to send verification reminder.";
       toast.error(message);
     } finally {
       setActionLoading(false);
@@ -153,9 +150,7 @@ export default function AdminCoachVerificationDetailPage() {
         />
         <Card className="bg-white">
           <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">
-              {error || "Coach details not found."}
-            </p>
+            <p className="font-semibold text-red-600">{error || "Coach details not found."}</p>
             <div className="flex items-center justify-center gap-2">
               <button
                 onClick={loadCoach}
@@ -187,7 +182,7 @@ export default function AdminCoachVerificationDetailPage() {
       <div>
         <Link
           href="/admin/coach-verification"
-          className="text-sm font-semibold text-slate-600 transition-colors hover:text-power-orange"
+          className="hover:text-power-orange text-sm font-semibold text-slate-600 transition-colors"
         >
           ← Back to coach verification list
         </Link>
@@ -196,12 +191,10 @@ export default function AdminCoachVerificationDetailPage() {
       <Card className="bg-white">
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-2xl font-bold text-slate-900">
-              {userInfo?.name || "Coach"}
-            </h2>
+            <h2 className="text-2xl font-bold text-slate-900">{userInfo?.name || "Coach"}</h2>
             <span
               className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadge(
-                coach.verificationStatus,
+                coach.verificationStatus
               )}`}
             >
               {coach.verificationStatus || "UNVERIFIED"}
@@ -210,31 +203,19 @@ export default function AdminCoachVerificationDetailPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                Email
-              </p>
-              <p className="text-sm font-medium text-slate-800">
-                {userInfo?.email || "No email"}
-              </p>
+              <p className="text-xs tracking-wide text-slate-500 uppercase">Email</p>
+              <p className="text-sm font-medium text-slate-800">{userInfo?.email || "No email"}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                Service Mode
-              </p>
-              <p className="text-sm font-medium text-slate-800">
-                {coach.serviceMode || "Not set"}
-              </p>
+              <p className="text-xs tracking-wide text-slate-500 uppercase">Service Mode</p>
+              <p className="text-sm font-medium text-slate-800">{coach.serviceMode || "Not set"}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                Hourly Rate
-              </p>
-              <p className="text-sm font-medium text-slate-800">
-                ₹{coach.hourlyRate || 0}
-              </p>
+              <p className="text-xs tracking-wide text-slate-500 uppercase">Hourly Rate</p>
+              <p className="text-sm font-medium text-slate-800">₹{coach.hourlyRate || 0}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">
+              <p className="text-xs tracking-wide text-slate-500 uppercase">
                 Verification Submitted
               </p>
               <p className="text-sm font-medium text-slate-800">
@@ -246,27 +227,22 @@ export default function AdminCoachVerificationDetailPage() {
           </div>
 
           <div>
-            <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
-              Sports
-            </p>
+            <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Sports</p>
             <p className="text-sm text-slate-800">
               {coach.sports?.length ? coach.sports.join(", ") : "No sports"}
             </p>
           </div>
 
           <div>
-            <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">
-              Bio
-            </p>
-            <p className="text-sm text-slate-800 whitespace-pre-wrap">
+            <p className="mb-1 text-xs tracking-wide text-slate-500 uppercase">Bio</p>
+            <p className="text-sm whitespace-pre-wrap text-slate-800">
               {coach.bio || "No bio provided."}
             </p>
           </div>
 
           {coach.verificationNotes ? (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              <span className="font-semibold">Notes:</span>{" "}
-              {coach.verificationNotes}
+              <span className="font-semibold">Notes:</span> {coach.verificationNotes}
             </div>
           ) : null}
         </div>
@@ -274,50 +250,30 @@ export default function AdminCoachVerificationDetailPage() {
 
       {coach.ownVenueDetails ? (
         <Card className="bg-white">
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">
-            Own Venue Details
-          </h3>
+          <h3 className="mb-4 text-lg font-semibold text-slate-900">Own Venue Details</h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                Venue Name
-              </p>
-              <p className="text-sm text-slate-800">
-                {coach.ownVenueDetails.name || "-"}
-              </p>
+              <p className="text-xs tracking-wide text-slate-500 uppercase">Venue Name</p>
+              <p className="text-sm text-slate-800">{coach.ownVenueDetails.name || "-"}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                Price Per Hour
-              </p>
-              <p className="text-sm text-slate-800">
-                ₹{coach.ownVenueDetails.pricePerHour || 0}
-              </p>
+              <p className="text-xs tracking-wide text-slate-500 uppercase">Price Per Hour</p>
+              <p className="text-sm text-slate-800">₹{coach.ownVenueDetails.pricePerHour || 0}</p>
             </div>
             <div className="sm:col-span-2">
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                Address
-              </p>
-              <p className="text-sm text-slate-800">
-                {coach.ownVenueDetails.address || "-"}
-              </p>
+              <p className="text-xs tracking-wide text-slate-500 uppercase">Address</p>
+              <p className="text-sm text-slate-800">{coach.ownVenueDetails.address || "-"}</p>
             </div>
             {coach.ownVenueDetails.description ? (
               <div className="sm:col-span-2">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Description
-                </p>
-                <p className="text-sm text-slate-800">
-                  {coach.ownVenueDetails.description}
-                </p>
+                <p className="text-xs tracking-wide text-slate-500 uppercase">Description</p>
+                <p className="text-sm text-slate-800">{coach.ownVenueDetails.description}</p>
               </div>
             ) : null}
           </div>
 
           <div className="mt-4">
-            <p className="mb-2 text-sm font-semibold text-slate-700">
-              Venue Images
-            </p>
+            <p className="mb-2 text-sm font-semibold text-slate-700">Venue Images</p>
             {coach.ownVenueDetails.images?.length ? (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {coach.ownVenueDetails.images.map((imageUrl, index) => (
@@ -337,9 +293,7 @@ export default function AdminCoachVerificationDetailPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500">
-                No venue images uploaded.
-              </p>
+              <p className="text-sm text-slate-500">No venue images uploaded.</p>
             )}
           </div>
         </Card>
@@ -355,7 +309,7 @@ export default function AdminCoachVerificationDetailPage() {
                 href={doc.url}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors hover:border-power-orange hover:text-power-orange"
+                className="hover:border-power-orange hover:text-power-orange rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors"
               >
                 {doc.type}: {doc.fileName}
               </a>
@@ -367,9 +321,7 @@ export default function AdminCoachVerificationDetailPage() {
       </Card>
 
       <Card className="bg-white">
-        <h3 className="mb-4 text-lg font-semibold text-slate-900">
-          Verification Actions
-        </h3>
+        <h3 className="mb-4 text-lg font-semibold text-slate-900">Verification Actions</h3>
         <div className="flex flex-wrap gap-2">
           {coach.verificationStatus !== "VERIFIED" && (
             <button
@@ -412,9 +364,7 @@ export default function AdminCoachVerificationDetailPage() {
         {actionMode ? (
           <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
             <p className="text-sm font-semibold text-slate-800">
-              {actionMode === "REJECT"
-                ? "Rejection reason"
-                : "Review notes (optional)"}
+              {actionMode === "REJECT" ? "Rejection reason" : "Review notes (optional)"}
             </p>
             <textarea
               rows={3}
@@ -430,10 +380,7 @@ export default function AdminCoachVerificationDetailPage() {
             <div className="flex gap-2">
               <button
                 onClick={handleSubmitAction}
-                disabled={
-                  actionLoading ||
-                  (actionMode === "REJECT" && !actionText.trim())
-                }
+                disabled={actionLoading || (actionMode === "REJECT" && !actionText.trim())}
                 className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {actionLoading ? "Saving..." : "Submit"}

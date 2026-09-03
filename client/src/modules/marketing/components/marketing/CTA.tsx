@@ -83,7 +83,7 @@ function AnimatedCTAButton({
           size="lg"
           className={`w-full rounded-xl ${
             isWhatsApp
-              ? "bg-[#25D366] border-[#25D366] hover:bg-[#1da851] focus:ring-[#25D366] shadow-lg shadow-green-500/20"
+              ? "border-[#25D366] bg-[#25D366] shadow-lg shadow-green-500/20 hover:bg-[#1da851] focus:ring-[#25D366]"
               : (className ?? "")
           }`}
         >
@@ -97,19 +97,13 @@ function AnimatedCTAButton({
 
 // ─── DEFAULT VARIANT ──────────────────────────────────────────────────────────
 
-function DefaultCTA({
-  title,
-  description,
-  primaryCTA,
-  secondaryCTA,
-  label,
-}: CTAProps) {
+function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTAProps) {
   return (
     <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/80 px-8 py-14 text-center shadow-sm backdrop-blur-md premium-shadow">
+        <div className="premium-shadow relative overflow-hidden rounded-3xl border border-white/70 bg-white/80 px-8 py-14 text-center shadow-sm backdrop-blur-md">
           <SkewPolygon className="absolute inset-0 h-full w-full" />
-          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange-200/25 blur-3xl" />
+          <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-orange-200/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-sky-200/20 blur-3xl" />
           <motion.div
             variants={containerVariants}
@@ -119,10 +113,7 @@ function DefaultCTA({
             className="relative"
           >
             {label && (
-              <motion.div
-                variants={itemVariants}
-                className="mb-5 flex justify-center"
-              >
+              <motion.div variants={itemVariants} className="mb-5 flex justify-center">
                 <SectionLabel label={label} color="orange" />
               </motion.div>
             )}
@@ -146,11 +137,7 @@ function DefaultCTA({
                 {primaryCTA.label}
               </AnimatedCTAButton>
               {secondaryCTA && (
-                <AnimatedCTAButton
-                  href={secondaryCTA.href}
-                  variant="outline"
-                  className="bg-white"
-                >
+                <AnimatedCTAButton href={secondaryCTA.href} variant="outline" className="bg-white">
                   {secondaryCTA.label}
                 </AnimatedCTAButton>
               )}
@@ -164,17 +151,11 @@ function DefaultCTA({
 
 // ─── GRADIENT VARIANT ─────────────────────────────────────────────────────────
 
-function GradientCTA({
-  title,
-  description,
-  primaryCTA,
-  secondaryCTA,
-  label,
-}: CTAProps) {
+function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CTAProps) {
   return (
     <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl border border-white/60 shadow-xl premium-shadow">
+        <div className="premium-shadow relative overflow-hidden rounded-3xl border border-white/60 shadow-xl">
           {/* Unsplash sports backdrop — very subtle */}
           <div className="absolute inset-0">
             <Image
@@ -187,14 +168,14 @@ function GradientCTA({
             />
             {/* Multi-layer gradient mesh overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-sky-50/90 to-orange-50/90" />
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-turf-green/8" />
+            <div className="to-turf-green/8 absolute inset-0 bg-gradient-to-tr from-transparent via-transparent" />
           </div>
 
           {/* Decorative skew polygon */}
           <SkewPolygon className="absolute inset-0 h-full w-full" />
 
           {/* Ambient blobs */}
-          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/35 blur-3xl" />
+          <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-amber-200/35 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-sky-200/30 blur-3xl" />
 
           <motion.div
@@ -205,10 +186,7 @@ function GradientCTA({
             className="relative px-8 py-16 text-center sm:px-12 sm:py-20"
           >
             {label && (
-              <motion.div
-                variants={itemVariants}
-                className="mb-5 flex justify-center"
-              >
+              <motion.div variants={itemVariants} className="mb-5 flex justify-center">
                 <SectionLabel label={label} color="orange" />
               </motion.div>
             )}
@@ -267,13 +245,7 @@ function ImageCTA({
       {/* Background image */}
       {backgroundImage && (
         <div className="absolute inset-0">
-          <Image
-            src={backgroundImage}
-            alt=""
-            fill
-            className="object-cover"
-            aria-hidden
-          />
+          <Image src={backgroundImage} alt="" fill className="object-cover" aria-hidden />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/75 to-slate-900/50" />
         </div>
       )}
@@ -287,10 +259,7 @@ function ImageCTA({
           viewport={{ once: true, margin: "-100px" }}
         >
           {label && (
-            <motion.div
-              variants={itemVariants}
-              className="mb-5 flex justify-center"
-            >
+            <motion.div variants={itemVariants} className="mb-5 flex justify-center">
               <SectionLabel label={label} color="orange" />
             </motion.div>
           )}
@@ -300,10 +269,7 @@ function ImageCTA({
           >
             {title}
           </motion.h2>
-          <motion.p
-            variants={itemVariants}
-            className="mb-10 text-lg text-white/90 sm:text-xl"
-          >
+          <motion.p variants={itemVariants} className="mb-10 text-lg text-white/90 sm:text-xl">
             {description}
           </motion.p>
           <motion.div

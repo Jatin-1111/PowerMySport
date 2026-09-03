@@ -5,12 +5,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { User } from "@/types";
 import { useCallback } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseQueryResult,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 
 /**
  * The signed-in user's profile.
@@ -26,9 +21,7 @@ import {
 export const profileQueryKey = queryKeys.auth.profile;
 
 /** The one fetcher for the signed-in profile. Shared by hook and imperative use. */
-const fetchProfile = async (
-  setUser: (user: User | null) => void,
-): Promise<User | null> => {
+const fetchProfile = async (setUser: (user: User | null) => void): Promise<User | null> => {
   const response = await authApi.getProfile();
   const user = response.success ? (response.data ?? null) : null;
 
@@ -106,7 +99,7 @@ export const useFetchProfile = (): (() => Promise<User | null>) => {
         queryKey: profileQueryKey,
         queryFn: () => fetchProfile(setUser),
       }),
-    [queryClient, setUser],
+    [queryClient, setUser]
   );
 };
 
@@ -129,6 +122,6 @@ export const useRefreshProfile = (): (() => Promise<User | null>) => {
         queryFn: () => fetchProfile(setUser),
         staleTime: 0,
       }),
-    [queryClient, setUser],
+    [queryClient, setUser]
   );
 };

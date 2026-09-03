@@ -41,8 +41,7 @@ async function migrateCoachVenueToProfile() {
     console.log("=== Starting Coach-Venue Separation Migration ===\n");
 
     // Connect to database
-    const mongoUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
+    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
     await mongoose.connect(mongoUri);
     console.log("✓ Connected to database");
 
@@ -52,28 +51,19 @@ async function migrateCoachVenueToProfile() {
     }).lean()) as any[];
 
     log.totalCoachesWithVenues = coachesWithVenues.length;
-    console.log(
-      `\n✓ Found ${log.totalCoachesWithVenues} coaches with venue references\n`,
-    );
+    console.log(`\n✓ Found ${log.totalCoachesWithVenues} coaches with venue references\n`);
 
     // Migrate each coach's venue data to their profile
     for (const coach of coachesWithVenues) {
       try {
-        console.log(
-          `Migrating coach ${coach._id} (venueId: ${coach.venueId})...`,
-        );
+        console.log(`Migrating coach ${coach._id} (venueId: ${coach.venueId})...`);
 
         // Fetch the associated venue
         const venue = await Venue.findById(coach.venueId);
 
         if (!venue) {
-          console.log(
-            `  ⚠ Warning: Venue ${coach.venueId} not found, removing reference`,
-          );
-          await Coach.updateOne(
-            { _id: coach._id },
-            { $unset: { venueId: "" } },
-          );
+          console.log(`  ⚠ Warning: Venue ${coach.venueId} not found, removing reference`);
+          await Coach.updateOne({ _id: coach._id }, { $unset: { venueId: "" } });
           log.successfulMigrations++;
           continue;
         }
@@ -98,7 +88,7 @@ async function migrateCoachVenueToProfile() {
           {
             $set: { ownVenueDetails },
             $unset: { venueId: "" },
-          },
+          }
         );
 
         console.log(`  ✓ Migrated venue data to coach profile`);

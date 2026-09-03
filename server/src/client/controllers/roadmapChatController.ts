@@ -45,10 +45,7 @@ function toPathwayContext(pathway: NonNullable<Awaited<ReturnType<typeof loadPat
 // ─── GET /api/roadmap-chat/sessions ──────────────────────────────────────────
 // List all chat sessions for the authenticated user, newest first.
 
-export const listRoadmapChatSessions = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listRoadmapChatSessions = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Authentication required" });
@@ -77,10 +74,7 @@ export const listRoadmapChatSessions = async (
 // ─── POST /api/roadmap-chat/sessions ─────────────────────────────────────────
 // Create a new blank session for a sport.
 
-export const createRoadmapChatSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const createRoadmapChatSession = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Authentication required" });
@@ -136,10 +130,7 @@ export const createRoadmapChatSession = async (
 // ─── GET /api/roadmap-chat/sessions/:sessionId ───────────────────────────────
 // Load a specific session by ID.
 
-export const getRoadmapChatSession = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getRoadmapChatSession = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Authentication required" });
@@ -188,10 +179,7 @@ export const getRoadmapChatSession = async (
 // ─── POST /api/roadmap-chat/sessions/:sessionId ──────────────────────────────
 // Send a message to a specific session.
 
-export const sendRoadmapChatSessionMessage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const sendRoadmapChatSessionMessage = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Authentication required" });
@@ -257,7 +245,11 @@ export const sendRoadmapChatSessionMessage = async (
 
     // ── Build system prompt ────────────────────────────────────────────────────
     const upcomingTournaments = await getUpcomingEditions(session.sportSlug, 5).catch(() => []);
-    const systemPrompt = buildRoadmapChatSystemPrompt(toPathwayContext(pathway), stageKey, upcomingTournaments);
+    const systemPrompt = buildRoadmapChatSystemPrompt(
+      toPathwayContext(pathway),
+      stageKey,
+      upcomingTournaments
+    );
 
     // ── Stream response and persist both turns ─────────────────────────────────
     await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
@@ -268,7 +260,9 @@ export const sendRoadmapChatSessionMessage = async (
         message: error instanceof Error ? error.message : "Chat request failed",
       });
     } else {
-      res.write(`data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+      );
       res.end();
     }
   }
@@ -305,7 +299,13 @@ export const getRoadmapChat = async (req: Request, res: Response): Promise<void>
         sportSlug,
         userId: req.user.id,
         title: null,
-        messages: [{ role: "assistant", content: buildOpeningMessage(pathway.sportName), createdAt: new Date() }],
+        messages: [
+          {
+            role: "assistant",
+            content: buildOpeningMessage(pathway.sportName),
+            createdAt: new Date(),
+          },
+        ],
       });
       session = newSession.toObject();
     }
@@ -368,14 +368,22 @@ export const sendRoadmapChatMessage = async (req: Request, res: Response): Promi
       return;
     }
 
-    let session = await RoadmapChatSession.findOne({ sportSlug, userId: req.user.id }).sort({ updatedAt: -1 });
+    let session = await RoadmapChatSession.findOne({ sportSlug, userId: req.user.id }).sort({
+      updatedAt: -1,
+    });
 
     if (!session) {
       session = await RoadmapChatSession.create({
         sportSlug,
         userId: req.user.id,
         title: null,
-        messages: [{ role: "assistant", content: buildOpeningMessage(pathway.sportName), createdAt: new Date() }],
+        messages: [
+          {
+            role: "assistant",
+            content: buildOpeningMessage(pathway.sportName),
+            createdAt: new Date(),
+          },
+        ],
       });
     }
 
@@ -398,7 +406,11 @@ export const sendRoadmapChatMessage = async (req: Request, res: Response): Promi
     }
 
     const upcomingTournaments = await getUpcomingEditions(sportSlug, 5).catch(() => []);
-    const systemPrompt = buildRoadmapChatSystemPrompt(toPathwayContext(pathway), stageKey, upcomingTournaments);
+    const systemPrompt = buildRoadmapChatSystemPrompt(
+      toPathwayContext(pathway),
+      stageKey,
+      upcomingTournaments
+    );
 
     await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
   } catch (error) {
@@ -408,7 +420,9 @@ export const sendRoadmapChatMessage = async (req: Request, res: Response): Promi
         message: error instanceof Error ? error.message : "Chat request failed",
       });
     } else {
-      res.write(`data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+      );
       res.end();
     }
   }

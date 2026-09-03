@@ -27,21 +27,19 @@ export const up = async () => {
 
   const parentRes = await users.updateMany(
     { role: "Player", userType: "Parent" },
-    { $set: { role: "Parent" }, $unset: { userType: "" } },
+    { $set: { role: "Parent" }, $unset: { userType: "" } }
   );
   console.log(
-    `Migrated ${parentRes.modifiedCount} users from role:Player+userType:Parent to role:Parent.`,
+    `Migrated ${parentRes.modifiedCount} users from role:Player+userType:Parent to role:Parent.`
   );
 
   // Everyone else (Player, Coach, VenueLister, Academy, EXPERT, Admin) keeps
   // their existing role — just drop the now-removed userType field.
   const cleanupRes = await users.updateMany(
     { userType: { $exists: true } },
-    { $unset: { userType: "" } },
+    { $unset: { userType: "" } }
   );
-  console.log(
-    `Removed userType field from ${cleanupRes.modifiedCount} remaining users.`,
-  );
+  console.log(`Removed userType field from ${cleanupRes.modifiedCount} remaining users.`);
 
   console.log("Migration completed successfully.");
 };
@@ -52,13 +50,13 @@ export const down = async () => {
 
   const res = await users.updateMany(
     { role: "Parent" },
-    { $set: { role: "Player", userType: "Parent" } },
+    { $set: { role: "Player", userType: "Parent" } }
   );
   console.log(
-    `Reverted ${res.modifiedCount} users from role:Parent back to role:Player+userType:Parent.`,
+    `Reverted ${res.modifiedCount} users from role:Parent back to role:Player+userType:Parent.`
   );
   console.log(
-    "Note: userType was NOT restored for non-Parent users — their original values weren't recorded (they were never anything but a duplicate of role). A full rollback also requires reverting the accompanying code changes.",
+    "Note: userType was NOT restored for non-Parent users — their original values weren't recorded (they were never anything but a duplicate of role). A full rollback also requires reverting the accompanying code changes."
   );
 
   console.log("Rollback completed.");
@@ -67,9 +65,7 @@ export const down = async () => {
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const rollback = process.argv.includes("--down");
 

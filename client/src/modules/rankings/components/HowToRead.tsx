@@ -66,13 +66,11 @@ export function HowToRead({
   ];
 
   return (
-    <dl className="mt-6 grid gap-x-6 gap-y-3 rounded-xl border border-dashed bg-muted/30 px-5 py-4 sm:grid-cols-3">
+    <dl className="bg-muted/30 mt-6 grid gap-x-6 gap-y-3 rounded-xl border border-dashed px-5 py-4 sm:grid-cols-3">
       {items.map((item) => (
         <div key={item.term}>
           <dt className="text-sm font-semibold">{item.term}</dt>
-          <dd className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
-            {item.detail}
-          </dd>
+          <dd className="text-muted-foreground mt-0.5 text-sm leading-relaxed">{item.detail}</dd>
         </div>
       ))}
     </dl>
@@ -89,34 +87,24 @@ export function HowToRead({
  *
  * Renders nothing on the open-age lists, where none of these rules apply.
  */
-export function EntryRules({
-  subcategory,
-  listLabel,
-}: {
-  subcategory: string;
-  listLabel: string;
-}) {
+export function EntryRules({ subcategory, listLabel }: { subcategory: string; listLabel: string }) {
   if (!isJuniorBracket(subcategory)) return null;
   const cap = annualEntryCap(subcategory);
   const isUnder18 = subcategory.trim().toUpperCase() === "U-18";
 
   return (
-    <section className="rounded-xl border bg-card p-5 sm:p-6">
-      <h3 className="text-base font-semibold tracking-tight">
-        What a rank opens and closes
-      </h3>
+    <section className="bg-card rounded-xl border p-5 sm:p-6">
+      <h3 className="text-base font-semibold tracking-tight">What a rank opens and closes</h3>
 
       {/* The ladder first. The gates below are stated in these names, and they
           mean nothing to someone reading them for the first time. */}
-      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+      <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
         Junior tournaments in India run in levels, easiest first:
       </p>
       <ol className="mt-2.5 space-y-1 text-sm">
         {JUNIOR_LADDER.map((rung, index) => (
           <li key={rung.name} className="flex gap-2">
-            <span className="w-4 shrink-0 tabular-nums text-muted-foreground">
-              {index + 1}.
-            </span>
+            <span className="text-muted-foreground w-4 shrink-0 tabular-nums">{index + 1}.</span>
             <span>
               <span className="font-medium">{rung.name}</span>{" "}
               <span className="text-muted-foreground">— {rung.plain}</span>
@@ -129,36 +117,35 @@ export function EntryRules({
           would be shut out of does not exist there. Saying otherwise would
           describe the loss of something that was never available. */}
       {isUnder18 ? (
-        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          Under 18 runs no Talent Series events, and Championship Series has no
-          ranking bar — so every level here is open to enter at any rank.
+        <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+          Under 18 runs no Talent Series events, and Championship Series has no ranking bar — so
+          every level here is open to enter at any rank.
         </p>
       ) : (
-        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          Here is the part that surprises most parents: a better rank{" "}
-          <em>closes</em> the entry level. Once a player is inside the top 75 of
-          their age group, AITA no longer lets them enter Talent Series — those
-          draws are kept for players still working their way up. Every other
-          level stays open.
+        <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
+          Here is the part that surprises most parents: a better rank <em>closes</em> the entry
+          level. Once a player is inside the top 75 of their age group, AITA no longer lets them
+          enter Talent Series — those draws are kept for players still working their way up. Every
+          other level stays open.
         </p>
       )}
 
       {/* The bands are all about the Talent Series cut-off, so they say nothing
           true at U-18. */}
       {!isUnder18 && (
-      <ul className="mt-4 space-y-2">
-        {ENTRY_BANDS.map((band) => (
-          <li
-            key={band.range}
-            className="flex flex-col gap-0.5 rounded-lg bg-muted/50 px-3.5 py-2.5 sm:flex-row sm:items-baseline sm:gap-3"
-          >
-            <span className="shrink-0 text-sm font-semibold tabular-nums sm:w-40">
-              {band.range}
-            </span>
-            <span className="text-sm text-muted-foreground">{band.effect}</span>
-          </li>
-        ))}
-      </ul>
+        <ul className="mt-4 space-y-2">
+          {ENTRY_BANDS.map((band) => (
+            <li
+              key={band.range}
+              className="bg-muted/50 flex flex-col gap-0.5 rounded-lg px-3.5 py-2.5 sm:flex-row sm:items-baseline sm:gap-3"
+            >
+              <span className="shrink-0 text-sm font-semibold tabular-nums sm:w-40">
+                {band.range}
+              </span>
+              <span className="text-muted-foreground text-sm">{band.effect}</span>
+            </li>
+          ))}
+        </ul>
       )}
 
       {cap && (
@@ -166,25 +153,24 @@ export function EntryRules({
           <span className="font-semibold">Tournament limit:</span>{" "}
           <span className="text-muted-foreground">
             a {listLabel} player may enter{" "}
-            <span className="font-medium text-foreground tabular-nums">{cap}</span>{" "}
-            tournaments in a year. Entering an older age group uses up the same
-            allowance — it is one budget for the year, not one per list.
+            <span className="text-foreground font-medium tabular-nums">{cap}</span> tournaments in a
+            year. Entering an older age group uses up the same allowance — it is one budget for the
+            year, not one per list.
           </span>
         </p>
       )}
 
-      <p className="mt-4 border-t pt-3 text-xs text-muted-foreground">
+      <p className="text-muted-foreground mt-4 border-t pt-3 text-xs">
         Rules from the{" "}
         <a
           href={RULES_SOURCE.href}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="underline hover:text-foreground"
+          className="hover:text-foreground underline"
         >
           {RULES_SOURCE.label}
         </a>
-        . Check the current regulations with AITA or your state association before
-        planning entries.
+        . Check the current regulations with AITA or your state association before planning entries.
       </p>
     </section>
   );

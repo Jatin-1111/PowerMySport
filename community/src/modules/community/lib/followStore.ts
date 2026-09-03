@@ -1,9 +1,6 @@
 import { communityService } from "@/modules/community/services/community";
 import { hasAuthToken } from "@/lib/auth/token";
-import type {
-  CommunityFollowKind,
-  CommunityFollowRecord,
-} from "@/modules/community/types";
+import type { CommunityFollowKind, CommunityFollowRecord } from "@/modules/community/types";
 
 export type { CommunityFollowKind, CommunityFollowRecord };
 
@@ -135,10 +132,7 @@ export const communityFollowStore = {
     return items.map((item) => item.targetId);
   },
 
-  async isFollowing(
-    kind: CommunityFollowKind,
-    targetId: string,
-  ): Promise<boolean> {
+  async isFollowing(kind: CommunityFollowKind, targetId: string): Promise<boolean> {
     const items = await this.getByKind(kind);
     return items.some((item) => item.targetId === targetId);
   },

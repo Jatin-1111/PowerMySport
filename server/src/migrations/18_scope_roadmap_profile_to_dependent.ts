@@ -32,16 +32,13 @@ export const up = async () => {
     if (firstDependent) {
       await UserPathwayProfile.updateOne(
         { _id: profile._id },
-        { $set: { dependentId: firstDependent._id } },
+        { $set: { dependentId: firstDependent._id } }
       );
       attached++;
     } else {
       // No dependent to attach to yet — explicitly set null so it occupies
       // the "general" slot in the new {userId, dependentId} unique index.
-      await UserPathwayProfile.updateOne(
-        { _id: profile._id },
-        { $set: { dependentId: null } },
-      );
+      await UserPathwayProfile.updateOne({ _id: profile._id }, { $set: { dependentId: null } });
       leftGeneral++;
     }
   }
@@ -65,13 +62,10 @@ export const up = async () => {
 export const down = async () => {
   console.log("Rolling back migration: Scope roadmap profile to dependent...");
 
-  const res = await UserPathwayProfile.updateMany(
-    {},
-    { $unset: { dependentId: "" } },
-  );
+  const res = await UserPathwayProfile.updateMany({}, { $unset: { dependentId: "" } });
   console.log(`Removed dependentId from ${res.modifiedCount} profile(s).`);
   console.log(
-    "Note: index shape is not reverted automatically — re-run the previous schema's syncIndexes() if needed.",
+    "Note: index shape is not reverted automatically — re-run the previous schema's syncIndexes() if needed."
   );
 
   console.log("Rollback completed successfully.");
@@ -80,9 +74,7 @@ export const down = async () => {
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const rollback = process.argv.includes("--down");
 

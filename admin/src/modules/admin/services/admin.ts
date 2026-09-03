@@ -28,11 +28,7 @@ type OpeningHours = {
 export type DataSourceTargetType = "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR";
 export type DataSourceKind = "PDF" | "LINK";
 export type DataSourceStatus =
-  | "PENDING_EXTRACTION"
-  | "EXTRACTION_FAILED"
-  | "PENDING_REVIEW"
-  | "APPROVED"
-  | "REJECTED";
+  "PENDING_EXTRACTION" | "EXTRACTION_FAILED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED";
 
 export interface DataSourceUploadUrlResponse {
   uploadUrl: string;
@@ -135,12 +131,8 @@ export interface AcademyAdminReviewDetails extends AcademyAdminQueueRecord {
   };
   venueIds?: Array<string | { _id?: string; id?: string; name?: string }>;
   coachIds?: Array<string | { _id?: string; id?: string; name?: string }>;
-  subscriptionPlans?: Array<
-    string | { _id?: string; id?: string; name?: string }
-  >;
-  sessionPackages?: Array<
-    string | { _id?: string; id?: string; name?: string }
-  >;
+  subscriptionPlans?: Array<string | { _id?: string; id?: string; name?: string }>;
+  sessionPackages?: Array<string | { _id?: string; id?: string; name?: string }>;
   rating?: number;
   reviewCount?: number;
   onboardingStep?: number;
@@ -268,8 +260,7 @@ export interface SupportTicketRecord {
   requesterName?: string;
   requesterEmail?: string;
   requesterPhone?: string;
-  requesterType?:
-    "player" | "venue_owner" | "coach" | "academy_owner" | "other";
+  requesterType?: "player" | "venue_owner" | "coach" | "academy_owner" | "other";
   assignedAdminId?: {
     _id: string;
     name: string;
@@ -308,13 +299,7 @@ export interface BookingEvent {
   actorType: "USER" | "PROVIDER" | "ADMIN" | "SYSTEM" | "GATEWAY";
   /** Populated to a user object server-side when the actor is a real account. */
   actorUserId?: { _id: string; name?: string; email?: string; role?: string } | string;
-  channel:
-    | "CLIENT_WEB"
-    | "PROVIDER_WEB"
-    | "ADMIN_PANEL"
-    | "CRON"
-    | "WEBHOOK"
-    | "SYSTEM";
+  channel: "CLIENT_WEB" | "PROVIDER_WEB" | "ADMIN_PANEL" | "CRON" | "WEBHOOK" | "SYSTEM";
   /** PAISE, matching the server. Divide by 100 to display rupees. */
   amountPaise?: number;
   summary?: string;
@@ -379,10 +364,7 @@ export const adminApi = {
     return response.data;
   },
 
-  updateProfile: async (data: {
-    name?: string;
-    email?: string;
-  }): Promise<ApiResponse<Admin>> => {
+  updateProfile: async (data: { name?: string; email?: string }): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.put("/admin/profile", data);
     if (response.data?.data) {
       response.data.data = normalizeAdmin(response.data.data);
@@ -417,9 +399,7 @@ export const adminApi = {
   getAllAdmins: async (): Promise<ApiResponse<Admin[]>> => {
     const response = await axiosInstance.get("/admin/list");
     if (Array.isArray(response.data?.data)) {
-      response.data.data = response.data.data.map((admin: Admin) =>
-        normalizeAdmin(admin),
-      );
+      response.data.data = response.data.data.map((admin: Admin) => normalizeAdmin(admin));
     }
     return response.data;
   },
@@ -441,7 +421,7 @@ export const adminApi = {
 
   updateAdminPermissions: async (
     adminId: string,
-    permissions: string[],
+    permissions: string[]
   ): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.put(`/admin/${adminId}/permissions`, {
       permissions,
@@ -452,10 +432,7 @@ export const adminApi = {
     return response.data;
   },
 
-  updateAdminRole: async (
-    adminId: string,
-    role: string,
-  ): Promise<ApiResponse<Admin>> => {
+  updateAdminRole: async (adminId: string, role: string): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.put(`/admin/${adminId}/role`, {
       role,
     });
@@ -465,10 +442,7 @@ export const adminApi = {
     return response.data;
   },
 
-  updateAdminProfile: async (
-    adminId: string,
-    name: string,
-  ): Promise<ApiResponse<Admin>> => {
+  updateAdminProfile: async (adminId: string, name: string): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.patch(`/admin/${adminId}/profile`, {
       name,
     });
@@ -478,10 +452,7 @@ export const adminApi = {
     return response.data;
   },
 
-  updateAdminStatus: async (
-    adminId: string,
-    isActive: boolean,
-  ): Promise<ApiResponse<Admin>> => {
+  updateAdminStatus: async (adminId: string, isActive: boolean): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.patch(`/admin/${adminId}/status`, {
       isActive,
     });
@@ -501,9 +472,7 @@ export const adminApi = {
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/admin/coaches/verification?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/admin/coaches/verification?${query.toString()}`);
     return response.data;
   },
 
@@ -520,55 +489,36 @@ export const adminApi = {
     if (params?.limit) query.append("limit", params.limit.toString());
 
     const response = await axiosInstance.get(
-      `/admin/coaches${query.toString() ? `?${query.toString()}` : ""}`,
+      `/admin/coaches${query.toString() ? `?${query.toString()}` : ""}`
     );
     return response.data;
   },
 
-  getCoachVerificationById: async (
-    coachId: string,
-  ): Promise<ApiResponse<Coach>> => {
+  getCoachVerificationById: async (coachId: string): Promise<ApiResponse<Coach>> => {
     const response = await axiosInstance.get(`/admin/coaches/${coachId}`);
     return response.data;
   },
 
-  approveCoachVerification: async (
-    coachId: string,
-  ): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post(
-      `/admin/coaches/${coachId}/verify`,
-    );
+  approveCoachVerification: async (coachId: string): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.post(`/admin/coaches/${coachId}/verify`);
     return response.data;
   },
 
-  rejectCoachVerification: async (
-    coachId: string,
-    reason: string,
-  ): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post(
-      `/admin/coaches/${coachId}/reject`,
-      { reason },
-    );
+  rejectCoachVerification: async (coachId: string, reason: string): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.post(`/admin/coaches/${coachId}/reject`, { reason });
     return response.data;
   },
 
   markCoachVerificationForReview: async (
     coachId: string,
-    notes?: string,
+    notes?: string
   ): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post(
-      `/admin/coaches/${coachId}/mark-review`,
-      { notes },
-    );
+    const response = await axiosInstance.post(`/admin/coaches/${coachId}/mark-review`, { notes });
     return response.data;
   },
 
-  notifyCoachVerification: async (
-    coachId: string,
-  ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.post(
-      `/admin/coaches/${coachId}/notify`,
-    );
+  notifyCoachVerification: async (coachId: string): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.post(`/admin/coaches/${coachId}/notify`);
     return response.data;
   },
 
@@ -577,21 +527,16 @@ export const adminApi = {
     data: {
       refundType: "FULL" | "PARTIAL";
       reason: string;
-    },
+    }
   ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.post(
-      `/admin/refunds/${bookingId}`,
-      data,
-    );
+    const response = await axiosInstance.post(`/admin/refunds/${bookingId}`, data);
     return response.data;
   },
 
   getPhonePeRefundStatus: async (
-    bookingId: string,
+    bookingId: string
   ): Promise<ApiResponse<AdminPhonePeRefundStatus>> => {
-    const response = await axiosInstance.get(
-      `/admin/refunds/${bookingId}/status`,
-    );
+    const response = await axiosInstance.get(`/admin/refunds/${bookingId}/status`);
     return response.data;
   },
 
@@ -599,12 +544,8 @@ export const adminApi = {
    * Append-only lifecycle timeline. Resolves across both bookings and expert
    * sessions, so the same call works for either kind of id.
    */
-  getBookingTimeline: async (
-    subjectId: string,
-  ): Promise<ApiResponse<BookingEvent[]>> => {
-    const response = await axiosInstance.get(
-      `/admin/bookings/${subjectId}/timeline`,
-    );
+  getBookingTimeline: async (subjectId: string): Promise<ApiResponse<BookingEvent[]>> => {
+    const response = await axiosInstance.get(`/admin/bookings/${subjectId}/timeline`);
     return response.data;
   },
 
@@ -614,12 +555,9 @@ export const adminApi = {
       disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER";
       resolution: "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND";
       evidence?: string;
-    },
+    }
   ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.post(
-      `/admin/disputes/${bookingId}`,
-      data,
-    );
+    const response = await axiosInstance.post(`/admin/disputes/${bookingId}`, data);
     return response.data;
   },
 
@@ -645,16 +583,12 @@ export const adminApi = {
     if (params?.page) query.append("page", String(params.page));
     if (params?.limit) query.append("limit", String(params.limit));
 
-    const response = await axiosInstance.get(
-      `/admin/refunds?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/admin/refunds?${query.toString()}`);
     return response.data;
   },
 
   getFailedRefundBookings: async (): Promise<ApiResponse<unknown[]>> => {
-    const response = await axiosInstance.get(
-      `/admin/refunds?refundStatus=REJECTED&limit=100`,
-    );
+    const response = await axiosInstance.get(`/admin/refunds?refundStatus=REJECTED&limit=100`);
     return response.data;
   },
 
@@ -666,9 +600,7 @@ export const adminApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/reviews/moderation/queue?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/reviews/moderation/queue?${params.toString()}`);
     return response.data;
   },
 
@@ -677,12 +609,9 @@ export const adminApi = {
     data: {
       action: "APPROVE" | "REMOVE" | "HIDE";
       moderationNotes?: string;
-    },
+    }
   ): Promise<ApiResponse<ModerationReview>> => {
-    const response = await axiosInstance.patch(
-      `/reviews/${reviewId}/moderate`,
-      data,
-    );
+    const response = await axiosInstance.patch(`/reviews/${reviewId}/moderate`, data);
     return response.data;
   },
 
@@ -698,9 +627,7 @@ export const adminApi = {
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/admin/users/safety?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/admin/users/safety?${query.toString()}`);
     return response.data;
   },
 
@@ -709,12 +636,9 @@ export const adminApi = {
     data: {
       action: "SUSPEND" | "REACTIVATE" | "DEACTIVATE";
       reason?: string;
-    },
+    }
   ): Promise<ApiResponse<UserSafetyRecord>> => {
-    const response = await axiosInstance.patch(
-      `/admin/users/${userId}/safety`,
-      data,
-    );
+    const response = await axiosInstance.patch(`/admin/users/${userId}/safety`, data);
     return response.data;
   },
 
@@ -727,9 +651,7 @@ export const adminApi = {
     if (params?.status) query.append("status", params.status);
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
-    const response = await axiosInstance.get(
-      `/admin/community/reports?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/admin/community/reports?${query.toString()}`);
     return response.data;
   },
 
@@ -738,14 +660,9 @@ export const adminApi = {
     payload: {
       status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
       resolutionNote?: string;
-    },
-  ): Promise<
-    ApiResponse<{ id: string; status: string; reviewedAt: string }>
-  > => {
-    const response = await axiosInstance.patch(
-      `/admin/community/reports/${reportId}`,
-      payload,
-    );
+    }
+  ): Promise<ApiResponse<{ id: string; status: string; reviewedAt: string }>> => {
+    const response = await axiosInstance.patch(`/admin/community/reports/${reportId}`, payload);
     return response.data;
   },
 
@@ -754,10 +671,7 @@ export const adminApi = {
     status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
     resolutionNote?: string;
   }): Promise<ApiResponse<{ modifiedCount: number }>> => {
-    const response = await axiosInstance.patch(
-      `/admin/community/reports/bulk-review`,
-      payload,
-    );
+    const response = await axiosInstance.patch(`/admin/community/reports/bulk-review`, payload);
     return response.data;
   },
 
@@ -773,9 +687,7 @@ export const adminApi = {
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/support-tickets/admin?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/support-tickets/admin?${query.toString()}`);
     return response.data;
   },
 
@@ -786,12 +698,9 @@ export const adminApi = {
       priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
       assignedAdminId?: string | null;
       note?: string;
-    },
+    }
   ): Promise<ApiResponse<SupportTicketRecord>> => {
-    const response = await axiosInstance.patch(
-      `/support-tickets/admin/${ticketId}`,
-      data,
-    );
+    const response = await axiosInstance.patch(`/support-tickets/admin/${ticketId}`, data);
     return response.data;
   },
 
@@ -817,21 +726,13 @@ export const adminApi = {
     return response.data;
   },
 
-  deactivatePromoCode: async (
-    codeId: string,
-  ): Promise<ApiResponse<PromoCodeRecord>> => {
-    const response = await axiosInstance.patch(
-      `/admin/promo-codes/${codeId}/deactivate`,
-    );
+  deactivatePromoCode: async (codeId: string): Promise<ApiResponse<PromoCodeRecord>> => {
+    const response = await axiosInstance.patch(`/admin/promo-codes/${codeId}/deactivate`);
     return response.data;
   },
 
-  getPromoCodeStats: async (
-    codeId: string,
-  ): Promise<ApiResponse<PromoCodeStats>> => {
-    const response = await axiosInstance.get(
-      `/admin/promo-codes/${codeId}/stats`,
-    );
+  getPromoCodeStats: async (codeId: string): Promise<ApiResponse<PromoCodeStats>> => {
+    const response = await axiosInstance.get(`/admin/promo-codes/${codeId}/stats`);
     return response.data;
   },
 
@@ -884,7 +785,7 @@ export const adminApi = {
       coverPhotoUrl?: string;
       coverPhotoKey?: string;
       convertExistingUser?: boolean;
-    },
+    }
   ): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.put(`/admin/venues/${venueId}`, data);
     return response.data;
@@ -923,8 +824,7 @@ export const adminApi = {
     venueId?: string;
     profilePhotoUrl?: string;
     profilePhotoKey?: string;
-    verificationStatus?:
-      "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
+    verificationStatus?: "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
     convertExistingUser?: boolean;
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/coaches/create", data);
@@ -933,7 +833,7 @@ export const adminApi = {
 
   getCoachPhotoUploadUrl: async (
     fileName: string,
-    contentType: string,
+    contentType: string
   ): Promise<
     ApiResponse<{
       uploadUrl: string;
@@ -941,13 +841,10 @@ export const adminApi = {
       key: string;
     }>
   > => {
-    const response = await axiosInstance.post(
-      "/admin/coaches/photo-upload-url",
-      {
-        fileName,
-        contentType,
-      },
-    );
+    const response = await axiosInstance.post("/admin/coaches/photo-upload-url", {
+      fileName,
+      contentType,
+    });
     return response.data;
   },
 
@@ -958,7 +855,7 @@ export const adminApi = {
       contentType: string;
       documentType?: string;
       purpose?: "DOCUMENT" | "VENUE_IMAGE";
-    },
+    }
   ): Promise<
     ApiResponse<{
       uploadUrl: string;
@@ -969,14 +866,14 @@ export const adminApi = {
   > => {
     const response = await axiosInstance.post(
       `/admin/coaches/${coachId}/verification/upload-url`,
-      payload,
+      payload
     );
     return response.data;
   },
 
   updateCoach: async (
     coachId: string,
-    data: Record<string, unknown>,
+    data: Record<string, unknown>
   ): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.put(`/admin/coaches/${coachId}`, data);
     return response.data;
@@ -984,11 +881,11 @@ export const adminApi = {
 
   submitCoachVerificationAdmin: async (
     coachId: string,
-    payload: { documents?: CoachVerificationDocument[] },
+    payload: { documents?: CoachVerificationDocument[] }
   ): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post(
       `/admin/coaches/${coachId}/verification/submit`,
-      payload,
+      payload
     );
     return response.data;
   },
@@ -1004,59 +901,42 @@ export const adminApi = {
     if (params?.filter) query.append("filter", params.filter);
 
     const response = await axiosInstance.get(
-      `/academies/admin/pending${query.toString() ? `?${query.toString()}` : ""}`,
+      `/academies/admin/pending${query.toString() ? `?${query.toString()}` : ""}`
     );
     return response.data;
   },
 
   getAcademyReviewDetails: async (
-    academyId: string,
+    academyId: string
   ): Promise<ApiResponse<AcademyAdminReviewDetails>> => {
-    const response = await axiosInstance.get(
-      `/academies/admin/${academyId}/review`,
-    );
+    const response = await axiosInstance.get(`/academies/admin/${academyId}/review`);
     return response.data;
   },
 
   approveAcademy: async (academyId: string): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(
-      `/academies/admin/${academyId}/approve`,
-    );
+    const response = await axiosInstance.put(`/academies/admin/${academyId}/approve`);
     return response.data;
   },
 
   rejectAcademy: async (
     academyId: string,
-    rejectionReason: string,
+    rejectionReason: string
   ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(
-      `/academies/admin/${academyId}/reject`,
-      {
-        rejectionReason,
-      },
-    );
+    const response = await axiosInstance.put(`/academies/admin/${academyId}/reject`, {
+      rejectionReason,
+    });
     return response.data;
   },
 
-  markAcademyKycVerified: async (
-    academyId: string,
-  ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(
-      `/academies/admin/${academyId}/kyc-verify`,
-    );
+  markAcademyKycVerified: async (academyId: string): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.put(`/academies/admin/${academyId}/kyc-verify`);
     return response.data;
   },
 
-  suspendAcademy: async (
-    academyId: string,
-    reason?: string,
-  ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(
-      `/academies/admin/${academyId}/suspend`,
-      {
-        reason,
-      },
-    );
+  suspendAcademy: async (academyId: string, reason?: string): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.put(`/academies/admin/${academyId}/suspend`, {
+      reason,
+    });
     return response.data;
   },
 
@@ -1068,8 +948,8 @@ export const adminApi = {
   markPayoutsAsPaid: async (data: {
     vendorId: string;
     // "CoachSession" is a recurring-coaching payout, earned per delivered class
-  // and settled per occurrence — its ids are occurrence ids, not booking ids.
-  vendorRole: "VenueLister" | "Coach" | "Expert" | "CoachSession";
+    // and settled per occurrence — its ids are occurrence ids, not booking ids.
+    vendorRole: "VenueLister" | "Coach" | "Expert" | "CoachSession";
     bookingIds: string[];
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/payouts/mark-paid", data);
@@ -1087,19 +967,12 @@ export const adminApi = {
   },
 
   retryWebhookError: async (key: string): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.post(
-      `/admin/webhook-errors/${key}/retry`,
-    );
+    const response = await axiosInstance.post(`/admin/webhook-errors/${key}/retry`);
     return response.data;
   },
 
-  reconcileOrder: async (
-    type: string,
-    orderId: string,
-  ): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.post(
-      `/admin/reconcile/${type}/${orderId}`,
-    );
+  reconcileOrder: async (type: string, orderId: string): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.post(`/admin/reconcile/${type}/${orderId}`);
     return response.data;
   },
 
@@ -1108,7 +981,7 @@ export const adminApi = {
   getDataSourceUploadUrl: async (
     fileName: string,
     contentType: string,
-    sportSlug: string,
+    sportSlug: string
   ): Promise<ApiResponse<DataSourceUploadUrlResponse>> => {
     const response = await axiosInstance.post("/admin/data-sources/upload-url", {
       fileName,
@@ -1120,7 +993,7 @@ export const adminApi = {
 
   listDataSourceTargets: async (
     targetType: DataSourceTargetType,
-    sportSlug: string,
+    sportSlug: string
   ): Promise<ApiResponse<DataSourceTargetOption[]>> => {
     const query = new URLSearchParams({ targetType, sportSlug });
     const response = await axiosInstance.get(`/admin/data-sources/targets?${query.toString()}`);
@@ -1146,7 +1019,7 @@ export const adminApi = {
     if (params?.page) query.append("page", String(params.page));
     if (params?.limit) query.append("limit", String(params.limit));
     const response = await axiosInstance.get(
-      `/admin/data-sources${query.toString() ? `?${query.toString()}` : ""}`,
+      `/admin/data-sources${query.toString() ? `?${query.toString()}` : ""}`
     );
     return response.data;
   },
@@ -1173,7 +1046,7 @@ export const adminApi = {
 
   updateDataSource: async (
     id: string,
-    extractedData: unknown,
+    extractedData: unknown
   ): Promise<ApiResponse<AdminDataSourceSubmission>> => {
     const response = await axiosInstance.patch(`/admin/data-sources/${id}`, { extractedData });
     return response.data;
@@ -1190,9 +1063,7 @@ export const adminApi = {
    * it fans out to as many as 150 page fetches — slow enough that it must not
    * ride along with every extraction.
    */
-  enrichDataSourceDetails: async (
-    id: string,
-  ): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+  enrichDataSourceDetails: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
     const response = await axiosInstance.post(`/admin/data-sources/${id}/enrich-details`);
     return response.data;
   },
@@ -1204,7 +1075,7 @@ export const adminApi = {
 
   rejectDataSource: async (
     id: string,
-    reason: string,
+    reason: string
   ): Promise<ApiResponse<AdminDataSourceSubmission>> => {
     const response = await axiosInstance.post(`/admin/data-sources/${id}/reject`, { reason });
     return response.data;
@@ -1243,7 +1114,7 @@ export const adminApi = {
       intro?: AdminPathwayIntro;
       sportIntro?: string[];
       reviewedOn?: string;
-    },
+    }
   ): Promise<ApiResponse<AdminPathwayGuide>> => {
     const response = await axiosInstance.put(`/admin/pathway-guides/${id}`, payload);
     return response.data;
@@ -1256,7 +1127,7 @@ export const adminApi = {
 
   setPathwayGuideStatus: async (
     id: string,
-    status: "draft" | "published",
+    status: "draft" | "published"
   ): Promise<ApiResponse<{ status: string; publishedAt: string | null }>> => {
     const response = await axiosInstance.post(`/admin/pathway-guides/${id}/status`, {
       status,
@@ -1266,7 +1137,7 @@ export const adminApi = {
 
   addPathwayStage: async (
     id: string,
-    stage: AdminPathwayStage,
+    stage: AdminPathwayStage
   ): Promise<ApiResponse<AdminPathwayGuide>> => {
     const response = await axiosInstance.post(`/admin/pathway-guides/${id}/stages`, stage);
     return response.data;
@@ -1275,28 +1146,28 @@ export const adminApi = {
   updatePathwayStage: async (
     id: string,
     stageKey: string,
-    stage: AdminPathwayStage,
+    stage: AdminPathwayStage
   ): Promise<ApiResponse<AdminPathwayGuide>> => {
     const response = await axiosInstance.put(
       `/admin/pathway-guides/${id}/stages/${encodeURIComponent(stageKey)}`,
-      stage,
+      stage
     );
     return response.data;
   },
 
   deletePathwayStage: async (
     id: string,
-    stageKey: string,
+    stageKey: string
   ): Promise<ApiResponse<AdminPathwayGuide>> => {
     const response = await axiosInstance.delete(
-      `/admin/pathway-guides/${id}/stages/${encodeURIComponent(stageKey)}`,
+      `/admin/pathway-guides/${id}/stages/${encodeURIComponent(stageKey)}`
     );
     return response.data;
   },
 
   reorderPathwayStages: async (
     id: string,
-    keys: string[],
+    keys: string[]
   ): Promise<ApiResponse<AdminPathwayGuide>> => {
     const response = await axiosInstance.put(`/admin/pathway-guides/${id}/stages/order`, {
       keys,

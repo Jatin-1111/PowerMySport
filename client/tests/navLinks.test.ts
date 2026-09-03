@@ -118,8 +118,7 @@ describe("route policy prefixes exist", () => {
 
     for (const policy of CONSOLE_POLICIES) {
       const hasPage = routes.some(
-        (route) =>
-          route === policy.prefix || route.startsWith(`${policy.prefix}/`),
+        (route) => route === policy.prefix || route.startsWith(`${policy.prefix}/`)
       );
       expect(hasPage, `no pages under ${policy.prefix}`).toBe(true);
     }

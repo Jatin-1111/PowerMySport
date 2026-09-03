@@ -24,9 +24,7 @@ const log = __rootLog.child("coachCheckout");
  */
 
 const PLATFORM_FEE_RATE = Number(
-  process.env.SUBSCRIPTION_PLATFORM_FEE_RATE ??
-    process.env.SERVICE_FEE_RATE ??
-    0,
+  process.env.SUBSCRIPTION_PLATFORM_FEE_RATE ?? process.env.SERVICE_FEE_RATE ?? 0
 );
 
 /** Minimum PhonePe will accept. */
@@ -40,16 +38,10 @@ export interface SubscriptionAmounts {
 }
 
 /** Everything in paise, matching the storage convention across the codebase. */
-export const computeSubscriptionAmounts = (
-  packagePricePaise: number,
-): SubscriptionAmounts => {
+export const computeSubscriptionAmounts = (packagePricePaise: number): SubscriptionAmounts => {
   const baseAmount = Math.round(Number(packagePricePaise) || 0);
-  const feeRate = Number.isFinite(PLATFORM_FEE_RATE)
-    ? Math.max(0, PLATFORM_FEE_RATE)
-    : 0;
-  const taxRate = Number.isFinite(SUBSCRIPTION_TAX_RATE)
-    ? Math.max(0, SUBSCRIPTION_TAX_RATE)
-    : 0;
+  const feeRate = Number.isFinite(PLATFORM_FEE_RATE) ? Math.max(0, PLATFORM_FEE_RATE) : 0;
+  const taxRate = Number.isFinite(SUBSCRIPTION_TAX_RATE) ? Math.max(0, SUBSCRIPTION_TAX_RATE) : 0;
 
   const platformFee = Math.round(baseAmount * feeRate);
   const taxAmount = platformFee > 0 ? Math.round(platformFee * taxRate) : 0;
@@ -105,7 +97,7 @@ export interface InitiateCheckoutResult {
  * the record never sits PENDING forever.
  */
 export const initiateSubscriptionCheckout = async (
-  payload: InitiateCheckoutPayload,
+  payload: InitiateCheckoutPayload
 ): Promise<InitiateCheckoutResult> => {
   const packageDoc = await CoachSubscriptionPackage.findById(payload.packageId);
   if (!packageDoc) throw new Error("Subscription package not found");
@@ -128,9 +120,7 @@ export const initiateSubscriptionCheckout = async (
   });
 
   const redirectBase =
-    process.env.FRONTEND_URL ||
-    process.env.PHONEPE_REDIRECT_URL_BASE ||
-    "http://localhost:3000";
+    process.env.FRONTEND_URL || process.env.PHONEPE_REDIRECT_URL_BASE || "http://localhost:3000";
   const redirectUrl = new URL("/payment", redirectBase);
   redirectUrl.searchParams.set("status", "pending");
   redirectUrl.searchParams.set("type", payload.redirectType ?? "subscription");

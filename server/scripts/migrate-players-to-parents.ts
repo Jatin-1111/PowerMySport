@@ -5,8 +5,7 @@ import { Player } from "../src/client/models/Player";
 
 dotenv.config(); // Ensure env vars are loaded
 
-const MONGODB_URI =
-  process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
+const MONGODB_URI = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
 
 async function migrate() {
   try {
@@ -30,10 +29,7 @@ async function migrate() {
       if (dependentsCount > 0) {
         console.log(`Migrating user ${user._id} (${user.email}) to Parent...`);
         // We use collection.updateOne to bypass mongoose discriminator key strictness
-        await User.collection.updateOne(
-          { _id: user._id },
-          { $set: { userType: "Parent" } },
-        );
+        await User.collection.updateOne({ _id: user._id }, { $set: { userType: "Parent" } });
         migratedCount++;
       }
     }

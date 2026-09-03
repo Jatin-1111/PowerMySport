@@ -9,11 +9,7 @@ import { BlogAuthorProfile, BlogListItem } from "@/modules/community/types";
 import { toast } from "@/lib/toast";
 import BlogProfileView from "./BlogProfileView";
 
-export default function WriterProfileClient({
-  identifier,
-}: {
-  identifier: string;
-}) {
+export default function WriterProfileClient({ identifier }: { identifier: string }) {
   const router = useRouter();
   const [profile, setProfile] = useState<BlogAuthorProfile | null>(null);
   const [blogs, setBlogs] = useState<BlogListItem[]>([]);
@@ -39,9 +35,7 @@ export default function WriterProfileClient({
       setBlogs(data.items || []);
     } catch (error) {
       setNotFound(true);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load writer",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load writer");
     } finally {
       setIsLoading(false);
       setIsLoadingBlogs(false);
@@ -74,11 +68,5 @@ export default function WriterProfileClient({
     );
   }
 
-  return (
-    <BlogProfileView
-      profile={profile}
-      blogs={blogs}
-      isLoadingBlogs={isLoadingBlogs}
-    />
-  );
+  return <BlogProfileView profile={profile} blogs={blogs} isLoadingBlogs={isLoadingBlogs} />;
 }

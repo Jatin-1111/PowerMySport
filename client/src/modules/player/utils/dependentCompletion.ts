@@ -91,7 +91,7 @@ export interface DependentCompletionResult {
 }
 
 export function calculateDependentCompletion(
-  profile: DependentCompletionProfile | null | undefined,
+  profile: DependentCompletionProfile | null | undefined
 ): DependentCompletionResult {
   const safeProfile = profile ?? {};
   const totalWeight = DEPENDENT_COMPLETION_FIELDS.reduce((sum, f) => sum + f.weight, 0);
@@ -119,7 +119,9 @@ const ARCHETYPE_TRAIT_FIELDS = ["physical", "personality", "comfort"];
  * i.e. this profile only ever went through a sport-known flow, never the
  * Discover wizard's archetype questions. Used to gate cross-flow nudges that
  * offer to fill those traits in (guidance, expert booking). */
-export function isMissingArchetypeTraits(profile: DependentCompletionProfile | null | undefined): boolean {
+export function isMissingArchetypeTraits(
+  profile: DependentCompletionProfile | null | undefined
+): boolean {
   const { missing } = calculateDependentCompletion(profile);
   return missing.some((m) => ARCHETYPE_TRAIT_FIELDS.includes(m.field));
 }

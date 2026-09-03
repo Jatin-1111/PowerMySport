@@ -22,8 +22,7 @@ const logTest = (name: string, passed: boolean, error?: string) => {
 // Connect to test database
 const connectDB = async () => {
   try {
-    const mongoUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/powermysport_test";
+    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport_test";
     await mongoose.connect(mongoUri);
     console.log("✅ Connected to test database\n");
   } catch (error) {
@@ -112,10 +111,7 @@ const testVenueApproval = async () => {
     });
 
     logTest("New venue has PENDING status", venue.approvalStatus === "PENDING");
-    logTest(
-      "New venue is NOT auto-approved",
-      venue.approvalStatus !== "APPROVED",
-    );
+    logTest("New venue is NOT auto-approved", venue.approvalStatus !== "APPROVED");
 
     await Venue.deleteOne({ _id: venue._id });
   } catch (error: any) {
@@ -141,7 +137,7 @@ const testPromoCodeValidation = async () => {
 
     const validation = await PromoCodeService.validatePromoCode(
       "TEST50",
-      new mongoose.Types.ObjectId().toString(),
+      new mongoose.Types.ObjectId().toString()
     );
     logTest("Valid promo code accepted", validation.isValid === true);
     logTest("Discount amount calculated", validation.discount !== undefined);
@@ -160,7 +156,7 @@ const testPromoCodeValidation = async () => {
 
     const expiredValidation = await PromoCodeService.validatePromoCode(
       "EXPIRED",
-      new mongoose.Types.ObjectId().toString(),
+      new mongoose.Types.ObjectId().toString()
     );
     logTest("Expired promo code rejected", expiredValidation.isValid === false);
 
@@ -219,10 +215,8 @@ const testCancellationPolicy = async () => {
       checkInCodeExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
 
-    const hoursUntilFarBooking =
-      (farFutureBooking.date.getTime() - Date.now()) / (1000 * 60 * 60);
-    const refund100 =
-      hoursUntilFarBooking >= 48 ? 100 : hoursUntilFarBooking >= 24 ? 50 : 0;
+    const hoursUntilFarBooking = (farFutureBooking.date.getTime() - Date.now()) / (1000 * 60 * 60);
+    const refund100 = hoursUntilFarBooking >= 48 ? 100 : hoursUntilFarBooking >= 24 ? 50 : 0;
     logTest("48+ hours cancellation = 100% refund", refund100 === 100);
 
     // Simulate 24-48 hours case
@@ -260,48 +254,22 @@ const testOpeningHoursValidation = async () => {
     // Test booking during open hours (Monday 10-11)
     const monday = new Date();
     monday.setDate(monday.getDate() + ((1 - monday.getDay() + 7) % 7)); // Next Monday
-    const validResult = isWithinOpeningHours(
-      monday,
-      "10:00",
-      "11:00",
-      openingHours,
-    );
+    const validResult = isWithinOpeningHours(monday, "10:00", "11:00", openingHours);
     logTest("Booking during open hours accepted", validResult.isValid === true);
 
     // Test booking before opening (Monday 08-09)
-    const tooEarlyResult = isWithinOpeningHours(
-      monday,
-      "08:00",
-      "09:00",
-      openingHours,
-    );
-    logTest(
-      "Booking before opening rejected",
-      tooEarlyResult.isValid === false,
-    );
+    const tooEarlyResult = isWithinOpeningHours(monday, "08:00", "09:00", openingHours);
+    logTest("Booking before opening rejected", tooEarlyResult.isValid === false);
 
     // Test booking after closing (Monday 19-20)
-    const tooLateResult = isWithinOpeningHours(
-      monday,
-      "19:00",
-      "20:00",
-      openingHours,
-    );
+    const tooLateResult = isWithinOpeningHours(monday, "19:00", "20:00", openingHours);
     logTest("Booking after closing rejected", tooLateResult.isValid === false);
 
     // Test booking on closed day (Sunday)
     const sunday = new Date();
     sunday.setDate(sunday.getDate() + ((0 - sunday.getDay() + 7) % 7)); // Next Sunday
-    const closedDayResult = isWithinOpeningHours(
-      sunday,
-      "10:00",
-      "11:00",
-      openingHours,
-    );
-    logTest(
-      "Booking on closed day rejected",
-      closedDayResult.isValid === false,
-    );
+    const closedDayResult = isWithinOpeningHours(sunday, "10:00", "11:00", openingHours);
+    logTest("Booking on closed day rejected", closedDayResult.isValid === false);
   } catch (error: any) {
     logTest("Opening hours validation test", false, error.message);
   }
@@ -353,14 +321,8 @@ const testCheckInCodeSecurity = async () => {
     });
 
     logTest("Check-in code is 8 characters", booking.checkInCode.length === 8);
-    logTest(
-      "Check-in code has expiry",
-      booking.checkInCodeExpiry !== undefined,
-    );
-    logTest(
-      "Check-in code expiry is in future",
-      booking.checkInCodeExpiry! > new Date(),
-    );
+    logTest("Check-in code has expiry", booking.checkInCodeExpiry !== undefined);
+    logTest("Check-in code expiry is in future", booking.checkInCodeExpiry! > new Date());
 
     await User.deleteOne({ _id: user._id });
     await Venue.deleteOne({ _id: venue._id });
@@ -454,7 +416,7 @@ const testReviewSystem = async () => {
     logTest("Coach review created", coachReview.targetType === "Coach");
     logTest(
       "Both reviews for same booking",
-      venueReview.bookingId.toString() === coachReview.bookingId.toString(),
+      venueReview.bookingId.toString() === coachReview.bookingId.toString()
     );
 
     await User.deleteOne({ _id: user._id });
@@ -507,8 +469,7 @@ const testReviewModeration = async () => {
         reportedAt: new Date(),
       },
     ];
-    review.moderationStatus =
-      review.reports.length >= 3 ? "FLAGGED" : "PENDING";
+    review.moderationStatus = review.reports.length >= 3 ? "FLAGGED" : "PENDING";
     await review.save();
 
     logTest("Review flagging works", review.moderationStatus === "FLAGGED");
@@ -530,10 +491,7 @@ const testAgeValidation = async () => {
       const today = new Date();
       let age = today.getFullYear() - dob.getFullYear();
       const monthDiff = today.getMonth() - dob.getMonth();
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < dob.getDate())
-      ) {
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
         age--;
       }
       return age;
@@ -581,10 +539,7 @@ const testEmailVerification = async () => {
     const EmailVerification = mongoose.model("EmailVerification");
     const verification = await EmailVerification.findOne({ email: testEmail });
     logTest("Verification code stored in database", verification !== null);
-    logTest(
-      "Verification code has expiry",
-      verification?.expiresAt !== undefined,
-    );
+    logTest("Verification code has expiry", verification?.expiresAt !== undefined);
 
     await EmailVerification.deleteMany({ email: testEmail });
   } catch (error: any) {
@@ -620,17 +575,13 @@ const runAllTests = async () => {
   console.log(`Total Tests: ${testResults.length}`);
   console.log(`✅ Passed: ${passed}`);
   console.log(`❌ Failed: ${failed}`);
-  console.log(
-    `Success Rate: ${((passed / testResults.length) * 100).toFixed(1)}%`,
-  );
+  console.log(`Success Rate: ${((passed / testResults.length) * 100).toFixed(1)}%`);
 
   if (failed > 0) {
     console.log("\n❌ Failed Tests:");
     testResults
       .filter((r) => !r.passed)
-      .forEach((r) =>
-        console.log(`  - ${r.name}: ${r.error || "Unknown error"}`),
-      );
+      .forEach((r) => console.log(`  - ${r.name}: ${r.error || "Unknown error"}`));
   }
 
   console.log("\n" + "=".repeat(60));

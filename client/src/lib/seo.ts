@@ -12,9 +12,10 @@ import type { Metadata } from "next";
  */
 
 /** Public origin, no trailing slash. Non-www — `www` 308s to the apex. */
-export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com"
-).replace(/\/$/, "");
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com").replace(
+  /\/$/,
+  ""
+);
 
 export const SITE_NAME = "PowerMySport";
 
@@ -111,9 +112,7 @@ export type JsonLdObject = Record<string, unknown>;
  * emit a hardcoded host — the wrong-host canonical was a real bug on this site
  * once and is not worth repeating.
  */
-export function breadcrumbJsonLd(
-  trail: { name: string; path: string }[],
-): JsonLdObject {
+export function breadcrumbJsonLd(trail: { name: string; path: string }[]): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -183,9 +182,7 @@ export const websiteJsonLd: JsonLdObject = {
 };
 
 /** FAQPage, for a page that genuinely renders every question and answer. */
-export function faqJsonLd(
-  items: { question: string; answer: string }[],
-): JsonLdObject {
+export function faqJsonLd(items: { question: string; answer: string }[]): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -279,10 +276,9 @@ export function sportsOrganizationJsonLd(input: {
   phone?: string;
   socialLinks?: Record<string, string | undefined>;
 }): JsonLdObject {
-  const sameAs = [
-    input.website,
-    ...Object.values(input.socialLinks ?? {}),
-  ].filter((value): value is string => Boolean(value));
+  const sameAs = [input.website, ...Object.values(input.socialLinks ?? {})].filter(
+    (value): value is string => Boolean(value)
+  );
 
   return {
     "@context": "https://schema.org",
@@ -469,18 +465,14 @@ export function productJsonLd(input: {
     ...(input.description ? { description: input.description } : {}),
     ...(input.images?.length ? { image: input.images } : {}),
     ...(input.sku ? { sku: input.sku } : {}),
-    ...(input.brand
-      ? { brand: { "@type": "Brand", name: input.brand } }
-      : {}),
+    ...(input.brand ? { brand: { "@type": "Brand", name: input.brand } } : {}),
     ...(input.category ? { category: input.category } : {}),
     offers: {
       "@type": "Offer",
       url,
       priceCurrency: "INR",
       price: input.priceInr,
-      availability: input.inStock
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
+      availability: input.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       itemCondition:
         input.condition === "USED"
           ? "https://schema.org/UsedCondition"

@@ -97,7 +97,7 @@ function ChipRow({ label, chips, group }: { label: string; chips: string[]; grou
   const c = CHIP_GROUPS[group];
   return (
     <div>
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+      <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
         {label}
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -175,9 +175,7 @@ export default function DependentDetailPage() {
     );
   }
 
-  const dependent = user?.dependents?.find(
-    (d) => d._id?.toString() === dependentId,
-  );
+  const dependent = user?.dependents?.find((d) => d._id?.toString() === dependentId);
 
   if (!user || !dependent) {
     return (
@@ -354,7 +352,7 @@ export default function DependentDetailPage() {
             title={`${dependent.name}'s profile is ${completion.percent}% complete`}
           >
             <Avatar className="h-16 w-16 border border-white shadow-sm">
-              <AvatarFallback className="bg-power-orange/10 text-lg font-bold text-power-orange">
+              <AvatarFallback className="bg-power-orange/10 text-power-orange text-lg font-bold">
                 {getInitials(dependent.name)}
               </AvatarFallback>
             </Avatar>
@@ -401,7 +399,7 @@ export default function DependentDetailPage() {
         {effectiveSport ? (
           <div className="mt-5 flex flex-col gap-3 rounded-xl border border-orange-100 bg-orange-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">
+              <p className="text-[11px] font-semibold tracking-wide text-orange-600 uppercase">
                 Playing
               </p>
               <p className="text-lg font-bold text-slate-900">{effectiveSport}</p>
@@ -439,7 +437,7 @@ export default function DependentDetailPage() {
               dependent.sport?.wizardCompletedAt
                 ? `Assessed on ${new Date(dependent.sport.wizardCompletedAt).toLocaleDateString(
                     undefined,
-                    { day: "numeric", month: "short", year: "numeric" },
+                    { day: "numeric", month: "short", year: "numeric" }
                   )}`
                 : "Sport fit results from the assessment."
             }
@@ -470,7 +468,7 @@ export default function DependentDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-slate-500">{m.fitLabel}</span>
-                    <span className="text-[11px] tabular-nums text-slate-300">{m.score}</span>
+                    <span className="text-[11px] text-slate-300 tabular-nums">{m.score}</span>
                   </div>
                 </div>
               );
@@ -497,7 +495,7 @@ export default function DependentDetailPage() {
               <ChipRow label="Practical" chips={practicalChips} group={3} />
               {(dependent.medicalConditions?.length ?? 0) > 0 && (
                 <div>
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <p className="mb-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
                     Medical conditions
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -530,7 +528,7 @@ export default function DependentDetailPage() {
         <Card className="shop-surface premium-shadow p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-power-orange/10 text-power-orange">
+              <div className="bg-power-orange/10 text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
                 <GraduationCap className="h-5 w-5" />
               </div>
               <div>
@@ -562,8 +560,8 @@ export default function DependentDetailPage() {
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-slate-900">Delete this profile</h3>
               <p className="mt-0.5 text-sm text-slate-500">
-                Permanently removes {dependent.name}&apos;s profile, assessment results, and
-                booking history. This cannot be undone.
+                Permanently removes {dependent.name}&apos;s profile, assessment results, and booking
+                history. This cannot be undone.
               </p>
             </div>
             <Button
@@ -637,9 +635,7 @@ export default function DependentDetailPage() {
               type="button"
               onClick={handleSubmitGraduation}
               loading={isGraduating}
-              disabled={
-                !graduationForm.email || !graduationForm.password || !graduationForm.phone
-              }
+              disabled={!graduationForm.email || !graduationForm.password || !graduationForm.phone}
             >
               Graduate
             </Button>

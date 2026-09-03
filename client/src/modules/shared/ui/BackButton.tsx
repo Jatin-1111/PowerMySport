@@ -34,13 +34,8 @@ export function BackButton({
   };
 
   return (
-    <Button
-      variant={variant}
-      onClick={handleClick}
-      className={className}
-      aria-label={label}
-    >
-      <ChevronLeft className="h-4 w-4 mr-2" />
+    <Button variant={variant} onClick={handleClick} className={className} aria-label={label}>
+      <ChevronLeft className="mr-2 h-4 w-4" />
       {label}
     </Button>
   );

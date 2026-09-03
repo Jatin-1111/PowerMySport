@@ -35,24 +35,14 @@ router.patch(
   "/profile",
   authMiddleware,
   validateRequest(blogProfileUpdateSchema),
-  updateBlogProfile,
+  updateBlogProfile
 );
 // Public — writer profile pages are shareable like the posts themselves.
 // private: isMe varies per viewer.
-router.get(
-  "/authors/:identifier",
-  optionalAuthMiddleware,
-  cacheControl(20),
-  getBlogAuthorProfile,
-);
+router.get("/authors/:identifier", optionalAuthMiddleware, cacheControl(20), getBlogAuthorProfile);
 
 // ─── Likes ────────────────────────────────────────────────────────────────────
-router.post(
-  "/likes",
-  authMiddleware,
-  validateRequest(blogLikeSchema),
-  toggleBlogLike,
-);
+router.post("/likes", authMiddleware, validateRequest(blogLikeSchema), toggleBlogLike);
 
 // ─── Image upload (rate-limited per user) ─────────────────────────────────────
 const blogUploadRateLimit = rateLimit({
@@ -62,8 +52,7 @@ const blogUploadRateLimit = rateLimit({
   handler: (_req: Request, res: Response, _next: NextFunction) => {
     res.status(429).json({
       success: false,
-      message:
-        "Too many upload requests. Please wait a moment before uploading another image.",
+      message: "Too many upload requests. Please wait a moment before uploading another image.",
     });
   },
   standardHeaders: true,
@@ -75,24 +64,19 @@ router.post(
   authMiddleware,
   blogUploadRateLimit,
   validateRequest(blogUploadUrlSchema),
-  getBlogImageUploadUrl,
+  getBlogImageUploadUrl
 );
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
 // Reading comments is public (same as the post itself, for shared links);
 // posting/deleting still requires auth. private: likedByMe/isMine vary per
 // viewer.
-router.get(
-  "/posts/:blogId/comments",
-  optionalAuthMiddleware,
-  cacheControl(15),
-  listBlogComments,
-);
+router.get("/posts/:blogId/comments", optionalAuthMiddleware, cacheControl(15), listBlogComments);
 router.post(
   "/posts/:blogId/comments",
   authMiddleware,
   validateRequest(blogCommentSchema),
-  createBlogComment,
+  createBlogComment
 );
 router.delete("/comments/:commentId", authMiddleware, deleteBlogComment);
 
@@ -104,12 +88,7 @@ router.get("/posts", optionalAuthMiddleware, cacheControl(20), listBlogs);
 // private: likedByMe/isMine vary per viewer.
 router.get("/posts/:blogId", optionalAuthMiddleware, cacheControl(20), getBlog);
 router.post("/posts", authMiddleware, validateRequest(blogCreateSchema), createBlog);
-router.patch(
-  "/posts/:blogId",
-  authMiddleware,
-  validateRequest(blogUpdateSchema),
-  updateBlog,
-);
+router.patch("/posts/:blogId", authMiddleware, validateRequest(blogUpdateSchema), updateBlog);
 router.delete("/posts/:blogId", authMiddleware, deleteBlog);
 
 export default router;

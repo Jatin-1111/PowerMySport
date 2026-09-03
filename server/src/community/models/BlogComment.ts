@@ -44,13 +44,10 @@ const blogCommentSchema = new Schema<BlogCommentDocument>(
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 blogCommentSchema.index({ blogId: 1, createdAt: -1 });
 blogCommentSchema.index({ blogId: 1, parentId: 1, createdAt: 1 });
 
-export const BlogComment = mongoose.model<BlogCommentDocument>(
-  "BlogComment",
-  blogCommentSchema,
-);
+export const BlogComment = mongoose.model<BlogCommentDocument>("BlogComment", blogCommentSchema);

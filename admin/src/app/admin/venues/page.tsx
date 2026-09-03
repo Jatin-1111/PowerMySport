@@ -3,16 +3,9 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
-import {
-  DetailDrawer,
-  DetailRow,
-  DetailSection,
-} from "@/modules/shared/ui/DetailDrawer";
+import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { Venue } from "@/types";
 import { formatCurrency } from "@/utils/format";
@@ -146,8 +139,7 @@ export default function AdminVenuesPage() {
       }
       return (
         factor *
-        (new Date(left.createdAt || 0).getTime() -
-          new Date(right.createdAt || 0).getTime())
+        (new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime())
       );
     });
   }, [venues, sortColumn, sortDirection]);
@@ -162,9 +154,7 @@ export default function AdminVenuesPage() {
           <VenueThumb venue={v} />
           <div className="min-w-0">
             <p className="truncate font-medium text-slate-900">{v.name}</p>
-            <p className="truncate text-xs text-slate-500">
-              {getVenueLocation(v)}
-            </p>
+            <p className="truncate text-xs text-slate-500">{getVenueLocation(v)}</p>
           </div>
         </div>
       ),
@@ -179,9 +169,7 @@ export default function AdminVenuesPage() {
       header: "Price / hr",
       sortable: true,
       align: "right",
-      render: (v) => (
-        <span className="text-slate-700">{formatCurrency(v.pricePerHour)}</span>
-      ),
+      render: (v) => <span className="text-slate-700">{formatCurrency(v.pricePerHour)}</span>,
     },
     {
       key: "rating",
@@ -196,9 +184,7 @@ export default function AdminVenuesPage() {
             <span className="text-slate-400">({v.reviewCount ?? 0})</span>
           </span>
         ) : (
-          <span className="text-xs font-semibold uppercase text-slate-400">
-            New
-          </span>
+          <span className="text-xs font-semibold text-slate-400 uppercase">New</span>
         ),
     },
     {
@@ -210,7 +196,7 @@ export default function AdminVenuesPage() {
             {v.sports.slice(0, 2).map((sport) => (
               <span
                 key={sport}
-                className="rounded-full bg-power-orange/10 px-2 py-0.5 text-xs font-medium text-power-orange"
+                className="bg-power-orange/10 text-power-orange rounded-full px-2 py-0.5 text-xs font-medium"
               >
                 {sport}
               </span>
@@ -229,9 +215,7 @@ export default function AdminVenuesPage() {
       key: "added",
       header: "Added",
       sortable: true,
-      render: (v) => (
-        <span className="text-slate-600">{formatDate(v.createdAt)}</span>
-      ),
+      render: (v) => <span className="text-slate-600">{formatDate(v.createdAt)}</span>,
     },
   ];
 
@@ -311,8 +295,7 @@ export default function AdminVenuesPage() {
               },
               {
                 header: "Created",
-                value: (v) =>
-                  v.createdAt ? new Date(v.createdAt).toISOString() : "",
+                value: (v) => (v.createdAt ? new Date(v.createdAt).toISOString() : ""),
               },
             ]}
           />
@@ -325,16 +308,14 @@ export default function AdminVenuesPage() {
         title={selectedVenue?.name || "Venue"}
         subtitle={selectedVenue ? getVenueLocation(selectedVenue) : undefined}
         headerExtra={
-          selectedVenue ? (
-            <StatusBadge status={selectedVenue.approvalStatus || "PENDING"} />
-          ) : null
+          selectedVenue ? <StatusBadge status={selectedVenue.approvalStatus || "PENDING"} /> : null
         }
         footer={
           selectedVenue ? (
             <div className="flex justify-end">
               <Link
                 href={`/admin/venues/${getVenueId(selectedVenue) || "#"}`}
-                className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
               >
                 Open full page
               </Link>
@@ -362,16 +343,9 @@ export default function AdminVenuesPage() {
             <DetailSection title="Overview">
               <DetailRow
                 label="Approval"
-                value={
-                  <StatusBadge
-                    status={selectedVenue.approvalStatus || "PENDING"}
-                  />
-                }
+                value={<StatusBadge status={selectedVenue.approvalStatus || "PENDING"} />}
               />
-              <DetailRow
-                label="Price / hr"
-                value={formatCurrency(selectedVenue.pricePerHour)}
-              />
+              <DetailRow label="Price / hr" value={formatCurrency(selectedVenue.pricePerHour)} />
               <DetailRow
                 label="Rating"
                 value={`${(selectedVenue.rating ?? 0).toFixed(1)} (${selectedVenue.reviewCount ?? 0} reviews)`}
@@ -380,15 +354,9 @@ export default function AdminVenuesPage() {
                 label="External coaches"
                 value={selectedVenue.allowExternalCoaches ? "Allowed" : "No"}
               />
-              <DetailRow
-                label="Added"
-                value={formatDate(selectedVenue.createdAt)}
-              />
+              <DetailRow label="Added" value={formatDate(selectedVenue.createdAt)} />
               {selectedVenue.rejectionReason && (
-                <DetailRow
-                  label="Rejection reason"
-                  value={selectedVenue.rejectionReason}
-                />
+                <DetailRow label="Rejection reason" value={selectedVenue.rejectionReason} />
               )}
             </DetailSection>
 
@@ -405,7 +373,7 @@ export default function AdminVenuesPage() {
                   {selectedVenue.sports.map((sport) => (
                     <span
                       key={sport}
-                      className="rounded-full bg-power-orange/10 px-2.5 py-0.5 text-xs font-medium text-power-orange"
+                      className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-medium"
                     >
                       {sport}
                       {selectedVenue.sportPricing?.[sport] != null

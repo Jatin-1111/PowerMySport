@@ -34,7 +34,7 @@ export const onboardingApi = {
    * STEP 1: Create venue with venue lister contact info
    */
   submitContactInfo: async (
-    data: OnboardingStep1Payload,
+    data: OnboardingStep1Payload
   ): Promise<ApiResponse<OnboardingVenue>> => {
     const response = await axiosInstance.post(`${API_BASE}/step1`, data);
     return response.data;
@@ -44,7 +44,7 @@ export const onboardingApi = {
    * STEP 2: Update venue with detailed information
    */
   submitVenueDetails: async (
-    data: OnboardingStep2Payload,
+    data: OnboardingStep2Payload
   ): Promise<ApiResponse<OnboardingVenue>> => {
     const response = await axiosInstance.post(`${API_BASE}/step2`, data);
     return response.data;
@@ -56,7 +56,7 @@ export const onboardingApi = {
    */
   getImageUploadUrls: async (
     venueId: string,
-    sports: string[],
+    sports: string[]
   ): Promise<ApiResponse<{ uploadUrls: PresignedUrl[] }>> => {
     const response = await axiosInstance.post(`${API_BASE}/step3/upload-urls`, {
       venueId,
@@ -69,12 +69,9 @@ export const onboardingApi = {
    * STEP 3B: Confirm images after upload
    */
   confirmImagesStep3: async (
-    payload: ConfirmImagesPayload,
+    payload: ConfirmImagesPayload
   ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/step3/confirm`,
-      payload,
-    );
+    const response = await axiosInstance.post(`${API_BASE}/step3/confirm`, payload);
     return response.data;
   },
 
@@ -87,7 +84,7 @@ export const onboardingApi = {
       type: string;
       fileName: string;
       contentType: string;
-    }>,
+    }>
   ): Promise<ApiResponse<{ uploadUrls: PresignedUrl[] }>> => {
     const response = await axiosInstance.post(`${API_BASE}/step4/upload-urls`, {
       venueId,
@@ -100,25 +97,17 @@ export const onboardingApi = {
    * STEP 4B: Finalize onboarding with documents
    */
   finalizeOnboarding: async (
-    payload: OnboardingStep3Payload,
+    payload: OnboardingStep3Payload
   ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/step4/finalize`,
-      payload,
-    );
+    const response = await axiosInstance.post(`${API_BASE}/step4/finalize`, payload);
     return response.data;
   },
 
   /**
    * STEP 5: Submit in-house coaches (optional)
    */
-  submitCoaches: async (
-    payload: OnboardingStep5Payload,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/step5/coaches`,
-      payload,
-    );
+  submitCoaches: async (payload: OnboardingStep5Payload): Promise<ApiResponse<OnboardingVenue>> => {
+    const response = await axiosInstance.post(`${API_BASE}/step5/coaches`, payload);
     return response.data;
   },
 
@@ -128,18 +117,13 @@ export const onboardingApi = {
   getCoachPhotoUploadUrl: async (
     venueId: string,
     fileName: string,
-    contentType: string,
-  ): Promise<
-    ApiResponse<{ uploadUrl: string; downloadUrl: string; s3Key: string }>
-  > => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/coach-photo-upload-url`,
-      {
-        venueId,
-        fileName,
-        contentType,
-      },
-    );
+    contentType: string
+  ): Promise<ApiResponse<{ uploadUrl: string; downloadUrl: string; s3Key: string }>> => {
+    const response = await axiosInstance.post(`${API_BASE}/coach-photo-upload-url`, {
+      venueId,
+      fileName,
+      contentType,
+    });
     return response.data;
   },
 
@@ -147,9 +131,7 @@ export const onboardingApi = {
   /**
    * @deprecated Use submitContactInfo and submitVenueDetails instead
    */
-  createVenue: async (
-    data: OnboardingStep1Payload,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
+  createVenue: async (data: OnboardingStep1Payload): Promise<ApiResponse<OnboardingVenue>> => {
     const response = await axiosInstance.post(`${API_BASE}/step1`, data);
     return response.data;
   },
@@ -159,12 +141,9 @@ export const onboardingApi = {
    * @deprecated Use confirmImagesStep3 instead
    */
   confirmImagesStep2: async (
-    payload: OnboardingStep2Payload,
+    payload: OnboardingStep2Payload
   ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/step3/confirm`,
-      payload,
-    );
+    const response = await axiosInstance.post(`${API_BASE}/step3/confirm`, payload);
     return response.data;
   },
 
@@ -182,7 +161,7 @@ export const onboardingApi = {
   getPendingVenues: async (
     page: number = 1,
     limit: number = 20,
-    status?: string,
+    status?: string
   ): Promise<
     ApiResponse<{
       venues: PendingVenueListItem[];
@@ -196,18 +175,14 @@ export const onboardingApi = {
     params.append("limit", limit.toString());
     if (status) params.append("status", status);
 
-    const response = await axiosInstance.get(
-      `${API_BASE}/admin/pending?${params}`,
-    );
+    const response = await axiosInstance.get(`${API_BASE}/admin/pending?${params}`);
     return response.data;
   },
 
   /**
    * ADMIN: Get venue details for review
    */
-  getVenueDetailsForReview: async (
-    venueId: string,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
+  getVenueDetailsForReview: async (venueId: string): Promise<ApiResponse<OnboardingVenue>> => {
     const response = await axiosInstance.get(`${API_BASE}/admin/${venueId}`);
     return response.data;
   },
@@ -215,28 +190,18 @@ export const onboardingApi = {
   /**
    * ADMIN: Approve venue
    */
-  approveVenue: async (
-    venueId: string,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/admin/${venueId}/approve`,
-    );
+  approveVenue: async (venueId: string): Promise<ApiResponse<OnboardingVenue>> => {
+    const response = await axiosInstance.post(`${API_BASE}/admin/${venueId}/approve`);
     return response.data;
   },
 
   /**
    * ADMIN: Reject venue
    */
-  rejectVenue: async (
-    venueId: string,
-    reason: string,
-  ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/admin/${venueId}/reject`,
-      {
-        reason,
-      },
-    );
+  rejectVenue: async (venueId: string, reason: string): Promise<ApiResponse<OnboardingVenue>> => {
+    const response = await axiosInstance.post(`${API_BASE}/admin/${venueId}/reject`, {
+      reason,
+    });
     return response.data;
   },
 
@@ -245,14 +210,11 @@ export const onboardingApi = {
    */
   markVenueForReview: async (
     venueId: string,
-    notes?: string,
+    notes?: string
   ): Promise<ApiResponse<OnboardingVenue>> => {
-    const response = await axiosInstance.post(
-      `${API_BASE}/admin/${venueId}/mark-review`,
-      {
-        notes,
-      },
-    );
+    const response = await axiosInstance.post(`${API_BASE}/admin/${venueId}/mark-review`, {
+      notes,
+    });
     return response.data;
   },
 };
@@ -263,7 +225,7 @@ export const onboardingApi = {
 export const uploadFileToPresignedUrl = async (
   file: File,
   presignedUrl: string,
-  contentType: string,
+  contentType: string
 ): Promise<void> => {
   await axios.put(presignedUrl, file, {
     headers: {

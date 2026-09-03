@@ -44,7 +44,7 @@ const dedupeTerms = (terms: Array<string | undefined | null>): string[] => {
 };
 
 export const buildCoachCommunityIntent = (
-  input: CoachCommunityIntentInput,
+  input: CoachCommunityIntentInput
 ): CoachCommunityIntent => {
   const selectedSport = normalizeTerm(input.selectedSport);
   const primaryCoachSport = normalizeTerm(input.coachSports?.[0]);

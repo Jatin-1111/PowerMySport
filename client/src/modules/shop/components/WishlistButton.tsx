@@ -16,8 +16,7 @@ export function WishlistButton({
   className?: string;
 }) {
   const { user } = useAuthStore();
-  const { wishlistProductIds, fetchWishlist, toggleWishlist } =
-    useWishlistStore();
+  const { wishlistProductIds, fetchWishlist, toggleWishlist } = useWishlistStore();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -57,17 +56,15 @@ export function WishlistButton({
       onClick={handleToggle}
       disabled={isLoading}
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-md shadow-md transition-all hover:scale-110 active:scale-95 disabled:opacity-50",
-        className,
+        "flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-md backdrop-blur-md transition-all hover:scale-110 active:scale-95 disabled:opacity-50",
+        className
       )}
       aria-label="Toggle wishlist"
     >
       <Heart
         className={cn(
           "h-5 w-5 transition-colors",
-          isWished
-            ? "fill-red-500 text-red-500"
-            : "text-slate-500 hover:text-red-500",
+          isWished ? "fill-red-500 text-red-500" : "text-slate-500 hover:text-red-500"
         )}
       />
     </button>

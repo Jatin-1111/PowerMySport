@@ -1,24 +1,14 @@
 "use client";
 
 import { toast } from "@/lib/toast";
-import {
-  adminApi,
-  type AdminPhonePeRefundStatus,
-} from "@/modules/admin/services/admin";
+import { adminApi, type AdminPhonePeRefundStatus } from "@/modules/admin/services/admin";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { BookingTimeline } from "@/modules/admin/components/BookingTimeline";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
-import {
-  DetailDrawer,
-  DetailRow,
-  DetailSection,
-} from "@/modules/shared/ui/DetailDrawer";
+import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { Booking } from "@/types";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
@@ -64,10 +54,7 @@ const PROVIDER_LABEL: Record<ProviderType, string> = {
   EXPERT: "Expert",
 };
 
-const PROVIDER_TONE: Record<
-  ProviderType,
-  "purple" | "blue" | "green" | "orange"
-> = {
+const PROVIDER_TONE: Record<ProviderType, "purple" | "blue" | "green" | "orange"> = {
   VENUE: "purple",
   COACH: "blue",
   ACADEMY: "green",
@@ -101,16 +88,17 @@ export default function AdminBookingsPage() {
   const [disputeType, setDisputeType] = useState<
     "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER"
   >("OTHER");
-  const [resolution, setResolution] = useState<
-    "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND"
-  >("NO_REFUND");
+  const [resolution, setResolution] = useState<"FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND">(
+    "NO_REFUND"
+  );
   const [reason, setReason] = useState("");
   const [evidence, setEvidence] = useState("");
   const [refundStatusByBookingId, setRefundStatusByBookingId] = useState<
     Record<string, AdminPhonePeRefundStatus>
   >({});
-  const [refundStatusLoadingByBookingId, setRefundStatusLoadingByBookingId] =
-    useState<Record<string, boolean>>({});
+  const [refundStatusLoadingByBookingId, setRefundStatusLoadingByBookingId] = useState<
+    Record<string, boolean>
+  >({});
   const PAGE_SIZE = 10;
 
   const loadBookings = useCallback(async () => {
@@ -168,40 +156,37 @@ export default function AdminBookingsPage() {
     setEvidence("");
   };
 
-  const checkPhonePeRefundStatus = useCallback(
-    async (bookingId: string, silent = false) => {
+  const checkPhonePeRefundStatus = useCallback(async (bookingId: string, silent = false) => {
+    setRefundStatusLoadingByBookingId((previous) => ({
+      ...previous,
+      [bookingId]: true,
+    }));
+    try {
+      const response = await adminApi.getPhonePeRefundStatus(bookingId);
+      const refundStatus = response.data;
+      if (!response.success || !refundStatus) {
+        throw new Error(response.message || "Failed to load refund status.");
+      }
+      setRefundStatusByBookingId((previous) => ({
+        ...previous,
+        [bookingId]: refundStatus,
+      }));
+      if (!silent) toast.success("PhonePe refund status updated.");
+    } catch (statusError) {
+      if (!silent) {
+        toast.error(
+          statusError instanceof Error
+            ? statusError.message
+            : "Failed to load PhonePe refund status."
+        );
+      }
+    } finally {
       setRefundStatusLoadingByBookingId((previous) => ({
         ...previous,
-        [bookingId]: true,
+        [bookingId]: false,
       }));
-      try {
-        const response = await adminApi.getPhonePeRefundStatus(bookingId);
-        const refundStatus = response.data;
-        if (!response.success || !refundStatus) {
-          throw new Error(response.message || "Failed to load refund status.");
-        }
-        setRefundStatusByBookingId((previous) => ({
-          ...previous,
-          [bookingId]: refundStatus,
-        }));
-        if (!silent) toast.success("PhonePe refund status updated.");
-      } catch (statusError) {
-        if (!silent) {
-          toast.error(
-            statusError instanceof Error
-              ? statusError.message
-              : "Failed to load PhonePe refund status.",
-          );
-        }
-      } finally {
-        setRefundStatusLoadingByBookingId((previous) => ({
-          ...previous,
-          [bookingId]: false,
-        }));
-      }
-    },
-    [],
-  );
+    }
+  }, []);
 
   const submitAction = async () => {
     if (!selectedBooking || !actionType) return;
@@ -236,9 +221,7 @@ export default function AdminBookingsPage() {
       await loadBookings();
     } catch (submitError) {
       toast.error(
-        submitError instanceof Error
-          ? submitError.message
-          : "Failed to submit booking action.",
+        submitError instanceof Error ? submitError.message : "Failed to submit booking action."
       );
     } finally {
       setActionLoading(false);
@@ -250,11 +233,10 @@ export default function AdminBookingsPage() {
       bookings.filter((booking) => {
         if (activeTab === "ALL") return true;
         if (activeTab === "Coach") return providerTypeOf(booking) === "COACH";
-        if (activeTab === "ACADEMY")
-          return providerTypeOf(booking) === "ACADEMY";
+        if (activeTab === "ACADEMY") return providerTypeOf(booking) === "ACADEMY";
         return providerTypeOf(booking) === "VENUE";
       }),
-    [bookings, activeTab],
+    [bookings, activeTab]
   );
 
   const bookingCounts = useMemo(
@@ -264,7 +246,7 @@ export default function AdminBookingsPage() {
       venue: bookings.filter((b) => providerTypeOf(b) === "VENUE").length,
       academy: bookings.filter((b) => providerTypeOf(b) === "ACADEMY").length,
     }),
-    [bookings],
+    [bookings]
   );
 
   const columns: AdminDataTableColumn<Booking>[] = [
@@ -272,9 +254,7 @@ export default function AdminBookingsPage() {
       key: "id",
       header: "Booking",
       render: (b) => (
-        <span className="font-mono text-slate-700">
-          #{getBookingId(b).slice(-6) || "—"}
-        </span>
+        <span className="font-mono text-slate-700">#{getBookingId(b).slice(-6) || "—"}</span>
       ),
     },
     {
@@ -318,25 +298,19 @@ export default function AdminBookingsPage() {
     {
       key: "player",
       header: "Player",
-      render: (b) => (
-        <span className="text-slate-700">{b.playerName || "—"}</span>
-      ),
+      render: (b) => <span className="text-slate-700">{b.playerName || "—"}</span>,
     },
     {
       key: "amount",
       header: "Amount",
       align: "right",
       render: (b) => (
-        <span className="font-semibold text-slate-900">
-          {formatCurrency(b.totalAmount)}
-        </span>
+        <span className="font-semibold text-slate-900">{formatCurrency(b.totalAmount)}</span>
       ),
     },
   ];
 
-  const selectedBookingId = selectedBooking
-    ? getBookingId(selectedBooking)
-    : "";
+  const selectedBookingId = selectedBooking ? getBookingId(selectedBooking) : "";
   const selectedRefundStatus = selectedBookingId
     ? refundStatusByBookingId[selectedBookingId]
     : undefined;
@@ -387,16 +361,14 @@ export default function AdminBookingsPage() {
               setActiveTab(tab);
               setCurrentPage(1);
             }}
-            className={`px-3 py-2.5 text-sm font-semibold transition-colors border-b-2 sm:px-4 sm:py-3 ${
+            className={`border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4 sm:py-3 ${
               activeTab === tab
                 ? "border-power-orange text-power-orange"
                 : "border-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
             {label}
-            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs">
-              {count}
-            </span>
+            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs">{count}</span>
           </button>
         ))}
       </div>
@@ -454,21 +426,13 @@ export default function AdminBookingsPage() {
       <DetailDrawer
         open={Boolean(selectedBooking)}
         onClose={closeBooking}
-        title={
-          selectedBooking
-            ? `Booking #${getBookingId(selectedBooking).slice(-6)}`
-            : "Booking"
-        }
+        title={selectedBooking ? `Booking #${getBookingId(selectedBooking).slice(-6)}` : "Booking"}
         subtitle={
           selectedBooking
             ? `${formatDate(selectedBooking.date)} · ${formatTime(selectedBooking.startTime)} – ${formatTime(selectedBooking.endTime)}`
             : undefined
         }
-        headerExtra={
-          selectedBooking ? (
-            <StatusBadge status={selectedBooking.status} />
-          ) : null
-        }
+        headerExtra={selectedBooking ? <StatusBadge status={selectedBooking.status} /> : null}
         widthClass="max-w-xl"
         footer={
           selectedBooking && !actionType ? (
@@ -483,7 +447,7 @@ export default function AdminBookingsPage() {
               <button
                 onClick={() => beginAction("REFUND")}
                 disabled={!REFUND_ACTIONS_ENABLED}
-                className="rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Refund
               </button>
@@ -512,15 +476,9 @@ export default function AdminBookingsPage() {
                 }
                 value={partyNameOf(selectedBooking)}
               />
-              <DetailRow
-                label="Player"
-                value={selectedBooking.playerName || "—"}
-              />
+              <DetailRow label="Player" value={selectedBooking.playerName || "—"} />
               <DetailRow label="Sport" value={selectedBooking.sport || "—"} />
-              <DetailRow
-                label="Date"
-                value={formatDate(selectedBooking.date)}
-              />
+              <DetailRow label="Date" value={formatDate(selectedBooking.date)} />
               <DetailRow
                 label="Time"
                 value={`${formatTime(selectedBooking.startTime)} – ${formatTime(selectedBooking.endTime)}`}
@@ -528,17 +486,10 @@ export default function AdminBookingsPage() {
               {selectedBooking.checkInCode && (
                 <DetailRow
                   label="Check-in code"
-                  value={
-                    <span className="font-mono">
-                      {selectedBooking.checkInCode}
-                    </span>
-                  }
+                  value={<span className="font-mono">{selectedBooking.checkInCode}</span>}
                 />
               )}
-              <DetailRow
-                label="Created"
-                value={formatDate(selectedBooking.createdAt)}
-              />
+              <DetailRow label="Created" value={formatDate(selectedBooking.createdAt)} />
             </DetailSection>
 
             <DetailSection title="History">
@@ -555,63 +506,50 @@ export default function AdminBookingsPage() {
                 }
               />
               {selectedBooking.serviceFee != null && (
-                <DetailRow
-                  label="Service fee"
-                  value={formatCurrency(selectedBooking.serviceFee)}
-                />
+                <DetailRow label="Service fee" value={formatCurrency(selectedBooking.serviceFee)} />
               )}
               {selectedBooking.taxAmount != null && (
-                <DetailRow
-                  label="Tax"
-                  value={formatCurrency(selectedBooking.taxAmount)}
-                />
+                <DetailRow label="Tax" value={formatCurrency(selectedBooking.taxAmount)} />
               )}
             </DetailSection>
 
-            {selectedBooking.payments &&
-              selectedBooking.payments.length > 0 && (
-                <DetailSection title="Payout splits">
-                  <div className="overflow-hidden rounded-lg border border-slate-200">
-                    <table className="min-w-full divide-y divide-slate-200 text-sm">
-                      <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                        <tr>
-                          <th className="px-3 py-2 text-left">Payee</th>
-                          <th className="px-3 py-2 text-right">Amount</th>
-                          <th className="px-3 py-2 text-right">Status</th>
+            {selectedBooking.payments && selectedBooking.payments.length > 0 && (
+              <DetailSection title="Payout splits">
+                <div className="overflow-hidden rounded-lg border border-slate-200">
+                  <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead className="bg-slate-50 text-xs text-slate-500 uppercase">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Payee</th>
+                        <th className="px-3 py-2 text-right">Amount</th>
+                        <th className="px-3 py-2 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {selectedBooking.payments.map((payment, index) => (
+                        <tr key={`${payment.userType}-${index}`}>
+                          <td className="px-3 py-2 text-slate-700">
+                            {payment.userType.replace(/_/g, " ")}
+                          </td>
+                          <td className="px-3 py-2 text-right text-slate-700">
+                            {formatCurrency(payment.amount)}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <StatusBadge status={payment.status} size="sm" />
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {selectedBooking.payments.map((payment, index) => (
-                          <tr key={`${payment.userType}-${index}`}>
-                            <td className="px-3 py-2 text-slate-700">
-                              {payment.userType.replace(/_/g, " ")}
-                            </td>
-                            <td className="px-3 py-2 text-right text-slate-700">
-                              {formatCurrency(payment.amount)}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              <StatusBadge status={payment.status} size="sm" />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </DetailSection>
-              )}
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </DetailSection>
+            )}
 
             {actionType && (
-              <DetailSection
-                title={
-                  actionType === "REFUND" ? "Process refund" : "Handle dispute"
-                }
-              >
+              <DetailSection title={actionType === "REFUND" ? "Process refund" : "Handle dispute"}>
                 {actionType === "REFUND" ? (
                   <select
                     value={refundType}
-                    onChange={(event) =>
-                      setRefundType(event.target.value as "FULL" | "PARTIAL")
-                    }
+                    onChange={(event) => setRefundType(event.target.value as "FULL" | "PARTIAL")}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   >
                     <option value="FULL">FULL</option>
@@ -624,10 +562,7 @@ export default function AdminBookingsPage() {
                       onChange={(event) =>
                         setDisputeType(
                           event.target.value as
-                            | "NO_SHOW"
-                            | "POOR_QUALITY"
-                            | "PAYMENT_ISSUE"
-                            | "OTHER",
+                            "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER"
                         )
                       }
                       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -641,8 +576,7 @@ export default function AdminBookingsPage() {
                       value={resolution}
                       onChange={(event) =>
                         setResolution(
-                          event.target.value as
-                            "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND",
+                          event.target.value as "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND"
                         )
                       }
                       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -689,14 +623,9 @@ export default function AdminBookingsPage() {
                   </button>
                   {actionType === "REFUND" && (
                     <button
-                      onClick={() =>
-                        checkPhonePeRefundStatus(selectedBookingId)
-                      }
+                      onClick={() => checkPhonePeRefundStatus(selectedBookingId)}
                       disabled={
-                        actionLoading ||
-                        Boolean(
-                          refundStatusLoadingByBookingId[selectedBookingId],
-                        )
+                        actionLoading || Boolean(refundStatusLoadingByBookingId[selectedBookingId])
                       }
                       className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -726,9 +655,7 @@ export default function AdminBookingsPage() {
                       <p>Merchant Refund ID: {transaction.merchantRefundId}</p>
                       <p>State: {transaction.state || "PENDING"}</p>
                       <p>Amount: {formatCurrency(transaction.amount)}</p>
-                      {transaction.refundId && (
-                        <p>Refund ID: {transaction.refundId}</p>
-                      )}
+                      {transaction.refundId && <p>Refund ID: {transaction.refundId}</p>}
                     </div>
                   ))}
                 </div>

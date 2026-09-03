@@ -23,9 +23,15 @@ import { GuidanceChatDrawer } from "@/modules/guidance/components/chat/GuidanceC
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
 import { ResultsView } from "@/modules/guidance/components/results/ResultsView";
 import { TagAssistedTextarea } from "@/modules/guidance/components/shared/TagAssistedTextarea";
-import { downloadGuidanceReportPdf, getGuidanceWhatsAppUrl } from "@/modules/guidance/services/guidance";
+import {
+  downloadGuidanceReportPdf,
+  getGuidanceWhatsAppUrl,
+} from "@/modules/guidance/services/guidance";
 import type { GuidanceSubmission } from "@/modules/guidance/types";
-import { CompleteProfileNudge, shouldShowTraitsNudge } from "@/modules/player/components/CompleteProfileNudge";
+import {
+  CompleteProfileNudge,
+  shouldShowTraitsNudge,
+} from "@/modules/player/components/CompleteProfileNudge";
 import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
 import { FourContextCards } from "@/modules/find-sport/components/inputs/FourContextCards";
 import { SportSearchInput } from "@/modules/find-sport/components/inputs/SportSearchInput";
@@ -177,7 +183,8 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       kind: "question",
       id: "weaknessArea",
       required: true,
-      heading: (f) => `What's the main weakness holding ${f.sport ? `their ${f.sport}` : "them"} back?`,
+      heading: (f) =>
+        `What's the main weakness holding ${f.sport ? `their ${f.sport}` : "them"} back?`,
       sub: "We'll build the entire plan around addressing this specific gap.",
     },
     {
@@ -214,7 +221,9 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       sub: "A few quick logistics questions and your plan is ready.",
     },
     sharedSteps.executor(),
-    sharedSteps.weeklyHours("The drill schedule will fit around the time you can realistically commit."),
+    sharedSteps.weeklyHours(
+      "The drill schedule will fit around the time you can realistically commit."
+    ),
     sharedSteps.budgetRange(),
     sharedSteps.state(),
   ],
@@ -312,7 +321,8 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       kind: "question",
       id: "topStrength",
       required: false,
-      heading: (f) => `What does ${f.sport ? `your ${f.sport} player` : "your child"} actually do well?`,
+      heading: (f) =>
+        `What does ${f.sport ? `your ${f.sport} player` : "your child"} actually do well?`,
       sub: "Optional — helps us build the breakthrough plan around their strengths, not just their gaps.",
     },
     sharedSteps.age(),
@@ -367,9 +377,7 @@ const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
 // Precompute question numbers per step per problem
 function getStepQNums(steps: WizardStep[]): (number | null)[] {
   return steps.map((s, i) =>
-    s.kind !== "question"
-      ? null
-      : steps.slice(0, i + 1).filter((x) => x.kind === "question").length,
+    s.kind !== "question" ? null : steps.slice(0, i + 1).filter((x) => x.kind === "question").length
   );
 }
 
@@ -425,7 +433,7 @@ function QuestionInput({
           placeholder="e.g. 12"
           min={3}
           max={25}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
         />
       );
 
@@ -448,9 +456,18 @@ function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "beginner", label: "Beginner — city / neighbourhood level, just getting started" },
-            { value: "intermediate", label: "Intermediate — school, club or district level, training regularly" },
-            { value: "competitive", label: "Competitive — state or national level, serious competition" },
+            {
+              value: "beginner",
+              label: "Beginner — city / neighbourhood level, just getting started",
+            },
+            {
+              value: "intermediate",
+              label: "Intermediate — school, club or district level, training regularly",
+            },
+            {
+              value: "competitive",
+              label: "Competitive — state or national level, serious competition",
+            },
           ]}
           value={form.experienceLevel}
           onChange={(v) => set("experienceLevel", v)}
@@ -475,10 +492,18 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "under-3k", label: "Under ₹3,000", context: "Minimal equipment, public grounds" },
+            {
+              value: "under-3k",
+              label: "Under ₹3,000",
+              context: "Minimal equipment, public grounds",
+            },
             { value: "3k-7k", label: "₹3,000–7,000", context: "Academy fees, basic coaching" },
             { value: "7k-15k", label: "₹7,000–15,000", context: "Regular coaching + equipment" },
-            { value: "15k-plus", label: "₹15,000+", context: "Premium coaching, tournaments, travel" },
+            {
+              value: "15k-plus",
+              label: "₹15,000+",
+              context: "Premium coaching, tournaments, travel",
+            },
           ]}
           value={form.budgetRange}
           onChange={(v) => set("budgetRange", v)}
@@ -489,7 +514,10 @@ function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "child", label: "The child on their own — self-practice, no adult guiding sessions" },
+            {
+              value: "child",
+              label: "The child on their own — self-practice, no adult guiding sessions",
+            },
             { value: "parent", label: "Me (the parent) — I'll supervise, but I'm not a coach" },
             { value: "coach", label: "A coach or trainer — professional guidance is available" },
           ]}
@@ -502,10 +530,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "technique", label: "Technique problems", context: "Incorrect form, poor timing, faulty mechanics" },
-            { value: "fitness", label: "Physical fitness", context: "Lacks strength, speed, stamina, or agility" },
-            { value: "mental", label: "Mental focus", context: "Loses concentration, nerves, gives up under pressure" },
-            { value: "tactical", label: "Tactical reading", context: "Doesn't read the game or make smart decisions" },
+            {
+              value: "technique",
+              label: "Technique problems",
+              context: "Incorrect form, poor timing, faulty mechanics",
+            },
+            {
+              value: "fitness",
+              label: "Physical fitness",
+              context: "Lacks strength, speed, stamina, or agility",
+            },
+            {
+              value: "mental",
+              label: "Mental focus",
+              context: "Loses concentration, nerves, gives up under pressure",
+            },
+            {
+              value: "tactical",
+              label: "Tactical reading",
+              context: "Doesn't read the game or make smart decisions",
+            },
           ]}
           value={form.weaknessArea}
           onChange={(v) => set("weaknessArea", v)}
@@ -551,10 +595,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "technique", label: "Technical consistency", context: "Technique breaks down under match pressure" },
-            { value: "stamina", label: "Physical stamina", context: "Doesn't have the fitness for a full-day competition" },
-            { value: "nerves", label: "Mental composure", context: "Nerves and pressure significantly affect performance" },
-            { value: "matchplay", label: "Match experience", context: "Not enough competitive matches — struggles to read opponents and adapt" },
+            {
+              value: "technique",
+              label: "Technical consistency",
+              context: "Technique breaks down under match pressure",
+            },
+            {
+              value: "stamina",
+              label: "Physical stamina",
+              context: "Doesn't have the fitness for a full-day competition",
+            },
+            {
+              value: "nerves",
+              label: "Mental composure",
+              context: "Nerves and pressure significantly affect performance",
+            },
+            {
+              value: "matchplay",
+              label: "Match experience",
+              context: "Not enough competitive matches — struggles to read opponents and adapt",
+            },
           ]}
           value={form.tournamentGap}
           onChange={(v) => set("tournamentGap", v)}
@@ -567,7 +627,10 @@ function QuestionInput({
           options={[
             { value: "school", label: "School level — playing casually or for school" },
             { value: "club", label: "Club level — enrolled at an academy or local club" },
-            { value: "district", label: "District / State — competing at district or state events" },
+            {
+              value: "district",
+              label: "District / State — competing at district or state events",
+            },
           ]}
           value={form.currentLevel}
           onChange={(v) => set("currentLevel", v)}
@@ -579,7 +642,10 @@ function QuestionInput({
         <ThreeOptionCards
           options={[
             { value: "club", label: "Club / academy — get into a proper structured programme" },
-            { value: "district", label: "District / State — compete at district or state tournaments" },
+            {
+              value: "district",
+              label: "District / State — compete at district or state tournaments",
+            },
             { value: "national", label: "National — aim for national championships or selection" },
           ]}
           value={form.targetLevel}
@@ -591,10 +657,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "technique", label: "Technique gaps", context: "Fundamental skills not at the standard required for the next level" },
-            { value: "fitness", label: "Physical conditioning", context: "Not fit or strong enough to compete at the next level" },
-            { value: "mental", label: "Mental game", context: "Confidence, composure, or belief is holding them back" },
-            { value: "competition", label: "Lack of exposure", context: "Not getting enough competitive match practice at the right level" },
+            {
+              value: "technique",
+              label: "Technique gaps",
+              context: "Fundamental skills not at the standard required for the next level",
+            },
+            {
+              value: "fitness",
+              label: "Physical conditioning",
+              context: "Not fit or strong enough to compete at the next level",
+            },
+            {
+              value: "mental",
+              label: "Mental game",
+              context: "Confidence, composure, or belief is holding them back",
+            },
+            {
+              value: "competition",
+              label: "Lack of exposure",
+              context: "Not getting enough competitive match practice at the right level",
+            },
           ]}
           value={form.levelBlocker}
           onChange={(v) => set("levelBlocker", v)}
@@ -605,10 +687,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "training", label: "In training", context: "They know it's there — visible during practice" },
-            { value: "matches", label: "In matches", context: "Game pressure causes the breakdown" },
-            { value: "pressure", label: "Under scrutiny", context: "Performance drops when being watched or evaluated" },
-            { value: "always", label: "Everywhere", context: "Consistent in all situations — deeply ingrained" },
+            {
+              value: "training",
+              label: "In training",
+              context: "They know it's there — visible during practice",
+            },
+            {
+              value: "matches",
+              label: "In matches",
+              context: "Game pressure causes the breakdown",
+            },
+            {
+              value: "pressure",
+              label: "Under scrutiny",
+              context: "Performance drops when being watched or evaluated",
+            },
+            {
+              value: "always",
+              label: "Everywhere",
+              context: "Consistent in all situations — deeply ingrained",
+            },
           ]}
           value={form.weaknessContext}
           onChange={(v) => set("weaknessContext", v)}
@@ -619,10 +717,22 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "nothing", label: "Nothing yet", context: "We've just identified the problem" },
+            {
+              value: "nothing",
+              label: "Nothing yet",
+              context: "We've just identified the problem",
+            },
             { value: "practice", label: "Extra practice", context: "Self-practice on their own" },
-            { value: "video", label: "Video analysis", context: "Watching footage to self-correct" },
-            { value: "coaching", label: "Tried coaching", context: "Worked with a coach but it hasn't stuck" },
+            {
+              value: "video",
+              label: "Video analysis",
+              context: "Watching footage to self-correct",
+            },
+            {
+              value: "coaching",
+              label: "Tried coaching",
+              context: "Worked with a coach but it hasn't stuck",
+            },
           ]}
           value={form.weaknessAttempts}
           onChange={(v) => set("weaknessAttempts", v)}
@@ -633,10 +743,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "school", label: "School level", context: "Inter-school or intra-school competition" },
-            { value: "district", label: "District level", context: "Competing against players across the district" },
-            { value: "state", label: "State championship", context: "State-level tournament or selection trial" },
-            { value: "national", label: "National level", context: "National championship or national selection" },
+            {
+              value: "school",
+              label: "School level",
+              context: "Inter-school or intra-school competition",
+            },
+            {
+              value: "district",
+              label: "District level",
+              context: "Competing against players across the district",
+            },
+            {
+              value: "state",
+              label: "State championship",
+              context: "State-level tournament or selection trial",
+            },
+            {
+              value: "national",
+              label: "National level",
+              context: "National championship or national selection",
+            },
           ]}
           value={form.tournamentLevel}
           onChange={(v) => set("tournamentLevel", v)}
@@ -648,7 +774,10 @@ function QuestionInput({
         <ThreeOptionCards
           options={[
             { value: "low", label: "Not match-ready — fitness is a concern, gets tired quickly" },
-            { value: "moderate", label: "Reasonably fit — can compete but fades in the second half" },
+            {
+              value: "moderate",
+              label: "Reasonably fit — can compete but fades in the second half",
+            },
             { value: "high", label: "Match-fit — conditioning is not an issue, ready to perform" },
           ]}
           value={form.physicalReadiness}
@@ -673,10 +802,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "self", label: "Self-practice", context: "On their own at home or with friends — no coaching" },
-            { value: "club", label: "Club or school", context: "Group sessions at a local club or school programme" },
-            { value: "academy", label: "Formal academy", context: "Enrolled at an academy with structured training" },
-            { value: "private", label: "Private coaching", context: "One-on-one or semi-private coaching sessions" },
+            {
+              value: "self",
+              label: "Self-practice",
+              context: "On their own at home or with friends — no coaching",
+            },
+            {
+              value: "club",
+              label: "Club or school",
+              context: "Group sessions at a local club or school programme",
+            },
+            {
+              value: "academy",
+              label: "Formal academy",
+              context: "Enrolled at an academy with structured training",
+            },
+            {
+              value: "private",
+              label: "Private coaching",
+              context: "One-on-one or semi-private coaching sessions",
+            },
           ]}
           value={form.trainingType}
           onChange={(v) => set("trainingType", v)}
@@ -687,10 +832,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "technique", label: "Technical skills", context: "Clean execution, good form, strong fundamentals" },
-            { value: "tactical", label: "Game intelligence", context: "Reads play well, makes smart decisions" },
-            { value: "physical", label: "Physical athleticism", context: "Speed, strength, or stamina stands out" },
-            { value: "mental", label: "Mental strength", context: "Composure, focus, and resilience under pressure" },
+            {
+              value: "technique",
+              label: "Technical skills",
+              context: "Clean execution, good form, strong fundamentals",
+            },
+            {
+              value: "tactical",
+              label: "Game intelligence",
+              context: "Reads play well, makes smart decisions",
+            },
+            {
+              value: "physical",
+              label: "Physical athleticism",
+              context: "Speed, strength, or stamina stands out",
+            },
+            {
+              value: "mental",
+              label: "Mental strength",
+              context: "Composure, focus, and resilience under pressure",
+            },
           ]}
           value={form.topStrength}
           onChange={(v) => set("topStrength", v)}
@@ -701,10 +862,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "motivation", label: "Motivation / confidence", context: "Mental blocks, fear of failure, loss of drive" },
-            { value: "injury", label: "Injury or recovery", context: "Physical health concern, rehab, return to sport" },
-            { value: "coaching", label: "Coaching or setup", context: "Coach selection, training programme, or structure" },
-            { value: "nutrition", label: "Nutrition or burnout", context: "Diet, body development, overtraining, balance" },
+            {
+              value: "motivation",
+              label: "Motivation / confidence",
+              context: "Mental blocks, fear of failure, loss of drive",
+            },
+            {
+              value: "injury",
+              label: "Injury or recovery",
+              context: "Physical health concern, rehab, return to sport",
+            },
+            {
+              value: "coaching",
+              label: "Coaching or setup",
+              context: "Coach selection, training programme, or structure",
+            },
+            {
+              value: "nutrition",
+              label: "Nutrition or burnout",
+              context: "Diet, body development, overtraining, balance",
+            },
           ]}
           value={form.challengeCategory}
           onChange={(v) => set("challengeCategory", v)}
@@ -715,10 +892,26 @@ function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "plan", label: "Step-by-step plan", context: "A concrete action plan to follow immediately" },
-            { value: "advice", label: "Expert perspective", context: "Guidance and insight from a sports expert viewpoint" },
-            { value: "resources", label: "Resources to find", context: "Specific programmes, coaches, or tools to seek out" },
-            { value: "opinion", label: "Second opinion", context: "A fresh look at what we're currently doing" },
+            {
+              value: "plan",
+              label: "Step-by-step plan",
+              context: "A concrete action plan to follow immediately",
+            },
+            {
+              value: "advice",
+              label: "Expert perspective",
+              context: "Guidance and insight from a sports expert viewpoint",
+            },
+            {
+              value: "resources",
+              label: "Resources to find",
+              context: "Specific programmes, coaches, or tools to seek out",
+            },
+            {
+              value: "opinion",
+              label: "Second opinion",
+              context: "A fresh look at what we're currently doing",
+            },
           ]}
           value={form.desiredOutcome}
           onChange={(v) => set("desiredOutcome", v)}
@@ -733,7 +926,7 @@ function QuestionInput({
           onChange={(e) => set("challenge", e.target.value)}
           placeholder="e.g. My son has been struggling with motivation after a string of losses. He loves cricket but keeps saying he wants to quit. How do we help him get his confidence back?"
           rows={5}
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/20 resize-none leading-relaxed"
+          className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:outline-none"
         />
       );
 
@@ -766,24 +959,32 @@ const isProblemId = (value: string | null): value is ProblemId =>
  */
 function buildGuidanceFlow(problemId: ProblemId) {
   const steps = WIZARD_STEPS[problemId];
-  return buildStepGateFlow<ConsultForm>(
-    `guidance-${problemId}`,
-    steps.length,
-    (i, form) => {
-      const step = steps[i];
-      return step.kind !== "question" || !step.required || isAnswered(step.id, form);
-    },
-  );
+  return buildStepGateFlow<ConsultForm>(`guidance-${problemId}`, steps.length, (i, form) => {
+    const step = steps[i];
+    return step.kind !== "question" || !step.required || isAnswered(step.id, form);
+  });
 }
 
 // ─── Loading screen ───────────────────────────────────────────────────────────
 
 function LoadingView({ problemId }: { problemId: ProblemId }) {
   const labels: Record<ProblemId, { title: string; sub: string }> = {
-    weakness: { title: "Building your weakness fix plan…", sub: "Analysing the challenge and designing targeted drills" },
-    tournament: { title: "Building your tournament plan…", sub: "Designing a week-by-week preparation timeline" },
-    levelup: { title: "Mapping the level-up path…", sub: "Working out exactly what the breakthrough requires" },
-    custom: { title: "Working on your plan…", sub: "Analysing the challenge and crafting targeted advice" },
+    weakness: {
+      title: "Building your weakness fix plan…",
+      sub: "Analysing the challenge and designing targeted drills",
+    },
+    tournament: {
+      title: "Building your tournament plan…",
+      sub: "Designing a week-by-week preparation timeline",
+    },
+    levelup: {
+      title: "Mapping the level-up path…",
+      sub: "Working out exactly what the breakthrough requires",
+    },
+    custom: {
+      title: "Working on your plan…",
+      sub: "Analysing the challenge and crafting targeted advice",
+    },
   };
   const { title, sub } = labels[problemId];
 
@@ -791,17 +992,17 @@ function LoadingView({ problemId }: { problemId: ProblemId }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="relative min-h-screen flex items-center justify-center px-4"
+      className="relative flex min-h-screen items-center justify-center px-4"
     >
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-        <div className="absolute -left-32 top-10 h-96 w-96 rounded-full bg-power-orange/8 blur-3xl" />
+        <div className="bg-power-orange/8 absolute top-10 -left-32 h-96 w-96 rounded-full blur-3xl" />
       </div>
-      <div className="text-center max-w-xs">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-power-orange/10">
-          <Loader2 className="h-8 w-8 animate-spin text-power-orange" />
+      <div className="max-w-xs text-center">
+        <div className="bg-power-orange/10 mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl">
+          <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
         </div>
-        <h2 className="font-title text-xl font-bold text-slate-900 mb-2">{title}</h2>
+        <h2 className="font-title mb-2 text-xl font-bold text-slate-900">{title}</h2>
         <p className="text-sm text-slate-500">{sub}</p>
       </div>
     </motion.div>
@@ -830,8 +1031,14 @@ function ResultsScreen({
   const pt = PROBLEM_TYPES.find((p) => p.id === problemId) ?? PROBLEM_TYPES[3];
 
   const handleChatClick = () => {
-    if (!user) { setLoginModalOpen(true); return; }
-    if (shouldShowTraitsNudge(dependent)) { setTraitsNudgeOpen(true); return; }
+    if (!user) {
+      setLoginModalOpen(true);
+      return;
+    }
+    if (shouldShowTraitsNudge(dependent)) {
+      setTraitsNudgeOpen(true);
+      return;
+    }
     setChatOpen(true);
   };
 
@@ -850,16 +1057,16 @@ function ResultsScreen({
     <div className="relative min-h-screen px-4 pt-4 pb-10 sm:px-6">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-        <div className="absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full bg-power-orange/10 blur-3xl" />
-        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/30 blur-3xl" />
+        <div className="bg-power-orange/10 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/30 blur-3xl" />
       </div>
 
       <div className="mx-auto w-full max-w-4xl">
         {/* Header */}
         <div className="pb-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-500 shadow-sm backdrop-blur">
-              <BrainCircuit className="h-3.5 w-3.5 text-power-orange" />
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/85 px-3 py-1.5 text-[11px] font-semibold tracking-widest text-slate-500 uppercase shadow-sm backdrop-blur">
+              <BrainCircuit className="text-power-orange h-3.5 w-3.5" />
               {pt.label}
             </div>
             <button
@@ -927,13 +1134,7 @@ function ResultsScreen({
 
 type PreFillPhase = "loading" | "select" | "ready";
 
-function ProblemWizardInner({
-  problemId,
-  onBack,
-}: {
-  problemId: ProblemId;
-  onBack: () => void;
-}) {
+function ProblemWizardInner({ problemId, onBack }: { problemId: ProblemId; onBack: () => void }) {
   const { token } = useAuthStore();
   const steps = WIZARD_STEPS[problemId];
   const qNums = getStepQNums(steps);
@@ -970,8 +1171,9 @@ function ProblemWizardInner({
   useEffect(() => {
     if (!token) return;
     const timeout = setTimeout(() => setPreFillPhase("ready"), 1500);
-    api.get<{ success: boolean; data: any[] }>("/auth/players")
-      .then(res => {
+    api
+      .get<{ success: boolean; data: any[] }>("/auth/players")
+      .then((res) => {
         clearTimeout(timeout);
         const deps = (res.data.data || []).filter((p: any) => p.type === "DEPENDENT");
         setDependents(deps);
@@ -980,12 +1182,15 @@ function ProblemWizardInner({
         // option (e.g. this query is about a different child).
         setPreFillPhase(deps.length > 0 ? "select" : "ready");
       })
-      .catch(() => { clearTimeout(timeout); setPreFillPhase("ready"); });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch(() => {
+        clearTimeout(timeout);
+        setPreFillPhase("ready");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   function applyDependent(dep: any) {
-    setForm(prev => {
+    setForm((prev) => {
       const age = dep.dob ? getAgeFromDob(new Date(dep.dob).toISOString().slice(0, 10)) : null;
       return {
         ...prev,
@@ -994,7 +1199,8 @@ function ProblemWizardInner({
         // Only carry over MALE/FEMALE — the gender question offers just those
         // two options, so an "OTHER" profile value must stay unset and force
         // an explicit answer rather than silently failing to pre-fill.
-        gender: prev.gender ?? (dep.gender === "MALE" || dep.gender === "FEMALE" ? dep.gender : null),
+        gender:
+          prev.gender ?? (dep.gender === "MALE" || dep.gender === "FEMALE" ? dep.gender : null),
         state: prev.state ?? dep.location ?? null,
         experienceLevel: prev.experienceLevel ?? dep.experienceLevel ?? null,
         weeklyHours: prev.weeklyHours ?? dep.weeklyHoursCategory ?? null,
@@ -1023,9 +1229,7 @@ function ProblemWizardInner({
   const qNum = qNums[idx];
 
   const canAdvance =
-    current.kind === "transition" ||
-    !current.required ||
-    isAnswered(current.id, form);
+    current.kind === "transition" || !current.required || isAnswered(current.id, form);
 
   const goNext = () => {
     setError(null);
@@ -1059,24 +1263,25 @@ function ProblemWizardInner({
 
       if (res.data.status === "not_supported") {
         const sportName = res.data.sport ?? form.sport ?? "that sport";
-        toast.error(
-          `${sportName} pathway isn't available yet. Try Cricket, Tennis, or Football.`,
-          { duration: 6000 } as Parameters<typeof toast.error>[1],
-        );
+        toast.error(`${sportName} pathway isn't available yet. Try Cricket, Tennis, or Football.`, {
+          duration: 6000,
+        } as Parameters<typeof toast.error>[1]);
         setLoading(false);
         return;
       }
 
       // Sync shared profile fields back to the matched dependent
       if (selectedDependentId) {
-        api.put(`/auth/dependents/${selectedDependentId}`, {
-          ...(form.sport ? { sportsFocus: [form.sport] } : {}),
-          ...(form.gender ? { gender: form.gender } : {}),
-          ...(form.state ? { location: form.state } : {}),
-          ...(form.experienceLevel ? { experienceLevel: form.experienceLevel } : {}),
-          ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
-          ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
-        }).catch(() => {});
+        api
+          .put(`/auth/dependents/${selectedDependentId}`, {
+            ...(form.sport ? { sportsFocus: [form.sport] } : {}),
+            ...(form.gender ? { gender: form.gender } : {}),
+            ...(form.state ? { location: form.state } : {}),
+            ...(form.experienceLevel ? { experienceLevel: form.experienceLevel } : {}),
+            ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
+            ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
+          })
+          .catch(() => {});
       }
 
       setLoading(false);
@@ -1111,11 +1316,11 @@ function ProblemWizardInner({
   // Brief loading state while we fetch dependents
   if (preFillPhase === "loading") {
     return (
-      <div className="relative min-h-screen flex items-center justify-center">
+      <div className="relative flex min-h-screen items-center justify-center">
         <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
         </div>
-        <Loader2 className="h-6 w-6 animate-spin text-power-orange" />
+        <Loader2 className="text-power-orange h-6 w-6 animate-spin" />
       </div>
     );
   }
@@ -1123,29 +1328,29 @@ function ProblemWizardInner({
   // Dependent selector for users with multiple children
   if (preFillPhase === "select") {
     return (
-      <div className="relative min-h-screen flex items-center justify-center px-4">
+      <div className="relative flex min-h-screen items-center justify-center px-4">
         <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-          <div className="absolute -left-32 top-10 h-96 w-96 rounded-full bg-power-orange/8 blur-3xl" />
+          <div className="bg-power-orange/8 absolute top-10 -left-32 h-96 w-96 rounded-full blur-3xl" />
         </div>
         <div className="w-full max-w-sm">
           <button
             type="button"
             onClick={onBack}
-            className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors"
+            className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-slate-700"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back
           </button>
-          <h2 className="font-title text-2xl font-bold text-slate-900 mb-2">
-            Who is this for?
-          </h2>
-          <p className="text-sm text-slate-500 mb-6">
+          <h2 className="font-title mb-2 text-2xl font-bold text-slate-900">Who is this for?</h2>
+          <p className="mb-6 text-sm text-slate-500">
             Select a child to pre-fill their details, or continue manually.
           </p>
           <div className="space-y-3">
-            {dependents.map(dep => {
-              const age = dep.dob ? getAgeFromDob(new Date(dep.dob).toISOString().slice(0, 10)) : null;
+            {dependents.map((dep) => {
+              const age = dep.dob
+                ? getAgeFromDob(new Date(dep.dob).toISOString().slice(0, 10))
+                : null;
               return (
                 <button
                   key={dep._id}
@@ -1155,7 +1360,7 @@ function ProblemWizardInner({
                     setSelectedDependentId(dep._id);
                     setPreFillPhase("ready");
                   }}
-                  className="w-full flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-left text-sm font-medium text-slate-900 shadow-sm transition hover:border-power-orange hover:bg-orange-50"
+                  className="hover:border-power-orange flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-left text-sm font-medium text-slate-900 shadow-sm transition hover:bg-orange-50"
                 >
                   <span>{dep.name}</span>
                   {age && <span className="text-xs text-slate-400">{age} yrs</span>}
@@ -1181,8 +1386,8 @@ function ProblemWizardInner({
     <div className="relative min-h-screen">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
-        <div className="absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full bg-power-orange/8 blur-3xl" />
-        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
+        <div className="bg-power-orange/8 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
       </div>
 
       {/* Transition card */}
@@ -1192,28 +1397,26 @@ function ProblemWizardInner({
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.25 }}
-          className="min-h-screen flex items-center justify-center px-4"
+          className="flex min-h-screen items-center justify-center px-4"
         >
-          <div className="text-center max-w-xs">
+          <div className="max-w-xs text-center">
             <button
               type="button"
               onClick={goPrev}
-              className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors"
+              className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 transition-colors hover:text-slate-700"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Back
             </button>
-            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-power-orange/10">
-              <Sparkles className="h-7 w-7 text-power-orange" />
+            <div className="bg-power-orange/10 mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl">
+              <Sparkles className="text-power-orange h-7 w-7" />
             </div>
-            <h2 className="font-title text-2xl font-bold text-slate-900 mb-2">
-              {current.text}
-            </h2>
-            <p className="text-slate-500 text-sm mb-8">{current.sub}</p>
+            <h2 className="font-title mb-2 text-2xl font-bold text-slate-900">{current.text}</h2>
+            <p className="mb-8 text-sm text-slate-500">{current.sub}</p>
             <button
               type="button"
               onClick={goNext}
-              className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
+              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
             >
               Continue
               <ChevronRight className="h-4 w-4" />
@@ -1228,7 +1431,7 @@ function ProblemWizardInner({
           <div className="mx-auto w-full max-w-2xl">
             {levelPlanLabel && (
               <div className="mb-4 flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5">
-                <Sparkles className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
                 <p className="text-xs font-semibold text-indigo-700">
                   Planning for {form.sport || "your sport"} · {levelPlanLabel}
                 </p>
@@ -1239,13 +1442,13 @@ function ProblemWizardInner({
               <button
                 type="button"
                 onClick={goPrev}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-800"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {idx === 0 ? "Back to options" : "Back"}
               </button>
               <div className="flex items-center gap-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                   {pt.label}
                 </span>
                 {qNum !== null && (
@@ -1257,9 +1460,9 @@ function ProblemWizardInner({
             </div>
 
             {/* Progress bar */}
-            <div className="mb-6 h-1 rounded-full bg-slate-100 overflow-hidden">
+            <div className="mb-6 h-1 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-power-orange transition-all duration-500"
+                className="bg-power-orange h-full rounded-full transition-all duration-500"
                 style={{ width: `${((qNum ?? 0) / totalQ) * 100}%` }}
               />
             </div>
@@ -1272,48 +1475,43 @@ function ProblemWizardInner({
               transition={{ duration: 0.22, ease: "easeOut" }}
               className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/[0.03] sm:p-7"
             >
-                <div className="mb-5">
-                  <h2 className="font-title text-xl font-bold text-slate-900 mb-1.5">
-                    {current.heading(form)}
-                  </h2>
-                  <p className="text-sm text-slate-500">{current.sub}</p>
+              <div className="mb-5">
+                <h2 className="font-title mb-1.5 text-xl font-bold text-slate-900">
+                  {current.heading(form)}
+                </h2>
+                <p className="text-sm text-slate-500">{current.sub}</p>
+              </div>
+
+              <QuestionInput id={current.id} form={form} set={set} problemId={problemId} />
+
+              {error && (
+                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {error}
                 </div>
+              )}
 
-                <QuestionInput
-                  id={current.id}
-                  form={form}
-                  set={set}
-                  problemId={problemId}
-                />
-
-                {error && (
-                  <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    {error}
-                  </div>
-                )}
-
-                <div className="mt-7 flex items-center justify-between gap-3">
-                  {!current.required ? (
-                    <button
-                      type="button"
-                      onClick={goNext}
-                      className="text-sm font-medium text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                      Skip
-                    </button>
-                  ) : (
-                    <div />
-                  )}
+              <div className="mt-7 flex items-center justify-between gap-3">
+                {!current.required ? (
                   <button
                     type="button"
                     onClick={goNext}
-                    disabled={!canAdvance}
-                    className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                    className="text-sm font-medium text-slate-400 transition-colors hover:text-slate-600"
                   >
-                    {isLastStep ? "Get my plan" : "Continue"}
-                    <ChevronRight className="h-4 w-4" />
+                    Skip
                   </button>
-                </div>
+                ) : (
+                  <div />
+                )}
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={!canAdvance}
+                  className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                >
+                  {isLastStep ? "Get my plan" : "Continue"}
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </motion.div>
           </div>
         </div>
@@ -1326,11 +1524,11 @@ function ProblemWizardInner({
 
 function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-16">
+    <div className="relative flex min-h-screen items-center justify-center px-4 py-16">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/60 via-white to-slate-50" />
-        <div className="absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full bg-power-orange/8 blur-3xl" />
-        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
+        <div className="bg-power-orange/8 absolute -top-10 -left-32 h-[28rem] w-[28rem] rounded-full blur-3xl" />
+        <div className="absolute top-40 right-[-6rem] h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-indigo-200/15 blur-3xl" />
       </div>
 
@@ -1339,22 +1537,22 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="text-center mb-10"
+          className="mb-10 text-center"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-power-orange mb-4">
+          <div className="text-power-orange mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase">
             <BrainCircuit className="h-3 w-3" />
             Expert Help
           </div>
-          <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl mb-3 tracking-tight">
+          <h1 className="font-title mb-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             What do you need help with?
           </h1>
-          <p className="text-slate-500 text-base max-w-md mx-auto leading-relaxed">
+          <p className="mx-auto max-w-md text-base leading-relaxed text-slate-500">
             Pick the challenge you&apos;re facing — we&apos;ll ask a few targeted questions and
             return an actionable plan.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {PROBLEM_TYPES.map((pt, i) => {
             const Icon = pt.Icon;
             return (
@@ -1364,28 +1562,26 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.08 * i + 0.1, duration: 0.35, ease: "easeOut" }}
                 onClick={() => onSelect(pt.id)}
-                className={`group text-left rounded-3xl border-2 border-slate-200 bg-white p-6 shadow-sm ${pt.hoverBorder} hover:shadow-md transition-all duration-200 active:scale-[0.99]`}
+                className={`group rounded-3xl border-2 border-slate-200 bg-white p-6 text-left shadow-sm ${pt.hoverBorder} transition-all duration-200 hover:shadow-md active:scale-[0.99]`}
               >
                 <div
                   className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${pt.color} transition-transform duration-300 group-hover:scale-110`}
                 >
                   <Icon className="h-5 w-5" />
                 </div>
-                <p className={`text-[11px] font-bold uppercase tracking-wider ${pt.accentText} mb-0.5`}>
+                <p
+                  className={`text-[11px] font-bold tracking-wider uppercase ${pt.accentText} mb-0.5`}
+                >
                   {pt.tagline}
                 </p>
-                <h2 className="font-title text-lg font-bold text-slate-900 mb-1.5">
-                  {pt.label}
-                </h2>
-                <p className="text-sm text-slate-500 leading-relaxed mb-4">
-                  {pt.description}
-                </p>
+                <h2 className="font-title mb-1.5 text-lg font-bold text-slate-900">{pt.label}</h2>
+                <p className="mb-4 text-sm leading-relaxed text-slate-500">{pt.description}</p>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-slate-400">
                     {estimateMinutes(WIZARD_STEPS[pt.id])}
                   </span>
                   <span
-                    className={`text-sm font-bold ${pt.accentText} group-hover:translate-x-1 transition-transform duration-200 inline-flex`}
+                    className={`text-sm font-bold ${pt.accentText} inline-flex transition-transform duration-200 group-hover:translate-x-1`}
                   >
                     Get started →
                   </span>
@@ -1399,7 +1595,7 @@ function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.4 }}
-          className="text-center text-xs text-slate-400 mt-6"
+          className="mt-6 text-center text-xs text-slate-400"
         >
           Free to use · AI-powered · No commitment
         </motion.p>
@@ -1453,12 +1649,7 @@ function GuidanceRoot() {
   };
 
   if (problemType) {
-    return (
-      <ProblemWizardInner
-        problemId={problemType}
-        onBack={() => setProblem(null)}
-      />
-    );
+    return <ProblemWizardInner problemId={problemType} onBack={() => setProblem(null)} />;
   }
   return <ProblemPicker onSelect={setProblem} />;
 }

@@ -48,14 +48,10 @@ export interface ResolveDeliveryInput {
   coach?: DeliveryCoachLike | null;
   academy?: DeliveryAcademyLike | null;
   /** Where the student is, for a coach who travels. */
-  playerLocation?:
-    | { coordinates: [number, number]; address?: string }
-    | undefined;
+  playerLocation?: { coordinates: [number, number]; address?: string } | undefined;
 }
 
-const asCoordinates = (
-  raw: number[] | undefined,
-): [number, number] | undefined => {
+const asCoordinates = (raw: number[] | undefined): [number, number] | undefined => {
   if (!Array.isArray(raw) || raw.length !== 2) return undefined;
   const [lng, lat] = raw;
   if (typeof lng !== "number" || typeof lat !== "number") return undefined;
@@ -64,14 +60,12 @@ const asCoordinates = (
 };
 
 /** Academy addresses are stored across four fields; the invoice wants one line. */
-const composeAcademyAddress = (
-  academy: DeliveryAcademyLike,
-): string | undefined => {
+const composeAcademyAddress = (academy: DeliveryAcademyLike): string | undefined => {
   const tail = [academy.city, academy.state, academy.pincode]
     .filter((part): part is string => Boolean(part && part.trim()))
     .join(", ");
-  const parts = [academy.address, tail].filter(
-    (part): part is string => Boolean(part && part.trim()),
+  const parts = [academy.address, tail].filter((part): part is string =>
+    Boolean(part && part.trim())
   );
   return parts.length > 0 ? parts.join(", ") : undefined;
 };
@@ -82,14 +76,14 @@ const composeAcademyAddress = (
  * `exactOptionalPropertyTypes`.
  */
 const stripUndefined = (
-  delivery: { kind: BookingDelivery["kind"] } & Record<string, unknown>,
+  delivery: { kind: BookingDelivery["kind"] } & Record<string, unknown>
 ): BookingDelivery =>
   Object.fromEntries(
-    Object.entries(delivery).filter(([, value]) => value !== undefined),
+    Object.entries(delivery).filter(([, value]) => value !== undefined)
   ) as unknown as BookingDelivery;
 
 export const resolveBookingDelivery = (
-  input: ResolveDeliveryInput,
+  input: ResolveDeliveryInput
 ): BookingDelivery | undefined => {
   const { venue, coach, academy, playerLocation } = input;
 
@@ -159,7 +153,7 @@ export const resolveBookingDelivery = (
  * rather than an empty string.
  */
 export const deliveryAddressLine = (
-  delivery: BookingDelivery | undefined | null,
+  delivery: BookingDelivery | undefined | null
 ): string | undefined => {
   if (!delivery) return undefined;
   const address = delivery.addressSnapshot?.trim();

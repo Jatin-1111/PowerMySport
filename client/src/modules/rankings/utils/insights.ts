@@ -134,7 +134,7 @@ export function ownBracket(subcategories: readonly string[]): string | null {
  */
 export function nationalStandingPhrase(
   rank: number,
-  listSize: number | null | undefined,
+  listSize: number | null | undefined
 ): string | null {
   if (!listSize || listSize <= 0) return null;
   const percent = Math.max(1, Math.ceil((rank / listSize) * 100));
@@ -384,7 +384,7 @@ export function explainTotal(
   }>,
   total: number,
   subcategory: string,
-  options: { deriveRollDown?: boolean } = {},
+  options: { deriveRollDown?: boolean } = {}
 ): ExplainedTotal | null {
   // ── Whether the roll-down still has to be recovered ───────────────────────
   // The old PDFs never printed the points carried down from the bracket above, so
@@ -408,7 +408,7 @@ export function explainTotal(
   // stored before it did, and for the single-player band the player page builds
   // from a raw row, which has no flags on it at all.
   const hasQuarterDoubles = scoring.some(
-    (slice) => /\b25\s*%/.test(slice.label) && /DBLS|DOUBLES/i.test(slice.label),
+    (slice) => /\b25\s*%/.test(slice.label) && /DBLS|DOUBLES/i.test(slice.label)
   );
   const counted = scoring.filter((slice) => {
     if (slice.isInformational) return false;

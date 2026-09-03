@@ -1,10 +1,7 @@
 "use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import {
-  CommunityReportRecord,
-  adminApi,
-} from "@/modules/admin/services/admin";
+import { CommunityReportRecord, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
 import { useCallback, useEffect, useState } from "react";
 
@@ -48,7 +45,7 @@ export default function AdminCommunityReportsPage() {
 
   const handleReview = async (
     reportId: string,
-    status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED",
+    status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED"
   ) => {
     setBusyId(reportId);
     try {
@@ -65,7 +62,7 @@ export default function AdminCommunityReportsPage() {
   };
 
   const actionableReports = reports.filter(
-    (r) => r.status === "OPEN" || r.status === "UNDER_REVIEW",
+    (r) => r.status === "OPEN" || r.status === "UNDER_REVIEW"
   );
 
   const toggleSelected = (reportId: string) => {
@@ -84,7 +81,7 @@ export default function AdminCommunityReportsPage() {
     setSelectedIds((prev) =>
       prev.size === actionableReports.length
         ? new Set()
-        : new Set(actionableReports.map((r) => r.id)),
+        : new Set(actionableReports.map((r) => r.id))
     );
   };
 
@@ -113,15 +110,13 @@ export default function AdminCommunityReportsPage() {
         subtitle="Review user-submitted reports for messages and groups."
       />
 
-      <Card className="bg-white space-y-4">
+      <Card className="space-y-4 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-slate-700">Filter:</span>
             <select
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as typeof statusFilter)
-              }
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
               className="rounded border border-slate-300 px-3 py-1.5 text-sm"
             >
               <option value="ALL">All</option>
@@ -136,10 +131,7 @@ export default function AdminCommunityReportsPage() {
             <label className="flex items-center gap-2 text-sm text-slate-600">
               <input
                 type="checkbox"
-                checked={
-                  selectedIds.size > 0 &&
-                  selectedIds.size === actionableReports.length
-                }
+                checked={selectedIds.size > 0 && selectedIds.size === actionableReports.length}
                 onChange={toggleSelectAll}
                 className="h-4 w-4 rounded border-slate-300"
               />
@@ -178,28 +170,20 @@ export default function AdminCommunityReportsPage() {
         )}
 
         {loading ? (
-          <div className="py-10 text-center text-slate-500">
-            Loading reports...
-          </div>
+          <div className="py-10 text-center text-slate-500">Loading reports...</div>
         ) : reports.length === 0 ? (
-          <div className="py-10 text-center text-slate-500">
-            No reports found.
-          </div>
+          <div className="py-10 text-center text-slate-500">No reports found.</div>
         ) : (
           <div className="space-y-3">
             {reports.map((report) => {
               const isExpanded = expandedId === report.id;
 
               return (
-                <div
-                  key={report.id}
-                  className="rounded-xl border border-slate-200 p-4"
-                >
+                <div key={report.id} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        {(report.status === "OPEN" ||
-                          report.status === "UNDER_REVIEW") && (
+                        {(report.status === "OPEN" || report.status === "UNDER_REVIEW") && (
                           <input
                             type="checkbox"
                             checked={selectedIds.has(report.id)}
@@ -216,13 +200,9 @@ export default function AdminCommunityReportsPage() {
                           {report.targetType}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">
-                        {report.reason}
-                      </p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">{report.reason}</p>
                       {report.details && (
-                        <p className="mt-1 text-sm text-slate-600">
-                          {report.details}
-                        </p>
+                        <p className="mt-1 text-sm text-slate-600">{report.details}</p>
                       )}
                       <p
                         className={`mt-2 text-sm italic ${report.targetDeleted ? "text-slate-400" : "text-slate-600"}`}
@@ -231,24 +211,16 @@ export default function AdminCommunityReportsPage() {
                       </p>
                       <p className="mt-1 text-xs text-slate-400">
                         Reported by {report.reporterUserId.name}
-                        {report.reporterUserId.email &&
-                          ` (${report.reporterUserId.email})`}{" "}
-                        • {new Date(report.createdAt).toLocaleDateString()}
-                        {report.resolutionNote && (
-                          <> • Note: {report.resolutionNote}</>
-                        )}
-                        {report.reviewedBy && (
-                          <> • Reviewed by {report.reviewedBy.name}</>
-                        )}
+                        {report.reporterUserId.email && ` (${report.reporterUserId.email})`} •{" "}
+                        {new Date(report.createdAt).toLocaleDateString()}
+                        {report.resolutionNote && <> • Note: {report.resolutionNote}</>}
+                        {report.reviewedBy && <> • Reviewed by {report.reviewedBy.name}</>}
                       </p>
                     </div>
 
-                    {(report.status === "OPEN" ||
-                      report.status === "UNDER_REVIEW") && (
+                    {(report.status === "OPEN" || report.status === "UNDER_REVIEW") && (
                       <button
-                        onClick={() =>
-                          setExpandedId(isExpanded ? null : report.id)
-                        }
+                        onClick={() => setExpandedId(isExpanded ? null : report.id)}
                         className="rounded border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         {isExpanded ? "Cancel" : "Review"}
@@ -257,14 +229,14 @@ export default function AdminCommunityReportsPage() {
                   </div>
 
                   {isExpanded && (
-                    <div className="mt-3 border-t border-slate-100 pt-3 space-y-3">
+                    <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
                       <div>
-                        <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-500 uppercase">
                           Resolution Note (optional)
                         </label>
                         <textarea
                           rows={2}
-                          className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                          className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 focus:outline-none"
                           placeholder="Optional note for your records..."
                           value={noteInputs[report.id] ?? ""}
                           onChange={(e) =>
@@ -279,9 +251,7 @@ export default function AdminCommunityReportsPage() {
                         {report.status === "OPEN" && (
                           <button
                             disabled={busyId === report.id}
-                            onClick={() =>
-                              handleReview(report.id, "UNDER_REVIEW")
-                            }
+                            onClick={() => handleReview(report.id, "UNDER_REVIEW")}
                             className="rounded bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-200 disabled:opacity-50"
                           >
                             Mark Under Review

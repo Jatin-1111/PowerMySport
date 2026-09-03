@@ -40,9 +40,7 @@ import { AUTH_COOKIE_NAME, readSessionFromCookie } from "@/flow/session";
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  const session = await readSessionFromCookie(
-    request.cookies.get(AUTH_COOKIE_NAME)?.value,
-  );
+  const session = await readSessionFromCookie(request.cookies.get(AUTH_COOKIE_NAME)?.value);
 
   const decision = resolveAccess(pathname, session);
 

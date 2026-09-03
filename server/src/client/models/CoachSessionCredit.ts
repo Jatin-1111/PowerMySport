@@ -106,13 +106,7 @@ const coachSessionCreditSchema = new Schema<CoachSessionCreditDocument>(
     },
     status: {
       type: String,
-      enum: [
-        "AVAILABLE",
-        "CONSUMED",
-        "EXPIRED",
-        "REFUND_PENDING",
-        "REFUNDED",
-      ],
+      enum: ["AVAILABLE", "CONSUMED", "EXPIRED", "REFUND_PENDING", "REFUNDED"],
       default: "AVAILABLE",
       index: true,
     },
@@ -143,12 +137,10 @@ const coachSessionCreditSchema = new Schema<CoachSessionCreditDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
-coachSessionCreditSchema.virtual("id").get(function (
-  this: CoachSessionCreditDocument,
-) {
+coachSessionCreditSchema.virtual("id").get(function (this: CoachSessionCreditDocument) {
   return this._id.toString();
 });
 
@@ -157,17 +149,14 @@ coachSessionCreditSchema.virtual("id").get(function (
  * spent with no link to the session that spent it, and the payout for that
  * session would be unauditable.
  */
-coachSessionCreditSchema.pre<CoachSessionCreditDocument>(
-  "validate",
-  function () {
-    if (this.status === "CONSUMED" && !this.consumedByOccurrenceId) {
-      this.invalidate(
-        "consumedByOccurrenceId",
-        "A consumed credit must record the occurrence that consumed it",
-      );
-    }
-  },
-);
+coachSessionCreditSchema.pre<CoachSessionCreditDocument>("validate", function () {
+  if (this.status === "CONSUMED" && !this.consumedByOccurrenceId) {
+    this.invalidate(
+      "consumedByOccurrenceId",
+      "A consumed credit must record the occurrence that consumed it"
+    );
+  }
+});
 
 // Drives the "does this student have a credit to spend" lookup on completion.
 coachSessionCreditSchema.index({ enrollmentId: 1, status: 1, periodEnd: 1 });
@@ -180,10 +169,10 @@ coachSessionCreditSchema.index(
     name: "one_credit_per_enrollment_per_occurrence",
     unique: true,
     partialFilterExpression: { consumedByOccurrenceId: { $type: "objectId" } },
-  },
+  }
 );
 
 export const CoachSessionCredit = mongoose.model<CoachSessionCreditDocument>(
   "CoachSessionCredit",
-  coachSessionCreditSchema,
+  coachSessionCreditSchema
 );

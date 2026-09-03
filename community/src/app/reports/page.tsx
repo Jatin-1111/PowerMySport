@@ -47,9 +47,7 @@ export default function ReportsPage() {
       const list = data?.items ?? [];
       setReports(Array.isArray(list) ? list : []);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load reports",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load reports");
     } finally {
       setIsLoading(false);
     }
@@ -91,28 +89,22 @@ export default function ReportsPage() {
           </p>
 
           {reports === null ? (
-            <div className="mt-6 rounded-xl border border-dashed border-border bg-slate-50 p-8 text-center">
+            <div className="border-border mt-6 rounded-xl border border-dashed bg-slate-50 p-8 text-center">
               <Flag size={32} className="mx-auto text-slate-300" />
-              <p className="mt-3 text-sm font-medium text-slate-600">
-                Load your reports
-              </p>
+              <p className="mt-3 text-sm font-medium text-slate-600">Load your reports</p>
             </div>
           ) : reports.length === 0 ? (
-            <div className="mt-6 rounded-xl border border-dashed border-border bg-slate-50 p-8 text-center">
+            <div className="border-border mt-6 rounded-xl border border-dashed bg-slate-50 p-8 text-center">
               <Flag size={32} className="mx-auto text-slate-300" />
-              <p className="mt-3 text-sm font-medium text-slate-600">
-                No reports yet
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                You have not reported any content yet.
-              </p>
+              <p className="mt-3 text-sm font-medium text-slate-600">No reports yet</p>
+              <p className="mt-1 text-xs text-slate-500">You have not reported any content yet.</p>
             </div>
           ) : (
             <div className="mt-4 space-y-3">
               {reports.map((report) => (
                 <div
                   key={report.id}
-                  className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 shadow-sm"
+                  className="border-border rounded-2xl border bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 shadow-sm"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
@@ -131,13 +123,9 @@ export default function ReportsPage() {
                       {new Date(report.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm font-medium text-slate-800">
-                    {report.reason}
-                  </p>
+                  <p className="mt-2 text-sm font-medium text-slate-800">{report.reason}</p>
                   {report.details && (
-                    <p className="mt-1 text-xs text-slate-500">
-                      {report.details}
-                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{report.details}</p>
                   )}
                   {report.targetType === "MESSAGE" && report.messageAudit && (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -158,12 +146,10 @@ export default function ReportsPage() {
                   )}
                   {report.resolutionNote && (
                     <div className="mt-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-2.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-green-700">
+                      <p className="text-[11px] font-semibold tracking-wide text-green-700 uppercase">
                         Admin note
                       </p>
-                      <p className="mt-0.5 text-xs text-green-900">
-                        {report.resolutionNote}
-                      </p>
+                      <p className="mt-0.5 text-xs text-green-900">{report.resolutionNote}</p>
                     </div>
                   )}
                 </div>

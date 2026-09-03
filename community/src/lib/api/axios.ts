@@ -1,8 +1,7 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -11,14 +10,13 @@ const axiosInstance: AxiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error)
 );
 
 axiosInstance.interceptors.response.use(
@@ -31,18 +29,14 @@ axiosInstance.interceptors.response.use(
       requestUrl.includes("/auth/google");
 
     const errorMessage =
-      ((error.response?.data as { message?: string })?.message as
-        string | undefined) || "";
+      ((error.response?.data as { message?: string })?.message as string | undefined) || "";
 
     const isStaleProfileSession =
       error.response?.status === 404 &&
       requestUrl.includes("/auth/profile") &&
       /user not found|session expired/i.test(errorMessage);
 
-    if (
-      (error.response?.status === 401 || isStaleProfileSession) &&
-      !isAuthEndpoint
-    ) {
+    if ((error.response?.status === 401 || isStaleProfileSession) && !isAuthEndpoint) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -52,15 +46,13 @@ axiosInstance.interceptors.response.use(
     }
 
     const errorWithData = new Error(
-      (error.response?.data as { message?: string })?.message ||
-        error.message ||
-        "Request failed",
+      (error.response?.data as { message?: string })?.message || error.message || "Request failed"
     ) as Error & {
       response?: unknown;
     };
     errorWithData.response = error.response;
     return Promise.reject(errorWithData);
-  },
+  }
 );
 
 export default axiosInstance;

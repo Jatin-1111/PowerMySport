@@ -51,15 +51,9 @@ const toDateHeading = (dateKey: string): string => {
   }
 
   const today = new Date();
-  const startToday = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
+  const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const startAt = new Date(at.getFullYear(), at.getMonth(), at.getDate());
-  const diffDays = Math.round(
-    (startToday.getTime() - startAt.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  const diffDays = Math.round((startToday.getTime() - startAt.getTime()) / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) {
     return "Today";
@@ -119,16 +113,13 @@ export default function CommunityNotificationsPage() {
 
   const unreadCount = useMemo(
     () => items.reduce((count, item) => (item.isRead ? count : count + 1), 0),
-    [items],
+    [items]
   );
 
   const sortedItems = useMemo(
     () =>
-      [...items].sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      ),
-    [items],
+      [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [items]
   );
 
   const groupedItems = useMemo(() => {
@@ -182,7 +173,7 @@ export default function CommunityNotificationsPage() {
         const response = await communityService.listCommunityNotifications(
           targetPage,
           PAGE_SIZE,
-          filter === "UNREAD" ? false : undefined,
+          filter === "UNREAD" ? false : undefined
         );
 
         setItems(response.items || []);
@@ -199,7 +190,7 @@ export default function CommunityNotificationsPage() {
         if (!isBackground) setIsLoading(false);
       }
     },
-    [filter],
+    [filter]
   );
 
   const handleMarkRead = useCallback(async (item: CommunityActivityItem) => {
@@ -210,9 +201,7 @@ export default function CommunityNotificationsPage() {
     try {
       await communityService.markCommunityNotificationRead(item.id);
       setItems((current) =>
-        current.map((entry) =>
-          entry.id === item.id ? { ...entry, isRead: true } : entry,
-        ),
+        current.map((entry) => (entry.id === item.id ? { ...entry, isRead: true } : entry))
       );
     } catch {
       toast.error("Failed to mark notification as read");
@@ -265,12 +254,10 @@ export default function CommunityNotificationsPage() {
       <section className="rounded-2xl border border-white/90 bg-white/90 p-4 shadow-sm backdrop-blur-md sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
               Community
             </p>
-            <h1 className="mt-1 font-title text-2xl font-semibold text-slate-900">
-              Notifications
-            </h1>
+            <h1 className="font-title mt-1 text-2xl font-semibold text-slate-900">Notifications</h1>
           </div>
 
           <div className="flex items-center gap-2">
@@ -288,7 +275,7 @@ export default function CommunityNotificationsPage() {
         <div className="mt-4 flex items-center gap-2">
           <button
             onClick={() => setFilter("ALL")}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition ${
               filter === "ALL"
                 ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
                 : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
@@ -298,7 +285,7 @@ export default function CommunityNotificationsPage() {
           </button>
           <button
             onClick={() => setFilter("UNREAD")}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold tracking-wide uppercase transition ${
               filter === "UNREAD"
                 ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
                 : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
@@ -307,7 +294,7 @@ export default function CommunityNotificationsPage() {
             Unread
           </button>
           {unreadCount > 0 ? (
-            <span className="ml-1 rounded-full bg-power-orange/10 px-2.5 py-1 text-[11px] font-semibold text-power-orange">
+            <span className="bg-power-orange/10 text-power-orange ml-1 rounded-full px-2.5 py-1 text-[11px] font-semibold">
               {unreadCount} unread
             </span>
           ) : null}
@@ -323,12 +310,9 @@ export default function CommunityNotificationsPage() {
         ) : items.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
             <Bell size={22} className="mx-auto text-slate-400" />
-            <p className="mt-2 text-sm font-semibold text-slate-700">
-              No notifications yet
-            </p>
+            <p className="mt-2 text-sm font-semibold text-slate-700">No notifications yet</p>
             <p className="mt-1 text-xs text-slate-500">
-              Actions like answers, upvotes, requests, and messages will show
-              here.
+              Actions like answers, upvotes, requests, and messages will show here.
             </p>
           </div>
         ) : (
@@ -336,23 +320,18 @@ export default function CommunityNotificationsPage() {
             {groupedItems.map((dateGroup) => (
               <div key={dateGroup.dateKey} className="space-y-3">
                 <div className="py-1.5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  <p className="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">
                     {dateGroup.heading}
                   </p>
                 </div>
 
                 {dateGroup.typeGroups.map((typeGroup) => (
-                  <div
-                    key={`${dateGroup.dateKey}-${typeGroup.label}`}
-                    className="space-y-2"
-                  >
+                  <div key={`${dateGroup.dateKey}-${typeGroup.label}`} className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      <p className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
                         {typeGroup.label}
                       </p>
-                      <span className="text-[11px] text-slate-400">
-                        {typeGroup.items.length}
-                      </span>
+                      <span className="text-[11px] text-slate-400">{typeGroup.items.length}</span>
                     </div>
 
                     {typeGroup.items.map((item) => {
@@ -370,11 +349,11 @@ export default function CommunityNotificationsPage() {
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
                                   {getEventLabel(item)}
                                 </span>
                                 {!item.isRead ? (
-                                  <span className="rounded-full bg-power-orange px-2 py-0.5 text-[10px] font-semibold text-white">
+                                  <span className="bg-power-orange rounded-full px-2 py-0.5 text-[10px] font-semibold text-white">
                                     New
                                   </span>
                                 ) : null}
@@ -382,9 +361,7 @@ export default function CommunityNotificationsPage() {
                               <p className="mt-1 text-sm font-semibold text-slate-900">
                                 {item.title}
                               </p>
-                              <p className="mt-0.5 text-sm text-slate-700">
-                                {item.message}
-                              </p>
+                              <p className="mt-0.5 text-sm text-slate-700">{item.message}</p>
                             </div>
 
                             <span className="text-xs text-slate-500">
@@ -399,7 +376,7 @@ export default function CommunityNotificationsPage() {
                                 onClick={() => {
                                   void handleMarkRead(item);
                                 }}
-                                className="inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-power-orange hover:bg-slate-50"
+                                className="text-power-orange inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold hover:bg-slate-50"
                               >
                                 Open
                               </Link>

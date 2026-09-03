@@ -12,7 +12,7 @@ import { User } from "../models/User";
 export const getReminderPreferences = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -55,7 +55,7 @@ export const getReminderPreferences = async (
 export const updateReminderPreferences = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -82,11 +82,10 @@ export const updateReminderPreferences = async (
       userId,
       {
         $set: {
-          "reminderPreferences.bookingReminders":
-            validatedData.bookingReminders,
+          "reminderPreferences.bookingReminders": validatedData.bookingReminders,
         },
       },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     ).select("reminderPreferences");
 
     if (!user) {
@@ -122,17 +121,16 @@ export const updateReminderPreferences = async (
 export const getUpcomingReminders = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
     const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
 
-    const reminders =
-      await ScheduledNotificationService.getUserUpcomingReminders(
-        userId as any,
-        limit,
-      );
+    const reminders = await ScheduledNotificationService.getUserUpcomingReminders(
+      userId as any,
+      limit
+    );
 
     res.json({
       success: true,
@@ -150,14 +148,12 @@ export const getUpcomingReminders = async (
 export const getReminderStats = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;
 
-    const stats = await ScheduledNotificationService.getUserReminderStats(
-      userId as any,
-    );
+    const stats = await ScheduledNotificationService.getUserReminderStats(userId as any);
 
     res.json({
       success: true,
@@ -175,7 +171,7 @@ export const getReminderStats = async (
 export const processRemindersManually = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     // Optional: Add admin check
@@ -184,13 +180,9 @@ export const processRemindersManually = async (
     //   return;
     // }
 
-    const batchSize = Math.min(
-      parseInt(req.query.batchSize as string) || 100,
-      500,
-    );
+    const batchSize = Math.min(parseInt(req.query.batchSize as string) || 100, 500);
 
-    const stats =
-      await ScheduledNotificationService.processPendingReminders(batchSize);
+    const stats = await ScheduledNotificationService.processPendingReminders(batchSize);
 
     res.json({
       success: true,
@@ -208,7 +200,7 @@ export const processRemindersManually = async (
 export const getMonitoringStats = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const stats = await ReminderMonitoringService.getMonitoringStats();
@@ -229,7 +221,7 @@ export const getMonitoringStats = async (
 export const checkSchedulerHealth = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const healthStatus = await ReminderMonitoringService.checkSchedulerHealth();
@@ -250,12 +242,11 @@ export const checkSchedulerHealth = async (
 export const getFailedReminders = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-    const failedReminders =
-      await ReminderMonitoringService.getFailedReminders(limit);
+    const failedReminders = await ReminderMonitoringService.getFailedReminders(limit);
 
     res.json({
       success: true,
@@ -274,7 +265,7 @@ export const getFailedReminders = async (
 export const triggerHealthCheck = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     // Optional: Add admin role check here
@@ -301,7 +292,7 @@ export const triggerHealthCheck = async (
 export const sendDailySummary = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     // Optional: Add admin role check here
@@ -324,7 +315,7 @@ export const sendDailySummary = async (
 export const retryFailedReminder = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const { id } = req.params;
@@ -362,7 +353,7 @@ export const retryFailedReminder = async (
 export const retryMultipleReminders = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const { reminderIds } = req.body;
@@ -391,8 +382,7 @@ export const retryMultipleReminders = async (
       return;
     }
 
-    const result =
-      await ReminderMonitoringService.retryMultipleReminders(reminderIds);
+    const result = await ReminderMonitoringService.retryMultipleReminders(reminderIds);
 
     res.json({
       success: result.success,
@@ -411,7 +401,7 @@ export const retryMultipleReminders = async (
 export const createReminder = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const userId = req.user!.id;

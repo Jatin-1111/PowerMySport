@@ -40,19 +40,19 @@ export type FlowDefinition<TStep extends FlowStepName, TContext> = {
 };
 
 export const defineFlow = <TStep extends FlowStepName, TContext>(
-  definition: FlowDefinition<TStep, TContext>,
+  definition: FlowDefinition<TStep, TContext>
 ): FlowDefinition<TStep, TContext> => definition;
 
 /** The search param a flow stores its step in. */
 export const flowParam = <TStep extends FlowStepName, TContext>(
-  flow: FlowDefinition<TStep, TContext>,
+  flow: FlowDefinition<TStep, TContext>
 ): string => flow.param ?? "step";
 
 /** Whether the step at `index` is skipped for the current context. */
 export const isStepSkipped = <TStep extends FlowStepName, TContext>(
   flow: FlowDefinition<TStep, TContext>,
   index: number,
-  context: TContext,
+  context: TContext
 ): boolean => {
   const step = flow.steps[index];
   return step !== undefined && (flow.skipWhen?.[step]?.(context) ?? false);
@@ -61,7 +61,7 @@ export const isStepSkipped = <TStep extends FlowStepName, TContext>(
 /** Indices of the steps that are not skipped, in order. */
 export const effectiveIndices = <TStep extends FlowStepName, TContext>(
   flow: FlowDefinition<TStep, TContext>,
-  context: TContext,
+  context: TContext
 ): number[] => {
   const out: number[] = [];
   for (let i = 0; i < flow.steps.length; i += 1) {
@@ -79,7 +79,7 @@ export const settleOnUnskipped = <TStep extends FlowStepName, TContext>(
   flow: FlowDefinition<TStep, TContext>,
   from: number,
   dir: 1 | -1,
-  context: TContext,
+  context: TContext
 ): number => {
   const total = flow.steps.length;
   let i = from;
@@ -100,7 +100,7 @@ export const settleOnUnskipped = <TStep extends FlowStepName, TContext>(
  */
 export const furthestReachableIndex = <TStep extends FlowStepName, TContext>(
   flow: FlowDefinition<TStep, TContext>,
-  context: TContext,
+  context: TContext
 ): number => {
   let furthest = 0;
 
@@ -142,7 +142,7 @@ export type ResolvedStep<TStep extends FlowStepName> = {
 export const resolveStep = <TStep extends FlowStepName, TContext>(
   flow: FlowDefinition<TStep, TContext>,
   requested: string | number | null | undefined,
-  context: TContext,
+  context: TContext
 ): ResolvedStep<TStep> => {
   const total = flow.steps.length;
 
@@ -210,7 +210,7 @@ export const buildStepGateFlow = <TContext>(
   id: string,
   stepCount: number,
   isStepSatisfied: (stepIndex: number, context: TContext) => boolean,
-  options: StepGateOptions<TContext> = {},
+  options: StepGateOptions<TContext> = {}
 ): FlowDefinition<string, TContext> => {
   const steps = Array.from({ length: stepCount }, (_, i) => String(i + 1));
   const { param, isStepSkipped } = options;
@@ -230,12 +230,11 @@ export const buildStepGateFlow = <TContext>(
     };
   }
 
-  const skipWhen: Record<string, (context: TContext) => boolean> | undefined =
-    isStepSkipped
-      ? Object.fromEntries(
-          steps.map((name, i) => [name, (context: TContext) => isStepSkipped(i, context)]),
-        )
-      : undefined;
+  const skipWhen: Record<string, (context: TContext) => boolean> | undefined = isStepSkipped
+    ? Object.fromEntries(
+        steps.map((name, i) => [name, (context: TContext) => isStepSkipped(i, context)])
+      )
+    : undefined;
 
   return defineFlow<string, TContext>({ id, steps, canEnter, skipWhen, param });
 };

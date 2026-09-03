@@ -120,7 +120,7 @@ const reviewSchema = new Schema<ReviewDocument>(
       },
     ],
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Indexes
@@ -131,14 +131,11 @@ reviewSchema.index({ userId: 1 });
 // Production has autoIndex off, so this also needs migration 35.
 reviewSchema.index({ moderationStatus: 1, reportCount: -1, createdAt: -1 });
 // Allow multiple reviews per booking (one for venue, one for coach)
-reviewSchema.index(
-  { bookingId: 1, targetType: 1, userId: 1 },
-  { unique: true, sparse: true },
-);
+reviewSchema.index({ bookingId: 1, targetType: 1, userId: 1 }, { unique: true, sparse: true });
 // Allow one review per product per order
 reviewSchema.index(
   { orderId: 1, targetType: 1, targetId: 1, userId: 1 },
-  { unique: true, sparse: true },
+  { unique: true, sparse: true }
 );
 
 export const Review = mongoose.model<ReviewDocument>("Review", reviewSchema);

@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getVoteTransitionDeltas,
-  normalizeTags,
-} from "../community/services/communityQnaUtils";
+import { getVoteTransitionDeltas, normalizeTags } from "../community/services/communityQnaUtils";
 
 test("normalizeTags lowercases, dedupes, and caps to 8 tags", () => {
   const result = normalizeTags([

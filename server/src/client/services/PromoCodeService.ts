@@ -20,7 +20,7 @@ export interface CreatePromoCodePayload {
  * Create a new promo code (admin only)
  */
 export const createPromoCode = async (
-  payload: CreatePromoCodePayload,
+  payload: CreatePromoCodePayload
 ): Promise<PromoCodeDocument> => {
   // Validate discount value
   if (payload.discountType === "PERCENTAGE") {
@@ -58,7 +58,7 @@ export const validatePromoCode = async (
   options?: {
     hasCoach?: boolean;
     context?: "BOOKING" | "MERCHANDISE";
-  },
+  }
 ): Promise<{
   isValid: boolean;
   discountAmount: number;
@@ -111,10 +111,7 @@ export const validatePromoCode = async (
   }
 
   // Check total usage limit
-  if (
-    promoCode.maxUsageTotal &&
-    promoCode.currentUsageCount >= promoCode.maxUsageTotal
-  ) {
+  if (promoCode.maxUsageTotal && promoCode.currentUsageCount >= promoCode.maxUsageTotal) {
     return {
       isValid: false,
       discountAmount: 0,
@@ -124,13 +121,10 @@ export const validatePromoCode = async (
 
   // Check per-user usage limit
   const userUsageCount = promoCode.usedBy.filter(
-    (usage) => usage.userId.toString() === userId,
+    (usage) => usage.userId.toString() === userId
   ).length;
 
-  if (
-    promoCode.maxUsagePerUser &&
-    userUsageCount >= promoCode.maxUsagePerUser
-  ) {
+  if (promoCode.maxUsagePerUser && userUsageCount >= promoCode.maxUsagePerUser) {
     return {
       isValid: false,
       discountAmount: 0,
@@ -147,10 +141,7 @@ export const validatePromoCode = async (
     };
   }
 
-  if (
-    promoCode.applicableTo === "MERCHANDISE_ONLY" &&
-    context !== "MERCHANDISE"
-  ) {
+  if (promoCode.applicableTo === "MERCHANDISE_ONLY" && context !== "MERCHANDISE") {
     return {
       isValid: false,
       discountAmount: 0,
@@ -160,8 +151,7 @@ export const validatePromoCode = async (
 
   if (
     context === "MERCHANDISE" &&
-    (promoCode.applicableTo === "COACH_ONLY" ||
-      promoCode.applicableTo === "VENUE_ONLY")
+    (promoCode.applicableTo === "COACH_ONLY" || promoCode.applicableTo === "VENUE_ONLY")
   ) {
     return {
       isValid: false,
@@ -176,10 +166,7 @@ export const validatePromoCode = async (
     discountAmount = (amount * promoCode.discountValue) / 100;
 
     // Apply max discount cap if set
-    if (
-      promoCode.maxDiscountAmount &&
-      discountAmount > promoCode.maxDiscountAmount
-    ) {
+    if (promoCode.maxDiscountAmount && discountAmount > promoCode.maxDiscountAmount) {
       discountAmount = promoCode.maxDiscountAmount;
     }
   } else {
@@ -202,7 +189,7 @@ export const applyPromoCode = async (
   userId: string,
   bookingId: string | null,
   orderId: string | null,
-  discountApplied: number,
+  discountApplied: number
 ): Promise<void> => {
   const usagePayload: {
     userId: string;
@@ -230,7 +217,7 @@ export const applyPromoCode = async (
       $push: {
         usedBy: usagePayload,
       },
-    },
+    }
   );
 };
 
@@ -263,21 +250,15 @@ export const getActivePromoCodes = async (): Promise<PromoCodeDocument[]> => {
 /**
  * Deactivate a promo code
  */
-export const deactivatePromoCode = async (
-  codeId: string,
-): Promise<PromoCodeDocument | null> => {
-  return PromoCode.findByIdAndUpdate(
-    codeId,
-    { isActive: false },
-    { new: true },
-  );
+export const deactivatePromoCode = async (codeId: string): Promise<PromoCodeDocument | null> => {
+  return PromoCode.findByIdAndUpdate(codeId, { isActive: false }, { new: true });
 };
 
 /**
  * Get promo code usage statistics
  */
 export const getPromoCodeStats = async (
-  codeId: string,
+  codeId: string
 ): Promise<{
   code: string;
   totalUsage: number;
@@ -299,11 +280,10 @@ export const getPromoCodeStats = async (
 
   const totalDiscountGiven = promoCode.usedBy.reduce(
     (sum, usage) => sum + usage.discountApplied,
-    0,
+    0
   );
 
-  const uniqueUsers = new Set(promoCode.usedBy.map((u) => u.userId.toString()))
-    .size;
+  const uniqueUsers = new Set(promoCode.usedBy.map((u) => u.userId.toString())).size;
 
   const recentRaw = promoCode.usedBy.slice(-10).reverse();
 

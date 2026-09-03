@@ -12,7 +12,7 @@ const Input = ({
   <div className="w-full">
     <input
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-slate-300 focus:border-power-orange focus:ring-power-orange"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} px-3 py-2 text-sm focus:ring-1 focus:outline-none ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -26,7 +26,7 @@ const Textarea = ({
   <div className="w-full">
     <textarea
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-slate-300 focus:border-power-orange focus:ring-power-orange"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} px-3 py-2 text-sm focus:ring-1 focus:outline-none ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -40,31 +40,18 @@ const Select = ({
   <div className="w-full">
     <select
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-slate-300 focus:border-power-orange focus:ring-power-orange"} bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} bg-white px-3 py-2 text-sm focus:ring-1 focus:outline-none ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
 );
 
-const Label = ({
-  children,
-  className,
-  ...props
-}: React.LabelHTMLAttributes<HTMLLabelElement>) => (
-  <label
-    {...props}
-    className={`block text-sm font-medium text-slate-700 ${className || ""}`}
-  >
+const Label = ({ children, className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) => (
+  <label {...props} className={`block text-sm font-medium text-slate-700 ${className || ""}`}>
     {children}
   </label>
 );
-import {
-  Trash2,
-  Plus,
-  UploadCloud,
-  Link as LinkIcon,
-  Image as ImageIcon,
-} from "lucide-react";
+import { Trash2, Plus, UploadCloud, Link as LinkIcon, Image as ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 
@@ -76,10 +63,8 @@ export default function AddProductPage() {
 
   const validateField = (field: string, value: string) => {
     let errMsg = "";
-    if (field === "name" && value.trim().length < 3)
-      errMsg = "Name must be at least 3 characters.";
-    if (field === "sku" && value.trim().length < 3)
-      errMsg = "SKU must be at least 3 characters.";
+    if (field === "name" && value.trim().length < 3) errMsg = "Name must be at least 3 characters.";
+    if (field === "sku" && value.trim().length < 3) errMsg = "SKU must be at least 3 characters.";
     if (field === "basePrice") {
       const num = parseFloat(value);
       if (isNaN(num) || num <= 0) errMsg = "Base Price must be greater than 0.";
@@ -102,11 +87,7 @@ export default function AddProductPage() {
     return errMsg === "";
   };
 
-  const validateVariantField = (
-    index: number,
-    field: string,
-    value: string,
-  ) => {
+  const validateVariantField = (index: number, field: string, value: string) => {
     let errMsg = "";
     if (field === "price" && value.trim() !== "") {
       const num = parseFloat(value);
@@ -160,10 +141,7 @@ export default function AddProductPage() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     };
@@ -191,10 +169,7 @@ export default function AddProductPage() {
       setError(null);
 
       const uploadPromises = files.map(async (file) => {
-        const res = await adminEcommerceApi.generateProductImageUploadUrl(
-          file.name,
-          file.type,
-        );
+        const res = await adminEcommerceApi.generateProductImageUploadUrl(file.name, file.type);
 
         if (!res?.data) throw new Error("Failed to get upload URL");
 
@@ -213,9 +188,7 @@ export default function AddProductPage() {
       setImages((prev) => [...prev, ...uploadedUrls].filter(Boolean));
     } catch (err: any) {
       console.error(err);
-      setError(
-        "Failed to upload image. Ensure S3 CORS is properly configured.",
-      );
+      setError("Failed to upload image. Ensure S3 CORS is properly configured.");
     } finally {
       setUploadingImage(false);
       e.target.value = "";
@@ -251,11 +224,7 @@ export default function AddProductPage() {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  const handleVariantChange = (
-    index: number,
-    field: keyof (typeof variants)[0],
-    value: string,
-  ) => {
+  const handleVariantChange = (index: number, field: keyof (typeof variants)[0], value: string) => {
     const newVariants = [...variants];
     newVariants[index][field] = value;
     setVariants(newVariants);
@@ -278,8 +247,7 @@ export default function AddProductPage() {
         if (v.size) attrs.size = v.size;
         if (v.color) attrs.color = v.color;
 
-        const variantLabel =
-          [v.size, v.color].filter(Boolean).join(" - ") || "Standard";
+        const variantLabel = [v.size, v.color].filter(Boolean).join(" - ") || "Standard";
 
         return {
           sku: v.sku || `${formData.sku}-V${Math.floor(Math.random() * 1000)}`,
@@ -348,18 +316,14 @@ export default function AddProductPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
         {error && (
-          <div className="rounded-lg bg-red-50 p-4 text-sm font-medium text-red-600">
-            {error}
-          </div>
+          <div className="rounded-lg bg-red-50 p-4 text-sm font-medium text-red-600">{error}</div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="space-y-6 md:col-span-2">
             {/* Basic Info */}
-            <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">
-                Basic Information
-              </h3>
+            <Card className="space-y-4 p-6">
+              <h3 className="text-lg font-bold text-slate-900">Basic Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Name *</Label>
@@ -393,9 +357,7 @@ export default function AddProductPage() {
                   <Label>Brand</Label>
                   <Select
                     value={formData.brand}
-                    onChange={(e) =>
-                      setFormData({ ...formData, brand: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                   >
                     <option value="SG">SG</option>
                     <option value="SS">SS</option>
@@ -444,18 +406,14 @@ export default function AddProductPage() {
             </Card>
 
             {/* Targeting & Details */}
-            <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">
-                Targeting & Specifications
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Card className="space-y-4 p-6">
+              <h3 className="text-lg font-bold text-slate-900">Targeting & Specifications</h3>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Age Group</Label>
                   <Select
                     value={formData.ageGroup}
-                    onChange={(e) =>
-                      setFormData({ ...formData, ageGroup: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
                   >
                     <option value="ALL">All Ages</option>
                     <option value="KIDS">Kids</option>
@@ -467,9 +425,7 @@ export default function AddProductPage() {
                   <Label>Skill Level</Label>
                   <Select
                     value={formData.skillLevel}
-                    onChange={(e) =>
-                      setFormData({ ...formData, skillLevel: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, skillLevel: e.target.value })}
                   >
                     <option value="ALL">All Levels</option>
                     <option value="BEGINNER">Beginner</option>
@@ -481,9 +437,7 @@ export default function AddProductPage() {
                   <Label>Gender</Label>
                   <Select
                     value={formData.gender}
-                    onChange={(e) =>
-                      setFormData({ ...formData, gender: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                   >
                     <option value="UNISEX">Unisex</option>
                     <option value="BOYS">Boys</option>
@@ -496,9 +450,7 @@ export default function AddProductPage() {
                   <Label>Material</Label>
                   <Select
                     value={formData.material}
-                    onChange={(e) =>
-                      setFormData({ ...formData, material: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, material: e.target.value })}
                   >
                     <option value="ENGLISH_WILLOW">English Willow</option>
                     <option value="KASHMIR_WILLOW">Kashmir Willow</option>
@@ -519,9 +471,7 @@ export default function AddProductPage() {
                   <Label>Warranty / Cert</Label>
                   <Input
                     value={formData.warranty}
-                    onChange={(e) =>
-                      setFormData({ ...formData, warranty: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, warranty: e.target.value })}
                     placeholder="E.g., 6 Months, CE Marked"
                   />
                 </div>
@@ -537,21 +487,17 @@ export default function AddProductPage() {
             </Card>
 
             {/* Images */}
-            <Card className="p-6 space-y-4">
+            <Card className="space-y-4 p-6">
               <h3 className="text-lg font-bold text-slate-900">Images *</h3>
               {images.length > 0 && (
-                <div className="flex flex-wrap gap-4 mb-4">
+                <div className="mb-4 flex flex-wrap gap-4">
                   {images.map((img, index) => (
                     <div
                       key={index}
-                      className="relative group h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-all hover:border-slate-300"
+                      className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-all hover:border-slate-300"
                     >
                       {img ? (
-                        <img
-                          src={img}
-                          alt="Preview"
-                          className="h-full w-full object-cover"
-                        />
+                        <img src={img} alt="Preview" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <ImageIcon className="h-8 w-8 text-slate-300" />
@@ -561,7 +507,7 @@ export default function AddProductPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}
-                        className="absolute right-1 top-1 rounded-full bg-black/60 p-1.5 text-white opacity-0 backdrop-blur-sm transition-all hover:scale-110 hover:bg-red-500 group-hover:opacity-100"
+                        className="absolute top-1 right-1 rounded-full bg-black/60 p-1.5 text-white opacity-0 backdrop-blur-sm transition-all group-hover:opacity-100 hover:scale-110 hover:bg-red-500"
                         title="Remove image"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -584,11 +530,10 @@ export default function AddProductPage() {
                 </Button>
 
                 {isDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg z-10">
+                  <div className="absolute top-full left-0 z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
                     <div className="p-1">
                       <label className="flex w-full cursor-pointer items-center rounded-sm px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
-                        <UploadCloud className="mr-2 h-4 w-4 text-slate-500" />{" "}
-                        Upload File to S3
+                        <UploadCloud className="mr-2 h-4 w-4 text-slate-500" /> Upload File to S3
                         <input
                           type="file"
                           accept="image/*"
@@ -608,8 +553,7 @@ export default function AddProductPage() {
                           handleAddImageUrl();
                         }}
                       >
-                        <LinkIcon className="mr-2 h-4 w-4 text-slate-500" />{" "}
-                        Enter Image URL
+                        <LinkIcon className="mr-2 h-4 w-4 text-slate-500" /> Enter Image URL
                       </button>
                     </div>
                   </div>
@@ -618,7 +562,7 @@ export default function AddProductPage() {
             </Card>
 
             {/* Variants */}
-            <Card className="p-6 space-y-4">
+            <Card className="space-y-4 p-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-slate-900">Variants</h3>
                 <Button type="button" size="sm" onClick={handleAddVariant}>
@@ -627,28 +571,23 @@ export default function AddProductPage() {
               </div>
               <div className="space-y-4">
                 {variants.map((variant, index) => (
-                  <div
-                    key={index}
-                    className="relative rounded-lg border border-slate-200 p-4"
-                  >
+                  <div key={index} className="relative rounded-lg border border-slate-200 p-4">
                     {variants.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveVariant(index)}
-                        className="absolute right-2 top-2 text-slate-400 hover:text-red-500"
+                        className="absolute top-2 right-2 text-slate-400 hover:text-red-500"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                       <div className="space-y-2">
                         <Label className="text-xs">Variant SKU</Label>
                         <Input
                           placeholder="Optional auto-generated"
                           value={variant.sku}
-                          onChange={(e) =>
-                            handleVariantChange(index, "sku", e.target.value)
-                          }
+                          onChange={(e) => handleVariantChange(index, "sku", e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -656,9 +595,7 @@ export default function AddProductPage() {
                         <Input
                           placeholder="E.g., L, XL, 42"
                           value={variant.size}
-                          onChange={(e) =>
-                            handleVariantChange(index, "size", e.target.value)
-                          }
+                          onChange={(e) => handleVariantChange(index, "size", e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -666,9 +603,7 @@ export default function AddProductPage() {
                         <Input
                           placeholder="E.g., Red, Black"
                           value={variant.color}
-                          onChange={(e) =>
-                            handleVariantChange(index, "color", e.target.value)
-                          }
+                          onChange={(e) => handleVariantChange(index, "color", e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -681,15 +616,9 @@ export default function AddProductPage() {
                           onChange={(e) => {
                             handleVariantChange(index, "price", e.target.value);
                             if (errors[`variant_${index}_price`])
-                              validateVariantField(
-                                index,
-                                "price",
-                                e.target.value,
-                              );
+                              validateVariantField(index, "price", e.target.value);
                           }}
-                          onBlur={(e) =>
-                            validateVariantField(index, "price", e.target.value)
-                          }
+                          onBlur={(e) => validateVariantField(index, "price", e.target.value)}
                           error={errors[`variant_${index}_price`]}
                         />
                       </div>
@@ -702,15 +631,9 @@ export default function AddProductPage() {
                           onChange={(e) => {
                             handleVariantChange(index, "stock", e.target.value);
                             if (errors[`variant_${index}_stock`])
-                              validateVariantField(
-                                index,
-                                "stock",
-                                e.target.value,
-                              );
+                              validateVariantField(index, "stock", e.target.value);
                           }}
-                          onBlur={(e) =>
-                            validateVariantField(index, "stock", e.target.value)
-                          }
+                          onBlur={(e) => validateVariantField(index, "stock", e.target.value)}
                           error={errors[`variant_${index}_stock`]}
                         />
                       </div>
@@ -723,15 +646,13 @@ export default function AddProductPage() {
 
           <div className="space-y-6">
             {/* Categorization & Status */}
-            <Card className="p-6 space-y-4">
+            <Card className="space-y-4 p-6">
               <h3 className="text-lg font-bold text-slate-900">Organization</h3>
               <div className="space-y-2">
                 <Label>Category *</Label>
                 <Select
                   value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
                   <option value="APPAREL">Apparel</option>
                   <option value="FOOTWEAR">Footwear</option>
@@ -747,14 +668,14 @@ export default function AddProductPage() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setFormData({ ...formData, isActive: e.target.checked })
                   }
-                  className="rounded border-slate-300 text-power-orange focus:ring-power-orange"
+                  className="text-power-orange focus:ring-power-orange rounded border-slate-300"
                 />
                 <Label htmlFor="isActive">Active in Store</Label>
               </div>
             </Card>
 
             {/* Pricing */}
-            <Card className="p-6 space-y-4">
+            <Card className="space-y-4 p-6">
               <h3 className="text-lg font-bold text-slate-900">Pricing</h3>
               <div className="space-y-2">
                 <Label>Base Price (in ₹) *</Label>
@@ -766,8 +687,7 @@ export default function AddProductPage() {
                   value={formData.basePrice}
                   onChange={(e) => {
                     setFormData({ ...formData, basePrice: e.target.value });
-                    if (errors.basePrice)
-                      validateField("basePrice", e.target.value);
+                    if (errors.basePrice) validateField("basePrice", e.target.value);
                   }}
                   onBlur={(e) => validateField("basePrice", e.target.value)}
                   error={errors.basePrice}
@@ -782,8 +702,7 @@ export default function AddProductPage() {
                   value={formData.salePrice}
                   onChange={(e) => {
                     setFormData({ ...formData, salePrice: e.target.value });
-                    if (errors.salePrice)
-                      validateField("salePrice", e.target.value);
+                    if (errors.salePrice) validateField("salePrice", e.target.value);
                   }}
                   onBlur={(e) => validateField("salePrice", e.target.value)}
                   error={errors.salePrice}
@@ -792,7 +711,7 @@ export default function AddProductPage() {
             </Card>
 
             {/* Logistics */}
-            <Card className="p-6 space-y-4">
+            <Card className="space-y-4 p-6">
               <h3 className="text-lg font-bold text-slate-900">Logistics</h3>
               <div className="space-y-2">
                 <Label>Weight (g) *</Label>
@@ -820,8 +739,7 @@ export default function AddProductPage() {
                     value={dimensions.length}
                     onChange={(e) => {
                       setDimensions({ ...dimensions, length: e.target.value });
-                      if (errors.dim_length)
-                        validateField("dim_length", e.target.value);
+                      if (errors.dim_length) validateField("dim_length", e.target.value);
                     }}
                     onBlur={(e) => validateField("dim_length", e.target.value)}
                     error={errors.dim_length}
@@ -836,8 +754,7 @@ export default function AddProductPage() {
                     value={dimensions.width}
                     onChange={(e) => {
                       setDimensions({ ...dimensions, width: e.target.value });
-                      if (errors.dim_width)
-                        validateField("dim_width", e.target.value);
+                      if (errors.dim_width) validateField("dim_width", e.target.value);
                     }}
                     onBlur={(e) => validateField("dim_width", e.target.value)}
                     error={errors.dim_width}
@@ -852,8 +769,7 @@ export default function AddProductPage() {
                     value={dimensions.height}
                     onChange={(e) => {
                       setDimensions({ ...dimensions, height: e.target.value });
-                      if (errors.dim_height)
-                        validateField("dim_height", e.target.value);
+                      if (errors.dim_height) validateField("dim_height", e.target.value);
                     }}
                     onBlur={(e) => validateField("dim_height", e.target.value)}
                     error={errors.dim_height}

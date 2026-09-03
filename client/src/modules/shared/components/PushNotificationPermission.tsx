@@ -4,20 +4,12 @@ import { pushNotificationService } from "@/lib/api/push";
 import { toast } from "@/lib/toast";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
-import {
-    AlertCircle,
-    Bell,
-    BellOff,
-    CheckCircle,
-    Lightbulb,
-    Smartphone,
-} from "lucide-react";
+import { AlertCircle, Bell, BellOff, CheckCircle, Lightbulb, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function PushNotificationPermission() {
   const [isSupported, setIsSupported] = useState(false);
-  const [permission, setPermission] =
-    useState<NotificationPermission>("default");
+  const [permission, setPermission] = useState<NotificationPermission>("default");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -36,8 +28,7 @@ export function PushNotificationPermission() {
         return;
       }
 
-      const currentPermission =
-        await pushNotificationService.getPermissionStatus();
+      const currentPermission = await pushNotificationService.getPermissionStatus();
       setPermission(currentPermission);
 
       const subscription = await pushNotificationService.getSubscription();
@@ -61,15 +52,12 @@ export function PushNotificationPermission() {
       setTimeout(() => {
         pushNotificationService.sendTestNotification(
           "Push Notifications Enabled",
-          "You will now receive real-time notifications from PowerMySport",
+          "You will now receive real-time notifications from PowerMySport"
         );
       }, 1000);
     } catch (error) {
       console.error("Failed to enable push notifications:", error);
-      if (
-        error instanceof Error &&
-        error.message.includes("permission denied")
-      ) {
+      if (error instanceof Error && error.message.includes("permission denied")) {
         toast.error("Notification permission denied");
       } else {
         toast.error("Failed to enable push notifications");
@@ -97,7 +85,7 @@ export function PushNotificationPermission() {
     try {
       await pushNotificationService.sendTestNotification(
         "Test Notification",
-        "This is a test notification from PowerMySport",
+        "This is a test notification from PowerMySport"
       );
       toast.success("Test notification sent");
     } catch (error) {
@@ -113,9 +101,7 @@ export function PushNotificationPermission() {
           <div className="flex items-center gap-3">
             <Smartphone className="text-slate-400" size={20} />
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                Push Notifications
-              </h3>
+              <h3 className="text-sm font-semibold text-slate-900">Push Notifications</h3>
               <p className="text-sm text-slate-600">Loading...</p>
             </div>
           </div>
@@ -135,8 +121,8 @@ export function PushNotificationPermission() {
                 Push Notifications Not Supported
               </h3>
               <p className="mt-1 text-sm text-slate-600">
-                Your browser does not support push notifications. Please use a
-                modern browser like Chrome, Firefox, Edge, or Safari.
+                Your browser does not support push notifications. Please use a modern browser like
+                Chrome, Firefox, Edge, or Safari.
               </p>
             </div>
           </div>
@@ -170,9 +156,7 @@ export function PushNotificationPermission() {
               <Bell className="text-emerald-600" size={20} />
             ) : (
               <BellOff
-                className={
-                  permission === "denied" ? "text-red-600" : "text-power-orange"
-                }
+                className={permission === "denied" ? "text-red-600" : "text-power-orange"}
                 size={20}
               />
             )}
@@ -180,9 +164,7 @@ export function PushNotificationPermission() {
 
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Browser Push Notifications
-              </h3>
+              <h3 className="text-sm font-semibold text-slate-900">Browser Push Notifications</h3>
               {isSubscribed && (
                 <div className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
                   <CheckCircle size={12} />
@@ -215,11 +197,7 @@ export function PushNotificationPermission() {
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               {!isSubscribed && permission !== "denied" && (
-                <Button
-                  onClick={handleEnablePush}
-                  disabled={actionLoading}
-                  size="sm"
-                >
+                <Button onClick={handleEnablePush} disabled={actionLoading} size="sm">
                   <Bell size={16} className="mr-2" />
                   {actionLoading ? "Enabling..." : "Enable Push Notifications"}
                 </Button>
@@ -236,11 +214,7 @@ export function PushNotificationPermission() {
                     <BellOff size={16} className="mr-2" />
                     {actionLoading ? "Disabling..." : "Disable"}
                   </Button>
-                  <Button
-                    onClick={handleTestNotification}
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button onClick={handleTestNotification} variant="outline" size="sm">
                     <Smartphone size={16} className="mr-2" />
                     Send Test
                   </Button>
@@ -256,8 +230,8 @@ export function PushNotificationPermission() {
               <span className="inline-flex items-center gap-1">
                 <Lightbulb className="h-3.5 w-3.5" /> <strong>Tip:</strong>
               </span>{" "}
-              You can manage which notifications you receive via push in the
-              notification preferences table below.
+              You can manage which notifications you receive via push in the notification
+              preferences table below.
             </p>
           </div>
         )}

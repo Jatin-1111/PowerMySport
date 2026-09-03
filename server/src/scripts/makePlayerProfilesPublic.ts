@@ -4,9 +4,7 @@ import { CommunityProfile } from "../community/models/CommunityProfile";
 import { User } from "../client/models/User";
 
 const MONGODB_URI =
-  process.env.MONGO_URI ||
-  process.env.MONGODB_URI ||
-  "mongodb://localhost:27017/powermysport";
+  process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
 const makeDefaultAlias = (name?: string): string => {
   const seed = Math.floor(1000 + Math.random() * 9000);
@@ -23,9 +21,7 @@ const run = async () => {
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB");
 
-    const players = await User.find({ role: "Player" })
-      .select("_id name role")
-      .lean();
+    const players = await User.find({ role: "Player" }).select("_id name role").lean();
 
     if (players.length === 0) {
       console.log("\n✅ No player accounts found in the database");
@@ -43,18 +39,14 @@ const run = async () => {
       .select("userId isIdentityPublic")
       .lean();
 
-    const existingProfileIds = new Set(
-      existingProfiles.map((profile) => String(profile.userId)),
-    );
+    const existingProfileIds = new Set(existingProfiles.map((profile) => String(profile.userId)));
 
     const updateResult = await CommunityProfile.updateMany(
       { userId: { $in: playerIds } },
-      { $set: { isIdentityPublic: true } },
+      { $set: { isIdentityPublic: true } }
     );
 
-    const missingPlayers = players.filter(
-      (player) => !existingProfileIds.has(String(player._id)),
-    );
+    const missingPlayers = players.filter((player) => !existingProfileIds.has(String(player._id)));
 
     let createdCount = 0;
     if (missingPlayers.length > 0) {

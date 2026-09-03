@@ -6,9 +6,7 @@ import api, { API_BASE_URL } from "@/lib/api/axios";
 export const getGuidanceWhatsAppUrl = (submissionId: string): string =>
   `${API_BASE_URL}/guidance/${submissionId}/whatsapp`;
 
-export const downloadGuidanceReportPdf = async (
-  submissionId: string,
-): Promise<void> => {
+export const downloadGuidanceReportPdf = async (submissionId: string): Promise<void> => {
   const response = await api.get(`/guidance/${submissionId}/report/pdf`, {
     responseType: "blob",
   });

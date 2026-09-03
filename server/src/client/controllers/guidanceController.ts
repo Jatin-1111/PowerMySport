@@ -71,10 +71,7 @@ function calculateBurnoutRisk(age: number, weeklyHours: number) {
   };
 }
 
-export const submitGuidance = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const submitGuidance = async (req: Request, res: Response): Promise<void> => {
   try {
     const parsed = guidanceRequestSchema.safeParse(req.body);
 
@@ -111,7 +108,7 @@ export const submitGuidance = async (
     // Enrich with server-computed fields (zero AI cost)
     const burnoutRisk = calculateBurnoutRisk(
       parsed.data.child_age,
-      parsed.data.weekly_time_commitment,
+      parsed.data.weekly_time_commitment
     );
     const enrichedGuidance = { ...guidance, burnoutRisk };
 
@@ -146,8 +143,7 @@ export const submitGuidance = async (
       },
     });
   } catch (error) {
-    let errorMessage =
-      error instanceof Error ? error.message : "Failed to generate guidance";
+    let errorMessage = error instanceof Error ? error.message : "Failed to generate guidance";
 
     // Attempt to parse Gemini's raw JSON error array
     try {
@@ -179,10 +175,7 @@ export const submitGuidance = async (
  * Diagnosis-confirmation step, run before full plan generation.
  * POST /guidance/diagnose
  */
-export const diagnoseGuidance = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const diagnoseGuidance = async (req: Request, res: Response): Promise<void> => {
   try {
     const parsed = diagnosisRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -199,16 +192,12 @@ export const diagnoseGuidance = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to generate diagnosis",
+      message: error instanceof Error ? error.message : "Failed to generate diagnosis",
     });
   }
 };
 
-export const deleteGuidance = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const deleteGuidance = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -240,10 +229,7 @@ export const deleteGuidance = async (
   }
 };
 
-export const getGuidanceHistory = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getGuidanceHistory = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
       res.status(401).json({ success: false, message: "Unauthorized" });
@@ -277,13 +263,11 @@ export const getGuidanceHistory = async (
 
 // ─── Full report PDF ───────────────────────────────────────────────────────────
 
-const collectPdfBuffer = (
-  doc: InstanceType<typeof PDFDocument>,
-): Promise<Buffer> => {
+const collectPdfBuffer = (doc: InstanceType<typeof PDFDocument>): Promise<Buffer> => {
   const chunks: Buffer[] = [];
   return new Promise((resolve, reject) => {
     doc.on("data", (chunk: Buffer | string) =>
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
     );
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
@@ -304,10 +288,7 @@ const BRAND = {
  * Download the full detailed guidance report as a PDF
  * GET /guidance/:id/report/pdf
  */
-export const downloadGuidanceReportPdf = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const downloadGuidanceReportPdf = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id;
     if (!id || !mongoose.isValidObjectId(id)) {
@@ -333,8 +314,7 @@ export const downloadGuidanceReportPdf = async (
 
     const doc = new PDFDocument({ size: "A4", margin: 48 });
     const pageLeft = doc.page.margins.left;
-    const pageWidth =
-      doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
     const bottomLimit = doc.page.height - doc.page.margins.bottom;
 
     const ensureSpace = (needed: number): void => {
@@ -396,9 +376,7 @@ export const downloadGuidanceReportPdf = async (
     const headerHeight = 96;
     const headerTop = doc.y;
     doc.save();
-    doc
-      .roundedRect(pageLeft, headerTop, pageWidth, headerHeight, 16)
-      .fill(BRAND.slate);
+    doc.roundedRect(pageLeft, headerTop, pageWidth, headerHeight, 16).fill(BRAND.slate);
     doc.restore();
     doc.save();
     doc.roundedRect(pageLeft, headerTop, pageWidth, 8, 16).fill(BRAND.orange);
@@ -420,7 +398,7 @@ export const downloadGuidanceReportPdf = async (
       .text(
         `Generated ${new Date(submission.createdAt).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })} · Report ID ${submission._id.toString()}`,
         pageLeft + 20,
-        headerTop + 68,
+        headerTop + 68
       );
     doc.y = headerTop + headerHeight + 12;
 
@@ -428,12 +406,9 @@ export const downloadGuidanceReportPdf = async (
     drawSection("Profile & Goal", () => {
       drawKeyValueRow(
         "Child",
-        `Age ${q.child_age} · ${q.child_gender === "male" ? "Boy" : "Girl"}`,
+        `Age ${q.child_age} · ${q.child_gender === "male" ? "Boy" : "Girl"}`
       );
-      drawKeyValueRow(
-        "Sport",
-        q.sport?.trim() || "Not specified — see recommended sports below",
-      );
+      drawKeyValueRow("Sport", q.sport?.trim() || "Not specified — see recommended sports below");
       drawKeyValueRow("Objective", q.primary_objective);
       if (q.location) drawKeyValueRow("Location", q.location);
       doc.moveDown(0.2);
@@ -463,12 +438,9 @@ export const downloadGuidanceReportPdf = async (
             .fillColor(BRAND.text)
             .font("Helvetica-Bold")
             .fontSize(11)
-            .text(
-              `${i + 1}. ${phase.title} (${phase.timeframe})`,
-              pageLeft,
-              doc.y,
-              { width: pageWidth },
-            );
+            .text(`${i + 1}. ${phase.title} (${phase.timeframe})`, pageLeft, doc.y, {
+              width: pageWidth,
+            });
           doc.moveDown(0.15);
           drawParagraph(phase.focus);
           phase.milestones.forEach((m) => {
@@ -485,8 +457,7 @@ export const downloadGuidanceReportPdf = async (
           });
           doc.moveDown(0.1);
           drawKeyValueRow("Outcome", phase.outcome);
-          if (phase.estimatedCost)
-            drawKeyValueRow("Est. cost", phase.estimatedCost);
+          if (phase.estimatedCost) drawKeyValueRow("Est. cost", phase.estimatedCost);
           doc.moveDown(0.3);
         });
       });
@@ -615,7 +586,7 @@ export const downloadGuidanceReportPdf = async (
         "AI-generated guidance — verify with a coach or academy before acting on this plan.",
         pageLeft,
         doc.y,
-        { width: pageWidth },
+        { width: pageWidth }
       );
 
     const pdfBuffer = await collectPdfBuffer(doc);
@@ -623,14 +594,13 @@ export const downloadGuidanceReportPdf = async (
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="guidance-report-${submission._id.toString()}.pdf"`,
+      `attachment; filename="guidance-report-${submission._id.toString()}.pdf"`
     );
     res.status(200).send(pdfBuffer);
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to generate report",
+      message: error instanceof Error ? error.message : "Failed to generate report",
     });
   }
 };
@@ -644,10 +614,7 @@ const WHATSAPP_TEAM_NUMBER = "918968582443";
  * link click-tracking, or DOM-scraping analytics.
  * GET /guidance/:id/whatsapp
  */
-export const redirectToWhatsApp = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const redirectToWhatsApp = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = req.params.id;
     if (!id || !mongoose.isValidObjectId(id)) {
@@ -706,20 +673,26 @@ const getCategoryScore = (tags: string[], attributes?: any): number => {
     if (t === "shy" && attributes.interactionType === "team") score -= 1;
     if (
       t === "energetic" &&
-      (attributes.demand === "power" || attributes.demand === "reflex" || attributes.demand === "endurance")
-    ) score += 2;
+      (attributes.demand === "power" ||
+        attributes.demand === "reflex" ||
+        attributes.demand === "endurance")
+    )
+      score += 2;
     if (t === "energetic" && attributes.demand === "precision") score -= 1;
-    if (
-      t === "focused" &&
-      (attributes.demand === "precision" || attributes.demand === "strategy")
-    ) score += 3;
+    if (t === "focused" && (attributes.demand === "precision" || attributes.demand === "strategy"))
+      score += 3;
     if (
       t === "patient" &&
-      (attributes.demand === "strategy" || attributes.demand === "precision" || attributes.demand === "flexibility")
-    ) score += 2;
-    if (t === "patient" && (attributes.demand === "power" || attributes.demand === "reflex")) score -= 1;
+      (attributes.demand === "strategy" ||
+        attributes.demand === "precision" ||
+        attributes.demand === "flexibility")
+    )
+      score += 2;
+    if (t === "patient" && (attributes.demand === "power" || attributes.demand === "reflex"))
+      score -= 1;
     // curious suits technical / strategic sports, not brute-power sports
-    if (t === "curious" && (attributes.demand === "strategy" || attributes.demand === "precision")) score += 2;
+    if (t === "curious" && (attributes.demand === "strategy" || attributes.demand === "precision"))
+      score += 2;
     if (t === "curious" && attributes.demand === "power") score -= 1;
   }
   return score;
@@ -730,7 +703,7 @@ const getPreferenceScore = (
   intensityPreference: string | undefined,
   attributes?: any,
   age?: number,
-  medicalConditions?: string[],
+  medicalConditions?: string[]
 ): number => {
   if (!attributes) return 0;
   let score = 0;
@@ -739,17 +712,41 @@ const getPreferenceScore = (
     const tp = teamPreference.toLowerCase();
     if (tp === "team" && attributes.interactionType === "team") score += 3;
     if (tp === "team" && attributes.interactionType === "individual") score -= 2;
-    if (tp === "individual" && (attributes.interactionType === "individual" || attributes.interactionType === "head-to-head")) score += 3;
+    if (
+      tp === "individual" &&
+      (attributes.interactionType === "individual" || attributes.interactionType === "head-to-head")
+    )
+      score += 3;
     if (tp === "individual" && attributes.interactionType === "team") score -= 2;
   }
 
   if (intensityPreference) {
     const ip = intensityPreference.toLowerCase();
-    if (ip === "high" && (attributes.demand === "power" || attributes.demand === "endurance" || attributes.demand === "reflex")) score += 2;
-    if (ip === "high" && (attributes.demand === "precision" || attributes.demand === "flexibility")) score -= 1;
-    if (ip === "medium" && (attributes.demand === "strategy" || attributes.demand === "reflex" || attributes.demand === "flexibility")) score += 2;
-    if (ip === "low" && (attributes.demand === "precision" || attributes.demand === "strategy" || attributes.demand === "flexibility")) score += 2;
-    if (ip === "low" && (attributes.demand === "power" || attributes.demand === "endurance")) score -= 2;
+    if (
+      ip === "high" &&
+      (attributes.demand === "power" ||
+        attributes.demand === "endurance" ||
+        attributes.demand === "reflex")
+    )
+      score += 2;
+    if (ip === "high" && (attributes.demand === "precision" || attributes.demand === "flexibility"))
+      score -= 1;
+    if (
+      ip === "medium" &&
+      (attributes.demand === "strategy" ||
+        attributes.demand === "reflex" ||
+        attributes.demand === "flexibility")
+    )
+      score += 2;
+    if (
+      ip === "low" &&
+      (attributes.demand === "precision" ||
+        attributes.demand === "strategy" ||
+        attributes.demand === "flexibility")
+    )
+      score += 2;
+    if (ip === "low" && (attributes.demand === "power" || attributes.demand === "endurance"))
+      score -= 2;
   }
 
   // Contact level scoring — differentiates high-contact (football, hockey) from
@@ -768,9 +765,11 @@ const getPreferenceScore = (
     }
 
     // Low intensity preference → high contact is a mismatch
-    if (intensityPreference && intensityPreference.toLowerCase() === "low" && cl === "high") score -= 2;
+    if (intensityPreference && intensityPreference.toLowerCase() === "low" && cl === "high")
+      score -= 2;
     // High intensity preference → slight bonus for high contact (physical engagement)
-    if (intensityPreference && intensityPreference.toLowerCase() === "high" && cl === "high") score += 1;
+    if (intensityPreference && intensityPreference.toLowerCase() === "high" && cl === "high")
+      score += 1;
   }
 
   return score;
@@ -811,20 +810,15 @@ const getAgeScore = (age: number, rangeStr: string): number => {
   return 0;
 };
 
-export const recommendSport = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const recommendSport = async (req: Request, res: Response): Promise<void> => {
   try {
     const parsed = sportMatchRequestSchema.safeParse(req.body);
     if (!parsed.success) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "Invalid payload",
-          issues: parsed.error.flatten(),
-        });
+      res.status(400).json({
+        success: false,
+        message: "Invalid payload",
+        issues: parsed.error.flatten(),
+      });
       return;
     }
 
@@ -834,21 +828,17 @@ export const recommendSport = async (
     // pathway guide (one document per sport) — independent of each other.
     const [allSports, publishedGuides] = await Promise.all([
       Sport.find({ isVerified: true }).lean(),
-      PathwayGuide.find({ status: "published" })
-        .select("sportSlug sportIntro stages")
-        .lean(),
+      PathwayGuide.find({ status: "published" }).select("sportSlug sportIntro stages").lean(),
     ]);
 
     // 3. Keyed by sport. This used to pick a state overlay over the national
     //    guide; there is one guide per sport now, so the lookup is direct.
     const pathwayBySlug = new Map<string, (typeof publishedGuides)[number]>(
-      publishedGuides.map((guide) => [guide.sportSlug, guide]),
+      publishedGuides.map((guide) => [guide.sportSlug, guide])
     );
 
     // 4. Which sports have a readable pathway at all.
-    const sportsWithAnyPathway = new Set<string>(
-      publishedGuides.map((guide) => guide.sportSlug),
-    );
+    const sportsWithAnyPathway = new Set<string>(publishedGuides.map((guide) => guide.sportSlug));
 
     if (allSports.length === 0) {
       res.status(404).json({ success: false, message: "No sports available" });
@@ -864,7 +854,7 @@ export const recommendSport = async (
         parsed.data.intensity_preference,
         sport.attributes,
         parsed.data.child_age,
-        parsed.data.medical_conditions,
+        parsed.data.medical_conditions
       );
 
       const p = pathwayBySlug.get(sport.slug);
@@ -872,9 +862,7 @@ export const recommendSport = async (
 
       // The first stage is the one a family choosing a sport is actually about
       // to live through, so it is the stage that grounds the recommendation.
-      const stage1 = p?.stages?.length
-        ? [...p.stages].sort((a, b) => a.order - b.order)[0]
-        : null;
+      const stage1 = p?.stages?.length ? [...p.stages].sort((a, b) => a.order - b.order)[0] : null;
       let overview = sport.description || "";
 
       if (stage1) {
@@ -920,10 +908,7 @@ export const recommendSport = async (
     const top3 = scoredSports.slice(0, 3);
 
     // Step B: Grounded AI Call
-    const recommendationResponse = await generateSportMatchRecommendation(
-      parsed.data,
-      top3,
-    );
+    const recommendationResponse = await generateSportMatchRecommendation(parsed.data, top3);
 
     // Re-sort by AI-computed scores (AI may reorder relative to rule-based ranking)
     recommendationResponse.recommendations.sort((a, b) => b.matchScore - a.matchScore);
@@ -933,10 +918,7 @@ export const recommendSport = async (
       data: recommendationResponse,
     });
   } catch (error) {
-    let errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Failed to generate recommendation";
+    let errorMessage = error instanceof Error ? error.message : "Failed to generate recommendation";
     const normalizedMessage = errorMessage.toLowerCase();
     const isTemporarilyUnavailable =
       normalizedMessage.includes("quota") ||

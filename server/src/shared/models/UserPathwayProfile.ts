@@ -34,7 +34,7 @@ const userPathwayProfileSchema = new Schema<UserPathwayProfileDocument>(
     applications: { type: Schema.Types.Mixed, default: [] },
     reminders: { type: Schema.Types.Mixed, default: [] },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // One profile per (user, dependent) pair — dependentId: null is its own slot,
@@ -43,5 +43,5 @@ userPathwayProfileSchema.index({ userId: 1, dependentId: 1 }, { unique: true });
 
 export const UserPathwayProfile = mongoose.model<UserPathwayProfileDocument>(
   "UserPathwayProfile",
-  userPathwayProfileSchema,
+  userPathwayProfileSchema
 );

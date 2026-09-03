@@ -23,22 +23,16 @@ import { ADMIN_ROLES, getRolePermissions } from "../constants/adminPermissions";
  */
 const run = async () => {
   const uri =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
   await mongoose.connect(uri);
   console.log("Connected to MongoDB");
 
   const systemAdmins = await Admin.find({ role: ADMIN_ROLES.SYSTEM_ADMIN });
-  const canonicalPermissions = [
-    ...getRolePermissions(ADMIN_ROLES.SYSTEM_ADMIN),
-  ];
+  const canonicalPermissions = [...getRolePermissions(ADMIN_ROLES.SYSTEM_ADMIN)];
   const canonicalSet = new Set(canonicalPermissions);
 
   console.log(`Found ${systemAdmins.length} System Admin(s)`);
-  console.log(
-    `Canonical permission set has ${canonicalPermissions.length} entries`,
-  );
+  console.log(`Canonical permission set has ${canonicalPermissions.length} entries`);
   console.log("---");
 
   let updated = 0;
@@ -55,10 +49,7 @@ const run = async () => {
       continue;
     }
 
-    await Admin.updateOne(
-      { _id: admin._id },
-      { $set: { permissions: canonicalPermissions } },
-    );
+    await Admin.updateOne({ _id: admin._id }, { $set: { permissions: canonicalPermissions } });
 
     console.log(`${admin.name} (${admin.email}): synced`);
     if (removed.length > 0) console.log(`  removed: ${removed.join(", ")}`);

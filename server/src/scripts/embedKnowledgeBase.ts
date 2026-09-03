@@ -22,7 +22,9 @@ async function main() {
   }
 
   await mongoose.connect(MONGO_URI);
-  console.log(`Connected to MongoDB. Embedding ${KNOWLEDGE_BASE_SOURCES.length} knowledge chunks...`);
+  console.log(
+    `Connected to MongoDB. Embedding ${KNOWLEDGE_BASE_SOURCES.length} knowledge chunks...`
+  );
 
   let succeeded = 0;
   let failed = 0;
@@ -39,7 +41,7 @@ async function main() {
             embedding,
           },
         },
-        { upsert: true },
+        { upsert: true }
       );
       succeeded++;
       console.log(`  ✓ ${entry.sourceId}`);

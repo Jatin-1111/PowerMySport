@@ -61,12 +61,10 @@ export default function BlogPreviewModal({
             <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                  <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold tracking-wider text-white uppercase">
                     Preview
                   </span>
-                  <span className="text-sm text-slate-500">
-                    How your story will look
-                  </span>
+                  <span className="text-sm text-slate-500">How your story will look</span>
                 </div>
                 <button
                   onClick={onClose}
@@ -86,30 +84,20 @@ export default function BlogPreviewModal({
 
                 <div className="mt-4 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
                   {coverUrl ? (
-                    <img
-                      src={coverUrl}
-                      alt={title}
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={coverUrl} alt={title} className="h-full w-full object-cover" />
                   ) : (
                     <BlogCoverFallback topic={topic} />
                   )}
                 </div>
 
-                <h1 className="font-title mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-900">
+                <h1 className="font-title mt-5 text-3xl leading-tight font-bold tracking-tight text-slate-900">
                   {title || "Untitled story"}
                 </h1>
 
                 <div className="mt-3 flex items-center gap-3 border-b border-slate-100 pb-5">
-                  <AuthorAvatar
-                    name={authorName}
-                    photoUrl={authorPhotoUrl}
-                    size={40}
-                  />
+                  <AuthorAvatar name={authorName} photoUrl={authorPhotoUrl} size={40} />
                   <span>
-                    <span className="block text-sm font-semibold text-slate-900">
-                      {authorName}
-                    </span>
+                    <span className="block text-sm font-semibold text-slate-900">{authorName}</span>
                     <span className="block text-xs text-slate-400">
                       {authorUsername ? `@${authorUsername} · ` : ""}
                       Published on {formatBlogDate(new Date().toISOString())}
@@ -126,6 +114,6 @@ export default function BlogPreviewModal({
         </>
       ) : null}
     </AnimatePresence>,
-    document.body,
+    document.body
   );
 }

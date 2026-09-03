@@ -42,7 +42,7 @@ export class ScheduledNotificationService {
         fifteenMinutes?: boolean;
       };
     },
-    channels: ReminderChannels,
+    channels: ReminderChannels
   ): Promise<void> {
     try {
       // Use defaults if preferences are not set
@@ -58,10 +58,7 @@ export class ScheduledNotificationService {
         return;
       }
 
-      const bookingDateTime = this.combineDateTime(
-        bookingData.bookingDate,
-        bookingData.startTime,
-      );
+      const bookingDateTime = this.combineDateTime(bookingData.bookingDate, bookingData.startTime);
 
       const reminders: Array<{
         interval: ReminderInterval;
@@ -85,20 +82,19 @@ export class ScheduledNotificationService {
         },
       ];
 
-      const serviceName =
-        bookingData.venueName || bookingData.coachName || "your session";
+      const serviceName = bookingData.venueName || bookingData.coachName || "your session";
 
       for (const reminder of reminders) {
         if (!reminder.enabled) continue;
 
         const scheduledFor = new Date(
-          bookingDateTime.getTime() - reminder.minutesBefore * 60 * 1000,
+          bookingDateTime.getTime() - reminder.minutesBefore * 60 * 1000
         );
 
         // Don't schedule reminders in the past
         if (scheduledFor < new Date()) {
           log.info(
-            `Skipping ${reminder.interval} reminder for booking ${bookingData.bookingId} - time has passed`,
+            `Skipping ${reminder.interval} reminder for booking ${bookingData.bookingId} - time has passed`
           );
           continue;
         }
@@ -108,7 +104,7 @@ export class ScheduledNotificationService {
           reminder.interval,
           bookingData.sport,
           serviceName,
-          bookingData.startTime,
+          bookingData.startTime
         );
 
         await ScheduledNotification.create({
@@ -135,7 +131,7 @@ export class ScheduledNotificationService {
         });
 
         log.info(
-          `Created ${reminder.interval} reminder for booking ${bookingData.bookingId} at ${scheduledFor.toISOString()}`,
+          `Created ${reminder.interval} reminder for booking ${bookingData.bookingId} at ${scheduledFor.toISOString()}`
         );
       }
     } catch (error) {
@@ -147,9 +143,7 @@ export class ScheduledNotificationService {
   /**
    * Cancel all pending reminders for a booking (when booking is cancelled)
    */
-  static async cancelBookingReminders(
-    bookingId: mongoose.Types.ObjectId,
-  ): Promise<number> {
+  static async cancelBookingReminders(bookingId: mongoose.Types.ObjectId): Promise<number> {
     try {
       const result = await ScheduledNotification.updateMany(
         {
@@ -158,12 +152,10 @@ export class ScheduledNotificationService {
         },
         {
           $set: { status: "CANCELLED" as ScheduledNotificationStatus },
-        },
+        }
       );
 
-      log.info(
-        `Cancelled ${result.modifiedCount} reminders for booking ${bookingId}`,
-      );
+      log.info(`Cancelled ${result.modifiedCount} reminders for booking ${bookingId}`);
       return result.modifiedCount;
     } catch (error) {
       log.error("Error cancelling booking reminders:", error);
@@ -188,10 +180,7 @@ export class ScheduledNotificationService {
         scheduledFor: { $lte: now },
       })
         .limit(batchSize)
-        .populate(
-          "userId",
-          "email name notificationPreferences pushSubscriptions",
-        )
+        .populate("userId", "email name notificationPreferences pushSubscriptions")
         .populate("bookingId", "status date startTime sport")
         .lean();
 
@@ -210,9 +199,7 @@ export class ScheduledNotificationService {
               await ScheduledNotification.findByIdAndUpdate(reminder._id, {
                 status: "CANCELLED",
               });
-              log.info(
-                `Cancelled reminder ${reminder._id} - booking no longer valid`,
-              );
+              log.info(`Cancelled reminder ${reminder._id} - booking no longer valid`);
               continue;
             }
           }
@@ -241,7 +228,7 @@ export class ScheduledNotificationService {
                 title: reminder.title,
                 message: reminder.body,
                 data: reminder.data || {},
-              }),
+              })
             );
           }
 
@@ -252,16 +239,13 @@ export class ScheduledNotificationService {
             user.pushSubscriptions.length > 0
           ) {
             sendPromises.push(
-              pushNotificationService.sendPushNotificationToMultiple(
-                user.pushSubscriptions,
-                {
-                  title: reminder.title,
-                  body: reminder.body,
-                  icon: "/icon-192x192.png",
-                  badge: "/badge-72x72.png",
-                  data: reminder.data || {},
-                },
-              ),
+              pushNotificationService.sendPushNotificationToMultiple(user.pushSubscriptions, {
+                title: reminder.title,
+                body: reminder.body,
+                icon: "/icon-192x192.png",
+                badge: "/badge-72x72.png",
+                data: reminder.data || {},
+              })
             );
           }
 
@@ -277,14 +261,13 @@ export class ScheduledNotificationService {
                   date: booking.date,
                   startTime: booking.startTime,
                   endTime: booking.endTime,
-                  interval: reminder.interval as
-                    "24_HOURS" | "1_HOUR" | "15_MINUTES",
+                  interval: reminder.interval as "24_HOURS" | "1_HOUR" | "15_MINUTES",
                   bookingId: reminder.bookingId?.toString() || "",
                 }).catch((err) => {
                   log.error("Failed to send reminder email:", err);
                   // Return rejected promise to count as failure
                   return Promise.reject(err);
-                }),
+                })
               );
             } else if (reminder.type === "PLAN_CHECKIN") {
               const data = (reminder.data || {}) as Record<string, any>;
@@ -299,7 +282,7 @@ export class ScheduledNotificationService {
                 }).catch((err) => {
                   log.error("Failed to send plan check-in email:", err);
                   return Promise.reject(err);
-                }),
+                })
               );
             }
           }
@@ -313,17 +296,14 @@ export class ScheduledNotificationService {
           });
 
           stats.sent++;
-          log.info(
-            `Sent reminder ${reminder._id}${booking ? ` for booking ${booking._id}` : ""}`,
-          );
+          log.info(`Sent reminder ${reminder._id}${booking ? ` for booking ${booking._id}` : ""}`);
         } catch (error) {
           log.error(`Error processing reminder ${reminder._id}:`, error);
 
           await ScheduledNotification.findByIdAndUpdate(reminder._id, {
             status: "FAILED",
             failedAt: new Date(),
-            failureReason:
-              error instanceof Error ? error.message : String(error),
+            failureReason: error instanceof Error ? error.message : String(error),
             $inc: { retryCount: 1 },
           });
 
@@ -343,10 +323,7 @@ export class ScheduledNotificationService {
   /**
    * Get upcoming reminders for a user
    */
-  static async getUserUpcomingReminders(
-    userId: mongoose.Types.ObjectId,
-    limit: number = 10,
-  ) {
+  static async getUserUpcomingReminders(userId: mongoose.Types.ObjectId, limit: number = 10) {
     return ScheduledNotification.find({
       userId,
       status: "PENDING",
@@ -382,7 +359,7 @@ export class ScheduledNotificationService {
         sent: 0,
         failed: 0,
         cancelled: 0,
-      },
+      }
     );
   }
 
@@ -422,7 +399,7 @@ export class ScheduledNotificationService {
     interval: ReminderInterval,
     sport: string,
     serviceName: string,
-    startTime: string,
+    startTime: string
   ): string {
     switch (interval) {
       case "24_HOURS":

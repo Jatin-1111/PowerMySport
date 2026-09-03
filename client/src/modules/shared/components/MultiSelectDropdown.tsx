@@ -51,10 +51,7 @@ export default function MultiSelectDropdown({
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -87,9 +84,7 @@ export default function MultiSelectDropdown({
   }, []);
 
   const toggleOption = (opt: string) => {
-    onChange(
-      value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt],
-    );
+    onChange(value.includes(opt) ? value.filter((v) => v !== opt) : [...value, opt]);
   };
 
   const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
@@ -97,9 +92,7 @@ export default function MultiSelectDropdown({
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       if (isOpen) {
-        optionRefs.current[
-          e.key === "ArrowDown" ? 0 : options.length - 1
-        ]?.focus();
+        optionRefs.current[e.key === "ArrowDown" ? 0 : options.length - 1]?.focus();
       } else {
         open(e.key === "ArrowDown" ? 0 : options.length - 1);
       }
@@ -110,9 +103,7 @@ export default function MultiSelectDropdown({
   };
 
   const handleListKeyDown = (e: React.KeyboardEvent) => {
-    const focused = optionRefs.current.findIndex(
-      (el) => el === document.activeElement,
-    );
+    const focused = optionRefs.current.findIndex((el) => el === document.activeElement);
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
@@ -120,9 +111,7 @@ export default function MultiSelectDropdown({
         break;
       case "ArrowUp":
         e.preventDefault();
-        optionRefs.current[
-          (focused - 1 + options.length) % options.length
-        ]?.focus();
+        optionRefs.current[(focused - 1 + options.length) % options.length]?.focus();
         break;
       case "Home":
         e.preventDefault();
@@ -159,13 +148,13 @@ export default function MultiSelectDropdown({
   };
 
   return (
-    <div className="w-full relative" ref={containerRef} onBlur={handleBlur}>
+    <div className="relative w-full" ref={containerRef} onBlur={handleBlur}>
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2 pb-2">
+        <div className="mb-2 flex flex-wrap gap-2 pb-2">
           {value.map((opt) => (
             <div
               key={opt}
-              className="inline-flex items-center gap-1 bg-power-orange/10 text-power-orange px-2.5 py-1 rounded-md text-xs font-medium"
+              className="bg-power-orange/10 text-power-orange inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium"
             >
               <span>{opt}</span>
               <button
@@ -176,7 +165,7 @@ export default function MultiSelectDropdown({
                   onChange(value.filter((v) => v !== opt));
                 }}
                 disabled={disabled}
-                className="rounded-full p-0.5 transition-colors hover:bg-power-orange/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange"
+                className="hover:bg-power-orange/20 focus-visible:ring-power-orange rounded-full p-0.5 transition-colors focus:outline-none focus-visible:ring-2"
               >
                 <X className="h-3 w-3" aria-hidden="true" />
               </button>
@@ -197,11 +186,11 @@ export default function MultiSelectDropdown({
           aria-expanded={isOpen}
           aria-label={`${label} — ${value.length} selected`}
           className={cn(
-            "flex w-full items-center justify-between rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:outline-none focus-visible:border-power-orange focus-visible:ring-2 focus-visible:ring-power-orange/40 dark:bg-slate-800/50",
+            "focus-visible:border-power-orange focus-visible:ring-power-orange/40 flex w-full items-center justify-between rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:outline-none focus-visible:ring-2 dark:bg-slate-800/50",
             isOpen
-              ? "border-power-orange ring-2 ring-power-orange/20 bg-white dark:bg-slate-800"
+              ? "border-power-orange ring-power-orange/20 bg-white ring-2 dark:bg-slate-800"
               : "border-slate-200 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800",
-            disabled && "opacity-50 cursor-not-allowed",
+            disabled && "cursor-not-allowed opacity-50"
           )}
         >
           <span className="text-slate-500 dark:text-slate-400">
@@ -209,10 +198,7 @@ export default function MultiSelectDropdown({
           </span>
           <ChevronDown
             aria-hidden="true"
-            className={cn(
-              "h-4 w-4 text-slate-400 transition-transform",
-              isOpen && "rotate-180",
-            )}
+            className={cn("h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")}
           />
         </button>
 
@@ -224,7 +210,7 @@ export default function MultiSelectDropdown({
             onKeyDown={handleListKeyDown}
             className={cn(
               "absolute z-20 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg shadow-black/5 dark:border-slate-700 dark:bg-slate-900",
-              openUp ? "bottom-full mb-1" : "top-full mt-1",
+              openUp ? "bottom-full mb-1" : "top-full mt-1"
             )}
           >
             {options.map((opt, i) => {
@@ -240,18 +226,15 @@ export default function MultiSelectDropdown({
                   }}
                   onClick={() => toggleOption(opt)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange/60",
+                    "focus-visible:ring-power-orange/60 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2",
                     isSelected
                       ? "bg-power-orange/10 text-power-orange font-semibold"
-                      : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800",
+                      : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                   )}
                 >
                   {opt}
                   {isSelected && (
-                    <div
-                      className="h-2 w-2 rounded-full bg-power-orange"
-                      aria-hidden="true"
-                    />
+                    <div className="bg-power-orange h-2 w-2 rounded-full" aria-hidden="true" />
                   )}
                 </button>
               );

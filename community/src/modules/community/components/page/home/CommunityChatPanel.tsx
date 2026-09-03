@@ -110,9 +110,7 @@ export default function CommunityChatPanel({ page }: Props) {
 
   const previousScrollHeightRef = useRef<number>(0);
   const previousScrollTopRef = useRef<number>(0);
-  const typingEmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const typingEmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [textareaRows, setTextareaRows] = useState(1);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
@@ -197,10 +195,7 @@ export default function CommunityChatPanel({ page }: Props) {
 
   // Close header menu on click outside
   const handleClickOutsideHeaderMenu = useCallback((e: MouseEvent) => {
-    if (
-      headerMenuRef.current &&
-      !headerMenuRef.current.contains(e.target as Node)
-    ) {
+    if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
       setShowHeaderMenu(false);
     }
   }, []);
@@ -213,31 +208,25 @@ export default function CommunityChatPanel({ page }: Props) {
     if (isLoadingMoreMessages) {
       const currentHeight = container.scrollHeight;
       if (currentHeight > previousScrollHeightRef.current) {
-        const heightDifference =
-          currentHeight - previousScrollHeightRef.current;
+        const heightDifference = currentHeight - previousScrollHeightRef.current;
         container.scrollTop = previousScrollTopRef.current + heightDifference;
       }
       return;
     }
 
     const messagesMatchConversation =
-      messages.length === 0 ||
-      messages[0].conversationId === selectedConversation?.id;
+      messages.length === 0 || messages[0].conversationId === selectedConversation?.id;
     if (!messagesMatchConversation) return;
 
-    const isNewConversation =
-      currentConversationIdRef.current !== selectedConversation?.id;
-    const lastMessageId =
-      messages.length > 0 ? messages[messages.length - 1].id : null;
+    const isNewConversation = currentConversationIdRef.current !== selectedConversation?.id;
+    const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
     const isNewMessage = lastMessageId !== lastMessageIdRef.current;
 
     if (isNewConversation || isNewMessage) {
       const isAtBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight <
-        250;
+        container.scrollHeight - container.scrollTop - container.clientHeight < 250;
       const isMyMessage =
-        messages.length > 0 &&
-        messages[messages.length - 1].senderId === profile?.userId;
+        messages.length > 0 && messages[messages.length - 1].senderId === profile?.userId;
 
       if (isNewConversation || isAtBottom || isMyMessage) {
         container.scrollTop = container.scrollHeight;
@@ -246,32 +235,20 @@ export default function CommunityChatPanel({ page }: Props) {
       currentConversationIdRef.current = selectedConversation?.id || null;
       lastMessageIdRef.current = lastMessageId;
     }
-  }, [
-    messages,
-    isLoadingMoreMessages,
-    selectedConversation?.id,
-    profile?.userId,
-  ]);
-
-
+  }, [messages, isLoadingMoreMessages, selectedConversation?.id, profile?.userId]);
 
   const handleScroll = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
     previousScrollHeightRef.current = container.scrollHeight;
     previousScrollTopRef.current = container.scrollTop;
-    if (
-      container.scrollTop < 100 &&
-      hasMoreMessages &&
-      !isLoadingMoreMessages
-    ) {
+    if (container.scrollTop < 100 && hasMoreMessages && !isLoadingMoreMessages) {
       void loadMoreMessages();
     }
   };
 
   const handleSend = () => {
-    if (typingEmitTimeoutRef.current)
-      clearTimeout(typingEmitTimeoutRef.current);
+    if (typingEmitTimeoutRef.current) clearTimeout(typingEmitTimeoutRef.current);
     const socket = getCommunitySocket();
     if (selectedConversation) {
       socket.emit("community:typingStop", {
@@ -301,8 +278,7 @@ export default function CommunityChatPanel({ page }: Props) {
         socket.emit("community:typingStart", {
           conversationId: selectedConversation.id,
         });
-        if (typingEmitTimeoutRef.current)
-          clearTimeout(typingEmitTimeoutRef.current);
+        if (typingEmitTimeoutRef.current) clearTimeout(typingEmitTimeoutRef.current);
         typingEmitTimeoutRef.current = setTimeout(() => {
           socket.emit("community:typingStop", {
             conversationId: selectedConversation.id,
@@ -314,7 +290,7 @@ export default function CommunityChatPanel({ page }: Props) {
         });
       }
     },
-    [setNewMessage, selectedConversation],
+    [setNewMessage, selectedConversation]
   );
 
   const handleEmojiSelect = useCallback(
@@ -323,7 +299,7 @@ export default function CommunityChatPanel({ page }: Props) {
       setShowEmojiPicker(false);
       textareaRef.current?.focus();
     },
-    [setNewMessage, setShowEmojiPicker],
+    [setNewMessage, setShowEmojiPicker]
   );
 
   const currentlyTypingUsers = selectedConversation
@@ -335,11 +311,8 @@ export default function CommunityChatPanel({ page }: Props) {
   // The group's shared pin, with the local mirror taking precedence so the
   // banner reacts to this user's own pin before the conversation refetches.
   const pinnedMessageId =
-    selectedConversationPinnedId ??
-    selectedConversation?.group?.pinnedMessageId ??
-    null;
-  const isAnnouncementGroup =
-    selectedConversation?.group?.postPolicy === "ADMIN_ONLY";
+    selectedConversationPinnedId ?? selectedConversation?.group?.pinnedMessageId ?? null;
+  const isAnnouncementGroup = selectedConversation?.group?.postPolicy === "ADMIN_ONLY";
   // The server computes this; an announcement group offers the pin control
   // only to admins, and an ordinary group offers it to anyone who can post.
   const canPinInGroup = selectedConversation?.group?.canPost !== false;
@@ -370,10 +343,10 @@ export default function CommunityChatPanel({ page }: Props) {
 
   return (
     <motion.section
-      className={`relative h-full min-h-0 min-w-0 flex-col overflow-hidden chat-bg ${workspaceView === "CHAT" ? "flex" : "hidden md:flex"}`}
+      className={`chat-bg relative h-full min-h-0 min-w-0 flex-col overflow-hidden ${workspaceView === "CHAT" ? "flex" : "hidden md:flex"}`}
     >
       {/* ── Header ── */}
-      <div className="z-20 shrink-0 border-b border-slate-200/50 bg-white/80 backdrop-blur-xl px-3 py-2.5 sm:px-4 shadow-[0_1px_12px_rgba(0,0,0,0.03)] supports-[backdrop-filter]:bg-white/70">
+      <div className="z-20 shrink-0 border-b border-slate-200/50 bg-white/80 px-3 py-2.5 shadow-[0_1px_12px_rgba(0,0,0,0.03)] backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 sm:px-4">
         <div className="flex items-center gap-3">
           {/* Back button (mobile only) */}
           <button
@@ -382,7 +355,7 @@ export default function CommunityChatPanel({ page }: Props) {
               setSidebarMode("INBOX");
               setWorkspaceView("DIRECTORY");
             }}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition md:hidden"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:bg-slate-200 md:hidden"
             aria-label="Back"
           >
             <ChevronLeft size={22} strokeWidth={2.5} />
@@ -391,9 +364,9 @@ export default function CommunityChatPanel({ page }: Props) {
           {/* Clickable Avatar + Name */}
           <button
             onClick={() => setShowChatDetailsSidebar(!showChatDetailsSidebar)}
-            className="flex items-center gap-3 min-w-0 flex-1 text-left hover:opacity-80 transition"
+            className="flex min-w-0 flex-1 items-center gap-3 text-left transition hover:opacity-80"
           >
-            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-bold uppercase text-slate-700 ring-2 ring-white shadow-sm">
+            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-bold text-slate-700 uppercase shadow-sm ring-2 ring-white">
               {selectedConversationPhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -407,10 +380,10 @@ export default function CommunityChatPanel({ page }: Props) {
             </div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-[15px] font-semibold text-slate-900 leading-tight tracking-tight">
+              <h2 className="truncate text-[15px] leading-tight font-semibold tracking-tight text-slate-900">
                 {selectedConversationDisplayName}
               </h2>
-              <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+              <p className="mt-0.5 text-[11px] font-medium text-slate-500">
                 {lastSeenText ? (
                   <span className="text-slate-600">{lastSeenText}</span>
                 ) : isGroup ? (
@@ -423,14 +396,12 @@ export default function CommunityChatPanel({ page }: Props) {
           </button>
 
           {/* Right actions */}
-          <div className="flex shrink-0 items-center gap-0.5 relative">
+          <div className="relative flex shrink-0 items-center gap-0.5">
             {isGroup && (
               <button
                 onClick={() => setShowGroupMembersPanel(!showGroupMembersPanel)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition"
-                aria-label={
-                  showGroupMembersPanel ? "Hide members" : "Show members"
-                }
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:bg-slate-200"
+                aria-label={showGroupMembersPanel ? "Hide members" : "Show members"}
               >
                 {showGroupMembersPanel ? (
                   <PanelRightClose size={18} />
@@ -443,7 +414,7 @@ export default function CommunityChatPanel({ page }: Props) {
             {/* Three-dot menu */}
             <button
               onClick={() => setShowHeaderMenu((prev) => !prev)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:bg-slate-200"
               aria-label="More options"
             >
               <MoreVertical size={18} />
@@ -474,7 +445,9 @@ export default function CommunityChatPanel({ page }: Props) {
                   onReport={() =>
                     handleOpenReportModal(
                       isGroup ? "GROUP" : "MESSAGE",
-                      isGroup ? (selectedConversation.group?.id ?? selectedConversation.id) : selectedConversation.id,
+                      isGroup
+                        ? (selectedConversation.group?.id ?? selectedConversation.id)
+                        : selectedConversation.id
                     )
                   }
                   onClearChat={() => setPendingConfirmAction("clear")}
@@ -497,20 +470,20 @@ export default function CommunityChatPanel({ page }: Props) {
               <div className="rounded-[14px] border border-orange-200/60 bg-gradient-to-r from-orange-50/80 to-amber-50/80 px-3.5 py-2.5 shadow-sm backdrop-blur-md">
                 {selectedConversationNeedsMyApproval ? (
                   <>
-                    <p className="font-600 text-orange-900 text-[14px]">Message request</p>
+                    <p className="font-600 text-[14px] text-orange-900">Message request</p>
                     <p className="mt-0.5 text-[12px] text-orange-800/80">
                       Do you want to accept this conversation request?
                     </p>
                     <div className="mt-2.5 flex gap-2">
                       <button
                         onClick={handleAcceptRequest}
-                        className="rounded-xl bg-gradient-to-b from-power-orange to-orange-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md shadow-orange-500/20 hover:from-orange-500 hover:to-orange-700 transition active:scale-95"
+                        className="from-power-orange rounded-xl bg-gradient-to-b to-orange-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md shadow-orange-500/20 transition hover:from-orange-500 hover:to-orange-700 active:scale-95"
                       >
                         Accept
                       </button>
                       <button
                         onClick={handleRejectRequest}
-                        className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition active:scale-95"
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95"
                       >
                         Decline
                       </button>
@@ -518,8 +491,7 @@ export default function CommunityChatPanel({ page }: Props) {
                   </>
                 ) : (
                   <p className="text-[12px] font-medium text-orange-800/80">
-                    Request sent. You can still message while waiting for a
-                    reply.
+                    Request sent. You can still message while waiting for a reply.
                   </p>
                 )}
               </div>
@@ -557,17 +529,16 @@ export default function CommunityChatPanel({ page }: Props) {
             className="z-10 shrink-0 overflow-hidden border-b border-slate-200/50 bg-slate-50/90 backdrop-blur"
           >
             <div className="flex items-center justify-between gap-3 px-4 py-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Pin size={12} className="shrink-0 text-power-orange fill-power-orange" />
+              <div className="flex min-w-0 items-center gap-2">
+                <Pin size={12} className="text-power-orange fill-power-orange shrink-0" />
                 <p className="truncate text-xs font-medium text-slate-700">
-                  <span className="font-semibold text-power-orange mr-1">Pinned:</span>
-                  {messages.find((m) => m.id === pinnedMessageId)?.content ||
-                    "Pinned message"}
+                  <span className="text-power-orange mr-1 font-semibold">Pinned:</span>
+                  {messages.find((m) => m.id === pinnedMessageId)?.content || "Pinned message"}
                 </p>
               </div>
               <button
                 onClick={() => void pinGroupMessage(pinnedMessageId)}
-                className="shrink-0 rounded-full p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition"
+                className="shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
               >
                 <X size={14} />
               </button>
@@ -580,7 +551,7 @@ export default function CommunityChatPanel({ page }: Props) {
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="min-h-0 flex-1 overflow-y-auto px-3 pt-4 pb-4 sm:px-4 sm:pt-5 space-y-1"
+        className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pt-4 pb-4 sm:px-4 sm:pt-5"
       >
         {/* Load more spinner */}
         <AnimatePresence>
@@ -591,8 +562,8 @@ export default function CommunityChatPanel({ page }: Props) {
               exit={{ opacity: 0, y: -8 }}
               className="flex justify-center py-3"
             >
-              <div className="flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 backdrop-blur-md px-4 py-1.5 shadow-sm text-xs font-medium text-slate-500">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-power-orange" />
+              <div className="flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 px-4 py-1.5 text-xs font-medium text-slate-500 shadow-sm backdrop-blur-md">
+                <Loader2 className="text-power-orange h-3.5 w-3.5 animate-spin" />
                 Loading older messages…
               </div>
             </motion.div>
@@ -605,12 +576,13 @@ export default function CommunityChatPanel({ page }: Props) {
           const showDateSeparator =
             !prevMessage ||
             new Date(message.createdAt).toDateString() !==
-            new Date(prevMessage.createdAt).toDateString();
-            
+              new Date(prevMessage.createdAt).toDateString();
+
           const isFirstUnread = message.id === firstUnreadMessageId;
 
           const isSearchMatch = isSearchOpen && searchMatchIds.includes(message.id);
-          const isActiveSearchMatch = isSearchOpen && searchMatchIds[searchMatchIndex] === message.id;
+          const isActiveSearchMatch =
+            isSearchOpen && searchMatchIds[searchMatchIndex] === message.id;
 
           return (
             <div
@@ -618,22 +590,21 @@ export default function CommunityChatPanel({ page }: Props) {
               id={`msg-${message.id}`}
               className={
                 isActiveSearchMatch
-                  ? "rounded-2xl ring-2 ring-power-orange/50 ring-offset-1 transition-all"
+                  ? "ring-power-orange/50 rounded-2xl ring-2 ring-offset-1 transition-all"
                   : isSearchMatch
-                  ? "rounded-2xl ring-1 ring-slate-300 ring-offset-1 transition-all"
-                  : undefined
+                    ? "rounded-2xl ring-1 ring-slate-300 ring-offset-1 transition-all"
+                    : undefined
               }
             >
               {showDateSeparator && (
                 <div className="flex items-center gap-3 py-3">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/40 to-slate-300/40" />
-                  <span className="shrink-0 rounded-full border border-slate-200/50 bg-white/80 backdrop-blur-md px-3 py-1 text-[10px] font-semibold tracking-wide text-slate-500 shadow-sm">
+                  <span className="shrink-0 rounded-full border border-slate-200/50 bg-white/80 px-3 py-1 text-[10px] font-semibold tracking-wide text-slate-500 shadow-sm backdrop-blur-md">
                     {new Date(message.createdAt).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "long",
                       year:
-                        new Date(message.createdAt).getFullYear() !==
-                          new Date().getFullYear()
+                        new Date(message.createdAt).getFullYear() !== new Date().getFullYear()
                           ? "numeric"
                           : undefined,
                     })}
@@ -643,11 +614,11 @@ export default function CommunityChatPanel({ page }: Props) {
               )}
               {isFirstUnread && (
                 <div className="flex items-center gap-3 py-2">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-power-orange/40 to-power-orange/40" />
-                  <span className="shrink-0 rounded-full border border-orange-200/60 bg-orange-50 px-3 py-1 text-[10px] font-semibold tracking-wide text-power-orange shadow-sm">
+                  <div className="via-power-orange/40 to-power-orange/40 h-px flex-1 bg-gradient-to-r from-transparent" />
+                  <span className="text-power-orange shrink-0 rounded-full border border-orange-200/60 bg-orange-50 px-3 py-1 text-[10px] font-semibold tracking-wide shadow-sm">
                     New Messages
                   </span>
-                  <div className="h-px flex-1 bg-gradient-to-l from-transparent via-power-orange/40 to-power-orange/40" />
+                  <div className="via-power-orange/40 to-power-orange/40 h-px flex-1 bg-gradient-to-l from-transparent" />
                 </div>
               )}
               <MessageBubble
@@ -674,11 +645,7 @@ export default function CommunityChatPanel({ page }: Props) {
                 isPinned={pinnedMessageId === message.id}
                 // Only offered in groups, and only to admins — the server
                 // rejects anyone else, so showing it would be a dead control.
-                onPin={
-                  isGroup && canPinInGroup
-                    ? (m) => void pinGroupMessage(m.id)
-                    : undefined
-                }
+                onPin={isGroup && canPinInGroup ? (m) => void pinGroupMessage(m.id) : undefined}
                 onForward={(m) => {
                   setForwardingMessages([m]);
                   setSelectChatsMode(true);
@@ -694,11 +661,15 @@ export default function CommunityChatPanel({ page }: Props) {
                     prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
                   );
                 }}
-                onClickName={isGroup ? (m) => {
-                  if (m.senderId && page.handleOpenMemberProfile) {
-                    page.handleOpenMemberProfile(m.senderId);
-                  }
-                } : undefined}
+                onClickName={
+                  isGroup
+                    ? (m) => {
+                        if (m.senderId && page.handleOpenMemberProfile) {
+                          page.handleOpenMemberProfile(m.senderId);
+                        }
+                      }
+                    : undefined
+                }
               />
             </div>
           );
@@ -712,10 +683,10 @@ export default function CommunityChatPanel({ page }: Props) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="flex items-end gap-2 justify-start mt-2"
+              className="mt-2 flex items-end justify-start gap-2"
             >
-              <div className="inline-flex items-center gap-2 rounded-[18px] rounded-bl-[6px] border border-slate-200/60 bg-white/90 backdrop-blur-sm px-4 py-2.5 shadow-sm">
-                <div className="flex gap-1.5 items-center">
+              <div className="inline-flex items-center gap-2 rounded-[18px] rounded-bl-[6px] border border-slate-200/60 bg-white/90 px-4 py-2.5 shadow-sm backdrop-blur-sm">
+                <div className="flex items-center gap-1.5">
                   <span
                     className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
                     style={{ animationDelay: "0ms" }}
@@ -744,17 +715,17 @@ export default function CommunityChatPanel({ page }: Props) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-orange-200/50 bg-gradient-to-b from-orange-50/50 to-white/50 backdrop-blur-xl shrink-0"
+            className="shrink-0 overflow-hidden border-t border-orange-200/50 bg-gradient-to-b from-orange-50/50 to-white/50 backdrop-blur-xl"
           >
             <div className="px-4 py-3 sm:px-5">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-[13px] font-semibold text-power-orange">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-power-orange flex items-center gap-1.5 text-[13px] font-semibold">
                   <Pencil size={14} />
                   Editing message
                 </div>
                 <button
                   onClick={handleCancelEditMessage}
-                  className="rounded-full p-1 text-slate-400 hover:bg-slate-200/50 hover:text-slate-600 transition"
+                  className="rounded-full p-1 text-slate-400 transition hover:bg-slate-200/50 hover:text-slate-600"
                 >
                   <X size={16} />
                 </button>
@@ -770,19 +741,19 @@ export default function CommunityChatPanel({ page }: Props) {
                   if (e.key === "Escape") handleCancelEditMessage();
                 }}
                 rows={2}
-                className="w-full resize-none rounded-[14px] border border-slate-200 bg-white/80 px-4 py-2.5 text-sm focus:border-power-orange focus:bg-white focus:outline-none focus:ring-4 focus:ring-power-orange/10 transition shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                className="focus:border-power-orange focus:ring-power-orange/10 w-full resize-none rounded-[14px] border border-slate-200 bg-white/80 px-4 py-2.5 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition focus:bg-white focus:ring-4 focus:outline-none"
               />
-              <div className="mt-2 flex gap-2 justify-end">
+              <div className="mt-2 flex justify-end gap-2">
                 <button
                   onClick={handleCancelEditMessage}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:scale-95 transition"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEditedMessage}
                   disabled={isMutatingMessageId === editingMessageId}
-                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-power-orange to-orange-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md shadow-orange-500/20 hover:from-orange-500 hover:to-orange-700 disabled:opacity-50 active:scale-95 transition"
+                  className="from-power-orange flex items-center gap-1.5 rounded-xl bg-gradient-to-b to-orange-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md shadow-orange-500/20 transition hover:from-orange-500 hover:to-orange-700 active:scale-95 disabled:opacity-50"
                 >
                   <Check size={13} /> Save
                 </button>
@@ -793,7 +764,7 @@ export default function CommunityChatPanel({ page }: Props) {
       </AnimatePresence>
 
       {/* ── Composer ── */}
-      <div className="z-20 shrink-0 border-t border-slate-200/40 bg-white/90 backdrop-blur-2xl px-3 py-2.5 sm:px-4 shadow-[0_-2px_16px_rgba(0,0,0,0.02)] supports-[backdrop-filter]:bg-white/70">
+      <div className="z-20 shrink-0 border-t border-slate-200/40 bg-white/90 px-3 py-2.5 shadow-[0_-2px_16px_rgba(0,0,0,0.02)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/70 sm:px-4">
         {/* Hidden file input */}
         {/* One picker for both kinds. Two buttons that both opened a file
             dialog read as duplicates; which dialog you wanted was a decision
@@ -831,7 +802,7 @@ export default function CommunityChatPanel({ page }: Props) {
               <div className="relative inline-block rounded-[16px] border border-slate-200/80 bg-white/50 p-1 shadow-sm backdrop-blur-md">
                 <button
                   onClick={() => setPendingImageFile(null)}
-                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-md hover:bg-slate-700 transition active:scale-90"
+                  className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-md transition hover:bg-slate-700 active:scale-90"
                 >
                   <X size={12} />
                 </button>
@@ -857,15 +828,13 @@ export default function CommunityChatPanel({ page }: Props) {
 
         {/* Replying-to bar */}
         {replyingTo ? (
-          <div className="mb-2 flex items-start gap-2 rounded-lg border-l-2 border-power-orange bg-slate-50 px-3 py-2">
+          <div className="border-power-orange mb-2 flex items-start gap-2 rounded-lg border-l-2 bg-slate-50 px-3 py-2">
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold text-power-orange">
+              <p className="text-power-orange text-[11px] font-semibold">
                 Replying to {replyingTo.senderDisplayName}
               </p>
               <p className="truncate text-xs text-slate-600">
-                {replyingTo.type === "IMAGE"
-                  ? "Photo"
-                  : replyingTo.content}
+                {replyingTo.type === "IMAGE" ? "Photo" : replyingTo.content}
               </p>
             </div>
             <button
@@ -887,7 +856,7 @@ export default function CommunityChatPanel({ page }: Props) {
               type="button"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               disabled={!canSendSelectedConversationMessage}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-power-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              className="hover:text-power-orange inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Emoji"
             >
               <Smile size={20} strokeWidth={2} />
@@ -903,7 +872,7 @@ export default function CommunityChatPanel({ page }: Props) {
           </div>
 
           {/* Textarea */}
-          <div className="relative flex-1 min-w-0">
+          <div className="relative min-w-0 flex-1">
             <textarea
               ref={textareaRef}
               value={newMessage}
@@ -911,8 +880,7 @@ export default function CommunityChatPanel({ page }: Props) {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if (canSendSelectedConversationMessage && hasContent)
-                    handleSend();
+                  if (canSendSelectedConversationMessage && hasContent) handleSend();
                 }
               }}
               placeholder={
@@ -924,7 +892,7 @@ export default function CommunityChatPanel({ page }: Props) {
               }
               disabled={!canSendSelectedConversationMessage || isUploadingImage}
               rows={textareaRows}
-              className="w-full resize-none rounded-[20px] border border-slate-200/80 bg-slate-50/60 px-4 py-2 text-[14px] leading-relaxed focus:border-power-orange/50 focus:bg-white focus:outline-none focus:ring-3 focus:ring-power-orange/10 disabled:cursor-not-allowed disabled:opacity-60 transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+              className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full resize-none rounded-[20px] border border-slate-200/80 bg-slate-50/60 px-4 py-2 text-[14px] leading-relaxed shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition-all focus:bg-white focus:ring-3 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 maxHeight: "9rem",
                 overflowY: textareaRows >= 5 ? "auto" : "hidden",
@@ -935,17 +903,13 @@ export default function CommunityChatPanel({ page }: Props) {
           {/* Attach image button */}
           <button
             type="button"
-            disabled={
-              !canSendSelectedConversationMessage ||
-              isSending ||
-              isUploadingImage
-            }
+            disabled={!canSendSelectedConversationMessage || isSending || isUploadingImage}
             onClick={() => imageInputRef.current?.click()}
             aria-label="Attach a photo or file"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-power-orange active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            className="hover:text-power-orange inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isUploadingImage ? (
-              <RotateCcw size={18} className="animate-spin text-power-orange" />
+              <RotateCcw size={18} className="text-power-orange animate-spin" />
             ) : (
               <Paperclip size={19} strokeWidth={2} />
             )}
@@ -954,17 +918,13 @@ export default function CommunityChatPanel({ page }: Props) {
           {/* Record a voice note */}
           <button
             type="button"
-            disabled={
-              !canSendSelectedConversationMessage ||
-              isSending ||
-              isUploadingImage
-            }
+            disabled={!canSendSelectedConversationMessage || isSending || isUploadingImage}
             onClick={() => void toggleVoiceRecording()}
             aria-label={isRecording ? "Stop recording" : "Record voice message"}
             className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${
               isRecording
                 ? "bg-red-50 text-red-600"
-                : "text-slate-500 hover:bg-slate-100 hover:text-power-orange"
+                : "hover:text-power-orange text-slate-500 hover:bg-slate-100"
             }`}
           >
             {isRecording ? <Square size={16} /> : <Mic size={19} strokeWidth={2} />}
@@ -974,13 +934,10 @@ export default function CommunityChatPanel({ page }: Props) {
           <motion.button
             whileTap={{ scale: 0.9 }}
             disabled={
-              isSending ||
-              isUploadingImage ||
-              !canSendSelectedConversationMessage ||
-              !hasContent
+              isSending || isUploadingImage || !canSendSelectedConversationMessage || !hasContent
             }
             onClick={handleSend}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-power-orange to-orange-500 text-white shadow-[0_2px_8px_rgba(233,115,22,0.3)] hover:from-orange-500 hover:to-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 transition-all"
+            className="from-power-orange inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br to-orange-500 text-white shadow-[0_2px_8px_rgba(233,115,22,0.3)] transition-all hover:from-orange-500 hover:to-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Send message"
           >
             {isSending ? (
@@ -1046,7 +1003,7 @@ export default function CommunityChatPanel({ page }: Props) {
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            className="absolute bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] flex gap-2"
+            className="absolute right-0 bottom-0 left-0 z-30 flex gap-2 border-t border-slate-200 bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
           >
             <button
               onClick={() => {
@@ -1060,7 +1017,7 @@ export default function CommunityChatPanel({ page }: Props) {
             <button
               disabled={selectedMessageIds.length === 0}
               onClick={() => {
-                const selectedMsgs = messages.filter(m => selectedMessageIds.includes(m.id));
+                const selectedMsgs = messages.filter((m) => selectedMessageIds.includes(m.id));
                 page.setForwardingMessages(selectedMsgs);
                 page.setSelectChatsMode(true);
                 if (window.innerWidth < 768) {
@@ -1069,7 +1026,7 @@ export default function CommunityChatPanel({ page }: Props) {
                 setIsMessageSelectionMode(false);
                 setSelectedMessageIds([]);
               }}
-              className="flex-1 rounded-lg bg-power-orange py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
+              className="bg-power-orange flex-1 rounded-lg py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
             >
               Forward
             </button>

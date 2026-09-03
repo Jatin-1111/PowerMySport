@@ -23,21 +23,14 @@ const fuzzyMatch = (query: string, target: string): boolean => {
   return target.toLowerCase().includes(normalizedQuery);
 };
 
-export function CommandPalette({
-  open,
-  items,
-  onClose,
-  onNavigate,
-}: CommandPaletteProps) {
+export function CommandPalette({ open, items, onClose, onNavigate }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const results = useMemo(() => {
     if (!query.trim()) return items;
-    return items.filter(
-      (item) => fuzzyMatch(query, item.label) || fuzzyMatch(query, item.group),
-    );
+    return items.filter((item) => fuzzyMatch(query, item.label) || fuzzyMatch(query, item.group));
   }, [items, query]);
 
   useEffect(() => {
@@ -106,9 +99,7 @@ export function CommandPalette({
 
         <div className="max-h-80 overflow-y-auto py-2">
           {results.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">
-              No matching pages.
-            </p>
+            <p className="px-4 py-6 text-center text-sm text-slate-500">No matching pages.</p>
           ) : (
             results.map((item, index) => {
               const Icon = item.icon;
@@ -131,9 +122,7 @@ export function CommandPalette({
                   <Icon size={16} />
                   <span className="flex-1">{item.label}</span>
                   <span className="text-xs text-slate-400">{item.group}</span>
-                  {isActive && (
-                    <CornerDownLeft className="h-3.5 w-3.5 text-power-orange" />
-                  )}
+                  {isActive && <CornerDownLeft className="text-power-orange h-3.5 w-3.5" />}
                 </button>
               );
             })

@@ -39,13 +39,13 @@ const emailVerificationSchema = new Schema<EmailVerificationDocument>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // TTL index to auto-delete expired verification codes after they expire
 emailVerificationSchema.index(
   { expiresAt: 1 },
-  { expireAfterSeconds: 3600, name: "verification_ttl" }, // Delete 1 hour after expiry
+  { expireAfterSeconds: 3600, name: "verification_ttl" } // Delete 1 hour after expiry
 );
 
 // Index for fast lookups
@@ -53,5 +53,5 @@ emailVerificationSchema.index({ email: 1, verified: 1 });
 
 export const EmailVerification = mongoose.model<EmailVerificationDocument>(
   "EmailVerification",
-  emailVerificationSchema,
+  emailVerificationSchema
 );

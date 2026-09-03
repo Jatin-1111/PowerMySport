@@ -23,7 +23,7 @@ export const blogService = {
       q?: string;
       mine?: boolean;
       authorId?: string;
-    },
+    }
   ): Promise<BlogListResponse> {
     const response = await axiosInstance.get<ApiResponse<BlogListResponse>>(
       "/community/blog/posts",
@@ -36,14 +36,14 @@ export const blogService = {
           ...(params?.mine ? { mine: true } : {}),
           ...(params?.authorId ? { authorId: params.authorId } : {}),
         },
-      },
+      }
     );
     return response.data.data;
   },
 
   async getBlog(blogId: string): Promise<BlogDetail> {
     const response = await axiosInstance.get<ApiResponse<BlogDetail>>(
-      `/community/blog/posts/${blogId}`,
+      `/community/blog/posts/${blogId}`
     );
     return response.data.data;
   },
@@ -59,7 +59,7 @@ export const blogService = {
   }): Promise<BlogDetail> {
     const response = await axiosInstance.post<ApiResponse<BlogDetail>>(
       "/community/blog/posts",
-      payload,
+      payload
     );
     return response.data.data;
   },
@@ -74,74 +74,65 @@ export const blogService = {
       tags?: string[];
       content?: string;
       status?: "DRAFT" | "PUBLISHED";
-    },
+    }
   ): Promise<BlogDetail> {
     const response = await axiosInstance.patch<ApiResponse<BlogDetail>>(
       `/community/blog/posts/${blogId}`,
-      payload,
+      payload
     );
     return response.data.data;
   },
 
   async deleteBlog(blogId: string): Promise<{ id: string; deleted: boolean }> {
-    const response = await axiosInstance.delete<
-      ApiResponse<{ id: string; deleted: boolean }>
-    >(`/community/blog/posts/${blogId}`);
+    const response = await axiosInstance.delete<ApiResponse<{ id: string; deleted: boolean }>>(
+      `/community/blog/posts/${blogId}`
+    );
     return response.data.data;
   },
 
   async toggleLike(
     targetType: "BLOG" | "COMMENT",
-    targetId: string,
+    targetId: string
   ): Promise<{ liked: boolean; likeCount: number }> {
-    const response = await axiosInstance.post<
-      ApiResponse<{ liked: boolean; likeCount: number }>
-    >("/community/blog/likes", { targetType, targetId });
-    return response.data.data;
-  },
-
-  async listComments(
-    blogId: string,
-    page = 1,
-    limit = 30,
-  ): Promise<BlogCommentListResponse> {
-    const response = await axiosInstance.get<
-      ApiResponse<BlogCommentListResponse>
-    >(`/community/blog/posts/${blogId}/comments`, { params: { page, limit } });
-    return response.data.data;
-  },
-
-  async createComment(
-    blogId: string,
-    content: string,
-    parentId?: string,
-  ): Promise<BlogComment> {
-    const response = await axiosInstance.post<ApiResponse<BlogComment>>(
-      `/community/blog/posts/${blogId}/comments`,
-      { content, ...(parentId ? { parentId } : {}) },
+    const response = await axiosInstance.post<ApiResponse<{ liked: boolean; likeCount: number }>>(
+      "/community/blog/likes",
+      { targetType, targetId }
     );
     return response.data.data;
   },
 
-  async deleteComment(
-    commentId: string,
-  ): Promise<{ id: string; deleted: boolean }> {
-    const response = await axiosInstance.delete<
-      ApiResponse<{ id: string; deleted: boolean }>
-    >(`/community/blog/comments/${commentId}`);
+  async listComments(blogId: string, page = 1, limit = 30): Promise<BlogCommentListResponse> {
+    const response = await axiosInstance.get<ApiResponse<BlogCommentListResponse>>(
+      `/community/blog/posts/${blogId}/comments`,
+      { params: { page, limit } }
+    );
+    return response.data.data;
+  },
+
+  async createComment(blogId: string, content: string, parentId?: string): Promise<BlogComment> {
+    const response = await axiosInstance.post<ApiResponse<BlogComment>>(
+      `/community/blog/posts/${blogId}/comments`,
+      { content, ...(parentId ? { parentId } : {}) }
+    );
+    return response.data.data;
+  },
+
+  async deleteComment(commentId: string): Promise<{ id: string; deleted: boolean }> {
+    const response = await axiosInstance.delete<ApiResponse<{ id: string; deleted: boolean }>>(
+      `/community/blog/comments/${commentId}`
+    );
     return response.data.data;
   },
 
   async getMyProfile(): Promise<BlogAuthorProfile> {
-    const response = await axiosInstance.get<ApiResponse<BlogAuthorProfile>>(
-      "/community/blog/profile",
-    );
+    const response =
+      await axiosInstance.get<ApiResponse<BlogAuthorProfile>>("/community/blog/profile");
     return response.data.data;
   },
 
   async getAuthorProfile(identifier: string): Promise<BlogAuthorProfile> {
     const response = await axiosInstance.get<ApiResponse<BlogAuthorProfile>>(
-      `/community/blog/authors/${encodeURIComponent(identifier)}`,
+      `/community/blog/authors/${encodeURIComponent(identifier)}`
     );
     return response.data.data;
   },
@@ -153,13 +144,13 @@ export const blogService = {
   }): Promise<BlogAuthorProfile> {
     const response = await axiosInstance.patch<ApiResponse<BlogAuthorProfile>>(
       "/community/blog/profile",
-      payload,
+      payload
     );
     return response.data.data;
   },
 
   async getImageUploadUrl(
-    contentType: string,
+    contentType: string
   ): Promise<{ uploadUrl: string; downloadUrl: string; key: string }> {
     const response = await axiosInstance.post<
       ApiResponse<{ uploadUrl: string; downloadUrl: string; key: string }>

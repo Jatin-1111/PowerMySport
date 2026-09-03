@@ -68,9 +68,6 @@ export function ageFitsRange(raw: string, age: number): boolean {
  * already passed loses a scroll, while one dropped past the stage they are
  * living in loses the advice they came for.
  */
-export function findStageForAge(
-  stages: Array<{ ageRange: string }>,
-  age: number,
-): number {
+export function findStageForAge(stages: Array<{ ageRange: string }>, age: number): number {
   return stages.findIndex((stage) => ageFitsRange(stage.ageRange, age));
 }

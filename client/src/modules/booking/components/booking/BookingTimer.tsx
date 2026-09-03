@@ -5,10 +5,7 @@ interface BookingTimerProps {
   onExpire?: () => void;
 }
 
-export default function BookingTimer({
-  expiresAt,
-  onExpire,
-}: BookingTimerProps) {
+export default function BookingTimer({ expiresAt, onExpire }: BookingTimerProps) {
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
   useEffect(() => {
@@ -39,9 +36,9 @@ export default function BookingTimer({
 
   if (timeLeft === 0) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-        <p className="text-red-600 font-semibold">? Booking Expired</p>
-        <p className="text-sm text-red-500 mt-1">
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+        <p className="font-semibold text-red-600">? Booking Expired</p>
+        <p className="mt-1 text-sm text-red-500">
           This booking has expired. Please create a new booking.
         </p>
       </div>
@@ -49,16 +46,12 @@ export default function BookingTimer({
   }
 
   return (
-    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-center">
-      <p className="text-sm text-muted-foreground mb-2">
-        Complete payment within:
-      </p>
-      <p className="text-3xl font-bold text-power-orange">
+    <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 text-center">
+      <p className="text-muted-foreground mb-2 text-sm">Complete payment within:</p>
+      <p className="text-power-orange text-3xl font-bold">
         {minutes}:{seconds.toString().padStart(2, "0")}
       </p>
-      <p className="text-xs text-muted-foreground mt-2">
-        Booking will expire after 10 minutes
-      </p>
+      <p className="text-muted-foreground mt-2 text-xs">Booking will expire after 10 minutes</p>
     </div>
   );
 }

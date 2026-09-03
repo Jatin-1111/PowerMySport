@@ -1,10 +1,7 @@
 import mongoose from "mongoose";
 import { CoachOffering } from "../models/CoachOffering";
 import { CoachEnrollment } from "../models/CoachEnrollment";
-import {
-  CoachWaitlistEntry,
-  CoachWaitlistEntryDocument,
-} from "../models/CoachWaitlistEntry";
+import { CoachWaitlistEntry, CoachWaitlistEntryDocument } from "../models/CoachWaitlistEntry";
 import { NotificationType } from "../models/Notification";
 import { NotificationService } from "./NotificationService";
 import { log as __rootLog } from "../../utils/logger";
@@ -34,14 +31,12 @@ const notify = (
   title: string,
   message: string,
   data: Record<string, unknown> = {},
-  email = false,
+  email = false
 ) => {
   NotificationService.send(
     { userId: userId.toString(), type, title, message, data },
-    { sendEmail: email },
-  ).catch((err: unknown) =>
-    log.error("[coachWaitlist] notification failed:", err),
-  );
+    { sendEmail: email }
+  ).catch((err: unknown) => log.error("[coachWaitlist] notification failed:", err));
 };
 
 /**
@@ -65,9 +60,7 @@ export const joinWaitlist = async (params: {
     throw new Error("This programme is not open");
   }
   if (offering.enrolledCount < offering.capacity) {
-    throw new Error(
-      "There is a place available — you can join this programme now",
-    );
+    throw new Error("There is a place available — you can join this programme now");
   }
 
   // Already enrolled students have no business queueing for a second seat.
@@ -106,7 +99,7 @@ export const leaveWaitlist = async (params: {
     },
     {
       $set: { status: "CANCELLED", leftAt: params.now ?? new Date() },
-    },
+    }
   );
 
   return Boolean(result);
@@ -132,17 +125,12 @@ export const notifyWaitlistOfFreeSeat = async (params: {
   if (offering.status !== "ACTIVE") return 0;
   if (offering.enrolledCount >= offering.capacity) return 0;
 
-  const cooldownBefore = new Date(
-    now.getTime() - WAITLIST_NOTIFY_COOLDOWN_HOURS * 60 * 60 * 1000,
-  );
+  const cooldownBefore = new Date(now.getTime() - WAITLIST_NOTIFY_COOLDOWN_HOURS * 60 * 60 * 1000);
 
   const waiting = await CoachWaitlistEntry.find({
     offeringId: params.offeringId,
     status: { $in: ["WAITING", "NOTIFIED"] },
-    $or: [
-      { lastNotifiedAt: null },
-      { lastNotifiedAt: { $lte: cooldownBefore } },
-    ],
+    $or: [{ lastNotifiedAt: null }, { lastNotifiedAt: { $lte: cooldownBefore } }],
   })
     .sort({ joinedAt: 1 })
     .limit(50);
@@ -153,15 +141,12 @@ export const notifyWaitlistOfFreeSeat = async (params: {
     const claimed = await CoachWaitlistEntry.findOneAndUpdate(
       {
         _id: entry._id,
-        $or: [
-          { lastNotifiedAt: null },
-          { lastNotifiedAt: { $lte: cooldownBefore } },
-        ],
+        $or: [{ lastNotifiedAt: null }, { lastNotifiedAt: { $lte: cooldownBefore } }],
       },
       {
         $set: { status: "NOTIFIED", lastNotifiedAt: now },
         $inc: { notifyCount: 1 },
-      },
+      }
     );
     if (!claimed) continue;
     notified += 1;
@@ -175,13 +160,13 @@ export const notifyWaitlistOfFreeSeat = async (params: {
         offeringId: params.offeringId.toString(),
         waitlistEntryId: entry._id.toString(),
       },
-      true,
+      true
     );
   }
 
   if (notified > 0) {
     log.info(
-      `notifyWaitlistOfFreeSeat: told ${notified} person(s) about a seat in ${offering.title}`,
+      `notifyWaitlistOfFreeSeat: told ${notified} person(s) about a seat in ${offering.title}`
     );
   }
 
@@ -207,7 +192,7 @@ export const convertWaitlistEntry = async (params: {
       playerId: params.playerId ?? null,
       status: { $in: ["WAITING", "NOTIFIED"] },
     },
-    { $set: { status: "CONVERTED", leftAt: params.now ?? new Date() } },
+    { $set: { status: "CONVERTED", leftAt: params.now ?? new Date() } }
   );
 
   return Boolean(result);
@@ -215,7 +200,7 @@ export const convertWaitlistEntry = async (params: {
 
 /** What a coach sees: who is waiting, oldest first. */
 export const waitlistForOffering = async (
-  offeringId: mongoose.Types.ObjectId,
+  offeringId: mongoose.Types.ObjectId
 ): Promise<CoachWaitlistEntryDocument[]> =>
   CoachWaitlistEntry.find({
     offeringId,
@@ -226,7 +211,7 @@ export const waitlistForOffering = async (
 
 /** What a parent sees on their own account. */
 export const waitlistEntriesForUser = async (
-  userId: mongoose.Types.ObjectId,
+  userId: mongoose.Types.ObjectId
 ): Promise<CoachWaitlistEntryDocument[]> =>
   CoachWaitlistEntry.find({
     userId,

@@ -1,10 +1,7 @@
 "use client";
 
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
-import {
-    expertApi,
-    type ExpertSession,
-} from "@/modules/expert/services/expert";
+import { expertApi, type ExpertSession } from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
@@ -14,22 +11,22 @@ import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { cn } from "@/utils/cn";
 import {
-    ArrowLeft,
-    CalendarClock,
-    CheckCircle2,
-    Clock,
-    Download,
-    FileText,
-    MapPin,
-    MessageSquareText,
-    RefreshCcw,
-    ShieldCheck,
-    Sparkles,
-    Star,
-    Target,
-    Users,
-    Video,
-    XCircle,
+  ArrowLeft,
+  CalendarClock,
+  CheckCircle2,
+  Clock,
+  Download,
+  FileText,
+  MapPin,
+  MessageSquareText,
+  RefreshCcw,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Target,
+  Users,
+  Video,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -38,13 +35,7 @@ import { toast } from "sonner";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
-function ExpertAvatar({
-  photoUrl,
-  name,
-}: {
-  photoUrl?: string;
-  name: string;
-}) {
+function ExpertAvatar({ photoUrl, name }: { photoUrl?: string; name: string }) {
   const [failed, setFailed] = useState(false);
   const initial = (name || "E").charAt(0).toUpperCase();
   if (!photoUrl || failed) {
@@ -138,8 +129,8 @@ export default function ExpertSessionPage() {
       }
     } catch (err: unknown) {
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Could not schedule the session.",
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          "Could not schedule the session."
       );
     } finally {
       setSaving(false);
@@ -158,8 +149,8 @@ export default function ExpertSessionPage() {
       }
     } catch (err: unknown) {
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Could not cancel the session.",
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          "Could not cancel the session."
       );
     } finally {
       setSaving(false);
@@ -184,8 +175,8 @@ export default function ExpertSessionPage() {
       }
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "This slot was taken or is no longer available.";
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        "This slot was taken or is no longer available.";
       toast.error(msg);
       setSaving(false);
     }
@@ -241,7 +232,7 @@ export default function ExpertSessionPage() {
           <p className="font-semibold text-red-600">{error || "Not found."}</p>
           <Link
             href="/booking?tab=experts"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-power-orange px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange mt-4 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <ArrowLeft className="h-4 w-4" /> Back to experts
           </Link>
@@ -258,9 +249,7 @@ export default function ExpertSessionPage() {
   // cancelled server-side (it already happened) — matches completeExpertSession's mirror check.
   const sessionEnded = Boolean(
     session.scheduledAt &&
-      new Date(session.scheduledAt).getTime() +
-        (session.durationMinutes || 60) * 60_000 <
-        Date.now(),
+    new Date(session.scheduledAt).getTime() + (session.durationMinutes || 60) * 60_000 < Date.now()
   );
 
   const statusBanner = cancelled
@@ -299,7 +288,7 @@ export default function ExpertSessionPage() {
       <div className="mx-auto max-w-2xl px-6 py-10">
         <Link
           href="/experts/sessions"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-power-orange"
+          className="hover:text-power-orange mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> My sessions
         </Link>
@@ -308,14 +297,11 @@ export default function ExpertSessionPage() {
           <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             {/* Dark hero strip — consistent with the expert profile page */}
             <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-7 text-white sm:px-8">
-              <div className="pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full bg-power-orange/20 blur-3xl" />
+              <div className="bg-power-orange/20 pointer-events-none absolute -top-14 -right-14 h-44 w-44 rounded-full blur-3xl" />
               <div className="relative flex items-center gap-4">
-                <ExpertAvatar
-                  photoUrl={session.expert?.photoUrl}
-                  name={expertName}
-                />
+                <ExpertAvatar photoUrl={session.expert?.photoUrl} name={expertName} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-white/60">
+                  <p className="text-xs font-semibold tracking-wide text-white/60 uppercase">
                     Session with
                   </p>
                   <h1 className="font-title truncate text-xl font-bold sm:text-2xl">
@@ -323,8 +309,8 @@ export default function ExpertSessionPage() {
                   </h1>
                   <span
                     className={cn(
-                      "mt-1.5 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset ring-white/20",
-                      "bg-white/10 text-white/90",
+                      "mt-1.5 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase ring-1 ring-white/20 ring-inset",
+                      "bg-white/10 text-white/90"
                     )}
                   >
                     {session.status.replace(/_/g, " ")}
@@ -332,9 +318,7 @@ export default function ExpertSessionPage() {
                 </div>
                 <div className="hidden shrink-0 text-right sm:block">
                   <p className="text-xs text-white/50">Amount</p>
-                  <p className="text-lg font-bold">
-                    {formatInr(session.amount)}
-                  </p>
+                  <p className="text-lg font-bold">{formatInr(session.amount)}</p>
                 </div>
               </div>
             </div>
@@ -344,14 +328,14 @@ export default function ExpertSessionPage() {
               <div
                 className={cn(
                   "flex flex-col gap-3 rounded-xl px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between",
-                  statusBanner.classes,
+                  statusBanner.classes
                 )}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                      statusBanner.iconClasses,
+                      statusBanner.iconClasses
                     )}
                   >
                     <statusBanner.icon className="h-4.5 w-4.5" />
@@ -359,9 +343,7 @@ export default function ExpertSessionPage() {
                   <div>
                     <p className="text-sm font-bold">{statusBanner.title}</p>
                     {statusBanner.subtitle && (
-                      <p className="text-xs font-medium opacity-80">
-                        {statusBanner.subtitle}
-                      </p>
+                      <p className="text-xs font-medium opacity-80">{statusBanner.subtitle}</p>
                     )}
                   </div>
                 </div>
@@ -393,14 +375,12 @@ export default function ExpertSessionPage() {
               {["PAID", "SCHEDULED"].includes(session.status) && (
                 <div className="mt-3">
                   {session.expertAcceptance === "ACCEPTED" ? (
-                    <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-100">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Confirmed by
-                      your expert
+                    <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100 ring-inset">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Confirmed by your expert
                     </p>
                   ) : (
-                    <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-100">
-                      <Clock className="h-3.5 w-3.5" /> Awaiting expert
-                      confirmation
+                    <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-100 ring-inset">
+                      <Clock className="h-3.5 w-3.5" /> Awaiting expert confirmation
                     </p>
                   )}
                 </div>
@@ -411,20 +391,15 @@ export default function ExpertSessionPage() {
                 <FadeIn delay={0.05}>
                   <div className="mt-5 rounded-xl bg-slate-50 p-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-power-orange/10">
-                        <CalendarClock className="h-4 w-4 text-power-orange" />
+                      <div className="bg-power-orange/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                        <CalendarClock className="text-power-orange h-4 w-4" />
                       </div>
                       <p className="text-sm font-bold text-slate-900">
-                        {session.status === "COMPLETED"
-                          ? "Session time"
-                          : "Scheduled"}
+                        {session.status === "COMPLETED" ? "Session time" : "Scheduled"}
                       </p>
                     </div>
                     <p className="mt-2 text-sm font-medium text-slate-700">
-                      {formatSessionTimeWithZone(
-                        session.scheduledAt,
-                        session.expertTimezone,
-                      )}
+                      {formatSessionTimeWithZone(session.scheduledAt, session.expertTimezone)}
                       {session.mode
                         ? ` · ${session.mode === "ONLINE" ? "Online" : "In-person"}`
                         : ""}
@@ -435,15 +410,14 @@ export default function ExpertSessionPage() {
                           href={session.meetingLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-2.5 inline-flex items-center gap-1.5 text-sm font-semibold text-power-orange hover:underline"
+                          className="text-power-orange mt-2.5 inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
                         >
                           <Video className="h-3.5 w-3.5" /> Join meeting link
                         </a>
                       ) : (
                         session.status === "SCHEDULED" && (
                           <p className="mt-2 text-xs text-slate-500">
-                            Your expert will add a meeting link before the
-                            session.
+                            Your expert will add a meeting link before the session.
                           </p>
                         )
                       )
@@ -456,8 +430,8 @@ export default function ExpertSessionPage() {
                       ) : (
                         session.status === "SCHEDULED" && (
                           <p className="mt-2 text-xs text-slate-500">
-                            Your expert hasn&apos;t shared a location yet —
-                            check back closer to your session.
+                            Your expert hasn&apos;t shared a location yet — check back closer to
+                            your session.
                           </p>
                         )
                       )
@@ -471,12 +445,10 @@ export default function ExpertSessionPage() {
                 <FadeIn delay={0.1}>
                   <div className="mt-3 rounded-xl bg-slate-50 p-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-power-orange/10">
-                        <Users className="h-4 w-4 text-power-orange" />
+                      <div className="bg-power-orange/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                        <Users className="text-power-orange h-4 w-4" />
                       </div>
-                      <p className="text-sm font-bold text-slate-900">
-                        Shared with your expert
-                      </p>
+                      <p className="text-sm font-bold text-slate-900">Shared with your expert</p>
                     </div>
                     {session.player && (
                       <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-700">
@@ -488,7 +460,7 @@ export default function ExpertSessionPage() {
                       </p>
                     )}
                     {session.clientNote && (
-                      <p className="mt-2 flex items-start gap-1.5 text-sm italic leading-relaxed text-slate-600">
+                      <p className="mt-2 flex items-start gap-1.5 text-sm leading-relaxed text-slate-600 italic">
                         <MessageSquareText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
                         &ldquo;{session.clientNote}&rdquo;
                       </p>
@@ -502,14 +474,12 @@ export default function ExpertSessionPage() {
                 <FadeIn delay={0.12}>
                   <div className="mt-3 rounded-xl bg-slate-50 p-4">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-power-orange/10">
-                        <FileText className="h-4 w-4 text-power-orange" />
+                      <div className="bg-power-orange/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                        <FileText className="text-power-orange h-4 w-4" />
                       </div>
-                      <p className="text-sm font-bold text-slate-900">
-                        Session notes
-                      </p>
+                      <p className="text-sm font-bold text-slate-900">Session notes</p>
                     </div>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                    <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
                       {session.momNotes}
                     </p>
                   </div>
@@ -540,8 +510,7 @@ export default function ExpertSessionPage() {
                   ) : (
                     <div>
                       <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                        <CalendarClock className="h-4 w-4 text-power-orange" />{" "}
-                        Pick a new time
+                        <CalendarClock className="text-power-orange h-4 w-4" /> Pick a new time
                       </h2>
                       <SlotPicker
                         expertId={session.expertId}
@@ -578,13 +547,9 @@ export default function ExpertSessionPage() {
               {session.status === "COMPLETED" && !session.reviewed && (
                 <div className="mt-6 border-t border-slate-100 pt-6">
                   <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                    <Sparkles className="h-4 w-4 text-power-orange" /> Rate
-                    your session
+                    <Sparkles className="text-power-orange h-4 w-4" /> Rate your session
                   </h2>
-                  <div
-                    className="mt-3 flex gap-1.5"
-                    onMouseLeave={() => setHoverRating(0)}
-                  >
+                  <div className="mt-3 flex gap-1.5" onMouseLeave={() => setHoverRating(0)}>
                     {Array.from({ length: 5 }).map((_, i) => {
                       const active = i < (hoverRating || rating);
                       return (
@@ -601,7 +566,7 @@ export default function ExpertSessionPage() {
                               "h-9 w-9 transition-colors",
                               active
                                 ? "fill-amber-500 text-amber-500"
-                                : "text-slate-200 hover:text-amber-300",
+                                : "text-slate-200 hover:text-amber-300"
                             )}
                           />
                         </button>
@@ -613,14 +578,14 @@ export default function ExpertSessionPage() {
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
                     placeholder="Share how the session went (optional)"
-                    className="mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20"
+                    className="focus:border-power-orange focus:ring-power-orange/20 mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all focus:bg-white focus:ring-2 focus:outline-none"
                   />
                   <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
                     <input
                       type="checkbox"
                       checked={anonymous}
                       onChange={(e) => setAnonymous(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-power-orange focus:ring-power-orange"
+                      className="text-power-orange focus:ring-power-orange h-4 w-4 rounded border-slate-300"
                     />
                     Post anonymously
                   </label>

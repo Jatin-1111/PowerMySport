@@ -81,15 +81,10 @@ const STATE_ALIASES: Record<string, string> = {
   "andaman and nicobar": "Andaman and Nicobar Islands",
 };
 
-const byLowerName = new Map(
-  INDIAN_STATES.map((s) => [s.name.toLowerCase(), s.name] as const),
-);
-const byLowerCode = new Map(
-  INDIAN_STATES.map((s) => [s.code.toLowerCase(), s.name] as const),
-);
+const byLowerName = new Map(INDIAN_STATES.map((s) => [s.name.toLowerCase(), s.name] as const));
+const byLowerCode = new Map(INDIAN_STATES.map((s) => [s.code.toLowerCase(), s.name] as const));
 
-const toTitleCase = (value: string): string =>
-  value.replace(/\b\w/g, (c) => c.toUpperCase());
+const toTitleCase = (value: string): string => value.replace(/\b\w/g, (c) => c.toUpperCase());
 
 /**
  * Map an arbitrary user-entered state string to its canonical name.

@@ -127,7 +127,7 @@ const communityGroupSchema = new Schema<CommunityGroupDocument>(
       maxlength: 20,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 communityGroupSchema.index({ visibility: 1, updatedAt: -1 });
@@ -150,5 +150,5 @@ communityGroupSchema.post("findOneAndUpdate", function (doc) {
 
 export const CommunityGroup = mongoose.model<CommunityGroupDocument>(
   "CommunityGroup",
-  communityGroupSchema,
+  communityGroupSchema
 );

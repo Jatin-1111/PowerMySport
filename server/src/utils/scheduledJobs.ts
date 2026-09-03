@@ -24,8 +24,7 @@ const log = __rootLog.child("scheduledJobs");
 export const releaseCompletedBookingPayments = async (): Promise<void> => {
   try {
     const { Booking } = await import("../client/models/Booking");
-    const { BookingPaymentTransaction } =
-      await import("../client/models/BookingPayment");
+    const { BookingPaymentTransaction } = await import("../client/models/BookingPayment");
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -47,15 +46,14 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
       });
       if (!confirmedTx) {
         log.warn(
-          `Skipping payout release for booking ${booking._id}: no confirmed payment transaction found`,
+          `Skipping payout release for booking ${booking._id}: no confirmed payment transaction found`
         );
         continue;
       }
 
       // Only release payee entries (VENUE_LISTER / COACH / ACADEMY).
       // The PLAYER entry is already marked PAID by updatePaymentStatus().
-      const released: Array<{ userId: string; userType: string; amountPaise: number }> =
-        [];
+      const released: Array<{ userId: string; userType: string; amountPaise: number }> = [];
       booking.payments = booking.payments.map((payment: any) => {
         if (payment.status === "PENDING" && payment.userType !== "Player") {
           payment.status = "PAID";
@@ -73,18 +71,13 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
       releasedCount++;
 
       if (released.length > 0) {
-        const { recordBookingEventFor } = await import(
-          "../client/services/BookingEventService"
-        );
+        const { recordBookingEventFor } = await import("../client/services/BookingEventService");
         await recordBookingEventFor(booking, {
           type: "PAYOUT_RELEASED",
           toStatus: booking.status,
           actorType: "SYSTEM",
           channel: "CRON",
-          amountPaise: released.reduce(
-            (sum, payee) => sum + payee.amountPaise,
-            0,
-          ),
+          amountPaise: released.reduce((sum, payee) => sum + payee.amountPaise, 0),
           summary: `Payout released to ${released.length} payee(s), 24h after completion`,
           metadata: {
             payees: released,
@@ -95,9 +88,7 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
     }
 
     if (releasedCount > 0) {
-      log.info(
-        `Auto-released payments for ${releasedCount} completed booking(s)`,
-      );
+      log.info(`Auto-released payments for ${releasedCount} completed booking(s)`);
     }
   } catch (error) {
     log.error("Error releasing completed booking payments:", error);
@@ -113,12 +104,8 @@ export const releaseCompletedBookingPayments = async (): Promise<void> => {
 export const retryPendingBookingRefunds = async (): Promise<void> => {
   try {
     const { Booking } = await import("../client/models/Booking");
-    const { BookingPaymentTransaction } = await import(
-      "../client/models/BookingPayment"
-    );
-    const { initiatePhonePeRefund } = await import(
-      "../shared/services/PhonePeService"
-    );
+    const { BookingPaymentTransaction } = await import("../client/models/BookingPayment");
+    const { initiatePhonePeRefund } = await import("../shared/services/PhonePeService");
     const { randomBytes } = await import("crypto");
 
     // Find cancelled bookings with a pending refund that was never successfully initiated.
@@ -172,14 +159,9 @@ export const retryPendingBookingRefunds = async (): Promise<void> => {
         }
         // If INITIATED — pollPendingRefunds will confirm and flip to PROCESSED.
 
-        const { recordBookingEventFor } = await import(
-          "../client/services/BookingEventService"
-        );
+        const { recordBookingEventFor } = await import("../client/services/BookingEventService");
         await recordBookingEventFor(booking, {
-          type:
-            refundState === "COMPLETED"
-              ? "REFUND_COMPLETED"
-              : "REFUND_INITIATED",
+          type: refundState === "COMPLETED" ? "REFUND_COMPLETED" : "REFUND_INITIATED",
           actorType: "SYSTEM",
           channel: "CRON",
           amountPaise,
@@ -192,15 +174,10 @@ export const retryPendingBookingRefunds = async (): Promise<void> => {
           },
         });
       } catch (err) {
-        log.error(
-          `Refund retry failed for booking ${booking._id}:`,
-          err,
-        );
+        log.error(`Refund retry failed for booking ${booking._id}:`, err);
         // Leave refundStatus as PENDING — try again next run.
 
-        const { recordBookingEventFor } = await import(
-          "../client/services/BookingEventService"
-        );
+        const { recordBookingEventFor } = await import("../client/services/BookingEventService");
         await recordBookingEventFor(booking, {
           type: "REFUND_FAILED",
           actorType: "SYSTEM",
@@ -218,9 +195,7 @@ export const retryPendingBookingRefunds = async (): Promise<void> => {
     }
 
     if (retried > 0) {
-      log.info(
-        `Refund retry: ${retried} attempted, ${succeeded} immediately completed`,
-      );
+      log.info(`Refund retry: ${retried} attempted, ${succeeded} immediately completed`);
     }
   } catch (error) {
     log.error("Error retrying pending booking refunds:", error);
@@ -233,13 +208,12 @@ export const retryPendingBookingRefunds = async (): Promise<void> => {
  */
 export const pollPendingRefunds = async (): Promise<void> => {
   try {
-    const { updatePendingRefundStatuses } =
-      await import("../client/services/RefundService");
+    const { updatePendingRefundStatuses } = await import("../client/services/RefundService");
     const result = await updatePendingRefundStatuses();
 
     if (result.checked > 0) {
       log.info(
-        `Refund polling: ${result.checked} checked, ${result.completed} completed, ${result.failed} failed`,
+        `Refund polling: ${result.checked} checked, ${result.completed} completed, ${result.failed} failed`
       );
     }
   } catch (error) {
@@ -271,12 +245,10 @@ export const runScheduledCleanup = async (): Promise<void> => {
     // a grace window FIRST, so the cleanup below only expires the ones that are
     // genuinely finished (grace elapsed, or auto-renew turned off).
     const awaitingRenewal = await lapseRenewableSubscriptionsToPastDue();
-    if (awaitingRenewal)
-      done.push(`${awaitingRenewal} subscription(s) awaiting renewal`);
+    if (awaitingRenewal) done.push(`${awaitingRenewal} subscription(s) awaiting renewal`);
 
     const expiredSubscriptions = await cleanupExpiredCoachSubscriptions();
-    if (expiredSubscriptions)
-      done.push(`${expiredSubscriptions} subscription(s) expired`);
+    if (expiredSubscriptions) done.push(`${expiredSubscriptions} subscription(s) expired`);
 
     await processWaitlistNotifications();
 
@@ -291,27 +263,18 @@ export const runScheduledCleanup = async (): Promise<void> => {
         sendSessionStartReminders,
       } = await import("../client/services/ExpertsService");
       const expiredHolds = await expireUnpaidExpertHolds();
-      if (expiredHolds > 0)
-        log.info(`Expired ${expiredHolds} unpaid expert hold(s)`);
+      if (expiredHolds > 0) log.info(`Expired ${expiredHolds} unpaid expert hold(s)`);
       const momReminders = await sendExpertMomReminders();
-      if (momReminders > 0)
-        log.info(`Sent ${momReminders} session-notes reminder(s)`);
+      if (momReminders > 0) log.info(`Sent ${momReminders} session-notes reminder(s)`);
       const reminded = await sendExpertReviewReminders();
-      if (reminded > 0)
-        log.info(`Sent ${reminded} expert review reminder(s)`);
+      if (reminded > 0) log.info(`Sent ${reminded} expert review reminder(s)`);
       const releasedPayouts = await releaseExpertSessionPayouts();
       if (releasedPayouts > 0)
-        log.info(
-          `Auto-released ${releasedPayouts} expert session payout(s)`,
-        );
+        log.info(`Auto-released ${releasedPayouts} expert session payout(s)`);
       const linkNudges = await sendExpertMeetingLinkNudges();
-      if (linkNudges > 0)
-        log.info(`Sent ${linkNudges} meeting-link nudge(s)`);
+      if (linkNudges > 0) log.info(`Sent ${linkNudges} meeting-link nudge(s)`);
       const startReminders = await sendSessionStartReminders();
-      if (startReminders > 0)
-        log.info(
-          `Sent ${startReminders} session-starting-soon reminder(s)`,
-        );
+      if (startReminders > 0) log.info(`Sent ${startReminders} session-starting-soon reminder(s)`);
     } catch (expertErr) {
       log.error("Expert session maintenance failed:", expertErr);
     }
@@ -320,25 +283,17 @@ export const runScheduledCleanup = async (): Promise<void> => {
     // Isolated in its own try/catch like the expert block: a failure here must
     // not stop account-deletion finalisation from running.
     try {
-      const { generateForAllActiveOfferings } = await import(
-        "../client/services/CoachOccurrenceService"
-      );
-      const { expireUnpaidEnrollmentHolds } = await import(
-        "../client/services/CoachOfferingService"
-      );
-      const {
-        sendRenewalReminders,
-        releaseEnrollmentsForExpiredSubscriptions,
-      } = await import("../client/services/CoachRenewalService");
-      const { retryPendingEnrollmentRefunds } = await import(
-        "../client/services/CoachEnrollmentRefundService"
-      );
-      const { expireCreditsPastPeriod } = await import(
-        "../client/services/CoachCreditLedgerService"
-      );
-      const { releaseDuePayouts } = await import(
-        "../client/services/CoachSessionLifecycleService"
-      );
+      const { generateForAllActiveOfferings } =
+        await import("../client/services/CoachOccurrenceService");
+      const { expireUnpaidEnrollmentHolds } =
+        await import("../client/services/CoachOfferingService");
+      const { sendRenewalReminders, releaseEnrollmentsForExpiredSubscriptions } =
+        await import("../client/services/CoachRenewalService");
+      const { retryPendingEnrollmentRefunds } =
+        await import("../client/services/CoachEnrollmentRefundService");
+      const { expireCreditsPastPeriod } =
+        await import("../client/services/CoachCreditLedgerService");
+      const { releaseDuePayouts } = await import("../client/services/CoachSessionLifecycleService");
       const { sendCoachMeetingLinkNudges, sendCoachSessionStartReminders } =
         await import("../client/services/CoachSessionReminderService");
 
@@ -346,28 +301,23 @@ export const runScheduledCleanup = async (): Promise<void> => {
       const generated = await generateForAllActiveOfferings();
       if (generated.created > 0)
         log.info(
-          `Generated ${generated.created} coaching session(s) across ${generated.offerings} programme(s)`,
+          `Generated ${generated.created} coaching session(s) across ${generated.offerings} programme(s)`
         );
 
       // Renewal, in order: nudge before the period ends, then release the
       // seats of anyone whose grace window has since run out. Nudging first
       // means a payer always gets asked before losing their place.
       const renewalNudges = await sendRenewalReminders();
-      if (renewalNudges > 0)
-        log.info(`Sent ${renewalNudges} programme renewal reminder(s)`);
+      if (renewalNudges > 0) log.info(`Sent ${renewalNudges} programme renewal reminder(s)`);
 
-      const releasedSeatsFromExpiry =
-        await releaseEnrollmentsForExpiredSubscriptions();
+      const releasedSeatsFromExpiry = await releaseEnrollmentsForExpiredSubscriptions();
       if (releasedSeatsFromExpiry > 0)
-        log.info(
-          `Released ${releasedSeatsFromExpiry} seat(s) from ended subscriptions`,
-        );
+        log.info(`Released ${releasedSeatsFromExpiry} seat(s) from ended subscriptions`);
 
       // Release seats held by checkouts nobody completed, so an abandoned
       // payment cannot shrink a batch permanently.
       const releasedSeats = await expireUnpaidEnrollmentHolds();
-      if (releasedSeats > 0)
-        log.info(`Released ${releasedSeats} unpaid enrolment hold(s)`);
+      if (releasedSeats > 0) log.info(`Released ${releasedSeats} unpaid enrolment hold(s)`);
 
       // A refund that could not be issued (gateway down when someone left)
       // leaves its credits frozen; without this retry the student's money would
@@ -375,7 +325,7 @@ export const runScheduledCleanup = async (): Promise<void> => {
       const retriedRefunds = await retryPendingEnrollmentRefunds();
       if (retriedRefunds.attempted > 0)
         log.info(
-          `Retried ${retriedRefunds.attempted} programme refund(s), ${retriedRefunds.refunded} succeeded`,
+          `Retried ${retriedRefunds.attempted} programme refund(s), ${retriedRefunds.refunded} succeeded`
         );
 
       // Credits lapse at period end — see the policy note in the ledger service.
@@ -387,8 +337,7 @@ export const runScheduledCleanup = async (): Promise<void> => {
         log.info(`Released ${releasedCoachPayouts} coach session payout(s)`);
 
       const coachLinkNudges = await sendCoachMeetingLinkNudges();
-      if (coachLinkNudges > 0)
-        log.info(`Sent ${coachLinkNudges} class-link nudge(s)`);
+      if (coachLinkNudges > 0) log.info(`Sent ${coachLinkNudges} class-link nudge(s)`);
 
       const coachStartReminders = await sendCoachSessionStartReminders();
       if (coachStartReminders > 0)
@@ -399,17 +348,11 @@ export const runScheduledCleanup = async (): Promise<void> => {
 
     // ── Pending account deletions ────────────────────────────────────────────
     try {
-      const { finalizePendingAccountDeletions } = await import(
-        "../shared/services/AuthService"
-      );
+      const { finalizePendingAccountDeletions } = await import("../shared/services/AuthService");
       const finalized = await finalizePendingAccountDeletions();
-      if (finalized > 0)
-        log.info(`Finalized ${finalized} pending account deletion(s)`);
+      if (finalized > 0) log.info(`Finalized ${finalized} pending account deletion(s)`);
     } catch (deletionErr) {
-      log.error(
-        "Pending account deletion finalization failed:",
-        deletionErr,
-      );
+      log.error("Pending account deletion finalization failed:", deletionErr);
     }
 
     // Silence when there was nothing to do — this runs every 15 minutes and
@@ -428,17 +371,13 @@ export const runScheduledCleanup = async (): Promise<void> => {
  * Call this once when the server starts.
  */
 export const initializeScheduledJobs = (): void => {
-
   // ── General cleanup ──────────────────────────────────────────────────────
-  const defaultCleanupIntervalMinutes =
-    process.env.NODE_ENV === "production" ? 60 : 15;
+  const defaultCleanupIntervalMinutes = process.env.NODE_ENV === "production" ? 60 : 15;
   const configuredCleanupIntervalMinutes = parseInt(
-    process.env.SCHEDULED_CLEANUP_INTERVAL_MINUTES ||
-      String(defaultCleanupIntervalMinutes),
-    10,
+    process.env.SCHEDULED_CLEANUP_INTERVAL_MINUTES || String(defaultCleanupIntervalMinutes),
+    10
   );
-  const CLEANUP_INTERVAL =
-    Math.max(5, configuredCleanupIntervalMinutes) * 60 * 1000;
+  const CLEANUP_INTERVAL = Math.max(5, configuredCleanupIntervalMinutes) * 60 * 1000;
 
   const cleanupIntervalHandle = setInterval(async () => {
     try {
@@ -463,5 +402,4 @@ export const initializeScheduledJobs = (): void => {
 
   // ── Pathway pre-warm (once at startup) ───────────────────────────────────
   // Pre-warming of 'any' locality generic sports is disabled.
-
 };

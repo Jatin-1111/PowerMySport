@@ -6,13 +6,7 @@ import type { Product } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-    ArrowUpRight,
-    ChevronDown,
-    Search,
-    SlidersHorizontal,
-    Sparkles,
-} from "lucide-react";
+import { ArrowUpRight, ChevronDown, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -39,26 +33,18 @@ export function ShopCatalogClient({
   const searchParams = useSearchParams();
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [category, setCategory] = useState(
-    searchParams.get("category") || "ALL",
-  );
+  const [category, setCategory] = useState(searchParams.get("category") || "ALL");
   const [sort, setSort] = useState(searchParams.get("sortBy") || "featured");
 
   const [brand, setBrand] = useState(searchParams.get("brand") || "");
   const [rating, setRating] = useState(
-    searchParams.get("rating") ? Number(searchParams.get("rating")) : 0,
+    searchParams.get("rating") ? Number(searchParams.get("rating")) : 0
   );
   const [maxPrice, setMaxPrice] = useState(
-    searchParams.get("maxPrice")
-      ? Number(searchParams.get("maxPrice"))
-      : facets.maxPrice,
+    searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : facets.maxPrice
   );
-  const [condition, setCondition] = useState(
-    searchParams.get("condition") || "",
-  );
-  const [sellerType, setSellerType] = useState(
-    searchParams.get("sellerType") || "",
-  );
+  const [condition, setCondition] = useState(searchParams.get("condition") || "");
+  const [sellerType, setSellerType] = useState(searchParams.get("sellerType") || "");
 
   const [showFilters, setShowFilters] = useState(false);
 
@@ -67,13 +53,9 @@ export function ShopCatalogClient({
     setCategory(searchParams.get("category") || "ALL");
     setSort(searchParams.get("sortBy") || "featured");
     setBrand(searchParams.get("brand") || "");
-    setRating(
-      searchParams.get("rating") ? Number(searchParams.get("rating")) : 0,
-    );
+    setRating(searchParams.get("rating") ? Number(searchParams.get("rating")) : 0);
     setMaxPrice(
-      searchParams.get("maxPrice")
-        ? Number(searchParams.get("maxPrice"))
-        : facets.maxPrice,
+      searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : facets.maxPrice
     );
     setCondition(searchParams.get("condition") || "");
     setSellerType(searchParams.get("sellerType") || "");
@@ -88,13 +70,10 @@ export function ShopCatalogClient({
     () => [
       "ALL",
       ...Array.from(
-        new Set([
-          ...(facets.categories || []),
-          ...products.map((item) => item.category),
-        ]),
+        new Set([...(facets.categories || []), ...products.map((item) => item.category)])
       ).filter(Boolean),
     ],
-    [facets.categories, products],
+    [facets.categories, products]
   );
 
   // Sync state to URL and refetch. Accepts overrides so a single filter click
@@ -109,7 +88,7 @@ export function ShopCatalogClient({
       maxPrice: number;
       condition: string;
       sellerType: string;
-    }> = {},
+    }> = {}
   ) => {
     const next = {
       search,
@@ -129,8 +108,7 @@ export function ShopCatalogClient({
     if (next.sort !== "featured") params.set("sortBy", next.sort);
     if (next.brand) params.set("brand", next.brand);
     if (next.rating > 0) params.set("rating", String(next.rating));
-    if (next.maxPrice < (facets.maxPrice || 10000))
-      params.set("maxPrice", String(next.maxPrice));
+    if (next.maxPrice < (facets.maxPrice || 10000)) params.set("maxPrice", String(next.maxPrice));
     if (next.condition) params.set("condition", next.condition);
     if (next.sellerType) params.set("sellerType", next.sellerType);
 
@@ -153,12 +131,10 @@ export function ShopCatalogClient({
   const [activeTab, setActiveTab] = useState("All Products");
 
   const displayProducts = useMemo(() => {
-    if (activeTab === "Best Sellers")
-      return [...filteredProducts].sort(() => 0.5 - Math.random());
+    if (activeTab === "Best Sellers") return [...filteredProducts].sort(() => 0.5 - Math.random());
     if (activeTab === "New Arrivals") return [...filteredProducts].reverse();
     return filteredProducts;
   }, [filteredProducts, activeTab]);
-
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -166,10 +142,10 @@ export function ShopCatalogClient({
         <motion.div
           initial={{ opacity: 0, scale: 0.98, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="relative flex flex-col lg:flex-row items-center justify-between overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-50 to-white p-8 border border-slate-200/50 shadow-sm sm:p-10"
+          className="relative flex flex-col items-center justify-between overflow-hidden rounded-[2rem] border border-slate-200/50 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm sm:p-10 lg:flex-row"
         >
           {/* Decorative background blur */}
-          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#ff5722] opacity-10 blur-[100px]" />
+          <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-[#ff5722] opacity-10 blur-[100px]" />
           <div className="pointer-events-none absolute -bottom-32 left-10 h-64 w-64 rounded-full bg-blue-500 opacity-10 blur-[100px]" />
 
           <div className="relative z-10 w-full lg:w-1/2">
@@ -177,7 +153,7 @@ export function ShopCatalogClient({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 rounded-full border border-[#ff5722]/20 bg-[#ff5722]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-[#ff5722]"
+              className="inline-flex items-center gap-2 rounded-full border border-[#ff5722]/20 bg-[#ff5722]/10 px-4 py-1.5 text-xs font-bold tracking-[0.2em] text-[#ff5722] uppercase"
             >
               <Sparkles className="h-3.5 w-3.5" />
               Pro-Level Gear
@@ -186,7 +162,7 @@ export function ShopCatalogClient({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="mt-6 max-w-xl text-5xl font-black tracking-tight leading-[1.1] sm:text-6xl text-slate-900"
+              className="mt-6 max-w-xl text-5xl leading-[1.1] font-black tracking-tight text-slate-900 sm:text-6xl"
             >
               Elevate Your <span className="text-[#ff5722]">Performance</span>
             </motion.h1>
@@ -196,8 +172,8 @@ export function ShopCatalogClient({
               transition={{ delay: 0.4 }}
               className="mt-6 max-w-lg text-lg leading-relaxed text-slate-600"
             >
-              Discover premium equipment, exclusive apparel, and advanced
-              training essentials curated for dedicated athletes.
+              Discover premium equipment, exclusive apparel, and advanced training essentials
+              curated for dedicated athletes.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -222,8 +198,8 @@ export function ShopCatalogClient({
           </div>
 
           {/* Hero Image Section */}
-          <div className="relative z-10 w-full lg:w-1/2 mt-10 lg:mt-0 flex justify-end">
-            <div className="relative w-full max-w-md aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl">
+          <div className="relative z-10 mt-10 flex w-full justify-end lg:mt-0 lg:w-1/2">
+            <div className="relative aspect-[4/3] w-full max-w-md overflow-hidden rounded-[2rem] shadow-2xl">
               <img
                 src="https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80"
                 alt="Pro Gear"
@@ -236,15 +212,15 @@ export function ShopCatalogClient({
       </section>
 
       {/* TABS & TOGGLES */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-200 pb-2 relative">
+      <div className="relative mb-6 flex flex-col justify-between gap-6 border-b border-slate-200 pb-2 sm:flex-row sm:items-center">
         <div className="flex items-center gap-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
-              "group flex items-center gap-3 rounded-full bg-slate-50 border px-4 py-2 text-sm font-bold transition-all shadow-sm cursor-pointer hover:border-slate-300",
+              "group flex cursor-pointer items-center gap-3 rounded-full border bg-slate-50 px-4 py-2 text-sm font-bold shadow-sm transition-all hover:border-slate-300",
               showFilters
                 ? "border-[#ff5722]/40 bg-[#ff5722]/5 text-[#ff5722]"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
             )}
           >
             <div className="flex items-center gap-1.5">
@@ -256,38 +232,36 @@ export function ShopCatalogClient({
 
             <div
               className={cn(
-                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out p-[2px] items-center",
-                showFilters ? "bg-[#ff5722]" : "bg-slate-200",
+                "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-[2px] transition-colors duration-200 ease-in-out",
+                showFilters ? "bg-[#ff5722]" : "bg-slate-200"
               )}
             >
               <span
                 className={cn(
                   "pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out",
-                  showFilters ? "translate-x-4" : "translate-x-0",
+                  showFilters ? "translate-x-4" : "translate-x-0"
                 )}
               />
             </div>
           </button>
 
-          <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+          <div className="hidden h-6 w-px bg-slate-200 sm:block" />
 
-          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar">
+          <div className="no-scrollbar flex items-center gap-6 overflow-x-auto">
             {["All Products", "Best Sellers", "New Arrivals"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "whitespace-nowrap px-2 py-3 text-sm font-bold transition-all relative",
-                  activeTab === tab
-                    ? "text-[#ff5722]"
-                    : "text-slate-500 hover:text-slate-900",
+                  "relative px-2 py-3 text-sm font-bold whitespace-nowrap transition-all",
+                  activeTab === tab ? "text-[#ff5722]" : "text-slate-500 hover:text-slate-900"
                 )}
               >
                 {tab}
                 {activeTab === tab && (
                   <motion.div
                     layoutId="activeTabIndicator"
-                    className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-[#ff5722]"
+                    className="absolute right-0 bottom-[-1px] left-0 h-0.5 bg-[#ff5722]"
                   />
                 )}
               </button>
@@ -304,7 +278,7 @@ export function ShopCatalogClient({
                 setSort(e.target.value);
                 applyFilters({ sort: e.target.value });
               }}
-              className="cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-8 py-1.5 text-sm font-bold outline-none shadow-sm transition focus:border-[#ff5722]"
+              className="cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-1.5 pr-8 pl-3 text-sm font-bold shadow-sm transition outline-none focus:border-[#ff5722]"
             >
               {sortOptions.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -312,7 +286,7 @@ export function ShopCatalogClient({
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 h-4 w-4 -translate-y-1/2 text-slate-500" />
           </div>
         </div>
       </div>
@@ -321,13 +295,13 @@ export function ShopCatalogClient({
         id="catalog"
         className={cn(
           "mt-12 grid grid-cols-1 items-start gap-8",
-          showFilters && "lg:grid-cols-[280px_1fr]",
+          showFilters && "lg:grid-cols-[280px_1fr]"
         )}
       >
         {/* VERTICAL LEFT SIDEBAR */}
         {showFilters && (
           <aside className="sticky top-28 flex flex-col gap-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-5 w-5 text-slate-900" />
                 <h2 className="text-lg font-black text-slate-900">Filters</h2>
@@ -341,7 +315,7 @@ export function ShopCatalogClient({
                 sellerType) && (
                 <button
                   onClick={clearFilters}
-                  className="text-xs font-bold text-[#ff5722] hover:underline transition-all"
+                  className="text-xs font-bold text-[#ff5722] transition-all hover:underline"
                 >
                   Clear all
                 </button>
@@ -352,26 +326,26 @@ export function ShopCatalogClient({
               className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm"
               open
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Search
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
               <div className="mt-4">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && applyFilters()}
                     placeholder="Search..."
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm outline-none transition focus:border-[#ff5722] focus:ring-1 focus:ring-[#ff5722]"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pr-3 pl-10 text-sm transition outline-none focus:border-[#ff5722] focus:ring-1 focus:ring-[#ff5722]"
                   />
                 </div>
               </div>
             </details>
 
             <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Category
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -387,7 +361,7 @@ export function ShopCatalogClient({
                       "flex items-center justify-between rounded-lg px-3 py-2 text-sm font-bold transition-all",
                       category === item
                         ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                        : "text-slate-600 hover:bg-slate-100",
+                        : "text-slate-600 hover:bg-slate-100"
                     )}
                   >
                     {item === "ALL" ? "All Categories" : item}
@@ -397,7 +371,7 @@ export function ShopCatalogClient({
             </details>
 
             <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Brands
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -408,10 +382,10 @@ export function ShopCatalogClient({
                     applyFilters({ brand: "" });
                   }}
                   className={cn(
-                    "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                    "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                     brand === ""
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-100",
+                      : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
                   All Brands
@@ -424,10 +398,10 @@ export function ShopCatalogClient({
                       applyFilters({ brand: b });
                     }}
                     className={cn(
-                      "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                      "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                       brand === b
                         ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                        : "text-slate-600 hover:bg-slate-100",
+                        : "text-slate-600 hover:bg-slate-100"
                     )}
                   >
                     {b}
@@ -437,7 +411,7 @@ export function ShopCatalogClient({
             </details>
 
             <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Price Range
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -459,7 +433,7 @@ export function ShopCatalogClient({
             </details>
 
             <details className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-              <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Rating
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -473,10 +447,10 @@ export function ShopCatalogClient({
                       applyFilters({ rating: nextRating });
                     }}
                     className={cn(
-                      "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                      "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                       rating === r
                         ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                        : "text-slate-600 hover:bg-slate-100",
+                        : "text-slate-600 hover:bg-slate-100"
                     )}
                   >
                     {r} Stars & Up
@@ -489,7 +463,7 @@ export function ShopCatalogClient({
               className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm"
               open
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Gear Condition
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -500,10 +474,10 @@ export function ShopCatalogClient({
                     applyFilters({ condition: "" });
                   }}
                   className={cn(
-                    "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                    "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                     condition === ""
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-100",
+                      : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
                   All Gear
@@ -514,10 +488,10 @@ export function ShopCatalogClient({
                     applyFilters({ condition: "NEW" });
                   }}
                   className={cn(
-                    "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                    "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                     condition === "NEW"
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-100",
+                      : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
                   New Gear
@@ -528,10 +502,10 @@ export function ShopCatalogClient({
                     applyFilters({ condition: "USED" });
                   }}
                   className={cn(
-                    "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                    "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                     condition === "USED"
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-100",
+                      : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
                   Used / Pre-owned
@@ -543,7 +517,7 @@ export function ShopCatalogClient({
               className="group rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm"
               open
             >
-              <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-sm text-slate-900 outline-none transition-colors group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900 transition-colors outline-none group-hover:text-[#ff5722] [&::-webkit-details-marker]:hidden">
                 Seller Type
                 <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
               </summary>
@@ -554,10 +528,10 @@ export function ShopCatalogClient({
                     applyFilters({ sellerType: "" });
                   }}
                   className={cn(
-                    "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                    "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                     sellerType === ""
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-100",
+                      : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
                   All Sellers
@@ -568,10 +542,10 @@ export function ShopCatalogClient({
                     applyFilters({ sellerType: "SYSTEM" });
                   }}
                   className={cn(
-                    "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                    "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                     sellerType === "SYSTEM"
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-100",
+                      : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
                   PowerMySport Store
@@ -582,10 +556,10 @@ export function ShopCatalogClient({
                     applyFilters({ sellerType: "PARENT" });
                   }}
                   className={cn(
-                    "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                    "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                     sellerType === "PARENT"
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-100",
+                      : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
                   Parents
@@ -596,10 +570,10 @@ export function ShopCatalogClient({
                     applyFilters({ sellerType: "Player" });
                   }}
                   className={cn(
-                    "text-left px-3 py-2 rounded-lg text-sm font-bold transition-all",
+                    "rounded-lg px-3 py-2 text-left text-sm font-bold transition-all",
                     sellerType === "Player"
                       ? "bg-[#ff5722] text-white shadow-md shadow-[#ff5722]/20"
-                      : "text-slate-600 hover:bg-slate-100",
+                      : "text-slate-600 hover:bg-slate-100"
                   )}
                 >
                   Players (P2P)
@@ -626,9 +600,7 @@ export function ShopCatalogClient({
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
                 <Search className="h-6 w-6 text-slate-400" />
               </div>
-              <h3 className="mt-4 text-lg font-bold text-slate-900">
-                No products found
-              </h3>
+              <h3 className="mt-4 text-lg font-bold text-slate-900">No products found</h3>
               <p className="mt-2 text-slate-500">
                 We couldn't find anything matching your current filters.
               </p>
@@ -642,7 +614,7 @@ export function ShopCatalogClient({
           ) : (
             <motion.div
               layout
-              className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 w-full"
+              className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"
             >
               <AnimatePresence mode="popLayout">
                 {displayProducts.map((product) => (

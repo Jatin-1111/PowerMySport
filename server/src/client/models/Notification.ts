@@ -57,16 +57,11 @@ export interface INotification extends Document {
 // Query helpers interface
 interface NotificationQueryHelpers {
   active(
-    this: mongoose.Query<any, any, NotificationQueryHelpers>,
+    this: mongoose.Query<any, any, NotificationQueryHelpers>
   ): mongoose.Query<any, any, NotificationQueryHelpers>;
 }
 
-const notificationSchema = new Schema<
-  INotification,
-  {},
-  {},
-  NotificationQueryHelpers
->(
+const notificationSchema = new Schema<INotification, {}, {}, NotificationQueryHelpers>(
   {
     userId: {
       type: Schema.Types.ObjectId,
@@ -152,7 +147,7 @@ const notificationSchema = new Schema<
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Compound indexes for efficient queries
@@ -163,13 +158,12 @@ notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL in
 
 // Soft delete query helper
 notificationSchema.query.active = function (
-  this: mongoose.Query<any, any, NotificationQueryHelpers>,
+  this: mongoose.Query<any, any, NotificationQueryHelpers>
 ) {
   return this.where({ deletedAt: null });
 };
 
 const Notification: Model<INotification> =
-  mongoose.models.Notification ||
-  mongoose.model<INotification>("Notification", notificationSchema);
+  mongoose.models.Notification || mongoose.model<INotification>("Notification", notificationSchema);
 
 export default Notification;

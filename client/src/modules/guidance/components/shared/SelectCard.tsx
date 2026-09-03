@@ -15,7 +15,7 @@ export function SelectCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left rounded-2xl border-2 p-4 transition-all duration-200 active:scale-[0.99] ${
+      className={`w-full rounded-2xl border-2 p-4 text-left transition-all duration-200 active:scale-[0.99] ${
         selected
           ? accent
             ? "border-power-orange bg-power-orange/5 shadow-power-orange/10 shadow-lg"

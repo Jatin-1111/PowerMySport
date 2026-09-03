@@ -96,9 +96,7 @@ describe("the stated bands and citation", () => {
     // so a band that disagrees with `entryStatus` is a visible contradiction.
     expect(ENTRY_BANDS).toHaveLength(2);
     expect(ENTRY_BANDS[0]!.range).toContain("75");
-    expect(ENTRY_BANDS.some((b) => /Championship Series closed/i.test(b.effect))).toBe(
-      false,
-    );
+    expect(ENTRY_BANDS.some((b) => /Championship Series closed/i.test(b.effect))).toBe(false);
   });
 
   it("cites the document it was actually written against", () => {

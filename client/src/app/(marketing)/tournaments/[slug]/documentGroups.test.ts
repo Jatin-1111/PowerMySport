@@ -5,7 +5,7 @@ import { groupDocumentsByKind } from "./documentGroups";
 const doc = (
   label: string,
   url: string,
-  kind: EditionDocument["kind"] = "acceptanceList",
+  kind: EditionDocument["kind"] = "acceptanceList"
 ): EditionDocument => ({ label, url, kind });
 
 describe("groupDocumentsByKind", () => {

@@ -29,83 +29,41 @@ const testOpeningHoursValidation = () => {
 
     // Test booking during open hours (Monday 10-11)
     const monday = new Date("2026-03-02T10:00:00"); // A Monday
-    const validResult = isWithinOpeningHours(
-      monday,
-      "10:00",
-      "11:00",
-      openingHours,
-    );
+    const validResult = isWithinOpeningHours(monday, "10:00", "11:00", openingHours);
     logTest("Booking during open hours accepted", validResult.isValid === true);
 
     // Test booking before opening (Monday 08-09)
-    const tooEarlyResult = isWithinOpeningHours(
-      monday,
-      "08:00",
-      "09:00",
-      openingHours,
-    );
-    logTest(
-      "Booking before opening rejected",
-      tooEarlyResult.isValid === false,
-    );
+    const tooEarlyResult = isWithinOpeningHours(monday, "08:00", "09:00", openingHours);
+    logTest("Booking before opening rejected", tooEarlyResult.isValid === false);
     logTest(
       "Before opening error message correct",
-      tooEarlyResult.message?.includes("opens at") || false,
+      tooEarlyResult.message?.includes("opens at") || false
     );
 
     // Test booking after closing (Monday 19-20)
-    const tooLateResult = isWithinOpeningHours(
-      monday,
-      "19:00",
-      "20:00",
-      openingHours,
-    );
+    const tooLateResult = isWithinOpeningHours(monday, "19:00", "20:00", openingHours);
     logTest("Booking after closing rejected", tooLateResult.isValid === false);
     logTest(
       "After closing error message correct",
-      tooLateResult.message?.includes("closes at") || false,
+      tooLateResult.message?.includes("closes at") || false
     );
 
     // Test booking on closed day (Sunday)
     const sunday = new Date("2026-03-01T10:00:00"); // A Sunday
-    const closedDayResult = isWithinOpeningHours(
-      sunday,
-      "10:00",
-      "11:00",
-      openingHours,
-    );
-    logTest(
-      "Booking on closed day rejected",
-      closedDayResult.isValid === false,
-    );
+    const closedDayResult = isWithinOpeningHours(sunday, "10:00", "11:00", openingHours);
+    logTest("Booking on closed day rejected", closedDayResult.isValid === false);
     logTest(
       "Closed day error message correct",
-      closedDayResult.message?.includes("closed on") || false,
+      closedDayResult.message?.includes("closed on") || false
     );
 
     // Test Saturday hours (different from weekday)
     const saturday = new Date("2026-03-07T10:00:00"); // A Saturday
-    const satValidResult = isWithinOpeningHours(
-      saturday,
-      "10:00",
-      "15:00",
-      openingHours,
-    );
-    logTest(
-      "Saturday booking during hours accepted",
-      satValidResult.isValid === true,
-    );
+    const satValidResult = isWithinOpeningHours(saturday, "10:00", "15:00", openingHours);
+    logTest("Saturday booking during hours accepted", satValidResult.isValid === true);
 
-    const satInvalidResult = isWithinOpeningHours(
-      saturday,
-      "17:00",
-      "18:00",
-      openingHours,
-    );
-    logTest(
-      "Saturday booking after closing rejected",
-      satInvalidResult.isValid === false,
-    );
+    const satInvalidResult = isWithinOpeningHours(saturday, "17:00", "18:00", openingHours);
+    logTest("Saturday booking after closing rejected", satInvalidResult.isValid === false);
   } catch (error: any) {
     logTest("Opening hours validation test", false, error.message);
   }
@@ -115,12 +73,8 @@ const testOpeningHoursValidation = () => {
 const testCancellationPolicy = () => {
   console.log("\n🧪 Test 2: Cancellation Policy Logic");
   try {
-    const calculateRefundPercentage = (
-      bookingDate: Date,
-      currentDate: Date,
-    ): number => {
-      const hoursUntilBooking =
-        (bookingDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60);
+    const calculateRefundPercentage = (bookingDate: Date, currentDate: Date): number => {
+      const hoursUntilBooking = (bookingDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60);
 
       if (hoursUntilBooking >= 48) {
         return 100; // Full refund
@@ -140,10 +94,7 @@ const testCancellationPolicy = () => {
 
     // Test 24-48 hours (50% refund)
     const mediumFutureBooking = new Date("2026-03-05T18:00:00"); // 30 hours away
-    const refund50 = calculateRefundPercentage(
-      mediumFutureBooking,
-      currentDate,
-    );
+    const refund50 = calculateRefundPercentage(mediumFutureBooking, currentDate);
     logTest("24-48 hours cancellation = 50% refund", refund50 === 50);
 
     // Test <24 hours (0% refund)
@@ -169,24 +120,16 @@ const testCancellationPolicy = () => {
 const testAgeValidation = () => {
   console.log("\n🧪 Test 3: Age Validation for Dependents");
   try {
-    const calculateAge = (
-      dob: Date,
-      referenceDate: Date = new Date(),
-    ): number => {
+    const calculateAge = (dob: Date, referenceDate: Date = new Date()): number => {
       let age = referenceDate.getFullYear() - dob.getFullYear();
       const monthDiff = referenceDate.getMonth() - dob.getMonth();
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && referenceDate.getDate() < dob.getDate())
-      ) {
+      if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < dob.getDate())) {
         age--;
       }
       return age;
     };
 
-    const validateDependentAge = (
-      dob: Date,
-    ): { valid: boolean; message?: string } => {
+    const validateDependentAge = (dob: Date): { valid: boolean; message?: string } => {
       // Check if DOB is in the future
       if (dob > new Date()) {
         return {
@@ -209,8 +152,7 @@ const testAgeValidation = () => {
       if (age >= 18) {
         return {
           valid: false,
-          message:
-            "Dependents must be under 18 years old. Please book as an adult.",
+          message: "Dependents must be under 18 years old. Please book as an adult.",
         };
       }
 
@@ -230,26 +172,20 @@ const testAgeValidation = () => {
     logTest("Too young rejected (2 years)", tooYoungResult.valid === false);
     logTest(
       "Too young error message correct",
-      tooYoungResult.message?.includes("at least 3 years") || false,
+      tooYoungResult.message?.includes("at least 3 years") || false
     );
 
     // Test too old (18 years old)
     const tooOldDOB = new Date("2008-03-04");
     const tooOldResult = validateDependentAge(tooOldDOB);
     logTest("Too old rejected (18 years)", tooOldResult.valid === false);
-    logTest(
-      "Too old error message correct",
-      tooOldResult.message?.includes("under 18") || false,
-    );
+    logTest("Too old error message correct", tooOldResult.message?.includes("under 18") || false);
 
     // Test future DOB
     const futureDOB = new Date("2027-01-01");
     const futureResult = validateDependentAge(futureDOB);
     logTest("Future DOB rejected", futureResult.valid === false);
-    logTest(
-      "Future DOB error message correct",
-      futureResult.message?.includes("future") || false,
-    );
+    logTest("Future DOB error message correct", futureResult.message?.includes("future") || false);
 
     // Test boundary: exactly 3 years old
     const exactly3DOB = new Date("2023-03-04");
@@ -285,7 +221,7 @@ const testCheckInCodeValidation = () => {
 
     const validateCheckInCode = (
       code: string,
-      expiry: Date,
+      expiry: Date
     ): { valid: boolean; message?: string } => {
       if (code.length !== 8) {
         return { valid: false, message: "Check-in code must be 8 characters" };
@@ -318,10 +254,7 @@ const testCheckInCodeValidation = () => {
     const pastExpiry = new Date(Date.now() - 1000);
     const expiredResult = validateCheckInCode("ABC12345", pastExpiry);
     logTest("Expired code rejected", expiredResult.valid === false);
-    logTest(
-      "Expired error message correct",
-      expiredResult.message?.includes("expired") || false,
-    );
+    logTest("Expired error message correct", expiredResult.message?.includes("expired") || false);
   } catch (error: any) {
     logTest("Check-in code validation test", false, error.message);
   }
@@ -344,7 +277,7 @@ const testReviewSystemLogic = () => {
       bookingStatus: string,
       bookingDate: Date,
       existingReviews: Review[],
-      targetType: "VENUE" | "Coach",
+      targetType: "VENUE" | "Coach"
     ): { allowed: boolean; message?: string } => {
       if (bookingStatus !== "COMPLETED") {
         return {
@@ -357,9 +290,7 @@ const testReviewSystemLogic = () => {
         return { allowed: false, message: "Cannot review future bookings" };
       }
 
-      const existingReview = existingReviews.find(
-        (r) => r.targetType === targetType,
-      );
+      const existingReview = existingReviews.find((r) => r.targetType === targetType);
       if (existingReview) {
         return {
           allowed: false,
@@ -378,30 +309,15 @@ const testReviewSystemLogic = () => {
     };
 
     // Test: Can leave review for completed booking
-    const completedResult = canLeaveReview(
-      "COMPLETED",
-      new Date("2026-03-01"),
-      [],
-      "VENUE",
-    );
+    const completedResult = canLeaveReview("COMPLETED", new Date("2026-03-01"), [], "VENUE");
     logTest("Can review completed booking", completedResult.allowed === true);
 
     // Test: Cannot review pending booking
-    const pendingResult = canLeaveReview(
-      "PENDING",
-      new Date("2026-03-01"),
-      [],
-      "VENUE",
-    );
+    const pendingResult = canLeaveReview("PENDING", new Date("2026-03-01"), [], "VENUE");
     logTest("Cannot review pending booking", pendingResult.allowed === false);
 
     // Test: Cannot review future booking
-    const futureResult = canLeaveReview(
-      "COMPLETED",
-      new Date("2026-12-01"),
-      [],
-      "VENUE",
-    );
+    const futureResult = canLeaveReview("COMPLETED", new Date("2026-12-01"), [], "VENUE");
     logTest("Cannot review future booking", futureResult.allowed === false);
 
     // Test: Can leave separate reviews for venue and coach
@@ -418,23 +334,17 @@ const testReviewSystemLogic = () => {
       "COMPLETED",
       new Date("2026-03-01"),
       [existingVenueReview],
-      "Coach",
+      "Coach"
     );
-    logTest(
-      "Can leave coach review after venue review",
-      canReviewCoach.allowed === true,
-    );
+    logTest("Can leave coach review after venue review", canReviewCoach.allowed === true);
 
     const canReviewVenueAgain = canLeaveReview(
       "COMPLETED",
       new Date("2026-03-01"),
       [existingVenueReview],
-      "VENUE",
+      "VENUE"
     );
-    logTest(
-      "Cannot leave duplicate venue review",
-      canReviewVenueAgain.allowed === false,
-    );
+    logTest("Cannot leave duplicate venue review", canReviewVenueAgain.allowed === false);
 
     // Test: Auto-flag review after 3 reports
     let review: Review = {
@@ -449,17 +359,11 @@ const testReviewSystemLogic = () => {
     review.reports.push({ reason: "Spam" });
     review.reports.push({ reason: "Offensive" });
     review = autoFlagReview(review);
-    logTest(
-      "Review not flagged with 2 reports",
-      review.moderationStatus === "PENDING",
-    );
+    logTest("Review not flagged with 2 reports", review.moderationStatus === "PENDING");
 
     review.reports.push({ reason: "Inappropriate" });
     review = autoFlagReview(review);
-    logTest(
-      "Review auto-flagged with 3 reports",
-      review.moderationStatus === "FLAGGED",
-    );
+    logTest("Review auto-flagged with 3 reports", review.moderationStatus === "FLAGGED");
   } catch (error: any) {
     logTest("Review system logic test", false, error.message);
   }
@@ -479,22 +383,10 @@ const testVerificationStatusLogic = () => {
     };
 
     // Test coach verification
-    logTest(
-      "VERIFIED coach can accept bookings",
-      canCoachAcceptBooking("VERIFIED") === true,
-    );
-    logTest(
-      "PENDING coach cannot accept bookings",
-      canCoachAcceptBooking("PENDING") === false,
-    );
-    logTest(
-      "REVIEW coach cannot accept bookings",
-      canCoachAcceptBooking("REVIEW") === false,
-    );
-    logTest(
-      "REJECTED coach cannot accept bookings",
-      canCoachAcceptBooking("REJECTED") === false,
-    );
+    logTest("VERIFIED coach can accept bookings", canCoachAcceptBooking("VERIFIED") === true);
+    logTest("PENDING coach cannot accept bookings", canCoachAcceptBooking("PENDING") === false);
+    logTest("REVIEW coach cannot accept bookings", canCoachAcceptBooking("REVIEW") === false);
+    logTest("REJECTED coach cannot accept bookings", canCoachAcceptBooking("REJECTED") === false);
 
     // Test venue approval
     const newVenueStatus = getVenueApprovalStatus();
@@ -527,17 +419,13 @@ const runAllTests = () => {
   console.log(`Total Tests: ${testResults.length}`);
   console.log(`✅ Passed: ${passed}`);
   console.log(`❌ Failed: ${failed}`);
-  console.log(
-    `Success Rate: ${((passed / testResults.length) * 100).toFixed(1)}%`,
-  );
+  console.log(`Success Rate: ${((passed / testResults.length) * 100).toFixed(1)}%`);
 
   if (failed > 0) {
     console.log("\n❌ Failed Tests:");
     testResults
       .filter((r) => !r.passed)
-      .forEach((r) =>
-        console.log(`  - ${r.name}: ${r.error || "Unknown error"}`),
-      );
+      .forEach((r) => console.log(`  - ${r.name}: ${r.error || "Unknown error"}`));
   }
 
   console.log("\n" + "=".repeat(60));

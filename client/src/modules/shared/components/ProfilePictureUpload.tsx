@@ -25,18 +25,14 @@ export default function ProfilePictureUpload({
   size = "lg",
 }: ProfilePictureUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
-    currentPhotoUrl || null,
-  );
+  const [previewUrl, setPreviewUrl] = useState<string | null>(currentPhotoUrl || null);
 
   // Sync preview URL with prop changes
   useEffect(() => {
     setPreviewUrl(currentPhotoUrl || null);
   }, [currentPhotoUrl]);
 
-  const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -59,10 +55,7 @@ export default function ProfilePictureUpload({
       setPreviewUrl(preview);
 
       // 1. Get presigned URL
-      const urlResponse = await authApi.getProfilePictureUploadUrl(
-        file.name,
-        file.type,
-      );
+      const urlResponse = await authApi.getProfilePictureUploadUrl(file.name, file.type);
 
       if (!urlResponse.success || !urlResponse.data) {
         throw new Error("Failed to get upload URL");
@@ -74,10 +67,7 @@ export default function ProfilePictureUpload({
       await authApi.uploadProfilePictureToS3(file, uploadUrl, file.type);
 
       // 3. Confirm upload
-      const confirmResponse = await authApi.confirmProfilePicture(
-        downloadUrl,
-        key,
-      );
+      const confirmResponse = await authApi.confirmProfilePicture(downloadUrl, key);
 
       if (!confirmResponse.success || !confirmResponse.data) {
         throw new Error("Failed to save profile picture");
@@ -88,9 +78,7 @@ export default function ProfilePictureUpload({
         onUploadSuccess(confirmResponse.data);
       }
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to upload image",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to upload image");
       setPreviewUrl(currentPhotoUrl || null);
     } finally {
       setUploading(false);
@@ -102,38 +90,18 @@ export default function ProfilePictureUpload({
       {/* Profile Picture Preview */}
       <div className="relative">
         <div
-          className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-slate-200 bg-slate-100 flex items-center justify-center`}
+          className={`${sizeClasses[size]} flex items-center justify-center overflow-hidden rounded-full border-4 border-slate-200 bg-slate-100`}
         >
           {previewUrl ? (
             <Image
               src={previewUrl}
               alt="Profile"
-              width={
-                size === "xl"
-                  ? 160
-                  : size === "lg"
-                    ? 128
-                    : size === "md"
-                      ? 96
-                      : 64
-              }
-              height={
-                size === "xl"
-                  ? 160
-                  : size === "lg"
-                    ? 128
-                    : size === "md"
-                      ? 96
-                      : 64
-              }
-              className="object-cover w-full h-full"
+              width={size === "xl" ? 160 : size === "lg" ? 128 : size === "md" ? 96 : 64}
+              height={size === "xl" ? 160 : size === "lg" ? 128 : size === "md" ? 96 : 64}
+              className="h-full w-full object-cover"
             />
           ) : (
-            <svg
-              className="w-1/2 h-1/2 text-slate-400"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
+            <svg className="h-1/2 w-1/2 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
@@ -145,8 +113,8 @@ export default function ProfilePictureUpload({
 
         {/* Upload Overlay */}
         {uploading && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          <div className="bg-opacity-50 absolute inset-0 flex items-center justify-center rounded-full bg-black">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-white"></div>
           </div>
         )}
       </div>
@@ -160,15 +128,13 @@ export default function ProfilePictureUpload({
           disabled={uploading}
           className="hidden"
         />
-        <span className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition inline-block">
+        <span className="inline-block rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
           {uploading ? "Uploading..." : "Change Photo"}
         </span>
       </label>
 
       {/* Info Text */}
-      <p className="text-slate-500 text-xs text-center max-w-xs">
-        JPG, PNG or WebP. Max 5MB.
-      </p>
+      <p className="max-w-xs text-center text-xs text-slate-500">JPG, PNG or WebP. Max 5MB.</p>
     </div>
   );
 }

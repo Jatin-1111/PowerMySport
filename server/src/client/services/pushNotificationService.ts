@@ -39,7 +39,7 @@ export interface PushSubscription {
  */
 export async function sendPushNotification(
   subscription: PushSubscription,
-  payload: PushNotificationPayload,
+  payload: PushNotificationPayload
 ): Promise<boolean> {
   try {
     const pushSubscription = {
@@ -72,7 +72,7 @@ export async function sendPushNotification(
  */
 export async function sendPushNotificationToMultiple(
   subscriptions: PushSubscription[],
-  payload: PushNotificationPayload,
+  payload: PushNotificationPayload
 ): Promise<{
   successful: number;
   failed: number;
@@ -96,10 +96,7 @@ export async function sendPushNotificationToMultiple(
       }
     } catch (error) {
       results.failed++;
-      log.error(
-        `Failed to send notification to ${subscription.endpoint}:`,
-        error,
-      );
+      log.error(`Failed to send notification to ${subscription.endpoint}:`, error);
     }
   });
 

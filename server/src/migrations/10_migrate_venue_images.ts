@@ -35,9 +35,7 @@ export const migrateVenueImages = async (refreshUrls: boolean = true) => {
       images: { $exists: true, $type: "array", $ne: [] },
     });
 
-    console.log(
-      `📊 Found ${venuesWithImages.length} venues with legacy images to consolidate`,
-    );
+    console.log(`📊 Found ${venuesWithImages.length} venues with legacy images to consolidate`);
 
     let migrated = 0;
     let errors = 0;
@@ -55,7 +53,7 @@ export const migrateVenueImages = async (refreshUrls: boolean = true) => {
           venue.generalImages = [...venue.images];
           changed = true;
           console.log(
-            `  ✓ Migrated ${venue.images.length} legacy images → generalImages for ${venue.name}`,
+            `  ✓ Migrated ${venue.images.length} legacy images → generalImages for ${venue.name}`
           );
         }
 
@@ -68,15 +66,12 @@ export const migrateVenueImages = async (refreshUrls: boolean = true) => {
           venue.generalImageKeys = [...venue.imageKeys];
           changed = true;
           console.log(
-            `  ✓ Migrated ${venue.imageKeys.length} legacy keys → generalImageKeys for ${venue.name}`,
+            `  ✓ Migrated ${venue.imageKeys.length} legacy keys → generalImageKeys for ${venue.name}`
           );
         }
 
         // CONSOLIDATE: Always clear legacy fields once structured fields exist
-        if (
-          venue.generalImages?.length ||
-          Object.keys(venue.sportImages || {}).length > 0
-        ) {
+        if (venue.generalImages?.length || Object.keys(venue.sportImages || {}).length > 0) {
           if (venue.images && venue.images.length > 0) {
             venue.images = [];
             changed = true;
@@ -85,25 +80,19 @@ export const migrateVenueImages = async (refreshUrls: boolean = true) => {
           if (venue.imageKeys && venue.imageKeys.length > 0) {
             venue.imageKeys = [];
             changed = true;
-            console.log(
-              `  🧹 Cleared legacy imageKeys field for ${venue.name}`,
-            );
+            console.log(`  🧹 Cleared legacy imageKeys field for ${venue.name}`);
           }
         }
 
         // Refresh presigned URLs if requested
-        if (
-          changed &&
-          refreshUrls &&
-          (venue.generalImageKeys?.length || venue.sportImageKeys)
-        ) {
+        if (changed && refreshUrls && (venue.generalImageKeys?.length || venue.sportImageKeys)) {
           try {
             await venue.refreshImageUrls();
             console.log(`  ✨ Refreshed presigned URLs for ${venue.name}`);
           } catch (urlError) {
             console.warn(
               `  ⚠️  Failed to refresh URLs for ${venue.name}:`,
-              (urlError as Error).message,
+              (urlError as Error).message
             );
             // Continue anyway - data is migrated
           }
@@ -115,10 +104,7 @@ export const migrateVenueImages = async (refreshUrls: boolean = true) => {
         }
       } catch (error) {
         errors++;
-        console.error(
-          `  ❌ Error migrating ${venue.name}:`,
-          (error as Error).message,
-        );
+        console.error(`  ❌ Error migrating ${venue.name}:`, (error as Error).message);
       }
     }
 
@@ -135,9 +121,7 @@ export const migrateVenueImages = async (refreshUrls: boolean = true) => {
 
     console.log();
     console.log("💡 What was done:");
-    console.log(
-      "  1. ✓ Legacy images → generalImages (if generalImages was empty)",
-    );
+    console.log("  1. ✓ Legacy images → generalImages (if generalImages was empty)");
     console.log("  2. ✓ Cleared legacy fields (images, imageKeys)");
     console.log("  3. ✓ Regenerated presigned URLs");
     console.log();
@@ -164,7 +148,7 @@ if (require.main === module) {
   const refreshUrls = process.argv.includes("--no-refresh") ? false : true;
 
   console.log(
-    `🚀 Running venue image migration ${refreshUrls ? "with URL refresh" : "without URL refresh"}...`,
+    `🚀 Running venue image migration ${refreshUrls ? "with URL refresh" : "without URL refresh"}...`
   );
   console.log();
 

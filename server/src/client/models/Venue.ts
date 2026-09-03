@@ -1,11 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation } from "../../types/index";
 import { IPayoutMethod } from "./Coach";
-import {
-  isEncryptedValue,
-  encryptValue,
-  decryptValue,
-} from "../../shared/utils/encryption";
+import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("venue");
 
@@ -74,12 +70,7 @@ export interface VenueDocument extends Document {
 
 export interface VenueDocumentFile {
   id?: string;
-  type:
-    | "OWNERSHIP_PROOF"
-    | "BUSINESS_REGISTRATION"
-    | "TAX_DOCUMENT"
-    | "INSURANCE"
-    | "CERTIFICATE";
+  type: "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
   url: string; // For backward compatibility
   s3Key: string; // S3 object key for regenerating URLs
   fileName: string;
@@ -133,9 +124,7 @@ const venueSchema = new Schema<VenueDocument>(
         validate: {
           validator(v: any) {
             if (!Array.isArray(v) || v.length !== 2) return false;
-            return v.every(
-              (coord) => typeof coord === "number" && !isNaN(coord),
-            );
+            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
           },
           message: "Coordinates must be [longitude, latitude]",
         },
@@ -472,7 +461,7 @@ const venueSchema = new Schema<VenueDocument>(
       },
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 venueSchema.set("toJSON", { getters: true });
@@ -535,18 +524,11 @@ venueSchema.methods.refreshDocumentUrls = async function () {
         if (!doc.s3Key) return;
 
         try {
-          doc.url = await s3Service.generateCachedDownloadUrl(
-            doc.s3Key,
-            "verification",
-            86400,
-          );
+          doc.url = await s3Service.generateCachedDownloadUrl(doc.s3Key, "verification", 86400);
         } catch (error) {
-          log.error(
-            `Failed to refresh URL for document ${doc.fileName}:`,
-            error,
-          );
+          log.error(`Failed to refresh URL for document ${doc.fileName}:`, error);
         }
-      }),
+      })
     );
   }
 
@@ -566,9 +548,7 @@ venueSchema.methods.refreshImageUrls = async function () {
 
     try {
       const parsed = new URL(url);
-      const rawPath = parsed.pathname.startsWith("/")
-        ? parsed.pathname.slice(1)
-        : parsed.pathname;
+      const rawPath = parsed.pathname.startsWith("/") ? parsed.pathname.slice(1) : parsed.pathname;
       const key = decodeURIComponent(rawPath);
       return key.length > 0 ? key : null;
     } catch {
@@ -585,7 +565,7 @@ venueSchema.methods.refreshImageUrls = async function () {
           log.error(`Failed to refresh URL for image ${key}:`, error);
           return "";
         }
-      }),
+      })
     );
 
     return freshImages.filter((url) => Boolean(url));
@@ -681,17 +661,14 @@ venueSchema.methods.refreshImageUrls = async function () {
 
   // Refresh cover photo
   const coverKey =
-    this.coverPhotoKey ||
-    extractKeyFromUrl(this.coverPhotoUrl) ||
-    imageKeysToUse[0] ||
-    "";
+    this.coverPhotoKey || extractKeyFromUrl(this.coverPhotoUrl) || imageKeysToUse[0] || "";
 
   if (coverKey) {
     try {
       this.coverPhotoUrl = await s3Service.generateCachedDownloadUrl(
         coverKey,
         "images",
-        604800, // 7 days
+        604800 // 7 days
       );
     } catch (error) {
       log.error(`Failed to refresh cover photo URL:`, error);
@@ -711,8 +688,4 @@ venueSchema.methods.refreshAllUrls = async function () {
   return this;
 };
 
-export const Venue = mongoose.model<VenueDocument>(
-  "Venue",
-  venueSchema,
-  "venues",
-);
+export const Venue = mongoose.model<VenueDocument>("Venue", venueSchema, "venues");

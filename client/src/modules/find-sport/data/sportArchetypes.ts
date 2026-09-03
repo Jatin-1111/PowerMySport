@@ -35,7 +35,8 @@ const CURRENT_STANDING_LADDERS: Record<Archetype, LadderTier[]> = {
     {
       value: 1,
       label: "No trials yet",
-      context: "Hasn't reached district trials yet — no matter how long or how seriously they've trained",
+      context:
+        "Hasn't reached district trials yet — no matter how long or how seriously they've trained",
     },
     { value: 2, label: "District level", context: "Competes at district level" },
     { value: 3, label: "State level", context: "Competes at state level" },
@@ -46,7 +47,8 @@ const CURRENT_STANDING_LADDERS: Record<Archetype, LadderTier[]> = {
     {
       value: 1,
       label: "No ranking yet",
-      context: "Hasn't entered ranking tournaments yet — no matter how long or how seriously they've trained",
+      context:
+        "Hasn't entered ranking tournaments yet — no matter how long or how seriously they've trained",
     },
     { value: 2, label: "State ranking", context: "Plays state-level ranking tournaments" },
     { value: 3, label: "All-India ranking", context: "Has an All-India (national) ranking" },
@@ -213,27 +215,75 @@ const CAREER_CONTEXT = "A sports-quota job, a college place, or turning pro";
 
 const AMBITION_OPTIONS: Record<Archetype, AmbitionOption[]> = {
   federation: [
-    { value: "fun", label: "Fitness & enjoyment only", context: "Staying active and enjoying the sport" },
-    { value: "competitive", label: "Improving for school team", context: "Building up to make or strengthen their school/local team" },
-    { value: "national", label: "Trying for district/state trials", context: "Training seriously toward trials this season" },
+    {
+      value: "fun",
+      label: "Fitness & enjoyment only",
+      context: "Staying active and enjoying the sport",
+    },
+    {
+      value: "competitive",
+      label: "Improving for school team",
+      context: "Building up to make or strengthen their school/local team",
+    },
+    {
+      value: "national",
+      label: "Trying for district/state trials",
+      context: "Training seriously toward trials this season",
+    },
     { value: "career", label: "Building a career in sport", context: CAREER_CONTEXT },
   ],
   ranking: [
-    { value: "fun", label: "Fitness & enjoyment only", context: "Staying active and enjoying the sport" },
-    { value: "competitive", label: "Playing ranking tournaments", context: "Entering the junior circuit and building a ranking" },
-    { value: "national", label: "Earning an All-India (national) ranking", context: "Training seriously to break into the national ranking" },
+    {
+      value: "fun",
+      label: "Fitness & enjoyment only",
+      context: "Staying active and enjoying the sport",
+    },
+    {
+      value: "competitive",
+      label: "Playing ranking tournaments",
+      context: "Entering the junior circuit and building a ranking",
+    },
+    {
+      value: "national",
+      label: "Earning an All-India (national) ranking",
+      context: "Training seriously to break into the national ranking",
+    },
     { value: "career", label: "Building a career in sport", context: CAREER_CONTEXT },
   ],
   rating: [
-    { value: "fun", label: "Just for enjoyment", context: "Playing casually and enjoying the game" },
-    { value: "competitive", label: "Playing rated tournaments", context: "Playing regularly to earn and grow a rating" },
-    { value: "national", label: "Aiming for a national (AICF) rating", context: "Training seriously to earn a national rating" },
+    {
+      value: "fun",
+      label: "Just for enjoyment",
+      context: "Playing casually and enjoying the game",
+    },
+    {
+      value: "competitive",
+      label: "Playing rated tournaments",
+      context: "Playing regularly to earn and grow a rating",
+    },
+    {
+      value: "national",
+      label: "Aiming for a national (AICF) rating",
+      context: "Training seriously to earn a national rating",
+    },
     { value: "career", label: "Building a career in chess", context: CAREER_CONTEXT },
   ],
   standard: [
-    { value: "fun", label: "Fitness & enjoyment only", context: "Staying active and enjoying the sport" },
-    { value: "competitive", label: "Improving their personal best", context: "Building up through school and club-level meets" },
-    { value: "national", label: "Training toward the national qualifying standard", context: "Training seriously to hit the national standard" },
+    {
+      value: "fun",
+      label: "Fitness & enjoyment only",
+      context: "Staying active and enjoying the sport",
+    },
+    {
+      value: "competitive",
+      label: "Improving their personal best",
+      context: "Building up through school and club-level meets",
+    },
+    {
+      value: "national",
+      label: "Training toward the national qualifying standard",
+      context: "Training seriously to hit the national standard",
+    },
     { value: "career", label: "Building a career in sport", context: CAREER_CONTEXT },
   ],
 };
@@ -250,7 +300,7 @@ export function getAmbitionOptions(sport: string): AmbitionOption[] {
 // either, the 5-tier currentStandingTier collapses down to the legacy shape.
 
 export function deriveExperienceLevel(
-  tier: number | null | undefined,
+  tier: number | null | undefined
 ): "beginner" | "intermediate" | "competitive" | undefined {
   if (tier == null) return undefined;
   if (tier <= 2) return "beginner";

@@ -49,8 +49,7 @@ const freshSpans = (): RequestSpans => ({
 const storage = new AsyncLocalStorage<RequestContext>();
 
 /** The context of the in-flight request, or undefined outside one (cron, boot, scripts). */
-export const getRequestContext = (): RequestContext | undefined =>
-  storage.getStore();
+export const getRequestContext = (): RequestContext | undefined => storage.getStore();
 
 /** Short form used in log lines — full uuids make every line unreadable. */
 export const getShortRequestId = (): string | undefined =>
@@ -79,7 +78,7 @@ export const recordSpan = (kind: "db" | "ext", ms: number): void => {
  */
 export const runWithRequestContext = <T>(
   context: Partial<RequestContext> & { method: string; path: string },
-  fn: () => T,
+  fn: () => T
 ): T =>
   storage.run(
     {
@@ -89,7 +88,7 @@ export const runWithRequestContext = <T>(
       startedAt: context.startedAt ?? process.hrtime.bigint(),
       spans: freshSpans(),
     },
-    fn,
+    fn
   );
 
 /**
@@ -97,11 +96,7 @@ export const runWithRequestContext = <T>(
  * can short-circuit — so even a rejected preflight or a rate-limited request
  * has an id to log against.
  */
-export const requestContextMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
+export const requestContextMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const inbound = (req.headers["x-request-id"] as string | undefined)?.trim();
 
   const context: RequestContext = {

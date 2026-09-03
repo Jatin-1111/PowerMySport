@@ -156,58 +156,41 @@ export const expertAdminApi = {
     return res.data;
   },
 
-  create: async (
-    payload: CreateExpertPayload,
-  ): Promise<ApiResponse<AdminExpert>> => {
+  create: async (payload: CreateExpertPayload): Promise<ApiResponse<AdminExpert>> => {
     const res = await axiosInstance.post(`/experts/admin`, payload);
     return res.data;
   },
 
   update: async (
     expertId: string,
-    payload: UpdateExpertPayload,
+    payload: UpdateExpertPayload
   ): Promise<ApiResponse<AdminExpert>> => {
-    const res = await axiosInstance.patch(
-      `/experts/admin/${expertId}`,
-      payload,
-    );
+    const res = await axiosInstance.patch(`/experts/admin/${expertId}`, payload);
     return res.data;
   },
 
-  setActive: async (
-    expertId: string,
-    isActive: boolean,
-  ): Promise<ApiResponse<AdminExpert>> => {
+  setActive: async (expertId: string, isActive: boolean): Promise<ApiResponse<AdminExpert>> => {
     const res = await axiosInstance.patch(`/experts/admin/${expertId}/active`, {
       isActive,
     });
     return res.data;
   },
 
-  getSessions: async (
-    expertId: string,
-  ): Promise<ApiResponse<AdminExpertSessionsResult>> => {
+  getSessions: async (expertId: string): Promise<ApiResponse<AdminExpertSessionsResult>> => {
     const res = await axiosInstance.get(`/experts/admin/${expertId}/sessions`);
     return res.data;
   },
 
-  markRefundDone: async (
-    sessionId: string,
-  ): Promise<ApiResponse<AdminExpertSession>> => {
-    const res = await axiosInstance.post(
-      `/experts/sessions/${sessionId}/refund-done`,
-    );
+  markRefundDone: async (sessionId: string): Promise<ApiResponse<AdminExpertSession>> => {
+    const res = await axiosInstance.post(`/experts/sessions/${sessionId}/refund-done`);
     return res.data;
   },
 
   hideReview: async (
     sessionId: string,
-    hidden: boolean,
+    hidden: boolean
   ): Promise<ApiResponse<AdminExpertSession>> => {
-    const res = await axiosInstance.post(
-      `/experts/sessions/${sessionId}/hide-review`,
-      { hidden },
-    );
+    const res = await axiosInstance.post(`/experts/sessions/${sessionId}/hide-review`, { hidden });
     return res.data;
   },
 

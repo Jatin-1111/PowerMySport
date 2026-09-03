@@ -3,14 +3,14 @@
 import { toast } from "@/lib/toast";
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import type {
-    AcademyStep1Payload,
-    AcademyStep2Payload,
-    AcademyStep3Payload,
-    AcademyStep4Payload,
-    AcademyStep5Payload,
-    AcademyStep6Payload,
-    AcademyStepPayload,
-    OnboardingAcademy,
+  AcademyStep1Payload,
+  AcademyStep2Payload,
+  AcademyStep3Payload,
+  AcademyStep4Payload,
+  AcademyStep5Payload,
+  AcademyStep6Payload,
+  AcademyStepPayload,
+  OnboardingAcademy,
 } from "@/modules/onboarding/types/academy";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -39,14 +39,7 @@ interface SavedFormData {
 
 type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
 
-const STEP_LABELS = [
-  "Basics",
-  "Location",
-  "Legal",
-  "Venues",
-  "Pricing",
-  "Payouts",
-];
+const STEP_LABELS = ["Basics", "Location", "Legal", "Venues", "Pricing", "Payouts"];
 
 export default function AcademyOnboardingContainer() {
   const router = useRouter();
@@ -94,13 +87,9 @@ export default function AcademyOnboardingContainer() {
           const response = await academyOnboardingApi.getProgress(idToUse);
           if (response.data) {
             const { currentStep } = response.data;
-            const academyData = response.data
-              .data as unknown as OnboardingAcademy | null;
+            const academyData = response.data.data as unknown as OnboardingAcademy | null;
             if (currentStep) {
-              const step = Math.min(
-                Math.max(currentStep, 1),
-                6,
-              ) as OnboardingStep;
+              const step = Math.min(Math.max(currentStep, 1), 6) as OnboardingStep;
               setCurrentStep(step);
               setMaxUnlockedStep(step);
 
@@ -148,9 +137,7 @@ export default function AcademyOnboardingContainer() {
                 if (step >= 3) {
                   newFormData.step3 = {
                     academyId: idToUse,
-                    businessType:
-                      (academyData.businessType as any) ||
-                      "sole_proprietorship",
+                    businessType: (academyData.businessType as any) || "sole_proprietorship",
                     panNumber: academyData.panNumber || "",
                     panDocumentUrl: academyData.panDocumentUrl || "",
                     panDocumentKey: academyData.panDocumentKey || "",
@@ -164,8 +151,7 @@ export default function AcademyOnboardingContainer() {
                 if (step >= 4) {
                   newFormData.step4 = {
                     academyId: idToUse,
-                    allowsExternalCoaches:
-                      academyData.allowsExternalCoaches ?? true,
+                    allowsExternalCoaches: academyData.allowsExternalCoaches ?? true,
                     venueIds: academyData.venueIds || [],
                     coachIds: academyData.coachIds || [],
                   };
@@ -177,8 +163,7 @@ export default function AcademyOnboardingContainer() {
                     sessionRatePerHour: academyData.sessionRatePerHour || 0,
                     batchTimings: academyData.batchTimings || [],
                     maxBatchSize: academyData.maxBatchSize || 20,
-                    trialsessionOffered:
-                      academyData.trialsessionOffered ?? false,
+                    trialsessionOffered: academyData.trialsessionOffered ?? false,
                     trialSessionPrice: academyData.trialSessionPrice || 0,
                   };
                 }
@@ -215,15 +200,9 @@ export default function AcademyOnboardingContainer() {
             if (parsed.academyId && parsed.currentStep > 1) {
               // Auto-restore silently and update URL
               setAcademyId(parsed.academyId);
-              setCurrentStep(
-                Math.min(Math.max(parsed.currentStep, 1), 6) as OnboardingStep,
-              );
-              setMaxUnlockedStep(
-                Math.min(Math.max(parsed.currentStep, 1), 6) as OnboardingStep,
-              );
-              router.replace(
-                `/academy/onboarding?resumeId=${parsed.academyId}`,
-              );
+              setCurrentStep(Math.min(Math.max(parsed.currentStep, 1), 6) as OnboardingStep);
+              setMaxUnlockedStep(Math.min(Math.max(parsed.currentStep, 1), 6) as OnboardingStep);
+              router.replace(`/academy/onboarding?resumeId=${parsed.academyId}`);
             }
           }
         } catch {
@@ -247,12 +226,10 @@ export default function AcademyOnboardingContainer() {
       // Keep resumeId in URL so refresh doesn't lose state
       router.replace(`/academy/onboarding?resumeId=${id}`);
     },
-    [router, saveLocalProgress],
+    [router, saveLocalProgress]
   );
 
-  const handleStep1Submit = async (
-    data: AcademyStep1Payload,
-  ): Promise<{ academyId: string }> => {
+  const handleStep1Submit = async (data: AcademyStep1Payload): Promise<{ academyId: string }> => {
     try {
       setIsLoading(true);
       const existingAcademyId = academyId || resumeId;
@@ -269,10 +246,7 @@ export default function AcademyOnboardingContainer() {
 
       const response = await academyOnboardingApi.startOnboarding(data);
       const newAcademyId =
-        response.data?.academyId ||
-        response.data?.id ||
-        response.data?._id ||
-        "";
+        response.data?.academyId || response.data?.id || response.data?._id || "";
       if (!newAcademyId) {
         throw new Error("Academy ID not returned from server");
       }
@@ -282,9 +256,7 @@ export default function AcademyOnboardingContainer() {
       toast.success("Academy created. Continuing to Step 2");
       return { academyId: newAcademyId };
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create academy",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to create academy");
       throw error;
     } finally {
       setIsLoading(false);
@@ -298,7 +270,7 @@ export default function AcademyOnboardingContainer() {
       | AcademyStep3Payload
       | AcademyStep4Payload
       | AcademyStep5Payload
-      | AcademyStep6Payload,
+      | AcademyStep6Payload
   ) => {
     try {
       setIsLoading(true);
@@ -324,11 +296,7 @@ export default function AcademyOnboardingContainer() {
         toast.success(`Step ${stepNumber} saved`);
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : `Failed to save step ${stepNumber}`,
-      );
+      toast.error(error instanceof Error ? error.message : `Failed to save step ${stepNumber}`);
       throw error;
     } finally {
       setIsLoading(false);
@@ -369,10 +337,10 @@ export default function AcademyOnboardingContainer() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-power-orange/20 mb-4">
-            <div className="w-8 h-8 border-3 border-power-orange border-t-transparent rounded-full animate-spin" />
+          <div className="bg-power-orange/20 mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full">
+            <div className="border-power-orange h-8 w-8 animate-spin rounded-full border-3 border-t-transparent" />
           </div>
           <p className="text-slate-600">Loading your progress...</p>
         </div>
@@ -381,31 +349,30 @@ export default function AcademyOnboardingContainer() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 px-4 py-8">
+      <div className="mx-auto max-w-4xl">
         <p className="mx-auto mb-6 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs text-amber-700">
-          Early access — bookings aren&apos;t open yet. Submit your details now and our team will review and activate your academy once bookings launch.
+          Early access — bookings aren&apos;t open yet. Submit your details now and our team will
+          review and activate your academy once bookings launch.
         </p>
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex justify-between mb-2">
-            <h3 className="text-sm font-medium text-slate-700">
-              Step {currentStep} of 6
-            </h3>
+          <div className="mb-2 flex justify-between">
+            <h3 className="text-sm font-medium text-slate-700">Step {currentStep} of 6</h3>
             <span className="text-sm text-slate-600">
               {Math.round((currentStep / 6) * 100)}% complete
             </span>
           </div>
-          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div className="h-2 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-full bg-linear-to-r from-power-orange to-power-orange/80 transition-all duration-500"
+              className="from-power-orange to-power-orange/80 h-full bg-linear-to-r transition-all duration-500"
               style={{ width: `${(currentStep / 6) * 100}%` }}
             />
           </div>
         </div>
 
         {/* Step Indicators */}
-        <div className="flex justify-between mb-8">
+        <div className="mb-8 flex justify-between">
           {[1, 2, 3, 4, 5, 6].map((step) => (
             <div
               key={step}
@@ -413,9 +380,9 @@ export default function AcademyOnboardingContainer() {
               onClick={() => goToStep(step)}
             >
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                className={`flex h-10 w-10 items-center justify-center rounded-full font-semibold transition-all ${
                   step === currentStep
-                    ? "bg-power-orange text-white shadow-lg scale-110"
+                    ? "bg-power-orange scale-110 text-white shadow-lg"
                     : step <= maxUnlockedStep
                       ? "bg-turf-green text-white"
                       : "bg-slate-200 text-slate-400"
@@ -424,7 +391,7 @@ export default function AcademyOnboardingContainer() {
                 {step < maxUnlockedStep ? "✓" : step}
               </div>
               <span
-                className={`text-xs mt-1 ${step === currentStep ? "text-power-orange font-medium" : "text-slate-500"}`}
+                className={`mt-1 text-xs ${step === currentStep ? "text-power-orange font-medium" : "text-slate-500"}`}
               >
                 {STEP_LABELS[step - 1]}
               </span>
@@ -438,7 +405,7 @@ export default function AcademyOnboardingContainer() {
             type="button"
             onClick={goPrev}
             disabled={!canGoPrev}
-            className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Previous Step
           </button>
@@ -446,7 +413,7 @@ export default function AcademyOnboardingContainer() {
             type="button"
             onClick={goNext}
             disabled={!canGoNext}
-            className="px-4 py-2 rounded-lg border border-power-orange/30 text-power-orange bg-power-orange/10 hover:bg-power-orange/15 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="border-power-orange/30 text-power-orange bg-power-orange/10 hover:bg-power-orange/15 rounded-lg border px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Next Step
           </button>
@@ -454,12 +421,9 @@ export default function AcademyOnboardingContainer() {
 
         {/* Resume banner */}
         {resumeId && currentStep > 1 && (
-          <div className="mb-4 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-sm text-emerald-800">
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
             <span>✅</span>
-            <span>
-              Resuming your onboarding from Step {currentStep}. Previous steps
-              are saved.
-            </span>
+            <span>Resuming your onboarding from Step {currentStep}. Previous steps are saved.</span>
           </div>
         )}
 
@@ -526,16 +490,10 @@ export default function AcademyOnboardingContainer() {
 
         {/* Help Text */}
         <div className="text-center text-sm text-slate-600">
-          <p>
-            Your progress is automatically saved. You can close and resume
-            later.
-          </p>
+          <p>Your progress is automatically saved. You can close and resume later.</p>
           <p className="mt-1">
             Questions?{" "}
-            <a
-              href="mailto:support@powermysport.com"
-              className="text-power-orange hover:underline"
-            >
+            <a href="mailto:support@powermysport.com" className="text-power-orange hover:underline">
               Contact support
             </a>
           </p>

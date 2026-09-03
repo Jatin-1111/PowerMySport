@@ -42,7 +42,8 @@ const TARGETS: IndexTarget[] = [
     spec: { status: 1, createdAt: -1 },
   },
   {
-    label: "Academy: onboardingCompleted+isApproved+createdAt (admin getPendingAcademies + getPendingCounts)",
+    label:
+      "Academy: onboardingCompleted+isApproved+createdAt (admin getPendingAcademies + getPendingCounts)",
     model: Academy,
     spec: { onboardingCompleted: 1, isApproved: 1, createdAt: -1 },
   },
@@ -51,7 +52,7 @@ const TARGETS: IndexTarget[] = [
 export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Starting migration 37: add admin domain indexes, pass 2 (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 37: add admin domain indexes, pass 2 (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   for (const target of TARGETS) {
@@ -82,7 +83,7 @@ export const up = async (options: Options = {}) => {
 export const down = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Reverting migration 37 (${apply ? "APPLY" : "DRY RUN"}) — dropping these indexes...`,
+    `Reverting migration 37 (${apply ? "APPLY" : "DRY RUN"}) — dropping these indexes...`
   );
 
   for (const target of TARGETS) {

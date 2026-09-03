@@ -2,10 +2,7 @@ import cron, { ScheduledTask } from "node-cron";
 import { bootFact } from "./boot";
 import { ScheduledNotificationService } from "../client/services/ScheduledNotificationService";
 import { ReminderMonitoringService } from "../client/services/ReminderMonitoringService";
-import {
-  broadcastStatsUpdate,
-  broadcastHealthUpdate,
-} from "../client/sockets/notificationSocket";
+import { broadcastStatsUpdate, broadcastHealthUpdate } from "../client/sockets/notificationSocket";
 import { log as __rootLog } from "./logger";
 const log = __rootLog.child("reminder");
 
@@ -19,26 +16,20 @@ const schedulerCronExpression =
 
 const healthCronExpression = process.env.REMINDER_HEALTH_CRON || "*/10 * * * *";
 
-const reminderBatchSize = parseInt(
-  process.env.REMINDER_PROCESS_BATCH_SIZE || "100",
-  10,
-);
+const reminderBatchSize = parseInt(process.env.REMINDER_PROCESS_BATCH_SIZE || "100", 10);
 
 /**
  * Initialize the reminder scheduler
  * Runs on configurable cron cadence to process pending reminders
  */
 export function initializeReminderScheduler() {
-
   const job = cron.schedule(
     schedulerCronExpression,
     async () => {
       // Prevent overlapping executions
       if (isProcessing) {
         if (verboseSchedulerLogs) {
-          log.info(
-            "Skipping reminder processing - previous job still running",
-          );
+          log.info("Skipping reminder processing - previous job still running");
         }
         return;
       }
@@ -51,14 +42,11 @@ export function initializeReminderScheduler() {
         // Record processing run for monitoring
         ReminderMonitoringService.recordProcessingRun();
 
-        const stats =
-          await ScheduledNotificationService.processPendingReminders(
-            reminderBatchSize,
-          );
+        const stats = await ScheduledNotificationService.processPendingReminders(reminderBatchSize);
 
         if (stats.processed > 0) {
           log.info(
-            `Processed ${stats.processed} reminder(s): ${stats.sent} sent, ${stats.failed} failed`,
+            `Processed ${stats.processed} reminder(s): ${stats.sent} sent, ${stats.failed} failed`
           );
         }
 
@@ -72,7 +60,7 @@ export function initializeReminderScheduler() {
     },
     {
       timezone: "Asia/Kolkata", // Adjust to your timezone
-    },
+    }
   );
 
   // Schedule health check every 10 minutes
@@ -90,7 +78,7 @@ export function initializeReminderScheduler() {
     },
     {
       timezone: "Asia/Kolkata",
-    },
+    }
   );
 
   bootFact("jobs", `health ${healthCronExpression}`);
@@ -108,15 +96,11 @@ export function initializeReminderScheduler() {
     },
     {
       timezone: "Asia/Kolkata",
-    },
+    }
   );
-
 
   //
-  bootFact(
-    "jobs",
-    `reminders ${schedulerCronExpression} x${reminderBatchSize}`,
-  );
+  bootFact("jobs", `reminders ${schedulerCronExpression} x${reminderBatchSize}`);
 
   // Return the job so it can be stopped if needed
   return job;

@@ -29,15 +29,14 @@ export function BackToRoadmapLink({
   hasPathway?: boolean;
   className?: string;
 }) {
-  const sportName =
-    hasPathway && sportSlug ? sportFromSlug(sportSlug)?.name : undefined;
+  const sportName = hasPathway && sportSlug ? sportFromSlug(sportSlug)?.name : undefined;
 
   return (
     <Link
       href={hasPathway && sportSlug ? roadmapHref(sportSlug) : "/roadmap"}
       className={
         className ??
-        "inline-flex items-center gap-1.5 text-xs font-medium text-white/35 hover:text-white/65 transition"
+        "inline-flex items-center gap-1.5 text-xs font-medium text-white/35 transition hover:text-white/65"
       }
     >
       <ArrowLeft className="h-3.5 w-3.5" />

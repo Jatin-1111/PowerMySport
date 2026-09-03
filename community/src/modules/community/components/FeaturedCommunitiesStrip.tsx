@@ -35,7 +35,7 @@ export function FeaturedCommunitiesStrip({
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
             Explore communities
           </p>
           <h3 className="font-title mt-1 text-sm font-semibold text-slate-900 sm:text-base">
@@ -61,7 +61,7 @@ export function FeaturedCommunitiesStrip({
             hidden: {},
             show: { transition: listStagger },
           }}
-          className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:snap-none sm:overflow-visible sm:pb-0 xl:grid-cols-3"
+          className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:pb-0 xl:grid-cols-3"
         >
           {groups.map((group) => {
             const actionLabel = getActionLabel(group);
@@ -81,7 +81,7 @@ export function FeaturedCommunitiesStrip({
                     {group.name}
                   </p>
                   {group.isMember && (
-                    <span className="rounded-full bg-turf-green/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-turf-green">
+                    <span className="bg-turf-green/10 text-turf-green rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
                       Joined
                     </span>
                   )}
@@ -114,9 +114,7 @@ export function FeaturedCommunitiesStrip({
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    {isGroupFollowed?.(group.id)
-                      ? "Following Group"
-                      : "Follow Group"}
+                    {isGroupFollowed?.(group.id) ? "Following Group" : "Follow Group"}
                   </button>
                 )}
               </motion.article>
@@ -124,7 +122,7 @@ export function FeaturedCommunitiesStrip({
           })}
         </motion.div>
       ) : (
-        <p className="mt-4 rounded-[1.25rem] border border-dashed border-border bg-slate-50/80 px-4 py-3 text-sm text-slate-500">
+        <p className="border-border mt-4 rounded-[1.25rem] border border-dashed bg-slate-50/80 px-4 py-3 text-sm text-slate-500">
           No communities available yet. Create one below to get started.
         </p>
       )}

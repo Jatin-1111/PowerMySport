@@ -8,10 +8,7 @@ import {
 } from "@/modules/admin/services/ecommerce";
 import { Card } from "@/modules/shared/ui/Card";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
 import { X } from "lucide-react";
@@ -46,9 +43,7 @@ type SortBy = "createdAt" | "totalAmount" | "orderNumber";
 
 export default function AdminOrdersPage() {
   return (
-    <Suspense
-      fallback={<div className="text-center py-12">Loading orders...</div>}
-    >
+    <Suspense fallback={<div className="py-12 text-center">Loading orders...</div>}>
       <AdminOrdersPageContent />
     </Suspense>
   );
@@ -78,9 +73,7 @@ function AdminOrdersPageContent() {
   const [sortBy, setSortBy] = useState<SortBy>("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [orderDetail, setOrderDetail] = useState<AdminOrderDetailRecord | null>(
-    null,
-  );
+  const [orderDetail, setOrderDetail] = useState<AdminOrderDetailRecord | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
 
@@ -146,7 +139,7 @@ function AdminOrdersPageContent() {
     try {
       const response = await adminEcommerceApi.updateOrderFulfillmentStatus(
         selectedOrderId,
-        nextStatus,
+        nextStatus
       );
       if (response.ok && response.data) {
         setOrderDetail(response.data.order);
@@ -177,20 +170,14 @@ function AdminOrdersPageContent() {
       key: "orderNumber",
       header: "Order #",
       sortable: true,
-      render: (order) => (
-        <span className="font-semibold text-slate-900">
-          {order.orderNumber}
-        </span>
-      ),
+      render: (order) => <span className="font-semibold text-slate-900">{order.orderNumber}</span>,
     },
     {
       key: "customer",
       header: "Customer",
       render: (order) => {
         const customer = getCustomer(order.userId);
-        return (
-          <EntityBadge name={customer.name} email={customer.email} size="sm" />
-        );
+        return <EntityBadge name={customer.name} email={customer.email} size="sm" />;
       },
     },
     {
@@ -324,19 +311,14 @@ function AdminOrdersPageContent() {
             onClick={(e) => e.stopPropagation()}
           >
             {detailLoading || !orderDetail ? (
-              <div className="py-10 text-center text-slate-500">
-                Loading order detail...
-              </div>
+              <div className="py-10 text-center text-slate-500">Loading order detail...</div>
             ) : (
               <>
                 <div className="mb-4 flex items-start justify-between">
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">
-                      {orderDetail.orderNumber}
-                    </h2>
+                    <h2 className="text-lg font-bold text-slate-900">{orderDetail.orderNumber}</h2>
                     <p className="text-sm text-slate-500">
-                      Placed{" "}
-                      {new Date(orderDetail.createdAt).toLocaleString("en-IN")}
+                      Placed {new Date(orderDetail.createdAt).toLocaleString("en-IN")}
                     </p>
                   </div>
                   <button
@@ -348,14 +330,14 @@ function AdminOrdersPageContent() {
                 </div>
 
                 <div className="mb-4 rounded-lg bg-slate-50 p-4">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Customer
                   </p>
                   <EntityBadge {...getCustomer(orderDetail.userId)} />
                 </div>
 
                 <div className="mb-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Line items
                   </p>
                   <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
@@ -365,17 +347,12 @@ function AdminOrdersPageContent() {
                         className="flex items-center justify-between gap-3 p-3 text-sm"
                       >
                         <div>
-                          <p className="font-medium text-slate-900">
-                            {item.productName}
-                          </p>
+                          <p className="font-medium text-slate-900">{item.productName}</p>
                           <p className="text-xs text-slate-500">
-                            {item.variantLabel} · Qty {item.quantity} ·{" "}
-                            {item.fulfillmentStatus}
+                            {item.variantLabel} · Qty {item.quantity} · {item.fulfillmentStatus}
                           </p>
                         </div>
-                        <p className="font-semibold text-slate-900">
-                          {formatInr(item.lineTotal)}
-                        </p>
+                        <p className="font-semibold text-slate-900">{formatInr(item.lineTotal)}</p>
                       </div>
                     ))}
                   </div>
@@ -402,7 +379,7 @@ function AdminOrdersPageContent() {
                   </div>
                   <div>
                     <p className="text-slate-500">Total</p>
-                    <p className="font-semibold text-power-orange">
+                    <p className="text-power-orange font-semibold">
                       {formatInr(orderDetail.totalAmount)}
                     </p>
                   </div>
@@ -410,7 +387,7 @@ function AdminOrdersPageContent() {
 
                 {orderDetail.shippingAddress && (
                   <div className="mb-4 rounded-lg border border-slate-200 p-4 text-sm text-slate-700">
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Shipping address
                     </p>
                     <p>{orderDetail.shippingAddress.fullName}</p>
@@ -421,8 +398,7 @@ function AdminOrdersPageContent() {
                         : ""}
                     </p>
                     <p>
-                      {orderDetail.shippingAddress.city},{" "}
-                      {orderDetail.shippingAddress.state}{" "}
+                      {orderDetail.shippingAddress.city}, {orderDetail.shippingAddress.state}{" "}
                       {orderDetail.shippingAddress.postalCode}
                     </p>
                     <p>{orderDetail.shippingAddress.phone}</p>
@@ -430,28 +406,22 @@ function AdminOrdersPageContent() {
                 )}
 
                 <div>
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="mb-1 text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Fulfillment status
                   </p>
                   <select
                     value={orderDetail.fulfillmentStatus}
                     disabled={statusUpdating}
-                    onChange={(e) =>
-                      handleFulfillmentStatusChange(e.target.value)
-                    }
+                    onChange={(e) => handleFulfillmentStatusChange(e.target.value)}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
                   >
-                    {[
-                      "PENDING",
-                      "PROCESSING",
-                      "SHIPPED",
-                      "DELIVERED",
-                      "CANCELLED",
-                    ].map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
+                    {["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"].map(
+                      (option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
               </>

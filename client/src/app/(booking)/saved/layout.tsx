@@ -4,13 +4,9 @@ import React from "react";
 
 export const metadata: Metadata = noindexMetadata(
   "Saved",
-  "Venues, coaches and academies you have saved.",
+  "Venues, coaches and academies you have saved."
 );
 
-export default function SavedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function SavedLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

@@ -8,10 +8,6 @@ export const metadata = buildMetadata({
   noindex: true,
 });
 
-export default function ContributorsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ContributorsLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

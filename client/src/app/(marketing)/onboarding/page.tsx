@@ -3,14 +3,11 @@
 import dynamic from "next/dynamic";
 
 const OnboardingContainer = dynamic(
-  () =>
-    import("@/modules/onboarding/components/onboarding").then(
-      (mod) => mod.OnboardingContainer,
-    ),
+  () => import("@/modules/onboarding/components/onboarding").then((mod) => mod.OnboardingContainer),
   {
     ssr: false,
     loading: () => <OnboardingPageSkeleton />,
-  },
+  }
 );
 
 function OnboardingPageSkeleton() {
@@ -41,7 +38,7 @@ function OnboardingPageSkeleton() {
             <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
             <div className="h-12 animate-pulse rounded-xl bg-slate-100" />
           </div>
-          <div className="mt-6 h-12 w-full animate-pulse rounded-xl bg-power-orange/25" />
+          <div className="bg-power-orange/25 mt-6 h-12 w-full animate-pulse rounded-xl" />
         </div>
       </div>
     </div>
@@ -54,7 +51,7 @@ export default function PublicOnboardingPage() {
       <div className="pointer-events-none fixed inset-0 -z-10 bg-linear-to-br from-orange-50 via-white to-slate-100" />
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-16 -left-20 h-72 w-72 rounded-full bg-power-orange/20 blur-3xl" />
+        <div className="bg-power-orange/20 absolute -top-16 -left-20 h-72 w-72 rounded-full blur-3xl" />
         <div className="absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-emerald-200/30 blur-3xl" />
         <div className="absolute bottom-0 left-1/4 h-64 w-64 rounded-full bg-slate-200/40 blur-3xl" />
       </div>

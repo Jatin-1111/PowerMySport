@@ -36,7 +36,7 @@ describe("calculateDependentCompletion", () => {
         sportsFocus: ["Tennis"],
         currentStandingTier: 3,
         bestResultTier: 2,
-      }).percent,
+      }).percent
     ).toBe(percent);
   });
 
@@ -87,7 +87,7 @@ describe("isMissingArchetypeTraits", () => {
         weeklyHoursCategory: "4-7",
         currentStandingTier: 2,
         bestResultTier: 1,
-      }),
+      })
     ).toBe(true);
   });
 
@@ -103,7 +103,7 @@ describe("isMissingArchetypeTraits", () => {
         contactComfort: "neutral",
         environment: "outdoor",
         waterComfort: "neutral",
-      }),
+      })
     ).toBe(false);
   });
 });

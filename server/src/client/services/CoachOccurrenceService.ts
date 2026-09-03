@@ -2,10 +2,7 @@ import mongoose from "mongoose";
 import { BookingDelivery } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { Venue } from "../models/Venue";
-import {
-  CoachOffering,
-  CoachOfferingDocument,
-} from "../models/CoachOffering";
+import { CoachOffering, CoachOfferingDocument } from "../models/CoachOffering";
 import { CoachEnrollment } from "../models/CoachEnrollment";
 import {
   CoachOccurrenceRosterEntry,
@@ -49,7 +46,9 @@ const dayMs = 24 * 60 * 60 * 1000;
  */
 export const resolveOfferingDelivery = async (
   offering: CoachOfferingDocument,
-  options: { enrollmentDeliveryAddress?: { addressSnapshot?: string; coordinates?: [number, number] } | null } = {},
+  options: {
+    enrollmentDeliveryAddress?: { addressSnapshot?: string; coordinates?: [number, number] } | null;
+  } = {}
 ): Promise<BookingDelivery | undefined> => {
   switch (offering.deliveryKind) {
     case "ONLINE": {
@@ -121,7 +120,7 @@ export const resolveOfferingDelivery = async (
 /** Active enrollments as roster entries, for a session at `at`. */
 export const buildRosterForOffering = async (
   offeringId: mongoose.Types.ObjectId,
-  at: Date,
+  at: Date
 ): Promise<CoachOccurrenceRosterEntry[]> => {
   const enrollments = await CoachEnrollment.find({
     offeringId,
@@ -160,7 +159,7 @@ interface RosterCandidate {
  * the same underlying question.
  */
 const fetchRosterCandidates = async (
-  offeringId: mongoose.Types.ObjectId,
+  offeringId: mongoose.Types.ObjectId
 ): Promise<RosterCandidate[]> =>
   CoachEnrollment.find({
     offeringId,
@@ -173,13 +172,11 @@ const fetchRosterCandidates = async (
  *  in-memory against an already-fetched candidate set. */
 const rosterAtFromCandidates = (
   candidates: RosterCandidate[],
-  at: Date,
+  at: Date
 ): CoachOccurrenceRosterEntry[] =>
   candidates
     .filter(
-      (candidate) =>
-        candidate.joinedAt <= at &&
-        (candidate.leftAt == null || candidate.leftAt > at),
+      (candidate) => candidate.joinedAt <= at && (candidate.leftAt == null || candidate.leftAt > at)
     )
     .map((candidate) => ({
       enrollmentId: candidate._id,
@@ -196,12 +193,9 @@ const rosterAtFromCandidates = (
  * timezone conversion here is the part most likely to be quietly wrong.
  */
 export const scheduledInstantsBetween = (
-  offering: Pick<
-    CoachOfferingDocument,
-    "schedule" | "timezone" | "startDate" | "endDate"
-  >,
+  offering: Pick<CoachOfferingDocument, "schedule" | "timezone" | "startDate" | "endDate">,
   from: Date,
-  through: Date,
+  through: Date
 ): Array<{ scheduledAt: Date; durationMinutes: number }> => {
   const results: Array<{ scheduledAt: Date; durationMinutes: number }> = [];
   if (through <= from) return results;
@@ -257,8 +251,7 @@ export const generateOccurrences = async (params: {
 }): Promise<{ created: number; skipped: number; through: Date }> => {
   const { offering } = params;
   const now = params.now ?? new Date();
-  const through =
-    params.through ?? new Date(now.getTime() + GENERATION_WINDOW_DAYS * dayMs);
+  const through = params.through ?? new Date(now.getTime() + GENERATION_WINDOW_DAYS * dayMs);
 
   if (offering.status !== "ACTIVE") {
     return { created: 0, skipped: 0, through: offering.generatedThrough ?? now };
@@ -266,9 +259,7 @@ export const generateOccurrences = async (params: {
 
   // Resume from wherever generation last reached, so a re-run is cheap.
   const from =
-    offering.generatedThrough && offering.generatedThrough > now
-      ? offering.generatedThrough
-      : now;
+    offering.generatedThrough && offering.generatedThrough > now ? offering.generatedThrough : now;
 
   const instants = scheduledInstantsBetween(offering, from, through);
 
@@ -286,9 +277,7 @@ export const generateOccurrences = async (params: {
         ? await singleEnrollmentAddress(offering._id as mongoose.Types.ObjectId)
         : null,
   });
-  const rosterCandidates = await fetchRosterCandidates(
-    offering._id as mongoose.Types.ObjectId,
-  );
+  const rosterCandidates = await fetchRosterCandidates(offering._id as mongoose.Types.ObjectId);
 
   for (const instant of instants) {
     const roster = rosterAtFromCandidates(rosterCandidates, instant.scheduledAt);
@@ -323,7 +312,7 @@ export const generateOccurrences = async (params: {
 
   if (created > 0) {
     log.info(
-      `generateOccurrences: offering ${offering._id.toString()} created ${created}, skipped ${skipped}`,
+      `generateOccurrences: offering ${offering._id.toString()} created ${created}, skipped ${skipped}`
     );
   }
 
@@ -331,7 +320,7 @@ export const generateOccurrences = async (params: {
 };
 
 const singleEnrollmentAddress = async (
-  offeringId: mongoose.Types.ObjectId,
+  offeringId: mongoose.Types.ObjectId
 ): Promise<{ addressSnapshot?: string; coordinates?: [number, number] } | null> => {
   const enrollment: any = await CoachEnrollment.findOne({
     offeringId,
@@ -377,10 +366,7 @@ export const syncRostersForFutureOccurrences = async (params: {
 
     // Preserve any attendance already marked on a seat that is still present.
     const previous = new Map<string, any>(
-      (occurrence.roster || []).map((entry: any) => [
-        entry.enrollmentId.toString(),
-        entry,
-      ]),
+      (occurrence.roster || []).map((entry: any) => [entry.enrollmentId.toString(), entry])
     );
     const mergedRoster = roster.map((entry) => {
       const prior = previous.get(entry.enrollmentId.toString());
@@ -403,18 +389,17 @@ export const syncRostersForFutureOccurrences = async (params: {
  * Sweep every active offering. Intended for a scheduled job so the window keeps
  * rolling forward without anyone touching the offering.
  */
-export const generateForAllActiveOfferings = async (params: {
-  now?: Date;
-} = {}): Promise<{ offerings: number; created: number }> => {
+export const generateForAllActiveOfferings = async (
+  params: {
+    now?: Date;
+  } = {}
+): Promise<{ offerings: number; created: number }> => {
   const now = params.now ?? new Date();
   const horizon = new Date(now.getTime() + GENERATION_WINDOW_DAYS * dayMs);
 
   const offerings = await CoachOffering.find({
     status: "ACTIVE",
-    $or: [
-      { generatedThrough: null },
-      { generatedThrough: { $lt: horizon } },
-    ],
+    $or: [{ generatedThrough: null }, { generatedThrough: { $lt: horizon } }],
   }).exec();
 
   let created = 0;
@@ -446,9 +431,7 @@ export const setOccurrenceMeetingLink = async (params: {
     throw new Error("Only an online session has a meeting link");
   }
   if (occurrence.status !== "SCHEDULED") {
-    throw new Error(
-      "The link can only be changed on a session that has not happened yet",
-    );
+    throw new Error("The link can only be changed on a session that has not happened yet");
   }
 
   occurrence.delivery.meetingLink = params.meetingLink;
@@ -493,7 +476,7 @@ export const setOfferingMeetingLink = async (params: {
         "delivery.meetingLink": params.meetingLink,
         meetingLinkNudgeSentAt: null,
       },
-    },
+    }
   );
 
   return { offering, updatedSessions: result.modifiedCount ?? 0 };

@@ -68,10 +68,7 @@ const fetchJson = async (url: string): Promise<any> => {
 
     const data = await response.json();
     if (isDev) {
-      log.info(
-        `[GEO] Response received:`,
-        JSON.stringify(data).substring(0, 200),
-      );
+      log.info(`[GEO] Response received:`, JSON.stringify(data).substring(0, 200));
     }
     return data;
   } catch (error) {
@@ -122,12 +119,9 @@ export const lookupPincode = async (req: Request, res: Response) => {
 
   // Tier 1 — free India Post lookup
   try {
-    const data: any = await fetchJson(
-      `https://api.postalpincode.in/pincode/${pincode}`,
-    );
+    const data: any = await fetchJson(`https://api.postalpincode.in/pincode/${pincode}`);
     const entry = Array.isArray(data) ? data[0] : null;
-    const postOffice =
-      entry?.Status === "Success" ? entry?.PostOffice?.[0] : null;
+    const postOffice = entry?.Status === "Success" ? entry?.PostOffice?.[0] : null;
 
     if (!postOffice) {
       // Tier 3 extension point: a paid provider (e.g. the Google layer above)
@@ -148,12 +142,7 @@ export const lookupPincode = async (req: Request, res: Response) => {
     };
 
     try {
-      await redis.set(
-        cacheKey,
-        JSON.stringify(payload),
-        "EX",
-        PINCODE_CACHE_TTL_SECONDS,
-      );
+      await redis.set(cacheKey, JSON.stringify(payload), "EX", PINCODE_CACHE_TTL_SECONDS);
     } catch {
       // fail open — caching is best effort
     }
@@ -218,16 +207,14 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
       log.info(`[GEO] Autocomplete query: "${query}"`);
     }
     const googleUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
-      query,
+      query
     )}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&region=in&components=country:in`;
 
     const googleData: any = await fetchJson(googleUrl);
 
     if (googleData?.status !== "OK") {
       if (isDev) {
-        log.error(
-          `[GEO] Google status: ${googleData?.status} - ${googleData?.error_message}`,
-        );
+        log.error(`[GEO] Google status: ${googleData?.status} - ${googleData?.error_message}`);
       }
       return res.status(400).json({
         success: false,
@@ -242,7 +229,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
       predictions.map(async (prediction: any) => {
         try {
           const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(
-            prediction.place_id,
+            prediction.place_id
           )}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&fields=geometry,address_components,formatted_address,place_id`;
 
           const detailsData: any = await fetchJson(detailsUrl);
@@ -257,9 +244,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
           }> = result?.address_components || [];
 
           const getAddressComponent = (type: string): string | undefined => {
-            const component = addressComponents.find((item) =>
-              (item.types || []).includes(type),
-            );
+            const component = addressComponents.find((item) => (item.types || []).includes(type));
             return component?.long_name || component?.short_name;
           };
 
@@ -283,12 +268,12 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
         } catch {
           return null;
         }
-      }),
+      })
     );
 
     const results = resolved.filter(
       (
-        item,
+        item
       ): item is {
         label: string;
         lat: number;
@@ -297,7 +282,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
         city?: string;
         state?: string;
         pincode?: string;
-      } => item !== null,
+      } => item !== null
     );
 
     setCache(cacheKey, results);
@@ -359,7 +344,7 @@ export const geocodeAddress = async (req: Request, res: Response) => {
       log.info(`[GEO] Geocoding address: "${address}"`);
     }
     const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-      address,
+      address
     )}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&region=in&components=country:in`;
 
     const googleData: any = await fetchJson(googleUrl);
@@ -445,9 +430,9 @@ export const reverseGeocode = async (req: Request, res: Response) => {
       log.info(`[GEO] Reverse geocoding: lat=${lat}, lon=${lon}`);
     }
     const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(
-      String(lat),
+      String(lat)
     )},${encodeURIComponent(String(lon))}&key=${encodeURIComponent(
-      GOOGLE_PLACES_API_KEY,
+      GOOGLE_PLACES_API_KEY
     )}&region=in`;
 
     const googleData: any = await fetchJson(googleUrl);

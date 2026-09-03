@@ -16,9 +16,7 @@ export type BookingTabId = "venues" | "coaches" | "academies" | "experts";
  * checks expertId first, because an in-person consultation can also carry a
  * venue and would otherwise be filed as a venue booking.
  */
-export const bucketBookings = (
-  bookings: Booking[],
-): Record<BookingTabId, Booking[]> => {
+export const bucketBookings = (bookings: Booking[]): Record<BookingTabId, Booking[]> => {
   const buckets: Record<BookingTabId, Booking[]> = {
     venues: [],
     coaches: [],

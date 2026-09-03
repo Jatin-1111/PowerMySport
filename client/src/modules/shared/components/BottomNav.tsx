@@ -31,14 +31,14 @@ export function BottomNav({ items, className }: BottomNavProps) {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-        "bg-white border-t border-slate-200/60 shadow-md",
+        "fixed right-0 bottom-0 left-0 z-50 md:hidden",
+        "border-t border-slate-200/60 bg-white shadow-md",
         "safe-area-inset-bottom",
-        className,
+        className
       )}
       aria-label="Mobile navigation"
     >
-      <div className="flex items-center justify-around h-14 px-1 overflow-x-auto">
+      <div className="flex h-14 items-center justify-around overflow-x-auto px-1">
         {items.map((item) => {
           const Icon = item.icon;
           const active = isItemActive(item.href);
@@ -49,26 +49,20 @@ export function BottomNav({ items, className }: BottomNavProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex flex-col items-center justify-center min-w-12 flex-shrink-0 h-full px-2",
+                "relative flex h-full min-w-12 flex-shrink-0 flex-col items-center justify-center px-2",
                 "transition-colors duration-200",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-inset",
-                active
-                  ? "text-power-orange"
-                  : "text-slate-600 hover:text-slate-900",
+                "focus-visible:ring-power-orange focus:outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                active ? "text-power-orange" : "text-slate-600 hover:text-slate-900"
               )}
               aria-label={`${item.label}${badgeText}`}
               aria-current={active ? "page" : undefined}
             >
               <div className="relative">
-                <Icon
-                  size={20}
-                  strokeWidth={active ? 2.5 : 2}
-                  aria-hidden="true"
-                />
+                <Icon size={20} strokeWidth={active ? 2.5 : 2} aria-hidden="true" />
                 {item.badge && (
                   <Badge
                     variant="destructive"
-                    className="absolute -top-1.5 -right-1.5 h-4 min-w-4 flex items-center justify-center text-[9px] px-0.5"
+                    className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center px-0.5 text-[9px]"
                     aria-label={`${item.badge} pending`}
                   >
                     {item.badge}
@@ -77,8 +71,8 @@ export function BottomNav({ items, className }: BottomNavProps) {
               </div>
               <span
                 className={cn(
-                  "text-[9px] mt-0.5 font-medium leading-tight",
-                  active && "font-semibold",
+                  "mt-0.5 text-[9px] leading-tight font-medium",
+                  active && "font-semibold"
                 )}
                 aria-hidden="true"
               >
@@ -86,7 +80,7 @@ export function BottomNav({ items, className }: BottomNavProps) {
               </span>
               {active && (
                 <div
-                  className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-power-orange rounded-b-full"
+                  className="bg-power-orange absolute top-0 left-1/2 h-0.5 w-12 -translate-x-1/2 rounded-b-full"
                   aria-hidden="true"
                 />
               )}

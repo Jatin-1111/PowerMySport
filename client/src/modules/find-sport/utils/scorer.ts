@@ -18,15 +18,24 @@ function getChildDimensions(a: WizardAnswers) {
     visualTracking: a.visualTracking === "strong" ? 5 : a.visualTracking === "moderate" ? 3 : 1,
     reactFast: a.decisionStyle === "react" ? 5 : a.decisionStyle === "strategic" ? 1 : 3,
     sustainedFocus: a.focusStyle === "sustained" ? 5 : a.focusStyle === "bursts" ? 1 : 3,
-    pressureTolerance: a.pressureResponse === "thrives" ? 5 : a.pressureResponse === "manages" ? 3 : 1,
+    pressureTolerance:
+      a.pressureResponse === "thrives" ? 5 : a.pressureResponse === "manages" ? 3 : 1,
     repetitionNeed: a.repetitionTolerance === "high" ? 5 : a.repetitionTolerance === "low" ? 1 : 3,
     contactRequired: a.contactComfort === "loves" ? 5 : a.contactComfort === "neutral" ? 3 : 1,
-    eyesightValue: a.eyesight === "sharp" ? 5 : a.eyesight === "corrected" ? 3 : a.eyesight === "limited" ? 1 : 3,
-    agilityValue: a.agility === "high" ? 5 : a.agility === "moderate" ? 3 : a.agility === "low" ? 1 : 3,
+    eyesightValue:
+      a.eyesight === "sharp"
+        ? 5
+        : a.eyesight === "corrected"
+          ? 3
+          : a.eyesight === "limited"
+            ? 1
+            : 3,
+    agilityValue:
+      a.agility === "high" ? 5 : a.agility === "moderate" ? 3 : a.agility === "low" ? 1 : 3,
     // Physical traits — derived from numeric height/weight
     buildValue: (() => {
       if (a.height && a.weight) {
-        const bmi = a.weight / ((a.height / 100) ** 2);
+        const bmi = a.weight / (a.height / 100) ** 2;
         if (bmi < 17) return 1;
         if (bmi > 22) return 5;
         return 3;
@@ -86,7 +95,7 @@ const WEIGHTS = {
   },
   national: {
     individual: 0.09,
-    explosive: 0.10,
+    explosive: 0.1,
     endurance: 0.08,
     visualTracking: 0.07,
     reactFast: 0.06,
@@ -98,13 +107,13 @@ const WEIGHTS = {
     agility: 0.08,
     physicalMatch: 0.07,
     environment: 0.01,
-    age: 0.10,
+    age: 0.1,
     timeMatch: 0.07,
     infrastructure: 0.03,
   },
   professional: {
     individual: 0.06,
-    explosive: 0.10,
+    explosive: 0.1,
     endurance: 0.08,
     visualTracking: 0.07,
     reactFast: 0.06,
@@ -115,8 +124,8 @@ const WEIGHTS = {
     eyesight: 0.06,
     agility: 0.09,
     physicalMatch: 0.09,
-    environment: 0.00,
-    age: 0.10,
+    environment: 0.0,
+    age: 0.1,
     timeMatch: 0.08,
     infrastructure: 0.02,
   },
@@ -139,7 +148,7 @@ const BUDGET_ORDER = ["under-3k", "3k-7k", "7k-15k", "15k-plus"] as const;
 
 function budgetCoversMinimum(
   parentBudget: WizardAnswers["budget"],
-  sportMin: SportProfile["minBudgetTier"],
+  sportMin: SportProfile["minBudgetTier"]
 ): boolean {
   if (!parentBudget) return true;
   return BUDGET_ORDER.indexOf(parentBudget) >= BUDGET_ORDER.indexOf(sportMin);
@@ -163,14 +172,19 @@ function capMatch(childVal: number, sportVal: number): number {
 // ─── Physical match ───────────────────────────────────────────────────────────
 
 function physicalMatch(child: ReturnType<typeof getChildDimensions>, sport: SportProfile): number {
-  const buildTarget = sport.buildPreference === "lean" ? 1 : sport.buildPreference === "stocky" ? 5 : 3;
-  const heightTarget = sport.heightAdvantage === "short" ? 1 : sport.heightAdvantage === "tall" ? 5 : 3;
+  const buildTarget =
+    sport.buildPreference === "lean" ? 1 : sport.buildPreference === "stocky" ? 5 : 3;
+  const heightTarget =
+    sport.heightAdvantage === "short" ? 1 : sport.heightAdvantage === "tall" ? 5 : 3;
   return (dimMatch(child.buildValue, buildTarget) + dimMatch(child.heightValue, heightTarget)) / 2;
 }
 
 // ─── Environment match ────────────────────────────────────────────────────────
 
-function envMatch(childPref: WizardAnswers["environment"], sportPref: SportProfile["environmentPreference"]): number {
+function envMatch(
+  childPref: WizardAnswers["environment"],
+  sportPref: SportProfile["environmentPreference"]
+): number {
   if (!childPref || childPref === "no-preference" || sportPref === "either") return 1;
   return childPref === sportPref ? 1 : 0.3;
 }
@@ -188,7 +202,8 @@ function infraMatch(stateTier: number, sportMinCityTier: SportProfile["minCityTi
 
 function timeMatch(childHours: WizardAnswers["weeklyHours"], sport: SportProfile): number {
   if (!childHours) return 0.7;
-  const childVal = childHours === "1-3" ? 2 : childHours === "4-7" ? 5 : childHours === "8-12" ? 10 : 15;
+  const childVal =
+    childHours === "1-3" ? 2 : childHours === "4-7" ? 5 : childHours === "8-12" ? 10 : 15;
   if (childVal >= sport.minWeeklyHours) return 1.0;
   return Math.max(0.15, childVal / sport.minWeeklyHours);
 }
@@ -197,7 +212,6 @@ function timeMatch(childHours: WizardAnswers["weeklyHours"], sport: SportProfile
 // Penalty per year of overshoot scales by BOTH ambition and age-start sensitivity.
 // critical (gymnastics): window closes fast — 2× the penalty multiplier.
 // flexible (chess, shooting, cricket): late starts are viable — 0.4× multiplier.
-
 
 // ─── Ambition tiers ──────────────────────────────────────────────────────────
 //
@@ -211,10 +225,13 @@ function timeMatch(childHours: WizardAnswers["weeklyHours"], sport: SportProfile
 // and is no longer offered, but rows written earlier still carry it, so every
 // check below keeps honouring it.
 const ELITE_AMBITIONS = new Set(["national", "career", "professional"]);
-const isEliteAmbition = (a: string | null | undefined): boolean =>
-  !!a && ELITE_AMBITIONS.has(a);
+const isEliteAmbition = (a: string | null | undefined): boolean => !!a && ELITE_AMBITIONS.has(a);
 
-function ageMatch(age: number | null, sport: SportProfile, ambition: WizardAnswers["ambition"]): number {
+function ageMatch(
+  age: number | null,
+  sport: SportProfile,
+  ambition: WizardAnswers["ambition"]
+): number {
   if (!age) return 0.7;
   const [idealMin, idealMax] = sport.ageWindowIdeal;
   if (age >= idealMin && age <= idealMax) return 1;
@@ -222,13 +239,19 @@ function ageMatch(age: number | null, sport: SportProfile, ambition: WizardAnswe
   if (age <= sport.ageWindowCutoff) {
     const overshoot = age - idealMax;
     const sensitivityMult =
-      sport.ageStartSensitivity === "critical" ? 2.2 :
-      sport.ageStartSensitivity === "flexible" ? 0.4 : 1.0;
+      sport.ageStartSensitivity === "critical"
+        ? 2.2
+        : sport.ageStartSensitivity === "flexible"
+          ? 0.4
+          : 1.0;
     const basePerYear = isEliteAmbition(ambition) ? 0.12 : 0.06;
     const penaltyPerYear = basePerYear * sensitivityMult;
     const minScore =
-      sport.ageStartSensitivity === "critical" ? 0.05 :
-      sport.ageStartSensitivity === "flexible" ? 0.45 : 0.2;
+      sport.ageStartSensitivity === "critical"
+        ? 0.05
+        : sport.ageStartSensitivity === "flexible"
+          ? 0.45
+          : 0.2;
     return Math.max(minScore, 1 - overshoot * penaltyPerYear);
   }
   if (isEliteAmbition(ambition)) return 0.05;
@@ -243,7 +266,7 @@ const RACKET_SPORT_NAMES = new Set(["Badminton", "Table Tennis", "Tennis"]);
 
 function computeSynergyBonus(
   child: ReturnType<typeof getChildDimensions>,
-  sport: SportProfile,
+  sport: SportProfile
 ): number {
   let bonus = 0;
   // Racket athlete: explosive bursts + high agility → unusually good fit for racket sports
@@ -259,7 +282,12 @@ function computeSynergyBonus(
     bonus += 0.03;
   }
   // Tactical athlete: strategic decision-making + sustained focus → mind/precision sports
-  if (child.reactFast <= 2 && child.sustainedFocus >= 4 && sport.reactFast <= 2 && sport.sustainedFocus >= 4) {
+  if (
+    child.reactFast <= 2 &&
+    child.sustainedFocus >= 4 &&
+    sport.reactFast <= 2 &&
+    sport.sustainedFocus >= 4
+  ) {
     bonus += 0.04;
   }
   return bonus;
@@ -274,14 +302,14 @@ function computeSynergyBonus(
 // be selected, so it would just be dead weight.
 
 const PRIOR_SPORT_TRANSFERS: Record<string, string[]> = {
-  "Badminton":    ["Table Tennis", "Tennis"],
+  Badminton: ["Table Tennis", "Tennis"],
   "Table Tennis": ["Badminton", "Tennis"],
-  "Tennis":       ["Badminton", "Table Tennis"],
-  "Basketball":   ["Volleyball", "Football", "Cricket"],
-  "Volleyball":   ["Basketball", "Football"],
-  "Football":     ["Basketball", "Cricket", "Hockey"],
-  "Cricket":      ["Football", "Volleyball"],
-  "Hockey":       ["Football"],
+  Tennis: ["Badminton", "Table Tennis"],
+  Basketball: ["Volleyball", "Football", "Cricket"],
+  Volleyball: ["Basketball", "Football"],
+  Football: ["Basketball", "Cricket", "Hockey"],
+  Cricket: ["Football", "Volleyball"],
+  Hockey: ["Football"],
 };
 
 function computePriorSportBonus(priorSports: string[], sport: SportProfile): number {
@@ -308,15 +336,17 @@ interface TaggedReason {
 // only when the parent didn't specify (same fallback rule as the wizard's
 // own question prompts).
 function pronounsFor(gender: WizardAnswers["gender"]) {
-  if (gender === "boy") return { poss: "his", possPronoun: "his", subj: "he", obj: "him", plural: false };
-  if (gender === "girl") return { poss: "her", possPronoun: "hers", subj: "she", obj: "her", plural: false };
+  if (gender === "boy")
+    return { poss: "his", possPronoun: "his", subj: "he", obj: "him", plural: false };
+  if (gender === "girl")
+    return { poss: "her", possPronoun: "hers", subj: "she", obj: "her", plural: false };
   return { poss: "their", possPronoun: "theirs", subj: "they", obj: "them", plural: true };
 }
 
 function buildReasons(
   answers: WizardAnswers,
   sport: SportProfile,
-  child: ReturnType<typeof getChildDimensions>,
+  child: ReturnType<typeof getChildDimensions>
 ): TaggedReason[] {
   const name = answers.childName || "Your child";
   const { poss, possPronoun } = pronounsFor(answers.gender);
@@ -332,32 +362,39 @@ function buildReasons(
   if (indMatch >= 0.75) {
     const ti = answers.teamIndividual;
     if (sport.individual >= 4) {
-      reasons.push({ type: "team-individual", text:
-        ti !== null && ti <= 2
-          ? `${name} wants the result to be ${possPronoun} alone. In ${sport.name} it is.`
-          : `${sport.name} is decided by one player — no teammates to carry a bad day.`,
+      reasons.push({
+        type: "team-individual",
+        text:
+          ti !== null && ti <= 2
+            ? `${name} wants the result to be ${possPronoun} alone. In ${sport.name} it is.`
+            : `${sport.name} is decided by one player — no teammates to carry a bad day.`,
       });
     } else if (sport.individual <= 2) {
-      reasons.push({ type: "team-individual", text:
-        ti !== null && ti >= 4
-          ? `${name} plays better with a team, and ${sport.name} is built entirely around one.`
-          : `${sport.name} runs on shared effort, with a squad to fall back on.`,
+      reasons.push({
+        type: "team-individual",
+        text:
+          ti !== null && ti >= 4
+            ? `${name} plays better with a team, and ${sport.name} is built entirely around one.`
+            : `${sport.name} runs on shared effort, with a squad to fall back on.`,
       });
     } else {
-      reasons.push({ type: "team-individual", text:
-        `${sport.name} is a team game where the big moments still land on one player. It works either way.`,
+      reasons.push({
+        type: "team-individual",
+        text: `${sport.name} is a team game where the big moments still land on one player. It works either way.`,
       });
     }
   }
 
   if (answers.energyType && dimMatch(child.explosive, sport.explosive) >= 0.75) {
     if (answers.energyType === "explosive" && sport.explosive >= 4) {
-      reasons.push({ type: "energy", text:
-        `Speed and power decide ${sport.name} — exactly ${poss} energy pattern.`,
+      reasons.push({
+        type: "energy",
+        text: `Speed and power decide ${sport.name} — exactly ${poss} energy pattern.`,
       });
     } else if (answers.energyType === "endurance" && sport.endurance >= 4) {
-      reasons.push({ type: "energy", text:
-        `${sport.name} rewards staying power over long sessions. That's ${poss} strength.`,
+      reasons.push({
+        type: "energy",
+        text: `${sport.name} rewards staying power over long sessions. That's ${poss} strength.`,
       });
     }
   }
@@ -373,16 +410,19 @@ function buildReasons(
   const sharpEyes = answers.eyesight === "sharp" && sport.visionDemand >= 4;
 
   if (trackingFits && sharpEyes && child.visualTracking >= 4 && child.eyesightValue >= 4) {
-    reasons.push({ type: "synergy-vision", text:
-      `Sharp eyes and strong tracking together — ${sport.name} rewards the pair more than either alone.`,
+    reasons.push({
+      type: "synergy-vision",
+      text: `Sharp eyes and strong tracking together — ${sport.name} rewards the pair more than either alone.`,
     });
   } else if (trackingFits) {
-    reasons.push({ type: "visual-tracking", text:
-      `${name} picks up a fast-moving object early — the core skill in ${sport.name}.`,
+    reasons.push({
+      type: "visual-tracking",
+      text: `${name} picks up a fast-moving object early — the core skill in ${sport.name}.`,
     });
   } else if (sharpEyes) {
-    reasons.push({ type: "eyesight", text:
-      `Clear, uncorrected vision, and ${sport.name} is read at speed.`,
+    reasons.push({
+      type: "eyesight",
+      text: `Clear, uncorrected vision, and ${sport.name} is read at speed.`,
     });
   }
 
@@ -391,87 +431,114 @@ function buildReasons(
     sport.reactFast >= 4 &&
     dimMatch(child.reactFast, sport.reactFast) >= 0.75
   ) {
-    reasons.push({ type: "decision-style", text:
-      `${sport.name} moves too fast to overthink. ${name} reacts on instinct.`,
+    reasons.push({
+      type: "decision-style",
+      text: `${sport.name} moves too fast to overthink. ${name} reacts on instinct.`,
     });
   } else if (
     answers.decisionStyle === "strategic" &&
     sport.reactFast <= 2 &&
     dimMatch(child.reactFast, sport.reactFast) >= 0.75
   ) {
-    reasons.push({ type: "decision-style", text:
-      `${sport.name} rewards planning over reflex — how ${name} already thinks.`,
+    reasons.push({
+      type: "decision-style",
+      text: `${sport.name} rewards planning over reflex — how ${name} already thinks.`,
     });
   }
 
   if (answers.pressureResponse === "thrives" && sport.pressureTolerance >= 4) {
-    reasons.push({ type: "pressure", text:
-      sport.individual >= 4
-        ? `${sport.name} puts one player in full view. ${name} plays better there.`
-        : `Even in a team, ${sport.name}'s decisive moments land on one player. ${name} wants them.`,
+    reasons.push({
+      type: "pressure",
+      text:
+        sport.individual >= 4
+          ? `${sport.name} puts one player in full view. ${name} plays better there.`
+          : `Even in a team, ${sport.name}'s decisive moments land on one player. ${name} wants them.`,
     });
   }
 
   // Physical match reason
   const phys = physicalMatch(child, sport);
-  if (phys >= 0.8 && answers.height && (sport.buildPreference !== "any" || sport.heightAdvantage !== "any")) {
+  if (
+    phys >= 0.8 &&
+    answers.height &&
+    (sport.buildPreference !== "any" || sport.heightAdvantage !== "any")
+  ) {
     const avg = answers.age ? Math.min(175, 85 + answers.age * 5.5) : 140;
     const isTall = answers.height > avg * 1.07;
     const isShort = answers.height < avg * 0.93;
-    const isStocky = answers.height && answers.weight
-      ? answers.weight / ((answers.height / 100) ** 2) > 22
-      : false;
+    const isStocky =
+      answers.height && answers.weight ? answers.weight / (answers.height / 100) ** 2 > 22 : false;
     if (sport.heightAdvantage === "tall" && isTall) {
-      reasons.push({ type: "physical", text:
-        `Taller than most kids ${poss} age — a structural advantage in ${sport.name}.`,
+      reasons.push({
+        type: "physical",
+        text: `Taller than most kids ${poss} age — a structural advantage in ${sport.name}.`,
       });
     } else if (sport.heightAdvantage === "short" && isShort) {
-      reasons.push({ type: "physical", text:
-        `A compact build means a lower centre of gravity and quicker rotation. Both count in ${sport.name}.`,
+      reasons.push({
+        type: "physical",
+        text: `A compact build means a lower centre of gravity and quicker rotation. Both count in ${sport.name}.`,
       });
     } else if (sport.buildPreference === "stocky" && isStocky) {
-      reasons.push({ type: "physical", text:
-        `A strong, stocky build suits the physical demands of ${sport.name}.`,
+      reasons.push({
+        type: "physical",
+        text: `A strong, stocky build suits the physical demands of ${sport.name}.`,
       });
     }
   }
 
   // Low vision demand — the sharp-eyesight case is handled with tracking above
   if (answers.eyesight === "limited" && sport.visionDemand <= 2) {
-    reasons.push({ type: "eyesight", text:
-      `${sport.name} asks almost nothing of eyesight. Vision won't hold ${name} back.`,
+    reasons.push({
+      type: "eyesight",
+      text: `${sport.name} asks almost nothing of eyesight. Vision won't hold ${name} back.`,
     });
   }
 
   // Agility & flexibility reason
-  if (answers.agility === "high" && sport.agilityNeed >= 4 && dimMatch(child.agilityValue, sport.agilityNeed) >= 0.75) {
-    reasons.push({ type: "agility", text:
-      `${sport.name} runs on quick footwork and range of movement. ${name} has both.`,
+  if (
+    answers.agility === "high" &&
+    sport.agilityNeed >= 4 &&
+    dimMatch(child.agilityValue, sport.agilityNeed) >= 0.75
+  ) {
+    reasons.push({
+      type: "agility",
+      text: `${sport.name} runs on quick footwork and range of movement. ${name} has both.`,
     });
   } else if (answers.agility === "low" && sport.agilityNeed <= 2) {
-    reasons.push({ type: "agility", text:
-      `${sport.name} doesn't ask for agility — strength, strategy and consistency carry it.`,
+    reasons.push({
+      type: "agility",
+      text: `${sport.name} doesn't ask for agility — strength, strategy and consistency carry it.`,
     });
   }
 
   // Time availability reason
   if (answers.weeklyHours) {
-    const childVal = answers.weeklyHours === "1-3" ? 2 : answers.weeklyHours === "4-7" ? 5 : answers.weeklyHours === "8-12" ? 10 : 15;
+    const childVal =
+      answers.weeklyHours === "1-3"
+        ? 2
+        : answers.weeklyHours === "4-7"
+          ? 5
+          : answers.weeklyHours === "8-12"
+            ? 10
+            : 15;
     if (childVal >= sport.minWeeklyHours) {
-      reasons.push({ type: "time", text:
-        `${sport.name} needs ${sport.minWeeklyHours}+ hours a week. Your time covers it.`,
+      reasons.push({
+        type: "time",
+        text: `${sport.name} needs ${sport.minWeeklyHours}+ hours a week. Your time covers it.`,
       });
     }
   }
 
   // Budget + location reason (always include as a practical anchor)
   if (answers.state && answers.budget) {
-    reasons.push({ type: "budget", text:
-      `${sport.name} runs ${sport.costRange} in ${answers.state} — inside your budget.`,
+    reasons.push({
+      type: "budget",
+      text: `${sport.name} runs ${sport.costRange} in ${answers.state} — inside your budget.`,
     });
   } else if (answers.budget) {
-    reasons.push({ type: "budget", text:
-      `A good ${sport.name} academy runs ${sport.costRange} — inside your budget.`,
+    reasons.push({
+      type: "budget",
+      text: `A good ${sport.name} academy runs ${sport.costRange} — inside your budget.`,
     });
   }
 
@@ -479,21 +546,29 @@ function buildReasons(
   if (answers.age) {
     const [idealMin, idealMax] = sport.ageWindowIdeal;
     if (answers.age >= idealMin && answers.age <= idealMax) {
-      reasons.push({ type: "age-window", text:
-        `At ${answers.age}, ${name} is inside the ideal window to start ${sport.name}.`,
+      reasons.push({
+        type: "age-window",
+        text: `At ${answers.age}, ${name} is inside the ideal window to start ${sport.name}.`,
       });
     }
   }
 
   // Synergy reasons — only fire when the compound actually scored
   if (RACKET_SPORT_NAMES.has(sport.name) && child.explosive >= 4 && child.agilityValue >= 4) {
-    reasons.push({ type: "synergy-racket", text:
-      `Explosive energy plus high agility — ${sport.name} demands exactly that pairing.`,
+    reasons.push({
+      type: "synergy-racket",
+      text: `Explosive energy plus high agility — ${sport.name} demands exactly that pairing.`,
     });
   }
-  if (child.reactFast <= 2 && child.sustainedFocus >= 4 && sport.reactFast <= 2 && sport.sustainedFocus >= 4) {
-    reasons.push({ type: "synergy-tactical", text:
-      `Patience and precision beat reaction speed in ${sport.name}. ${name} has both.`,
+  if (
+    child.reactFast <= 2 &&
+    child.sustainedFocus >= 4 &&
+    sport.reactFast <= 2 &&
+    sport.sustainedFocus >= 4
+  ) {
+    reasons.push({
+      type: "synergy-tactical",
+      text: `Patience and precision beat reaction speed in ${sport.name}. ${name} has both.`,
     });
   }
 
@@ -501,8 +576,9 @@ function buildReasons(
   const transfersFrom = PRIOR_SPORT_TRANSFERS[sport.name] ?? [];
   const matchingPrior = answers.priorSports.find((ps) => transfersFrom.includes(ps));
   if (matchingPrior) {
-    reasons.push({ type: "prior-sport", text:
-      `${matchingPrior} transfers directly to ${sport.name} — the movement patterns overlap.`,
+    reasons.push({
+      type: "prior-sport",
+      text: `${matchingPrior} transfers directly to ${sport.name} — the movement patterns overlap.`,
     });
   }
 
@@ -519,18 +595,17 @@ function passesHardGates(answers: WizardAnswers, sport: SportProfile): boolean {
   // Budget gate
   if (answers.budget && !budgetCoversMinimum(answers.budget, sport.minBudgetTier)) return false;
   // Age cutoff for national/professional ambition
-  if (
-    answers.age &&
-    answers.age > sport.ageWindowCutoff &&
-    isEliteAmbition(answers.ambition)
-  ) return false;
+  if (answers.age && answers.age > sport.ageWindowCutoff && isEliteAmbition(answers.ambition))
+    return false;
 
   // ── Biological gates ──────────────────────────────────────────────────────
   // Basketball: height lower bound — national/professional + age 13+
   if (
     sport.name === "Basketball" &&
     isEliteAmbition(answers.ambition) &&
-    answers.age && answers.age >= 13 && answers.height
+    answers.age &&
+    answers.age >= 13 &&
+    answers.height
   ) {
     const minH = answers.gender === "girl" ? 160 : 168;
     if (answers.height < minH) return false;
@@ -540,7 +615,9 @@ function passesHardGates(answers: WizardAnswers, sport: SportProfile): boolean {
   if (
     sport.name === "Volleyball" &&
     isEliteAmbition(answers.ambition) &&
-    answers.age && answers.age >= 13 && answers.height
+    answers.age &&
+    answers.age >= 13 &&
+    answers.height
   ) {
     const minH = answers.gender === "girl" ? 162 : 172;
     if (answers.height < minH) return false;
@@ -580,29 +657,25 @@ function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[]
 
   if (sport.requiresWater && answers.waterComfort === "uncomfortable") {
     out.push(
-      `${name} isn't comfortable in water yet. Learn-to-swim comes first — ${sport.name} training makes no sense before that.`,
+      `${name} isn't comfortable in water yet. Learn-to-swim comes first — ${sport.name} training makes no sense before that.`
     );
   }
 
   if (sport.requiresContact && answers.contactComfort === "avoids") {
     out.push(
-      `${sport.name} involves regular physical contact ${name} actively avoids. Forcing it early usually ends the sport, not the discomfort.`,
+      `${sport.name} involves regular physical contact ${name} actively avoids. Forcing it early usually ends the sport, not the discomfort.`
     );
   }
 
   if (answers.budget && !budgetCoversMinimum(answers.budget, sport.minBudgetTier)) {
     out.push(
-      `${sport.name} coaching runs ${sport.costRange} — above the ${BUDGET_GAP_LABEL[answers.budget]} you set. School and district programmes are the cheaper way in.`,
+      `${sport.name} coaching runs ${sport.costRange} — above the ${BUDGET_GAP_LABEL[answers.budget]} you set. School and district programmes are the cheaper way in.`
     );
   }
 
-  if (
-    answers.age &&
-    answers.age > sport.ageWindowCutoff &&
-    isEliteAmbition(answers.ambition)
-  ) {
+  if (answers.age && answers.age > sport.ageWindowCutoff && isEliteAmbition(answers.ambition)) {
     out.push(
-      `For the goal you picked, ${answers.age} is past the starting window in ${sport.name} — that pathway begins by ${sport.ageWindowCutoff}. To play and enjoy, still wide open.`,
+      `For the goal you picked, ${answers.age} is past the starting window in ${sport.name} — that pathway begins by ${sport.ageWindowCutoff}. To play and enjoy, still wide open.`
     );
   }
 
@@ -610,15 +683,21 @@ function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[]
   if (
     (sport.name === "Basketball" || sport.name === "Volleyball") &&
     eliteAmbition &&
-    answers.age && answers.age >= 13 && answers.height
+    answers.age &&
+    answers.age >= 13 &&
+    answers.height
   ) {
     const minH =
       sport.name === "Basketball"
-        ? answers.gender === "girl" ? 160 : 168
-        : answers.gender === "girl" ? 162 : 172;
+        ? answers.gender === "girl"
+          ? 160
+          : 168
+        : answers.gender === "girl"
+          ? 162
+          : 172;
     if (answers.height < minH) {
       out.push(
-        `National selection in ${sport.name} is height-driven, and at ${answers.age} ${name} ${plural ? "are" : "is"} under the ${minH}cm mark selectors work from. Not out of the sport — out of that pathway, so ${poss} goal may need rethinking.`,
+        `National selection in ${sport.name} is height-driven, and at ${answers.age} ${name} ${plural ? "are" : "is"} under the ${minH}cm mark selectors work from. Not out of the sport — out of that pathway, so ${poss} goal may need rethinking.`
       );
     }
   }
@@ -635,7 +714,7 @@ function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[]
 function buildGaps(
   answers: WizardAnswers,
   sport: SportProfile,
-  child: ReturnType<typeof getChildDimensions>,
+  child: ReturnType<typeof getChildDimensions>
 ): string[] {
   const name = answers.childName || "Your child";
   const { poss, possPronoun, obj, subj, plural } = pronounsFor(answers.gender);
@@ -647,7 +726,7 @@ function buildGaps(
     gaps.push(
       sport.individual >= 4
         ? `${sport.name} rests entirely on one player, and ${name} plays better with a team around ${obj}. Watch that in a trial.`
-        : `In ${sport.name} wins and losses belong to the group. ${name} wants them to be ${possPronoun}.`,
+        : `In ${sport.name} wins and losses belong to the group. ${name} wants them to be ${possPronoun}.`
     );
   }
 
@@ -656,73 +735,71 @@ function buildGaps(
     // Deliberately says "stamina", not "conditioning" — this branch also fires
     // for Chess, where the long sessions are mental rather than physical.
     gaps.push(
-      `${sport.name} rewards long, sustained effort; ${name} works in short bursts. Stamina trains up — expect that to be the early grind.`,
+      `${sport.name} rewards long, sustained effort; ${name} works in short bursts. Stamina trains up — expect that to be the early grind.`
     );
   } else if (answers.energyType === "endurance" && sport.explosive >= 4 && sport.endurance <= 3) {
     gaps.push(
-      `${sport.name} is decided in short bursts; ${name}'s strength is staying power. Speed work comes first.`,
+      `${sport.name} is decided in short bursts; ${name}'s strength is staying power. Speed work comes first.`
     );
   }
 
   // Visual tracking
   if (child.visualTracking <= 2 && sport.visualTracking >= 4) {
     gaps.push(
-      `Reading a fast-moving object is central to ${sport.name}, and it's a weak spot today. Trainable, but the first real hurdle.`,
+      `Reading a fast-moving object is central to ${sport.name}, and it's a weak spot today. Trainable, but the first real hurdle.`
     );
   }
 
   // Decision style
   if (answers.decisionStyle === "strategic" && sport.reactFast >= 4) {
     gaps.push(
-      `${sport.name} rarely allows time to plan — decisions are made at speed. ${name} likes to watch first.`,
+      `${sport.name} rarely allows time to plan — decisions are made at speed. ${name} likes to watch first.`
     );
   } else if (answers.decisionStyle === "react" && sport.reactFast <= 2) {
     // Sport-neutral on purpose: this branch fires for Chess and Swimming alike,
     // so it can't lean on board-game language.
-    gaps.push(
-      `${sport.name} rewards deliberate, planned play. ${name} acts on instinct.`,
-    );
+    gaps.push(`${sport.name} rewards deliberate, planned play. ${name} acts on instinct.`);
   }
 
   // Focus pattern
   if (answers.focusStyle === "bursts" && sport.sustainedFocus >= 4) {
     gaps.push(
-      `${sport.name} asks for unbroken concentration; ${name} focuses in 20–30 minute blocks. Test session length.`,
+      `${sport.name} asks for unbroken concentration; ${name} focuses in 20–30 minute blocks. Test session length.`
     );
   }
 
   // Pressure
   if (answers.pressureResponse === "avoids" && sport.pressureTolerance >= 4) {
     gaps.push(
-      `${sport.name} puts one player in full view, and ${name} would rather not be. Fine socially; limiting at tournament level.`,
+      `${sport.name} puts one player in full view, and ${name} would rather not be. Fine socially; limiting at tournament level.`
     );
   }
 
   // Repetition tolerance
   if (answers.repetitionTolerance === "low" && sport.repetitionNeed >= 4) {
     gaps.push(
-      `${sport.name} progresses through months of the same drills, and ${name} needs variety. Pick a coach who mixes them up.`,
+      `${sport.name} progresses through months of the same drills, and ${name} needs variety. Pick a coach who mixes them up.`
     );
   }
 
   // Contact comfort (soft — the hard case is already a blocker)
   if (answers.contactComfort === "avoids" && sport.contactRequired >= 3 && !sport.requiresContact) {
     gaps.push(
-      `${sport.name} involves regular jostling ${name} would rather avoid. Uncomfortable at first, not a dealbreaker.`,
+      `${sport.name} involves regular jostling ${name} would rather avoid. Uncomfortable at first, not a dealbreaker.`
     );
   }
 
   // Agility
   if (child.agilityValue <= 2 && sport.agilityNeed >= 4) {
     gaps.push(
-      `${sport.name} lives on quick footwork, which isn't ${name}'s strength today. Agility drills would need a permanent slot.`,
+      `${sport.name} lives on quick footwork, which isn't ${name}'s strength today. Agility drills would need a permanent slot.`
     );
   }
 
   // Eyesight
   if (answers.eyesight === "limited" && sport.visionDemand >= 4) {
     gaps.push(
-      `${sport.name} depends on sharp vision at speed. Worth an eye check before starting.`,
+      `${sport.name} depends on sharp vision at speed. Worth an eye check before starting.`
     );
   }
 
@@ -730,16 +807,16 @@ function buildGaps(
   if (answers.height) {
     if (sport.heightAdvantage === "tall" && child.heightValue <= 2) {
       gaps.push(
-        `Height is a structural advantage in ${sport.name}, and ${name} ${isAre} shorter than average today. Revisit as ${subj} ${plural ? "grow" : "grows"} — it's a moving target at this age.`,
+        `Height is a structural advantage in ${sport.name}, and ${name} ${isAre} shorter than average today. Revisit as ${subj} ${plural ? "grow" : "grows"} — it's a moving target at this age.`
       );
     } else if (sport.heightAdvantage === "short" && child.heightValue >= 4) {
       gaps.push(
-        `${sport.name} favours a compact frame, and ${name} ${isAre} taller than most kids ${poss} age.`,
+        `${sport.name} favours a compact frame, and ${name} ${isAre} taller than most kids ${poss} age.`
       );
     }
     if (sport.buildPreference === "lean" && child.buildValue >= 5) {
       gaps.push(
-        `${sport.name} is built around a lean, light frame. Expect conditioning to carry more of the training.`,
+        `${sport.name} is built around a lean, light frame. Expect conditioning to carry more of the training.`
       );
     }
   }
@@ -752,14 +829,14 @@ function buildGaps(
     answers.environment !== sport.environmentPreference
   ) {
     gaps.push(
-      `${sport.name} is played almost entirely ${sport.environmentPreference === "indoor" ? "indoors" : "outdoors"}, and ${name} gravitates the other way. Small thing that decides whether training feels like a chore.`,
+      `${sport.name} is played almost entirely ${sport.environmentPreference === "indoor" ? "indoors" : "outdoors"}, and ${name} gravitates the other way. Small thing that decides whether training feels like a chore.`
     );
   }
 
   // Weekly time
   if (answers.weeklyHours && timeMatch(answers.weeklyHours, sport) < 1) {
     gaps.push(
-      `${sport.name} needs about ${sport.minWeeklyHours} hours a week; you've set aside ${HOURS_GAP_LABEL[answers.weeklyHours]}. Enough to enjoy, tight to compete.`,
+      `${sport.name} needs about ${sport.minWeeklyHours} hours a week; you've set aside ${HOURS_GAP_LABEL[answers.weeklyHours]}. Enough to enjoy, tight to compete.`
     );
   }
 
@@ -767,7 +844,7 @@ function buildGaps(
   const stateTier = getStateInfraTier(answers.state);
   if (answers.state && infraMatch(stateTier, sport.minCityTier) < 1) {
     gaps.push(
-      `Serious ${sport.name} coaching sits in the big metros. From ${answers.state}, expect travel or a longer academy search.`,
+      `Serious ${sport.name} coaching sits in the big metros. From ${answers.state}, expect travel or a longer academy search.`
     );
   }
 
@@ -776,7 +853,7 @@ function buildGaps(
     const [, idealMax] = sport.ageWindowIdeal;
     if (answers.age > idealMax && answers.age <= sport.ageWindowCutoff) {
       gaps.push(
-        `Most who go far in ${sport.name} start by ${idealMax}; ${name} would start at ${answers.age}. Workable, but the competitive path narrows.`,
+        `Most who go far in ${sport.name} start by ${idealMax}; ${name} would start at ${answers.age}. Workable, but the competitive path narrows.`
       );
     }
   }
@@ -785,12 +862,9 @@ function buildGaps(
   // We no longer ask whether the family would relocate, so this states the
   // structural fact and leaves the judgement to them rather than asserting
   // what they'd be willing to do.
-  if (
-    isEliteAmbition(answers.ambition) &&
-    sport.specializationIntensity === "high"
-  ) {
+  if (isEliteAmbition(answers.ambition) && sport.specializationIntensity === "high") {
     gaps.push(
-      `Reaching the top in ${sport.name} in India usually means relocating to the coaching. Worth deciding early if that's on the table.`,
+      `Reaching the top in ${sport.name} in India usually means relocating to the coaching. Worth deciding early if that's on the table.`
     );
   }
 
@@ -832,7 +906,7 @@ function scoringContext(answers: WizardAnswers) {
 function rawScoreFor(
   answers: WizardAnswers,
   sport: SportProfile,
-  ctx: ReturnType<typeof scoringContext>,
+  ctx: ReturnType<typeof scoringContext>
 ): number {
   const { weights, child, stateInfraTier } = ctx;
 
@@ -857,7 +931,9 @@ function rawScoreFor(
   const synergyScore = computeSynergyBonus(child, sport);
   const priorScore = computePriorSportBonus(answers.priorSports, sport);
 
-  return dims + physScore + envScore + ageScore + timeScore + infraScore + synergyScore + priorScore;
+  return (
+    dims + physScore + envScore + ageScore + timeScore + infraScore + synergyScore + priorScore
+  );
 }
 
 function normalisedScore(rawScore: number, ceiling: number): number {
@@ -890,9 +966,7 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
 
   // Third pick: wildcard from a different primary category
   const usedCategories = new Set(top2.map((s) => s.sport.category));
-  const wildcard = normalised
-    .slice(2)
-    .find((s) => !usedCategories.has(s.sport.category));
+  const wildcard = normalised.slice(2).find((s) => !usedCategories.has(s.sport.category));
   const third = wildcard ?? normalised[2];
 
   const top3 = [...top2, ...(third ? [third] : [])].slice(0, 3);
@@ -941,7 +1015,7 @@ export function scoreSports(answers: WizardAnswers): SportResult[] {
  */
 export function scoreChosenSports(
   answers: WizardAnswers,
-  chosenNames: string[] = answers.consideringSports,
+  chosenNames: string[] = answers.consideringSports
 ): SportFitResult[] {
   if (!chosenNames?.length) return [];
 
@@ -957,7 +1031,9 @@ export function scoreChosenSports(
   return sports.map((sport) => {
     const score = normalisedScore(rawScoreFor(answers, sport, ctx), ceiling);
     const blockers = findHardBlockers(answers, sport);
-    const strengths = buildReasons(answers, sport, child).map((r) => r.text).slice(0, 4);
+    const strengths = buildReasons(answers, sport, child)
+      .map((r) => r.text)
+      .slice(0, 4);
 
     return {
       sport,

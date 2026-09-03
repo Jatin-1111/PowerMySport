@@ -53,18 +53,12 @@ export interface TrajectoryPoint {
  */
 const INSET = { top: 8, bottom: 8, left: 2, right: 2 } as const;
 
-export function RankTrajectory({
-  points,
-  label,
-}: {
-  points: TrajectoryPoint[];
-  label: string;
-}) {
+export function RankTrajectory({ points, label }: { points: TrajectoryPoint[]; label: string }) {
   const plotRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<number | null>(null);
 
   const ordered = [...points].sort(
-    (a, b) => new Date(a.asOnDate).getTime() - new Date(b.asOnDate).getTime(),
+    (a, b) => new Date(a.asOnDate).getTime() - new Date(b.asOnDate).getTime()
   );
 
   // Hooks must run before any early return, so the guard sits after them.
@@ -139,19 +133,19 @@ export function RankTrajectory({
             which is what lets the plot stretch to the full width of the card. */}
         <div className="relative w-12 shrink-0 sm:w-14" style={{ height: "13rem" }}>
           <span
-            className="absolute right-1.5 text-[10px] font-medium leading-none text-muted-foreground"
+            className="text-muted-foreground absolute right-1.5 text-[10px] leading-none font-medium"
             style={{ top: `${INSET.top}%`, transform: "translateY(-1.35rem)" }}
           >
             better ↑
           </span>
           <span
-            className="absolute right-1.5 text-[11px] leading-none tabular-nums text-muted-foreground"
+            className="text-muted-foreground absolute right-1.5 text-[11px] leading-none tabular-nums"
             style={{ top: `${INSET.top}%`, transform: "translateY(-50%)" }}
           >
             #{best.toLocaleString("en-IN")}
           </span>
           <span
-            className="absolute right-1.5 text-[11px] leading-none tabular-nums text-muted-foreground"
+            className="text-muted-foreground absolute right-1.5 text-[11px] leading-none tabular-nums"
             style={{ top: `${100 - INSET.bottom}%`, transform: "translateY(-50%)" }}
           >
             #{worst.toLocaleString("en-IN")}
@@ -163,7 +157,7 @@ export function RankTrajectory({
           role="group"
           tabIndex={0}
           aria-label={`${summary} Use the left and right arrow keys to read each week.`}
-          className="relative flex-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+          className="focus-visible:ring-power-orange relative flex-1 rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
           style={{ height: "13rem" }}
           onPointerMove={(event) => locate(event.clientX)}
           onPointerDown={(event) => locate(event.clientX)}
@@ -194,7 +188,7 @@ export function RankTrajectory({
             <span
               key={top}
               aria-hidden
-              className="absolute inset-x-0 border-t border-border"
+              className="border-border absolute inset-x-0 border-t"
               style={{ top: `${top}%` }}
             />
           ))}
@@ -227,7 +221,7 @@ export function RankTrajectory({
             <span
               key={c.asOnDate}
               aria-hidden
-              className={`absolute rounded-full bg-rank-accent transition-transform ${
+              className={`bg-rank-accent absolute rounded-full transition-transform ${
                 active === index ? "scale-150" : ""
               }`}
               style={{
@@ -244,7 +238,7 @@ export function RankTrajectory({
               parent will want to find again. */}
           <span
             aria-hidden
-            className="absolute rounded-full border border-rank-accent/50"
+            className="border-rank-accent/50 absolute rounded-full border"
             style={{
               left: `${coords[bestIndex]!.x}%`,
               top: `${coords[bestIndex]!.y}%`,
@@ -258,7 +252,7 @@ export function RankTrajectory({
             <>
               <span
                 aria-hidden
-                className="absolute top-0 bottom-0 border-l border-dashed border-rank-accent/50"
+                className="border-rank-accent/50 absolute top-0 bottom-0 border-l border-dashed"
                 style={{ left: `${shown.x}%` }}
               />
               <Readout
@@ -275,7 +269,7 @@ export function RankTrajectory({
       </div>
 
       {/* Dates under the plot, aligned to the gutter above. */}
-      <div className="ml-12 flex justify-between text-[11px] text-muted-foreground sm:ml-14">
+      <div className="text-muted-foreground ml-12 flex justify-between text-[11px] sm:ml-14">
         <span>{formatAsOn(first.asOnDate)}</span>
         <span>{formatAsOn(last.asOnDate)}</span>
       </div>
@@ -293,9 +287,9 @@ export function RankTrajectory({
           : ""}
       </span>
 
-      <figcaption className="mt-2 text-sm leading-relaxed text-muted-foreground">
+      <figcaption className="text-muted-foreground mt-2 text-sm leading-relaxed">
         Point at any dot to see that week.{" "}
-        <span className="font-medium text-foreground">
+        <span className="text-foreground font-medium">
           {improved
             ? `Up ${(first.rank - last.rank).toLocaleString("en-IN")} places`
             : last.rank === first.rank
@@ -339,7 +333,7 @@ function Readout({
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute z-10 whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-2 shadow-md"
+      className="border-border bg-card pointer-events-none absolute z-10 rounded-lg border px-2.5 py-2 whitespace-nowrap shadow-md"
       style={{
         left: `${x}%`,
         top: `${y}%`,
@@ -349,13 +343,9 @@ function Readout({
         ].join(" "),
       }}
     >
-      <p className="text-[11px] font-medium text-muted-foreground">
-        {formatAsOn(asOnDate)}
-      </p>
+      <p className="text-muted-foreground text-[11px] font-medium">{formatAsOn(asOnDate)}</p>
       <p className="mt-0.5 flex items-baseline gap-2">
-        <span className="text-base font-bold tabular-nums">
-          #{rank.toLocaleString("en-IN")}
-        </span>
+        <span className="text-base font-bold tabular-nums">#{rank.toLocaleString("en-IN")}</span>
         {movement !== null && movement !== 0 && (
           <span
             className={`text-xs font-semibold tabular-nums ${
@@ -365,12 +355,10 @@ function Readout({
             {movement > 0 ? "▲" : "▼"} {Math.abs(movement).toLocaleString("en-IN")}
           </span>
         )}
-        {movement === 0 && (
-          <span className="text-xs text-muted-foreground">no change</span>
-        )}
+        {movement === 0 && <span className="text-muted-foreground text-xs">no change</span>}
       </p>
       {totalPoints !== undefined && (
-        <p className="text-[11px] tabular-nums text-muted-foreground">
+        <p className="text-muted-foreground text-[11px] tabular-nums">
           {formatPoints(totalPoints)} points
         </p>
       )}

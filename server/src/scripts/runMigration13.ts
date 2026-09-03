@@ -6,9 +6,7 @@ dotenv.config();
 
 const run = async () => {
   const mongoUri =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   await mongoose.connect(mongoUri);
   console.log("Connected to database");

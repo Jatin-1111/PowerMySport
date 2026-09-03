@@ -40,10 +40,7 @@ export async function getMyScreeningRequests(req: Request, res: Response): Promi
 
   // Unbounded by construction (a parent's screening requests should always
   // be few), but capped defensively since nothing else limits it.
-  const requests = await ScreeningRequest.find(filter)
-    .sort({ createdAt: -1 })
-    .limit(100)
-    .lean();
+  const requests = await ScreeningRequest.find(filter).sort({ createdAt: -1 }).limit(100).lean();
 
   res.json({ success: true, data: { requests } });
 }

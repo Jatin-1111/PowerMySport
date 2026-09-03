@@ -30,9 +30,7 @@ export default function CertificationsMultiSelect({
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleCertification = (cert: string) => {
-    const updated = value.includes(cert)
-      ? value.filter((c) => c !== cert)
-      : [...value, cert];
+    const updated = value.includes(cert) ? value.filter((c) => c !== cert) : [...value, cert];
     onChange(updated);
   };
 
@@ -45,18 +43,18 @@ export default function CertificationsMultiSelect({
       <div className="relative">
         {/* Selected Tags */}
         {value.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2 pb-2 border-b border-slate-200">
+          <div className="mb-2 flex flex-wrap gap-2 border-b border-slate-200 pb-2">
             {value.map((cert) => (
               <div
                 key={cert}
-                className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
+                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-700"
               >
                 <span>{cert}</span>
                 <button
                   type="button"
                   onClick={() => removeCertification(cert)}
                   disabled={disabled}
-                  className="hover:text-blue-900 transition-colors"
+                  className="transition-colors hover:text-blue-900"
                 >
                   <X size={14} />
                 </button>
@@ -70,32 +68,27 @@ export default function CertificationsMultiSelect({
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           disabled={disabled}
-          className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-white flex items-center justify-between text-slate-900 hover:border-slate-400 transition-colors disabled:bg-slate-100 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-colors hover:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100"
         >
           <span className="text-slate-700">
-            {value.length === 0
-              ? "Add certifications..."
-              : `${value.length} added`}
+            {value.length === 0 ? "Add certifications..." : `${value.length} added`}
           </span>
-          <ChevronDown
-            size={20}
-            className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
-          />
+          <ChevronDown size={20} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />
         </button>
 
         {/* Dropdown Menu */}
         {isOpen && !disabled && (
-          <div className="absolute top-full left-0 right-0 mt-1 border border-slate-300 rounded-lg bg-white shadow-lg z-10 max-h-64 overflow-y-auto">
+          <div className="absolute top-full right-0 left-0 z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-300 bg-white shadow-lg">
             {CERTIFICATIONS_OPTIONS.map((cert) => (
               <label
                 key={cert}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0"
+                className="flex cursor-pointer items-center gap-3 border-b border-slate-100 px-4 py-3 transition-colors last:border-b-0 hover:bg-slate-50"
               >
                 <input
                   type="checkbox"
                   checked={value.includes(cert)}
                   onChange={() => toggleCertification(cert)}
-                  className="w-4 h-4 rounded border-slate-300 accent-blue-600 cursor-pointer"
+                  className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-blue-600"
                 />
                 <span className="text-sm text-slate-900">{cert}</span>
               </label>

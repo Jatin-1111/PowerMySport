@@ -1,13 +1,13 @@
 "use client";
 
 import {
-    addUserAddress,
-    deleteUserAddress,
-    getUserAddresses,
-    lookupPincode,
-    setDefaultUserAddress,
-    updateUserAddress,
-    type UserAddress,
+  addUserAddress,
+  deleteUserAddress,
+  getUserAddresses,
+  lookupPincode,
+  setDefaultUserAddress,
+  updateUserAddress,
+  type UserAddress,
 } from "@/lib/shop/ecommerce-api";
 import { INDIAN_STATES } from "@/lib/shop/indianStates";
 import { useAuthStore } from "../../auth/store/authStore";
@@ -19,9 +19,7 @@ import { toast } from "sonner";
 export function AddressManagement() {
   const { user } = useAuthStore();
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
-  const [defaultAddressId, setDefaultAddressId] = useState<
-    string | undefined
-  >();
+  const [defaultAddressId, setDefaultAddressId] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -146,9 +144,7 @@ export function AddressManagement() {
         setDefaultAddressId(response.defaultAddressId);
       }
 
-      toast.success(
-        editingId ? "Address updated" : "Address added",
-      );
+      toast.success(editingId ? "Address updated" : "Address added");
       resetForm();
     } catch (err: any) {
       toast.error(err.message || "Failed to save address");
@@ -197,9 +193,7 @@ export function AddressManagement() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-black text-slate-900">Manage Addresses</h2>
-        <p className="text-sm text-slate-500">
-          Add, update, or delete shipping addresses.
-        </p>
+        <p className="text-sm text-slate-500">Add, update, or delete shipping addresses.</p>
       </div>
 
       {/* Saved Addresses List */}
@@ -211,25 +205,23 @@ export function AddressManagement() {
               <div
                 key={address._id}
                 className={cn(
-                  "p-4 rounded-xl border-2 transition-all cursor-pointer",
+                  "cursor-pointer rounded-xl border-2 p-4 transition-all",
                   defaultAddressId === address._id
                     ? "border-[#ff5722] bg-orange-50/30"
-                    : "border-slate-200 bg-slate-50/30 hover:border-slate-300",
+                    : "border-slate-200 bg-slate-50/30 hover:border-slate-300"
                 )}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-slate-900">
-                        {address.fullName}
-                      </h4>
+                      <h4 className="font-bold text-slate-900">{address.fullName}</h4>
                       {defaultAddressId === address._id && (
-                        <span className="px-2 py-1 text-xs font-bold bg-[#ff5722] text-white rounded-full">
+                        <span className="rounded-full bg-[#ff5722] px-2 py-1 text-xs font-bold text-white">
                           Default
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-slate-600 mt-2">
+                    <p className="mt-2 text-sm text-slate-600">
                       {address.addressLine1}
                       {address.addressLine2 && `, ${address.addressLine2}`}
                     </p>
@@ -240,23 +232,19 @@ export function AddressManagement() {
                       {address.phone} • {address.email}
                     </p>
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex shrink-0 gap-2">
                     <button
                       onClick={() => setEditingId(address._id || null)}
-                      className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition-all"
+                      className="rounded-lg p-2 text-slate-600 transition-all hover:bg-slate-200"
                       disabled={loading}
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(address._id || "")}
-                      className="p-2 rounded-lg hover:bg-red-100 text-red-600 transition-all"
+                      className="rounded-lg p-2 text-red-600 transition-all hover:bg-red-100"
                       disabled={loading || addresses.length === 1}
-                      title={
-                        addresses.length === 1
-                          ? "Cannot delete the last address"
-                          : ""
-                      }
+                      title={addresses.length === 1 ? "Cannot delete the last address" : ""}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -276,7 +264,7 @@ export function AddressManagement() {
           </div>
           <button
             onClick={() => setIsAddingNew(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-all"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-3 font-bold text-slate-600 transition-all hover:bg-slate-50"
           >
             <Plus size={18} />
             Add New Address
@@ -288,9 +276,9 @@ export function AddressManagement() {
       {(isAddingNew || editingId) && (
         <form
           onSubmit={handleSubmit}
-          className="space-y-6 max-w-2xl bg-slate-50/50 p-6 sm:p-8 rounded-3xl border border-slate-200/60 shadow-xs"
+          className="max-w-2xl space-y-6 rounded-3xl border border-slate-200/60 bg-slate-50/50 p-6 shadow-xs sm:p-8"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-bold text-slate-900">
               {editingId ? "Edit Address" : "Add New Address"}
             </h3>
@@ -303,9 +291,9 @@ export function AddressManagement() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 Recipient Name
               </label>
               <input
@@ -314,12 +302,12 @@ export function AddressManagement() {
                 placeholder="Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 Email Address
               </label>
               <input
@@ -328,12 +316,12 @@ export function AddressManagement() {
                 placeholder="email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 Phone Number
               </label>
               <input
@@ -342,12 +330,12 @@ export function AddressManagement() {
                 placeholder="e.g. +91 99999 99999"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 Address Line 1
               </label>
               <input
@@ -356,12 +344,12 @@ export function AddressManagement() {
                 placeholder="House/Flat No., Building, Street Name"
                 value={addressLine1}
                 onChange={(e) => setAddressLine1(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 Address Line 2 (Optional)
               </label>
               <input
@@ -369,12 +357,12 @@ export function AddressManagement() {
                 placeholder="Apartment, suite, floor, etc."
                 value={addressLine2}
                 onChange={(e) => setAddressLine2(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 City
               </label>
               <input
@@ -383,25 +371,23 @@ export function AddressManagement() {
                 placeholder="City"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 State
               </label>
               <select
                 required
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               >
                 <option value="">Select state</option>
                 {/* Preserve a legacy/non-canonical value so editing still shows it */}
-                {state && !INDIAN_STATES.includes(state) && (
-                  <option value={state}>{state}</option>
-                )}
+                {state && !INDIAN_STATES.includes(state) && <option value={state}>{state}</option>}
                 {INDIAN_STATES.map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -411,7 +397,7 @@ export function AddressManagement() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 Postal / ZIP Code
               </label>
               <input
@@ -422,28 +408,24 @@ export function AddressManagement() {
                 placeholder="6-digit ZIP code"
                 value={postalCode}
                 onChange={(e) => handlePostalChange(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               />
               {pincodeLoading && (
-                <p className="mt-1 text-xs text-slate-400">
-                  Looking up city & state…
-                </p>
+                <p className="mt-1 text-xs text-slate-400">Looking up city & state…</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+              <label className="mb-2 block text-xs font-bold tracking-wider text-slate-500 uppercase">
                 Country
               </label>
               <select
                 required
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none focus:border-[#ff5722] transition shadow-sm"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm transition outline-none focus:border-[#ff5722]"
               >
-                {country && country !== "IN" && (
-                  <option value={country}>{country}</option>
-                )}
+                {country && country !== "IN" && <option value={country}>{country}</option>}
                 <option value="IN">India</option>
               </select>
             </div>
@@ -453,19 +435,15 @@ export function AddressManagement() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-6 py-3 rounded-xl bg-[#ff5722] hover:bg-[#e64a19] text-sm font-bold text-white transition-all active:scale-95 shadow-md shadow-[#ff5722]/15 disabled:opacity-50"
+              className="flex-1 rounded-xl bg-[#ff5722] px-6 py-3 text-sm font-bold text-white shadow-md shadow-[#ff5722]/15 transition-all hover:bg-[#e64a19] active:scale-95 disabled:opacity-50"
             >
-              {loading
-                ? "Saving..."
-                : editingId
-                  ? "Update Address"
-                  : "Add Address"}
+              {loading ? "Saving..." : editingId ? "Update Address" : "Add Address"}
             </button>
             <button
               type="button"
               onClick={resetForm}
               disabled={loading}
-              className="px-6 py-3 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-900 hover:bg-slate-50 transition-all"
+              className="rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-900 transition-all hover:bg-slate-50"
             >
               Cancel
             </button>
@@ -475,14 +453,12 @@ export function AddressManagement() {
 
       {/* No addresses state */}
       {addresses.length === 0 && !isAddingNew && !editingId && (
-        <div className="text-center py-12 bg-slate-50/50 rounded-3xl border border-slate-200/60">
+        <div className="rounded-3xl border border-slate-200/60 bg-slate-50/50 py-12 text-center">
           <MapPin className="mx-auto mb-4 text-slate-400" size={48} />
-          <p className="text-slate-600 font-bold mb-4">
-            No addresses saved yet
-          </p>
+          <p className="mb-4 font-bold text-slate-600">No addresses saved yet</p>
           <button
             onClick={() => setIsAddingNew(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#ff5722] hover:bg-[#e64a19] text-sm font-bold text-white transition-all"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#ff5722] px-6 py-3 text-sm font-bold text-white transition-all hover:bg-[#e64a19]"
           >
             <Plus size={18} />
             Add Your First Address

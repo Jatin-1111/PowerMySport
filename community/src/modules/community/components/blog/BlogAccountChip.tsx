@@ -12,11 +12,7 @@ import AuthorAvatar from "./AuthorAvatar";
  * Compact "My Account" access for the blog tab: avatar + @username linking to
  * the account page. Fetches the current user's blog profile once on mount.
  */
-export default function BlogAccountChip({
-  className = "",
-}: {
-  className?: string;
-}) {
+export default function BlogAccountChip({ className = "" }: { className?: string }) {
   const [profile, setProfile] = useState<BlogAuthorProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +45,7 @@ export default function BlogAccountChip({
   if (loading) {
     return (
       <div
-        className={`inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 py-1 pl-1 pr-3 shadow-sm ${className}`}
+        className={`inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 py-1 pr-3 pl-1 shadow-sm ${className}`}
       >
         <span className="h-8 w-8 animate-pulse rounded-full bg-slate-200" />
         <span className="h-3 w-16 animate-pulse rounded-full bg-slate-200" />
@@ -68,13 +64,9 @@ export default function BlogAccountChip({
       <Link
         href="/blog/account"
         title="My Account"
-        className={`group inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 py-1 pl-1 pr-3 shadow-sm backdrop-blur-sm transition hover:border-power-orange/40 hover:bg-white ${className}`}
+        className={`group hover:border-power-orange/40 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 py-1 pr-3 pl-1 shadow-sm backdrop-blur-sm transition hover:bg-white ${className}`}
       >
-        <AuthorAvatar
-          name={profile.name}
-          photoUrl={profile.photoUrl}
-          size={32}
-        />
+        <AuthorAvatar name={profile.name} photoUrl={profile.photoUrl} size={32} />
         <span className="flex min-w-0 flex-col leading-tight">
           <span className="truncate text-[11px] font-medium text-slate-400 group-hover:text-slate-500">
             My Account

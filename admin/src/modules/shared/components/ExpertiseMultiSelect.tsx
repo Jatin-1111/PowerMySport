@@ -39,10 +39,7 @@ export default function ExpertiseMultiSelect({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -55,9 +52,7 @@ export default function ExpertiseMultiSelect({
   }, [isOpen]);
 
   const toggleExpertise = (exp: string) => {
-    const updated = value.includes(exp)
-      ? value.filter((e) => e !== exp)
-      : [...value, exp];
+    const updated = value.includes(exp) ? value.filter((e) => e !== exp) : [...value, exp];
     onChange(updated);
   };
 
@@ -66,14 +61,14 @@ export default function ExpertiseMultiSelect({
   };
 
   return (
-    <div className="w-full relative" ref={containerRef}>
+    <div className="relative w-full" ref={containerRef}>
       {/* Selected Tags Display */}
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2 pb-2">
+        <div className="mb-2 flex flex-wrap gap-2 pb-2">
           {value.map((exp) => (
             <div
               key={exp}
-              className="inline-flex items-center gap-1 bg-power-orange/10 text-power-orange px-2.5 py-1 rounded-md text-xs font-medium"
+              className="bg-power-orange/10 text-power-orange inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium"
             >
               <span>{exp}</span>
               <button
@@ -101,21 +96,16 @@ export default function ExpertiseMultiSelect({
           className={cn(
             "flex w-full items-center justify-between rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:outline-none",
             isOpen
-              ? "border-power-orange ring-2 ring-power-orange/20 bg-white"
+              ? "border-power-orange ring-power-orange/20 bg-white ring-2"
               : "border-slate-200 hover:bg-slate-100",
-            disabled && "opacity-50 cursor-not-allowed",
+            disabled && "cursor-not-allowed opacity-50"
           )}
         >
           <span className="text-slate-500">
-            {value.length === 0
-              ? "Select expertise..."
-              : `Add more expertise...`}
+            {value.length === 0 ? "Select expertise..." : `Add more expertise...`}
           </span>
           <ChevronDown
-            className={cn(
-              "h-4 w-4 text-slate-400 transition-transform",
-              isOpen && "rotate-180",
-            )}
+            className={cn("h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")}
           />
         </button>
 
@@ -130,16 +120,14 @@ export default function ExpertiseMultiSelect({
                   type="button"
                   onClick={() => toggleExpertise(exp)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-left transition-colors",
+                    "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
                     isSelected
                       ? "bg-power-orange/10 text-power-orange font-semibold"
-                      : "text-slate-700 hover:bg-slate-50",
+                      : "text-slate-700 hover:bg-slate-50"
                   )}
                 >
                   {exp}
-                  {isSelected && (
-                    <div className="h-2 w-2 rounded-full bg-power-orange" />
-                  )}
+                  {isSelected && <div className="bg-power-orange h-2 w-2 rounded-full" />}
                 </button>
               );
             })}

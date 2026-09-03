@@ -76,14 +76,12 @@ export function RankingStatStrip({
   return (
     // A one-pixel gap over the border colour draws the dividers, so they stay
     // correct however the grid wraps — `divide-x` breaks on a wrapped grid.
-    <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-4">
+    <dl className="bg-border mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border md:grid-cols-4">
       {tiles.map((tile) => (
         <div key={tile.hint} className="bg-card px-4 py-3.5 sm:px-5">
-          <dd className="text-2xl font-bold leading-none sm:text-3xl">{tile.value}</dd>
-          <dt className="mt-1.5 text-xs font-medium text-foreground sm:text-sm">
-            {tile.label}
-          </dt>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground" title={tile.hint}>
+          <dd className="text-2xl leading-none font-bold sm:text-3xl">{tile.value}</dd>
+          <dt className="text-foreground mt-1.5 text-xs font-medium sm:text-sm">{tile.label}</dt>
+          <p className="text-muted-foreground mt-0.5 truncate text-xs" title={tile.hint}>
             {tile.hint}
           </p>
         </div>
@@ -93,10 +91,7 @@ export function RankingStatStrip({
 }
 
 /** The first of `wanted` that this list actually has a benchmark for. */
-function pick(
-  benchmarks: RankingBenchmark[],
-  wanted: number[],
-): RankingBenchmark | undefined {
+function pick(benchmarks: RankingBenchmark[], wanted: number[]): RankingBenchmark | undefined {
   for (const rank of wanted) {
     const found = benchmarks.find((b) => b.rank === rank);
     if (found) return found;

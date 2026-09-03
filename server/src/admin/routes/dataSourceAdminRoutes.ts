@@ -13,11 +13,7 @@ import {
   approveDataSource,
   rejectDataSource,
 } from "../controllers/dataSourceAdminController";
-import {
-  authMiddleware,
-  adminMiddleware,
-  requirePermission,
-} from "../../middleware/auth";
+import { authMiddleware, adminMiddleware, requirePermission } from "../../middleware/auth";
 import { createRedisRateLimitStore } from "../../middleware/rateLimit";
 
 const dataSourceAdminRouter = Router();
@@ -41,7 +37,7 @@ dataSourceAdminRouter.post(
   authMiddleware,
   adminMiddleware,
   requirePermission("data-sources:manage"),
-  getDataSourceUploadUrl,
+  getDataSourceUploadUrl
 );
 
 dataSourceAdminRouter.get(
@@ -49,7 +45,7 @@ dataSourceAdminRouter.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("data-sources:view"),
-  listDataSourceTargets,
+  listDataSourceTargets
 );
 
 dataSourceAdminRouter.get(
@@ -57,7 +53,7 @@ dataSourceAdminRouter.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("data-sources:view"),
-  getCalendarFreshness,
+  getCalendarFreshness
 );
 
 dataSourceAdminRouter.get(
@@ -65,7 +61,7 @@ dataSourceAdminRouter.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("data-sources:view"),
-  listDataSources,
+  listDataSources
 );
 
 dataSourceAdminRouter.post(
@@ -74,7 +70,7 @@ dataSourceAdminRouter.post(
   adminMiddleware,
   requirePermission("data-sources:manage"),
   extractionRateLimiter,
-  createDataSource,
+  createDataSource
 );
 
 dataSourceAdminRouter.get(
@@ -82,7 +78,7 @@ dataSourceAdminRouter.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("data-sources:view"),
-  getDataSourceDetail,
+  getDataSourceDetail
 );
 
 dataSourceAdminRouter.patch(
@@ -90,7 +86,7 @@ dataSourceAdminRouter.patch(
   authMiddleware,
   adminMiddleware,
   requirePermission("data-sources:review"),
-  updateDataSource,
+  updateDataSource
 );
 
 dataSourceAdminRouter.post(
@@ -99,7 +95,7 @@ dataSourceAdminRouter.post(
   adminMiddleware,
   requirePermission("data-sources:manage"),
   extractionRateLimiter,
-  reExtractDataSource,
+  reExtractDataSource
 );
 
 // Fans out to as many as 150 page fetches plus batched AI reads, so it shares
@@ -110,7 +106,7 @@ dataSourceAdminRouter.post(
   adminMiddleware,
   requirePermission("data-sources:manage"),
   extractionRateLimiter,
-  enrichDataSourceDetails,
+  enrichDataSourceDetails
 );
 
 dataSourceAdminRouter.post(
@@ -118,7 +114,7 @@ dataSourceAdminRouter.post(
   authMiddleware,
   adminMiddleware,
   requirePermission("data-sources:review"),
-  approveDataSource,
+  approveDataSource
 );
 
 dataSourceAdminRouter.post(
@@ -126,7 +122,7 @@ dataSourceAdminRouter.post(
   authMiddleware,
   adminMiddleware,
   requirePermission("data-sources:review"),
-  rejectDataSource,
+  rejectDataSource
 );
 
 export default dataSourceAdminRouter;

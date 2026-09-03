@@ -1,10 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IPayoutMethod } from "./Coach";
-import {
-  isEncryptedValue,
-  encryptValue,
-  decryptValue,
-} from "../../shared/utils/encryption";
+import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
 
 /**
  * Expert = an elite/ex-professional player who offers paid 1:1 sessions.
@@ -70,7 +66,7 @@ const availabilityWindowSchema = new Schema<ExpertAvailabilityWindow>(
     start: { type: String, required: true }, // "HH:mm"
     end: { type: String, required: true }, // "HH:mm"
   },
-  { _id: false },
+  { _id: false }
 );
 
 const expertSchema = new Schema<ExpertDocument>(
@@ -136,7 +132,7 @@ const expertSchema = new Schema<ExpertDocument>(
     gstNumber: { type: String, trim: true, uppercase: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 expertSchema.set("toJSON", { getters: true });
@@ -181,5 +177,4 @@ expertSchema.index({
 });
 
 export const Expert =
-  mongoose.models.Expert ||
-  mongoose.model<ExpertDocument>("Expert", expertSchema);
+  mongoose.models.Expert || mongoose.model<ExpertDocument>("Expert", expertSchema);

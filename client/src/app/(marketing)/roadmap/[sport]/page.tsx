@@ -87,8 +87,7 @@ export default async function SportPathwayPage({
             headline: `${guide.sportName} pathway in India — a parent's guide`,
             path: `/roadmap/${guide.sportSlug}`,
             description:
-              guide.intro.description ??
-              `Every stage of ${guide.sportName} for Indian parents.`,
+              guide.intro.description ?? `Every stage of ${guide.sportName} for Indian parents.`,
             ...(guide.updatedAt ? { dateModified: guide.updatedAt } : {}),
             section: guide.sportName,
             keywords: [
@@ -105,7 +104,7 @@ export default async function SportPathwayPage({
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <Link
             href="/roadmap"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-power-orange"
+            className="hover:text-power-orange inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition"
           >
             <ChevronLeft className="h-4 w-4" />
             All sports
@@ -115,15 +114,12 @@ export default async function SportPathwayPage({
             <div className="max-w-3xl">
               <div className="mb-3">
                 <SectionLabel
-                  label={
-                    guide.intro.eyebrow ?? `${guide.sportName} pathway · for parents`
-                  }
+                  label={guide.intro.eyebrow ?? `${guide.sportName} pathway · for parents`}
                   color="orange"
                 />
               </div>
               <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl">
-                {guide.intro.headline ??
-                  "Understand. Question. Observe. Decide. Act."}
+                {guide.intro.headline ?? "Understand. Question. Observe. Decide. Act."}
               </h1>
               {guide.intro.description && (
                 <p className="mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
@@ -133,8 +129,8 @@ export default async function SportPathwayPage({
             </div>
 
             {guide.sportIntro.length > 0 && (
-              <aside className="w-full rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm premium-shadow lg:max-w-sm">
-                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              <aside className="premium-shadow w-full rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm lg:max-w-sm">
+                <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
                   About {guide.sportName}
                 </p>
                 <div className="mt-2 space-y-2 text-sm leading-relaxed text-slate-600">
@@ -151,13 +147,8 @@ export default async function SportPathwayPage({
       {/* ── The pathway ── */}
       <section className="py-8 sm:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <PathwayReader
-            guide={guide}
-            initialStageKey={stageParam?.trim().toLowerCase()}
-          />
-          {guide.reviewedOn && (
-            <p className="mt-4 text-xs text-slate-400">{guide.reviewedOn}</p>
-          )}
+          <PathwayReader guide={guide} initialStageKey={stageParam?.trim().toLowerCase()} />
+          {guide.reviewedOn && <p className="mt-4 text-xs text-slate-400">{guide.reviewedOn}</p>}
         </div>
       </section>
 

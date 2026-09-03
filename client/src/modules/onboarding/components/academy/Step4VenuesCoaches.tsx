@@ -46,25 +46,20 @@ export default function Step4VenuesCoaches({
 
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-900 mb-2">
-          Step 4: Venues & Coaches
-        </h2>
-        <p className="text-slate-600">
-          Link your venues and coaches (optional for now)
-        </p>
+      <div className="mb-8 text-center">
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 4: Venues & Coaches</h2>
+        <p className="text-slate-600">Link your venues and coaches (optional for now)</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
           <p className="text-sm text-blue-900">
-            You can skip this step for now and add venues and coaches later from
-            your dashboard.
+            You can skip this step for now and add venues and coaches later from your dashboard.
           </p>
         </div>
 
         <div>
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className="flex cursor-pointer items-center gap-3">
             <input
               type="checkbox"
               checked={formData.allowsExternalCoaches}
@@ -74,54 +69,41 @@ export default function Step4VenuesCoaches({
                   allowsExternalCoaches: e.target.checked,
                 }))
               }
-              className="w-4 h-4 rounded"
+              className="h-4 w-4 rounded"
               disabled={isSubmitting}
             />
             <span className="text-sm font-medium text-slate-900">
               Allow external coaches to book your venues
             </span>
           </label>
-          <p className="text-xs text-slate-600 mt-2 ml-7">
+          <p className="mt-2 ml-7 text-xs text-slate-600">
             If enabled, coaches can rent your venues for their sessions
           </p>
         </div>
 
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-2">
-            Venues ({formData.venueIds.length})
-          </h3>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-2 font-semibold text-slate-900">Venues ({formData.venueIds.length})</h3>
           <p className="text-sm text-slate-600">
-            You haven&apos;t linked any venues yet. Add them from your dashboard
-            later.
+            You haven&apos;t linked any venues yet. Add them from your dashboard later.
           </p>
         </div>
 
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <h3 className="font-semibold text-slate-900 mb-2">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <h3 className="mb-2 font-semibold text-slate-900">
             Coaches ({formData.coachIds.length})
           </h3>
           <p className="text-sm text-slate-600">
-            You haven&apos;t linked any coaches yet. Add them from your
-            dashboard later.
+            You haven&apos;t linked any coaches yet. Add them from your dashboard later.
           </p>
         </div>
 
         <div className="flex gap-3 pt-4">
           {onBack && (
-            <Button
-              type="button"
-              onClick={onBack}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button type="button" onClick={onBack} variant="outline" disabled={isSubmitting}>
               Back
             </Button>
           )}
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Saving..." : "Continue to Step 5"}
           </Button>
         </div>

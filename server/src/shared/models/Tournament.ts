@@ -82,7 +82,7 @@ const federationSchema = new Schema<FederationInfo>(
     type: { type: String, enum: ["govt", "private", "hybrid"], required: true },
     about: { type: String },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const tournamentSchema = new Schema<TournamentDocument>(
@@ -125,7 +125,7 @@ const tournamentSchema = new Schema<TournamentDocument>(
     importantNotes: [{ type: String }],
     circuitContext: { type: String },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 tournamentSchema.index({ sportSlug: 1, name: 1 }, { unique: true });
@@ -133,5 +133,4 @@ tournamentSchema.index({ slug: 1 }, { unique: true, sparse: true });
 tournamentSchema.index({ isCurated: 1, sportSlug: 1 });
 
 export const Tournament =
-  mongoose.models.Tournament ||
-  mongoose.model<TournamentDocument>("Tournament", tournamentSchema);
+  mongoose.models.Tournament || mongoose.model<TournamentDocument>("Tournament", tournamentSchema);

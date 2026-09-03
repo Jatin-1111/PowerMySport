@@ -38,7 +38,7 @@ export function CommunityPageHeader({
       <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           {badge && (
-            <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 backdrop-blur">
+            <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold tracking-[0.22em] text-slate-600 uppercase backdrop-blur">
               {badge}
             </span>
           )}
@@ -64,9 +64,7 @@ export function CommunityPageHeader({
       <motion.div
         aria-hidden="true"
         animate={
-          prefersReducedMotion
-            ? { opacity: 0.45 }
-            : { x: [0, -8, 0], y: [0, 8, 0], opacity: 0.45 }
+          prefersReducedMotion ? { opacity: 0.45 } : { x: [0, -8, 0], y: [0, 8, 0], opacity: 0.45 }
         }
         transition={
           prefersReducedMotion
@@ -77,14 +75,12 @@ export function CommunityPageHeader({
                 ease: "easeInOut",
               }
         }
-        className="pointer-events-none absolute -right-24 -top-20 h-56 w-56 rounded-full bg-power-orange/30 blur-3xl"
+        className="bg-power-orange/30 pointer-events-none absolute -top-20 -right-24 h-56 w-56 rounded-full blur-3xl"
       />
       <motion.div
         aria-hidden="true"
         animate={
-          prefersReducedMotion
-            ? { opacity: 0.3 }
-            : { x: [0, 10, 0], y: [0, -10, 0], opacity: 0.3 }
+          prefersReducedMotion ? { opacity: 0.3 } : { x: [0, 10, 0], y: [0, -10, 0], opacity: 0.3 }
         }
         transition={
           prefersReducedMotion
@@ -95,7 +91,7 @@ export function CommunityPageHeader({
                 ease: "easeInOut",
               }
         }
-        className="pointer-events-none absolute -bottom-16 -left-16 h-44 w-44 rounded-full bg-turf-green/25 blur-3xl"
+        className="bg-turf-green/25 pointer-events-none absolute -bottom-16 -left-16 h-44 w-44 rounded-full blur-3xl"
       />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.4),transparent_35%)]" />
     </motion.div>

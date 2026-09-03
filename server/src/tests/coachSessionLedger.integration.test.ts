@@ -21,12 +21,8 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 const { CoachOffering } = require("../client/models/CoachOffering");
 const { CoachEnrollment } = require("../client/models/CoachEnrollment");
 const { CoachSessionCredit } = require("../client/models/CoachSessionCredit");
-const {
-  CoachSessionOccurrence,
-} = require("../client/models/CoachSessionOccurrence");
-const {
-  CoachSubscriptionPackage,
-} = require("../client/models/CoachSubscriptionPackage");
+const { CoachSessionOccurrence } = require("../client/models/CoachSessionOccurrence");
+const { CoachSubscriptionPackage } = require("../client/models/CoachSubscriptionPackage");
 const offeringService = require("../client/services/CoachOfferingService");
 const lifecycle = require("../client/services/CoachSessionLifecycleService");
 const ledger = require("../client/services/CoachCreditLedgerService");
@@ -83,7 +79,7 @@ const BEFORE_ALL = new Date("2026-08-31T00:00:00.000Z");
 
 const seedOffering = async (
   overrides: Record<string, unknown> = {},
-  packageOverrides: Record<string, unknown> = {},
+  packageOverrides: Record<string, unknown> = {}
 ) => {
   const coachId = oid();
   const pkg = await CoachSubscriptionPackage.create({
@@ -126,12 +122,8 @@ const seedOffering = async (
  * never by the reservation — which is exactly the property the tests below rely
  * on when they check that an unpaid hold grants nothing.
  */
-const enroll = async (
-  offering: any,
-  overrides: Record<string, unknown> = {},
-) => {
-  const { now, feePaise, periodStart, periodEnd, ...seatOverrides } =
-    overrides as any;
+const enroll = async (offering: any, overrides: Record<string, unknown> = {}) => {
+  const { now, feePaise, periodStart, periodEnd, ...seatOverrides } = overrides as any;
 
   const enrollment = await offeringService.reserveEnrollmentSeat({
     offeringId: offering._id,
@@ -178,7 +170,7 @@ describe("enrollment", () => {
     assert.equal(
       credits.reduce((sum: number, c: any) => sum + c.valuePaise, 0),
       400000,
-      "the credits must sum to exactly the fee charged",
+      "the credits must sum to exactly the fee charged"
     );
   });
 
@@ -191,7 +183,7 @@ describe("enrollment", () => {
     // Only the sessions still ahead of them are bought.
     assert.ok(
       creditsGranted > 0 && creditsGranted < 8,
-      `expected a partial grant, got ${creditsGranted}`,
+      `expected a partial grant, got ${creditsGranted}`
     );
   });
 
@@ -261,7 +253,7 @@ describe("enrollment", () => {
     // than leaving it to be discovered on the first session.
     await assert.rejects(
       () => seedOffering({ deliveryKind: "STUDENT_LOCATION", capacity: 4 }),
-      /cannot be delivered at a student's location/,
+      /cannot be delivered at a student's location/
     );
   });
 });
@@ -293,7 +285,7 @@ describe("enrolling is gated on payment", () => {
         params: { offeringId: offering._id.toString() },
         body,
       } as any,
-      res,
+      res
     );
     return captured;
   };
@@ -314,7 +306,7 @@ describe("enrolling is gated on payment", () => {
     assert.equal(
       await CoachSessionCredit.countDocuments({}),
       0,
-      "the enrol endpoint granted credits without a payment",
+      "the enrol endpoint granted credits without a payment"
     );
   });
 
@@ -326,11 +318,7 @@ describe("enrolling is gated on payment", () => {
     await callEnroll(offering, { studentName: "Abandoned Checkout" });
 
     const reloaded = await CoachOffering.findById(offering._id);
-    assert.equal(
-      reloaded.enrolledCount,
-      0,
-      "a failed checkout permanently consumed a seat",
-    );
+    assert.equal(reloaded.enrolledCount, 0, "a failed checkout permanently consumed a seat");
   });
 
   it("refuses to enrol into a programme that is not published", async () => {
@@ -400,7 +388,7 @@ describe("enrolling is gated on payment", () => {
           periodEnd: PERIOD_END,
           feePaise: 400000,
         }),
-      /released before the payment completed/,
+      /released before the payment completed/
     );
   });
 });
@@ -459,11 +447,7 @@ describe("payment reconciliation activates the enrolment", () => {
 
     const credits = await CoachSessionCredit.find({});
     const total = credits.reduce((sum: number, c: any) => sum + c.valuePaise, 0);
-    assert.equal(
-      total,
-      400000,
-      "credits must total the base amount, not the gross charge",
-    );
+    assert.equal(total, 400000, "credits must total the base amount, not the gross charge");
   });
 
   it("grants nothing when the payment fails", async () => {
@@ -499,7 +483,7 @@ describe("payment reconciliation activates the enrolment", () => {
     assert.equal(
       await CoachSessionCredit.countDocuments({}),
       afterFirst,
-      "a replayed webhook granted a second set of credits",
+      "a replayed webhook granted a second set of credits"
     );
   });
 });
@@ -557,7 +541,7 @@ describe("completing a session", () => {
         result.occurrence.payout.commissionPaise +
         result.occurrence.payout.commissionGstPaise,
       result.occurrence.payout.grossPaise,
-      "the payout split must reconstruct the gross exactly",
+      "the payout split must reconstruct the gross exactly"
     );
 
     const consumed = await CoachSessionCredit.countDocuments({
@@ -619,7 +603,7 @@ describe("completing a session", () => {
     // Burn every credit the student has.
     await CoachSessionCredit.updateMany(
       { enrollmentId: enrollments[0]._id },
-      { $set: { status: "EXPIRED", expiredAt: new Date() } },
+      { $set: { status: "EXPIRED", expiredAt: new Date() } }
     );
 
     const result = await lifecycle.completeOccurrence({
@@ -640,10 +624,7 @@ describe("completing a session", () => {
       at,
     });
 
-    assert.equal(
-      result.occurrence.payout.releaseAt.toISOString(),
-      "2026-09-02T13:30:00.000Z",
-    );
+    assert.equal(result.occurrence.payout.releaseAt.toISOString(), "2026-09-02T13:30:00.000Z");
   });
 
   it("returns the credits when a completion is reversed", async () => {
@@ -672,7 +653,7 @@ describe("completing a session", () => {
 
     await assert.rejects(
       () => lifecycle.reopenOccurrence({ occurrenceId: occurrence._id }),
-      /already been paid out/,
+      /already been paid out/
     );
   });
 });
@@ -754,7 +735,7 @@ describe("coach cancellation and makeups", () => {
           cancelledOccurrenceId: occurrence._id,
           scheduledAt: new Date("2026-09-06T12:30:00.000Z"),
         }),
-      /only replace a session the coach or platform cancelled/,
+      /only replace a session the coach or platform cancelled/
     );
   });
 
@@ -772,7 +753,7 @@ describe("coach cancellation and makeups", () => {
           cancelledOccurrenceId: occurrence._id,
           scheduledAt: new Date("2026-09-08T12:30:00.000Z"),
         }),
-      /already has a makeup/,
+      /already has a makeup/
     );
   });
 
@@ -802,7 +783,7 @@ describe("coach cancellation and makeups", () => {
 
     await assert.rejects(
       () => lifecycle.cancelOccurrenceByCoach({ occurrenceId: occurrence._id }),
-      /completed session cannot be cancelled/,
+      /completed session cannot be cancelled/
     );
   });
 });
@@ -946,7 +927,7 @@ describe("coach payouts", () => {
 
     await assert.rejects(
       () => lifecycle.markPayoutPaid({ occurrenceId: occurrence._id }),
-      /Only a released payout/,
+      /Only a released payout/
     );
   });
 
@@ -998,9 +979,7 @@ describe("admin payout settlement", () => {
       sports: ["Chess"],
       hourlyRate: 500,
       serviceMode: "FREELANCE",
-      payoutMethods: [
-        { type: "UPI", upiId: "coach@upi", isDefault: true, addedAt: new Date() },
-      ],
+      payoutMethods: [{ type: "UPI", upiId: "coach@upi", isDefault: true, addedAt: new Date() }],
     });
 
     const occurrence = await CoachSessionOccurrence.create({
@@ -1043,17 +1022,11 @@ describe("admin payout settlement", () => {
     await adminPayouts.listPendingPayouts({} as any, res);
 
     assert.equal(captured.status, 200);
-    const row = (captured.body.data as any[]).find(
-      (p) => p.vendorId === coachUserId.toString(),
-    );
+    const row = (captured.body.data as any[]).find((p) => p.vendorId === coachUserId.toString());
     assert.ok(row, "the coach's session payout was not listed");
     assert.equal(row.vendorRole, "CoachSession");
     // 500.00 gross - 75.00 commission - 13.50 GST = 411.50 payable.
-    assert.equal(
-      row.totalPendingAmount,
-      411.5,
-      "admin must settle the net, not the gross",
-    );
+    assert.equal(row.totalPendingAmount, 411.5, "admin must settle the net, not the gross");
     assert.equal(row.payoutMethod?.upiId, "coach@upi");
   });
 
@@ -1094,9 +1067,7 @@ describe("admin payout settlement", () => {
     const { res, captured } = mockRes();
     await adminPayouts.listPendingPayouts({} as any, res);
 
-    const row = (captured.body.data as any[]).find(
-      (p) => p.vendorId === coachUserId.toString(),
-    );
+    const row = (captured.body.data as any[]).find((p) => p.vendorId === coachUserId.toString());
     assert.equal(row, undefined, "an unreleased payout was offered for payment");
   });
 
@@ -1112,7 +1083,7 @@ describe("admin payout settlement", () => {
           bookingIds: [occurrence._id.toString()],
         },
       } as any,
-      res,
+      res
     );
 
     assert.equal(captured.status, 200);
@@ -1126,7 +1097,7 @@ describe("admin payout settlement", () => {
     const second = mockRes();
     await adminPayouts.listPendingPayouts({} as any, second.res);
     const row = (second.captured.body.data as any[]).find(
-      (p) => p.vendorId === coachUserId.toString(),
+      (p) => p.vendorId === coachUserId.toString()
     );
     assert.equal(row, undefined, "a settled payout was still listed");
   });
@@ -1158,9 +1129,7 @@ describe("admin payout settlement", () => {
 describe("renewal", () => {
   const subs = require("../client/services/CoachSubscriptionService");
   const renewal = require("../client/services/CoachRenewalService");
-  const {
-    CoachSubscription,
-  } = require("../client/models/CoachSubscription");
+  const { CoachSubscription } = require("../client/models/CoachSubscription");
 
   /** An enrolment funded by a real subscription, one period in. */
   const seedSubscribed = async (overrides: Record<string, unknown> = {}) => {
@@ -1215,17 +1184,16 @@ describe("renewal", () => {
     assert.equal(
       renewed.currentPeriodStart.toISOString(),
       PERIOD_END.toISOString(),
-      "the new period must start where the old one ended",
+      "the new period must start where the old one ended"
     );
     assert.ok(
       renewed.currentPeriodEnd > renewed.currentPeriodStart,
-      "the period must still run forwards",
+      "the period must still run forwards"
     );
   });
 
   it("grants one period's worth of credits on renewal, not two", async () => {
-    const { offering, coachId, pkg, userId, subscription, enrollment } =
-      await seedSubscribed();
+    const { offering, coachId, pkg, userId, subscription, enrollment } = await seedSubscribed();
 
     const before = await CoachSessionCredit.countDocuments({
       enrollmentId: enrollment._id,
@@ -1252,7 +1220,7 @@ describe("renewal", () => {
 
     assert.ok(
       granted > 0 && granted <= (pkg.maxSessions ?? 8),
-      `a renewal granted ${granted} credits — expected at most one period's worth`,
+      `a renewal granted ${granted} credits — expected at most one period's worth`
     );
 
     // And the new period's credits are worth exactly the new period's fee.
@@ -1262,7 +1230,7 @@ describe("renewal", () => {
     });
     assert.equal(
       newPeriod.reduce((sum: number, c: any) => sum + c.valuePaise, 0),
-      400000,
+      400000
     );
     assert.ok(offering);
   });
@@ -1314,10 +1282,7 @@ describe("renewal", () => {
 
     const reloaded = await CoachOffering.findById(offering._id);
     assert.equal(reloaded.enrolledCount, 1, "the seat was released too early");
-    assert.equal(
-      (await CoachSubscription.findById(subscription._id)).status,
-      "PAST_DUE",
-    );
+    assert.equal((await CoachSubscription.findById(subscription._id)).status, "PAST_DUE");
   });
 
   it("releases the seat once grace has run out", async () => {
@@ -1388,7 +1353,7 @@ describe("renewal", () => {
     assert.equal(
       pastAfter.roster.length,
       1,
-      "a delivered session's attendance record was rewritten",
+      "a delivered session's attendance record was rewritten"
     );
     assert.equal(futureAfter.roster.length, 0);
   });
@@ -1479,11 +1444,7 @@ describe("renewal", () => {
       userId,
     });
 
-    assert.equal(
-      target,
-      null,
-      "renewing a released enrolment would skip the capacity check",
-    );
+    assert.equal(target, null, "renewing a released enrolment would skip the capacity check");
   });
 });
 
@@ -1552,7 +1513,12 @@ describe("refunding unused classes", () => {
     let asked = 0;
     const restore = stubGateway(async (payload: any) => {
       asked = payload.amount;
-      return { transactionId: "t", state: "INITIATED", amount: payload.amount, method: "ORIGINAL_CARD" };
+      return {
+        transactionId: "t",
+        state: "INITIATED",
+        amount: payload.amount,
+        method: "ORIGINAL_CARD",
+      };
     });
 
     const result = await refunds.refundUnusedCreditsForEnrollment({
@@ -1574,7 +1540,12 @@ describe("refunding unused classes", () => {
     let asked = 0;
     const restore = stubGateway(async (payload: any) => {
       asked = payload.amount;
-      return { transactionId: "t", state: "INITIATED", amount: payload.amount, method: "ORIGINAL_CARD" };
+      return {
+        transactionId: "t",
+        state: "INITIATED",
+        amount: payload.amount,
+        method: "ORIGINAL_CARD",
+      };
     });
     await refunds.refundUnusedCreditsForEnrollment({
       enrollmentId: enrollment._id,
@@ -1603,7 +1574,7 @@ describe("refunding unused classes", () => {
         enrollmentId: enrollment._id,
         status: "REFUNDED",
       }),
-      8,
+      8
     );
   });
 
@@ -1613,7 +1584,12 @@ describe("refunding unused classes", () => {
     let calls = 0;
     const restore = stubGateway(async (payload: any) => {
       calls += 1;
-      return { transactionId: "t", state: "INITIATED", amount: payload.amount, method: "ORIGINAL_CARD" };
+      return {
+        transactionId: "t",
+        state: "INITIATED",
+        amount: payload.amount,
+        method: "ORIGINAL_CARD",
+      };
     });
 
     await refunds.refundUnusedCreditsForEnrollment({
@@ -1647,7 +1623,7 @@ describe("refunding unused classes", () => {
         enrollmentId: enrollment._id,
         status: "REFUND_PENDING",
       }),
-      8,
+      8
     );
   });
 
@@ -1672,7 +1648,7 @@ describe("refunding unused classes", () => {
         enrollmentId: enrollment._id,
         status: "REFUND_PENDING",
       }),
-      8,
+      8
     );
   });
 
@@ -1703,7 +1679,7 @@ describe("refunding unused classes", () => {
         enrollmentId: enrollment._id,
         status: "REFUNDED",
       }),
-      8,
+      8
     );
   });
 
@@ -1723,7 +1699,7 @@ describe("refunding unused classes", () => {
         enrollmentId: enrollment._id,
         status: "AVAILABLE",
       }),
-      8,
+      8
     );
   });
 
@@ -1732,13 +1708,18 @@ describe("refunding unused classes", () => {
     // Most of the payment has already been refunded by hand.
     await CoachSubscriptionPaymentTransaction.updateMany(
       { enrollmentId: enrollment._id },
-      { $set: { refundAmount: 380000 } },
+      { $set: { refundAmount: 380000 } }
     );
 
     let asked = 0;
     const restore = stubGateway(async (payload: any) => {
       asked = payload.amount;
-      return { transactionId: "t", state: "INITIATED", amount: payload.amount, method: "ORIGINAL_CARD" };
+      return {
+        transactionId: "t",
+        state: "INITIATED",
+        amount: payload.amount,
+        method: "ORIGINAL_CARD",
+      };
     });
     await refunds.refundUnusedCreditsForEnrollment({
       enrollmentId: enrollment._id,
@@ -1809,7 +1790,7 @@ describe("policy: makeups run inside the period that paid for them", () => {
           cancelledOccurrenceId: occurrence._id,
           scheduledAt: new Date("2026-10-15T12:30:00.000Z"),
         }),
-      /must run by/,
+      /must run by/
     );
   });
 
@@ -1847,7 +1828,7 @@ describe("policy: makeups run inside the period that paid for them", () => {
           cancelledOccurrenceId: occurrence._id,
           scheduledAt: new Date("2026-09-25T12:30:00.000Z"),
         }),
-      /must run by/,
+      /must run by/
     );
   });
 });
@@ -1916,9 +1897,7 @@ describe("policy: cancellations are counted, not capped", () => {
 
 describe("policy: waitlist with notify-on-seat-free", () => {
   const waitlist = require("../client/services/CoachWaitlistService");
-  const {
-    CoachWaitlistEntry,
-  } = require("../client/models/CoachWaitlistEntry");
+  const { CoachWaitlistEntry } = require("../client/models/CoachWaitlistEntry");
 
   const fullOffering = async () => {
     const { offering } = await seedOffering({ capacity: 1 });
@@ -1937,7 +1916,7 @@ describe("policy: waitlist with notify-on-seat-free", () => {
           userId: oid(),
           studentName: "Too Early",
         }),
-      /place available/,
+      /place available/
     );
   });
 
@@ -1963,7 +1942,7 @@ describe("policy: waitlist with notify-on-seat-free", () => {
           userId: enrollment.userId,
           studentName: enrollment.studentName,
         }),
-      /already enrolled/,
+      /already enrolled/
     );
   });
 
@@ -1982,7 +1961,7 @@ describe("policy: waitlist with notify-on-seat-free", () => {
         offeringId: offering._id,
         userId,
         studentName: "Twice",
-      }),
+      })
     );
   });
 
@@ -2091,10 +2070,7 @@ describe("policy: waitlist with notify-on-seat-free", () => {
       studentName: "Changed Mind",
     });
 
-    assert.equal(
-      await waitlist.leaveWaitlist({ entryId: entry._id, userId }),
-      true,
-    );
+    assert.equal(await waitlist.leaveWaitlist({ entryId: entry._id, userId }), true);
     assert.equal((await waitlist.waitlistForOffering(offering._id)).length, 0);
   });
 
@@ -2106,10 +2082,7 @@ describe("policy: waitlist with notify-on-seat-free", () => {
       studentName: "Someone Else",
     });
 
-    assert.equal(
-      await waitlist.leaveWaitlist({ entryId: entry._id, userId: oid() }),
-      false,
-    );
+    assert.equal(await waitlist.leaveWaitlist({ entryId: entry._id, userId: oid() }), false);
     assert.equal((await waitlist.waitlistForOffering(offering._id)).length, 1);
   });
 });

@@ -31,26 +31,26 @@ const REDUNDANT_SPEC: Record<string, 1 | -1> = { messageId: 1 };
 
 const isExactSingleFieldMatch = (
   key: Record<string, unknown>,
-  spec: Record<string, 1 | -1>,
+  spec: Record<string, 1 | -1>
 ): boolean => {
   const keyFields = Object.keys(key);
   const specFields = Object.keys(spec);
   if (keyFields.length !== specFields.length) return false;
   return specFields.every(
-    (field, position) => keyFields[position] === field && key[field] === spec[field],
+    (field, position) => keyFields[position] === field && key[field] === spec[field]
   );
 };
 
 export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Starting migration 33: drop redundant reaction index (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 33: drop redundant reaction index (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   const collection = CommunityMessageReaction.collection;
   const indexes = await collection.indexes();
   const redundant = indexes.filter((index) =>
-    isExactSingleFieldMatch(index.key || {}, REDUNDANT_SPEC),
+    isExactSingleFieldMatch(index.key || {}, REDUNDANT_SPEC)
   );
 
   if (!redundant.length) {
@@ -58,9 +58,7 @@ export const up = async (options: Options = {}) => {
     return;
   }
 
-  console.log(
-    `  found: ${redundant.map((index) => index.name).join(", ")}`,
-  );
+  console.log(`  found: ${redundant.map((index) => index.name).join(", ")}`);
 
   if (!apply) {
     console.log("Dry run complete — re-run with --apply.");
@@ -80,7 +78,7 @@ export const up = async (options: Options = {}) => {
 export const down = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Reverting migration 33 (${apply ? "APPLY" : "DRY RUN"}) — recreating the redundant index...`,
+    `Reverting migration 33 (${apply ? "APPLY" : "DRY RUN"}) — recreating the redundant index...`
   );
 
   if (!apply) {

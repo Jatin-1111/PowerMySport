@@ -20,17 +20,17 @@ export function CitySelector({
   return (
     <div className="space-y-3">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
           placeholder="Search your city..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-power-orange focus:ring-1 focus:ring-power-orange/20"
+          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-9 text-sm text-slate-800 placeholder:text-slate-400 focus:ring-1 focus:outline-none"
         />
       </div>
 
-      <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto pr-1">
+      <div className="flex max-h-52 flex-wrap gap-2 overflow-y-auto pr-1">
         {filtered.map((city) => {
           const selected = value === city.name;
           return (
@@ -38,7 +38,7 @@ export function CitySelector({
               key={city.name}
               type="button"
               onClick={() => onChange(city.name, city.tier)}
-              className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-all duration-150 ${
+              className={`rounded-full border-2 px-4 py-2 text-sm font-medium transition-all duration-150 ${
                 selected
                   ? "border-power-orange bg-power-orange/5 text-power-orange"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"

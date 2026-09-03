@@ -44,6 +44,6 @@ export const useSessionExpiry = (): void => {
         // cleared, but sending them to login from login would be a no-op reload.
         if (returnTo !== null) router.replace(loginUrlFor(returnTo));
       }),
-    [logout, router],
+    [logout, router]
   );
 };

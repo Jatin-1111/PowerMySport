@@ -47,7 +47,7 @@ test("commission, GST and net always reconstruct the fee exactly", () => {
     assert.equal(
       r.commissionPaise + r.gstOnCommissionPaise + r.netPayablePaise,
       fee,
-      `the split of ${fee} paise did not reconstruct`,
+      `the split of ${fee} paise did not reconstruct`
     );
   }
 });

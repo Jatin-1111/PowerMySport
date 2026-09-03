@@ -2,25 +2,19 @@
 
 import { clearShopCart, getShopCartTotals, useShopCart } from "@/lib/shop/cart";
 import {
-    addUserAddress,
-    createOrderFromCart,
-    getUserAddresses,
-    lookupPincode,
-    type ShippingAddress,
-    type UserAddress,
+  addUserAddress,
+  createOrderFromCart,
+  getUserAddresses,
+  lookupPincode,
+  type ShippingAddress,
+  type UserAddress,
 } from "@/lib/shop/ecommerce-api";
 import { formatInr } from "@/lib/shop/format";
 import { INDIAN_STATES } from "@/lib/shop/indianStates";
 import { useAuthStore } from "../../auth/store/authStore";
 import { cn } from "@/utils/cn";
 import { motion } from "framer-motion";
-import {
-    CheckCircle2,
-    CreditCard,
-    LockKeyhole,
-    MapPin,
-    Plus,
-} from "lucide-react";
+import { CheckCircle2, CreditCard, LockKeyhole, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
@@ -42,16 +36,12 @@ export function CheckoutClient() {
   const [form, setForm] = useState(initialForm);
 
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
-    null,
-  );
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [addingNew, setAddingNew] = useState(false);
   const [saveNewAddress, setSaveNewAddress] = useState(true);
   const [pincodeLoading, setPincodeLoading] = useState(false);
 
-  const [status, setStatus] = useState<"idle" | "placing" | "placed" | "error">(
-    "idle",
-  );
+  const [status, setStatus] = useState<"idle" | "placing" | "placed" | "error">("idle");
   const [message, setMessage] = useState("");
 
   // Resolve auth client-side only (avoids SSR/hydration mismatch).
@@ -117,7 +107,7 @@ export function CheckoutClient() {
 
   const selectedAddress = useMemo(
     () => savedAddresses.find((a) => a._id === selectedAddressId) || null,
-    [savedAddresses, selectedAddressId],
+    [savedAddresses, selectedAddressId]
   );
 
   const formComplete =
@@ -129,8 +119,7 @@ export function CheckoutClient() {
     !!form.state.trim() &&
     !!form.postalCode.trim();
 
-  const canPlace =
-    items.length > 0 && (addingNew ? formComplete : !!selectedAddress);
+  const canPlace = items.length > 0 && (addingNew ? formComplete : !!selectedAddress);
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -164,15 +153,14 @@ export function CheckoutClient() {
     setStatus("placing");
     setMessage("");
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     if (!token) {
       window.setTimeout(() => {
         clearShopCart();
         setStatus("placed");
         setMessage(
-          "Demo order placed locally. Sign in before checkout to create a backend order and payment.",
+          "Demo order placed locally. Sign in before checkout to create a backend order and payment."
         );
       }, 650);
       return;
@@ -216,17 +204,11 @@ export function CheckoutClient() {
         window.location.href = paymentUrl;
       } else {
         setStatus("placed");
-        setMessage(
-          `Order ${result.order.orderNumber} created. Please check your orders page.`,
-        );
+        setMessage(`Order ${result.order.orderNumber} created. Please check your orders page.`);
       }
     } catch (error) {
       setStatus("error");
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to place order right now.",
-      );
+      setMessage(error instanceof Error ? error.message : "Unable to place order right now.");
     }
   }
 
@@ -234,9 +216,7 @@ export function CheckoutClient() {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 shadow-sm">
-          <h1 className="text-3xl font-black text-slate-950">
-            Checkout needs a cart
-          </h1>
+          <h1 className="text-3xl font-black text-slate-950">Checkout needs a cart</h1>
           <p className="mt-3 text-slate-600">
             Add a product first, then return here to complete the order.
           </p>
@@ -260,9 +240,7 @@ export function CheckoutClient() {
           className="rounded-2xl border border-emerald-200 bg-white p-10 shadow-sm"
         >
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
-          <h1 className="mt-4 text-3xl font-black text-slate-950">
-            Order started
-          </h1>
+          <h1 className="mt-4 text-3xl font-black text-slate-950">Order started</h1>
           <p className="mx-auto mt-3 max-w-xl text-slate-600">{message}</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
@@ -285,13 +263,9 @@ export function CheckoutClient() {
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_390px] lg:px-8">
-      <form
-        id="shop-checkout-form"
-        onSubmit={handleSubmit}
-        className="space-y-5"
-      >
+      <form id="shop-checkout-form" onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
+          <p className="text-sm font-bold tracking-[0.16em] text-orange-600 uppercase">
             Secure Checkout
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
@@ -305,9 +279,7 @@ export function CheckoutClient() {
               <span className="grid h-10 w-10 place-items-center rounded-lg bg-orange-50 text-orange-600">
                 <MapPin className="h-5 w-5" />
               </span>
-              <h2 className="text-lg font-black text-slate-950">
-                Shipping Address
-              </h2>
+              <h2 className="text-lg font-black text-slate-950">Shipping Address</h2>
             </div>
             {isAuthed && (
               <Link
@@ -333,16 +305,14 @@ export function CheckoutClient() {
                       "w-full rounded-xl border-2 p-4 text-left transition-all",
                       selected
                         ? "border-power-orange bg-orange-50/40"
-                        : "border-slate-200 bg-white hover:border-slate-300",
+                        : "border-slate-200 bg-white hover:border-slate-300"
                     )}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">
-                          {address.fullName}
-                        </span>
+                        <span className="font-bold text-slate-900">{address.fullName}</span>
                         {address.isDefault && (
-                          <span className="rounded-full bg-power-orange px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                          <span className="bg-power-orange rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase">
                             Default
                           </span>
                         )}
@@ -352,12 +322,10 @@ export function CheckoutClient() {
                           "grid h-5 w-5 place-items-center rounded-full border-2",
                           selected
                             ? "border-power-orange bg-power-orange"
-                            : "border-slate-300 bg-white",
+                            : "border-slate-300 bg-white"
                         )}
                       >
-                        {selected && (
-                          <span className="h-2 w-2 rounded-full bg-white" />
-                        )}
+                        {selected && <span className="h-2 w-2 rounded-full bg-white" />}
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-slate-600">
@@ -394,23 +362,21 @@ export function CheckoutClient() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
                   value={form.fullName}
-                  onChange={(event) =>
-                    updateField("fullName", event.target.value)
-                  }
+                  onChange={(event) => updateField("fullName", event.target.value)}
                   placeholder="Full name"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
                 />
                 <input
                   value={form.email}
                   onChange={(event) => updateField("email", event.target.value)}
                   placeholder="Email"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
                 />
                 <input
                   value={form.phone}
                   onChange={(event) => updateField("phone", event.target.value)}
                   placeholder="Phone"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
                 />
                 <div>
                   <input
@@ -419,24 +385,22 @@ export function CheckoutClient() {
                     placeholder="Postal code"
                     inputMode="numeric"
                     maxLength={6}
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
                   />
                   {pincodeLoading && (
-                    <p className="mt-1 text-xs text-slate-400">
-                      Looking up city & state…
-                    </p>
+                    <p className="mt-1 text-xs text-slate-400">Looking up city & state…</p>
                   )}
                 </div>
                 <input
                   value={form.city}
                   onChange={(event) => updateField("city", event.target.value)}
                   placeholder="City"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
                 />
                 <select
                   value={form.state}
                   onChange={(event) => updateField("state", event.target.value)}
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white"
                 >
                   <option value="">Select state</option>
                   {form.state && !INDIAN_STATES.includes(form.state) && (
@@ -450,19 +414,15 @@ export function CheckoutClient() {
                 </select>
                 <input
                   value={form.addressLine1}
-                  onChange={(event) =>
-                    updateField("addressLine1", event.target.value)
-                  }
+                  onChange={(event) => updateField("addressLine1", event.target.value)}
                   placeholder="Address line 1"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white sm:col-span-2"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white sm:col-span-2"
                 />
                 <input
                   value={form.addressLine2}
-                  onChange={(event) =>
-                    updateField("addressLine2", event.target.value)
-                  }
+                  onChange={(event) => updateField("addressLine2", event.target.value)}
                   placeholder="Address line 2 (optional)"
-                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white sm:col-span-2"
+                  className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm transition outline-none focus:border-slate-400 focus:bg-white sm:col-span-2"
                 />
               </div>
 
@@ -471,9 +431,7 @@ export function CheckoutClient() {
                   <input
                     type="checkbox"
                     checked={saveNewAddress}
-                    onChange={(event) =>
-                      setSaveNewAddress(event.target.checked)
-                    }
+                    onChange={(event) => setSaveNewAddress(event.target.checked)}
                     className="h-4 w-4 accent-orange-500"
                   />
                   Save this address to my address book
@@ -519,15 +477,10 @@ export function CheckoutClient() {
           <LockKeyhole className="h-4 w-4" />
           Encrypted checkout
         </div>
-        <h2 className="mt-4 text-xl font-black text-slate-950">
-          Order Summary
-        </h2>
+        <h2 className="mt-4 text-xl font-black text-slate-950">Order Summary</h2>
         <div className="mt-5 space-y-3 text-sm text-slate-600">
           {items.map((item) => (
-            <div
-              key={item.variantId}
-              className="flex items-start justify-between gap-4"
-            >
+            <div key={item.variantId} className="flex items-start justify-between gap-4">
               <span>
                 {item.name} x {item.quantity}
               </span>
@@ -547,11 +500,7 @@ export function CheckoutClient() {
           </div>
           <div className="flex items-center justify-between">
             <span>Shipping</span>
-            <span>
-              {totals.shippingAmount
-                ? formatInr(totals.shippingAmount)
-                : "Free"}
-            </span>
+            <span>{totals.shippingAmount ? formatInr(totals.shippingAmount) : "Free"}</span>
           </div>
           <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-lg font-black text-slate-950">
             <span>Total</span>
@@ -562,7 +511,7 @@ export function CheckoutClient() {
           type="submit"
           form="shop-checkout-form"
           disabled={!canPlace || status === "placing"}
-          className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg bg-power-orange text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="bg-power-orange mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {status === "placing" ? "Placing Order..." : "Place Order"}
         </button>

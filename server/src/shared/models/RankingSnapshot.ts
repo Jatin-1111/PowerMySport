@@ -16,12 +16,7 @@ import mongoose, { Document, Schema } from "mongoose";
  * them yet.
  */
 export type RankingSnapshotStatus =
-  | "discovered"
-  | "archived"
-  | "parsed"
-  | "published"
-  | "quarantined"
-  | "failed";
+  "discovered" | "archived" | "parsed" | "published" | "quarantined" | "failed";
 
 export interface RankingSnapshotDocument extends Document {
   sportSlug: string;
@@ -113,7 +108,7 @@ const diagnosticsSchema = new Schema(
     unparsedLines: { type: [String], default: [] },
     warnings: { type: [String], default: [] },
   },
-  { _id: false },
+  { _id: false }
 );
 
 /** Same reason as `diagnosticsSchema` — nested schemas cannot be inlined here. */
@@ -122,7 +117,7 @@ const benchmarkSchema = new Schema(
     rank: { type: Number, required: true },
     points: { type: Number, required: true },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const stateCountSchema = new Schema(
@@ -131,7 +126,7 @@ const stateCountSchema = new Schema(
     count: { type: Number, required: true },
     inTop100: { type: Number, default: 0 },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const bandProfileSchema = new Schema(
@@ -163,7 +158,7 @@ const bandProfileSchema = new Schema(
     // exact over the whole band — see the note on `BandProfile`.
     compositionTotal: { type: Number },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const rankingSnapshotSchema = new Schema<RankingSnapshotDocument>(
@@ -206,14 +201,14 @@ const rankingSnapshotSchema = new Schema<RankingSnapshotDocument>(
     parsedAt: { type: Date },
     publishedAt: { type: Date },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Identity. Two rows for the same date are allowed only when the bytes differ,
 // which is exactly the corrected-re-upload case.
 rankingSnapshotSchema.index(
   { federationCode: 1, category: 1, subcategory: 1, asOnDate: 1, contentHash: 1 },
-  { unique: true },
+  { unique: true }
 );
 // "What is the newest list for this combo?" — the query behind every public page.
 rankingSnapshotSchema.index({ category: 1, subcategory: 1, isLatestForCombo: 1 });

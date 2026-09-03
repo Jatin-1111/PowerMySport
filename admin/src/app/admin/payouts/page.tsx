@@ -40,8 +40,7 @@ const VENDOR_ICON_CLASSES: Record<PayoutSummary["vendorRole"], string> = {
   Expert: "bg-amber-100 text-amber-600",
 };
 
-const payoutKey = (payout: PayoutSummary) =>
-  `${payout.vendorId}-${payout.vendorRole}`;
+const payoutKey = (payout: PayoutSummary) => `${payout.vendorId}-${payout.vendorRole}`;
 
 export default function AdminPayoutsPage() {
   const [payouts, setPayouts] = useState<PayoutSummary[]>([]);
@@ -92,9 +91,7 @@ export default function AdminPayoutsPage() {
       toast.success("Payout marked as paid!");
       await loadPayouts();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to process payout",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to process payout");
       console.error(error);
     } finally {
       setProcessingId(null);
@@ -115,18 +112,15 @@ export default function AdminPayoutsPage() {
   };
 
   const payableSelectedPayouts = payouts.filter(
-    (p) => selected.has(payoutKey(p)) && p.payoutMethod,
+    (p) => selected.has(payoutKey(p)) && p.payoutMethod
   );
 
   const handleBulkPay = async () => {
     if (payableSelectedPayouts.length === 0) return;
-    const totalAmount = payableSelectedPayouts.reduce(
-      (sum, p) => sum + p.totalPendingAmount,
-      0,
-    );
+    const totalAmount = payableSelectedPayouts.reduce((sum, p) => sum + p.totalPendingAmount, 0);
     if (
       !window.confirm(
-        `Mark ₹${totalAmount.toLocaleString()} as PAID across ${payableSelectedPayouts.length} vendor(s)?`,
+        `Mark ₹${totalAmount.toLocaleString()} as PAID across ${payableSelectedPayouts.length} vendor(s)?`
       )
     ) {
       return;
@@ -135,13 +129,11 @@ export default function AdminPayoutsPage() {
     setBulkProcessing(true);
     try {
       const results = await Promise.allSettled(
-        payableSelectedPayouts.map((payout) => payOneVendor(payout)),
+        payableSelectedPayouts.map((payout) => payOneVendor(payout))
       );
       const failedCount = results.filter((r) => r.status === "rejected").length;
       if (failedCount > 0) {
-        toast.error(
-          `${payableSelectedPayouts.length - failedCount} paid, ${failedCount} failed.`,
-        );
+        toast.error(`${payableSelectedPayouts.length - failedCount} paid, ${failedCount} failed.`);
       } else {
         toast.success(`${payableSelectedPayouts.length} vendor(s) paid.`);
       }
@@ -161,17 +153,14 @@ export default function AdminPayoutsPage() {
           subtitle="Manage and settle pending earnings for Venue Listers, Coaches, and Experts."
         />
         <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-          <Loader2 className="h-10 w-10 animate-spin mb-3" />
+          <Loader2 className="mb-3 h-10 w-10 animate-spin" />
           <p className="text-sm">Loading pending payouts...</p>
         </div>
       </div>
     );
   }
 
-  const totalAmountOwed = payouts.reduce(
-    (sum, p) => sum + p.totalPendingAmount,
-    0,
-  );
+  const totalAmountOwed = payouts.reduce((sum, p) => sum + p.totalPendingAmount, 0);
 
   return (
     <div className="space-y-6">
@@ -181,20 +170,14 @@ export default function AdminPayoutsPage() {
         subtitle="Manage and settle pending earnings for Venue Listers, Coaches, and Experts."
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white p-6 border-l-4 border-l-power-orange">
-          <p className="text-sm font-semibold text-slate-500">
-            Total Pending Vendors
-          </p>
-          <p className="text-3xl font-bold text-slate-900 mt-2">
-            {payouts.length}
-          </p>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="border-l-power-orange border-l-4 bg-white p-6">
+          <p className="text-sm font-semibold text-slate-500">Total Pending Vendors</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{payouts.length}</p>
         </Card>
-        <Card className="bg-white p-6 border-l-4 border-l-emerald-500">
-          <p className="text-sm font-semibold text-slate-500">
-            Total Amount Owed
-          </p>
-          <p className="text-3xl font-bold text-emerald-600 mt-2">
+        <Card className="border-l-4 border-l-emerald-500 bg-white p-6">
+          <p className="text-sm font-semibold text-slate-500">Total Amount Owed</p>
+          <p className="mt-2 text-3xl font-bold text-emerald-600">
             ₹{totalAmountOwed.toLocaleString()}
           </p>
         </Card>
@@ -229,37 +212,29 @@ export default function AdminPayoutsPage() {
 
       {payouts.length === 0 ? (
         <Card className="bg-white py-12 text-center">
-          <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900">
-            All caught up!
-          </h3>
-          <p className="text-slate-500 max-w-md mx-auto mt-2">
-            There are currently no pending payouts. All completed bookings have
-            been successfully settled.
+          <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
+          <h3 className="text-lg font-semibold text-slate-900">All caught up!</h3>
+          <p className="mx-auto mt-2 max-w-md text-slate-500">
+            There are currently no pending payouts. All completed bookings have been successfully
+            settled.
           </p>
         </Card>
       ) : (
         <div className="space-y-4">
           {selected.size > 0 && (
-            <Card className="bg-orange-50 border border-power-orange/30 flex flex-wrap items-center justify-between gap-3 p-4">
+            <Card className="border-power-orange/30 flex flex-wrap items-center justify-between gap-3 border bg-orange-50 p-4">
               <p className="text-sm font-semibold text-slate-800">
                 {selected.size} vendor{selected.size === 1 ? "" : "s"} selected
                 {payableSelectedPayouts.length !== selected.size &&
                   ` (${selected.size - payableSelectedPayouts.length} missing a payout method, will be skipped)`}
               </p>
               <div className="flex gap-2">
-                <Button
-                  onClick={() => setSelected(new Set())}
-                  variant="ghost"
-                  size="sm"
-                >
+                <Button onClick={() => setSelected(new Set())} variant="ghost" size="sm">
                   Clear
                 </Button>
                 <Button
                   onClick={handleBulkPay}
-                  disabled={
-                    bulkProcessing || payableSelectedPayouts.length === 0
-                  }
+                  disabled={bulkProcessing || payableSelectedPayouts.length === 0}
                   variant="success"
                   size="sm"
                 >
@@ -273,12 +248,12 @@ export default function AdminPayoutsPage() {
           {payouts.map((payout) => (
             <Card
               key={`${payout.vendorId}-${payout.vendorRole}`}
-              className="bg-white overflow-hidden transition-all hover:shadow-md border border-slate-200"
+              className="overflow-hidden border border-slate-200 bg-white transition-all hover:shadow-md"
             >
               <div className="flex flex-col md:flex-row md:items-stretch">
                 {/* Left side: Vendor Info */}
-                <div className="p-6 border-b md:border-b-0 md:border-r border-slate-100 flex-1">
-                  <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 border-b border-slate-100 p-6 md:border-r md:border-b-0">
+                  <div className="mb-4 flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={selected.has(payoutKey(payout))}
@@ -291,18 +266,14 @@ export default function AdminPayoutsPage() {
                           : "No payout method configured"
                       }
                     />
-                    <div
-                      className={`p-2 rounded-lg ${VENDOR_ICON_CLASSES[payout.vendorRole]}`}
-                    >
+                    <div className={`rounded-lg p-2 ${VENDOR_ICON_CLASSES[payout.vendorRole]}`}>
                       {(() => {
                         const VendorIcon = VENDOR_ICON[payout.vendorRole];
                         return <VendorIcon size={24} />;
                       })()}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        {payout.vendorName}
-                      </h3>
+                      <h3 className="text-lg font-bold text-slate-900">{payout.vendorName}</h3>
                       <p className="text-sm font-semibold text-slate-500">
                         {VENDOR_LABEL[payout.vendorRole]}
                       </p>
@@ -312,9 +283,7 @@ export default function AdminPayoutsPage() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-slate-500">Contact</p>
-                      <p className="font-medium text-slate-900">
-                        {payout.vendorEmail}
-                      </p>
+                      <p className="font-medium text-slate-900">{payout.vendorEmail}</p>
                       <p className="text-slate-600">{payout.vendorPhone}</p>
                     </div>
                     <div>
@@ -327,28 +296,26 @@ export default function AdminPayoutsPage() {
                 </div>
 
                 {/* Middle: Payout Method */}
-                <div className="p-6 border-b md:border-b-0 md:border-r border-slate-100 flex-1 bg-slate-50/50">
-                  <p className="text-sm font-semibold text-slate-500 mb-3">
+                <div className="flex-1 border-b border-slate-100 bg-slate-50/50 p-6 md:border-r md:border-b-0">
+                  <p className="mb-3 text-sm font-semibold text-slate-500">
                     Preferred Payout Method
                   </p>
 
                   {!payout.payoutMethod ? (
-                    <div className="flex items-start gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-600">
+                      <AlertCircle className="h-5 w-5 flex-shrink-0" />
                       <p className="text-sm font-medium">
-                        This user has not configured a payout method yet. They
-                        need to set it up in their dashboard.
+                        This user has not configured a payout method yet. They need to set it up in
+                        their dashboard.
                       </p>
                     </div>
                   ) : payout.payoutMethod.type === "BANK_TRANSFER" ? (
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 font-semibold text-slate-900 mb-2">
-                        <Landmark size={18} className="text-slate-500" /> Bank
-                        Transfer
+                      <div className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+                        <Landmark size={18} className="text-slate-500" /> Bank Transfer
                       </div>
                       <p>
-                        <span className="text-slate-500">Bank:</span>{" "}
-                        {payout.payoutMethod.bankName}
+                        <span className="text-slate-500">Bank:</span> {payout.payoutMethod.bankName}
                       </p>
                       <p>
                         <span className="text-slate-500">Name:</span>{" "}
@@ -356,26 +323,25 @@ export default function AdminPayoutsPage() {
                       </p>
                       <p>
                         <span className="text-slate-500">A/C No:</span>{" "}
-                        <span className="font-mono text-slate-900 font-medium">
+                        <span className="font-mono font-medium text-slate-900">
                           {payout.payoutMethod.accountNumber}
                         </span>
                       </p>
                       <p>
                         <span className="text-slate-500">IFSC:</span>{" "}
-                        <span className="font-mono text-slate-900 font-medium">
+                        <span className="font-mono font-medium text-slate-900">
                           {payout.payoutMethod.ifscCode}
                         </span>
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 font-semibold text-slate-900 mb-2">
-                        <Smartphone size={18} className="text-slate-500" /> UPI
-                        Transfer
+                      <div className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+                        <Smartphone size={18} className="text-slate-500" /> UPI Transfer
                       </div>
                       <p>
                         <span className="text-slate-500">UPI ID:</span>{" "}
-                        <span className="font-mono text-slate-900 font-medium">
+                        <span className="font-mono font-medium text-slate-900">
                           {payout.payoutMethod.upiId}
                         </span>
                       </p>
@@ -384,19 +350,15 @@ export default function AdminPayoutsPage() {
                 </div>
 
                 {/* Right side: Action */}
-                <div className="p-6 flex flex-col justify-center items-center text-center w-full md:w-64 bg-slate-50/50">
-                  <p className="text-sm font-semibold text-slate-500 mb-2">
-                    Amount Owed
-                  </p>
-                  <p className="text-3xl font-bold text-power-orange mb-6">
+                <div className="flex w-full flex-col items-center justify-center bg-slate-50/50 p-6 text-center md:w-64">
+                  <p className="mb-2 text-sm font-semibold text-slate-500">Amount Owed</p>
+                  <p className="text-power-orange mb-6 text-3xl font-bold">
                     ₹{payout.totalPendingAmount.toLocaleString()}
                   </p>
 
                   <Button
                     onClick={() => handleMarkAsPaid(payout)}
-                    disabled={
-                      !payout.payoutMethod || processingId === payout.vendorId
-                    }
+                    disabled={!payout.payoutMethod || processingId === payout.vendorId}
                     variant={!payout.payoutMethod ? "ghost" : "success"}
                     size="md"
                     fullWidth
@@ -414,7 +376,7 @@ export default function AdminPayoutsPage() {
                     )}
                   </Button>
                   {!payout.payoutMethod && (
-                    <p className="text-xs text-slate-500 mt-3 text-center">
+                    <p className="mt-3 text-center text-xs text-slate-500">
                       Cannot pay without payout details
                     </p>
                   )}

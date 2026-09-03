@@ -15,13 +15,13 @@ export const up = async () => {
     const userUpdate1 = await User.updateMany(
       { userType: { $exists: false } },
       { $set: { userType: "Recreational" } },
-      { session },
+      { session }
     );
 
     const userUpdate2 = await User.updateMany(
       { dependents: { $exists: false } },
       { $set: { dependents: [] } },
-      { session },
+      { session }
     );
     console.log(`✅ Users Patched (userType): ${userUpdate1.modifiedCount}`);
     console.log(`✅ Users Patched (dependents): ${userUpdate2.modifiedCount}`);
@@ -34,11 +34,9 @@ export const up = async () => {
           participantId: null, // Null means the master account user (Parent/Recreational) is playing
         },
       },
-      { session },
+      { session }
     );
-    console.log(
-      `✅ Bookings Patched (participantId normalized): ${bookingUpdate.modifiedCount}`,
-    );
+    console.log(`✅ Bookings Patched (participantId normalized): ${bookingUpdate.modifiedCount}`);
 
     await session.commitTransaction();
     console.log("🚀 Migration Completed Successfully.");

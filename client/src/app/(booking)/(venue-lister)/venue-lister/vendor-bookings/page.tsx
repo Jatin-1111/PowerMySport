@@ -60,8 +60,8 @@ export default function VenueBookingsPage() {
           prev.map((booking) =>
             booking.id === response.data?.id
               ? { ...booking, status: response.data.status }
-              : booking,
-          ),
+              : booking
+          )
         );
         setCheckInMessage("Check-in successful.");
         setCheckInCode("");
@@ -70,9 +70,7 @@ export default function VenueBookingsPage() {
 
       setCheckInMessage(response.message || "Unable to verify check-in code.");
     } catch (error: any) {
-      setCheckInMessage(
-        error?.response?.data?.message || "Unable to verify check-in code.",
-      );
+      setCheckInMessage(error?.response?.data?.message || "Unable to verify check-in code.");
     } finally {
       setCheckInLoading(false);
     }
@@ -86,17 +84,13 @@ export default function VenueBookingsPage() {
       if (response.success && confirmedStatus) {
         setBookings((prev) =>
           prev.map((booking) =>
-            booking.id === bookingId
-              ? { ...booking, status: confirmedStatus }
-              : booking,
-          ),
+            booking.id === bookingId ? { ...booking, status: confirmedStatus } : booking
+          )
         );
         toast.success("Booking confirmed.");
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Unable to confirm booking.",
-      );
+      toast.error(error?.response?.data?.message || "Unable to confirm booking.");
     } finally {
       setApprovingId(null);
     }
@@ -105,32 +99,25 @@ export default function VenueBookingsPage() {
   const handleRejectBooking = async (bookingId: string) => {
     try {
       setRejectingId(bookingId);
-      const response = await bookingApi.rejectBookingByProvider(
-        bookingId,
-        "Rejected by venue",
-      );
+      const response = await bookingApi.rejectBookingByProvider(bookingId, "Rejected by venue");
       const rejectedBooking = response.data?.booking;
       if (response.success && rejectedBooking) {
         setBookings((prev) =>
           prev.map((booking) =>
-            booking.id === bookingId
-              ? { ...booking, status: rejectedBooking.status }
-              : booking,
-          ),
+            booking.id === bookingId ? { ...booking, status: rejectedBooking.status } : booking
+          )
         );
         toast.success("Booking rejected.");
       }
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Unable to reject booking.",
-      );
+      toast.error(error?.response?.data?.message || "Unable to reject booking.");
     } finally {
       setRejectingId(null);
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-12">Loading bookings...</div>;
+    return <div className="py-12 text-center">Loading bookings...</div>;
   }
 
   return (
@@ -154,7 +141,7 @@ export default function VenueBookingsPage() {
       {bookings.length === 0 ? (
         <Card className="bg-white">
           <div className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
+            <div className="bg-power-orange/10 text-power-orange rounded-full px-4 py-2 text-sm font-semibold">
               No bookings yet
             </div>
             <p className="max-w-md text-slate-600">
@@ -175,10 +162,8 @@ export default function VenueBookingsPage() {
           <Card className="bg-white">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-900 mb-1">
-                  Player Check-in
-                </p>
-                <p className="text-xs text-slate-500 mb-2">
+                <p className="mb-1 text-sm font-semibold text-slate-900">Player Check-in</p>
+                <p className="mb-2 text-xs text-slate-500">
                   Enter the player's 8-character code to verify arrival.
                 </p>
                 <input
@@ -193,84 +178,66 @@ export default function VenueBookingsPage() {
                     setCheckInCode(nextValue);
                   }}
                   placeholder="Enter 8-character code"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm uppercase tracking-[0.35em] font-mono"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm tracking-[0.35em] uppercase"
                   autoComplete="one-time-code"
                 />
               </div>
-              <Button
-                variant="primary"
-                onClick={handleCodeCheckIn}
-                disabled={checkInLoading}
-              >
+              <Button variant="primary" onClick={handleCodeCheckIn} disabled={checkInLoading}>
                 {checkInLoading ? "Verifying..." : "Verify Check-in"}
               </Button>
             </div>
-            {checkInMessage && (
-              <p className="mt-3 text-sm text-slate-700">{checkInMessage}</p>
-            )}
+            {checkInMessage && <p className="mt-3 text-sm text-slate-700">{checkInMessage}</p>}
           </Card>
 
           {bookings.map((booking) => (
-            <Card
-              key={booking.id}
-              className="bg-white hover:shadow-lg transition-shadow"
-            >
-              <div className="flex justify-between items-start">
+            <Card key={booking.id} className="bg-white transition-shadow hover:shadow-lg">
+              <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-lg font-semibold text-slate-900">
-                      Booking Request
-                    </h3>
+                  <div className="mb-3 flex items-center gap-3">
+                    <h3 className="text-lg font-semibold text-slate-900">Booking Request</h3>
                     <span
-                      className={`px-3 py-1 rounded text-sm font-semibold ${
+                      className={`rounded px-3 py-1 text-sm font-semibold ${
                         booking.status === "CONFIRMED" ||
                         booking.status === "IN_PROGRESS" ||
                         booking.status === "COMPLETED"
-                          ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
+                          ? "border border-emerald-300 bg-emerald-100 text-emerald-700"
                           : booking.status === "AWAITING_PROVIDER" ||
                               booking.status === "AWAITING_PAYMENT"
-                            ? "bg-amber-100 text-amber-700 border border-amber-300"
+                            ? "border border-amber-300 bg-amber-100 text-amber-700"
                             : booking.status === "PENDING_INVITES"
-                              ? "bg-indigo-100 text-indigo-700 border border-indigo-300"
-                              : "bg-red-100 text-red-700 border border-red-300"
+                              ? "border border-indigo-300 bg-indigo-100 text-indigo-700"
+                              : "border border-red-300 bg-red-100 text-red-700"
                       }`}
                     >
                       {booking.status}
                     </span>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4 mb-3">
+                  <div className="mb-3 grid gap-4 md:grid-cols-2">
                     <div>
                       <p className="text-sm text-slate-600">Date & Time</p>
-                      <p className="font-semibold text-slate-900 flex items-center gap-1">
+                      <p className="flex items-center gap-1 font-semibold text-slate-900">
                         <Calendar size={16} />
                         {formatDate(booking.date)}
                       </p>
                       <p className="text-sm text-slate-900">
-                        {formatTime(booking.startTime)} -{" "}
-                        {formatTime(booking.endTime)}
+                        {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
                       </p>
                     </div>
 
                     <div>
                       <p className="text-sm text-slate-600">Player Details</p>
-                      <p className="font-semibold text-slate-900">
-                        Privacy protected
-                      </p>
+                      <p className="font-semibold text-slate-900">Privacy protected</p>
                     </div>
                   </div>
 
                   {/* Payment Details */}
-                  {booking.payments?.find(
-                    (payment) => payment.userType === "VenueLister",
-                  ) && (
-                    <div className="bg-slate-50 rounded-lg p-4 mt-3 border border-slate-200">
-                      <p className="text-sm font-semibold mb-2 text-slate-900">
-                        Payment Details
-                      </p>
+                  {booking.payments?.find((payment) => payment.userType === "VenueLister") && (
+                    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="mb-2 text-sm font-semibold text-slate-900">Payment Details</p>
                       {(() => {
                         const venuePayment = booking.payments?.find(
-                          (payment) => payment.userType === "VenueLister",
+                          (payment) => payment.userType === "VenueLister"
                         );
 
                         if (!venuePayment) {
@@ -281,7 +248,7 @@ export default function VenueBookingsPage() {
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div>
                               <span className="text-slate-600">Venue Fee:</span>
-                              <span className="font-semibold ml-2 text-slate-900">
+                              <span className="ml-2 font-semibold text-slate-900">
                                 ₹{venuePayment.amount}
                               </span>
                             </div>
@@ -305,9 +272,7 @@ export default function VenueBookingsPage() {
                 </div>
 
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-power-orange">
-                    ₹{booking.totalAmount}
-                  </p>
+                  <p className="text-power-orange text-2xl font-bold">₹{booking.totalAmount}</p>
                   {booking.status === "AWAITING_PROVIDER" && (
                     <div className="mt-3 flex flex-col gap-2">
                       <Button
@@ -315,9 +280,7 @@ export default function VenueBookingsPage() {
                         onClick={() => handleApproveBooking(booking.id)}
                         disabled={approvingId === booking.id}
                       >
-                        {approvingId === booking.id
-                          ? "Confirming..."
-                          : "Confirm booking"}
+                        {approvingId === booking.id ? "Confirming..." : "Confirm booking"}
                       </Button>
                       <Button
                         variant="outline"

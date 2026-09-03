@@ -34,9 +34,7 @@ const LEGACY_STATUS = "PENDING_CONFIRMATION";
 export const up = async (options: { apply?: boolean } = {}) => {
   const apply = Boolean(options.apply);
 
-  console.log(
-    `Starting migration 23: split ${LEGACY_STATUS} (${apply ? "APPLY" : "DRY RUN"})...`,
-  );
+  console.log(`Starting migration 23: split ${LEGACY_STATUS} (${apply ? "APPLY" : "DRY RUN"})...`);
 
   const collection = Booking.collection;
 
@@ -46,10 +44,7 @@ export const up = async (options: { apply?: boolean } = {}) => {
   });
   const toPayment = await collection.countDocuments({
     status: LEGACY_STATUS,
-    $or: [
-      { paymentConfirmedAt: { $exists: false } },
-      { paymentConfirmedAt: null },
-    ],
+    $or: [{ paymentConfirmedAt: { $exists: false } }, { paymentConfirmedAt: null }],
   });
 
   console.log(`  -> AWAITING_PROVIDER (paid)   : ${toProvider}`);
@@ -63,17 +58,14 @@ export const up = async (options: { apply?: boolean } = {}) => {
         status: LEGACY_STATUS,
         paymentConfirmedAt: { $exists: true, $ne: null },
       },
-      { $set: { status: "AWAITING_PROVIDER" } },
+      { $set: { status: "AWAITING_PROVIDER" } }
     );
     const unpaidResult = await collection.updateMany(
       {
         status: LEGACY_STATUS,
-        $or: [
-          { paymentConfirmedAt: { $exists: false } },
-          { paymentConfirmedAt: null },
-        ],
+        $or: [{ paymentConfirmedAt: { $exists: false } }, { paymentConfirmedAt: null }],
       },
-      { $set: { status: "AWAITING_PAYMENT" } },
+      { $set: { status: "AWAITING_PAYMENT" } }
     );
     modified = (paidResult.modifiedCount ?? 0) + (unpaidResult.modifiedCount ?? 0);
   }
@@ -101,9 +93,7 @@ export const up = async (options: { apply?: boolean } = {}) => {
 export const down = async (options: { apply?: boolean } = {}) => {
   const apply = Boolean(options.apply);
 
-  console.log(
-    `Rolling back migration 23 (${apply ? "APPLY" : "DRY RUN"})...`,
-  );
+  console.log(`Rolling back migration 23 (${apply ? "APPLY" : "DRY RUN"})...`);
 
   const collection = Booking.collection;
   const affected = await collection.countDocuments({
@@ -114,13 +104,13 @@ export const down = async (options: { apply?: boolean } = {}) => {
   if (apply) {
     const result = await collection.updateMany(
       { status: { $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER"] } },
-      { $set: { status: LEGACY_STATUS } },
+      { $set: { status: LEGACY_STATUS } }
     );
     console.log(`Reverted ${result.modifiedCount} booking(s).`);
     console.log(
       "Note: the model's status enum no longer contains PENDING_CONFIRMATION, " +
         "so the code change must be reverted too or these rows will fail " +
-        "validation on their next save.",
+        "validation on their next save."
     );
   } else {
     console.log("Dry run — nothing was written.");
@@ -132,9 +122,7 @@ export const down = async (options: { apply?: boolean } = {}) => {
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const apply = process.argv.includes("--apply");
   const rollback = process.argv.includes("--down");

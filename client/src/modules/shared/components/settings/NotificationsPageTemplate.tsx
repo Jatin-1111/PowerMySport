@@ -3,23 +3,15 @@
 import { PushNotificationPermission } from "../PushNotificationPermission";
 import { Checkbox } from "../../ui/Checkbox";
 import {
-    notificationApi,
-    NotificationChannelPreferences,
-    NotificationPreferences,
+  notificationApi,
+  NotificationChannelPreferences,
+  NotificationPreferences,
 } from "@/lib/api/notification";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-    Bell,
-    Lightbulb,
-    Mail,
-    MonitorSmartphone,
-    Save,
-    Smartphone,
-    X,
-} from "lucide-react";
+import { Bell, Lightbulb, Mail, MonitorSmartphone, Save, Smartphone, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -86,8 +78,7 @@ const notificationTypes: NotificationType[] = [
   {
     key: "admin",
     label: "Administrative",
-    description:
-      "Get notified about account updates and administrative actions",
+    description: "Get notified about account updates and administrative actions",
     category: "Administrative",
   },
 
@@ -108,14 +99,10 @@ const groupedNotifications = notificationTypes.reduce(
     acc[type.category].push(type);
     return acc;
   },
-  {} as Record<string, NotificationType[]>,
+  {} as Record<string, NotificationType[]>
 );
 
-export function NotificationsPageTemplate({
-  backUrl = "/settings",
-}: {
-  backUrl?: string;
-}) {
+export function NotificationsPageTemplate({ backUrl = "/settings" }: { backUrl?: string }) {
   const router = useRouter();
   const { user } = useAuthStore();
   const [preferences, setPreferences] = useState<NotificationPreferences>({
@@ -123,8 +110,9 @@ export function NotificationsPageTemplate({
     push: {},
     inApp: {},
   });
-  const [originalPreferences, setOriginalPreferences] =
-    useState<NotificationPreferences | null>(null);
+  const [originalPreferences, setOriginalPreferences] = useState<NotificationPreferences | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -155,7 +143,7 @@ export function NotificationsPageTemplate({
   const handleToggle = (
     channel: "email" | "push" | "inApp",
     key: keyof NotificationChannelPreferences,
-    value: boolean,
+    value: boolean
   ) => {
     setPreferences((prev) => ({
       ...prev,
@@ -186,8 +174,7 @@ export function NotificationsPageTemplate({
     }
   };
 
-  const hasChanges =
-    JSON.stringify(preferences) !== JSON.stringify(originalPreferences);
+  const hasChanges = JSON.stringify(preferences) !== JSON.stringify(originalPreferences);
 
   if (!user) {
     return null;
@@ -197,9 +184,7 @@ export function NotificationsPageTemplate({
     return (
       <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">
-            Notification Preferences
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-900">Notification Preferences</h1>
           <p className="mt-2 text-slate-600">Loading preferences...</p>
         </div>
       </div>
@@ -210,22 +195,16 @@ export function NotificationsPageTemplate({
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-power-orange/30 bg-power-orange/10 px-3 py-1 text-sm text-power-orange">
+        <div className="border-power-orange/30 bg-power-orange/10 text-power-orange inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm">
           <Bell size={14} />
           Notification Settings
         </div>
-        <h1 className="mt-4 text-3xl font-bold text-slate-900">
-          Notification Preferences
-        </h1>
+        <h1 className="mt-4 text-3xl font-bold text-slate-900">Notification Preferences</h1>
         <p className="mt-2 text-slate-600">
-          Choose how you want to receive notifications for different types of
-          activity.
+          Choose how you want to receive notifications for different types of activity.
         </p>
         <div className="mt-4">
-          <Link
-            href={backUrl}
-            className="text-sm text-power-orange hover:underline"
-          >
+          <Link href={backUrl} className="text-power-orange text-sm hover:underline">
             ← Back to Settings
           </Link>
         </div>
@@ -234,36 +213,27 @@ export function NotificationsPageTemplate({
       {/* Channel Legend */}
       <Card className="mb-6 bg-white">
         <div className="p-6">
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">
-            Notification Channels
-          </h3>
+          <h3 className="mb-4 text-sm font-semibold text-slate-900">Notification Channels</h3>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="flex items-start gap-3">
-              <Mail className="mt-0.5 text-power-orange" size={18} />
+              <Mail className="text-power-orange mt-0.5" size={18} />
               <div>
                 <h4 className="text-sm font-medium text-slate-900">Email</h4>
                 <p className="text-xs text-slate-600">Sent to {user.email}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Smartphone className="mt-0.5 text-power-orange" size={18} />
+              <Smartphone className="text-power-orange mt-0.5" size={18} />
               <div>
                 <h4 className="text-sm font-medium text-slate-900">Push</h4>
-                <p className="text-xs text-slate-600">
-                  Mobile & browser notifications
-                </p>
+                <p className="text-xs text-slate-600">Mobile & browser notifications</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <MonitorSmartphone
-                className="mt-0.5 text-power-orange"
-                size={18}
-              />
+              <MonitorSmartphone className="text-power-orange mt-0.5" size={18} />
               <div>
                 <h4 className="text-sm font-medium text-slate-900">In-App</h4>
-                <p className="text-xs text-slate-600">
-                  Notification center bell
-                </p>
+                <p className="text-xs text-slate-600">Notification center bell</p>
               </div>
             </div>
           </div>
@@ -293,84 +263,65 @@ export function NotificationsPageTemplate({
                   <span className="mt-1 block text-xs">Push</span>
                 </th>
                 <th className="px-4 py-4 text-center text-sm font-semibold text-slate-900">
-                  <MonitorSmartphone
-                    size={16}
-                    className="mx-auto text-slate-600"
-                  />
+                  <MonitorSmartphone size={16} className="mx-auto text-slate-600" />
                   <span className="mt-1 block text-xs">In-App</span>
                 </th>
               </tr>
             </thead>
             <tbody>
-              {Object.entries(groupedNotifications).map(
-                ([category, types], categoryIndex) => (
-                  <React.Fragment key={category}>
-                    {/* Category Header */}
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <td
-                        colSpan={4}
-                        className="px-6 py-3 text-sm font-semibold text-slate-900"
-                      >
-                        {category}
+              {Object.entries(groupedNotifications).map(([category, types], categoryIndex) => (
+                <React.Fragment key={category}>
+                  {/* Category Header */}
+                  <tr className="border-b border-slate-200 bg-slate-50">
+                    <td colSpan={4} className="px-6 py-3 text-sm font-semibold text-slate-900">
+                      {category}
+                    </td>
+                  </tr>
+                  {/* Notification Types in Category */}
+                  {types.map((type, typeIndex) => (
+                    <tr
+                      key={type.key}
+                      className={
+                        typeIndex === types.length - 1 &&
+                        categoryIndex === Object.keys(groupedNotifications).length - 1
+                          ? ""
+                          : "border-b border-slate-100"
+                      }
+                    >
+                      <td className="px-6 py-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-slate-900">{type.label}</h4>
+                          <p className="mt-0.5 text-xs text-slate-600">{type.description}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex justify-center">
+                          <Checkbox
+                            checked={preferences.email?.[type.key] ?? true}
+                            onCheckedChange={(checked) => handleToggle("email", type.key, checked)}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex justify-center">
+                          <Checkbox
+                            checked={preferences.push?.[type.key] ?? true}
+                            onCheckedChange={(checked) => handleToggle("push", type.key, checked)}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex justify-center">
+                          <Checkbox
+                            checked={preferences.inApp?.[type.key] ?? true}
+                            onCheckedChange={(checked) => handleToggle("inApp", type.key, checked)}
+                          />
+                        </div>
                       </td>
                     </tr>
-                    {/* Notification Types in Category */}
-                    {types.map((type, typeIndex) => (
-                      <tr
-                        key={type.key}
-                        className={
-                          typeIndex === types.length - 1 &&
-                          categoryIndex ===
-                            Object.keys(groupedNotifications).length - 1
-                            ? ""
-                            : "border-b border-slate-100"
-                        }
-                      >
-                        <td className="px-6 py-4">
-                          <div>
-                            <h4 className="text-sm font-medium text-slate-900">
-                              {type.label}
-                            </h4>
-                            <p className="mt-0.5 text-xs text-slate-600">
-                              {type.description}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <div className="flex justify-center">
-                            <Checkbox
-                              checked={preferences.email?.[type.key] ?? true}
-                              onCheckedChange={(checked) =>
-                                handleToggle("email", type.key, checked)
-                              }
-                            />
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <div className="flex justify-center">
-                            <Checkbox
-                              checked={preferences.push?.[type.key] ?? true}
-                              onCheckedChange={(checked) =>
-                                handleToggle("push", type.key, checked)
-                              }
-                            />
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <div className="flex justify-center">
-                            <Checkbox
-                              checked={preferences.inApp?.[type.key] ?? true}
-                              onCheckedChange={(checked) =>
-                                handleToggle("inApp", type.key, checked)
-                              }
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </React.Fragment>
-                ),
-              )}
+                  ))}
+                </React.Fragment>
+              ))}
             </tbody>
           </table>
         </div>
@@ -391,7 +342,7 @@ export function NotificationsPageTemplate({
       )}
 
       {/* Info Banner */}
-      <Card className="mt-6 border-l-4 border-l-power-orange bg-white">
+      <Card className="border-l-power-orange mt-6 border-l-4 bg-white">
         <div className="p-6">
           <h3 className="text-sm font-semibold text-slate-900">
             <span className="inline-flex items-center gap-2">
@@ -400,20 +351,18 @@ export function NotificationsPageTemplate({
           </h3>
           <ul className="mt-2 space-y-1 text-sm text-slate-600">
             <li>
-              • <strong>Email:</strong> Notifications sent to your registered
-              email address
+              • <strong>Email:</strong> Notifications sent to your registered email address
             </li>
             <li>
-              • <strong>Push:</strong> Real-time notifications on your mobile
-              device or browser (requires permission)
+              • <strong>Push:</strong> Real-time notifications on your mobile device or browser
+              (requires permission)
             </li>
             <li>
-              • <strong>In-App:</strong> Notifications visible in the bell icon
-              notification center
+              • <strong>In-App:</strong> Notifications visible in the bell icon notification center
             </li>
             <li className="mt-3 text-xs text-slate-500">
-              Note: Some critical notifications (e.g., security alerts) cannot
-              be disabled and will always be sent.
+              Note: Some critical notifications (e.g., security alerts) cannot be disabled and will
+              always be sent.
             </li>
           </ul>
         </div>

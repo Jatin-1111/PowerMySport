@@ -15,10 +15,7 @@ const escHtml = (str: unknown): string =>
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#x27;");
 
-export const getPresignedUploadUrl = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getPresignedUploadUrl = async (req: Request, res: Response): Promise<void> => {
   try {
     const { fileName, contentType, documentType } = req.body;
     const userId = req.user?.id;
@@ -33,11 +30,7 @@ export const getPresignedUploadUrl = async (
       return;
     }
 
-    const ALLOWED_CONTENT_TYPES = [
-      "application/pdf",
-      "image/jpeg",
-      "image/png",
-    ];
+    const ALLOWED_CONTENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
     if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
       res.status(400).json({
         error: "Invalid file type. Only PDF, JPG, and PNG are allowed.",
@@ -60,17 +53,14 @@ export const getPresignedUploadUrl = async (
       return;
     }
 
-    const safeFileName = path
-      .basename(fileName)
-      .replace(/[^a-zA-Z0-9._\-]/g, "_");
+    const safeFileName = path.basename(fileName).replace(/[^a-zA-Z0-9._\-]/g, "_");
 
-    const { uploadUrl, downloadUrl, key } =
-      await s3Service.generateConciergeDocumentUploadUrl(
-        safeFileName,
-        contentType,
-        userId.toString(),
-        documentType,
-      );
+    const { uploadUrl, downloadUrl, key } = await s3Service.generateConciergeDocumentUploadUrl(
+      safeFileName,
+      contentType,
+      userId.toString(),
+      documentType
+    );
 
     res.status(200).json({ uploadUrl, downloadUrl, key });
   } catch (error) {
@@ -79,10 +69,7 @@ export const getPresignedUploadUrl = async (
   }
 };
 
-export const submitConciergeRequest = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const submitConciergeRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
 
@@ -109,9 +96,7 @@ export const submitConciergeRequest = async (
     }
 
     if (documents.length > 10) {
-      res
-        .status(400)
-        .json({ error: "Maximum 10 documents allowed per request." });
+      res.status(400).json({ error: "Maximum 10 documents allowed per request." });
       return;
     }
 
@@ -135,10 +120,7 @@ export const submitConciergeRequest = async (
 
     // Format documents list for email
     const docsListHtml = documents
-      .map(
-        (doc) =>
-          `<li><strong>${escHtml(doc.documentName)}:</strong> uploaded to S3</li>`,
-      )
+      .map((doc) => `<li><strong>${escHtml(doc.documentName)}:</strong> uploaded to S3</li>`)
       .join("");
 
     // Format item label
@@ -168,19 +150,14 @@ export const submitConciergeRequest = async (
       `,
     });
 
-    res
-      .status(201)
-      .json({ message: "Concierge request submitted successfully", request });
+    res.status(201).json({ message: "Concierge request submitted successfully", request });
   } catch (error) {
     log.error("Error submitting concierge request:", error);
     res.status(500).json({ error: "Failed to submit request" });
   }
 };
 
-export const getUserConciergeRequests = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getUserConciergeRequests = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
 
@@ -190,18 +167,11 @@ export const getUserConciergeRequests = async (
     }
 
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(
-      50,
-      Math.max(1, parseInt(req.query.limit as string) || 20),
-    );
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
     const skip = (page - 1) * limit;
 
     const [requests, total] = await Promise.all([
-      ConciergeRequest.find({ userId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      ConciergeRequest.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       ConciergeRequest.countDocuments({ userId }),
     ]);
 

@@ -16,12 +16,12 @@ const allowDirty = process.argv.includes("--allow-dirty");
 
 if (dirtyFiles) {
   console.log(
-    `\nWorking tree has uncommitted changes — the image will NOT match commit ${gitSha}:\n`,
+    `\nWorking tree has uncommitted changes — the image will NOT match commit ${gitSha}:\n`
   );
   console.log(dirtyFiles);
   if (!allowDirty) {
     console.log(
-      "\nCommit (or stash) first, or re-run with --allow-dirty to deploy this working tree anyway.",
+      "\nCommit (or stash) first, or re-run with --allow-dirty to deploy this working tree anyway."
     );
     process.exit(1);
   }

@@ -9,8 +9,7 @@ export interface AcademyDocument {
   fileName: string;
 }
 
-export type AcademyBusinessType =
-  "sole_proprietorship" | "partnership" | "pvt_ltd" | "ngo_trust";
+export type AcademyBusinessType = "sole_proprietorship" | "partnership" | "pvt_ltd" | "ngo_trust";
 
 export type AcademyBatchTiming = "morning" | "evening" | "both";
 
@@ -151,8 +150,7 @@ export interface OnboardingAcademy {
   placeId?: string;
 
   // Legal & Compliance
-  businessType?:
-    "sole_proprietorship" | "partnership" | "pvt_ltd" | "ngo_trust";
+  businessType?: "sole_proprietorship" | "partnership" | "pvt_ltd" | "ngo_trust";
   panNumber?: string;
   panDocumentUrl?: string;
   panDocumentKey?: string;
@@ -162,10 +160,7 @@ export interface OnboardingAcademy {
   aadhaarLast4?: string;
 
   // Operational
-  operatingHours?: Record<
-    string,
-    { isOpen: boolean; openTime?: string; closeTime?: string }
-  >;
+  operatingHours?: Record<string, { isOpen: boolean; openTime?: string; closeTime?: string }>;
   languagesSpoken?: string[];
   contactPersonName?: string;
   contactEmail?: string;

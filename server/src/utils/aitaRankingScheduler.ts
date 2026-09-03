@@ -129,24 +129,24 @@ export function initializeAitaRankingScheduler(): {
         if (!hasNewWork) return;
 
         log.info(
-          `[aita-rankings] source moved to ${sourceLatest} (had ${storedLatest ?? "nothing"}) — sweeping`,
+          `[aita-rankings] source moved to ${sourceLatest} (had ${storedLatest ?? "nothing"}) — sweeping`
         );
         const report = await service.sweepLiveCombos();
         if (report.published > 0) {
           suppressPollUntil = nextMondayMidnight();
           log.info(
             `[aita-rankings] published ${report.published} list(s); ` +
-              `next poll window opens ${suppressPollUntil.toISOString()}`,
+              `next poll window opens ${suppressPollUntil.toISOString()}`
           );
         }
         if (report.quarantined > 0 || report.failed > 0) {
           log.warn(
-            `[aita-rankings] ${report.quarantined} quarantined, ${report.failed} failed — review needed`,
+            `[aita-rankings] ${report.quarantined} quarantined, ${report.failed} failed — review needed`
           );
         }
       });
     },
-    { timezone: TIMEZONE },
+    { timezone: TIMEZONE }
   );
 
   // Thursday 03:00 IST — the backstop the tripwire cannot cover.
@@ -157,11 +157,11 @@ export function initializeAitaRankingScheduler(): {
         const report = await service.sweepLiveCombos();
         log.info(
           `[aita-rankings] weekly sweep: ${report.published} published, ` +
-            `${report.quarantined} quarantined, ${report.failed} failed`,
+            `${report.quarantined} quarantined, ${report.failed} failed`
         );
       });
     },
-    { timezone: TIMEZONE },
+    { timezone: TIMEZONE }
   );
 
   // Daily 09:00 IST. The real failure mode is silence, not an exception.
@@ -188,23 +188,17 @@ export function initializeAitaRankingScheduler(): {
           else log.warn(`${message} (first daily check — will escalate if it persists)`);
         } else {
           if (consecutiveBehindChecks > 0) {
-            log.info(
-              `[aita-rankings] caught up with the source at ${health.latestAsOnDate}`,
-            );
+            log.info(`[aita-rankings] caught up with the source at ${health.latestAsOnDate}`);
           }
           consecutiveBehindChecks = 0;
           // Only meaningful when the source could not be read at all — when we
           // know we match it, the age of the newest list is AITA's lag, not ours.
           if (health.stale) {
-            log.error(
-              `[aita-rankings] STALE — ${health.staleReason ?? "reason unrecorded"}.`,
-            );
+            log.error(`[aita-rankings] STALE — ${health.staleReason ?? "reason unrecorded"}.`);
           }
         }
         if (health.quarantinedCount > 0) {
-          log.warn(
-            `[aita-rankings] ${health.quarantinedCount} snapshot(s) awaiting review`,
-          );
+          log.warn(`[aita-rankings] ${health.quarantinedCount} snapshot(s) awaiting review`);
         }
         // Staleness answers "are we behind?"; this answers "can we still reach
         // them?". Reported together because the pair distinguishes a quiet week
@@ -212,14 +206,14 @@ export function initializeAitaRankingScheduler(): {
         if (consecutiveSourceFailures > 0) {
           log.warn(
             `[aita-rankings] ${consecutiveSourceFailures} consecutive tripwire ` +
-              `failure(s) since the last successful check`,
+              `failure(s) since the last successful check`
           );
         }
       } catch (error) {
         log.error("[aita-rankings] health check failed:", error);
       }
     },
-    { timezone: TIMEZONE },
+    { timezone: TIMEZONE }
   );
 
   bootFact("jobs", "aita hourly + Thu sweep");
@@ -269,8 +263,7 @@ function noteSourceFailure(error: unknown): void {
   // Escalate at the threshold, then again at each doubling, so a multi-day
   // outage stays visible without writing an error every hour for days.
   const shouldAlert =
-    alertedAtFailureCount === 0 ||
-    consecutiveSourceFailures >= alertedAtFailureCount * 2;
+    alertedAtFailureCount === 0 || consecutiveSourceFailures >= alertedAtFailureCount * 2;
   if (!shouldAlert) return;
 
   alertedAtFailureCount = consecutiveSourceFailures;
@@ -278,7 +271,7 @@ function noteSourceFailure(error: unknown): void {
     `[aita-rankings] SOURCE UNREACHABLE — ${consecutiveSourceFailures} consecutive ` +
       `failed tripwires. AITA's routes may have moved or started requiring a ` +
       `session; check https://www.aita.hitcourt.com/ranking before assuming an ` +
-      `outage. Last error: ${error instanceof Error ? error.message : String(error)}`,
+      `outage. Last error: ${error instanceof Error ? error.message : String(error)}`
   );
 }
 
@@ -287,7 +280,7 @@ function noteSourceReachable(): void {
   if (consecutiveSourceFailures >= SOURCE_FAILURE_ALERT_THRESHOLD) {
     log.info(
       `[aita-rankings] source reachable again after ` +
-        `${consecutiveSourceFailures} failed tripwires`,
+        `${consecutiveSourceFailures} failed tripwires`
     );
   }
   consecutiveSourceFailures = 0;
@@ -308,7 +301,7 @@ function nextMondayMidnight(): Date {
   const mondayIst = Date.UTC(
     nowIst.getUTCFullYear(),
     nowIst.getUTCMonth(),
-    nowIst.getUTCDate() + daysUntilMonday,
+    nowIst.getUTCDate() + daysUntilMonday
   );
   return new Date(mondayIst - IST_OFFSET_MS);
 }

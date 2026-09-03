@@ -1,2 +1,1 @@
-export const isCommunityEligibleRole = (role?: string): boolean =>
-  role === "Parent";
+export const isCommunityEligibleRole = (role?: string): boolean => role === "Parent";

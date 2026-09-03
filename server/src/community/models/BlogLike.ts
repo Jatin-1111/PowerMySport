@@ -29,16 +29,10 @@ const blogLikeSchema = new Schema<BlogLikeDocument>(
       index: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-blogLikeSchema.index(
-  { userId: 1, targetType: 1, targetId: 1 },
-  { unique: true },
-);
+blogLikeSchema.index({ userId: 1, targetType: 1, targetId: 1 }, { unique: true });
 blogLikeSchema.index({ targetType: 1, targetId: 1 });
 
-export const BlogLike = mongoose.model<BlogLikeDocument>(
-  "BlogLike",
-  blogLikeSchema,
-);
+export const BlogLike = mongoose.model<BlogLikeDocument>("BlogLike", blogLikeSchema);

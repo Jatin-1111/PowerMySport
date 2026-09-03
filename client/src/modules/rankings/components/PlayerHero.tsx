@@ -45,8 +45,9 @@ export function displayName(raw: string): string {
   if (raw !== raw.toUpperCase()) return raw;
   return raw
     .toLowerCase()
-    .replace(/(^|[\s'\-.])([a-z])/g, (_, boundary: string, char: string) =>
-      `${boundary}${char.toUpperCase()}`,
+    .replace(
+      /(^|[\s'\-.])([a-z])/g,
+      (_, boundary: string, char: string) => `${boundary}${char.toUpperCase()}`
     );
 }
 
@@ -78,7 +79,7 @@ export interface SeasonSummary {
  */
 export function summariseSeason(
   history: HistoryPoint[],
-  comboLabel: (c: { category: string; subcategory: string }) => string,
+  comboLabel: (c: { category: string; subcategory: string }) => string
 ): SeasonSummary {
   const byCombo = new Map<string, HistoryPoint[]>();
   for (const point of history) {
@@ -93,7 +94,7 @@ export function summariseSeason(
 
   for (const [key, points] of byCombo) {
     const ordered = [...points].sort(
-      (a, b) => new Date(a.asOnDate).getTime() - new Date(b.asOnDate).getTime(),
+      (a, b) => new Date(a.asOnDate).getTime() - new Date(b.asOnDate).getTime()
     );
     const first = ordered[0]!;
     const last = ordered[ordered.length - 1]!;
@@ -129,7 +130,7 @@ export function summariseSeason(
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+    <span className="border-border bg-background/60 text-muted-foreground inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium">
       {children}
     </span>
   );
@@ -164,30 +165,28 @@ export function PlayerHero({
   /** Null for a player we hold no current standing for — history only. */
   primary: PrimaryStanding | null;
 }) {
-  const standing = primary
-    ? nationalStandingPhrase(primary.rank, primary.listSize)
-    : null;
+  const standing = primary ? nationalStandingPhrase(primary.rank, primary.listSize) : null;
 
   return (
-    <header className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <header className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm">
       <div className="relative isolate px-5 py-6 sm:px-8 sm:py-8">
         {/* A soft wash rather than a photo — we hold no player imagery, and a
             stock face on a minor's page would be worse than none. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-power-orange/10 via-transparent to-turf-green/10"
+          className="from-power-orange/10 to-turf-green/10 pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br via-transparent"
         />
 
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div
             aria-hidden
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-power-orange to-power-orange/70 text-xl font-bold text-white shadow-sm sm:h-20 sm:w-20 sm:text-2xl"
+            className="from-power-orange to-power-orange/70 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-xl font-bold text-white shadow-sm sm:h-20 sm:w-20 sm:text-2xl"
           >
             {initials(name)}
           </div>
 
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            <h1 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
               {name}
             </h1>
             <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -206,20 +205,13 @@ export function PlayerHero({
         {primary && (
           <p className="mt-6 max-w-2xl text-base leading-relaxed sm:text-lg">
             Ranked{" "}
-            <span className="font-bold tabular-nums">
-              #{primary.rank.toLocaleString("en-IN")}
-            </span>
-            {primary.listSize && (
-              <>
-                {" "}
-                of {primary.listSize.toLocaleString("en-IN")}
-              </>
-            )}{" "}
-            in {federationAcronym} {primary.listLabel}
+            <span className="font-bold tabular-nums">#{primary.rank.toLocaleString("en-IN")}</span>
+            {primary.listSize && <> of {primary.listSize.toLocaleString("en-IN")}</>} in{" "}
+            {federationAcronym} {primary.listLabel}
             {standing && (
               <>
                 {" — "}
-                <span className="font-semibold text-foreground">{standing}</span>
+                <span className="text-foreground font-semibold">{standing}</span>
               </>
             )}
             .
@@ -228,11 +220,8 @@ export function PlayerHero({
 
         {summary.bestClimb && summary.bestClimb.places > 0 && (
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm sm:text-base">
-            <ArrowUp
-              className="h-4 w-4 shrink-0 self-center text-rank-delta-up"
-              aria-hidden
-            />
-            <span className="font-bold tabular-nums text-rank-delta-up">
+            <ArrowUp className="text-rank-delta-up h-4 w-4 shrink-0 self-center" aria-hidden />
+            <span className="text-rank-delta-up font-bold tabular-nums">
               Up {summary.bestClimb.places.toLocaleString("en-IN")} places
             </span>
             <span className="text-muted-foreground">
@@ -244,7 +233,7 @@ export function PlayerHero({
         )}
       </div>
 
-      <dl className="grid grid-cols-1 divide-y divide-border border-t border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <dl className="divide-border border-border grid grid-cols-1 divide-y border-t sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {primary && (
           <Stat
             icon={<TrendingUp className="h-4 w-4" aria-hidden />}
@@ -295,17 +284,15 @@ function Stat({
 }) {
   return (
     <div className="px-5 py-4 sm:px-6">
-      <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <dt className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase">
         {icon}
         {label}
       </dt>
       {/* Hint on its own line: inline, "#270" and "13 Jul 2026" ran together
           and read as a single number. */}
       <dd className="mt-1">
-        <span className="text-2xl font-bold tabular-nums text-foreground">
-          {value}
-        </span>
-        <span className="mt-0.5 block text-xs text-muted-foreground">{hint}</span>
+        <span className="text-foreground text-2xl font-bold tabular-nums">{value}</span>
+        <span className="text-muted-foreground mt-0.5 block text-xs">{hint}</span>
       </dd>
     </div>
   );

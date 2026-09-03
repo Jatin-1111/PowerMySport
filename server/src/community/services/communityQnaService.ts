@@ -1,34 +1,13 @@
-import {
-  User,
-} from "../../client/models/User";
-import {
-  NotificationService,
-} from "../../client/services/NotificationService";
-import {
-  CommunityAnswer,
-} from "../models/CommunityAnswer";
-import {
-  CommunityAnswerComment,
-} from "../models/CommunityAnswerComment";
-import {
-  CommunityPost,
-} from "../models/CommunityPost";
-import {
-  CommunityProfile,
-} from "../models/CommunityProfile";
-import {
-  CommunityReputation,
-} from "../models/CommunityReputation";
-import {
-  CommunityVote,
-} from "../models/CommunityVote";
-import {
-  resolveCommunityCredentials,
-} from "./communityCredentials";
-import {
-  getVoteTransitionDeltas,
-  normalizeTags,
-} from "./communityQnaUtils";
+import { User } from "../../client/models/User";
+import { NotificationService } from "../../client/services/NotificationService";
+import { CommunityAnswer } from "../models/CommunityAnswer";
+import { CommunityAnswerComment } from "../models/CommunityAnswerComment";
+import { CommunityPost } from "../models/CommunityPost";
+import { CommunityProfile } from "../models/CommunityProfile";
+import { CommunityReputation } from "../models/CommunityReputation";
+import { CommunityVote } from "../models/CommunityVote";
+import { resolveCommunityCredentials } from "./communityCredentials";
+import { getVoteTransitionDeltas, normalizeTags } from "./communityQnaUtils";
 import {
   COMMUNITY_POINTS,
   adjustAcceptedAnswerReputation,
@@ -68,7 +47,7 @@ export const communityQnaService = {
       category?: string;
       mine?: boolean;
       authorId?: string;
-    },
+    }
   ) {
     userId = await resolvePublicViewerId(userId);
     if (userId) {
@@ -81,8 +60,7 @@ export const communityQnaService = {
     const skip = (safePage - 1) * safeLimit;
     const sort = (filters?.sort || "NEW").toUpperCase() as
       "NEW" | "TOP" | "UNANSWERED" | "ANSWERED";
-    const direction = (filters?.direction || "DESC").toUpperCase() as
-      "ASC" | "DESC";
+    const direction = (filters?.direction || "DESC").toUpperCase() as "ASC" | "DESC";
 
     const query: Record<string, unknown> = {
       isDeleted: false,
@@ -146,11 +124,7 @@ export const communityQnaService = {
         : { createdAt: createdAtOrder };
 
     const [posts, total] = await Promise.all([
-      CommunityPost.find(query)
-        .sort(sortClause)
-        .skip(skip)
-        .limit(safeLimit)
-        .lean(),
+      CommunityPost.find(query).sort(sortClause).skip(skip).limit(safeLimit).lean(),
       CommunityPost.countDocuments(query),
     ]);
 
@@ -186,12 +160,10 @@ export const communityQnaService = {
     ]);
 
     const userMap = new Map(users.map((user) => [String(user._id), user]));
-    const profileMap = new Map(
-      profiles.map((profile) => [String(profile.userId), profile]),
-    );
+    const profileMap = new Map(profiles.map((profile) => [String(profile.userId), profile]));
     const voteMap = new Map(votes.map((vote) => [String(vote.targetId), vote]));
     const credentialMap = await resolveCommunityCredentials(
-      posts.map((post) => String(post.authorId)),
+      posts.map((post) => String(post.authorId))
     );
 
     return {
@@ -204,9 +176,7 @@ export const communityQnaService = {
           const isPostAnon = post.isAnonymous && !isSelf;
           // Anonymous posts carry no badge — a credential is an identity
           // claim, and showing it would narrow who wrote it.
-          const credential = isPostAnon
-            ? undefined
-            : credentialMap.get(authorId);
+          const credential = isPostAnon ? undefined : credentialMap.get(authorId);
 
           return {
             id: String(post._id),
@@ -223,9 +193,7 @@ export const communityQnaService = {
             downvoteCount: post.downvoteCount || 0,
             answerCount: post.answerCount || 0,
             viewCount: post.viewCount || 0,
-            acceptedAnswerId: post.acceptedAnswerId
-              ? String(post.acceptedAnswerId)
-              : null,
+            acceptedAnswerId: post.acceptedAnswerId ? String(post.acceptedAnswerId) : null,
             createdAt: post.createdAt,
             updatedAt: post.updatedAt,
             myVote: voteMap.get(String(post._id))?.value || 0,
@@ -249,7 +217,7 @@ export const communityQnaService = {
               credentialKind: credential?.kind,
             },
           };
-        }),
+        })
       ),
       pagination: {
         total,
@@ -259,12 +227,7 @@ export const communityQnaService = {
     };
   },
 
-  async getPostDetails(
-    userId: string | undefined,
-    postId: string,
-    page = 1,
-    limit = 30,
-  ) {
+  async getPostDetails(userId: string | undefined, postId: string, page = 1, limit = 30) {
     userId = await resolvePublicViewerId(userId);
 
     const post = await CommunityPost.findOne({
@@ -276,10 +239,7 @@ export const communityQnaService = {
     }
 
     // Fire-and-forget view increment — don't block the read on it.
-    CommunityPost.updateOne(
-      { _id: post._id },
-      { $inc: { viewCount: 1 } },
-    ).catch(() => {});
+    CommunityPost.updateOne({ _id: post._id }, { $inc: { viewCount: 1 } }).catch(() => {});
 
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(100, Math.max(1, limit));
@@ -295,9 +255,7 @@ export const communityQnaService = {
             }).lean()
           : Promise.resolve(null),
         CommunityAnswer.countDocuments({ postId: post._id, isDeleted: false }),
-        User.findById(post.authorId)
-          .select("_id name photoUrl photoS3Key role")
-          .lean(),
+        User.findById(post.authorId).select("_id name photoUrl photoS3Key role").lean(),
         CommunityProfile.findOne({ userId: post.authorId })
           .select("userId anonymousAlias isIdentityPublic")
           .lean(),
@@ -328,9 +286,7 @@ export const communityQnaService = {
       restFilter._id = { $ne: acceptedAnswer._id };
     }
     const restSkip = showAcceptedThisPage ? 0 : acceptedAnswer ? skip - 1 : skip;
-    const restLimit = showAcceptedThisPage
-      ? Math.max(0, safeLimit - 1)
-      : safeLimit;
+    const restLimit = showAcceptedThisPage ? Math.max(0, safeLimit - 1) : safeLimit;
 
     const restAnswers = restLimit
       ? await CommunityAnswer.find(restFilter)
@@ -364,19 +320,13 @@ export const communityQnaService = {
     ]);
 
     const answerUserMap = new Map(
-      answerUsers.map((answerUser) => [String(answerUser._id), answerUser]),
+      answerUsers.map((answerUser) => [String(answerUser._id), answerUser])
     );
     const answerProfileMap = new Map(
-      answerProfiles.map((answerProfile) => [
-        String(answerProfile.userId),
-        answerProfile,
-      ]),
+      answerProfiles.map((answerProfile) => [String(answerProfile.userId), answerProfile])
     );
     const answerVoteMap = new Map(
-      answerVotes.map((answerVote) => [
-        String(answerVote.targetId),
-        answerVote,
-      ]),
+      answerVotes.map((answerVote) => [String(answerVote.targetId), answerVote])
     );
 
     const postAuthorId = String(post.authorId);
@@ -413,12 +363,8 @@ export const communityQnaService = {
         .select("userId anonymousAlias isIdentityPublic")
         .lean(),
     ]);
-    const commentUserMap = new Map(
-      commentUsers.map((item) => [String(item._id), item]),
-    );
-    const commentProfileMap = new Map(
-      commentProfiles.map((item) => [String(item.userId), item]),
-    );
+    const commentUserMap = new Map(commentUsers.map((item) => [String(item._id), item]));
+    const commentProfileMap = new Map(commentProfiles.map((item) => [String(item.userId), item]));
 
     const commentsByAnswer = new Map<string, typeof comments>();
     for (const comment of comments) {
@@ -462,9 +408,7 @@ export const communityQnaService = {
         },
       };
     };
-    const postAuthorCredential = isPostAnon
-      ? undefined
-      : credentialMap.get(postAuthorId);
+    const postAuthorCredential = isPostAnon ? undefined : credentialMap.get(postAuthorId);
 
     return {
       post: {
@@ -482,9 +426,7 @@ export const communityQnaService = {
         downvoteCount: post.downvoteCount || 0,
         answerCount: post.answerCount || 0,
         viewCount: (post.viewCount || 0) + 1,
-        acceptedAnswerId: post.acceptedAnswerId
-          ? String(post.acceptedAnswerId)
-          : null,
+        acceptedAnswerId: post.acceptedAnswerId ? String(post.acceptedAnswerId) : null,
         // Only the asker sees the accept controls, and an anonymous asker is
         // still the asker — `isPostAuthorSelf` already accounts for that.
         canAccept: isPostAuthorSelf,
@@ -500,7 +442,9 @@ export const communityQnaService = {
               : postAuthorProfile?.isIdentityPublic
                 ? postAuthor?.name || "Player"
                 : postAuthorProfile?.anonymousAlias || "Anonymous Player",
-          isIdentityPublic: post.isAnonymous ? false : (postAuthorProfile?.isIdentityPublic ?? true),
+          isIdentityPublic: post.isAnonymous
+            ? false
+            : (postAuthorProfile?.isIdentityPublic ?? true),
           photoUrl: post.isAnonymous
             ? null
             : postAuthorProfile?.isIdentityPublic && postAuthor
@@ -518,9 +462,7 @@ export const communityQnaService = {
           const answerProfile = answerProfileMap.get(answerAuthorId);
           const isAnswerSelf = Boolean(userId) && answerAuthorId === userId;
           const isAnswerAnon = answer.isAnonymous && !isAnswerSelf;
-          const answerCredential = isAnswerAnon
-            ? undefined
-            : credentialMap.get(answerAuthorId);
+          const answerCredential = isAnswerAnon ? undefined : credentialMap.get(answerAuthorId);
 
           return {
             id: String(answer._id),
@@ -533,11 +475,8 @@ export const communityQnaService = {
             createdAt: answer.createdAt,
             updatedAt: answer.updatedAt,
             myVote: answerVoteMap.get(String(answer._id))?.value || 0,
-            isAccepted:
-              String(post.acceptedAnswerId || "") === String(answer._id),
-            comments: (commentsByAnswer.get(String(answer._id)) || []).map(
-              shapeComment,
-            ),
+            isAccepted: String(post.acceptedAnswerId || "") === String(answer._id),
+            comments: (commentsByAnswer.get(String(answer._id)) || []).map(shapeComment),
             author: {
               id: isAnswerAnon ? "anon" : answerAuthorId,
               displayName: answer.isAnonymous
@@ -547,7 +486,9 @@ export const communityQnaService = {
                   : answerProfile?.isIdentityPublic
                     ? answerUser?.name || "Player"
                     : answerProfile?.anonymousAlias || "Anonymous Player",
-              isIdentityPublic: answer.isAnonymous ? false : (answerProfile?.isIdentityPublic ?? true),
+              isIdentityPublic: answer.isAnonymous
+                ? false
+                : (answerProfile?.isIdentityPublic ?? true),
               photoUrl: answer.isAnonymous
                 ? null
                 : answerProfile?.isIdentityPublic && answerUser
@@ -558,7 +499,7 @@ export const communityQnaService = {
               credentialKind: answerCredential?.kind,
             },
           };
-        }),
+        })
       ),
       pagination: {
         total: answerTotal,
@@ -578,7 +519,7 @@ export const communityQnaService = {
       city?: string;
       category?: string;
       isAnonymous?: boolean;
-    },
+    }
   ) {
     await ensureProfile(userId);
     const userRole = await getCommunityRole(userId);
@@ -607,7 +548,7 @@ export const communityQnaService = {
           questionCount: 1,
         },
       },
-      { upsert: true },
+      { upsert: true }
     );
 
     trackCommunityRoleMixEvent("qna_post_created", {
@@ -644,7 +585,7 @@ export const communityQnaService = {
       status?: "OPEN" | "CLOSED";
       sport?: string;
       city?: string;
-    },
+    }
   ) {
     await ensureProfile(userId);
 
@@ -715,12 +656,7 @@ export const communityQnaService = {
     return { id: String(post._id), deleted: true };
   },
 
-  async createAnswer(
-    userId: string,
-    postId: string,
-    content: string,
-    isAnonymous = false,
-  ) {
+  async createAnswer(userId: string, postId: string, content: string, isAnonymous = false) {
     await ensureProfile(userId);
     const userRole = await getCommunityRole(userId);
     ensureQnaAllowedForRole(userRole);
@@ -772,7 +708,7 @@ export const communityQnaService = {
             answerCount: 1,
           },
         },
-        { upsert: true },
+        { upsert: true }
       ),
     ]);
 
@@ -846,14 +782,14 @@ export const communityQnaService = {
 
     await CommunityPost.updateOne(
       { _id: answer.postId, answerCount: { $gt: 0 } },
-      { $inc: { answerCount: -1 } },
+      { $inc: { answerCount: -1 } }
     );
 
     // Comments hang off the answer; leaving them behind would orphan them and
     // let a deleted answer's discussion linger on the next page load.
     await CommunityAnswerComment.updateMany(
       { answerId: answer._id, isDeleted: false },
-      { $set: { isDeleted: true, deletedAt: new Date() } },
+      { $set: { isDeleted: true, deletedAt: new Date() } }
     );
 
     // A deleted answer must not stay marked as the accepted one — the post
@@ -861,7 +797,7 @@ export const communityQnaService = {
     // author would keep points for it.
     const clearedAccepted = await CommunityPost.findOneAndUpdate(
       { _id: answer.postId, acceptedAnswerId: answer._id },
-      { $set: { acceptedAnswerId: null } },
+      { $set: { acceptedAnswerId: null } }
     );
 
     if (clearedAccepted) {
@@ -879,7 +815,7 @@ export const communityQnaService = {
     userId: string,
     answerId: string,
     content: string,
-    isAnonymous = false,
+    isAnonymous = false
   ) {
     await ensureProfile(userId);
     const userRole = await getCommunityRole(userId);
@@ -921,7 +857,7 @@ export const communityQnaService = {
           targetId: String(answer._id),
           targetType: "ANSWER",
           actorUserId: userId,
-        },
+        }
       );
     }
 
@@ -952,9 +888,7 @@ export const communityQnaService = {
     }
 
     if (String(comment.authorId) !== userId) {
-      const post = await CommunityPost.findById(comment.postId)
-        .select("authorId")
-        .lean();
+      const post = await CommunityPost.findById(comment.postId).select("authorId").lean();
       if (!post || String(post.authorId) !== userId) {
         throw new Error("You cannot delete this comment");
       }
@@ -1033,7 +967,7 @@ export const communityQnaService = {
             targetId: String(answer._id),
             targetType: "ANSWER",
             actorUserId: userId,
-          },
+          }
         );
       }
     }
@@ -1042,9 +976,7 @@ export const communityQnaService = {
       postId: String(post._id),
       answerId: String(answer._id),
       accepted: !wasAccepted,
-      acceptedAnswerId: post.acceptedAnswerId
-        ? String(post.acceptedAnswerId)
-        : null,
+      acceptedAnswerId: post.acceptedAnswerId ? String(post.acceptedAnswerId) : null,
     };
   },
 
@@ -1054,7 +986,7 @@ export const communityQnaService = {
       targetType: "POST" | "ANSWER";
       targetId: string;
       value: 1 | -1;
-    },
+    }
   ) {
     await ensureProfile(userId);
 
@@ -1123,7 +1055,7 @@ export const communityQnaService = {
             upvoteCount: deltas.upvoteCount,
             downvoteCount: deltas.downvoteCount,
           },
-        },
+        }
       );
     } else {
       await CommunityAnswer.updateOne(
@@ -1134,7 +1066,7 @@ export const communityQnaService = {
             upvoteCount: deltas.upvoteCount,
             downvoteCount: deltas.downvoteCount,
           },
-        },
+        }
       );
     }
 
@@ -1151,7 +1083,7 @@ export const communityQnaService = {
             receivedUpvotes: deltas.upvoteCount,
           },
         },
-        { upsert: true },
+        { upsert: true }
       );
     }
 
@@ -1177,10 +1109,7 @@ export const communityQnaService = {
           event: "COMMUNITY_UPVOTE_RECEIVED",
           postId:
             payload.targetType === "ANSWER"
-              ? String(
-                  (updatedTarget as { postId?: mongoose.Types.ObjectId })
-                    ?.postId || "",
-                )
+              ? String((updatedTarget as { postId?: mongoose.Types.ObjectId })?.postId || "")
               : payload.targetId,
         },
       }).catch((error: unknown) => {
@@ -1197,10 +1126,7 @@ export const communityQnaService = {
       downvoteCount: updatedTarget?.downvoteCount || 0,
       postId:
         payload.targetType === "ANSWER"
-          ? String(
-              (updatedTarget as { postId?: mongoose.Types.ObjectId })?.postId ||
-                "",
-            )
+          ? String((updatedTarget as { postId?: mongoose.Types.ObjectId })?.postId || "")
           : payload.targetId,
     };
   },

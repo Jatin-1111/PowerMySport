@@ -28,7 +28,7 @@ const safeParse = (value: string | null): FollowItem[] => {
         typeof item.id === "string" &&
         typeof item.label === "string" &&
         typeof item.href === "string" &&
-        (item.kind === "coach" || item.kind === "venue"),
+        (item.kind === "coach" || item.kind === "venue")
     );
   } catch {
     return [];
@@ -54,8 +54,7 @@ const writeAll = (items: FollowItem[]) => {
 export const clientFollowStore = {
   getAll(): FollowItem[] {
     return readAll().sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   },
 
@@ -70,15 +69,12 @@ export const clientFollowStore = {
   toggle(item: Omit<FollowItem, "createdAt">): { following: boolean } {
     const current = readAll();
     const exists = current.some(
-      (existing) => existing.kind === item.kind && existing.id === item.id,
+      (existing) => existing.kind === item.kind && existing.id === item.id
     );
 
     if (exists) {
       writeAll(
-        current.filter(
-          (existing) =>
-            !(existing.kind === item.kind && existing.id === item.id),
-        ),
+        current.filter((existing) => !(existing.kind === item.kind && existing.id === item.id))
       );
       return { following: false };
     }

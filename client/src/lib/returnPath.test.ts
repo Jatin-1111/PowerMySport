@@ -14,7 +14,7 @@ describe("safeReturnPath", () => {
 
   it("accepts an absolute URL on an allowlisted origin", () => {
     expect(safeReturnPath("https://powermysport.com/dashboard")).toBe(
-      "https://powermysport.com/dashboard",
+      "https://powermysport.com/dashboard"
     );
   });
 
@@ -26,9 +26,7 @@ describe("safeReturnPath", () => {
 
   it("rejects lookalike hosts that merely contain an allowlisted one", () => {
     expect(safeReturnPath("https://powermysport.com.evil.example")).toBeNull();
-    expect(
-      safeReturnPath("https://evil.example/?x=powermysport.com"),
-    ).toBeNull();
+    expect(safeReturnPath("https://evil.example/?x=powermysport.com")).toBeNull();
     expect(safeReturnPath("https://notpowermysport.com")).toBeNull();
   });
 
@@ -45,9 +43,7 @@ describe("safeReturnPath", () => {
 
   it("rejects non-http schemes", () => {
     expect(safeReturnPath("javascript:alert(1)")).toBeNull();
-    expect(
-      safeReturnPath("data:text/html,<script>alert(1)</script>"),
-    ).toBeNull();
+    expect(safeReturnPath("data:text/html,<script>alert(1)</script>")).toBeNull();
     expect(safeReturnPath("file:///etc/passwd")).toBeNull();
   });
 

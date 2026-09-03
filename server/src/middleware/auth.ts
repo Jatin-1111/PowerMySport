@@ -31,12 +31,11 @@ const touchAuthActivity = (userId: string): void => {
     .set(redisKey, "1", "PX", AUTH_ACTIVITY_WRITE_THROTTLE_MS, "NX")
     .then((result) => {
       if (result) {
-        User.updateOne(
-          { _id: userId },
-          { $set: { lastActiveAt: new Date() } },
-        ).catch((error: unknown) => {
-          log.error("Failed to persist auth activity:", error);
-        });
+        User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date() } }).catch(
+          (error: unknown) => {
+            log.error("Failed to persist auth activity:", error);
+          }
+        );
       }
     })
     .catch((error) => {
@@ -54,17 +53,14 @@ const touchAuthActivity = (userId: string): void => {
  * this without re-confirming that trade-off still holds.
  */
 const ACCOUNT_STATUS_CACHE_TTL_SECONDS = 15;
-const accountStatusCacheKey = (userId: string): string =>
-  `auth:status:${userId}`;
+const accountStatusCacheKey = (userId: string): string => `auth:status:${userId}`;
 
 interface CachedAccountStatus {
   isActive: boolean;
   suspensionReason?: string;
 }
 
-const getCachedAccountStatus = async (
-  userId: string,
-): Promise<CachedAccountStatus | null> => {
+const getCachedAccountStatus = async (userId: string): Promise<CachedAccountStatus | null> => {
   try {
     const raw = await redis.get(accountStatusCacheKey(userId));
     return raw ? (JSON.parse(raw) as CachedAccountStatus) : null;
@@ -75,16 +71,13 @@ const getCachedAccountStatus = async (
   }
 };
 
-const cacheAccountStatus = (
-  userId: string,
-  status: CachedAccountStatus,
-): void => {
+const cacheAccountStatus = (userId: string, status: CachedAccountStatus): void => {
   redis
     .set(
       accountStatusCacheKey(userId),
       JSON.stringify(status),
       "EX",
-      ACCOUNT_STATUS_CACHE_TTL_SECONDS,
+      ACCOUNT_STATUS_CACHE_TTL_SECONDS
     )
     .catch((error) => {
       log.error("Failed to cache account status:", error);
@@ -109,7 +102,7 @@ const USER_ROLES_NEEDING_STATUS_CHECK: Array<IUserPayload["role"]> = [
 export const authMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
@@ -138,9 +131,7 @@ export const authMiddleware = async (
     }
 
     if (USER_ROLES_NEEDING_STATUS_CHECK.includes(decoded.role)) {
-      let status = decoded.id
-        ? await getCachedAccountStatus(decoded.id)
-        : null;
+      let status = decoded.id ? await getCachedAccountStatus(decoded.id) : null;
 
       if (!status) {
         const userRecord = await User.findById(decoded.id)
@@ -209,7 +200,7 @@ export const authMiddleware = async (
 export const optionalAuthMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
@@ -233,9 +224,7 @@ export const optionalAuthMiddleware = async (
       }
 
       if (USER_ROLES_NEEDING_STATUS_CHECK.includes(decoded.role)) {
-        let status = decoded.id
-          ? await getCachedAccountStatus(decoded.id)
-          : null;
+        let status = decoded.id ? await getCachedAccountStatus(decoded.id) : null;
 
         if (!status) {
           const userRecord = await User.findById(decoded.id)
@@ -281,7 +270,7 @@ export const optionalAuthMiddleware = async (
 export const onboardingAuthMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
@@ -309,10 +298,7 @@ export const onboardingAuthMiddleware = async (
       return;
     }
 
-    if (
-      decoded.role !== "VENUE_ONBOARDING" &&
-      !isSystemAdminRole(decoded.role)
-    ) {
+    if (decoded.role !== "VENUE_ONBOARDING" && !isSystemAdminRole(decoded.role)) {
       res.status(403).json({
         success: false,
         message: "Invalid token for venue onboarding.",
@@ -322,11 +308,7 @@ export const onboardingAuthMiddleware = async (
 
     // Enforce strict ownership verification
     const requestedVenueId = req.body?.venueId || req.params?.venueId;
-    if (
-      requestedVenueId &&
-      requestedVenueId !== decoded.id &&
-      !isSystemAdminRole(decoded.role)
-    ) {
+    if (requestedVenueId && requestedVenueId !== decoded.id && !isSystemAdminRole(decoded.role)) {
       res.status(403).json({
         success: false,
         message: "Unauthorized access to this venue.",
@@ -349,11 +331,7 @@ export const onboardingAuthMiddleware = async (
  * Coaches and venue-listers are completely separate roles.
  * Coaches who want to list venues for rent must create separate venue-lister credentials.
  */
-export const venueListerMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
+export const venueListerMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   if (req.user?.role !== "VenueLister") {
     res.status(403).json({
       success: false,
@@ -365,11 +343,7 @@ export const venueListerMiddleware = (
   next();
 };
 
-export const playerOnlyMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
+export const playerOnlyMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   if (req.user?.role !== "Player" && req.user?.role !== "Parent") {
     res.status(403).json({
       success: false,
@@ -384,11 +358,7 @@ export const playerOnlyMiddleware = (
 // Alias for backward compatibility - will be removed in future
 export const vendorMiddleware = venueListerMiddleware;
 
-export const adminMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
+export const adminMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   // Check if user has any admin role
   if (
     !isSystemAdminRole(req.user?.role) &&
@@ -403,11 +373,7 @@ export const adminMiddleware = (
   next();
 };
 
-export const superAdminMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
+export const superAdminMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   if (!isSystemAdminRole(req.user?.role)) {
     res.status(403).json({
       success: false,
@@ -422,7 +388,7 @@ export const superAdminMiddleware = (
 export const coachVerificationCompletedMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     if (req.user?.role !== "Coach" || !req.user.id) {
@@ -431,7 +397,7 @@ export const coachVerificationCompletedMiddleware = async (
     }
 
     const coach = await Coach.findOne({ userId: req.user.id }).select(
-      "bio sports verificationStatus isVerified",
+      "bio sports verificationStatus isVerified"
     );
 
     if (!coach) {
@@ -442,9 +408,7 @@ export const coachVerificationCompletedMiddleware = async (
       return;
     }
 
-    const status =
-      coach.verificationStatus ||
-      (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+    const status = coach.verificationStatus || (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
     const hasBio = Boolean(coach.bio?.trim());
     const hasSports = Array.isArray(coach.sports) && coach.sports.length > 0;
 
@@ -454,8 +418,7 @@ export const coachVerificationCompletedMiddleware = async (
     if (!isVerified) {
       res.status(403).json({
         success: false,
-        message:
-          "Coach verification must be approved by admin before taking bookings.",
+        message: "Coach verification must be approved by admin before taking bookings.",
       });
       return;
     }
@@ -464,10 +427,7 @@ export const coachVerificationCompletedMiddleware = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to verify coach status",
+      message: error instanceof Error ? error.message : "Failed to verify coach status",
     });
   }
 };
@@ -475,7 +435,7 @@ export const coachVerificationCompletedMiddleware = async (
 export const coachVerifiedMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> => {
   try {
     if (req.user?.role !== "Coach" || !req.user.id) {
@@ -484,7 +444,7 @@ export const coachVerifiedMiddleware = async (
     }
 
     const coach = await Coach.findOne({ userId: req.user.id }).select(
-      "verificationStatus isVerified",
+      "verificationStatus isVerified"
     );
 
     if (!coach) {
@@ -495,9 +455,7 @@ export const coachVerifiedMiddleware = async (
       return;
     }
 
-    const status =
-      coach.verificationStatus ||
-      (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+    const status = coach.verificationStatus || (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
 
     if (status !== "VERIFIED") {
       res.status(403).json({
@@ -511,10 +469,7 @@ export const coachVerifiedMiddleware = async (
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to verify coach status",
+      message: error instanceof Error ? error.message : "Failed to verify coach status",
     });
   }
 };
@@ -528,11 +483,7 @@ export const coachVerifiedMiddleware = async (
  * Usage: requirePermission('users:view')
  */
 export const requirePermission = (requiredPermission: string) => {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user?.id) {
         res.status(401).json({
@@ -543,9 +494,7 @@ export const requirePermission = (requiredPermission: string) => {
       }
 
       // Fetch admin with permissions
-      const admin = await Admin.findById(req.user.id).select(
-        "role permissions isActive",
-      );
+      const admin = await Admin.findById(req.user.id).select("role permissions isActive");
 
       if (!admin || !admin.isActive) {
         res.status(403).json({
@@ -568,8 +517,7 @@ export const requirePermission = (requiredPermission: string) => {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message:
-          error instanceof Error ? error.message : "Permission check failed",
+        message: error instanceof Error ? error.message : "Permission check failed",
       });
     }
   };
@@ -580,11 +528,7 @@ export const requirePermission = (requiredPermission: string) => {
  * Usage: requireAnyPermission(['users:view', 'users:manage'])
  */
 export const requireAnyPermission = (requiredPermissions: string[]) => {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user?.id) {
         res.status(401).json({
@@ -594,9 +538,7 @@ export const requireAnyPermission = (requiredPermissions: string[]) => {
         return;
       }
 
-      const admin = await Admin.findById(req.user.id).select(
-        "role permissions isActive",
-      );
+      const admin = await Admin.findById(req.user.id).select("role permissions isActive");
 
       if (!admin || !admin.isActive) {
         res.status(403).json({
@@ -606,9 +548,7 @@ export const requireAnyPermission = (requiredPermissions: string[]) => {
         return;
       }
 
-      if (
-        !hasAnyPermission(admin.permissions, admin.role, requiredPermissions)
-      ) {
+      if (!hasAnyPermission(admin.permissions, admin.role, requiredPermissions)) {
         res.status(403).json({
           success: false,
           message: `Access denied. Required any of: ${requiredPermissions.join(", ")}`,
@@ -620,8 +560,7 @@ export const requireAnyPermission = (requiredPermissions: string[]) => {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message:
-          error instanceof Error ? error.message : "Permission check failed",
+        message: error instanceof Error ? error.message : "Permission check failed",
       });
     }
   };
@@ -632,11 +571,7 @@ export const requireAnyPermission = (requiredPermissions: string[]) => {
  * Usage: requireAllPermissions(['users:view', 'venues:view'])
  */
 export const requireAllPermissions = (requiredPermissions: string[]) => {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (!req.user?.id) {
         res.status(401).json({
@@ -646,9 +581,7 @@ export const requireAllPermissions = (requiredPermissions: string[]) => {
         return;
       }
 
-      const admin = await Admin.findById(req.user.id).select(
-        "role permissions isActive",
-      );
+      const admin = await Admin.findById(req.user.id).select("role permissions isActive");
 
       if (!admin || !admin.isActive) {
         res.status(403).json({
@@ -658,9 +591,7 @@ export const requireAllPermissions = (requiredPermissions: string[]) => {
         return;
       }
 
-      if (
-        !hasAllPermissions(admin.permissions, admin.role, requiredPermissions)
-      ) {
+      if (!hasAllPermissions(admin.permissions, admin.role, requiredPermissions)) {
         res.status(403).json({
           success: false,
           message: `Access denied. Required all of: ${requiredPermissions.join(", ")}`,
@@ -672,8 +603,7 @@ export const requireAllPermissions = (requiredPermissions: string[]) => {
     } catch (error) {
       res.status(500).json({
         success: false,
-        message:
-          error instanceof Error ? error.message : "Permission check failed",
+        message: error instanceof Error ? error.message : "Permission check failed",
       });
     }
   };

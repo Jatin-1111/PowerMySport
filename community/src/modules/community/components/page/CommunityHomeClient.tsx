@@ -25,18 +25,16 @@ export default function CommunityHomeClient({
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.28 }}
-        className="absolute inset-0 overflow-hidden flex flex-col bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
+        className="absolute inset-0 flex flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
       >
         <motion.div
           variants={shellVariants}
           initial="hidden"
           animate="show"
-          className="mx-auto grid h-full min-h-0 w-full max-w-full gap-0 grid-cols-1"
+          className="mx-auto grid h-full min-h-0 w-full max-w-full grid-cols-1 gap-0"
         >
           {isCommunityView && <CommunityOverviewPanel page={page} />}
-          {isConversationsView && (
-            <CommunityConversationsWorkspace page={page} />
-          )}
+          {isConversationsView && <CommunityConversationsWorkspace page={page} />}
         </motion.div>
       </motion.div>
 

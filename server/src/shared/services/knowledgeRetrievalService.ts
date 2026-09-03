@@ -41,7 +41,7 @@ export async function embedText(text: string): Promise<number[]> {
   throw new Error(
     `No supported Gemini embedding model found. Tried: ${embeddingModelCandidates.join(", ")}. Last error: ${
       lastError instanceof Error ? lastError.message : String(lastError)
-    }`,
+    }`
   );
 }
 
@@ -103,10 +103,7 @@ const MIN_RELEVANCE_SCORE = 0.6;
  * callers should treat retrieval as best-effort grounding, not a hard
  * dependency for the chat to function.
  */
-export async function retrieveRelevantChunks(
-  query: string,
-  topK = 5,
-): Promise<RetrievedChunk[]> {
+export async function retrieveRelevantChunks(query: string, topK = 5): Promise<RetrievedChunk[]> {
   try {
     const [queryEmbedding, chunks] = await Promise.all([embedText(query), getCache()]);
     if (chunks.length === 0) return [];

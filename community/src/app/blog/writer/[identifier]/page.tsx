@@ -1,21 +1,11 @@
 import type { Metadata } from "next";
 import WriterProfileClient from "@/modules/community/components/blog/WriterProfileClient";
-import {
-  breadcrumbSchema,
-  JsonLd,
-} from "@/modules/community/components/seo/JsonLd";
-import {
-  buildMetadata,
-  clampText,
-  communityUrl,
-  fetchPublicData,
-} from "@/lib/seo";
+import { breadcrumbSchema, JsonLd } from "@/modules/community/components/seo/JsonLd";
+import { buildMetadata, clampText, communityUrl, fetchPublicData } from "@/lib/seo";
 import type { BlogAuthorProfile } from "@/modules/community/types";
 
 const getAuthor = (identifier: string) =>
-  fetchPublicData<BlogAuthorProfile>(
-    `/community/blog/authors/${encodeURIComponent(identifier)}`,
-  );
+  fetchPublicData<BlogAuthorProfile>(`/community/blog/authors/${encodeURIComponent(identifier)}`);
 
 export async function generateMetadata({
   params,
@@ -28,8 +18,7 @@ export async function generateMetadata({
   if (!author) {
     return buildMetadata({
       title: "Writer Profile",
-      description:
-        "Explore blogs and stories from PowerMySport community writers.",
+      description: "Explore blogs and stories from PowerMySport community writers.",
       path: `/blog/writer/${identifier}`,
     });
   }

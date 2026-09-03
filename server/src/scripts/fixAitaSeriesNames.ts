@@ -48,7 +48,10 @@ const REPLACEMENTS: Array<[string, string]> = [
     "across four tiers: Super Series (SS), National Series (NS), City Series (CS), and Team Series (TS).",
     "across four tiers: Super Series (SS), National Series (NS), Championship Series (CS), and Talent Series (TS).",
   ],
-  ["start with City Series if new to the circuit", "start with Talent Series if new to the circuit"],
+  [
+    "start with City Series if new to the circuit",
+    "start with Talent Series if new to the circuit",
+  ],
   ["Team Series (TS)", "Talent Series (TS)"],
   ["Junior City Series (CS)", "Junior Championship Series (CS)"],
   ["AITA City Series (CS)", "AITA Championship Series (CS)"],
@@ -117,7 +120,7 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    `\n─── ${changedFields} field(s) across ${changedDocs} record(s) ${APPLY ? "updated" : "would change"} ───`,
+    `\n─── ${changedFields} field(s) across ${changedDocs} record(s) ${APPLY ? "updated" : "would change"} ───`
   );
   if (!APPLY) console.log("Report only — nothing written. Re-run with --apply.");
 

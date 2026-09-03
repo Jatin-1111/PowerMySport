@@ -22,26 +22,19 @@ const decryptPayoutMethod = (m: IPayoutMethod): IPayoutMethod => {
   return out;
 };
 
-const getPrimaryPayoutMethod = (
-  payoutMethods?: IPayoutMethod[],
-): IPayoutMethod | null => {
+const getPrimaryPayoutMethod = (payoutMethods?: IPayoutMethod[]): IPayoutMethod | null => {
   if (!payoutMethods || payoutMethods.length === 0) {
     return null;
   }
 
-  return (
-    payoutMethods.find((method) => method.isDefault) ?? payoutMethods[0] ?? null
-  );
+  return payoutMethods.find((method) => method.isDefault) ?? payoutMethods[0] ?? null;
 };
 
 /**
  * Admin: Get all pending payouts grouped by vendor
  * GET /api/admin/payouts/pending
  */
-export const listPendingPayouts = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const listPendingPayouts = async (req: Request, res: Response): Promise<void> => {
   try {
     // Find all completed bookings with pending payments for coaches or venue listers
     const bookings = await Booking.find({
@@ -91,20 +84,16 @@ export const listPendingPayouts = async (
       .lean();
 
     if (expertSessions.length > 0) {
-      const expertIds = [
-        ...new Set(expertSessions.map((s) => s.expertId.toString())),
-      ];
+      const expertIds = [...new Set(expertSessions.map((s) => s.expertId.toString()))];
       const experts = await Expert.find({ _id: { $in: expertIds } })
         .select("userId")
         .lean();
       const expertUserIdByExpertId = new Map(
-        experts.map((e) => [e._id.toString(), e.userId.toString()]),
+        experts.map((e) => [e._id.toString(), e.userId.toString()])
       );
 
       for (const session of expertSessions) {
-        const expertUserId = expertUserIdByExpertId.get(
-          session.expertId.toString(),
-        );
+        const expertUserId = expertUserIdByExpertId.get(session.expertId.toString());
         if (!expertUserId) continue;
         const key = `${expertUserId}_Expert`;
         if (!payoutMap.has(key)) {
@@ -119,8 +108,7 @@ export const listPendingPayouts = async (
         // The NET, after the platform's commission and its GST. Sessions
         // completed before commission existed have no net recorded, so they
         // fall back to the gross they were promised at the time.
-        current.totalPendingAmount +=
-          session.payoutNetAmount ?? session.amount ?? 0;
+        current.totalPendingAmount += session.payoutNetAmount ?? session.amount ?? 0;
         current.bookingIds.push(session._id.toString());
       }
     }
@@ -144,20 +132,16 @@ export const listPendingPayouts = async (
       .lean();
 
     if (sessionPayouts.length > 0) {
-      const coachIds = [
-        ...new Set(sessionPayouts.map((s) => s.coachId.toString())),
-      ];
+      const coachIds = [...new Set(sessionPayouts.map((s) => s.coachId.toString()))];
       const coaches = await Coach.find({ _id: { $in: coachIds } })
         .select("userId")
         .lean();
       const coachUserIdByCoachId = new Map(
-        coaches.map((c) => [c._id.toString(), c.userId.toString()]),
+        coaches.map((c) => [c._id.toString(), c.userId.toString()])
       );
 
       for (const occurrence of sessionPayouts) {
-        const coachUserId = coachUserIdByCoachId.get(
-          occurrence.coachId.toString(),
-        );
+        const coachUserId = coachUserIdByCoachId.get(occurrence.coachId.toString());
         if (!coachUserId) continue;
 
         const key = `${coachUserId}_CoachSession`;
@@ -172,8 +156,7 @@ export const listPendingPayouts = async (
         const current = payoutMap.get(key)!;
         // Everything else in this map is rupees; session payouts are stored in
         // paise, so convert rather than adding two different units together.
-        current.totalPendingAmount +=
-          (occurrence.payout?.amountPaise ?? 0) / 100;
+        current.totalPendingAmount += (occurrence.payout?.amountPaise ?? 0) / 100;
         current.bookingIds.push(occurrence._id.toString());
       }
     }
@@ -209,15 +192,9 @@ export const listPendingPayouts = async (
     ]);
 
     const usersByVendorId = new Map(users.map((u) => [u._id.toString(), u]));
-    const coachesByUserId = new Map(
-      coaches.map((c) => [c.userId.toString(), c]),
-    );
-    const venuesByOwnerId = new Map(
-      venues.map((v) => [String(v.ownerId), v]),
-    );
-    const expertsByUserId = new Map(
-      experts.map((e) => [e.userId.toString(), e]),
-    );
+    const coachesByUserId = new Map(coaches.map((c) => [c.userId.toString(), c]));
+    const venuesByOwnerId = new Map(venues.map((v) => [String(v.ownerId), v]));
+    const expertsByUserId = new Map(experts.map((e) => [e.userId.toString(), e]));
 
     const populatedPayouts = pendingPayouts.map((payout) => {
       const user = usersByVendorId.get(payout.vendorId);
@@ -225,18 +202,14 @@ export const listPendingPayouts = async (
       let payoutMethod: IPayoutMethod | null = null;
       if (payout.vendorRole === "Coach" || payout.vendorRole === "CoachSession") {
         const coach = coachesByUserId.get(payout.vendorId);
-        payoutMethod = getPrimaryPayoutMethod(
-          coach?.payoutMethods as IPayoutMethod[] | undefined,
-        );
+        payoutMethod = getPrimaryPayoutMethod(coach?.payoutMethods as IPayoutMethod[] | undefined);
       } else if (payout.vendorRole === "VenueLister") {
         const venue = venuesByOwnerId.get(payout.vendorId);
-        payoutMethod = getPrimaryPayoutMethod(
-          venue?.payoutMethods as IPayoutMethod[] | undefined,
-        );
+        payoutMethod = getPrimaryPayoutMethod(venue?.payoutMethods as IPayoutMethod[] | undefined);
       } else if (payout.vendorRole === "Expert") {
         const expert = expertsByUserId.get(payout.vendorId);
         payoutMethod = getPrimaryPayoutMethod(
-          expert?.payoutMethods as unknown as IPayoutMethod[] | undefined,
+          expert?.payoutMethods as unknown as IPayoutMethod[] | undefined
         );
       }
       // .lean() bypasses the models' schema-level decrypt getters — admin
@@ -261,8 +234,7 @@ export const listPendingPayouts = async (
     log.error("listPendingPayouts error:", error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to load payouts",
+      message: error instanceof Error ? error.message : "Failed to load payouts",
     });
   }
 };
@@ -271,23 +243,14 @@ export const listPendingPayouts = async (
  * Admin: Mark a vendor's pending payouts as paid
  * POST /api/admin/payouts/mark-paid
  */
-export const markPayoutsAsPaid = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const markPayoutsAsPaid = async (req: Request, res: Response): Promise<void> => {
   try {
     const { vendorId, vendorRole, bookingIds } = req.body;
 
-    if (
-      !vendorId ||
-      !vendorRole ||
-      !Array.isArray(bookingIds) ||
-      bookingIds.length === 0
-    ) {
+    if (!vendorId || !vendorRole || !Array.isArray(bookingIds) || bookingIds.length === 0) {
       res.status(400).json({
         success: false,
-        message:
-          "vendorId, vendorRole, and an array of bookingIds are required",
+        message: "vendorId, vendorRole, and an array of bookingIds are required",
       });
       return;
     }
@@ -304,7 +267,7 @@ export const markPayoutsAsPaid = async (
         } catch (err) {
           log.warn(
             `Skipping expert payout for session ${sessionId}:`,
-            err instanceof Error ? err.message : err,
+            err instanceof Error ? err.message : err
           );
         }
       }
@@ -329,7 +292,7 @@ export const markPayoutsAsPaid = async (
         } catch (err) {
           log.warn(
             `Skipping coach session payout for ${occurrenceId}:`,
-            err instanceof Error ? err.message : err,
+            err instanceof Error ? err.message : err
           );
         }
       }
@@ -371,7 +334,7 @@ export const markPayoutsAsPaid = async (
               },
             ],
             session,
-          },
+          }
         );
 
         if (result.modifiedCount > 0) {
@@ -384,9 +347,7 @@ export const markPayoutsAsPaid = async (
       // Notify the vendor of the payout (fire-and-forget).
       void (async () => {
         try {
-          const vendorUser = await User.findById(vendorId)
-            .select("name email")
-            .lean();
+          const vendorUser = await User.findById(vendorId).select("name email").lean();
           if (vendorUser?.email) {
             const paidBookings = await Booking.find({
               _id: { $in: bookingIds },
@@ -432,8 +393,7 @@ export const markPayoutsAsPaid = async (
     log.error("markPayoutsAsPaid error:", error);
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to process payout",
+      message: error instanceof Error ? error.message : "Failed to process payout",
     });
   }
 };

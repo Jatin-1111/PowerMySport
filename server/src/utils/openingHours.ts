@@ -18,11 +18,7 @@ export const combineDateAndTimeIST = (date: Date, time: string): Date => {
   const hour = parseInt(hourPart || "0", 10);
   const minute = parseInt(minutePart || "0", 10);
 
-  const utcMidnight = Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-  );
+  const utcMidnight = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   const minutesSinceUtcMidnight = hour * 60 + minute - IST_OFFSET_MINUTES;
   return new Date(utcMidnight + minutesSinceUtcMidnight * 60 * 1000);
 };
@@ -34,7 +30,7 @@ export const isWithinOpeningHours = (
   bookingDate: Date,
   startTime: string,
   endTime: string,
-  openingHours: OpeningHours,
+  openingHours: OpeningHours
 ): { isValid: boolean; message?: string } => {
   const dayNames = [
     "sunday",
@@ -97,10 +93,7 @@ export const isWithinOpeningHours = (
   const isWithinAnySlot = normalizedSlots.some((slot) => {
     const slotStartMinutes = toMinutes(slot.startTime);
     const slotEndMinutes = toMinutes(slot.endTime);
-    return (
-      bookingStartMinutes >= slotStartMinutes &&
-      bookingEndMinutes <= slotEndMinutes
-    );
+    return bookingStartMinutes >= slotStartMinutes && bookingEndMinutes <= slotEndMinutes;
   });
 
   if (!isWithinAnySlot) {
@@ -121,15 +114,7 @@ export const isWithinOpeningHours = (
  * Get the day name from a date
  */
 export const getDayName = (date: Date): string => {
-  const dayNames = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   // See isWithinOpeningHours above — UTC day-of-week for the same reason.
   return dayNames[date.getUTCDay()] || "Unknown";
 };

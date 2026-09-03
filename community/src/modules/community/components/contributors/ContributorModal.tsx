@@ -84,7 +84,7 @@ export function ContributorModal({
                   <div className="relative shrink-0 border-b border-slate-100 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_60%,#fff1dc_100%)] px-7 py-8">
                     <button
                       onClick={onClose}
-                      className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-white hover:text-slate-600"
+                      className="absolute top-4 right-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-white hover:text-slate-600"
                     >
                       <X size={16} />
                     </button>
@@ -98,7 +98,7 @@ export function ContributorModal({
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <span className="text-2xl font-bold text-power-orange">
+                          <span className="text-power-orange text-2xl font-bold">
                             {contributor.name.charAt(0).toUpperCase()}
                           </span>
                         )}
@@ -120,10 +120,8 @@ export function ContributorModal({
                       { label: "Score", value: contributor.score },
                     ].map((stat) => (
                       <div key={stat.label} className="text-center">
-                        <p className="text-base font-bold text-slate-900">
-                          {stat.value}
-                        </p>
-                        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="text-base font-bold text-slate-900">{stat.value}</p>
+                        <p className="mt-0.5 text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
                           {stat.label}
                         </p>
                       </div>
@@ -131,13 +129,11 @@ export function ContributorModal({
                   </div>
 
                   <div className="max-h-[40vh] overflow-y-auto rounded-b-[2rem] px-6 py-5">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="mb-3 text-xs font-semibold tracking-wide text-slate-400 uppercase">
                       Questions Asked
                     </p>
                     {isLoadingThreads ? (
-                      <p className="py-4 text-center text-sm text-slate-500">
-                        Loading threads...
-                      </p>
+                      <p className="py-4 text-center text-sm text-slate-500">Loading threads...</p>
                     ) : threads.length === 0 ? (
                       <p className="py-4 text-center text-sm text-slate-500">
                         No thread history available.
@@ -149,7 +145,7 @@ export function ContributorModal({
                             key={post.id}
                             href={`/questions/${post.id}`}
                             onClick={onClose}
-                            className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-power-orange/40 hover:bg-white"
+                            className="hover:border-power-orange/40 block rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:bg-white"
                           >
                             <p className="line-clamp-1 text-sm font-semibold text-slate-900">
                               {post.title}
@@ -177,6 +173,6 @@ export function ContributorModal({
         </>
       )}
     </AnimatePresence>,
-    document.body,
+    document.body
   );
 }

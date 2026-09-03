@@ -7,10 +7,7 @@ const log = __rootLog.child("adminConcierge");
 /**
  * Fetch all concierge requests for the admin panel, sorted by newest first
  */
-export const getAllConciergeRequests = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getAllConciergeRequests = async (req: Request, res: Response): Promise<void> => {
   try {
     const requests = await ConciergeRequest.find()
       .populate("userId", "name email phone")
@@ -28,10 +25,7 @@ export const getAllConciergeRequests = async (
 /**
  * Update the status and optional admin notes of a specific concierge request
  */
-export const updateConciergeRequestStatus = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const updateConciergeRequestStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
@@ -46,11 +40,9 @@ export const updateConciergeRequestStatus = async (
       updatePayload.adminNotes = String(adminNotes).slice(0, 2000);
     }
 
-    const updatedRequest = await ConciergeRequest.findByIdAndUpdate(
-      id,
-      updatePayload,
-      { new: true },
-    ).populate("userId", "name email phone");
+    const updatedRequest = await ConciergeRequest.findByIdAndUpdate(id, updatePayload, {
+      new: true,
+    }).populate("userId", "name email phone");
 
     if (!updatedRequest) {
       res.status(404).json({ success: false, error: "Request not found" });
@@ -69,7 +61,7 @@ export const updateConciergeRequestStatus = async (
  */
 export const getConciergeDocumentDownloadUrl = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { id } = req.params;
@@ -89,15 +81,12 @@ export const getConciergeDocumentDownloadUrl = async (
 
     const docExists = request.documents.some((doc) => doc.s3Key === key);
     if (!docExists) {
-      res
-        .status(404)
-        .json({ success: false, error: "Document not found in request" });
+      res.status(404).json({ success: false, error: "Document not found in request" });
       return;
     }
 
     const s3Service = new S3Service();
-    const downloadUrl =
-      await s3Service.generateConciergeDocumentDownloadUrl(key);
+    const downloadUrl = await s3Service.generateConciergeDocumentDownloadUrl(key);
 
     res.status(200).json({ success: true, url: downloadUrl });
   } catch (error) {

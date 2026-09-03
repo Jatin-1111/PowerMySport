@@ -21,7 +21,7 @@ export type SubscriptionBreakdown = {
 };
 
 export const useSubscriptionQuote = (
-  basePaise: number,
+  basePaise: number
 ): { breakdown: SubscriptionBreakdown; isQuoteLoading: boolean } => {
   const token = useAuthStore((state) => state.token);
   const hydrated = useAuthStore((state) => state.hydrated);
@@ -33,10 +33,7 @@ export const useSubscriptionQuote = (
       const response = await axiosInstance.post("/coaches/subscriptions/quote", {
         basePaise,
       });
-      return response.data.data as Omit<
-        SubscriptionBreakdown,
-        "isZeroCommission"
-      >;
+      return response.data.data as Omit<SubscriptionBreakdown, "isZeroCommission">;
     },
     enabled,
     staleTime: 5 * 60_000,

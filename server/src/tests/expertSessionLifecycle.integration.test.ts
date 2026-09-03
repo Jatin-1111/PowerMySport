@@ -193,8 +193,7 @@ const createSession = async (opts: { paid?: boolean } = {}) => {
   };
 };
 
-const load = async (sessionId: string) =>
-  ExpertSession.findById(sessionId).lean();
+const load = async (sessionId: string) => ExpertSession.findById(sessionId).lean();
 
 // ───────────────── creation & payment ─────────────────
 describe("creating an expert session", () => {
@@ -219,7 +218,7 @@ describe("creating an expert session", () => {
           userId: expertUserId,
           scheduledAt: futureSlot().toISOString(),
         }),
-      /cannot book a session with yourself/i,
+      /cannot book a session with yourself/i
     );
   });
 
@@ -233,7 +232,7 @@ describe("creating an expert session", () => {
           userId,
           scheduledAt: futureSlot().toISOString(),
         }),
-      /Expert not found/,
+      /Expert not found/
     );
   });
 
@@ -302,14 +301,10 @@ describe("expert responding to a booked session", () => {
     assert.equal(session.status, "CANCELLED");
     assert.equal(session.expertAcceptance, "DECLINED");
     assert.equal(session.cancelledBy, "EXPERT");
-    assert.equal(
-      session.refundStatus,
-      "REQUIRED",
-      "a paid decline owes the customer money",
-    );
+    assert.equal(session.refundStatus, "REQUIRED", "a paid decline owes the customer money");
     assert.ok(
       typeof session.cancellationNoticeHours === "number",
-      "notice given is recorded for admin to judge the refund",
+      "notice given is recorded for admin to judge the refund"
     );
   });
 
@@ -322,7 +317,7 @@ describe("expert responding to a booked session", () => {
           expertUserId: oid().toString(),
           action: "ACCEPT",
         }),
-      /Only the expert or an admin/,
+      /Only the expert or an admin/
     );
   });
 
@@ -342,7 +337,7 @@ describe("expert responding to a booked session", () => {
           expertUserId,
           action: "ACCEPT",
         }),
-      /can no longer be modified/,
+      /can no longer be modified/
     );
   });
 });
@@ -367,7 +362,7 @@ describe("completing a session", () => {
     assert.ok(session.momAddedAt);
     assert.ok(
       session.completedAt,
-      "completedAt anchors the 24h payout window and must be distinct from updatedAt",
+      "completedAt anchors the 24h payout window and must be distinct from updatedAt"
     );
     assert.equal(session.payoutStatus, "PENDING");
   });
@@ -382,7 +377,7 @@ describe("completing a session", () => {
           isAdmin: true,
           momNotes: "done",
         }),
-      /at least \d+ characters/,
+      /at least \d+ characters/
     );
   });
 
@@ -395,7 +390,7 @@ describe("completing a session", () => {
           actorUserId: expertUserId,
           momNotes: MOM,
         }),
-      /only complete a session once it has started/i,
+      /only complete a session once it has started/i
     );
   });
 
@@ -457,7 +452,7 @@ describe("cancelling a session", () => {
           sessionId,
           actorUserId: oid().toString(),
         }),
-      /not authorized/i,
+      /not authorized/i
     );
   });
 
@@ -474,7 +469,7 @@ describe("cancelling a session", () => {
 
     await assert.rejects(
       () => ExpertsService.cancelExpertSession({ sessionId, actorUserId: userId }),
-      /completed session cannot be cancelled/i,
+      /completed session cannot be cancelled/i
     );
   });
 
@@ -505,7 +500,7 @@ describe("refund and payout", () => {
     const { sessionId } = await createSession({ paid: true });
     await assert.rejects(
       () => ExpertsService.markSessionRefundDone(sessionId),
-      /no pending refund/i,
+      /no pending refund/i
     );
   });
 
@@ -514,7 +509,7 @@ describe("refund and payout", () => {
 
     await assert.rejects(
       () => ExpertsService.markSessionPayoutDone(sessionId),
-      /no payout to release/i,
+      /no payout to release/i
     );
 
     await ExpertsService.completeExpertSession({
@@ -542,7 +537,7 @@ describe("refund and payout", () => {
 
     await assert.rejects(
       () => ExpertsService.markSessionPayoutDone(sessionId),
-      /already been marked paid/i,
+      /already been marked paid/i
     );
   });
 
@@ -558,12 +553,12 @@ describe("refund and payout", () => {
     assert.equal(
       await ExpertsService.releaseExpertSessionPayouts(),
       0,
-      "a just-completed session is not yet eligible",
+      "a just-completed session is not yet eligible"
     );
 
     await ExpertSession.collection.updateOne(
       { _id: new mongoose.Types.ObjectId(sessionId) },
-      { $set: { completedAt: new Date(Date.now() - 25 * 60 * 60 * 1000) } },
+      { $set: { completedAt: new Date(Date.now() - 25 * 60 * 60 * 1000) } }
     );
 
     assert.equal(await ExpertsService.releaseExpertSessionPayouts(), 1);
@@ -612,7 +607,7 @@ describe("reviewing a session", () => {
 
     await assert.rejects(
       () => ExpertsService.reviewExpertSession({ sessionId, userId, rating: 5 }),
-      /already reviewed/i,
+      /already reviewed/i
     );
   });
 
@@ -623,13 +618,13 @@ describe("reviewing a session", () => {
 
     await assert.rejects(
       () => ExpertsService.reviewExpertSession({ sessionId, userId, rating: 5 }),
-      /only review a completed session/i,
+      /only review a completed session/i
     );
 
     await completeIt(sessionId, expertUserId);
     await assert.rejects(
       () => ExpertsService.reviewExpertSession({ sessionId, userId, rating: 6 }),
-      /between 1 and 5/,
+      /between 1 and 5/
     );
   });
 });
@@ -639,7 +634,7 @@ describe("unpaid hold expiry", () => {
   const expire = async (sessionId: string) =>
     ExpertSession.collection.updateOne(
       { _id: new mongoose.Types.ObjectId(sessionId) },
-      { $set: { holdExpiresAt: new Date(Date.now() - 60_000) } },
+      { $set: { holdExpiresAt: new Date(Date.now() - 60_000) } }
     );
 
   it("cancels a lapsed unpaid hold with the exact system reason", async () => {

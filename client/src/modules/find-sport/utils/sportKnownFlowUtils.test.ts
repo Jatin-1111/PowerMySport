@@ -235,18 +235,20 @@ describe("buildProfileChips", () => {
 
   it("currentStandingTier resolves to the right ladder per sport", () => {
     // Tennis has an authored AITA ladder, so the chip reads in AITA's terms
-    expect(
-      buildProfileChips(form({ sport: "Tennis", currentStandingTier: 1 })),
-    ).toContain("No AITA ranking yet");
+    expect(buildProfileChips(form({ sport: "Tennis", currentStandingTier: 1 }))).toContain(
+      "No AITA ranking yet"
+    );
     // Chess has an authored AICF ladder, which has no "state rating" rung
-    expect(
-      buildProfileChips(form({ sport: "Chess", currentStandingTier: 2 })),
-    ).toContain("Playing rated tournaments");
+    expect(buildProfileChips(form({ sport: "Chess", currentStandingTier: 2 }))).toContain(
+      "Playing rated tournaments"
+    );
   });
 
   it("null currentStandingTier omits the standing chip", () => {
     const chips = buildProfileChips(form({ sport: "Cricket", currentStandingTier: null }));
-    expect(chips.some((c) => c.startsWith("Competes at") || c === "International exposure")).toBe(false);
+    expect(chips.some((c) => c.startsWith("Competes at") || c === "International exposure")).toBe(
+      false
+    );
   });
 
   it("yearsPlaying singular vs plural", () => {
@@ -272,14 +274,14 @@ describe("buildProfileChips", () => {
 
 describe("buildAchievementChips", () => {
   it("bestResultTier resolves to the right ladder label per sport", () => {
-    expect(
-      buildAchievementChips(form({ sport: "Cricket", bestResultTier: 4 })),
-    ).toContain("National-level selection or medal");
+    expect(buildAchievementChips(form({ sport: "Cricket", bestResultTier: 4 }))).toContain(
+      "National-level selection or medal"
+    );
   });
 
   it("achievementsNote passes through when present", () => {
     expect(
-      buildAchievementChips(form({ achievementsNote: "Won U-14 state championship" })),
+      buildAchievementChips(form({ achievementsNote: "Won U-14 state championship" }))
     ).toContain("Won U-14 state championship");
   });
 
@@ -307,15 +309,27 @@ describe("buildGoalChips", () => {
   });
 
   it("federation sports (Cricket) get district/state trial wording", () => {
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "fun" }))).toContain("Fitness & enjoyment only");
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "competitive" }))).toContain("Improving for school team");
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "national" }))).toContain("Trying for district/state trials");
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "career" }))).toContain("Building a career in sport");
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "fun" }))).toContain(
+      "Fitness & enjoyment only"
+    );
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "competitive" }))).toContain(
+      "Improving for school team"
+    );
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "national" }))).toContain(
+      "Trying for district/state trials"
+    );
+    expect(buildGoalChips(form({ sport: "Cricket", ambition: "career" }))).toContain(
+      "Building a career in sport"
+    );
   });
 
   it("ranking sports (Tennis) get ranking-tournament wording instead of district/state trials", () => {
-    expect(buildGoalChips(form({ sport: "Tennis", ambition: "national" }))).toContain("Earning an All-India (national) ranking");
-    expect(buildGoalChips(form({ sport: "Tennis", ambition: "career" }))).toContain("Building a career in sport");
+    expect(buildGoalChips(form({ sport: "Tennis", ambition: "national" }))).toContain(
+      "Earning an All-India (national) ranking"
+    );
+    expect(buildGoalChips(form({ sport: "Tennis", ambition: "career" }))).toContain(
+      "Building a career in sport"
+    );
   });
 
   it("empty sport omits the ambition chip (consistent with other chip builders)", () => {
@@ -412,14 +426,16 @@ describe("getCurrentStandingLadder / getBestResultLadder — archetype resolutio
   it("Badminton and Table Tennis KEEP a state rung — unlike tennis, state play is real in both (BAI issues the mandatory BAI ID through the state association; TTFI allots national entry off the published state ranking)", () => {
     ["Badminton", "Table Tennis"].forEach((sport) => {
       const hasStateRung = getCurrentStandingLadder(sport).some((t) =>
-        `${t.label} ${t.context ?? ""}`.toLowerCase().includes("state"),
+        `${t.label} ${t.context ?? ""}`.toLowerCase().includes("state")
       );
       expect(hasStateRung).toBe(true);
     });
   });
 
   it("Table Tennis resolves from both the name and the slug", () => {
-    expect(getCurrentStandingLadder("table-tennis")).toEqual(getCurrentStandingLadder("Table Tennis"));
+    expect(getCurrentStandingLadder("table-tennis")).toEqual(
+      getCurrentStandingLadder("Table Tennis")
+    );
     expect(getGoverningBodyName("table-tennis")).toBe("TTFI");
   });
 
@@ -473,14 +489,14 @@ describe("getCurrentStandingLadder / getBestResultLadder — archetype resolutio
 
   it("Athletics/Swimming (time-based standard) swap in 'time'", () => {
     expect(getCurrentStandingLadder("Athletics")[0].context).toBe(
-      "No time recorded yet — no matter how long or how seriously they've trained",
+      "No time recorded yet — no matter how long or how seriously they've trained"
     );
     expect(getCurrentStandingLadder("Swimming")[1].context).toBe("Has a district/club-level time");
   });
 
   it("Shooting (score-based standard) swaps in 'score'", () => {
     expect(getCurrentStandingLadder("Shooting")[0].context).toBe(
-      "No score recorded yet — no matter how long or how seriously they've trained",
+      "No score recorded yet — no matter how long or how seriously they've trained"
     );
   });
 
@@ -514,7 +530,9 @@ describe("getCurrentStandingLadder / getBestResultLadder — archetype resolutio
   });
 
   it("unknown sport falls back to the federation ladder", () => {
-    expect(getCurrentStandingLadder("Underwater Hockey")).toEqual(getCurrentStandingLadder("Cricket"));
+    expect(getCurrentStandingLadder("Underwater Hockey")).toEqual(
+      getCurrentStandingLadder("Cricket")
+    );
   });
 
   it("best-result ladder is phrased as an achievement, not a current state", () => {
@@ -591,7 +609,9 @@ describe("getAmbitionOptions — sport-anchored goal wording", () => {
 
   it("federation sports use district/state trial language", () => {
     const options = getAmbitionOptions("Cricket");
-    expect(options.find((o) => o.value === "national")?.label).toBe("Trying for district/state trials");
+    expect(options.find((o) => o.value === "national")?.label).toBe(
+      "Trying for district/state trials"
+    );
     expect(options.find((o) => o.value === "career")?.label).toBe("Building a career in sport");
   });
 
@@ -604,13 +624,15 @@ describe("getAmbitionOptions — sport-anchored goal wording", () => {
       expect(`${o.label} ${o.context}`.toLowerCase()).not.toContain("state");
     });
     expect(options.find((o) => o.value === "national")?.label).toBe(
-      "Earning an All-India (national) ranking",
+      "Earning an All-India (national) ranking"
     );
   });
 
   it("rating sports (Chess) reference AICF (national) vs FIDE (international) correctly", () => {
     const options = getAmbitionOptions("Chess");
-    expect(options.find((o) => o.value === "national")?.label).toBe("Aiming for a national (AICF) rating");
+    expect(options.find((o) => o.value === "national")?.label).toBe(
+      "Aiming for a national (AICF) rating"
+    );
     expect(options.find((o) => o.value === "career")?.label).toBe("Building a career in chess");
   });
 

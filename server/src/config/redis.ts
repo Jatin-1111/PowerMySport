@@ -39,7 +39,7 @@ const disabledClientOptions = {
 // ── General-purpose client (caching, presence, etc.) ─────────────────────────
 const redis = new Redis(
   REDIS_URL,
-  REDIS_ENABLED ? { maxRetriesPerRequest: 3 } : disabledClientOptions,
+  REDIS_ENABLED ? { maxRetriesPerRequest: 3 } : disabledClientOptions
 );
 
 redis.on("connect", () => {
@@ -58,7 +58,7 @@ redis.on("error", (err) => {
 
 if (!REDIS_ENABLED) {
   bootWarn(
-    "Redis explicitly disabled (REDIS_ENABLED=false) — every Redis-backed feature falls back immediately",
+    "Redis explicitly disabled (REDIS_ENABLED=false) — every Redis-backed feature falls back immediately"
   );
 }
 

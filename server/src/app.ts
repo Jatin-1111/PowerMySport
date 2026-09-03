@@ -12,10 +12,7 @@ import { errorLogger, requestLogger } from "./middleware/logger";
 import { observabilityMiddleware } from "./middleware/observability";
 import { requestContextMiddleware } from "./utils/requestContext";
 import { installTimingInstrumentation } from "./utils/timings";
-import {
-  apiRateLimitMiddleware,
-  securityHeadersMiddleware,
-} from "./middleware/security";
+import { apiRateLimitMiddleware, securityHeadersMiddleware } from "./middleware/security";
 
 import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
@@ -73,8 +70,7 @@ app.set("trust proxy", 1);
 
 // NOTE: initializeScheduledJobs() is called in server.ts after the server starts listening.
 
-const normalizeOrigin = (origin: string): string =>
-  origin.trim().replace(/\/$/, "").toLowerCase();
+const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, "").toLowerCase();
 
 const configuredOrigins = [
   process.env.FRONTEND_URLS,
@@ -110,9 +106,7 @@ const isOriginAllowed = (origin: string): boolean => {
     return true;
   }
 
-  return allowedOriginPatterns.some((pattern) =>
-    pattern.test(normalizedOrigin),
-  );
+  return allowedOriginPatterns.some((pattern) => pattern.test(normalizedOrigin));
 };
 
 const corsOptions: CorsOptions = {
@@ -165,14 +159,14 @@ app.use(
     verify: (req, _res, buf) => {
       (req as any).rawBody = buf.toString();
     },
-  }),
+  })
 );
 app.use(
   express.json({
     verify: (req, _res, buf) => {
       (req as any).rawBody = buf.toString();
     },
-  }),
+  })
 );
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -277,9 +271,7 @@ const getDetailedHealthPayload = async () => {
     const t0 = Date.now();
     await Promise.race([
       redis.ping(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("ping timeout")), 500),
-      ),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("ping timeout")), 500)),
     ]);
     redisPingMs = Date.now() - t0;
     redisStatus = "connected";
@@ -351,15 +343,10 @@ app.get("/api/health", async (_req, res) => {
   });
 });
 
-app.get(
-  "/api/admin/health/detail",
-  authMiddleware,
-  adminMiddleware,
-  async (_req, res) => {
-    const detailed = await getDetailedHealthPayload();
-    res.status(200).json(detailed);
-  },
-);
+app.get("/api/admin/health/detail", authMiddleware, adminMiddleware, async (_req, res) => {
+  const detailed = await getDetailedHealthPayload();
+  res.status(200).json(detailed);
+});
 
 app.use(errorLogger);
 

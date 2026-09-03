@@ -7,10 +7,6 @@ export const metadata = buildMetadata({
   noindex: true,
 });
 
-export default function ReportsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ReportsLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

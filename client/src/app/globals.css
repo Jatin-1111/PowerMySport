@@ -6,11 +6,11 @@
 
 :root {
   /* PowerMySport Brand Colors */
-  --power-orange: #E97316;
-  --deep-slate: #0F172A;
-  --ghost-white: #F8FAFC;
-  --turf-green: #22C55E;
-  --error-red: #EF4444;
+  --power-orange: #e97316;
+  --deep-slate: #0f172a;
+  --ghost-white: #f8fafc;
+  --turf-green: #22c55e;
+  --error-red: #ef4444;
 
   /* Semantic Colors */
   --primary: oklch(0.205 0 0);
@@ -133,7 +133,8 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 
-  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite;
+  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards)
+    linear infinite;
 
   /* ── Ranking analytics colours ────────────────────────────────────────────
      These MUST be registered here, not only declared in `:root`. Tailwind v4
@@ -228,18 +229,17 @@
     @apply bg-background text-foreground;
     background:
       radial-gradient(1100px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
-      radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 34%),
-      var(--background);
+      radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 34%), var(--background);
   }
 }
 
 @layer utilities {
   .glass-panel {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl dark:bg-slate-900/70 dark:border-white/10;
+    @apply border border-white/20 bg-white/70 shadow-xl backdrop-blur-md dark:border-white/10 dark:bg-slate-900/70;
   }
 
   .glass-panel-heavy {
-    @apply bg-white/90 backdrop-blur-xl border border-white/30 shadow-2xl dark:bg-slate-900/90 dark:border-white/20;
+    @apply border border-white/30 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-white/20 dark:bg-slate-900/90;
   }
 
   .premium-shadow {
@@ -260,7 +260,7 @@
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-linear-to-r from-power-orange to-turf-green;
+    @apply from-power-orange to-turf-green bg-linear-to-r bg-clip-text text-transparent;
   }
 
   .font-title {
@@ -268,7 +268,7 @@
   }
 
   .shop-surface {
-    @apply bg-white/80 backdrop-blur-md border border-white/60;
+    @apply border border-white/60 bg-white/80 backdrop-blur-md;
   }
 
   .shop-nav-link {
@@ -325,4 +325,4 @@
   .legal-content section[id] {
     scroll-margin-top: 6rem;
   }
-}
+}

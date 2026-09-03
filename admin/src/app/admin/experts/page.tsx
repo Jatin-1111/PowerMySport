@@ -1,17 +1,11 @@
 "use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { DetailDrawer } from "@/modules/shared/ui/DetailDrawer";
-import {
-  expertAdminApi,
-  type AdminExpert,
-} from "@/modules/expert/services/expert";
+import { expertAdminApi, type AdminExpert } from "@/modules/expert/services/expert";
 import { ExpertAdminPanel } from "./ExpertAdminPanel";
 import { Plus, Star } from "lucide-react";
 import Link from "next/link";
@@ -70,21 +64,18 @@ export default function AdminExpertsPage() {
 
   const applyUpdate = useCallback((updated: AdminExpert) => {
     setExperts((list) =>
-      list.map((e) =>
-        (e.id || e._id) === (updated.id || updated._id)
-          ? { ...e, ...updated }
-          : e,
-      ),
+      list.map((e) => ((e.id || e._id) === (updated.id || updated._id) ? { ...e, ...updated } : e))
     );
     setSelected((prev) =>
-      prev && (prev.id || prev._id) === (updated.id || updated._id)
-        ? { ...prev, ...updated }
-        : prev,
+      prev && (prev.id || prev._id) === (updated.id || updated._id) ? { ...prev, ...updated } : prev
     );
     // Refresh pending count after any status change
-    expertAdminApi.list({ limit: 1 }).then((r) => {
-      if (r.pendingCount !== undefined) setPendingCount(r.pendingCount);
-    }).catch(() => {});
+    expertAdminApi
+      .list({ limit: 1 })
+      .then((r) => {
+        if (r.pendingCount !== undefined) setPendingCount(r.pendingCount);
+      })
+      .catch(() => {});
   }, []);
 
   const visible = useMemo(() => {
@@ -94,7 +85,7 @@ export default function AdminExpertsPage() {
       (e) =>
         (e.name || "").toLowerCase().includes(q) ||
         (e.email || "").toLowerCase().includes(q) ||
-        (e.sports || []).join(" ").toLowerCase().includes(q),
+        (e.sports || []).join(" ").toLowerCase().includes(q)
     );
   }, [experts, search]);
 
@@ -113,7 +104,7 @@ export default function AdminExpertsPage() {
             {e.sports.slice(0, 2).map((s) => (
               <span
                 key={s}
-                className="rounded-full bg-power-orange/10 px-2 py-0.5 text-xs font-medium text-power-orange"
+                className="bg-power-orange/10 text-power-orange rounded-full px-2 py-0.5 text-xs font-medium"
               >
                 {s}
               </span>
@@ -132,9 +123,7 @@ export default function AdminExpertsPage() {
       key: "fee",
       header: "Fee",
       align: "right",
-      render: (e) => (
-        <span className="text-slate-700">{formatInr(e.sessionFee)}</span>
-      ),
+      render: (e) => <span className="text-slate-700">{formatInr(e.sessionFee)}</span>,
     },
     {
       key: "mode",
@@ -161,7 +150,7 @@ export default function AdminExpertsPage() {
             <span className="text-slate-400">({e.reviewCount})</span>
           </span>
         ) : (
-          <span className="text-xs uppercase text-slate-400">New</span>
+          <span className="text-xs text-slate-400 uppercase">New</span>
         ),
     },
     {
@@ -170,7 +159,9 @@ export default function AdminExpertsPage() {
       render: (e) => {
         const status = e.verificationStatus || "APPROVED";
         return (
-          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${VERIFICATION_BADGE_STYLES[status] || ""}`}>
+          <span
+            className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${VERIFICATION_BADGE_STYLES[status] || ""}`}
+          >
             {STATUS_LABEL[status] || status}
           </span>
         );
@@ -179,9 +170,7 @@ export default function AdminExpertsPage() {
     {
       key: "status",
       header: "Active",
-      render: (e) => (
-        <StatusBadge status={e.isActive ? "ACTIVE" : "INACTIVE"} />
-      ),
+      render: (e) => <StatusBadge status={e.isActive ? "ACTIVE" : "INACTIVE"} />,
     },
   ];
 
@@ -194,7 +183,7 @@ export default function AdminExpertsPage() {
         action={
           <Link
             href="/admin/experts/add"
-            className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <Plus size={16} /> Add expert
           </Link>
@@ -202,12 +191,12 @@ export default function AdminExpertsPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 w-fit">
+      <div className="flex w-fit gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
         <button
           onClick={() => setTab("ALL")}
           className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-all ${
             tab === "ALL"
-              ? "bg-white shadow-sm text-slate-900"
+              ? "bg-white text-slate-900 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
@@ -217,7 +206,7 @@ export default function AdminExpertsPage() {
           onClick={() => setTab("PENDING")}
           className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition-all ${
             tab === "PENDING"
-              ? "bg-white shadow-sm text-slate-900"
+              ? "bg-white text-slate-900 shadow-sm"
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
@@ -246,7 +235,11 @@ export default function AdminExpertsPage() {
           rows={visible}
           getRowKey={(e) => e.id || e._id || e.email || ""}
           loading={loading}
-          emptyMessage={tab === "PENDING" ? "No experts pending review." : "No experts yet. Use Add expert to create one."}
+          emptyMessage={
+            tab === "PENDING"
+              ? "No experts pending review."
+              : "No experts yet. Use Add expert to create one."
+          }
           onRowClick={setSelected}
           search={{
             value: search,
@@ -265,7 +258,9 @@ export default function AdminExpertsPage() {
           selected ? (
             <div className="flex items-center gap-2">
               {selected.verificationStatus && selected.verificationStatus !== "APPROVED" && (
-                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${VERIFICATION_BADGE_STYLES[selected.verificationStatus] || ""}`}>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${VERIFICATION_BADGE_STYLES[selected.verificationStatus] || ""}`}
+                >
                   {selected.verificationStatus}
                 </span>
               )}
@@ -274,9 +269,7 @@ export default function AdminExpertsPage() {
           ) : null
         }
       >
-        {selected && (
-          <ExpertAdminPanel expert={selected} onUpdated={applyUpdate} />
-        )}
+        {selected && <ExpertAdminPanel expert={selected} onUpdated={applyUpdate} />}
       </DetailDrawer>
     </div>
   );

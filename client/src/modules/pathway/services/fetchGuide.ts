@@ -1,8 +1,4 @@
-import type {
-  PathwayGuide,
-  PathwayGuideSummary,
-  PathwayStageSummary,
-} from "./pathway";
+import type { PathwayGuide, PathwayGuideSummary, PathwayStageSummary } from "./pathway";
 import { pathwaySportRank } from "../data/sports";
 
 // ─── Server-side pathway fetch ───────────────────────────────────────────────
@@ -16,12 +12,9 @@ import { pathwaySportRank } from "../data/sports";
 
 const REVALIDATE_SECONDS = 3600;
 
-const apiBase = (): string =>
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const apiBase = (): string => process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
-export async function fetchPathwayGuide(
-  sport: string,
-): Promise<PathwayGuide | null> {
+export async function fetchPathwayGuide(sport: string): Promise<PathwayGuide | null> {
   const params = new URLSearchParams({ sport });
   try {
     const res = await fetch(`${apiBase()}/pathways/guide?${params.toString()}`, {
@@ -53,9 +46,7 @@ export async function fetchPublishedPathways(): Promise<PathwayGuideSummary[]> {
     });
     if (!res.ok) return [];
     const body = await res.json();
-    return body?.success && Array.isArray(body.data)
-      ? (body.data as PathwayGuideSummary[])
-      : [];
+    return body?.success && Array.isArray(body.data) ? (body.data as PathwayGuideSummary[]) : [];
   } catch {
     return [];
   }
@@ -128,9 +119,7 @@ async function fetchAnsweredQuestions(): Promise<QuestionsBySport[]> {
     });
     if (!res.ok) return [];
     const body = await res.json();
-    return body?.success && Array.isArray(body.data)
-      ? (body.data as QuestionsBySport[])
-      : [];
+    return body?.success && Array.isArray(body.data) ? (body.data as QuestionsBySport[]) : [];
   } catch {
     return [];
   }
@@ -148,19 +137,15 @@ async function fetchAnsweredQuestions(): Promise<QuestionsBySport[]> {
  * Sports are visited in curated order, so when there are more sports than slots
  * the ones the site leads with are the ones that appear.
  */
-export function interleave(
-  bySport: QuestionsBySport[],
-): PathwayIndexQuestion[] {
+export function interleave(bySport: QuestionsBySport[]): PathwayIndexQuestion[] {
   const lists = [...bySport]
-    .sort(
-      (a, b) => pathwaySportRank(a.sportSlug) - pathwaySportRank(b.sportSlug),
-    )
+    .sort((a, b) => pathwaySportRank(a.sportSlug) - pathwaySportRank(b.sportSlug))
     .map((sport) =>
       sport.questions.map((q) => ({
         ...q,
         sportSlug: sport.sportSlug,
         sportName: sport.sportName,
-      })),
+      }))
     );
 
   const pool: PathwayIndexQuestion[] = [];
@@ -191,21 +176,20 @@ export function interleave(
 export function rotateQuestions(
   pool: PathwayIndexQuestion[],
   count: number,
-  now: number,
+  now: number
 ): PathwayIndexQuestion[] {
   if (pool.length <= count) return pool;
-  const start =
-    (Math.floor(now / ROTATION_WINDOW_MS) * count) % pool.length;
+  const start = (Math.floor(now / ROTATION_WINDOW_MS) * count) % pool.length;
   // Read circularly, so the window never returns a short final page.
   return Array.from(
     { length: count },
-    (_, i) => pool[(start + i) % pool.length] as PathwayIndexQuestion,
+    (_, i) => pool[(start + i) % pool.length] as PathwayIndexQuestion
   );
 }
 
 export async function fetchPathwayIndex(
   /** Injected so the rotation is testable and the caller owns the clock. */
-  now: number = Date.now(),
+  now: number = Date.now()
 ): Promise<PathwayIndex> {
   const [summaries, answered] = await Promise.all([
     fetchPublishedPathways(),

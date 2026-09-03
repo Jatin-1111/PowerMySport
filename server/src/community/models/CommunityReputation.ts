@@ -24,7 +24,7 @@ const communityReputationSchema = new Schema<CommunityReputationDocument>(
     answerCount: { type: Number, default: 0 },
     receivedUpvotes: { type: Number, default: 0 },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Direction matters: listLeaderboard sorts { totalPoints: -1, updatedAt: 1 }.
@@ -37,5 +37,5 @@ communityReputationSchema.index({ totalPoints: -1, updatedAt: 1 });
 
 export const CommunityReputation = mongoose.model<CommunityReputationDocument>(
   "CommunityReputation",
-  communityReputationSchema,
+  communityReputationSchema
 );

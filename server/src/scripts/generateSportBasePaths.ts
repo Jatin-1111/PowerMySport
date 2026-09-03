@@ -23,9 +23,7 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
 const MODEL_NAME = "gemini-2.0-flash";
 
 const args = process.argv.slice(2);
-const forceSport = args.includes("--sport")
-  ? args[args.indexOf("--sport") + 1]
-  : null;
+const forceSport = args.includes("--sport") ? args[args.indexOf("--sport") + 1] : null;
 const forceRegen = args.includes("--force");
 
 function buildBasePathPrompt(sportName: string): string {
@@ -108,7 +106,9 @@ async function generateBasePath(sportSlug: string, sportName: string): Promise<v
   if (!forceRegen) {
     const existing = await SportBasePath.findOne({ sportSlug });
     if (existing) {
-      console.log(`  ⏭  ${sportName} — base path already exists, skipping (use --force to regenerate)`);
+      console.log(
+        `  ⏭  ${sportName} — base path already exists, skipping (use --force to regenerate)`
+      );
       return;
     }
   }
@@ -152,15 +152,21 @@ async function generateBasePath(sportSlug: string, sportName: string): Promise<v
         generatedAt: new Date(),
       },
     },
-    { upsert: true, new: true },
+    { upsert: true, new: true }
   );
 
   console.log(`  ✓  ${sportName} — base path saved`);
 }
 
 async function main() {
-  if (!MONGO_URI) { console.error("MONGO_URI not set"); process.exit(1); }
-  if (!GEMINI_KEY) { console.error("GEMINI_API_KEY not set"); process.exit(1); }
+  if (!MONGO_URI) {
+    console.error("MONGO_URI not set");
+    process.exit(1);
+  }
+  if (!GEMINI_KEY) {
+    console.error("GEMINI_API_KEY not set");
+    process.exit(1);
+  }
 
   await mongoose.connect(MONGO_URI);
   console.log("Connected to MongoDB\n");

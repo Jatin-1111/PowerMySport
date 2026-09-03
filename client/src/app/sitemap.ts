@@ -1,11 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { SITE_URL as siteUrl } from "@/lib/seo";
-import {
-  RANKING_SPORTS,
-  comboHref,
-  rankingSportHref,
-} from "@/modules/rankings/config/rankings";
+import { RANKING_SPORTS, comboHref, rankingSportHref } from "@/modules/rankings/config/rankings";
 import { PATHWAY_SPORTS } from "@/modules/pathway/data/sports";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -42,9 +38,7 @@ async function fetchSlugs(path: string): Promise<SlugRecord[]> {
     });
     if (!res.ok) return [];
     const body = await res.json();
-    return body.success && Array.isArray(body.data)
-      ? (body.data as SlugRecord[])
-      : [];
+    return body.success && Array.isArray(body.data) ? (body.data as SlugRecord[]) : [];
   } catch {
     return [];
   }
@@ -67,10 +61,7 @@ interface IdRecord {
  * when the backend is unreachable, which would publish invented product URLs
  * into the sitemap on any API blip.
  */
-async function fetchIds(
-  path: string,
-  pick: (body: unknown) => IdRecord[],
-): Promise<IdRecord[]> {
+async function fetchIds(path: string, pick: (body: unknown) => IdRecord[]): Promise<IdRecord[]> {
   try {
     const res = await fetch(`${apiBase}${path}`, {
       next: { revalidate: 3600 },
@@ -90,8 +81,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchSlugs("/tournament-editions"),
     SHOP_IS_LIVE
       ? fetchIds("/v1/products?page=1&limit=500", (body) => {
-          const data = (body as { ok?: boolean; data?: { products?: IdRecord[] } })
-            ?.data;
+          const data = (body as { ok?: boolean; data?: { products?: IdRecord[] } })?.data;
           return Array.isArray(data?.products) ? data.products : [];
         })
       : Promise.resolve([]),
@@ -103,15 +93,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           };
           if (!envelope?.success) return [];
           if (Array.isArray(envelope.data)) return envelope.data;
-          return Array.isArray(envelope.data?.experts)
-            ? envelope.data.experts
-            : [];
+          return Array.isArray(envelope.data?.experts) ? envelope.data.experts : [];
         })
       : Promise.resolve([]),
   ]);
 
-  const lastMod = (record: SlugRecord) =>
-    record.updatedAt ? new Date(record.updatedAt) : now;
+  const lastMod = (record: SlugRecord) => (record.updatedAt ? new Date(record.updatedAt) : now);
 
   // ── Federation detail pages (/federations/[slug]) ──
   // Deep, long-tail content — eligibility rules and official calendars parents
@@ -190,22 +177,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-  const rankingEntries: MetadataRoute.Sitemap = RANKING_SPORTS.flatMap(
-    (sport) => [
-      {
-        url: `${siteUrl}${rankingSportHref(sport.slug)}`,
-        lastModified: now,
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      },
-      ...sport.combos.map((combo) => ({
-        url: `${siteUrl}${comboHref(sport.slug, combo)}`,
-        lastModified: now,
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      })),
-    ],
-  );
+  const rankingEntries: MetadataRoute.Sitemap = RANKING_SPORTS.flatMap((sport) => [
+    {
+      url: `${siteUrl}${rankingSportHref(sport.slug)}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    },
+    ...sport.combos.map((combo) => ({
+      url: `${siteUrl}${comboHref(sport.slug, combo)}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })),
+  ]);
 
   return [
     {

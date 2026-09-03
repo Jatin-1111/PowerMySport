@@ -1,10 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation, OpeningHours } from "../../types/index";
-import {
-  isEncryptedValue,
-  encryptValue,
-  decryptValue,
-} from "../../shared/utils/encryption";
+import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
 
 export interface AcademyOwnedVenue {
   name: string;
@@ -168,10 +164,7 @@ const academySchema = new Schema<AcademyDocument>(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [
-        /^[a-z0-9\-]+$/,
-        "Slug must contain only lowercase letters, numbers, and hyphens",
-      ],
+      match: [/^[a-z0-9\-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"],
     },
     description: {
       type: String,
@@ -236,9 +229,7 @@ const academySchema = new Schema<AcademyDocument>(
         validate: {
           validator(v: any) {
             if (!Array.isArray(v) || v.length !== 2) return false;
-            return v.every(
-              (coord) => typeof coord === "number" && !isNaN(coord),
-            );
+            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
           },
           message: "Coordinates must be [longitude, latitude]",
         },
@@ -404,10 +395,7 @@ const academySchema = new Schema<AcademyDocument>(
       type: String,
       required: [true, "Contact email is required"],
       lowercase: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        "Please provide a valid email",
-      ],
+      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email"],
     },
     contactPhone: {
       type: String,
@@ -581,7 +569,7 @@ const academySchema = new Schema<AcademyDocument>(
       min: [0, "Review count cannot be negative"],
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 academySchema.set("toJSON", { getters: true });
@@ -631,7 +619,6 @@ academySchema.index({ isApproved: 1, isActive: 1, sports: 1 });
 academySchema.index({ onboardingCompleted: 1, isApproved: 1, createdAt: -1 });
 
 const Academy =
-  mongoose.models.Academy ||
-  mongoose.model<AcademyDocument>("Academy", academySchema);
+  mongoose.models.Academy || mongoose.model<AcademyDocument>("Academy", academySchema);
 
 export default Academy;

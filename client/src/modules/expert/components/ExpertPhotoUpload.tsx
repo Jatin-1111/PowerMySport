@@ -31,9 +31,7 @@ export function ExpertPhotoUpload({
   size = "xl",
 }: ExpertPhotoUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>(
-    currentPhotoUrl,
-  );
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(currentPhotoUrl);
 
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -50,10 +48,7 @@ export function ExpertPhotoUpload({
     setPreviewUrl(localPreview);
 
     try {
-      const urlRes = await authApi.getProfilePictureUploadUrl(
-        file.name,
-        file.type,
-      );
+      const urlRes = await authApi.getProfilePictureUploadUrl(file.name, file.type);
       if (!urlRes.success || !urlRes.data) {
         throw new Error("Failed to get an upload URL.");
       }
@@ -63,9 +58,7 @@ export function ExpertPhotoUpload({
       onPhotoReady(downloadUrl, key);
       toast.success("Photo uploaded.");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to upload photo.",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to upload photo.");
       setPreviewUrl(currentPhotoUrl);
     } finally {
       setUploading(false);
@@ -75,15 +68,11 @@ export function ExpertPhotoUpload({
   return (
     <div className="relative shrink-0">
       <label
-        className={`group relative flex ${SIZE_CLASSES[size]} cursor-pointer items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md ring-1 ring-slate-200 focus-within:ring-4 focus-within:ring-power-orange/60`}
+        className={`group relative flex ${SIZE_CLASSES[size]} focus-within:ring-power-orange/60 cursor-pointer items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md ring-1 ring-slate-200 focus-within:ring-4`}
       >
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={previewUrl}
-            alt="Profile"
-            className="h-full w-full object-cover"
-          />
+          <img src={previewUrl} alt="Profile" className="h-full w-full object-cover" />
         ) : (
           <span className="text-3xl font-bold text-slate-300">
             <Camera className="h-8 w-8" />
@@ -105,9 +94,7 @@ export function ExpertPhotoUpload({
           aria-label="Upload profile photo"
           className="sr-only"
           disabled={uploading}
-          onChange={(e) =>
-            e.target.files?.[0] && handleFileSelect(e.target.files[0])
-          }
+          onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
         />
       </label>
     </div>

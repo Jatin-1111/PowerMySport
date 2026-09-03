@@ -3,17 +3,13 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { ModerationReview, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
-import {
-  AdminDataTable,
-  AdminDataTableColumn,
-} from "@/modules/shared/ui/AdminDataTable";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { useCallback, useEffect, useState } from "react";
 
 const getTargetLabel = (review: ModerationReview): string => {
   const target = review.targetId;
-  const name =
-    typeof target === "object" && target !== null ? target.name : undefined;
+  const name = typeof target === "object" && target !== null ? target.name : undefined;
   const label = review.targetType === "VENUE" ? "Venue" : "Coach";
   return name ? `${label}: ${name}` : `${label} (unavailable)`;
 };
@@ -33,9 +29,7 @@ export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<ModerationReview[]>([]);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [targetTypeFilter, setTargetTypeFilter] = useState<
-    "" | "VENUE" | "Coach"
-  >("");
+  const [targetTypeFilter, setTargetTypeFilter] = useState<"" | "VENUE" | "Coach">("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -61,10 +55,7 @@ export default function AdminReviewsPage() {
     loadQueue();
   }, [loadQueue]);
 
-  const handleModeration = async (
-    reviewId: string,
-    action: "APPROVE" | "HIDE" | "REMOVE",
-  ) => {
+  const handleModeration = async (reviewId: string, action: "APPROVE" | "HIDE" | "REMOVE") => {
     setPendingActionId(reviewId);
     try {
       await adminApi.moderateReview(reviewId, { action });
@@ -75,8 +66,7 @@ export default function AdminReviewsPage() {
   };
 
   const visibleReviews = reviews.filter((review) => {
-    if (targetTypeFilter && review.targetType !== targetTypeFilter)
-      return false;
+    if (targetTypeFilter && review.targetType !== targetTypeFilter) return false;
     const query = search.trim().toLowerCase();
     if (!query) return true;
     return (
@@ -91,9 +81,7 @@ export default function AdminReviewsPage() {
       key: "target",
       header: "Reviewed",
       render: (review) => (
-        <span className="font-medium text-slate-900">
-          {getTargetLabel(review)}
-        </span>
+        <span className="font-medium text-slate-900">{getTargetLabel(review)}</span>
       ),
     },
     { key: "reviewer", header: "Reviewer", render: getReviewerLabel },
@@ -173,9 +161,7 @@ export default function AdminReviewsPage() {
             <>
               <select
                 value={targetTypeFilter}
-                onChange={(e) =>
-                  setTargetTypeFilter(e.target.value as typeof targetTypeFilter)
-                }
+                onChange={(e) => setTargetTypeFilter(e.target.value as typeof targetTypeFilter)}
                 className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
               >
                 <option value="">All types</option>

@@ -72,7 +72,7 @@ const printDigest = (windowMs: number): void => {
           budgetMs: route.budgetMs,
           overBudget: route.overBudget,
         })),
-      }),
+      })
     );
     return;
   }
@@ -88,7 +88,7 @@ const printDigest = (windowMs: number): void => {
         `db ${Math.round(snapshot.dbShare * 100)}% ext ${Math.round(snapshot.extShare * 100)}%`,
         `loop lag ${formatMs(lagMean)} (p99 ${formatMs(lagP99)})`,
         `heap ${heapMb}MB`,
-      ].join(colours.grey(" | ")),
+      ].join(colours.grey(" | "))
   );
 
   for (const route of snapshot.routes.slice(0, 3)) {
@@ -98,7 +98,7 @@ const printDigest = (windowMs: number): void => {
         padVisible(method, 5) +
         padVisible(rest.join(" "), 32) +
         padVisible(`${route.count} req`, 10, "right") +
-        `  ${colours.grey("p95")} ${formatMs(route.p95)}`,
+        `  ${colours.grey("p95")} ${formatMs(route.p95)}`
     );
   }
 
@@ -109,8 +109,8 @@ const printDigest = (windowMs: number): void => {
       colours.yellow("   ! over budget  ") +
         padVisible(breach.routeKey, 40) +
         `p95 ${colours.yellow(formatMs(breach.p95))} ${colours.grey("vs budget")} ${formatMs(
-          breach.budgetMs ?? 0,
-        )}`,
+          breach.budgetMs ?? 0
+        )}`
     );
   }
 };

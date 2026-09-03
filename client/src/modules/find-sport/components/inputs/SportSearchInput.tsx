@@ -19,7 +19,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="bg-orange-100 text-power-orange rounded px-0.5 not-italic font-semibold">
+      <mark className="text-power-orange rounded bg-orange-100 px-0.5 font-semibold not-italic">
         {text.slice(idx, idx + query.length)}
       </mark>
       {text.slice(idx + query.length)}
@@ -27,7 +27,12 @@ function highlightMatch(text: string, query: string): React.ReactNode {
   );
 }
 
-export function SportSearchInput({ value, onChange, placeholder = "e.g. Cricket, Badminton, Tennis…", required }: Props) {
+export function SportSearchInput({
+  value,
+  onChange,
+  placeholder = "e.g. Cricket, Badminton, Tennis…",
+  required,
+}: Props) {
   const [query, setQuery] = useState(value || "");
   const [allSports, setAllSports] = useState<Sport[]>([]);
   const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
@@ -94,13 +99,15 @@ export function SportSearchInput({ value, onChange, placeholder = "e.g. Cricket,
   return (
     <div ref={containerRef} className="relative">
       {/* Input */}
-      <div className={`flex items-center gap-2 rounded-2xl border-2 bg-white px-4 py-3 transition-colors ${
-        selected
-          ? "border-emerald-400 bg-emerald-50/40"
-          : open
-          ? "border-power-orange"
-          : "border-slate-200 hover:border-slate-300"
-      }`}>
+      <div
+        className={`flex items-center gap-2 rounded-2xl border-2 bg-white px-4 py-3 transition-colors ${
+          selected
+            ? "border-emerald-400 bg-emerald-50/40"
+            : open
+              ? "border-power-orange"
+              : "border-slate-200 hover:border-slate-300"
+        }`}
+      >
         {selected ? (
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
         ) : (
@@ -135,7 +142,7 @@ export function SportSearchInput({ value, onChange, placeholder = "e.g. Cricket,
             }
           }}
           placeholder={placeholder}
-          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none"
+          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
           role="combobox"
           aria-expanded={open}
           aria-autocomplete="list"
@@ -144,7 +151,7 @@ export function SportSearchInput({ value, onChange, placeholder = "e.g. Cricket,
           <button
             type="button"
             onClick={clear}
-            className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-slate-100"
           >
             <X className="h-3.5 w-3.5 text-slate-400" />
           </button>
@@ -153,7 +160,7 @@ export function SportSearchInput({ value, onChange, placeholder = "e.g. Cricket,
 
       {/* Selected badge */}
       {selected && (
-        <p className="mt-2 text-xs text-emerald-600 font-medium flex items-center gap-1">
+        <p className="mt-2 flex items-center gap-1 text-xs font-medium text-emerald-600">
           <CheckCircle2 className="h-3 w-3" />
           {value} selected
         </p>
@@ -161,10 +168,10 @@ export function SportSearchInput({ value, onChange, placeholder = "e.g. Cricket,
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
-          <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
+        <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
+          <div className="from-power-orange/60 via-power-orange to-power-orange/60 h-0.5 w-full bg-gradient-to-r" />
           {suggestions.length > 0 ? (
-            <ul role="listbox" className="py-1.5 max-h-64 overflow-y-auto">
+            <ul role="listbox" className="max-h-64 overflow-y-auto py-1.5">
               {suggestions.map((s, idx) => {
                 const active = idx === activeIdx;
                 return (
@@ -173,25 +180,32 @@ export function SportSearchInput({ value, onChange, placeholder = "e.g. Cricket,
                       type="button"
                       role="option"
                       aria-selected={active}
-                      onMouseDown={(e) => { e.preventDefault(); select(s.name); }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        select(s.name);
+                      }}
                       onMouseEnter={() => setActiveIdx(idx)}
                       className={`group relative flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                         active ? "bg-orange-50" : "hover:bg-orange-50"
                       }`}
                     >
                       {active && (
-                        <span className="absolute inset-y-1 left-0 w-0.5 rounded-r-full bg-power-orange" />
+                        <span className="bg-power-orange absolute inset-y-1 left-0 w-0.5 rounded-r-full" />
                       )}
-                      <Search className={`h-3.5 w-3.5 shrink-0 ${active ? "text-power-orange" : "text-slate-300"}`} />
+                      <Search
+                        className={`h-3.5 w-3.5 shrink-0 ${active ? "text-power-orange" : "text-slate-300"}`}
+                      />
                       <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
                         {highlightMatch(s.name, query)}
                       </span>
                       {s.category && (
-                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-500 uppercase">
                           {s.category}
                         </span>
                       )}
-                      <ChevronRight className={`h-3.5 w-3.5 shrink-0 text-slate-300 ${active ? "text-power-orange" : ""}`} />
+                      <ChevronRight
+                        className={`h-3.5 w-3.5 shrink-0 text-slate-300 ${active ? "text-power-orange" : ""}`}
+                      />
                     </button>
                   </li>
                 );
@@ -200,7 +214,7 @@ export function SportSearchInput({ value, onChange, placeholder = "e.g. Cricket,
           ) : (
             <div className="px-4 py-4 text-center">
               <p className="text-sm text-slate-500">No sport found for &ldquo;{query}&rdquo;</p>
-              <p className="text-xs text-slate-400 mt-0.5">Try a different spelling</p>
+              <p className="mt-0.5 text-xs text-slate-400">Try a different spelling</p>
             </div>
           )}
         </div>

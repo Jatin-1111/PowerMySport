@@ -1,11 +1,6 @@
 import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
-import {
-  ParsedPointBreakdown,
-  ParsedRankingRow,
-  ParseResult,
-  SourceMovement,
-} from "./types";
+import { ParsedPointBreakdown, ParsedRankingRow, ParseResult, SourceMovement } from "./types";
 import { resolveStateCode } from "./stateCodes";
 
 /**
@@ -45,10 +40,7 @@ export interface ParseListOptions {
   requestedPageSize?: number;
 }
 
-export function parseRankingList(
-  html: string,
-  options: ParseListOptions = {},
-): ParseResult {
+export function parseRankingList(html: string, options: ParseListOptions = {}): ParseResult {
   const $ = cheerio.load(html);
 
   const diagnostics: ParseResult["diagnostics"] = {
@@ -64,7 +56,7 @@ export function parseRankingList(
   if (cards.length === 0) {
     throw new Error(
       "Ranking page contains no `div.rankingCard` rows — the source layout has " +
-        "changed. Refusing to guess.",
+        "changed. Refusing to guess."
     );
   }
 
@@ -102,7 +94,7 @@ export function parseRankingList(
     throw new Error(
       `Ranking page returned ${cards.length} rows against a requested page size ` +
         `of ${pageSize} — the list is probably truncated. Raise the page size ` +
-        `rather than publishing a partial list.`,
+        `rather than publishing a partial list.`
     );
   }
 
@@ -126,15 +118,13 @@ const LIST_COLUMNS = ["Rank", "Player", "State", "Total Pts."];
 function readCard(
   $: cheerio.CheerioAPI,
   card: cheerio.Cheerio<AnyNode>,
-  diagnostics: ParseResult["diagnostics"],
+  diagnostics: ParseResult["diagnostics"]
 ): ParsedRankingRow | null {
   const nameLink = card.find("a.rr-name").first();
 
   // `data-rank` is the server's own value; the printed cell is the fallback,
   // because a medal badge wraps it in an extra span.
-  const rank =
-    toInt(nameLink.attr("data-rank")) ??
-    toInt(card.find("span.rr-rank").first().text());
+  const rank = toInt(nameLink.attr("data-rank")) ?? toInt(card.find("span.rr-rank").first().text());
   const playerKey = (nameLink.attr("data-player") ?? "").trim();
   const fullName = normaliseSpace(nameLink.attr("title") || nameLink.text());
 
@@ -146,9 +136,7 @@ function readCard(
 
   if (rank === null || !playerKey || !regNo || !fullName) {
     diagnostics.malformedRows++;
-    diagnostics.unparsedLines.push(
-      normaliseSpace(card.text()).slice(0, 200) || "(empty card)",
-    );
+    diagnostics.unparsedLines.push(normaliseSpace(card.text()).slice(0, 200) || "(empty card)");
     return null;
   }
 
@@ -192,7 +180,7 @@ function readCard(
  */
 function readState(
   $: cheerio.CheerioAPI,
-  card: cheerio.Cheerio<AnyNode>,
+  card: cheerio.Cheerio<AnyNode>
 ): { code: string | null; name: string | null } {
   const link = card.find("small.rr-sub a[href*='state=']").first();
   const href = link.attr("href") ?? "";
@@ -291,9 +279,7 @@ export function parsePointBreakdown(fragment: string): ParsedPointBreakdown {
   const labels = $("div.pv-stat span.lbl")
     .map((_, el) => normaliseSpace($(el).text()))
     .get();
-  const hasQuarterDoubles = labels.some(
-    (l) => /\b25\s*%/.test(l) && /DBLS|DOUBLES/i.test(l),
-  );
+  const hasQuarterDoubles = labels.some((l) => /\b25\s*%/.test(l) && /DBLS|DOUBLES/i.test(l));
 
   $("div.pv-stat").each((_, element) => {
     const stat = $(element);
@@ -319,10 +305,7 @@ export function parsePointBreakdown(fragment: string): ParsedPointBreakdown {
       value,
       // Only informational where the scoring sibling actually exists — see the
       // note above `hasQuarterDoubles`.
-      isInformational:
-        hasQuarterDoubles &&
-        /DBLS|DOUBLES/i.test(label) &&
-        !/\b25\s*%/.test(label),
+      isInformational: hasQuarterDoubles && /DBLS|DOUBLES/i.test(label) && !/\b25\s*%/.test(label),
       isDeduction: /penalt/i.test(label),
       isRollDown: isRollDownLabel(label),
     });
@@ -363,17 +346,13 @@ function isRollDownLabel(label: string): boolean {
  * undetectable mis-filing into a caught error.
  */
 function readInlineNumber(html: string, name: string): number | null {
-  const match = html.match(
-    new RegExp(`\\b(?:var|let|const)\\s+${name}\\s*=\\s*(-?\\d+)`),
-  );
+  const match = html.match(new RegExp(`\\b(?:var|let|const)\\s+${name}\\s*=\\s*(-?\\d+)`));
   return match?.[1] ? Number.parseInt(match[1], 10) : null;
 }
 
 /** Reads `var category="BS12";` out of the page's inline script. */
 function readInlineString(html: string, name: string): string | null {
-  const match = html.match(
-    new RegExp(`\\b(?:var|let|const)\\s+${name}\\s*=\\s*["']([^"']*)["']`),
-  );
+  const match = html.match(new RegExp(`\\b(?:var|let|const)\\s+${name}\\s*=\\s*["']([^"']*)["']`));
   return match?.[1]?.trim() || null;
 }
 

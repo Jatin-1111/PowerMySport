@@ -42,8 +42,7 @@ type TestContext = {
 
 type TestRunner = (ctx: TestContext) => Promise<RaceResult>;
 
-const unique = (): string =>
-  `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+const unique = (): string => `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
 
 const makePhone = (): string => {
   const suffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-10);
@@ -63,10 +62,7 @@ const toHHmm = (date: Date): string => {
   return `${hours}:${minutes}`;
 };
 
-const parsePositiveInt = (
-  value: string | undefined,
-  fallback: number,
-): number => {
+const parsePositiveInt = (value: string | undefined, fallback: number): number => {
   const parsed = Number.parseInt(value || "", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
@@ -125,39 +121,24 @@ const venueSlotRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
     const raceResults = await Promise.allSettled(
       Array.from({ length: config.slotAttempts }, (_, index) =>
         initiateBooking({
-          userId: pickPlayer(
-            ctx.playerIds,
-            iteration * config.slotAttempts + index,
-          ),
+          userId: pickPlayer(ctx.playerIds, iteration * config.slotAttempts + index),
           venueId: ctx.venueOneId,
           sport: "Badminton",
           date: bookingDate,
           startTime,
           endTime,
-        }),
-      ),
+        })
+      )
     );
 
-    const successCount = raceResults.filter(
-      (item) => item.status === "fulfilled",
-    ).length;
-    const failureCount = raceResults.filter(
-      (item) => item.status === "rejected",
-    ).length;
+    const successCount = raceResults.filter((item) => item.status === "fulfilled").length;
+    const failureCount = raceResults.filter((item) => item.status === "rejected").length;
 
     const dbCount = await Booking.countDocuments({
       venueId: ctx.venueOneId,
       date: {
-        $gte: new Date(
-          bookingDate.getFullYear(),
-          bookingDate.getMonth(),
-          bookingDate.getDate(),
-        ),
-        $lt: new Date(
-          bookingDate.getFullYear(),
-          bookingDate.getMonth(),
-          bookingDate.getDate() + 1,
-        ),
+        $gte: new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate()),
+        $lt: new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate() + 1),
       },
       startTime,
       endTime,
@@ -165,11 +146,7 @@ const venueSlotRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
     });
 
     totalRuns += 1;
-    if (
-      successCount === 1 &&
-      failureCount === config.slotAttempts - 1 &&
-      dbCount === 1
-    ) {
+    if (successCount === 1 && failureCount === config.slotAttempts - 1 && dbCount === 1) {
       passedRuns += 1;
     }
   }
@@ -194,40 +171,25 @@ const coachSlotRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
     const raceResults = await Promise.allSettled(
       Array.from({ length: config.slotAttempts }, (_, index) =>
         initiateBooking({
-          userId: pickPlayer(
-            ctx.playerIds,
-            iteration * config.slotAttempts + index,
-          ),
+          userId: pickPlayer(ctx.playerIds, iteration * config.slotAttempts + index),
           venueId: index % 2 === 0 ? ctx.venueOneId : ctx.venueTwoId,
           coachId: ctx.coachId,
           sport: "Badminton",
           date: bookingDate,
           startTime,
           endTime,
-        }),
-      ),
+        })
+      )
     );
 
-    const successCount = raceResults.filter(
-      (item) => item.status === "fulfilled",
-    ).length;
-    const failureCount = raceResults.filter(
-      (item) => item.status === "rejected",
-    ).length;
+    const successCount = raceResults.filter((item) => item.status === "fulfilled").length;
+    const failureCount = raceResults.filter((item) => item.status === "rejected").length;
 
     const dbCount = await Booking.countDocuments({
       coachId: ctx.coachId,
       date: {
-        $gte: new Date(
-          bookingDate.getFullYear(),
-          bookingDate.getMonth(),
-          bookingDate.getDate(),
-        ),
-        $lt: new Date(
-          bookingDate.getFullYear(),
-          bookingDate.getMonth(),
-          bookingDate.getDate() + 1,
-        ),
+        $gte: new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate()),
+        $lt: new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate() + 1),
       },
       startTime,
       endTime,
@@ -235,11 +197,7 @@ const coachSlotRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
     });
 
     totalRuns += 1;
-    if (
-      successCount === 1 &&
-      failureCount === config.slotAttempts - 1 &&
-      dbCount === 1
-    ) {
+    if (successCount === 1 && failureCount === config.slotAttempts - 1 && dbCount === 1) {
       passedRuns += 1;
     }
   }
@@ -251,9 +209,7 @@ const coachSlotRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
   };
 };
 
-const boundaryBackToBackCase = async (
-  ctx: TestContext,
-): Promise<RaceResult> => {
+const boundaryBackToBackCase = async (ctx: TestContext): Promise<RaceResult> => {
   const bookingDate = makeFutureDate(9);
   const userA = pickPlayer(ctx.playerIds, 0);
   const userB = pickPlayer(ctx.playerIds, 1);
@@ -277,12 +233,8 @@ const boundaryBackToBackCase = async (
     }),
   ]);
 
-  const successCount = results.filter(
-    (item) => item.status === "fulfilled",
-  ).length;
-  const failureCount = results.filter(
-    (item) => item.status === "rejected",
-  ).length;
+  const successCount = results.filter((item) => item.status === "fulfilled").length;
+  const failureCount = results.filter((item) => item.status === "rejected").length;
 
   return {
     name: "",
@@ -304,15 +256,12 @@ const cancelRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
 
   const cancelResults = await Promise.allSettled(
     Array.from({ length: config.cancelAttempts }, () =>
-      cancelBooking(
-        booking.booking._id.toString(),
-        booking.booking.organizerId.toString(),
-      ),
-    ),
+      cancelBooking(booking.booking._id.toString(), booking.booking.organizerId.toString())
+    )
   );
 
   const nonNullCancels = cancelResults.filter(
-    (item) => item.status === "fulfilled" && item.value,
+    (item) => item.status === "fulfilled" && item.value
   ).length;
 
   const refreshed = await Booking.findById(booking.booking._id);
@@ -338,9 +287,7 @@ const checkInRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
     endTime: toHHmm(end),
   });
 
-  const bookingWithCode = await Booking.findById(booking.booking._id).select(
-    "+checkInCode",
-  );
+  const bookingWithCode = await Booking.findById(booking.booking._id).select("+checkInCode");
 
   if (!bookingWithCode?.checkInCode) {
     return {
@@ -352,20 +299,12 @@ const checkInRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
 
   const checkInResults = await Promise.allSettled(
     Array.from({ length: config.checkInAttempts }, () =>
-      checkInBookingByCode(
-        bookingWithCode.checkInCode as string,
-        ctx.adminId,
-        "Admin",
-      ),
-    ),
+      checkInBookingByCode(bookingWithCode.checkInCode as string, ctx.adminId, "Admin")
+    )
   );
 
-  const successCount = checkInResults.filter(
-    (item) => item.status === "fulfilled",
-  ).length;
-  const failureCount = checkInResults.filter(
-    (item) => item.status === "rejected",
-  ).length;
+  const successCount = checkInResults.filter((item) => item.status === "fulfilled").length;
+  const failureCount = checkInResults.filter((item) => item.status === "rejected").length;
 
   const refreshed = await Booking.findById(booking.booking._id);
 
@@ -394,16 +333,12 @@ const mockPaymentRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
 
   const raceResults = await Promise.allSettled(
     Array.from({ length: config.paymentAttempts }, () =>
-      confirmMockPaymentSuccess(booking.booking._id.toString(), userId),
-    ),
+      confirmMockPaymentSuccess(booking.booking._id.toString(), userId)
+    )
   );
 
-  const rejectedCount = raceResults.filter(
-    (item) => item.status === "rejected",
-  ).length;
-  const refreshed = await Booking.findById(booking.booking._id).select(
-    "+checkInCode",
-  );
+  const rejectedCount = raceResults.filter((item) => item.status === "rejected").length;
+  const refreshed = await Booking.findById(booking.booking._id).select("+checkInCode");
 
   const hasPaymentTimestamp = Boolean(refreshed?.paymentConfirmedAt);
   const hasEmailTimestamp = Boolean(refreshed?.confirmationEmailSentAt);
@@ -415,9 +350,7 @@ const mockPaymentRaceCase = async (ctx: TestContext): Promise<RaceResult> => {
   };
 };
 
-const unauthorizedPaymentCase = async (
-  ctx: TestContext,
-): Promise<RaceResult> => {
+const unauthorizedPaymentCase = async (ctx: TestContext): Promise<RaceResult> => {
   const bookingDate = makeFutureDate(12);
   const bookingOwner = pickPlayer(ctx.playerIds, 5);
   const wrongUser = pickPlayer(ctx.playerIds, 6);
@@ -465,8 +398,8 @@ const run = async (): Promise<void> => {
           checkInAttempts: config.checkInAttempts,
         },
         null,
-        2,
-      ),
+        2
+      )
     );
 
     const owner = await User.create({
@@ -612,9 +545,7 @@ const run = async (): Promise<void> => {
     const message = error instanceof Error ? error.message : String(error);
     console.error("❌ Stress script failed:", message);
     if (message.includes("Transaction numbers are only allowed")) {
-      console.error(
-        "ℹ️ This test requires MongoDB transactions (replica set / Atlas cluster).",
-      );
+      console.error("ℹ️ This test requires MongoDB transactions (replica set / Atlas cluster).");
     }
     process.exitCode = 1;
   } finally {

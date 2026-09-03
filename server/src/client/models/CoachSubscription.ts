@@ -1,8 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { notifyUserDataUpdated } from "../sockets/friendSocket";
 
-export type CoachSubscriptionStatus =
-  "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
+export type CoachSubscriptionStatus = "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
 
 export interface CoachSubscriptionDocument extends Document {
   id?: string;
@@ -108,12 +107,10 @@ const coachSubscriptionSchema = new Schema<CoachSubscriptionDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
-coachSubscriptionSchema.virtual("id").get(function (
-  this: CoachSubscriptionDocument,
-) {
+coachSubscriptionSchema.virtual("id").get(function (this: CoachSubscriptionDocument) {
   return this._id.toString();
 });
 
@@ -143,5 +140,5 @@ coachSubscriptionSchema.post("findOneAndUpdate", function (doc) {
 
 export const CoachSubscription = mongoose.model<CoachSubscriptionDocument>(
   "CoachSubscription",
-  coachSubscriptionSchema,
+  coachSubscriptionSchema
 );

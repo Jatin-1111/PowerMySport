@@ -21,9 +21,7 @@ export default function JoinCommunityPage() {
   const params = useParams();
   const router = useRouter();
   const inviteCodeParam = params.code;
-  const inviteCode = Array.isArray(inviteCodeParam)
-    ? inviteCodeParam[0]
-    : inviteCodeParam;
+  const inviteCode = Array.isArray(inviteCodeParam) ? inviteCodeParam[0] : inviteCodeParam;
 
   const [status, setStatus] = useState<JoinStatus>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +36,7 @@ export default function JoinCommunityPage() {
         }
 
         setStatus("loading");
-        const result = await communityService.joinGroupByCode(
-          inviteCode.trim(),
-        );
+        const result = await communityService.joinGroupByCode(inviteCode.trim());
 
         if (!isActive) {
           return;
@@ -57,17 +53,14 @@ export default function JoinCommunityPage() {
 
         // Navigate to the community page with a stable inbox/conversations context.
         router.push(
-          `/chats?sidebar=conversations&conversation=${encodeURIComponent(result.conversationId)}`,
+          `/chats?sidebar=conversations&conversation=${encodeURIComponent(result.conversationId)}`
         );
       } catch (joinError) {
         if (!isActive) {
           return;
         }
 
-        const message =
-          joinError instanceof Error
-            ? joinError.message
-            : "Failed to join community";
+        const message = joinError instanceof Error ? joinError.message : "Failed to join community";
         setError(message);
         setStatus("error");
         toast.error(message);
@@ -83,22 +76,20 @@ export default function JoinCommunityPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] px-4 py-6 sm:py-8">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-white p-5 shadow-xl sm:p-8">
+      <div className="border-border w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl sm:p-8">
         {status === "loading" && (
           <div className="text-center">
-            <Loader className="mx-auto h-12 w-12 animate-spin text-power-orange" />
+            <Loader className="text-power-orange mx-auto h-12 w-12 animate-spin" />
             <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
               Joining Group...
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Please wait while we add you to the group
-            </p>
+            <p className="mt-2 text-sm text-slate-600">Please wait while we add you to the group</p>
           </div>
         )}
 
         {status === "success" && (
           <div className="text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-turf-green" />
+            <CheckCircle className="text-turf-green mx-auto h-12 w-12" />
             <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
               Successfully Joined!
             </h2>
@@ -110,7 +101,7 @@ export default function JoinCommunityPage() {
 
         {status === "redirecting" && (
           <div className="text-center">
-            <Loader className="mx-auto h-12 w-12 animate-spin text-power-orange" />
+            <Loader className="text-power-orange mx-auto h-12 w-12 animate-spin" />
             <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
               Taking you to the group...
             </h2>
@@ -120,20 +111,18 @@ export default function JoinCommunityPage() {
         {status === "error" && (
           <div className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
-              Could Not Join
-            </h2>
+            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">Could Not Join</h2>
             <p className="mt-2 text-sm text-slate-600">{error}</p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
               <button
                 onClick={() => router.push("/")}
-                className="flex-1 rounded-lg border border-border bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                className="border-border flex-1 rounded-lg border bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
               >
                 Go to Community
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="flex-1 rounded-lg bg-power-orange px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                className="bg-power-orange flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
               >
                 Try Again
               </button>

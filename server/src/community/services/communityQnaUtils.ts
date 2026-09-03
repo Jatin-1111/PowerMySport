@@ -17,10 +17,7 @@ export const normalizeTags = (tags: string[] = []): string[] => {
   return normalized;
 };
 
-export const getVoteTransitionDeltas = (
-  previousVote: 1 | -1 | null,
-  nextVote: 1 | -1 | null,
-) => {
+export const getVoteTransitionDeltas = (previousVote: 1 | -1 | null, nextVote: 1 | -1 | null) => {
   let upvoteCount = 0;
   let downvoteCount = 0;
 

@@ -1,13 +1,6 @@
-import {
-  BlogPost,
-} from "../models/BlogPost";
-import {
-  CommunityPost,
-} from "../models/CommunityPost";
-import {
-  clampForSnippet,
-  stripHtml,
-} from "./communityShared";
+import { BlogPost } from "../models/BlogPost";
+import { CommunityPost } from "../models/CommunityPost";
+import { clampForSnippet, stripHtml } from "./communityShared";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("communitySearch");
 
@@ -34,7 +27,7 @@ export const communitySearchService = {
   async searchCommunity(
     userId: string | undefined,
     query: string,
-    options?: { type?: "ALL" | "POST" | "BLOG"; limit?: number },
+    options?: { type?: "ALL" | "POST" | "BLOG"; limit?: number }
   ) {
     const term = (query || "").trim();
     if (term.length < 2) {
@@ -59,10 +52,7 @@ export const communitySearchService = {
      * in the log, which is the difference between "no stories matched" and a
      * 500.
      */
-    const searchSide = async <T>(
-      label: string,
-      run: () => Promise<T[]>,
-    ): Promise<T[]> => {
+    const searchSide = async <T>(label: string, run: () => Promise<T[]>): Promise<T[]> => {
       try {
         return await run();
       } catch (error) {
@@ -80,12 +70,12 @@ export const communitySearchService = {
                 isDeleted: false,
                 status: { $in: ["OPEN", "CLOSED"] },
               },
-              { score: { $meta: "textScore" } },
+              { score: { $meta: "textScore" } }
             )
               .select("title body sport tags answerCount acceptedAnswerId createdAt")
               .sort({ score: { $meta: "textScore" } })
               .limit(perSide)
-              .lean(),
+              .lean()
           )
         : Promise.resolve([]),
       wantBlogs
@@ -96,7 +86,7 @@ export const communitySearchService = {
                 isDeleted: false,
                 status: "PUBLISHED",
               },
-              { score: { $meta: "textScore" } },
+              { score: { $meta: "textScore" } }
             )
               // `content` is only needed as a snippet fallback when `excerpt`
               // is empty — still projected, but everything else unused by
@@ -104,15 +94,14 @@ export const communitySearchService = {
               .select("title excerpt content tags createdAt")
               .sort({ score: { $meta: "textScore" } })
               .limit(perSide)
-              .lean(),
+              .lean()
           )
         : Promise.resolve([]),
     ]);
 
     // Lean() results do not carry the projected `score` in their type, so it is
     // read through a narrow cast rather than widening the row types.
-    const scoreOf = (row: unknown): number =>
-      (row as { score?: number })?.score || 0;
+    const scoreOf = (row: unknown): number => (row as { score?: number })?.score || 0;
 
     const normalize = <T>(rows: T[]): { row: T; relevance: number }[] => {
       const top = scoreOf(rows[0]);
@@ -156,9 +145,7 @@ export const communitySearchService = {
           return b.relevance - a.relevance;
         }
         // Equally relevant: the fresher one first.
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       })
       .slice(0, safeLimit);
 

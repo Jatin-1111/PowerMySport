@@ -25,7 +25,7 @@ export const startOutboxWorker = () => {
       const item = await OutboxMessage.findOneAndUpdate(
         { status: "PENDING", nextAttemptAt: { $lte: now } },
         { $set: { status: "PROCESSING" } },
-        { sort: { nextAttemptAt: 1 } },
+        { sort: { nextAttemptAt: 1 } }
       );
 
       if (!item) return;
@@ -42,10 +42,7 @@ export const startOutboxWorker = () => {
                 {
                   userId,
                   type: "MESSAGE_RECEIVED",
-                  title:
-                    payload.conversationType === "GROUP"
-                      ? "New group message"
-                      : "New message",
+                  title: payload.conversationType === "GROUP" ? "New group message" : "New message",
                   message: payload.summary || "You have a new message",
                   data: {
                     event: "COMMUNITY_MESSAGE_RECEIVED",
@@ -55,17 +52,13 @@ export const startOutboxWorker = () => {
                     conversationType: payload.conversationType || "DM",
                   },
                 },
-                { persistToDb: true, sendSocket: true, sendPush: true },
+                { persistToDb: true, sendSocket: true, sendPush: true }
               );
             } catch (err) {
-              log.error(
-                "[outbox][deliver_message] Failed to send notification",
-                {
-                  userId,
-                  error:
-                    (err as any)?.stack || (err as any)?.message || String(err),
-                },
-              );
+              log.error("[outbox][deliver_message] Failed to send notification", {
+                userId,
+                error: (err as any)?.stack || (err as any)?.message || String(err),
+              });
             }
           }
         } else if (item.type === "process_payment_webhook") {
@@ -88,9 +81,7 @@ export const startOutboxWorker = () => {
             await event.save();
 
             try {
-              await reconcileCoachSubscriptionPaymentFromWebhookPayload(
-                event.payload,
-              );
+              await reconcileCoachSubscriptionPaymentFromWebhookPayload(event.payload);
 
               // Also try booking payment reconciliation — the webhook may be
               // for a booking rather than a coach subscription.
@@ -102,9 +93,7 @@ export const startOutboxWorker = () => {
 
               // Also try expert session reconciliation — the webhook may be
               // for an expert session (merchantOrderId prefix "EXP_").
-              await reconcileExpertSessionPaymentFromWebhookPayload(
-                event.payload,
-              );
+              await reconcileExpertSessionPaymentFromWebhookPayload(event.payload);
 
               event.status = "DONE";
               event.processedAt = new Date();
@@ -114,9 +103,7 @@ export const startOutboxWorker = () => {
             } catch (procErr) {
               event.status = "FAILED";
               event.lastError =
-                (procErr as any)?.stack ||
-                (procErr as any)?.message ||
-                String(procErr);
+                (procErr as any)?.stack || (procErr as any)?.message || String(procErr);
               await event.save().catch(() => undefined);
 
               log.error("[outbox][payment] processing failed", {
@@ -144,17 +131,11 @@ export const startOutboxWorker = () => {
         log.info("[outbox] item done", { id: item._id, type: item.type });
       } catch (procErr) {
         const attempts = (item.attempts || 0) + 1;
-        const baseBackoff = Math.min(
-          60 * 60 * 1000,
-          Math.pow(2, attempts) * 1000,
-        );
+        const baseBackoff = Math.min(60 * 60 * 1000, Math.pow(2, attempts) * 1000);
         const backoffMs = jitter(baseBackoff);
         item.attempts = attempts;
         item.nextAttemptAt = new Date(Date.now() + backoffMs);
-        item.lastError =
-          (procErr as any)?.stack ||
-          (procErr as any)?.message ||
-          String(procErr);
+        item.lastError = (procErr as any)?.stack || (procErr as any)?.message || String(procErr);
         item.status = attempts >= MAX_ATTEMPTS ? "FAILED" : "PENDING";
         await item.save();
         log.warn("[outbox] item failed, scheduled retry", {

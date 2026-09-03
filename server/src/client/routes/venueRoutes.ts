@@ -26,7 +26,7 @@ router.post(
   authMiddleware,
   venueListerMiddleware,
   validateRequest(venueSchema),
-  createNewVenue,
+  createNewVenue
 );
 
 // Get all venues. public: response never reads req.user or embeds any
@@ -34,56 +34,26 @@ router.post(
 router.get("/", cacheControl(60, "public"), cacheResponse(60), searchVenues);
 
 // Discovery endpoint (public) - returns venues AND coaches
-router.get(
-  "/discover",
-  cacheControl(60, "public"),
-  cacheResponse(60),
-  discoverNearby,
-);
+router.get("/discover", cacheControl(60, "public"), cacheResponse(60), discoverNearby);
 
 // Legacy search endpoint (public)
-router.get(
-  "/search",
-  cacheControl(60, "public"),
-  cacheResponse(60),
-  searchVenues,
-);
+router.get("/search", cacheControl(60, "public"), cacheResponse(60), searchVenues);
 
-router.get(
-  "/earnings",
-  authMiddleware,
-  venueListerMiddleware,
-  getVenueEarningsHandler,
-);
-router.get(
-  "/analytics",
-  authMiddleware,
-  venueListerMiddleware,
-  getVenueAnalyticsHandler,
-);
+router.get("/earnings", authMiddleware, venueListerMiddleware, getVenueEarningsHandler);
+router.get("/analytics", authMiddleware, venueListerMiddleware, getVenueAnalyticsHandler);
 router.get("/my-venues", authMiddleware, venueListerMiddleware, getMyVenues);
 router.post(
   "/:venueId/image-upload-urls",
   authMiddleware,
   venueListerMiddleware,
   validateRequest(venueImageUploadSchema),
-  getVenueImageUploadUrls,
+  getVenueImageUploadUrls
 );
 // Public venue detail — same 60s Redis cache already used for search/discover,
 // applied here too since this is the highest-traffic read (every venue page
 // view) and previously had no caching at all. public: never reads req.user.
 router.get("/:venueId", cacheControl(60, "public"), cacheResponse(60), getVenue);
-router.put(
-  "/:venueId",
-  authMiddleware,
-  venueListerMiddleware,
-  updateVenueDetails,
-);
-router.delete(
-  "/:venueId",
-  authMiddleware,
-  venueListerMiddleware,
-  deleteVenueById,
-);
+router.put("/:venueId", authMiddleware, venueListerMiddleware, updateVenueDetails);
+router.delete("/:venueId", authMiddleware, venueListerMiddleware, deleteVenueById);
 
 export default router;

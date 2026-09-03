@@ -27,12 +27,7 @@ export class WalletService {
   /**
    * Directly credits the wallet (e.g. for Refunds).
    */
-  static async creditWallet(
-    userId: string,
-    amount: number,
-    reason: string,
-    referenceId?: string,
-  ) {
+  static async creditWallet(userId: string, amount: number, reason: string, referenceId?: string) {
     const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const transaction: WalletTransaction = {
       id: transactionId,
@@ -50,7 +45,7 @@ export class WalletService {
         $inc: { balance: amount },
         $push: { transactions: { $each: [transaction], $position: 0 } },
       },
-      { new: true, upsert: true },
+      { new: true, upsert: true }
     );
 
     return { wallet, transaction };
@@ -59,12 +54,7 @@ export class WalletService {
   /**
    * Directly debits the wallet.
    */
-  static async debitWallet(
-    userId: string,
-    amount: number,
-    reason: string,
-    referenceId?: string,
-  ) {
+  static async debitWallet(userId: string, amount: number, reason: string, referenceId?: string) {
     const wallet = await Wallet.findOne({ userId });
     if (!wallet) {
       throw new Error("Wallet not found");
@@ -90,13 +80,11 @@ export class WalletService {
         $inc: { balance: -amount },
         $push: { transactions: { $each: [transaction], $position: 0 } },
       },
-      { new: true },
+      { new: true }
     );
 
     if (!updatedWallet) {
-      throw new Error(
-        "Concurrent transaction altered balance. Please try again.",
-      );
+      throw new Error("Concurrent transaction altered balance. Please try again.");
     }
 
     return { wallet: updatedWallet, transaction };
@@ -126,7 +114,7 @@ export class WalletService {
     await Wallet.findOneAndUpdate(
       { userId },
       { $push: { transactions: { $each: [transaction], $position: 0 } } },
-      { upsert: true },
+      { upsert: true }
     );
 
     const initResult = await initiatePhonePePayment({
@@ -154,7 +142,7 @@ export class WalletService {
     if (!wallet) throw new Error("Wallet not found");
 
     const transaction = wallet.transactions.find(
-      (t) => t.referenceId === merchantOrderId && t.reason === "Wallet Top Up",
+      (t) => t.referenceId === merchantOrderId && t.reason === "Wallet Top Up"
     );
 
     if (!transaction) throw new Error("Top-up transaction not found");
@@ -175,10 +163,7 @@ export class WalletService {
       // reports paise. Without this check a user could initiate a large top-up
       // and pay (or be charged) a smaller amount yet receive full credit.
       const expectedPaise = Math.round(transaction.amount * 100);
-      if (
-        typeof phonePeStatus.amount !== "number" ||
-        phonePeStatus.amount !== expectedPaise
-      ) {
+      if (typeof phonePeStatus.amount !== "number" || phonePeStatus.amount !== expectedPaise) {
         throw new Error("Top-up amount mismatch");
       }
 
@@ -193,7 +178,7 @@ export class WalletService {
           $inc: { balance: transaction.amount },
           $set: { "transactions.$.status": "COMPLETED" },
         },
-        { new: true },
+        { new: true }
       );
 
       if (!updatedWallet) {
@@ -214,7 +199,7 @@ export class WalletService {
       // Mark as failed
       await Wallet.updateOne(
         { userId, "transactions.id": transaction.id },
-        { $set: { "transactions.$.status": "FAILED" } },
+        { $set: { "transactions.$.status": "FAILED" } }
       );
       return { status: "FAILED", wallet };
     }

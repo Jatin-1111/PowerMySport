@@ -6,7 +6,7 @@ const ONE_MINUTE_MS = 60 * 1000;
 export const securityHeadersMiddleware = (
   _req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
@@ -22,12 +22,9 @@ export const securityHeadersMiddleware = (
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-    ].join("; "),
+    ].join("; ")
   );
-  res.setHeader(
-    "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()",
-  );
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   res.setHeader("Cross-Origin-Resource-Policy", "same-site");
 
   /**
@@ -41,10 +38,7 @@ export const securityHeadersMiddleware = (
   res.setHeader("X-Robots-Tag", "noindex, nofollow");
 
   if (process.env.NODE_ENV === "production") {
-    res.setHeader(
-      "Strict-Transport-Security",
-      "max-age=31536000; includeSubDomains",
-    );
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
 
   next();
@@ -61,11 +55,7 @@ export const securityHeadersMiddleware = (
  * "amnesia scaling" — each EB instance had its own counter, so the ALB
  * routing a user to a different instance would reset their rate-limit window.
  */
-export const apiRateLimitMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void => {
+export const apiRateLimitMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   if (req.path === "/api/health") {
     next();
     return;
@@ -77,15 +67,9 @@ export const apiRateLimitMiddleware = (
     return;
   }
 
-  const maxRequestsPerWindow = parseInt(
-    process.env.API_RATE_LIMIT_MAX_REQUESTS || "120",
-    10,
-  );
+  const maxRequestsPerWindow = parseInt(process.env.API_RATE_LIMIT_MAX_REQUESTS || "120", 10);
   const windowSec = Math.ceil(
-    parseInt(
-      process.env.API_RATE_LIMIT_WINDOW_MS || String(ONE_MINUTE_MS),
-      10,
-    ) / 1000,
+    parseInt(process.env.API_RATE_LIMIT_WINDOW_MS || String(ONE_MINUTE_MS), 10) / 1000
   );
 
   // req.ip is now the real user IP because app.set("trust proxy", 1) is set in app.ts
@@ -101,10 +85,7 @@ export const apiRateLimitMiddleware = (
       }
 
       res.setHeader("X-RateLimit-Limit", String(maxRequestsPerWindow));
-      res.setHeader(
-        "X-RateLimit-Remaining",
-        String(Math.max(0, maxRequestsPerWindow - count)),
-      );
+      res.setHeader("X-RateLimit-Remaining", String(Math.max(0, maxRequestsPerWindow - count)));
 
       if (count > maxRequestsPerWindow) {
         res.setHeader("Retry-After", String(windowSec));

@@ -15,13 +15,13 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         checked={checked}
         onChange={(e) => onCheckedChange?.(e.target.checked)}
         className={cn(
-          "h-4 w-4 rounded border border-slate-300 text-power-orange focus:ring-2 focus:ring-power-orange focus:ring-offset-2",
-          className,
+          "text-power-orange focus:ring-power-orange h-4 w-4 rounded border border-slate-300 focus:ring-2 focus:ring-offset-2",
+          className
         )}
         {...props}
       />
     );
-  },
+  }
 );
 Checkbox.displayName = "Checkbox";
 

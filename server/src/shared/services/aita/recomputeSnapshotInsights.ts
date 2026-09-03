@@ -43,7 +43,7 @@ export interface RecomputeResult {
 
 export async function recomputeSnapshotInsights(
   snapshotId: unknown,
-  options: { apply?: boolean } = {},
+  options: { apply?: boolean } = {}
 ): Promise<RecomputeResult | null> {
   const apply = options.apply ?? true;
 
@@ -128,10 +128,10 @@ export async function recomputeSnapshotInsights(
   const hasSample = rows.some((row) => row.pointsSampled);
   const bandProfiles = hasSample
     ? computeSampledBandProfiles(rows)
-    // Subcategory is load-bearing on this path, not decoration: it is what tells
-    // the band profiles whether an age group sits above this one whose points
-    // roll down and must be recovered.
-    : computeBandProfiles(rows, String(snapshot.subcategory));
+    : // Subcategory is load-bearing on this path, not decoration: it is what tells
+      // the band profiles whether an age group sits above this one whose points
+      // roll down and must be recovered.
+      computeBandProfiles(rows, String(snapshot.subcategory));
 
   // ── Row updates ───────────────────────────────────────────────────────────
   // Only rows whose values actually move are written. That is what makes a
@@ -169,10 +169,9 @@ export async function recomputeSnapshotInsights(
 
   if (apply && operations.length > 0) {
     for (let i = 0; i < operations.length; i += ENTRY_CHUNK_SIZE) {
-      await RankingEntry.bulkWrite(
-        operations.slice(i, i + ENTRY_CHUNK_SIZE) as never[],
-        { ordered: false },
-      );
+      await RankingEntry.bulkWrite(operations.slice(i, i + ENTRY_CHUNK_SIZE) as never[], {
+        ordered: false,
+      });
     }
   }
 
@@ -187,7 +186,7 @@ export async function recomputeSnapshotInsights(
           ...(previous?.asOnDate ? { comparedTo: previous.asOnDate } : {}),
         },
         ...(previous?.asOnDate ? {} : { $unset: { comparedTo: "" } }),
-      },
+      }
     );
   }
 

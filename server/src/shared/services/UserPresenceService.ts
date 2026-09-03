@@ -20,16 +20,10 @@ const shouldWriteNow = (userId: string): boolean => {
   return true;
 };
 
-const persistLastActive = async (
-  userId: string,
-  force = false,
-): Promise<void> => {
+const persistLastActive = async (userId: string, force = false): Promise<void> => {
   if (!force && !shouldWriteNow(userId)) return;
   try {
-    await User.updateOne(
-      { _id: userId },
-      { $set: { lastActiveAt: new Date() } },
-    );
+    await User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date() } });
   } catch (error) {
     log.error("Failed to persist user lastActiveAt:", error);
   }
@@ -52,10 +46,7 @@ const emitPresenceUpdate = (userId: string, isOnlineNow: boolean): void => {
  * Registers the socket ID under the user's Redis presence hash and
  * resets the TTL so the key doesn't expire while the user is active.
  */
-export const markUserOnline = async (
-  userId: string,
-  socketId: string,
-): Promise<void> => {
+export const markUserOnline = async (userId: string, socketId: string): Promise<void> => {
   try {
     const key = presenceKey(userId);
     await redis.hset(key, socketId, "1");
@@ -72,10 +63,7 @@ export const markUserOnline = async (
  * Removes only that socket's entry; the user stays online if they have
  * other open connections (e.g. two browser tabs).
  */
-export const markUserOffline = async (
-  userId: string,
-  socketId: string,
-): Promise<void> => {
+export const markUserOffline = async (userId: string, socketId: string): Promise<void> => {
   let isStillOnline = false;
   try {
     const key = presenceKey(userId);
@@ -119,9 +107,7 @@ export const isUserOnline = async (userId: string): Promise<boolean> => {
  * N sequential/parallel HLEN calls. Used by admin list endpoints that need
  * presence for a whole page of users at once.
  */
-export const areUsersOnline = async (
-  userIds: string[],
-): Promise<Map<string, boolean>> => {
+export const areUsersOnline = async (userIds: string[]): Promise<Map<string, boolean>> => {
   const result = new Map<string, boolean>();
   if (userIds.length === 0) return result;
   try {

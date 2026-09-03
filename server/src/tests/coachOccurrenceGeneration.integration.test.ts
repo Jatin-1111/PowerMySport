@@ -15,12 +15,8 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 const { CoachOffering } = require("../client/models/CoachOffering");
 const { CoachEnrollment } = require("../client/models/CoachEnrollment");
 const { CoachSessionCredit } = require("../client/models/CoachSessionCredit");
-const {
-  CoachSessionOccurrence,
-} = require("../client/models/CoachSessionOccurrence");
-const {
-  CoachSubscriptionPackage,
-} = require("../client/models/CoachSubscriptionPackage");
+const { CoachSessionOccurrence } = require("../client/models/CoachSessionOccurrence");
+const { CoachSubscriptionPackage } = require("../client/models/CoachSubscriptionPackage");
 const { Coach } = require("../client/models/Coach");
 const occurrences = require("../client/services/CoachOccurrenceService");
 const offeringService = require("../client/services/CoachOfferingService");
@@ -135,7 +131,7 @@ describe("generating sessions from a weekly pattern", () => {
     assert.equal(
       created[0].scheduledAt.toISOString(),
       "2026-09-01T12:30:00.000Z",
-      "18:00 IST must be stored as 12:30 UTC",
+      "18:00 IST must be stored as 12:30 UTC"
     );
   });
 
@@ -225,7 +221,7 @@ describe("rosters", () => {
     sessions = await CoachSessionOccurrence.find({});
     assert.ok(
       sessions.every((s: any) => s.roster.length === 1),
-      "enrolling did not add the student to upcoming sessions",
+      "enrolling did not add the student to upcoming sessions"
     );
   });
 
@@ -250,7 +246,7 @@ describe("rosters", () => {
     assert.equal(
       reloaded.roster.length,
       0,
-      "a completed session's attendance record was rewritten",
+      "a completed session's attendance record was rewritten"
     );
   });
 });
@@ -305,7 +301,7 @@ describe("online delivery", () => {
     assert.equal(
       reloadedPast.delivery.meetingLink,
       "https://zoom.example/abc",
-      "a delivered session's link was rewritten",
+      "a delivered session's link was rewritten"
     );
   });
 
@@ -327,7 +323,7 @@ describe("online delivery", () => {
           occurrenceId: session._id,
           meetingLink: "https://zoom.example/other",
         }),
-      /has not happened yet/,
+      /has not happened yet/
     );
   });
 
@@ -346,7 +342,7 @@ describe("online delivery", () => {
           occurrenceId: session._id,
           meetingLink: "https://zoom.example/x",
         }),
-      /Only an online session/,
+      /Only an online session/
     );
   });
 });

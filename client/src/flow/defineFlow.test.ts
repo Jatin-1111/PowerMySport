@@ -86,17 +86,7 @@ describe("resolveStep", () => {
   });
 
   it("is total — junk input still resolves to a real step", () => {
-    for (const input of [
-      "nonsense",
-      "",
-      "-5",
-      "999",
-      -1,
-      99,
-      null,
-      undefined,
-      "NaN",
-    ]) {
+    for (const input of ["nonsense", "", "-5", "999", -1, 99, null, undefined, "NaN"]) {
       const r = resolveStep(CHECKOUT, input as never, ready);
       expect(CHECKOUT.steps).toContain(r.step);
       expect(r.number).toBeGreaterThanOrEqual(1);

@@ -1,20 +1,20 @@
 import axiosInstance from "@/lib/api/axios";
 import {
-    AnalyticsData,
-    ApiResponse,
-    ClientDetails,
-    ClientNote,
-    ClientSummary,
-    Coach,
-    CoachCalendarData,
-    CoachSubscription,
-    CoachSubscriptionPackage,
-    CoachSubscriptionPackageCreateInput,
-    CoachVerificationDocument,
-    EarningsData,
-    IAvailability,
-    IBlockedDate,
-    NoteType,
+  AnalyticsData,
+  ApiResponse,
+  ClientDetails,
+  ClientNote,
+  ClientSummary,
+  Coach,
+  CoachCalendarData,
+  CoachSubscription,
+  CoachSubscriptionPackage,
+  CoachSubscriptionPackageCreateInput,
+  CoachVerificationDocument,
+  EarningsData,
+  IAvailability,
+  IBlockedDate,
+  NoteType,
 } from "@/types";
 
 export interface CoachVerificationUploadResponse {
@@ -30,10 +30,7 @@ export const coachApi = {
     bio: string;
     mobileNumber: string;
   }): Promise<ApiResponse<Coach | { bio: string; mobileNumber: string }>> => {
-    const response = await axiosInstance.post(
-      "/coaches/verification/step1",
-      payload,
-    );
+    const response = await axiosInstance.post("/coaches/verification/step1", payload);
     return response.data;
   },
 
@@ -65,10 +62,7 @@ export const coachApi = {
       };
     };
   }): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post(
-      "/coaches/verification/step2",
-      payload,
-    );
+    const response = await axiosInstance.post("/coaches/verification/step2", payload);
     return response.data;
   },
 
@@ -76,10 +70,7 @@ export const coachApi = {
   submitVerificationStep3: async (payload: {
     documents?: CoachVerificationDocument[];
   }): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post(
-      "/coaches/verification/step3",
-      payload,
-    );
+    const response = await axiosInstance.post("/coaches/verification/step3", payload);
     return response.data;
   },
 
@@ -96,10 +87,7 @@ export const coachApi = {
   },
 
   // Update coach profile
-  updateProfile: async (
-    coachId: string,
-    data: Partial<Coach>,
-  ): Promise<ApiResponse<Coach>> => {
+  updateProfile: async (coachId: string, data: Partial<Coach>): Promise<ApiResponse<Coach>> => {
     const response = await axiosInstance.put(`/coaches/${coachId}`, data);
     return response.data;
   },
@@ -108,10 +96,7 @@ export const coachApi = {
   updateMyAvailability: async (data: {
     availabilityBySport: Record<string, IAvailability[]>;
   }): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.put(
-      "/coaches/my-profile/availability",
-      data,
-    );
+    const response = await axiosInstance.put("/coaches/my-profile/availability", data);
     return response.data;
   },
 
@@ -122,64 +107,46 @@ export const coachApi = {
     documentType: CoachVerificationDocument["type"];
     purpose?: "DOCUMENT" | "VENUE_IMAGE";
   }): Promise<ApiResponse<CoachVerificationUploadResponse>> => {
-    const response = await axiosInstance.post(
-      "/coaches/verification/upload-url",
-      payload,
-    );
+    const response = await axiosInstance.post("/coaches/verification/upload-url", payload);
     return response.data;
   },
 
   // Coach-owned subscription packages
-  listMyPackages: async (): Promise<
-    ApiResponse<{ packages: CoachSubscriptionPackage[] }>
-  > => {
+  listMyPackages: async (): Promise<ApiResponse<{ packages: CoachSubscriptionPackage[] }>> => {
     const response = await axiosInstance.get("/coaches/subscription-packages");
     return response.data;
   },
 
   createPackage: async (
-    payload: CoachSubscriptionPackageCreateInput,
+    payload: CoachSubscriptionPackageCreateInput
   ): Promise<ApiResponse<{ package: CoachSubscriptionPackage }>> => {
-    const response = await axiosInstance.post(
-      "/coaches/subscription-packages",
-      payload,
-    );
+    const response = await axiosInstance.post("/coaches/subscription-packages", payload);
     return response.data;
   },
 
   updatePackage: async (
     packageId: string,
-    payload: Partial<CoachSubscriptionPackageCreateInput>,
+    payload: Partial<CoachSubscriptionPackageCreateInput>
   ): Promise<ApiResponse<{ package: CoachSubscriptionPackage }>> => {
     const response = await axiosInstance.put(
       `/coaches/subscription-packages/${packageId}`,
-      payload,
+      payload
     );
     return response.data;
   },
 
   deletePackage: async (packageId: string): Promise<ApiResponse<{}>> => {
-    const response = await axiosInstance.delete(
-      `/coaches/subscription-packages/${packageId}`,
-    );
+    const response = await axiosInstance.delete(`/coaches/subscription-packages/${packageId}`);
     return response.data;
   },
 
-  getActiveSubscriptionsForCoach: async (): Promise<
-    ApiResponse<{ subscriptions: any[] }>
-  > => {
-    const response = await axiosInstance.get(
-      "/coaches/subscription-packages/active-subscriptions",
-    );
+  getActiveSubscriptionsForCoach: async (): Promise<ApiResponse<{ subscriptions: any[] }>> => {
+    const response = await axiosInstance.get("/coaches/subscription-packages/active-subscriptions");
     return response.data;
   },
 
-  getCoachActiveSubscriptions: async (): Promise<
-    ApiResponse<{ subscriptions: any[] }>
-  > => {
-    const response = await axiosInstance.get(
-      "/coaches/subscription-packages/active-subscriptions",
-    );
+  getCoachActiveSubscriptions: async (): Promise<ApiResponse<{ subscriptions: any[] }>> => {
+    const response = await axiosInstance.get("/coaches/subscription-packages/active-subscriptions");
     return response.data;
   },
 
@@ -191,18 +158,16 @@ export const coachApi = {
     if (params?.startDate) query.append("startDate", params.startDate);
     if (params?.endDate) query.append("endDate", params.endDate);
     const response = await axiosInstance.get(
-      `/coaches/subscription-packages/revenue${query.toString() ? `?${query.toString()}` : ""}`,
+      `/coaches/subscription-packages/revenue${query.toString() ? `?${query.toString()}` : ""}`
     );
     return response.data;
   },
 
   // Public: get a coach's packages
   getCoachPackages: async (
-    coachId: string,
+    coachId: string
   ): Promise<ApiResponse<{ packages: CoachSubscriptionPackage[] }>> => {
-    const response = await axiosInstance.get(
-      `/coaches/${coachId}/subscription-packages`,
-    );
+    const response = await axiosInstance.get(`/coaches/${coachId}/subscription-packages`);
     return response.data;
   },
 
@@ -212,26 +177,20 @@ export const coachApi = {
     packageId: string;
     merchantOrderId: string;
   }): Promise<ApiResponse<{ subscription: any }>> => {
-    const response = await axiosInstance.post(
-      "/coaches/subscriptions",
-      payload,
-    );
+    const response = await axiosInstance.post("/coaches/subscriptions", payload);
     return response.data;
   },
 
   cancelCoachSubscription: async (
     subscriptionId: string,
-    reason?: string,
+    reason?: string
   ): Promise<ApiResponse<{ subscription: CoachSubscription }>> => {
-    const response = await axiosInstance.delete(
-      `/coaches/subscriptions/${subscriptionId}`,
-      {
-        data: {
-          subscriptionId,
-          reason,
-        },
+    const response = await axiosInstance.delete(`/coaches/subscriptions/${subscriptionId}`, {
+      data: {
+        subscriptionId,
+        reason,
       },
-    );
+    });
     return response.data;
   },
 
@@ -244,7 +203,7 @@ export const coachApi = {
     }
 
     const response = await axiosInstance.get(
-      `/coaches/subscriptions${query.toString() ? `?${query.toString()}` : ""}`,
+      `/coaches/subscriptions${query.toString() ? `?${query.toString()}` : ""}`
     );
     return response.data;
   },
@@ -264,15 +223,12 @@ export const coachApi = {
       total: number;
     };
   }> => {
-    const response = await axiosInstance.post(
-      "/coaches/subscriptions/phonepe/initiate",
-      payload,
-    );
+    const response = await axiosInstance.post("/coaches/subscriptions/phonepe/initiate", payload);
     return response.data.data;
   },
 
   verifySubscriptionPaymentStatus: async (
-    merchantOrderId: string,
+    merchantOrderId: string
   ): Promise<{
     state?: string;
     merchantOrderId: string;
@@ -285,7 +241,7 @@ export const coachApi = {
     };
   }> => {
     const response = await axiosInstance.get(
-      `/coaches/subscriptions/phonepe/status/${merchantOrderId}`,
+      `/coaches/subscriptions/phonepe/status/${merchantOrderId}`
     );
     return response.data.data;
   },
@@ -293,7 +249,7 @@ export const coachApi = {
   // Get coach calendar for a date range
   getCalendar: async (
     startDate: string,
-    endDate: string,
+    endDate: string
   ): Promise<ApiResponse<CoachCalendarData>> => {
     const response = await axiosInstance.get("/coaches/my-profile/calendar", {
       params: { startDate, endDate },
@@ -308,18 +264,13 @@ export const coachApi = {
     reason?: string;
     allDay?: boolean;
   }): Promise<ApiResponse<IBlockedDate>> => {
-    const response = await axiosInstance.post(
-      "/coaches/my-profile/block-dates",
-      payload,
-    );
+    const response = await axiosInstance.post("/coaches/my-profile/block-dates", payload);
     return response.data;
   },
 
   // Remove a blocked date
   unblockDate: async (blockId: string): Promise<ApiResponse<null>> => {
-    const response = await axiosInstance.delete(
-      `/coaches/my-profile/block-dates/${blockId}`,
-    );
+    const response = await axiosInstance.delete(`/coaches/my-profile/block-dates/${blockId}`);
     return response.data;
   },
 
@@ -329,12 +280,8 @@ export const coachApi = {
     return response.data;
   },
 
-  getClientDetails: async (
-    clientUserId: string,
-  ): Promise<ApiResponse<ClientDetails>> => {
-    const response = await axiosInstance.get(
-      `/coaches/my-clients/${clientUserId}`,
-    );
+  getClientDetails: async (clientUserId: string): Promise<ApiResponse<ClientDetails>> => {
+    const response = await axiosInstance.get(`/coaches/my-clients/${clientUserId}`);
     return response.data;
   },
 
@@ -345,21 +292,15 @@ export const coachApi = {
       noteType?: NoteType;
       sessionDate?: string;
       bookingId?: string;
-    },
+    }
   ): Promise<ApiResponse<ClientNote>> => {
-    const response = await axiosInstance.post(
-      `/coaches/my-clients/${clientUserId}/notes`,
-      payload,
-    );
+    const response = await axiosInstance.post(`/coaches/my-clients/${clientUserId}/notes`, payload);
     return response.data;
   },
 
-  deleteClientNote: async (
-    clientUserId: string,
-    noteId: string,
-  ): Promise<ApiResponse<null>> => {
+  deleteClientNote: async (clientUserId: string, noteId: string): Promise<ApiResponse<null>> => {
     const response = await axiosInstance.delete(
-      `/coaches/my-clients/${clientUserId}/notes/${noteId}`,
+      `/coaches/my-clients/${clientUserId}/notes/${noteId}`
     );
     return response.data;
   },

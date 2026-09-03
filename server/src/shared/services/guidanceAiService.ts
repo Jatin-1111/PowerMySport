@@ -87,7 +87,7 @@ export const shortTermPlanSchema = z.object({
       label: z.string(),
       focus: z.string(),
       sessions: z.array(z.union([planSessionSchema, z.string()])),
-    }),
+    })
   ),
   successCheck: z.string(),
 });
@@ -120,9 +120,7 @@ export const guidanceResponseSchema = z.object({
   mentalSkillsRoadmap: z
     .object({
       currentFocus: z.string(),
-      skills: z.array(
-        z.object({ skill: z.string(), howToDevelop: z.string() }),
-      ),
+      skills: z.array(z.object({ skill: z.string(), howToDevelop: z.string() })),
     })
     .optional(),
   talentIdentifiers: z.array(z.string()).optional(),
@@ -167,9 +165,7 @@ export const planResponseSchema = z.object({
   mentalSkillsRoadmap: z
     .object({
       currentFocus: z.string(),
-      skills: z.array(
-        z.object({ skill: z.string(), howToDevelop: z.string() }),
-      ),
+      skills: z.array(z.object({ skill: z.string(), howToDevelop: z.string() })),
     })
     .optional(),
   talentIdentifiers: z.array(z.string()).optional(),
@@ -227,7 +223,7 @@ const SHARED_TONE_INSTRUCTION = `WRITE IN THE SIMPLEST POSSIBLE ENGLISH: every f
 export const getAnalysisSystemPrompt = (
   hasSport: boolean,
   groundingContext?: string,
-  hasPersonality: boolean = true,
+  hasPersonality: boolean = true
 ) => `You are an expert Youth Sports Consultant advising an Indian parent. You will receive a child's profile strictly in JSON format.
 ${groundingContext ? `\nGROUNDING CONTEXT (OFFICIAL PATHWAY DATA):\n${groundingContext}\n\nAnchor your cost figures and realism judgement to these official benchmarks. Do not invent contradictory figures.\n` : ""}
 ${SHARED_TONE_INSTRUCTION}
@@ -250,9 +246,7 @@ Return ONLY a valid JSON object — no markdown, no preamble — matching this s
     "restDays": "How many rest days and why"
   },
   "recommendedPlatformActions": "Single string (not array) containing 2-3 specific actions the parent takes ON THE POWERMYSPORT PLATFORM ITSELF to get started, using ONLY features that exist today (e.g. explore this sport's full roadmap on the platform, message the PowerMySport team directly, ask a follow-up in the guidance chat) — do NOT mention booking/messaging a coach or browsing academy listings (no such marketplace exists yet), and NOT training drills or practice milestones",${
-    hasSport
-      ? ""
-      : '\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"],'
+    hasSport ? "" : '\n  "recommendedSports": ["Sport 1", "Sport 2", "Sport 3"],'
   }
   "goalAssessment": {
     "statedGoal": "Restate the parent's goal in one clear line — use parent_specific_question if present, else the primary objective",
@@ -310,9 +304,13 @@ function planSchemaBody(planHorizon: PlanHorizon, age: number): string {
       {"skill": "Mental skill name", "howToDevelop": "Concrete, age-appropriate exercise or drill to build this skill"}
     ]
   }`);
-    parts.push(`"talentIdentifiers": ["Observable sign or marker that this child shows genuine aptitude — specific to the sport and age group"]`);
+    parts.push(
+      `"talentIdentifiers": ["Observable sign or marker that this child shows genuine aptitude — specific to the sport and age group"]`
+    );
     if (age <= 11) {
-      parts.push(`"multiSportAdvisory": "Explain in 2-3 sentences why playing multiple sports (not specialising yet) is scientifically recommended for children under 12, with specific benefits for this child's profile and which complementary sports to consider"`);
+      parts.push(
+        `"multiSportAdvisory": "Explain in 2-3 sentences why playing multiple sports (not specialising yet) is scientifically recommended for children under 12, with specific benefits for this child's profile and which complementary sports to consider"`
+      );
     }
   }
   return parts.join(",\n  ");
@@ -321,7 +319,7 @@ function planSchemaBody(planHorizon: PlanHorizon, age: number): string {
 export const getPlanSystemPrompt = (
   age: number,
   groundingContext?: string,
-  planHorizon: PlanHorizon = "journey",
+  planHorizon: PlanHorizon = "journey"
 ) => `You are an expert Youth Sports Consultant building the concrete training plan for an Indian parent's child. You will receive the child's profile strictly in JSON format. A separate step already covers the personality/fitness read, coaching style, goal-realism verdict, and cost breakdown — focus ONLY on the plan itself, do not repeat any of that here.
 ${groundingContext ? `\nGROUNDING CONTEXT (OFFICIAL PATHWAY DATA):\n${groundingContext}\n\nYou must anchor your plan to these official benchmarks. Do not invent contradictory timelines or criteria.\n` : ""}
 ${SHARED_TONE_INSTRUCTION}
@@ -351,9 +349,7 @@ const isQuotaOrRateLimitError = (errorMessage: string) =>
 
 const getGuidanceClient = () => {
   if (!apiKey) {
-    throw new Error(
-      "Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable",
-    );
+    throw new Error("Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable");
   }
 
   return new GoogleGenAI({ apiKey });
@@ -368,7 +364,7 @@ async function callGuidanceModel<T>(
   contents: string,
   systemInstruction: string,
   schema: { parse: (data: unknown) => T },
-  temperature: number,
+  temperature: number
 ): Promise<T> {
   let lastError: unknown = null;
   let sawQuotaIssue = false;
@@ -394,8 +390,7 @@ async function callGuidanceModel<T>(
       return schema.parse(parsed);
     } catch (error) {
       lastError = error;
-      const errorMessage =
-        error instanceof Error ? error.message.toLowerCase() : "";
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
 
       if (isQuotaOrRateLimitError(errorMessage)) {
         sawQuotaIssue = true;
@@ -409,30 +404,26 @@ async function callGuidanceModel<T>(
 
   if (sawQuotaIssue) {
     throw new Error(
-      "Guidance generation is temporarily unavailable because Gemini API quota was exceeded for all configured models. Please wait a minute, reduce request volume, or switch GEMINI_MODEL_NAME / API key to one with available quota.",
+      "Guidance generation is temporarily unavailable because Gemini API quota was exceeded for all configured models. Please wait a minute, reduce request volume, or switch GEMINI_MODEL_NAME / API key to one with available quota."
     );
   }
   throw new Error(
     `No supported Gemini guidance model found. Tried: ${guidanceModelCandidates.join(
-      ", ",
-    )}. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+      ", "
+    )}. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`
   );
 }
 
 export const generateYouthSportsGuidance = async (
-  payload: GuidanceRequest,
+  payload: GuidanceRequest
 ): Promise<GuidanceResponse> => {
   const genAI = getGuidanceClient();
 
   let groundingContext = "";
   if (payload.sport && payload.location) {
     const slug = payload.sport.trim().toLowerCase().replace(/\s+/g, "-");
-    const stateSlug = payload.location
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-");
-    const levelIndex =
-      Math.max(1, Math.min(5, payload.current_pathway_level || 1)) - 1;
+    const stateSlug = payload.location.trim().toLowerCase().replace(/\s+/g, "-");
+    const levelIndex = Math.max(1, Math.min(5, payload.current_pathway_level || 1)) - 1;
 
     try {
       // Prefer the new split models (SportBasePath + SportStatePath) — they give
@@ -491,14 +482,14 @@ export const generateYouthSportsGuidance = async (
       contents,
       getAnalysisSystemPrompt(hasSport, groundingContext, hasPersonality),
       analysisResponseSchema,
-      0.4,
+      0.4
     ),
     callGuidanceModel(
       genAI,
       contents,
       getPlanSystemPrompt(payload.child_age, groundingContext, planHorizon),
       planResponseSchema,
-      0.4,
+      0.4
     ),
   ]);
 
@@ -524,7 +515,8 @@ export const diagnosisResponseSchema = z.object({
 });
 export type DiagnosisResponse = z.infer<typeof diagnosisResponseSchema>;
 
-const getDiagnosisSystemPrompt = () => `You are a sports diagnostician reading a parent's description of their child's situation. Your ONLY job is to restate the underlying pattern you actually see in what they described — do NOT build a plan, do NOT give advice, do NOT list drills.
+const getDiagnosisSystemPrompt =
+  () => `You are a sports diagnostician reading a parent's description of their child's situation. Your ONLY job is to restate the underlying pattern you actually see in what they described — do NOT build a plan, do NOT give advice, do NOT list drills.
 WRITE IN THE SIMPLEST POSSIBLE ENGLISH, as if speaking out loud to a parent who has never played sport. Short sentences, everyday words, no jargon.
 Be SPECIFIC to the exact details given — never return a generic restatement. If the parent described a symptom (e.g. "keeps losing close matches"), name the more specific pattern behind it if the details support one (e.g. composure breaking down at the end of close games, not fitness) — but only if the details actually support that read. If the details are too thin to diagnose anything beyond what was stated, say so plainly rather than inventing a deeper cause.
 Return ONLY a valid JSON object — no markdown, no preamble — matching this schema exactly:
@@ -534,7 +526,7 @@ Return ONLY a valid JSON object — no markdown, no preamble — matching this s
 }`;
 
 export const generateGuidanceDiagnosis = async (
-  payload: DiagnosisRequest,
+  payload: DiagnosisRequest
 ): Promise<DiagnosisResponse> => {
   const genAI = getGuidanceClient();
   let lastError: unknown = null;
@@ -561,8 +553,7 @@ export const generateGuidanceDiagnosis = async (
       return diagnosisResponseSchema.parse(parsed);
     } catch (error) {
       lastError = error;
-      const errorMessage =
-        error instanceof Error ? error.message.toLowerCase() : "";
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
 
       if (isQuotaOrRateLimitError(errorMessage)) {
         sawQuotaIssue = true;
@@ -576,11 +567,11 @@ export const generateGuidanceDiagnosis = async (
 
   if (sawQuotaIssue) {
     throw new Error(
-      "Diagnosis is temporarily unavailable because Gemini API quota was exceeded for all configured models.",
+      "Diagnosis is temporarily unavailable because Gemini API quota was exceeded for all configured models."
     );
   }
   throw new Error(
-    `No supported Gemini model found for diagnosis. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+    `No supported Gemini model found for diagnosis. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`
   );
 };
 
@@ -610,7 +601,7 @@ export const sportMatchRecommendationSchema = z.object({
       reasons: z.array(z.string()).length(3),
       monthlyCostRange: z.string().nullable(),
       keyTalentSignal: z.string().nullable(),
-    }),
+    })
   ),
 });
 
@@ -628,7 +619,7 @@ export const generateSportMatchRecommendation = async (
     equipmentCost: string;
     overview: string;
     hasGeneratedPathway: boolean;
-  }>,
+  }>
 ): Promise<SportMatchResponse> => {
   const genAI = getGuidanceClient();
   let lastError: unknown = null;
@@ -648,7 +639,9 @@ export const generateSportMatchRecommendation = async (
 
   const preferences = [
     request.team_preference ? `Team/individual preference: ${request.team_preference}` : null,
-    request.indoor_outdoor_preference ? `Indoor/outdoor: ${request.indoor_outdoor_preference}` : null,
+    request.indoor_outdoor_preference
+      ? `Indoor/outdoor: ${request.indoor_outdoor_preference}`
+      : null,
     request.intensity_preference ? `Intensity: ${request.intensity_preference}` : null,
     request.weekly_time_commitment ? `Weekly time: ${request.weekly_time_commitment} hrs` : null,
     request.school_sport_involvement !== undefined
@@ -714,8 +707,7 @@ Return ONLY a valid JSON object matching this schema exactly:
       return sportMatchRecommendationSchema.parse(parsed);
     } catch (error) {
       lastError = error;
-      const errorMessage =
-        error instanceof Error ? error.message.toLowerCase() : "";
+      const errorMessage = error instanceof Error ? error.message.toLowerCase() : "";
       if (isQuotaOrRateLimitError(errorMessage)) {
         sawQuotaIssue = true;
         continue;
@@ -725,11 +717,9 @@ Return ONLY a valid JSON object matching this schema exactly:
   }
 
   if (sawQuotaIssue) {
-    throw new Error(
-      "Guidance generation temporarily unavailable due to quota limits.",
-    );
+    throw new Error("Guidance generation temporarily unavailable due to quota limits.");
   }
   throw new Error(
-    `No supported Gemini model found for sport match. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+    `No supported Gemini model found for sport match. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`
   );
 };

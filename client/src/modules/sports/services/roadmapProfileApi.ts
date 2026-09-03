@@ -44,7 +44,7 @@ export const roadmapProfileApi = {
 
   updateProfile: async (
     data: Partial<UserPathwayProfile>,
-    dependentId?: string | null,
+    dependentId?: string | null
   ): Promise<UserPathwayProfile | null> => {
     try {
       const resp = await axiosInstance.put<{
@@ -57,11 +57,7 @@ export const roadmapProfileApi = {
     }
   },
 
-  getStories: async (
-    sport: string,
-    level?: number,
-    state?: string,
-  ): Promise<AthleteStory[]> => {
+  getStories: async (sport: string, level?: number, state?: string): Promise<AthleteStory[]> => {
     try {
       let url = `/pathways/stories?sport=${encodeURIComponent(sport)}`;
       if (level) url += `&level=${level}`;

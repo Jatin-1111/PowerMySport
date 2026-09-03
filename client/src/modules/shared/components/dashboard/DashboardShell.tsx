@@ -1,10 +1,6 @@
 "use client";
 
-import {
-    BottomNav,
-    BottomNavSpacer,
-    type BottomNavItem,
-} from "../BottomNav";
+import { BottomNav, BottomNavSpacer, type BottomNavItem } from "../BottomNav";
 import { Badge } from "../../ui/Badge";
 import { Menu, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -46,29 +42,27 @@ const NavItems = ({
   pathname: string;
   onNavigate?: () => void;
 }) => {
-  const sections = items.reduce<
-    Array<{ title?: string; items: DashboardNavItem[] }>
-  >((acc, item) => {
-    const last = acc.at(-1);
+  const sections = items.reduce<Array<{ title?: string; items: DashboardNavItem[] }>>(
+    (acc, item) => {
+      const last = acc.at(-1);
 
-    if (last && last.title === item.section) {
-      last.items.push(item);
+      if (last && last.title === item.section) {
+        last.items.push(item);
+        return acc;
+      }
+
+      acc.push({ title: item.section, items: [item] });
       return acc;
-    }
-
-    acc.push({ title: item.section, items: [item] });
-    return acc;
-  }, []);
+    },
+    []
+  );
 
   return (
-    <nav
-      className="mt-1 flex-1 space-y-3 overflow-y-auto px-4 pb-4"
-      aria-label="Main navigation"
-    >
+    <nav className="mt-1 flex-1 space-y-3 overflow-y-auto px-4 pb-4" aria-label="Main navigation">
       {sections.map((section, sectionIndex) => (
         <div key={`${section.title ?? "general"}-${sectionIndex}`}>
           {section.title && (
-            <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <p className="mb-1 px-3 text-[11px] font-semibold tracking-wide text-slate-500 uppercase">
               {section.title}
             </p>
           )}
@@ -84,7 +78,7 @@ const NavItems = ({
                     key={item.href}
                     href={item.href}
                     onClick={onNavigate}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2"
+                    className="focus-visible:ring-power-orange flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                     aria-label={`${item.label}${badgeText}`}
                   >
                     <Icon size={17} aria-hidden="true" />
@@ -107,10 +101,8 @@ const NavItems = ({
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 ${
-                    active
-                      ? "bg-slate-100 text-slate-900"
-                      : "text-slate-700 hover:bg-slate-100"
+                  className={`focus-visible:ring-power-orange flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    active ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-100"
                   }`}
                   aria-label={`${item.label}${badgeText}`}
                   aria-current={active ? "page" : undefined}
@@ -160,16 +152,12 @@ export const DashboardShell = ({
   }, [userName]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/60 bg-white/80 px-4 py-3 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              {dashboardLabel}
-            </p>
-            <p className="text-sm font-semibold text-slate-900">
-              {displayName}
-            </p>
+            <p className="text-xs tracking-wide text-slate-500 uppercase">{dashboardLabel}</p>
+            <p className="text-sm font-semibold text-slate-900">{displayName}</p>
           </div>
           {hasNav && (
             <button
@@ -190,15 +178,11 @@ export const DashboardShell = ({
             aria-label="Close dashboard menu"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="absolute left-0 top-0 flex h-full w-[88vw] max-w-sm flex-col border-r border-white/60 bg-white/95 shadow-lg backdrop-blur-xl">
+          <div className="absolute top-0 left-0 flex h-full w-[88vw] max-w-sm flex-col border-r border-white/60 bg-white/95 shadow-lg backdrop-blur-xl">
             <div className="flex shrink-0 items-center justify-between border-b border-white/60 p-4">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  {dashboardLabel}
-                </p>
-                <p className="text-sm font-semibold text-slate-900">
-                  {displayName}
-                </p>
+                <p className="text-xs tracking-wide text-slate-500 uppercase">{dashboardLabel}</p>
+                <p className="text-sm font-semibold text-slate-900">{displayName}</p>
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -231,15 +215,11 @@ export const DashboardShell = ({
       )}
 
       <div className="flex min-h-screen lg:pt-0">
-        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/60 bg-white/80 backdrop-blur-md shadow-sm lg:flex lg:flex-col">
+        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/60 bg-white/80 shadow-sm backdrop-blur-md lg:flex lg:flex-col">
           <div className="shrink-0 p-6">
             <div className="rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-5 text-slate-900 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-slate-500">
-                {dashboardLabel}
-              </p>
-              <h1 className="font-title mt-2 text-2xl font-bold text-slate-900">
-                PowerMySport
-              </h1>
+              <p className="text-xs tracking-wide text-slate-500 uppercase">{dashboardLabel}</p>
+              <h1 className="font-title mt-2 text-2xl font-bold text-slate-900">PowerMySport</h1>
               <p className="mt-1 text-sm text-slate-600">{displayName}</p>
             </div>
           </div>

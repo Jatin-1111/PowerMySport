@@ -16,17 +16,13 @@ const colorMap = {
 /**
  * Standardized eyebrow/label pill used across all marketing section headers.
  */
-export function SectionLabel({
-  label,
-  color = "slate",
-  className,
-}: SectionLabelProps) {
+export function SectionLabel({ label, color = "slate", className }: SectionLabelProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.18em]",
+        "inline-flex items-center rounded-full border px-3.5 py-1 text-xs font-semibold tracking-[0.18em] uppercase",
         colorMap[color],
-        className,
+        className
       )}
     >
       {label}

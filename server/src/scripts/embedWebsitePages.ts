@@ -118,7 +118,7 @@ async function crawlPage(route: string): Promise<void> {
     await KnowledgeChunk.updateOne(
       { sourceType: "page", sourceId },
       { $set: { title: chunk.heading, content: chunk.content, embedding } },
-      { upsert: true },
+      { upsert: true }
     );
   }
 }
@@ -129,7 +129,9 @@ async function main() {
   }
 
   await mongoose.connect(MONGO_URI);
-  console.log(`Connected to MongoDB. Crawling ${ROUTES_TO_CRAWL.length} pages from ${SITE_BASE_URL}...`);
+  console.log(
+    `Connected to MongoDB. Crawling ${ROUTES_TO_CRAWL.length} pages from ${SITE_BASE_URL}...`
+  );
 
   let succeeded = 0;
   let failed = 0;

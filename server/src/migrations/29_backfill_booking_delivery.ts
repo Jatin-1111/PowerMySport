@@ -19,7 +19,7 @@ import Academy from "../admin/models/Academy";
  * Bookings with a FREELANCE/HYBRID coach and no venue were delivered at the
  * student's address — and that address was never persisted. `playerLocation`
  * was validated at booking time and then discarded. It is genuinely gone.
- *  
+ *
  * This migration does NOT invent a location for those (the coach's base
  * location is where the coach starts from, not where the session happened).
  * It counts them and reports them, and they keep `delivery` unset. Writing a
@@ -51,15 +51,13 @@ const asCoordinates = (raw: unknown): Coordinates | undefined => {
 };
 
 const clean = <T extends Record<string, unknown>>(value: T): T =>
-  Object.fromEntries(
-    Object.entries(value).filter(([, v]) => v !== undefined && v !== null),
-  ) as T;
+  Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined && v !== null)) as T;
 
 export const up = async (options: { apply?: boolean } = {}) => {
   const apply = Boolean(options.apply);
 
   console.log(
-    `Starting migration 29: backfill Booking.delivery (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 29: backfill Booking.delivery (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   const bookings = await Booking.find({ delivery: { $exists: false } })
@@ -153,9 +151,8 @@ export const up = async (options: { apply?: boolean } = {}) => {
           .filter((p: unknown): p is string => Boolean(p && String(p).trim()))
           .join(", ");
         const addressSnapshot =
-          [academy.address, tail]
-            .filter((p): p is string => Boolean(p && p.trim()))
-            .join(", ") || undefined;
+          [academy.address, tail].filter((p): p is string => Boolean(p && p.trim())).join(", ") ||
+          undefined;
         delivery = clean({
           kind: "PROVIDER_VENUE",
           nameSnapshot: academy.name,
@@ -198,21 +195,21 @@ export const up = async (options: { apply?: boolean } = {}) => {
     console.log(`  ${kind.padEnd(30)}: ${count}`);
   }
   console.log(
-    `Unrecoverable    : ${unrecoverable}  (freelance/hybrid coach at the student's address — never stored)`,
+    `Unrecoverable    : ${unrecoverable}  (freelance/hybrid coach at the student's address — never stored)`
   );
   if (venueDeleted > 0) {
     console.log(
-      `Venue deleted    : ${venueDeleted}  (booking keeps venueId, no address to snapshot)`,
+      `Venue deleted    : ${venueDeleted}  (booking keeps venueId, no address to snapshot)`
     );
   }
   if (venueWithoutAddress > 0) {
     console.log(
-      `Venue no address : ${venueWithoutAddress}  (venue row exists but has no address on file — data quality)`,
+      `Venue no address : ${venueWithoutAddress}  (venue row exists but has no address on file — data quality)`
     );
   }
   if (missingProvider > 0) {
     console.log(
-      `Provider missing : ${missingProvider}  (coach/academy doc deleted; no delivery written)`,
+      `Provider missing : ${missingProvider}  (coach/academy doc deleted; no delivery written)`
     );
   }
   if (apply) console.log(`Modified         : ${modified}`);
@@ -239,13 +236,13 @@ export const down = async (options: { apply?: boolean } = {}) => {
   console.log(
     "NOTE: this unsets delivery on ALL bookings, including ones written by the " +
       "application after the field shipped — not just the rows this migration " +
-      "backfilled. Those are not recoverable by re-running up().",
+      "backfilled. Those are not recoverable by re-running up()."
   );
 
   if (apply) {
     const result = await Booking.collection.updateMany(
       { delivery: { $exists: true } },
-      { $unset: { delivery: "" } },
+      { $unset: { delivery: "" } }
     );
     console.log(`Unset delivery on ${result.modifiedCount} booking(s).`);
   } else {
@@ -258,9 +255,7 @@ export const down = async (options: { apply?: boolean } = {}) => {
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const apply = process.argv.includes("--apply");
   const rollback = process.argv.includes("--down");

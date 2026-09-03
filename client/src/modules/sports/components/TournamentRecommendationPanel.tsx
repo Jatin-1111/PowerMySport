@@ -2,18 +2,18 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    ArrowRight,
-    Award,
-    CalendarPlus,
-    ChevronDown,
-    ChevronRight,
-    MapPin,
-    Sparkles,
-    Star,
-    Target,
-    Trophy,
-    Users,
-    Zap,
+  ArrowRight,
+  Award,
+  CalendarPlus,
+  ChevronDown,
+  ChevronRight,
+  MapPin,
+  Sparkles,
+  Star,
+  Target,
+  Trophy,
+  Users,
+  Zap,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -88,11 +88,7 @@ function normalizeTournamentLevel(levelStr: string): number {
 
 type Priority = "immediate" | "next" | "goal" | "aspire";
 
-function getPriority(
-  tLevel: number,
-  currentLevel: number,
-  goalLevel: number,
-): Priority | null {
+function getPriority(tLevel: number, currentLevel: number, goalLevel: number): Priority | null {
   if (currentLevel === 0) {
     // No progress set — prioritise everything relative to the chosen goal.
     // Without a goal, only surface beginner-friendly tournaments.
@@ -145,7 +141,7 @@ function getReasonText(
   priority: Priority,
   currentLevel: number,
   goalLevel: number,
-  sportName: string,
+  sportName: string
 ): string {
   const goal = GOALS.find((g) => g.level === goalLevel);
   const sport = sportName || "your sport";
@@ -179,8 +175,7 @@ export function TournamentRecommendationPanel({
       const tLevel = normalizeTournamentLevel(t.level || "");
       // When no goal is set and no current level, default effectiveGoal to 0 so
       // getPriority shows nothing until the user picks a goal.
-      const effectiveGoal =
-        goalLevel || (currentLevel > 0 ? currentLevel + 2 : 0);
+      const effectiveGoal = goalLevel || (currentLevel > 0 ? currentLevel + 2 : 0);
       const priority = getPriority(tLevel, currentLevel, effectiveGoal);
       return priority ? { tournament: t, priority, tLevel } : null;
     })
@@ -202,19 +197,19 @@ export function TournamentRecommendationPanel({
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white overflow-hidden shadow-sm"
+      className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white shadow-sm"
     >
       {/* Panel header */}
       <button
         type="button"
         onClick={() => setIsExpanded((o) => !o)}
-        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-slate-50/80 transition"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-50/80"
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-power-orange to-amber-400 text-white shadow">
+        <div className="from-power-orange flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br to-amber-400 text-white shadow">
           <Sparkles className="h-4 w-4" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-power-orange">
+        <div className="min-w-0 flex-1">
+          <p className="text-power-orange text-[10px] font-bold tracking-widest uppercase">
             Personalised Recommendations
           </p>
           <p className="text-sm font-bold text-slate-900">
@@ -244,22 +239,19 @@ export function TournamentRecommendationPanel({
             }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-5 space-y-4 border-t border-slate-100 pt-4">
+            <div className="space-y-4 border-t border-slate-100 px-5 pt-4 pb-5">
               {/* Aspiration examples */}
               {examples.length > 0 && (
                 <p className="text-xs text-slate-500">
                   Want your child to reach the level of{" "}
-                  <span className="font-semibold text-slate-700">
-                    {examples.join(", ")}
-                  </span>
-                  ? Set a goal below and we'll show you the exact tournaments to
-                  play.
+                  <span className="font-semibold text-slate-700">{examples.join(", ")}</span>? Set a
+                  goal below and we'll show you the exact tournaments to play.
                 </p>
               )}
 
               {/* Goal selector */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                <p className="mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                   Select Your Child's Aspirational Goal
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -272,7 +264,7 @@ export function TournamentRecommendationPanel({
                         onClick={() => setGoalLevel(active ? 0 : goal.level)}
                         className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
                           active
-                            ? `bg-gradient-to-r ${goal.color} text-white border-transparent shadow-md`
+                            ? `bg-gradient-to-r ${goal.color} border-transparent text-white shadow-md`
                             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                         }`}
                       >
@@ -287,7 +279,7 @@ export function TournamentRecommendationPanel({
               {/* Recommended tournaments */}
               {recommended.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
-                  <Trophy className="h-6 w-6 text-slate-300 mx-auto mb-2" />
+                  <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-300" />
                   <p className="text-sm text-slate-500">
                     {goalLevel
                       ? "No tournaments found matching this goal. Try a different level."
@@ -296,7 +288,7 @@ export function TournamentRecommendationPanel({
                 </div>
               ) : (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+                  <p className="mb-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                     Recommended Tournaments
                     {goalLevel && currentLevel > 0
                       ? ` — Your child is at Level ${currentLevel}, aiming for ${activeGoal?.label}`
@@ -305,72 +297,66 @@ export function TournamentRecommendationPanel({
 
                   <div className="space-y-2.5">
                     <AnimatePresence>
-                      {displayed.map(
-                        ({ tournament: t, priority }, i) => {
-                          const meta = PRIORITY_META[priority];
-                          const reason = getReasonText(
-                            t,
-                            priority,
-                            currentLevel,
-                            goalLevel || 3,
-                            sportName,
-                          );
-                          return (
-                            <motion.button
-                              key={t.name || i}
-                              initial={{ opacity: 0, y: 6 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: i * 0.04 }}
-                              type="button"
-                              onClick={() => onViewTournament(t)}
-                              className="w-full flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left hover:border-power-orange hover:shadow-sm transition-all group"
-                            >
-                              {/* Priority badge */}
-                              <div className="flex flex-col items-center gap-1 shrink-0 pt-0.5">
-                                <span
-                                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold ${meta.style}`}
-                                >
-                                  {meta.icon}
-                                  {meta.label}
-                                </span>
-                                <span className="text-[9px] font-bold text-slate-300">
-                                  #{i + 1}
-                                </span>
-                              </div>
+                      {displayed.map(({ tournament: t, priority }, i) => {
+                        const meta = PRIORITY_META[priority];
+                        const reason = getReasonText(
+                          t,
+                          priority,
+                          currentLevel,
+                          goalLevel || 3,
+                          sportName
+                        );
+                        return (
+                          <motion.button
+                            key={t.name || i}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            type="button"
+                            onClick={() => onViewTournament(t)}
+                            className="hover:border-power-orange group flex w-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left transition-all hover:shadow-sm"
+                          >
+                            {/* Priority badge */}
+                            <div className="flex shrink-0 flex-col items-center gap-1 pt-0.5">
+                              <span
+                                className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold ${meta.style}`}
+                              >
+                                {meta.icon}
+                                {meta.label}
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-300">#{i + 1}</span>
+                            </div>
 
-                              {/* Content */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2 mb-1">
-                                  <h4 className="font-bold text-slate-900 text-sm break-words group-hover:text-power-orange transition-colors">
-                                    {t.name}
-                                  </h4>
-                                  <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-power-orange shrink-0 mt-0.5 transition-colors" />
-                                </div>
-                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 rounded-md px-1.5 py-0.5">
-                                    {t.level}
-                                  </span>
-                                  {t.ageGroup && (
-                                    <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                                      <Users className="h-3 w-3" />
-                                      {t.ageGroup}
-                                    </span>
-                                  )}
-                                  {t.city && (
-                                    <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                                      <MapPin className="h-3 w-3" />
-                                      {t.city}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-slate-500 leading-relaxed">
-                                  {reason}
-                                </p>
+                            {/* Content */}
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-1 flex items-start justify-between gap-2">
+                                <h4 className="group-hover:text-power-orange text-sm font-bold break-words text-slate-900 transition-colors">
+                                  {t.name}
+                                </h4>
+                                <ArrowRight className="group-hover:text-power-orange mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition-colors" />
                               </div>
-                            </motion.button>
-                          );
-                        },
-                      )}
+                              <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                                  {t.level}
+                                </span>
+                                {t.ageGroup && (
+                                  <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                                    <Users className="h-3 w-3" />
+                                    {t.ageGroup}
+                                  </span>
+                                )}
+                                {t.city && (
+                                  <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                                    <MapPin className="h-3 w-3" />
+                                    {t.city}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs leading-relaxed text-slate-500">{reason}</p>
+                            </div>
+                          </motion.button>
+                        );
+                      })}
                     </AnimatePresence>
                   </div>
 
@@ -380,14 +366,14 @@ export function TournamentRecommendationPanel({
                       <button
                         type="button"
                         onClick={() => setShowAll((o) => !o)}
-                        className="text-xs font-semibold text-slate-500 hover:text-slate-800 underline underline-offset-2 transition"
+                        className="text-xs font-semibold text-slate-500 underline underline-offset-2 transition hover:text-slate-800"
                       >
                         {showAll
                           ? "Show top 3 only"
                           : `Show all ${recommended.length} recommendations`}
                       </button>
                     )}
-                    <span className="flex items-center gap-1.5 text-xs text-slate-400 ml-auto">
+                    <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
                       <CalendarPlus className="h-3.5 w-3.5" />
                       Click any tournament to view details and add to calendar
                     </span>

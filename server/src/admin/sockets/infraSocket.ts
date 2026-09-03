@@ -2,10 +2,7 @@ import { Server as SocketIOServer, Socket } from "socket.io";
 import { isTokenRevoked, verifyToken } from "../../utils/jwt";
 import { isSystemAdminRole } from "../../utils/permissions";
 import { ADMIN_ROLES } from "../../constants/adminPermissions";
-import {
-  getInfraMetrics,
-  getInfraOverview,
-} from "../services/InfraMonitoringService";
+import { getInfraMetrics, getInfraOverview } from "../services/InfraMonitoringService";
 
 const OVERVIEW_INTERVAL_MS = 15000;
 const METRICS_INTERVAL_MS = 30000;
@@ -15,9 +12,7 @@ const isAdminRole = (role?: string): boolean =>
   isSystemAdminRole(role) || Object.values(ADMIN_ROLES).includes(role as never);
 
 const extractToken = (socket: Socket): string | null => {
-  const authToken = (
-    socket.handshake.auth?.token as string | undefined
-  )?.trim();
+  const authToken = (socket.handshake.auth?.token as string | undefined)?.trim();
   const bearer = (socket.handshake.headers.authorization as string | undefined)
     ?.replace(/^Bearer\s+/i, "")
     .trim();

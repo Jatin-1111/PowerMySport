@@ -76,10 +76,7 @@ interface SkippedRow {
   reason: string;
 }
 
-
-export const up = async (
-  options: { apply?: boolean; report?: boolean } = {},
-) => {
+export const up = async (options: { apply?: boolean; report?: boolean } = {}) => {
   const apply = Boolean(options.apply);
   // Only the CLI writes a report file. Called programmatically (tests, or from
   // another migration) it should stay a pure function of the database — writing
@@ -87,7 +84,7 @@ export const up = async (
   const writeReport = Boolean(options.report);
 
   console.log(
-    `Starting migration 25: ExpertSession -> Booking (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 25: ExpertSession -> Booking (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   const sessions = await ExpertSession.find({}).sort({ createdAt: 1 }).lean();
@@ -102,7 +99,7 @@ export const up = async (
     .select("expert.legacySessionId")
     .lean<Array<{ expert?: { legacySessionId?: string } }>>();
   const alreadyMigrated = new Set(
-    existing.map((b) => b.expert?.legacySessionId).filter(Boolean) as string[],
+    existing.map((b) => b.expert?.legacySessionId).filter(Boolean) as string[]
   );
 
   const migrated: MigratedRow[] = [];
@@ -114,9 +111,7 @@ export const up = async (
   const experts = await Expert.find({ _id: { $in: expertIds } })
     .select("_id userId")
     .lean<Array<{ _id: mongoose.Types.ObjectId; userId: mongoose.Types.ObjectId }>>();
-  const expertUserById = new Map(
-    experts.map((e) => [e._id.toString(), e.userId?.toString()]),
-  );
+  const expertUserById = new Map(experts.map((e) => [e._id.toString(), e.userId?.toString()]));
 
   // Booking.participantName is who the session is FOR — the child when the
   // parent picked one, otherwise the booking user. ExpertSession never stored
@@ -126,9 +121,7 @@ export const up = async (
   const players = await Player.find({ _id: { $in: playerIds } })
     .select("_id name")
     .lean<Array<{ _id: mongoose.Types.ObjectId; name?: string }>>();
-  const playerNameById = new Map(
-    players.map((p) => [p._id.toString(), p.name ?? ""]),
-  );
+  const playerNameById = new Map(players.map((p) => [p._id.toString(), p.name ?? ""]));
 
   const userIds = [...new Set(sessions.map((s) => String(s.userId)))];
   const users = await User.find({ _id: { $in: userIds } })
@@ -161,7 +154,7 @@ export const up = async (
 
     if (slotCrossesMidnightIST(scheduledAt, duration)) {
       warnings.push(
-        `session ${sessionId}: crosses IST midnight — endTime clamped to ${slot.endTime}`,
+        `session ${sessionId}: crosses IST midnight — endTime clamped to ${slot.endTime}`
       );
     }
 
@@ -170,7 +163,7 @@ export const up = async (
 
     if (!expertUserId) {
       warnings.push(
-        `session ${sessionId}: expert ${session.expertId} has no owning user — no payout payee will be recorded`,
+        `session ${sessionId}: expert ${session.expertId} has no owning user — no payout payee will be recorded`
       );
     }
 
@@ -208,25 +201,17 @@ export const up = async (
       totalAmount: session.amount,
       status: bookingStatus,
       participantName:
-        (session.playerId
-          ? playerNameById.get(String(session.playerId))
-          : undefined) ||
+        (session.playerId ? playerNameById.get(String(session.playerId)) : undefined) ||
         userNameById.get(String(session.userId)) ||
         "Client",
       ...(session.playerId ? { participantId: session.playerId } : {}),
       ...(session.paidAt ? { paymentConfirmedAt: session.paidAt } : {}),
       ...(session.holdExpiresAt ? { expiresAt: session.holdExpiresAt } : {}),
-      ...(session.expertAcceptance
-        ? { providerAcceptance: session.expertAcceptance }
-        : {}),
-      ...(session.expertRespondedAt
-        ? { providerRespondedAt: session.expertRespondedAt }
-        : {}),
+      ...(session.expertAcceptance ? { providerAcceptance: session.expertAcceptance } : {}),
+      ...(session.expertRespondedAt ? { providerRespondedAt: session.expertRespondedAt } : {}),
       ...(session.completedAt ? { completedAt: session.completedAt } : {}),
       ...(session.cancelledAt ? { cancelledAt: session.cancelledAt } : {}),
-      ...(session.cancelReason
-        ? { cancellationReason: session.cancelReason }
-        : {}),
+      ...(session.cancelReason ? { cancellationReason: session.cancelReason } : {}),
       ...(mapExpertCanceller(session.cancelledBy)
         ? { cancelledBy: mapExpertCanceller(session.cancelledBy) }
         : {}),
@@ -245,18 +230,10 @@ export const up = async (
         ...(session.momNotes ? { momNotes: session.momNotes } : {}),
         ...(session.momAddedAt ? { momAddedAt: session.momAddedAt } : {}),
         ...(session.autoCompleted ? { autoCompleted: session.autoCompleted } : {}),
-        ...(session.refundStatus
-          ? { manualRefundStatus: session.refundStatus }
-          : {}),
-        ...(session.merchantOrderId
-          ? { merchantOrderId: session.merchantOrderId }
-          : {}),
-        ...(session.phonepeOrderId
-          ? { phonepeOrderId: session.phonepeOrderId }
-          : {}),
-        ...(session.momReminderSentAt
-          ? { momReminderSentAt: session.momReminderSentAt }
-          : {}),
+        ...(session.refundStatus ? { manualRefundStatus: session.refundStatus } : {}),
+        ...(session.merchantOrderId ? { merchantOrderId: session.merchantOrderId } : {}),
+        ...(session.phonepeOrderId ? { phonepeOrderId: session.phonepeOrderId } : {}),
+        ...(session.momReminderSentAt ? { momReminderSentAt: session.momReminderSentAt } : {}),
         ...(session.reviewReminderSentAt
           ? { reviewReminderSentAt: session.reviewReminderSentAt }
           : {}),
@@ -282,9 +259,7 @@ export const up = async (
       // Raw insert rather than the model: these documents carry historical
       // timestamps and a legacy marker, and must not be reshaped by defaults
       // or the providerType derivation hook on the way in.
-      const { insertedId: created } = await Booking.collection.insertOne(
-        bookingDoc as never,
-      );
+      const { insertedId: created } = await Booking.collection.insertOne(bookingDoc as never);
       row.bookingId = String(created);
 
       if (session.reviewed && typeof session.rating === "number") {
@@ -326,7 +301,7 @@ export const up = async (
     console.log(
       `  ${row.sessionId}  ${row.fromStatus} -> ${row.toStatus}  booking=${row.bookingId}${
         row.reviewId ? `  review=${row.reviewId}` : ""
-      }`,
+      }`
     );
   }
   for (const row of skipped) {
@@ -341,7 +316,7 @@ export const up = async (
   console.log();
   console.log(
     "NOTE: the original ExpertSession documents are left untouched. They remain " +
-      "the fallback until the service cutover is verified and you drop them.",
+      "the fallback until the service cutover is verified and you drop them."
   );
 
   if (apply && writeReport && migrated.length > 0) {
@@ -349,12 +324,9 @@ export const up = async (
     fs.mkdirSync(reportDir, { recursive: true });
     const reportPath = path.join(
       reportDir,
-      `migration-25-expert-sessions-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
+      `migration-25-expert-sessions-${new Date().toISOString().replace(/[:.]/g, "-")}.json`
     );
-    fs.writeFileSync(
-      reportPath,
-      JSON.stringify({ migrated, skipped, warnings }, null, 2),
-    );
+    fs.writeFileSync(reportPath, JSON.stringify({ migrated, skipped, warnings }, null, 2));
     console.log(`Report written to ${reportPath}`);
   }
 
@@ -392,11 +364,11 @@ export const down = async (options: { apply?: boolean } = {}) => {
       _id: { $in: ids },
     });
     console.log(
-      `Deleted ${bookings.deletedCount} booking(s) and ${reviews.deletedCount} review(s).`,
+      `Deleted ${bookings.deletedCount} booking(s) and ${reviews.deletedCount} review(s).`
     );
     console.log(
       "The original ExpertSession documents were never modified, so they are " +
-        "still intact and authoritative.",
+        "still intact and authoritative."
     );
   } else {
     console.log("Dry run — nothing was written.");
@@ -408,9 +380,7 @@ export const down = async (options: { apply?: boolean } = {}) => {
 // Run if executed directly
 if (require.main === module) {
   const MONGODB_URI =
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    "mongodb://localhost:27017/powermysport";
+    process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
   const apply = process.argv.includes("--apply");
   const rollback = process.argv.includes("--down");

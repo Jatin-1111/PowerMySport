@@ -76,7 +76,7 @@ function requireCombo(): { category: AitaCategory; subcategory: string } {
   const subcategory = args.get("subcategory") ?? "";
   if (!AITA_CATEGORIES.includes(category as AitaCategory) || !subcategory) {
     console.error(
-      `--category must be one of ${AITA_CATEGORIES.join(", ")} and --subcategory is required`,
+      `--category must be one of ${AITA_CATEGORIES.join(", ")} and --subcategory is required`
     );
     process.exit(1);
   }
@@ -93,7 +93,7 @@ function report(
     rowCount?: number;
     reason?: string;
   },
-  prefix = "",
+  prefix = ""
 ): void {
   const icon =
     outcome.status === "published"
@@ -109,7 +109,7 @@ function report(
   const why = outcome.reason ? ` — ${outcome.reason}` : "";
   console.log(
     `${prefix}${icon} ${outcome.category}/${outcome.subcategory} ${outcome.asOnDate} ` +
-      `${outcome.status}${rows}${why}`,
+      `${outcome.status}${rows}${why}`
   );
 }
 
@@ -134,13 +134,10 @@ async function main(): Promise<void> {
     await withDatabase(async () => {
       const results = await service.sampleLatestComposition({
         force: flags.has("force"),
-        ...(args.has("per-band")
-          ? { perBand: Number.parseInt(args.get("per-band")!, 10) }
-          : {}),
+        ...(args.has("per-band") ? { perBand: Number.parseInt(args.get("per-band")!, 10) } : {}),
       });
       for (const r of results) {
-        const icon =
-          r.status === "sampled" ? "✅" : r.status === "already-sampled" ? "➖" : "❌";
+        const icon = r.status === "sampled" ? "✅" : r.status === "already-sampled" ? "➖" : "❌";
         const extra =
           r.status === "sampled"
             ? ` ${r.fetched} players` +
@@ -150,9 +147,7 @@ async function main(): Promise<void> {
               : r.reason
                 ? ` — ${r.reason}`
                 : "";
-        console.log(
-          `${icon} ${r.category}/${r.subcategory} ${r.asOnDate} ${r.status}${extra}`,
-        );
+        console.log(`${icon} ${r.category}/${r.subcategory} ${r.asOnDate} ${r.status}${extra}`);
       }
       const sampled = results.filter((r) => r.status === "sampled").length;
       console.log(`
@@ -167,7 +162,7 @@ ${sampled} of ${results.length} lists sampled`);
       console.log(
         `source latest ${result.sourceLatest ?? "none"}, ` +
           `stored latest ${result.storedLatest ?? "none"} — ` +
-          (result.hasNewWork ? "NEW WORK" : "up to date"),
+          (result.hasNewWork ? "NEW WORK" : "up to date")
       );
     });
     return;
@@ -193,7 +188,7 @@ ${sampled} of ${results.length} lists sampled`);
       for (const [index, combo] of LIVE_COMBOS.entries()) {
         console.log(
           `\n── [${index + 1}/${LIVE_COMBOS.length}] ${combo.category}/${combo.subcategory} ` +
-            `${since ? `since ${since}` : "(full history)"} ──`,
+            `${since ? `since ${since}` : "(full history)"} ──`
         );
         const options: Parameters<typeof service.backfillCombo>[2] = {
           // Resumable by default: an interrupted run costs nothing to restart,
@@ -203,11 +198,7 @@ ${sampled} of ${results.length} lists sampled`);
         };
         if (since) options.since = since;
 
-        const outcomes = await service.backfillCombo(
-          combo.category,
-          combo.subcategory,
-          options,
-        );
+        const outcomes = await service.backfillCombo(combo.category, combo.subcategory, options);
         for (const outcome of outcomes) {
           if (outcome.status in totals) {
             totals[outcome.status as keyof typeof totals]++;
@@ -218,7 +209,7 @@ ${sampled} of ${results.length} lists sampled`);
       console.log(
         `\n══ Backfill complete in ${minutes} min: ${totals.published} published, ` +
           `${totals.unchanged} unchanged, ${totals.quarantined} quarantined, ` +
-          `${totals.failed} failed ══`,
+          `${totals.failed} failed ══`
       );
     });
     return;
@@ -244,7 +235,7 @@ ${sampled} of ${results.length} lists sampled`);
         `\nDone: ${outcomes.filter((o) => o.status === "published").length} published, ` +
           `${outcomes.filter((o) => o.status === "unchanged").length} unchanged, ` +
           `${outcomes.filter((o) => o.status === "quarantined").length} quarantined, ` +
-          `${outcomes.filter((o) => o.status === "failed").length} failed`,
+          `${outcomes.filter((o) => o.status === "failed").length} failed`
       );
     });
     return;
@@ -270,7 +261,7 @@ ${sampled} of ${results.length} lists sampled`);
     sweep.outcomes.forEach((outcome) => report(outcome));
     console.log(
       `\nDone in ${Math.round((sweep.finishedAt.getTime() - sweep.startedAt.getTime()) / 1000)}s: ` +
-        `${sweep.published} published, ${sweep.quarantined} quarantined, ${sweep.failed} failed`,
+        `${sweep.published} published, ${sweep.quarantined} quarantined, ${sweep.failed} failed`
     );
   });
 }

@@ -136,7 +136,7 @@ const TARGETS: IndexTarget[] = [
 export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Starting migration 35: add second-pass client indexes (${apply ? "APPLY" : "DRY RUN"})...`,
+    `Starting migration 35: add second-pass client indexes (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
   for (const target of TARGETS) {
@@ -178,7 +178,7 @@ export const up = async (options: Options = {}) => {
 export const down = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(
-    `Reverting migration 35 (${apply ? "APPLY" : "DRY RUN"}) — dropping these indexes...`,
+    `Reverting migration 35 (${apply ? "APPLY" : "DRY RUN"}) — dropping these indexes...`
   );
 
   for (const target of TARGETS) {

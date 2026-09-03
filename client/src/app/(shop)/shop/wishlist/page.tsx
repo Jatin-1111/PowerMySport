@@ -4,10 +4,7 @@ import { cookies } from "next/headers";
 import { WishlistClient } from "./WishlistClient";
 
 // Per-user list — nothing here is the same for two visitors.
-export const metadata: Metadata = noindexMetadata(
-  "Wishlist",
-  "View your saved performance gear.",
-);
+export const metadata: Metadata = noindexMetadata("Wishlist", "View your saved performance gear.");
 
 export default async function WishlistPage() {
   const cookieStore = await cookies();
@@ -22,7 +19,7 @@ export default async function WishlistPage() {
         {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
-        },
+        }
       );
       const data = await res.json();
       if (data.ok) {
@@ -36,10 +33,5 @@ export default async function WishlistPage() {
     }
   }
 
-  return (
-    <WishlistClient
-      initialProducts={wishlistProducts}
-      isAuthenticated={!!token}
-    />
-  );
+  return <WishlistClient initialProducts={wishlistProducts} isAuthenticated={!!token} />;
 }

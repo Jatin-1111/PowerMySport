@@ -129,7 +129,7 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       },
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 guidanceSubmissionSchema.index({ createdAt: -1 });
@@ -140,5 +140,5 @@ guidanceSubmissionSchema.index({ userId: 1, createdAt: -1 });
 
 export const GuidanceSubmission = mongoose.model<GuidanceSubmissionDocument>(
   "GuidanceSubmission",
-  guidanceSubmissionSchema,
+  guidanceSubmissionSchema
 );

@@ -73,15 +73,13 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
     // resolves, and the server has still refused this recipient. Without this
     // check a rejected address looks identical to a delivered one in the logs.
     if (info.rejected?.length) {
-      throw new Error(
-        `SMTP accepted the message but rejected ${info.rejected.join(", ")}`,
-      );
+      throw new Error(`SMTP accepted the message but rejected ${info.rejected.join(", ")}`);
     }
 
     log.info(`Email sent to ${options.to}: ${info.messageId}`);
   } catch (error) {
     log.error(
-      `Email sending failed [to=${options.to}] [subject=${options.subject}]: ${describeSmtpError(error)}`,
+      `Email sending failed [to=${options.to}] [subject=${options.subject}]: ${describeSmtpError(error)}`
     );
     if (options.critical) throw error;
     // Otherwise swallowed by design — see `critical` above.
@@ -111,9 +109,7 @@ interface WelcomeEmailOptions {
   role: string;
 }
 
-export const sendWelcomeEmail = async (
-  options: WelcomeEmailOptions,
-): Promise<void> => {
+export const sendWelcomeEmail = async (options: WelcomeEmailOptions): Promise<void> => {
   const roleNames: Record<string, string> = {
     Player: "Player",
     Parent: "Parent",
@@ -218,7 +214,7 @@ export const sendWelcomeEmail = async (
     </div>
     `
           : options.role === "Coach"
-          ? `
+            ? `
     <div class="feature-box">
       <h3>🏆 As a Coach, you can:</h3>
       <ul>
@@ -229,8 +225,8 @@ export const sendWelcomeEmail = async (
       </ul>
     </div>
     `
-          : options.role === "VenueLister"
-            ? `
+            : options.role === "VenueLister"
+              ? `
     <div class="feature-box">
       <h3>🏟️ As a Venue Lister, you can:</h3>
       <ul>
@@ -241,7 +237,7 @@ export const sendWelcomeEmail = async (
       </ul>
     </div>
     `
-            : ""
+              : ""
     }
     
     <center>
@@ -293,7 +289,7 @@ interface BookingLifecycleEmailOptions {
 }
 
 export const sendBookingLifecycleEmail = async (
-  options: BookingLifecycleEmailOptions,
+  options: BookingLifecycleEmailOptions
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
@@ -376,9 +372,7 @@ export const sendBookingLifecycleEmail = async (
       : "";
 
   const checkInRow =
-    options.checkInCode &&
-    options.state === "CONFIRMED" &&
-    options.recipientRole === "Player"
+    options.checkInCode && options.state === "CONFIRMED" && options.recipientRole === "Player"
       ? `
                 <tr>
                   <td style="padding:10px 0 14px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Check-in Code</td>
@@ -496,9 +490,7 @@ interface PasswordResetEmailOptions {
   resetToken: string;
 }
 
-export const sendPasswordResetEmail = async (
-  options: PasswordResetEmailOptions,
-): Promise<void> => {
+export const sendPasswordResetEmail = async (options: PasswordResetEmailOptions): Promise<void> => {
   const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${options.resetToken}`;
 
   const html = `
@@ -606,9 +598,7 @@ interface PlanCheckInEmailOptions {
   checkInId: string;
 }
 
-export const sendPlanCheckInEmail = async (
-  options: PlanCheckInEmailOptions,
-): Promise<void> => {
+export const sendPlanCheckInEmail = async (options: PlanCheckInEmailOptions): Promise<void> => {
   const checkInUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/check-in/${options.checkInId}`;
 
   const signalsHtml = options.signals
@@ -667,9 +657,7 @@ interface FriendRequestEmailOptions {
   requesterPhotoUrl?: string | undefined;
 }
 
-export const sendFriendRequestEmail = async (
-  options: FriendRequestEmailOptions,
-): Promise<void> => {
+export const sendFriendRequestEmail = async (options: FriendRequestEmailOptions): Promise<void> => {
   const dashboardUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/friends`;
 
   const html = `
@@ -791,7 +779,7 @@ interface FriendRequestAcceptedEmailOptions {
 }
 
 export const sendFriendRequestAcceptedEmail = async (
-  options: FriendRequestAcceptedEmailOptions,
+  options: FriendRequestAcceptedEmailOptions
 ): Promise<void> => {
   const dashboardUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/friends`;
 
@@ -919,7 +907,7 @@ interface BookingInvitationEmailOptions {
 }
 
 export const sendBookingInvitationEmail = async (
-  options: BookingInvitationEmailOptions,
+  options: BookingInvitationEmailOptions
 ): Promise<void> => {
   const invitationsUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/invitations`;
 
@@ -1060,7 +1048,7 @@ interface CoachVerificationStatusEmailOptions {
 }
 
 export const sendCoachVerificationStatusEmail = async (
-  options: CoachVerificationStatusEmailOptions,
+  options: CoachVerificationStatusEmailOptions
 ): Promise<void> => {
   const statusLabels: Record<string, string> = {
     PENDING: "Pending",
@@ -1136,7 +1124,7 @@ const escapeHtml = (value: string): string =>
     .replace(/'/g, "&#39;");
 
 export const sendDataSourceReadyForReviewEmail = async (
-  options: DataSourceReadyForReviewEmailOptions,
+  options: DataSourceReadyForReviewEmailOptions
 ): Promise<void> => {
   const targetLabel = DATA_SOURCE_TARGET_LABELS[options.targetType] || options.targetType;
   const safeName = escapeHtml(options.name);
@@ -1181,7 +1169,7 @@ interface CoachVerificationReminderEmailOptions {
 }
 
 export const sendCoachVerificationReminderEmail = async (
-  options: CoachVerificationReminderEmailOptions,
+  options: CoachVerificationReminderEmailOptions
 ): Promise<void> => {
   const html = `
 <!DOCTYPE html>
@@ -1238,9 +1226,7 @@ interface AdminTemporaryCredentialsEmailOptions {
   loginUrl: string;
 }
 
-export const sendCredentialsEmail = async (
-  options: CredentialsEmailOptions,
-): Promise<void> => {
+export const sendCredentialsEmail = async (options: CredentialsEmailOptions): Promise<void> => {
   const html = `
 <!DOCTYPE html>
 <html>
@@ -1357,7 +1343,7 @@ interface ExpertAdminCredentialsEmailOptions {
 }
 
 export const sendCoachAdminCredentialsEmail = async (
-  options: CoachAdminCredentialsEmailOptions,
+  options: CoachAdminCredentialsEmailOptions
 ): Promise<void> => {
   const html = `
 <!DOCTYPE html>
@@ -1445,7 +1431,7 @@ export const sendCoachAdminCredentialsEmail = async (
 };
 
 export const sendVenueAdminCredentialsEmail = async (
-  options: VenueAdminCredentialsEmailOptions,
+  options: VenueAdminCredentialsEmailOptions
 ): Promise<void> => {
   const html = `
 <!DOCTYPE html>
@@ -1533,7 +1519,7 @@ export const sendVenueAdminCredentialsEmail = async (
 };
 
 export const sendExpertAdminCredentialsEmail = async (
-  options: ExpertAdminCredentialsEmailOptions,
+  options: ExpertAdminCredentialsEmailOptions
 ): Promise<void> => {
   const html = `
 <!DOCTYPE html>
@@ -1618,7 +1604,7 @@ export const sendExpertAdminCredentialsEmail = async (
 };
 
 export const sendAdminTemporaryCredentialsEmail = async (
-  options: AdminTemporaryCredentialsEmailOptions,
+  options: AdminTemporaryCredentialsEmailOptions
 ): Promise<void> => {
   // Format role name (e.g., "SYSTEM_ADMIN" -> "System Admin")
   const roleLabel = options.role
@@ -1729,7 +1715,7 @@ interface BookingConfirmationEmailOptions {
 }
 
 export const sendBookingConfirmationEmail = async (
-  options: BookingConfirmationEmailOptions,
+  options: BookingConfirmationEmailOptions
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
@@ -1855,7 +1841,7 @@ interface BookingReminderEmailOptions {
 }
 
 export const sendBookingReminderEmail = async (
-  options: BookingReminderEmailOptions,
+  options: BookingReminderEmailOptions
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const bookingsUrl = `${frontendBaseUrl}/dashboard/my-bookings`;
@@ -2111,7 +2097,7 @@ interface OrderConfirmationEmailOptions {
 }
 
 export const sendOrderConfirmationEmail = async (
-  options: OrderConfirmationEmailOptions,
+  options: OrderConfirmationEmailOptions
 ): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const itemsHtml = options.items
@@ -2129,7 +2115,7 @@ export const sendOrderConfirmationEmail = async (
         ₹${(item.lineTotal / 100).toFixed(2)}
       </td>
     </tr>
-  `,
+  `
     )
     .join("");
 
@@ -2225,11 +2211,9 @@ export const sendOrderConfirmationEmail = async (
 //  reviews, account safety, password-change). Added 2026-07.
 // ════════════════════════════════════════════════════════════════════════════
 
-const emailFrontendUrl = (): string =>
-  process.env.FRONTEND_URL || "http://localhost:3000";
+const emailFrontendUrl = (): string => process.env.FRONTEND_URL || "http://localhost:3000";
 
-const formatInr = (n: number): string =>
-  `₹${Number(n || 0).toLocaleString("en-IN")}`;
+const formatInr = (n: number): string => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
 const renderEmailShell = (opts: {
   heading: string;
@@ -2262,7 +2246,7 @@ const detailTable = (rows: Array<[string, string]>): string =>
   `<table style="width:100%;border-collapse:collapse;margin:16px 0;">${rows
     .map(
       ([k, v]) =>
-        `<tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:bold;background:#fff;">${k}</td><td style="padding:8px 12px;border:1px solid #e5e7eb;background:#fff;">${v}</td></tr>`,
+        `<tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:bold;background:#fff;">${k}</td><td style="padding:8px 12px;border:1px solid #e5e7eb;background:#fff;">${v}</td></tr>`
     )
     .join("")}</table>`;
 
@@ -2275,7 +2259,7 @@ interface SupportTicketReceivedOptions {
 }
 
 export const sendSupportTicketReceivedEmail = async (
-  options: SupportTicketReceivedOptions,
+  options: SupportTicketReceivedOptions
 ): Promise<void> => {
   const html = renderEmailShell({
     heading: "We've received your request",
@@ -2283,9 +2267,7 @@ export const sendSupportTicketReceivedEmail = async (
     bodyHtml: detailTable([
       ["Ticket", `#${options.ticketId.slice(-8)}`],
       ["Subject", options.subject],
-      ...(options.category
-        ? ([["Category", options.category]] as [string, string][])
-        : []),
+      ...(options.category ? ([["Category", options.category]] as [string, string][]) : []),
     ]),
     ctaLabel: "View my tickets",
     ctaUrl: `${emailFrontendUrl()}/dashboard`,
@@ -2307,15 +2289,11 @@ interface SupportTicketStatusOptions {
 }
 
 export const sendSupportTicketStatusEmail = async (
-  options: SupportTicketStatusOptions,
+  options: SupportTicketStatusOptions
 ): Promise<void> => {
-  const resolved = ["RESOLVED", "CLOSED"].includes(
-    options.status.toUpperCase(),
-  );
+  const resolved = ["RESOLVED", "CLOSED"].includes(options.status.toUpperCase());
   const html = renderEmailShell({
-    heading: resolved
-      ? "Your support ticket was updated"
-      : "Update on your support ticket",
+    heading: resolved ? "Your support ticket was updated" : "Update on your support ticket",
     intro: `Hi ${options.name || "there"}, there's an update on your support ticket.`,
     bodyHtml:
       detailTable([
@@ -2345,9 +2323,7 @@ interface PayoutProcessedOptions {
   role: "Coach" | "VenueLister";
 }
 
-export const sendPayoutProcessedEmail = async (
-  options: PayoutProcessedOptions,
-): Promise<void> => {
+export const sendPayoutProcessedEmail = async (options: PayoutProcessedOptions): Promise<void> => {
   const html = renderEmailShell({
     heading: "You've been paid 🎉",
     intro: `Hi ${options.name || "there"}, a payout has been processed to your account.`,
@@ -2377,14 +2353,10 @@ interface DisputeStatusOptions {
   refundAmount?: number | undefined;
 }
 
-export const sendDisputeStatusEmail = async (
-  options: DisputeStatusOptions,
-): Promise<void> => {
+export const sendDisputeStatusEmail = async (options: DisputeStatusOptions): Promise<void> => {
   const isResolved = options.status !== "OPEN";
   const html = renderEmailShell({
-    heading: isResolved
-      ? "Your dispute has been resolved"
-      : "We've received your dispute",
+    heading: isResolved ? "Your dispute has been resolved" : "We've received your dispute",
     intro: isResolved
       ? `Hi ${options.name || "there"}, your dispute has been reviewed and resolved.`
       : `Hi ${options.name || "there"}, your dispute has been logged and our team will review it.`,
@@ -2393,10 +2365,7 @@ export const sendDisputeStatusEmail = async (
       ["Type", options.disputeType.replace(/_/g, " ")],
       ["Status", options.status],
       ...(options.resolution
-        ? ([["Resolution", options.resolution.replace(/_/g, " ")]] as [
-            string,
-            string,
-          ][])
+        ? ([["Resolution", options.resolution.replace(/_/g, " ")]] as [string, string][])
         : []),
       ...(options.refundAmount
         ? ([["Refund", formatInr(options.refundAmount)]] as [string, string][])
@@ -2426,7 +2395,7 @@ interface WaitlistSlotAvailableOptions {
 }
 
 export const sendWaitlistSlotAvailableEmail = async (
-  options: WaitlistSlotAvailableOptions,
+  options: WaitlistSlotAvailableOptions
 ): Promise<void> => {
   const dateStr = new Date(options.date).toLocaleDateString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -2464,13 +2433,11 @@ interface CoachSubscriptionPurchasedOptions {
 }
 
 export const sendCoachSubscriptionPurchasedEmail = async (
-  options: CoachSubscriptionPurchasedOptions,
+  options: CoachSubscriptionPurchasedOptions
 ): Promise<void> => {
   const forPlayer = options.recipientRole === "Player";
   const html = renderEmailShell({
-    heading: forPlayer
-      ? "Your coaching plan is active 🏆"
-      : "You have a new subscriber 🎉",
+    heading: forPlayer ? "Your coaching plan is active 🏆" : "You have a new subscriber 🎉",
     intro: forPlayer
       ? `Hi ${options.name || "there"}, your subscription to ${options.counterpartName}'s coaching plan is now active.`
       : `Hi ${options.name || "there"}, ${options.counterpartName} just subscribed to your coaching plan.`,
@@ -2501,7 +2468,7 @@ interface CoachSubscriptionCancelledOptions {
 }
 
 export const sendCoachSubscriptionCancelledEmail = async (
-  options: CoachSubscriptionCancelledOptions,
+  options: CoachSubscriptionCancelledOptions
 ): Promise<void> => {
   const forPlayer = options.recipientRole === "Player";
   const html = renderEmailShell({
@@ -2533,9 +2500,7 @@ interface ReviewReceivedOptions {
   targetType: "VENUE" | "Coach";
 }
 
-export const sendReviewReceivedEmail = async (
-  options: ReviewReceivedOptions,
-): Promise<void> => {
+export const sendReviewReceivedEmail = async (options: ReviewReceivedOptions): Promise<void> => {
   const stars =
     "★".repeat(Math.max(0, Math.min(5, Math.round(options.rating)))) +
     "☆".repeat(5 - Math.max(0, Math.min(5, Math.round(options.rating))));
@@ -2564,9 +2529,7 @@ interface AccountStatusOptions {
   reason?: string | undefined;
 }
 
-export const sendAccountStatusEmail = async (
-  options: AccountStatusOptions,
-): Promise<void> => {
+export const sendAccountStatusEmail = async (options: AccountStatusOptions): Promise<void> => {
   const reactivated = options.action === "REACTIVATE";
   const heading = reactivated
     ? "Your account has been reactivated"
@@ -2600,9 +2563,7 @@ interface PasswordChangedOptions {
   email: string;
 }
 
-export const sendPasswordChangedEmail = async (
-  options: PasswordChangedOptions,
-): Promise<void> => {
+export const sendPasswordChangedEmail = async (options: PasswordChangedOptions): Promise<void> => {
   const html = renderEmailShell({
     heading: "Your password was changed",
     intro: `Hi ${options.name || "there"}, this is a confirmation that the password for your PowerMySport account was just changed.`,
@@ -2667,7 +2628,11 @@ export const sendExpertApprovedEmail = async (options: {
   </table>
 </body>
 </html>`;
-  await sendEmail({ to: options.email, subject: "Your PowerMySport Expert Profile Is Live!", html });
+  await sendEmail({
+    to: options.email,
+    subject: "Your PowerMySport Expert Profile Is Live!",
+    html,
+  });
 };
 
 export const sendExpertRejectedEmail = async (options: {
@@ -2721,5 +2686,9 @@ export const sendExpertRejectedEmail = async (options: {
   </table>
 </body>
 </html>`;
-  await sendEmail({ to: options.email, subject: "Your PowerMySport Expert Profile Needs Updates", html });
+  await sendEmail({
+    to: options.email,
+    subject: "Your PowerMySport Expert Profile Needs Updates",
+    html,
+  });
 };

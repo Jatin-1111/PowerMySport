@@ -6,10 +6,7 @@ import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboardi
 import { Button } from "@/modules/shared/ui/Button";
 import { CheckCircle, Loader2, Upload } from "lucide-react";
 import { useState } from "react";
-import type {
-  AcademyBusinessType,
-  AcademyStep3Payload,
-} from "@/modules/onboarding/types/academy";
+import type { AcademyBusinessType, AcademyStep3Payload } from "@/modules/onboarding/types/academy";
 
 interface Step3LegalProps {
   academyId: string;
@@ -27,8 +24,7 @@ export default function Step3Legal({
   previousData,
 }: Step3LegalProps) {
   const [formData, setFormData] = useState({
-    businessType: (previousData?.businessType ||
-      "sole_proprietorship") as AcademyBusinessType,
+    businessType: (previousData?.businessType || "sole_proprietorship") as AcademyBusinessType,
     panNumber: previousData?.panNumber || "",
     panDocumentUrl: previousData?.panDocumentUrl || "",
     panDocumentKey: previousData?.panDocumentKey || "",
@@ -44,12 +40,8 @@ export default function Step3Legal({
   const [gstFile, setGstFile] = useState<File | null>(null);
   const [panUploading, setPanUploading] = useState(false);
   const [gstUploading, setGstUploading] = useState(false);
-  const [panUploaded, setPanUploaded] = useState(
-    !!previousData?.panDocumentUrl,
-  );
-  const [gstUploaded, setGstUploaded] = useState(
-    !!previousData?.gstDocumentUrl,
-  );
+  const [panUploaded, setPanUploaded] = useState(!!previousData?.panDocumentUrl);
+  const [gstUploaded, setGstUploaded] = useState(!!previousData?.gstDocumentUrl);
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -62,15 +54,12 @@ export default function Step3Legal({
     }
     if (
       formData.gstNumber.trim() &&
-      !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
-        formData.gstNumber.trim(),
-      )
+      !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber.trim())
     ) {
       errors.gstNumber = "Invalid GST format (e.g., 22AABCT1234H2Z0)";
     }
     if (formData.gstNumber.trim() && !gstUploaded && !formData.gstDocumentKey) {
-      errors.gstDocument =
-        "GST document is required when GST number is provided";
+      errors.gstDocument = "GST document is required when GST number is provided";
     }
     if (!/^\d{4}$/.test(formData.aadhaarLast4)) {
       errors.aadhaarLast4 = "Please enter last 4 digits of Aadhaar";
@@ -80,10 +69,7 @@ export default function Step3Legal({
     return Object.keys(errors).length === 0;
   };
 
-  const handleFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    type: "pan" | "gst",
-  ) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "pan" | "gst") => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -97,18 +83,10 @@ export default function Step3Legal({
       setPanUploaded(false);
       setPanUploading(true);
       try {
-        const res = await academyOnboardingApi.getDocumentUploadUrls(
-          academyId,
-          ["panDocument"],
-        );
+        const res = await academyOnboardingApi.getDocumentUploadUrls(academyId, ["panDocument"]);
         const upload = res.data?.uploadUrls?.[0];
-        if (!res.success || !upload)
-          throw new Error("Could not get upload URL");
-        await uploadFileToPresignedUrl(
-          file,
-          upload.uploadUrl,
-          upload.contentType,
-        );
+        if (!res.success || !upload) throw new Error("Could not get upload URL");
+        await uploadFileToPresignedUrl(file, upload.uploadUrl, upload.contentType);
         const confirmRes = await academyOnboardingApi.confirmDocuments({
           academyId,
           panDocumentUrl: upload.downloadUrl,
@@ -135,18 +113,10 @@ export default function Step3Legal({
       setGstUploaded(false);
       setGstUploading(true);
       try {
-        const res = await academyOnboardingApi.getDocumentUploadUrls(
-          academyId,
-          ["gstDocument"],
-        );
+        const res = await academyOnboardingApi.getDocumentUploadUrls(academyId, ["gstDocument"]);
         const upload = res.data?.uploadUrls?.[0];
-        if (!res.success || !upload)
-          throw new Error("Could not get upload URL");
-        await uploadFileToPresignedUrl(
-          file,
-          upload.uploadUrl,
-          upload.contentType,
-        );
+        if (!res.success || !upload) throw new Error("Could not get upload URL");
+        await uploadFileToPresignedUrl(file, upload.uploadUrl, upload.contentType);
         const confirmRes = await academyOnboardingApi.confirmDocuments({
           academyId,
           panDocumentUrl: formData.panDocumentUrl,
@@ -209,9 +179,7 @@ export default function Step3Legal({
 
       await onSubmit(payload);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save legal info",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save legal info");
     } finally {
       setIsSubmitting(false);
     }
@@ -220,12 +188,8 @@ export default function Step3Legal({
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-3xl font-bold text-slate-900">
-          Step 3: Legal & KYC
-        </h2>
-        <p className="text-slate-600">
-          Provide your business and compliance details
-        </p>
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 3: Legal & KYC</h2>
+        <p className="text-slate-600">Provide your business and compliance details</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -241,7 +205,7 @@ export default function Step3Legal({
                 businessType: e.target.value as AcademyBusinessType,
               }))
             }
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange"
+            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
             disabled={isSubmitting}
           >
             <option value="sole_proprietorship">Sole Proprietorship</option>
@@ -270,17 +234,13 @@ export default function Step3Legal({
                 }
                 placeholder="AAAAA0000A"
                 maxLength={10}
-                className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-                  fieldErrors.panNumber
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 bg-white"
+                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+                  fieldErrors.panNumber ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
               />
               {fieldErrors.panNumber && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.panNumber}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.panNumber}</p>
               )}
             </div>
 
@@ -294,7 +254,7 @@ export default function Step3Legal({
                     ? "border-green-400 bg-green-50"
                     : fieldErrors.panDocument
                       ? "border-red-300 bg-red-50"
-                      : "border-slate-300 hover:border-power-orange hover:bg-orange-50"
+                      : "hover:border-power-orange border-slate-300 hover:bg-orange-50"
                 } ${panUploading ? "pointer-events-none opacity-75" : ""}`}
               >
                 <input
@@ -306,7 +266,7 @@ export default function Step3Legal({
                 />
                 <div className="flex flex-col gap-1">
                   {panUploading ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-power-orange" />
+                    <Loader2 className="text-power-orange h-5 w-5 animate-spin" />
                   ) : panUploaded ? (
                     <CheckCircle className="h-5 w-5 text-green-600" />
                   ) : (
@@ -321,24 +281,18 @@ export default function Step3Legal({
                           ? panFile.name
                           : "Click to upload PAN"}
                   </span>
-                  <span className="text-xs text-slate-500">
-                    PDF, JPG, PNG (Max 5MB)
-                  </span>
+                  <span className="text-xs text-slate-500">PDF, JPG, PNG (Max 5MB)</span>
                 </div>
               </label>
               {fieldErrors.panDocument && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.panDocument}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.panDocument}</p>
               )}
             </div>
           </div>
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="mb-4 font-semibold text-slate-900">
-            GST Details (Optional)
-          </h3>
+          <h3 className="mb-4 font-semibold text-slate-900">GST Details (Optional)</h3>
 
           <div className="space-y-4">
             <div>
@@ -355,13 +309,11 @@ export default function Step3Legal({
                   }))
                 }
                 placeholder="22AABCT1234H2Z0"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange"
+                className="focus:ring-power-orange w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:outline-none"
                 disabled={isSubmitting}
               />
               {formData.gstNumber && fieldErrors.gstNumber && (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors.gstNumber}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.gstNumber}</p>
               )}
             </div>
 
@@ -376,7 +328,7 @@ export default function Step3Legal({
                       ? "border-green-400 bg-green-50"
                       : fieldErrors.gstDocument
                         ? "border-red-300 bg-red-50"
-                        : "border-slate-300 hover:border-power-orange hover:bg-orange-50"
+                        : "hover:border-power-orange border-slate-300 hover:bg-orange-50"
                   } ${gstUploading ? "pointer-events-none opacity-75" : ""}`}
                 >
                   <input
@@ -388,7 +340,7 @@ export default function Step3Legal({
                   />
                   <div className="flex flex-col gap-1">
                     {gstUploading ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-power-orange" />
+                      <Loader2 className="text-power-orange h-5 w-5 animate-spin" />
                     ) : gstUploaded ? (
                       <CheckCircle className="h-5 w-5 text-green-600" />
                     ) : (
@@ -406,9 +358,7 @@ export default function Step3Legal({
                   </div>
                 </label>
                 {fieldErrors.gstDocument && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {fieldErrors.gstDocument}
-                  </p>
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.gstDocument}</p>
                 )}
               </div>
             )}
@@ -430,39 +380,24 @@ export default function Step3Legal({
             }
             placeholder="1234"
             maxLength={4}
-            className={`w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-power-orange ${
-              fieldErrors.aadhaarLast4
-                ? "border-red-300 bg-red-50"
-                : "border-slate-300 bg-white"
+            className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none ${
+              fieldErrors.aadhaarLast4 ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
             disabled={isSubmitting}
           />
           {fieldErrors.aadhaarLast4 && (
-            <p className="mt-1 text-xs text-red-600">
-              {fieldErrors.aadhaarLast4}
-            </p>
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.aadhaarLast4}</p>
           )}
-          <p className="mt-1 text-xs text-slate-500">
-            We only store the last 4 digits for privacy
-          </p>
+          <p className="mt-1 text-xs text-slate-500">We only store the last 4 digits for privacy</p>
         </div>
 
         <div className="flex gap-3 pt-4">
           {onBack && (
-            <Button
-              type="button"
-              onClick={onBack}
-              variant="outline"
-              disabled={isSubmitting}
-            >
+            <Button type="button" onClick={onBack} variant="outline" disabled={isSubmitting}>
               Back
             </Button>
           )}
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Saving..." : "Continue to Step 4"}
           </Button>
         </div>

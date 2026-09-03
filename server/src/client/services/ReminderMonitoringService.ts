@@ -66,21 +66,15 @@ export class ReminderMonitoringService {
         acc[stat._id.toLowerCase()] = stat.count;
         return acc;
       },
-      { pending: 0, sent: 0, failed: 0, cancelled: 0 } as Record<
-        string,
-        number
-      >,
+      { pending: 0, sent: 0, failed: 0, cancelled: 0 } as Record<string, number>
     );
 
     const total = (Object.values(statusCounts) as number[]).reduce(
       (sum: number, count: number) => sum + count,
-      0,
+      0
     );
     const failureRate =
-      total > 0
-        ? (statusCounts.failed / (statusCounts.sent + statusCounts.failed)) *
-          100
-        : 0;
+      total > 0 ? (statusCounts.failed / (statusCounts.sent + statusCounts.failed)) * 100 : 0;
 
     // Get last processed reminder
     const lastProcessed = await ScheduledNotification.findOne({
@@ -125,13 +119,13 @@ export class ReminderMonitoringService {
     // Determine health issues
     if (minutesSinceLastRun !== null && minutesSinceLastRun > 10) {
       issues.push(
-        `Scheduler hasn't run in ${minutesSinceLastRun} minutes (expected: every 1-5 minutes)`,
+        `Scheduler hasn't run in ${minutesSinceLastRun} minutes (expected: every 1-5 minutes)`
       );
     }
 
     if (overdueCount > 50) {
       issues.push(
-        `High number of overdue reminders: ${overdueCount} (may indicate processing bottleneck)`,
+        `High number of overdue reminders: ${overdueCount} (may indicate processing bottleneck)`
       );
     }
 
@@ -163,9 +157,7 @@ export class ReminderMonitoringService {
   /**
    * Get failed reminders for investigation
    */
-  static async getFailedReminders(
-    limit: number = 50,
-  ): Promise<FailedReminderInfo[]> {
+  static async getFailedReminders(limit: number = 50): Promise<FailedReminderInfo[]> {
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const failedReminders = await ScheduledNotification.find({
@@ -180,18 +172,13 @@ export class ReminderMonitoringService {
 
     return failedReminders.map((reminder) => {
       const user = reminder.userId as unknown as
-        | { _id: unknown; name?: string; email?: string }
-        | mongoose.Types.ObjectId;
+        { _id: unknown; name?: string; email?: string } | mongoose.Types.ObjectId;
       const isPopulated = typeof user === "object" && "name" in user;
 
       return {
         _id: reminder._id.toString(),
-        userId: isPopulated
-          ? String((user as { _id: unknown })._id)
-          : String(user),
-        userName: isPopulated
-          ? (user as { name?: string }).name || "Unknown user"
-          : "Unknown user",
+        userId: isPopulated ? String((user as { _id: unknown })._id) : String(user),
+        userName: isPopulated ? (user as { name?: string }).name || "Unknown user" : "Unknown user",
         userEmail: isPopulated ? (user as { email?: string }).email || "" : "",
         bookingId: reminder.bookingId?.toString() || "unknown",
         interval: reminder.interval,
@@ -205,17 +192,13 @@ export class ReminderMonitoringService {
   /**
    * Send alert email to admins about critical issues
    */
-  static async sendHealthAlert(
-    healthStatus: SchedulerHealthStatus,
-  ): Promise<void> {
+  static async sendHealthAlert(healthStatus: SchedulerHealthStatus): Promise<void> {
     if (healthStatus.isHealthy) {
       return; // No alert needed
     }
 
     const adminEmail =
-      process.env.ALERT_EMAIL ||
-      process.env.EMAIL_USER ||
-      "teams@powermysport.com";
+      process.env.ALERT_EMAIL || process.env.EMAIL_USER || "teams@powermysport.com";
     const appName = "PowerMySport Reminder System";
 
     const issuesList = healthStatus.issues
@@ -312,9 +295,7 @@ export class ReminderMonitoringService {
    */
   static async sendDailySummary(): Promise<void> {
     const adminEmail =
-      process.env.ALERT_EMAIL ||
-      process.env.EMAIL_USER ||
-      "teams@powermysport.com";
+      process.env.ALERT_EMAIL || process.env.EMAIL_USER || "teams@powermysport.com";
     const stats = await this.getMonitoringStats();
     const healthStatus = await this.checkSchedulerHealth();
     const failedReminders = await this.getFailedReminders(10);
@@ -330,7 +311,7 @@ export class ReminderMonitoringService {
         <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.failureReason.substring(0, 50)}${r.failureReason.length > 50 ? "..." : ""}</td>
         <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;">${r.retryCount}</td>
       </tr>
-    `,
+    `
             )
             .join("")
         : '<tr><td colspan="4" style="padding:15px;text-align:center;color:#64748b;">No failed reminders in the last 24 hours 🎉</td></tr>';
@@ -455,7 +436,7 @@ export class ReminderMonitoringService {
    * Retry a failed reminder
    */
   static async retryFailedReminder(
-    reminderId: string,
+    reminderId: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       const reminder = await ScheduledNotification.findById(reminderId);
@@ -482,7 +463,7 @@ export class ReminderMonitoringService {
       await reminder.save();
 
       log.info(
-        `Reminder ${reminderId} reset to PENDING for retry (total attempts: ${reminder.retryCount})`,
+        `Reminder ${reminderId} reset to PENDING for retry (total attempts: ${reminder.retryCount})`
       );
 
       return {
@@ -505,7 +486,7 @@ export class ReminderMonitoringService {
       reminderIds.map(async (id) => {
         const result = await this.retryFailedReminder(id);
         return { reminderId: id, ...result };
-      }),
+      })
     );
 
     const successCount = results.filter((r) => r.success).length;

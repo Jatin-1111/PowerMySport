@@ -88,61 +88,30 @@ router.patch(
   "/profile",
   authMiddleware,
   validateRequest(communityUpdateProfileSchema),
-  updateCommunityProfile,
+  updateCommunityProfile
 );
 
 router.get("/blocked-users", authMiddleware, getBlockedUsers);
-router.post(
-  "/block",
-  authMiddleware,
-  validateRequest(communityBlockSchema),
-  blockUser,
-);
-router.post(
-  "/unblock",
-  authMiddleware,
-  validateRequest(communityBlockSchema),
-  unblockUser,
-);
+router.post("/block", authMiddleware, validateRequest(communityBlockSchema), blockUser);
+router.post("/unblock", authMiddleware, validateRequest(communityBlockSchema), unblockUser);
 
 router.get("/conversations", authMiddleware, listConversations);
-router.get(
-  "/conversations/unread-count",
-  authMiddleware,
-  getUnreadConversationCount,
-);
+router.get("/conversations/unread-count", authMiddleware, getUnreadConversationCount);
 router.post(
   "/conversations/start",
   authMiddleware,
   validateRequest(communityStartConversationSchema),
-  startConversation,
+  startConversation
 );
-router.post(
-  "/conversations/:conversationId/accept",
-  authMiddleware,
-  acceptConversationRequest,
-);
-router.post(
-  "/conversations/:conversationId/reject",
-  authMiddleware,
-  rejectConversationRequest,
-);
-router.get(
-  "/conversations/:conversationId/messages",
-  authMiddleware,
-  getConversationMessages,
-);
-router.post(
-  "/messages",
-  authMiddleware,
-  validateRequest(communitySendMessageSchema),
-  sendMessage,
-);
+router.post("/conversations/:conversationId/accept", authMiddleware, acceptConversationRequest);
+router.post("/conversations/:conversationId/reject", authMiddleware, rejectConversationRequest);
+router.get("/conversations/:conversationId/messages", authMiddleware, getConversationMessages);
+router.post("/messages", authMiddleware, validateRequest(communitySendMessageSchema), sendMessage);
 router.patch(
   "/messages/:messageId",
   authMiddleware,
   validateRequest(communityUpdateMessageSchema),
-  editMessage,
+  editMessage
 );
 router.post("/messages/:messageId/pin", authMiddleware, pinGroupMessage);
 router.delete("/messages/:messageId", authMiddleware, deleteMessage);
@@ -154,38 +123,29 @@ router.post(
   "/groups/upload-url",
   authMiddleware,
   validateRequest(communityGroupUploadUrlSchema),
-  getGroupImageUploadUrl,
+  getGroupImageUploadUrl
 );
-router.post(
-  "/groups",
-  authMiddleware,
-  validateRequest(communityCreateGroupSchema),
-  createGroup,
-);
+router.post("/groups", authMiddleware, validateRequest(communityCreateGroupSchema), createGroup);
 router.post(
   "/groups/:groupId/members",
   authMiddleware,
   validateRequest(communityAddGroupMemberSchema),
-  addGroupMember,
+  addGroupMember
 );
 router.patch(
   "/groups/:groupId",
   authMiddleware,
   validateRequest(communityUpdateGroupSchema),
-  updateGroup,
+  updateGroup
 );
 router.patch(
   "/groups/:groupId/settings",
   authMiddleware,
   validateRequest(communityUpdateGroupSettingsSchema),
-  updateGroupSettings,
+  updateGroupSettings
 );
 router.post("/groups/:groupId/join", authMiddleware, joinGroup);
-router.post(
-  "/groups/join-by-code/:inviteCode",
-  authMiddleware,
-  joinGroupByCode,
-);
+router.post("/groups/join-by-code/:inviteCode", authMiddleware, joinGroupByCode);
 router.get("/groups/:groupId/members", authMiddleware, getGroupMembers);
 router.get("/groups/:groupId/invite-code", authMiddleware, getGroupInviteCode);
 router.post("/groups/:groupId/leave", authMiddleware, leaveGroup);
@@ -194,7 +154,7 @@ router.post(
   "/reports",
   authMiddleware,
   validateRequest(communityReportSchema),
-  reportCommunityContent,
+  reportCommunityContent
 );
 router.get("/reports/my", authMiddleware, listMyCommunityReports);
 
@@ -206,13 +166,13 @@ router.post(
   "/follows/toggle",
   authMiddleware,
   validateRequest(communityFollowToggleSchema),
-  toggleCommunityFollow,
+  toggleCommunityFollow
 );
 router.post(
   "/follows/import",
   authMiddleware,
   validateRequest(communityFollowImportSchema),
-  importCommunityFollows,
+  importCommunityFollows
 );
 // Public — questions and published stories are readable without an account,
 // so search over them is too. public: search results carry no per-viewer
@@ -223,62 +183,44 @@ router.get("/search", optionalAuthMiddleware, cacheControl(45, "public"), search
 // links, and the sitemap generator. private: myVote/likedByMe/canAccept vary
 // per viewer.
 router.get("/posts", optionalAuthMiddleware, cacheControl(20), listCommunityPosts);
-router.get(
-  "/posts/:postId",
-  optionalAuthMiddleware,
-  cacheControl(15),
-  getCommunityPostDetails,
-);
+router.get("/posts/:postId", optionalAuthMiddleware, cacheControl(15), getCommunityPostDetails);
 router.post(
   "/posts",
   authMiddleware,
   validateRequest(communityCreatePostSchema),
-  createCommunityPost,
+  createCommunityPost
 );
 router.patch(
   "/posts/:postId",
   authMiddleware,
   validateRequest(communityUpdatePostSchema),
-  updateCommunityPost,
+  updateCommunityPost
 );
 router.delete("/posts/:postId", authMiddleware, deleteCommunityPost);
 router.post(
   "/posts/:postId/answers",
   authMiddleware,
   validateRequest(communityCreateAnswerSchema),
-  createCommunityAnswer,
+  createCommunityAnswer
 );
 router.patch(
   "/answers/:answerId",
   authMiddleware,
   validateRequest(communityCreateAnswerSchema),
-  updateCommunityAnswer,
+  updateCommunityAnswer
 );
 router.delete("/answers/:answerId", authMiddleware, deleteCommunityAnswer);
 
-router.post(
-  "/posts/:postId/accept/:answerId",
-  authMiddleware,
-  acceptCommunityAnswer,
-);
+router.post("/posts/:postId/accept/:answerId", authMiddleware, acceptCommunityAnswer);
 
 router.post(
   "/answers/:answerId/comments",
   authMiddleware,
   validateRequest(communityAnswerCommentSchema),
-  createCommunityAnswerComment,
+  createCommunityAnswerComment
 );
-router.delete(
-  "/answer-comments/:commentId",
-  authMiddleware,
-  deleteCommunityAnswerComment,
-);
-router.post(
-  "/votes",
-  authMiddleware,
-  validateRequest(communityVoteSchema),
-  voteCommunityTarget,
-);
+router.delete("/answer-comments/:commentId", authMiddleware, deleteCommunityAnswerComment);
+router.post("/votes", authMiddleware, validateRequest(communityVoteSchema), voteCommunityTarget);
 
 /**
  * Rate limiter for chat image upload URL generation.
@@ -292,8 +234,7 @@ const chatUploadRateLimit = rateLimit({
   handler: (_req: Request, res: Response, _next: NextFunction) => {
     res.status(429).json({
       success: false,
-      message:
-        "Too many upload requests. Please wait a moment before uploading another image.",
+      message: "Too many upload requests. Please wait a moment before uploading another image.",
     });
   },
   standardHeaders: true,
@@ -305,7 +246,7 @@ router.post(
   authMiddleware,
   chatUploadRateLimit,
   validateRequest(communityChatUploadUrlSchema),
-  getChatImageUploadUrl,
+  getChatImageUploadUrl
 );
 
 // Shares the image upload rate limit — same bucket, same abuse surface.
@@ -314,7 +255,7 @@ router.post(
   authMiddleware,
   chatUploadRateLimit,
   validateRequest(communityChatAttachmentUploadUrlSchema),
-  getChatAttachmentUploadUrl,
+  getChatAttachmentUploadUrl
 );
 
 export default router;

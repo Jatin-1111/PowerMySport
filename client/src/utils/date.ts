@@ -4,9 +4,7 @@
 export function formatDistanceToNow(date: Date | string): string {
   const now = new Date();
   const targetDate = typeof date === "string" ? new Date(date) : date;
-  const diffInSeconds = Math.floor(
-    (now.getTime() - targetDate.getTime()) / 1000,
-  );
+  const diffInSeconds = Math.floor((now.getTime() - targetDate.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
     return "just now";

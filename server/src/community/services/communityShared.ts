@@ -3,19 +3,10 @@ import {
   CommunityConversation,
   CommunityConversationDocument,
 } from "../models/CommunityConversation";
-import {
-  CommunityGroup,
-  type CommunityGroupVisibility,
-} from "../models/CommunityGroup";
-import {
-  CommunityMessage,
-  type CommunityMessageType,
-} from "../models/CommunityMessage";
+import { CommunityGroup, type CommunityGroupVisibility } from "../models/CommunityGroup";
+import { CommunityMessage, type CommunityMessageType } from "../models/CommunityMessage";
 import { CommunityMessageReaction } from "../models/CommunityMessageReaction";
-import {
-  CommunityMessagePrivacy,
-  CommunityProfile,
-} from "../models/CommunityProfile";
+import { CommunityMessagePrivacy, CommunityProfile } from "../models/CommunityProfile";
 import { User } from "../../client/models/User";
 import { CommunityReport } from "../models/CommunityReport";
 import { CommunityPost } from "../models/CommunityPost";
@@ -24,10 +15,7 @@ import { CommunityAnswerComment } from "../models/CommunityAnswerComment";
 import { BlogPost } from "../models/BlogPost";
 import { CommunityVote } from "../models/CommunityVote";
 import { CommunityReputation } from "../models/CommunityReputation";
-import {
-  CommunityFollow,
-  type CommunityFollowKind,
-} from "../models/CommunityFollow";
+import { CommunityFollow, type CommunityFollowKind } from "../models/CommunityFollow";
 import { NotificationService } from "../../client/services/NotificationService";
 import OutboxMessage from "../../shared/models/OutboxMessage";
 import { S3Service } from "../../shared/services/S3Service";
@@ -69,11 +57,9 @@ const log = __rootLog.child("communityShared");
  * Nothing here reaches back into a domain service — that would reintroduce the
  * cycle this split exists to avoid.
  */
-export const buildParticipantKey = (a: string, b: string): string =>
-  [a, b].sort().join(":");
+export const buildParticipantKey = (a: string, b: string): string => [a, b].sort().join(":");
 
-export const buildGroupParticipantKey = (groupId: string): string =>
-  `group:${groupId}`;
+export const buildGroupParticipantKey = (groupId: string): string => `group:${groupId}`;
 
 export const normalizeOptionalText = (value?: string): string => value?.trim() || "";
 
@@ -99,20 +85,18 @@ export const clampForSnippet = (value: string, max = 180): string => {
  *  yielding an object of undefined keys. Collapse that to null so clients can
  *  test for presence rather than inspecting every field. */
 export const normalizeMessageMetadata = <T extends Record<string, unknown>>(
-  metadata?: T | null,
+  metadata?: T | null
 ): T | null => {
   if (!metadata) {
     return null;
   }
-  const hasValue = Object.values(metadata).some(
-    (value) => value !== undefined && value !== null,
-  );
+  const hasValue = Object.values(metadata).some((value) => value !== undefined && value !== null);
   return hasValue ? metadata : null;
 };
 
 export const describeNonTextMessage = (
   type: string | undefined,
-  metadata?: { fileName?: string; durationMs?: number } | null,
+  metadata?: { fileName?: string; durationMs?: number } | null
 ): string => {
   if (type === "IMAGE") {
     return "Photo";
@@ -132,10 +116,7 @@ export const MAX_FOLLOWS_PER_USER = 200;
 /** Topics are free text and must match the tag normalization used when a post
  *  is saved, or `#Tennis` and `#tennis` become two different follows. Groups
  *  are ObjectIds and are validated as such so a junk id cannot be stored. */
-export const normalizeFollowTargetId = (
-  kind: CommunityFollowKind,
-  rawTargetId: string,
-): string => {
+export const normalizeFollowTargetId = (kind: CommunityFollowKind, rawTargetId: string): string => {
   const value = String(rawTargetId || "").trim();
 
   if (kind === "GROUP") {
@@ -160,13 +141,12 @@ export const splitCsvValues = (value?: string): string[] => {
       value
         .split(",")
         .map((item) => item.trim())
-        .filter(Boolean),
-    ),
+        .filter(Boolean)
+    )
   );
 };
 
-export const escapeRegex = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export const MESSAGE_EDIT_DELETE_WINDOW_MS = 30 * 60 * 1000;
 export const COMMUNITY_ALLOWED_ROLES = ["Parent"] as const;
@@ -193,11 +173,7 @@ export const resolveUserPhotoUrl = async (user?: {
   }
 
   try {
-    return await s3Service.generateCachedDownloadUrl(
-      user.photoS3Key,
-      "images",
-      604800,
-    );
+    return await s3Service.generateCachedDownloadUrl(user.photoS3Key, "images", 604800);
   } catch (error) {
     log.error("Failed to refresh community photo URL:", error);
     return user.photoUrl || null;
@@ -213,11 +189,7 @@ export const resolveGroupPhotoUrl = async (group: {
   }
 
   try {
-    return await s3Service.generateCachedDownloadUrl(
-      group.profilePictureKey,
-      "images",
-      604800,
-    );
+    return await s3Service.generateCachedDownloadUrl(group.profilePictureKey, "images", 604800);
   } catch (error) {
     log.error("Failed to refresh community group photo URL:", error);
     return group.profilePicture || "";
@@ -245,8 +217,7 @@ export const makeDefaultAlias = (name?: string): string => {
 };
 
 export const generateInviteCode = (): string => {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let code = "";
   for (let i = 0; i < 12; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -265,10 +236,7 @@ export const ensurePolicyAllowed = (policyEnabled: boolean, message: string): vo
   }
 };
 
-export const trackCommunityRoleMixEvent = (
-  event: string,
-  payload: Record<string, unknown>,
-) => {
+export const trackCommunityRoleMixEvent = (event: string, payload: Record<string, unknown>) => {
   // Phase-3 telemetry hook: swap with analytics sink when available.
   log.info("[community-role-mix]", event, payload);
 };
@@ -278,22 +246,17 @@ export const trackCommunityRoleMixEvent = (
  *  predates this counter must not push someone negative. */
 export const adjustAcceptedAnswerReputation = async (
   userId: string,
-  direction: 1 | -1,
+  direction: 1 | -1
 ): Promise<void> => {
   const delta = direction * COMMUNITY_POINTS.ANSWER_ACCEPTED;
 
   if (delta < 0) {
-    const current = await CommunityReputation.findOne({ userId })
-      .select("totalPoints")
-      .lean();
+    const current = await CommunityReputation.findOne({ userId }).select("totalPoints").lean();
     const safeDelta = Math.max(delta, -(current?.totalPoints || 0));
     if (safeDelta === 0) {
       return;
     }
-    await CommunityReputation.updateOne(
-      { userId },
-      { $inc: { totalPoints: safeDelta } },
-    );
+    await CommunityReputation.updateOne({ userId }, { $inc: { totalPoints: safeDelta } });
     return;
   }
 
@@ -303,7 +266,7 @@ export const adjustAcceptedAnswerReputation = async (
       $setOnInsert: { questionCount: 0, answerCount: 0, receivedUpvotes: 0 },
       $inc: { totalPoints: delta },
     },
-    { upsert: true },
+    { upsert: true }
   );
 };
 
@@ -311,7 +274,7 @@ export const sendCommunityNotification = (
   userId: string,
   title: string,
   message: string,
-  data: Record<string, unknown>,
+  data: Record<string, unknown>
 ) => {
   NotificationService.send({
     userId,
@@ -327,7 +290,7 @@ export const sendCommunityNotification = (
 export const ensureQnaAllowedForRole = (role: CommunityRole): void => {
   ensurePolicyAllowed(
     COMMUNITY_INTERACTION_POLICY.allowCrossRoleQna,
-    `Q&A participation is currently disabled for ${ROLE_LABEL[role]} accounts`,
+    `Q&A participation is currently disabled for ${ROLE_LABEL[role]} accounts`
   );
 };
 
@@ -337,14 +300,8 @@ export const ensureCommunityUser = async (userId: string) => {
     throw new Error("User not found");
   }
 
-  if (
-    !COMMUNITY_ALLOWED_ROLES.includes(
-      user.role as (typeof COMMUNITY_ALLOWED_ROLES)[number],
-    )
-  ) {
-    throw new Error(
-      "Community is available only for parent accounts",
-    );
+  if (!COMMUNITY_ALLOWED_ROLES.includes(user.role as (typeof COMMUNITY_ALLOWED_ROLES)[number])) {
+    throw new Error("Community is available only for parent accounts");
   }
 
   return user;
@@ -365,7 +322,7 @@ export const ensureProfile = async (userId: string) => {
           anonymousAlias: makeDefaultAlias(user.name),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
 
     if (!profile) {
@@ -401,7 +358,7 @@ export const ensureProfile = async (userId: string) => {
  * upsert-write. That write only needs to happen on an actual mutation path.
  */
 export const resolvePublicViewerId = async (
-  userId: string | undefined,
+  userId: string | undefined
 ): Promise<string | undefined> => {
   if (!userId) {
     return undefined;
@@ -415,21 +372,14 @@ export const resolvePublicViewerId = async (
   }
 };
 
-export const isBlockedBetween = async (
-  userA: string,
-  userB: string,
-): Promise<boolean> => {
+export const isBlockedBetween = async (userA: string, userB: string): Promise<boolean> => {
   const [a, b] = await Promise.all([
     CommunityProfile.findOne({ userId: userA }).select("blockedUsers"),
     CommunityProfile.findOne({ userId: userB }).select("blockedUsers"),
   ]);
 
-  const aBlockedB = Boolean(
-    a?.blockedUsers?.some((blocked) => String(blocked) === userB),
-  );
-  const bBlockedA = Boolean(
-    b?.blockedUsers?.some((blocked) => String(blocked) === userA),
-  );
+  const aBlockedB = Boolean(a?.blockedUsers?.some((blocked) => String(blocked) === userB));
+  const bBlockedA = Boolean(b?.blockedUsers?.some((blocked) => String(blocked) === userA));
 
   return aBlockedB || bBlockedA;
 };
@@ -437,10 +387,7 @@ export const isBlockedBetween = async (
 /**
  * Every read or write inside a conversation goes through this.
  */
-export const assertConversationAccess = async (
-  userId: string,
-  conversationId: string,
-) => {
+export const assertConversationAccess = async (userId: string, conversationId: string) => {
   const conversation = await CommunityConversation.findById(conversationId)
     .select("participants")
     .lean();
@@ -449,7 +396,7 @@ export const assertConversationAccess = async (
   }
 
   const isParticipant = conversation.participants.some(
-    (participantId) => String(participantId) === userId,
+    (participantId) => String(participantId) === userId
   );
   if (!isParticipant) {
     throw new Error("Access denied");
@@ -470,7 +417,7 @@ export const formatParticipant = (
       lastSeenVisible: boolean;
       lastSeenAt?: Date;
     };
-  },
+  }
 ) => {
   const profile = participant.profile;
   const isSelf = String(participant._id) === selfId;
@@ -483,8 +430,7 @@ export const formatParticipant = (
         ? participant.name
         : profile?.anonymousAlias || "Anonymous Member",
     isIdentityPublic: profile?.isIdentityPublic ?? true,
-    photoUrl:
-      !isSelf && profile?.isIdentityPublic ? participant.photoUrl : null,
+    photoUrl: !isSelf && profile?.isIdentityPublic ? participant.photoUrl : null,
     lastSeenAt: profile?.lastSeenVisible ? profile?.lastSeenAt || null : null,
   };
 };

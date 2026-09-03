@@ -17,37 +17,37 @@ You are drawing a ladder, not writing an encyclopedia. For every rung the parent
 must be able to see how you get on, what changes once you are on it, what locks
 you out, and what carries you to the next one.
 
-Test every sentence: *does this tell the parent something about moving forward?*
+Test every sentence: _does this tell the parent something about moving forward?_
 If it only says what something **is**, cut it — or fold the fact into a sentence
 about movement.
 
-| Don't write | Write |
-|---|---|
-| "AITA is the governing body for tennis in India." | "No entry is accepted without an AITA ITN number, so this is the first thing to get — and it must be current on the entry deadline, not the match day." |
-| "The Talent Series is the entry-level series." | "Talent Series is where an unranked child starts, because unranked players cannot be placed in a main draw anywhere else — and once inside the top 150 they are barred from it and must move up." |
-| "UTR is a rating from 1 to 16.5." | "Compare your child's UTR against last year's draw for the same event. If the whole draw sits two points above them, you are paying for a first-round loss." |
-| "State associations organise tournaments." | "Your state sits in one of four AITA zones, and Talent Series events are open only to players registered in that zone — so where you live decides how far you drive for two years." |
+| Don't write                                       | Write                                                                                                                                                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "AITA is the governing body for tennis in India." | "No entry is accepted without an AITA ITN number, so this is the first thing to get — and it must be current on the entry deadline, not the match day."                                           |
+| "The Talent Series is the entry-level series."    | "Talent Series is where an unranked child starts, because unranked players cannot be placed in a main draw anywhere else — and once inside the top 150 they are barred from it and must move up." |
+| "UTR is a rating from 1 to 16.5."                 | "Compare your child's UTR against last year's draw for the same event. If the whole draw sits two points above them, you are paying for a first-round loss."                                      |
+| "State associations organise tournaments."        | "Your state sits in one of four AITA zones, and Talent Series events are open only to players registered in that zone — so where you live decides how far you drive for two years."               |
 
 Institutional facts are allowed only as **the reason a gate opens or closes**,
 never as a standalone paragraph. A stage is not an age band — it is a change in
-what the child is *allowed to do*. `summary` and `movingUp` must make that
+what the child is _allowed to do_. `summary` and `movingUp` must make that
 transition legible.
 
 ## Produce these nine stages, in this order
 
 Use these exact `key` values and `number`s.
 
-| # | key | title | rough ages |
-|---|-----|-------|-----------|
-| 1 | `discover` | Discover Tennis | 3–8 |
-| 2 | `getting-started` | Getting Started | 4–8 |
-| 3 | `foundation` | Foundation | 8–10 |
-| 4 | `competitive` | Competitive | 10–12 |
-| 5 | `national-pathway` | National Pathway | 12–14 |
-| 6 | `high-performance` | High Performance | 14–18 |
-| 7 | `career-decisions` | Career Decisions | 16–18 |
-| 8 | `professional` | Professional Tennis | 17+ |
-| 9 | `beyond-playing` | Beyond Playing | 18+ |
+| #   | key                | title               | rough ages |
+| --- | ------------------ | ------------------- | ---------- |
+| 1   | `discover`         | Discover Tennis     | 3–8        |
+| 2   | `getting-started`  | Getting Started     | 4–8        |
+| 3   | `foundation`       | Foundation          | 8–10       |
+| 4   | `competitive`      | Competitive         | 10–12      |
+| 5   | `national-pathway` | National Pathway    | 12–14      |
+| 6   | `high-performance` | High Performance    | 14–18      |
+| 7   | `career-decisions` | Career Decisions    | 16–18      |
+| 8   | `professional`     | Professional Tennis | 17+        |
+| 9   | `beyond-playing`   | Beyond Playing      | 18+        |
 
 ---
 
@@ -55,7 +55,7 @@ Use these exact `key` values and `number`s.
 
 From AITA's official junior tournament structure and registration notices. Where
 these contradict your prior knowledge, **these win**. Where you need a fact not
-listed here, describe the *mechanism* without the number and tell the parent
+listed here, describe the _mechanism_ without the number and tell the parent
 where to check it.
 
 ## The ladder — this is the spine, get it exactly right
@@ -84,7 +84,7 @@ distinct rungs. Put each in `india.competitionTiers` at the right `level`.
 - **Playing up is allowed and spends the same cap.** A U12 may enter U12, U14 and
   U16 events, but all of it comes out of the same 18.
 - **Unranked players cannot be placed in a main draw** — they sit in qualifying or
-  in the alternates. This is *why* the first events must be TS or CS3.
+  in the alternates. This is _why_ the first events must be TS or CS3.
 - **CS3 requires no entry submission at all** — sign in at the venue on Friday
   between 12:00–14:00, draw made that evening. The genuine zero-friction first
   ranked event, and almost no parent knows it exists.
@@ -121,7 +121,7 @@ distinct rungs. Put each in `india.competitionTiers` at the right `level`.
   certificate on letterhead with photo and principal's signature, or a passport
   copy. Two passport photographs. Self-attested.
 - Administered by AITA centrally, with the **state association as the verifying
-  and routing layer** — you register *from* a state, and that state sets your zone.
+  and routing layer** — you register _from_ a state, and that state sets your zone.
 - AITA now runs an online membership portal and player login. Point the parent at
   the portal; do not describe the old form-and-demand-draft flow as current.
 - Complete registration **well before** the first entry deadline. Expiry is a
@@ -190,7 +190,7 @@ optional colour — it is in the ranking formula, and it is the cheapest
 international exposure before European or American ITF travel.
 
 **Leave the top-level `state` field unset.** This is the national guide; `state`
-is only for a guide whose *stages themselves* differ by state.
+is only for a guide whose _stages themselves_ differ by state.
 
 ---
 
@@ -244,7 +244,7 @@ what the realistic result is, and what a year of trying costs.
    competitive state level ~₹2,00,000–5,00,000; national level ~₹5,00,000–12,00,000;
    international junior ~₹15,00,000–30,00,000+. Map these onto the stages, give
    both numbers and a label — `{ "minInr": 200000, "maxInr": 500000, "label":
-   "₹2L – ₹5L a year" }` — and put "indicative, varies by city, academy and how
+"₹2L – ₹5L a year" }` — and put "indicative, varies by city, academy and how
    much travel you choose" in `note`. **Do not** write a blanket refusal to give
    figures; a stated range with a caveat beats silence. For things AITA genuinely
    does not publish — coaching rates, entry fees — name what the money buys and

@@ -1,7 +1,6 @@
 import { cn } from "@/utils/cn";
 
-export type StatusTone =
-  "green" | "red" | "amber" | "blue" | "slate" | "purple" | "orange";
+export type StatusTone = "green" | "red" | "amber" | "blue" | "slate" | "purple" | "orange";
 
 const toneClasses: Record<StatusTone, string> = {
   green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -85,10 +84,10 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-semibold uppercase tracking-wide ring-1 ring-inset",
+        "inline-flex items-center gap-1.5 rounded-full font-semibold tracking-wide uppercase ring-1 ring-inset",
         size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
         toneClasses[resolvedTone],
-        className,
+        className
       )}
     >
       {dot && (

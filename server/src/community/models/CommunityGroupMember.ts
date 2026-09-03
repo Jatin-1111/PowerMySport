@@ -37,7 +37,7 @@ const communityGroupMemberSchema = new Schema<CommunityGroupMemberDocument>(
       required: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Joining twice is a no-op, not a duplicate row. Every add relies on this.
@@ -53,8 +53,7 @@ communityGroupMemberSchema.index({ userId: 1, createdAt: -1 });
 // Production has autoIndex off, so this also needs migration 31.
 communityGroupMemberSchema.index({ groupId: 1, createdAt: 1 });
 
-export const CommunityGroupMember =
-  mongoose.model<CommunityGroupMemberDocument>(
-    "CommunityGroupMember",
-    communityGroupMemberSchema,
-  );
+export const CommunityGroupMember = mongoose.model<CommunityGroupMemberDocument>(
+  "CommunityGroupMember",
+  communityGroupMemberSchema
+);

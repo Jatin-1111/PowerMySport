@@ -6,18 +6,18 @@ import { Button } from "@/modules/shared/ui/Button";
 import { IPayoutMethod, PayoutMethodType } from "@/types";
 import { cn } from "@/utils/cn";
 import {
-    BadgeCheck,
-    Banknote,
-    CreditCard,
-    Eye,
-    EyeOff,
-    Loader2,
-    PencilLine,
-    Shield,
-    Smartphone,
-    Star,
-    Trash2,
-    Wallet,
+  BadgeCheck,
+  Banknote,
+  CreditCard,
+  Eye,
+  EyeOff,
+  Loader2,
+  PencilLine,
+  Shield,
+  Smartphone,
+  Star,
+  Trash2,
+  Wallet,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -29,13 +29,11 @@ interface PayoutMethodManagerProps {
   /** Load all payout methods from backend */
   onLoad: () => Promise<IPayoutMethod[]>;
   /** Add a new payout method */
-  onAdd: (
-    payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">,
-  ) => Promise<IPayoutMethod>;
+  onAdd: (payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">) => Promise<IPayoutMethod>;
   /** Update existing payout method */
   onUpdate: (
     methodId: string,
-    payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">,
+    payload: Omit<IPayoutMethod, "id" | "addedAt" | "updatedAt">
   ) => Promise<IPayoutMethod>;
   /** Delete payout method */
   onDelete: (methodId: string) => Promise<void>;
@@ -51,11 +49,7 @@ const maskAccountNumber = (num: string) =>
   num.length > 4 ? "•".repeat(num.length - 4) + num.slice(-4) : num;
 
 const getPayoutMethodIcon = (type: PayoutMethodType, size = 16) => {
-  return type === "BANK_TRANSFER" ? (
-    <CreditCard size={size} />
-  ) : (
-    <Smartphone size={size} />
-  );
+  return type === "BANK_TRANSFER" ? <CreditCard size={size} /> : <Smartphone size={size} />;
 };
 
 const getPayoutMethodLabel = (type: PayoutMethodType) => {
@@ -64,21 +58,11 @@ const getPayoutMethodLabel = (type: PayoutMethodType) => {
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function FieldRow({
-  label,
-  value,
-  masked,
-}: {
-  label: string;
-  value: string;
-  masked?: boolean;
-}) {
+function FieldRow({ label, value, masked }: { label: string; value: string; masked?: boolean }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <p className="text-xs text-slate-600 uppercase tracking-wider font-medium">
-        {label}
-      </p>
-      <p className="text-sm font-semibold text-slate-900 truncate text-right ml-3">
+      <p className="text-xs font-medium tracking-wider text-slate-600 uppercase">{label}</p>
+      <p className="ml-3 truncate text-right text-sm font-semibold text-slate-900">
         {masked ? maskAccountNumber(value) : value}
       </p>
     </div>
@@ -101,10 +85,10 @@ function MethodCard({
   isLoading: boolean;
 }) {
   return (
-    <div className="rounded-xl border-0 bg-white p-4 shadow-[0_2px_12px_rgb(0,0,0,0.05)] hover:shadow-[0_8px_20px_rgb(0,0,0,0.09)] transition-shadow">
-      <div className="flex items-start justify-between mb-3">
+    <div className="rounded-xl border-0 bg-white p-4 shadow-[0_2px_12px_rgb(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_20px_rgb(0,0,0,0.09)]">
+      <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-slate-100 text-slate-600">
+          <div className="rounded-lg bg-slate-100 p-2 text-slate-600">
             {getPayoutMethodIcon(method.type, 18)}
           </div>
           <div>
@@ -122,7 +106,7 @@ function MethodCard({
           </div>
         </div>
         {isDefault && (
-          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full text-xs font-semibold">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
             <Star size={12} className="fill-current" />
             Primary
           </span>
@@ -130,15 +114,11 @@ function MethodCard({
       </div>
 
       {/* Details */}
-      <div className="space-y-2 border-t border-slate-100 pt-3 mb-4">
+      <div className="mb-4 space-y-2 border-t border-slate-100 pt-3">
         {method.type === "BANK_TRANSFER" ? (
           <>
             <FieldRow label="Account" value={method.accountHolderName || ""} />
-            <FieldRow
-              label="Account #"
-              value={method.accountNumber || ""}
-              masked
-            />
+            <FieldRow label="Account #" value={method.accountNumber || ""} masked />
             <FieldRow label="IFSC" value={method.ifscCode || ""} />
           </>
         ) : (
@@ -148,12 +128,7 @@ function MethodCard({
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button
-          onClick={() => onEdit(method)}
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-        >
+        <Button onClick={() => onEdit(method)} variant="outline" size="sm" disabled={isLoading}>
           <PencilLine size={14} />
           Edit
         </Button>
@@ -173,14 +148,10 @@ function MethodCard({
           disabled={isLoading}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
-            "text-red-600 hover:bg-red-50 disabled:opacity-50",
+            "text-red-600 hover:bg-red-50 disabled:opacity-50"
           )}
         >
-          {isLoading ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Trash2 size={14} />
-          )}
+          {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
         </button>
       </div>
     </div>
@@ -213,9 +184,7 @@ function FormFieldGroup({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-semibold text-slate-700">
-        {label}
-      </label>
+      <label className="block text-sm font-semibold text-slate-700">{label}</label>
       <div className="relative">
         <Input
           type={isPasswordField && !showPassword ? "password" : "text"}
@@ -226,15 +195,15 @@ function FormFieldGroup({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           className={cn(
-            "bg-white border-slate-300 focus:border-power-orange focus:ring-power-orange/20",
-            isPasswordField && "pr-10",
+            "focus:border-power-orange focus:ring-power-orange/20 border-slate-300 bg-white",
+            isPasswordField && "pr-10"
           )}
         />
         {isPasswordField && (
           <button
             type="button"
             onClick={onTogglePassword}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
@@ -259,9 +228,7 @@ export function PayoutMethodManager({
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [methods, setMethods] = useState<IPayoutMethod[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-  const [editingMethod, setEditingMethod] = useState<IPayoutMethod | null>(
-    null,
-  );
+  const [editingMethod, setEditingMethod] = useState<IPayoutMethod | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("BANK_TRANSFER");
 
   // Form state
@@ -398,9 +365,7 @@ export function PayoutMethodManager({
 
       resetForm();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to save payout method",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to save payout method");
     } finally {
       setSaving(false);
     }
@@ -415,9 +380,7 @@ export function PayoutMethodManager({
       setMethods((prev) => prev.filter((m) => m.id !== methodId));
       toast.success("Payout method removed");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to remove payout method",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to remove payout method");
     } finally {
       setProcessingId(null);
     }
@@ -427,14 +390,10 @@ export function PayoutMethodManager({
     setProcessingId(methodId);
     try {
       await onSetDefault(methodId);
-      setMethods((prev) =>
-        prev.map((m) => ({ ...m, isDefault: m.id === methodId })),
-      );
+      setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === methodId })));
       toast.success("Primary payout method updated");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to set default method",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to set default method");
     } finally {
       setProcessingId(null);
     }
@@ -443,31 +402,28 @@ export function PayoutMethodManager({
   if (loading) {
     return (
       <div className="flex h-48 items-center justify-center">
-        <Loader2 className="animate-spin text-power-orange" size={28} />
+        <Loader2 className="text-power-orange animate-spin" size={28} />
       </div>
     );
   }
-
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="rounded-xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-2 flex items-center gap-2">
               <Wallet size={20} className="text-power-orange" />
-              <h2 className="text-lg font-bold text-slate-900">
-                Payout Methods
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Payout Methods</h2>
             </div>
             <p className="text-sm text-slate-600">
-              Add multiple payout methods to receive your earnings. Your primary
-              method will be used for automatic payouts.
+              Add multiple payout methods to receive your earnings. Your primary method will be used
+              for automatic payouts.
             </p>
           </div>
           {methods.length > 0 && (
-            <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700">
               <BadgeCheck size={12} />
               {methods.length} method{methods.length !== 1 ? "s" : ""}
             </span>
@@ -475,18 +431,14 @@ export function PayoutMethodManager({
         </div>
 
         {methods.length === 0 ? (
-          <div className="text-center py-6">
+          <div className="py-6 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
               <Banknote size={26} className="text-amber-600" />
             </div>
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="mb-4 text-sm text-slate-600">
               You haven&apos;t added any payout methods yet.
             </p>
-            <Button
-              onClick={() => setIsAdding(true)}
-              variant="primary"
-              size="md"
-            >
+            <Button onClick={() => setIsAdding(true)} variant="primary" size="md">
               <Wallet size={18} />
               Add Your First Method
             </Button>
@@ -494,7 +446,7 @@ export function PayoutMethodManager({
         ) : (
           <>
             {/* Methods Grid */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               {methods.map((method, index) => (
                 <MethodCard
                   key={method.id ?? `${method.type}-${index}`}
@@ -515,14 +467,12 @@ export function PayoutMethodManager({
               {/* Add More CTA */}
               <button
                 onClick={() => setIsAdding(true)}
-                className="rounded-lg border-2 border-dashed border-slate-300 p-4 hover:border-power-orange hover:bg-orange-50/30 transition-colors flex flex-col items-center justify-center gap-2"
+                className="hover:border-power-orange flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 p-4 transition-colors hover:bg-orange-50/30"
               >
-                <div className="p-2 rounded-lg bg-slate-100">
+                <div className="rounded-lg bg-slate-100 p-2">
                   <Wallet size={18} className="text-slate-600" />
                 </div>
-                <p className="text-sm font-semibold text-slate-700">
-                  Add Method
-                </p>
+                <p className="text-sm font-semibold text-slate-700">Add Method</p>
                 <p className="text-xs text-slate-500">Bank or UPI</p>
               </button>
             </div>
@@ -532,30 +482,30 @@ export function PayoutMethodManager({
 
       {/* Form */}
       {(isAdding || editingMethod) && (
-        <div className="rounded-xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)] space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5 rounded-xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)] duration-300">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <h3 className="text-base font-bold text-slate-900">
               {editingMethod ? "Update Payout Method" : "Add New Payout Method"}
             </h3>
             <button
               onClick={resetForm}
-              className="text-sm text-slate-500 hover:text-slate-700 font-medium"
+              className="text-sm font-medium text-slate-500 hover:text-slate-700"
             >
               Cancel
             </button>
           </div>
 
           {/* Type Selector */}
-          <div className="flex rounded-lg bg-slate-100 p-1 gap-1">
+          <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
             {(["BANK_TRANSFER", "UPI"] as TabId[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2 rounded-md py-2 text-sm font-semibold transition-all",
+                  "flex flex-1 items-center justify-center gap-2 rounded-md py-2 text-sm font-semibold transition-all",
                   activeTab === tab
-                    ? "bg-white text-power-orange shadow-sm border border-power-orange/20"
-                    : "text-slate-600 hover:text-slate-900",
+                    ? "text-power-orange border-power-orange/20 border bg-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
                 )}
               >
                 {getPayoutMethodIcon(tab, 16)}
@@ -580,9 +530,7 @@ export function PayoutMethodManager({
                 placeholder="Enter account number"
                 type="password"
                 showPassword={showPasswords.account}
-                onTogglePassword={() =>
-                  setShowPasswords((p) => ({ ...p, account: !p.account }))
-                }
+                onTogglePassword={() => setShowPasswords((p) => ({ ...p, account: !p.account }))}
               />
               <FormFieldGroup
                 label="Confirm Account Number"
@@ -591,9 +539,7 @@ export function PayoutMethodManager({
                 placeholder="Re-enter account number"
                 type="password"
                 showPassword={showPasswords.confirm}
-                onTogglePassword={() =>
-                  setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))
-                }
+                onTogglePassword={() => setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))}
               />
               <FormFieldGroup
                 label="IFSC Code"
@@ -623,13 +569,8 @@ export function PayoutMethodManager({
           )}
 
           {/* Actions */}
-          <div className="flex gap-2 pt-4 border-t border-slate-200">
-            <Button
-              onClick={handleSave}
-              variant="primary"
-              disabled={saving}
-              className="flex-1"
-            >
+          <div className="flex gap-2 border-t border-slate-200 pt-4">
+            <Button onClick={handleSave} variant="primary" disabled={saving} className="flex-1">
               {saving ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />

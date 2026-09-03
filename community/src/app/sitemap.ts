@@ -44,9 +44,7 @@ const MAX_PAGES = 20;
  * reads as "the site has 200 posts" rather than "the sitemap gave up".
  */
 async function fetchAllItems(basePath: string): Promise<ListItem[]> {
-  const first = await fetchPublicData<ListResponse>(
-    `${basePath}?page=1&limit=${PAGE_SIZE}`,
-  );
+  const first = await fetchPublicData<ListResponse>(`${basePath}?page=1&limit=${PAGE_SIZE}`);
   if (!first?.items?.length) return [];
 
   const totalPages = Math.min(first.pagination?.totalPages ?? 1, MAX_PAGES);
@@ -54,10 +52,8 @@ async function fetchAllItems(basePath: string): Promise<ListItem[]> {
 
   const rest = await Promise.all(
     Array.from({ length: totalPages - 1 }, (_, i) =>
-      fetchPublicData<ListResponse>(
-        `${basePath}?page=${i + 2}&limit=${PAGE_SIZE}`,
-      ),
-    ),
+      fetchPublicData<ListResponse>(`${basePath}?page=${i + 2}&limit=${PAGE_SIZE}`)
+    )
   );
 
   return [...first.items, ...rest.flatMap((page) => page?.items ?? [])];
@@ -108,7 +104,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const writerUsernames = new Set(
     blogs
       .map((blog) => blog.author?.username)
-      .filter((username): username is string => Boolean(username)),
+      .filter((username): username is string => Boolean(username))
   );
 
   for (const username of writerUsernames) {

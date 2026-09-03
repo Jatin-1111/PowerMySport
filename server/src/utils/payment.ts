@@ -11,7 +11,7 @@ import { commissionOn } from "../client/services/CommissionService";
 const payeeEntry = (
   userId: string,
   userType: IPayment["userType"],
-  feeRupees: number,
+  feeRupees: number
 ): IPayment => {
   const breakdown = commissionOn(Math.round(feeRupees * 100));
 
@@ -27,7 +27,6 @@ const payeeEntry = (
     status: "PENDING",
   };
 };
-
 
 /**
  * Calculate split payment amounts for venue, optional coach and optional academy
@@ -49,7 +48,7 @@ export const calculateSplitAmounts = (
   payerUserId?: string,
   totalAmount?: number,
   academyPrice?: number,
-  academyOwnerUserId?: string,
+  academyOwnerUserId?: string
 ): IPayment[] => {
   const payments: IPayment[] = [];
 
@@ -65,9 +64,7 @@ export const calculateSplitAmounts = (
   // amount from the parent and releaseCompletedBookingPayments() has nothing
   // to release — money in, nothing owed out.
   if (academyPrice && academyOwnerUserId) {
-    payments.push(
-      payeeEntry(academyOwnerUserId, "Academy", academyPrice),
-    );
+    payments.push(payeeEntry(academyOwnerUserId, "Academy", academyPrice));
   }
 
   // Add the player (payer) entry so that getBookingPaymentAmount()
@@ -78,8 +75,7 @@ export const calculateSplitAmounts = (
     payments.push({
       userId: payerUserId,
       userType: "Player",
-      amount:
-        totalAmount ?? venuePrice + (coachPrice || 0) + (academyPrice || 0),
+      amount: totalAmount ?? venuePrice + (coachPrice || 0) + (academyPrice || 0),
       status: "PENDING",
     });
   }
@@ -103,7 +99,7 @@ export const calculateGroupPaymentSplits = (
   venueOwnerId: string,
   participantIds: string[],
   coachPrice?: number,
-  coachUserId?: string,
+  coachUserId?: string
 ): IPayment[] => {
   const payments: IPayment[] = [];
 
@@ -132,8 +128,7 @@ export const calculateGroupPaymentSplits = (
   }
 
   // Split total amount equally
-  const amountPerPerson =
-    Math.round((totalAmount / numParticipants) * 100) / 100;
+  const amountPerPerson = Math.round((totalAmount / numParticipants) * 100) / 100;
 
   // Handle rounding - last person pays the difference
   const sumOfSplits = amountPerPerson * (numParticipants - 1);
@@ -144,8 +139,7 @@ export const calculateGroupPaymentSplits = (
     payments.push({
       userId,
       userType: "Player",
-      amount:
-        index === numParticipants - 1 ? lastPersonAmount : amountPerPerson,
+      amount: index === numParticipants - 1 ? lastPersonAmount : amountPerPerson,
       status: "PENDING",
     });
   });

@@ -12,10 +12,7 @@ const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 const toRadians = (value: number): number => (value * Math.PI) / 180;
 
-const calculateDistanceKm = (
-  from: [number, number],
-  to: [number, number],
-): number => {
+const calculateDistanceKm = (from: [number, number], to: [number, number]): number => {
   const [fromLng, fromLat] = from;
   const [toLng, toLat] = to;
 
@@ -35,8 +32,7 @@ const calculateDistanceKm = (
 
 const getVenueDisplayPrice = (venue: any): number => {
   const fallback =
-    typeof venue?.pricePerHour === "number" &&
-    Number.isFinite(venue.pricePerHour)
+    typeof venue?.pricePerHour === "number" && Number.isFinite(venue.pricePerHour)
       ? venue.pricePerHour
       : 0;
 
@@ -49,8 +45,7 @@ const getVenueDisplayPrice = (venue: any): number => {
       : Object.values(pricing as Record<string, unknown>);
 
   const validValues = values.filter(
-    (value): value is number =>
-      typeof value === "number" && Number.isFinite(value) && value >= 0,
+    (value): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0
   );
 
   if (validValues.length === 0) return fallback;
@@ -132,15 +127,11 @@ export interface CreateVenuePayload {
   gstNumber?: string;
 }
 
-export const createVenue = async (
-  payload: CreateVenuePayload,
-): Promise<VenueDocument> => {
+export const createVenue = async (payload: CreateVenuePayload): Promise<VenueDocument> => {
   // Ensure ownerId is properly converted to ObjectId
   const venueData: any = {
     ...payload,
-    ownerId: payload.ownerId
-      ? new mongoose.Types.ObjectId(payload.ownerId)
-      : undefined,
+    ownerId: payload.ownerId ? new mongoose.Types.ObjectId(payload.ownerId) : undefined,
   };
 
   log.info("Creating venue with data:", {
@@ -164,9 +155,7 @@ export const createVenue = async (
   return venue;
 };
 
-export const getVenueById = async (
-  id: string,
-): Promise<VenueDocument | null> => {
+export const getVenueById = async (id: string): Promise<VenueDocument | null> => {
   const venue = await Venue.findById(id).populate("ownerId");
   if (venue) {
     // For venue detail reads, only image URLs are needed.
@@ -179,7 +168,7 @@ export const getVenueById = async (
 export const getVenuesByOwner = async (
   ownerId: string,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   venues: VenueDocument[];
   total: number;
@@ -209,7 +198,7 @@ export const findVenuesNearby = async (
   radiusMeters: number = 5000,
   sport?: string,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   venues: VenueDocument[];
   total: number;
@@ -268,7 +257,7 @@ export const findVenuesNearby = async (
         const doc = Venue.hydrate(v);
         await doc.refreshAllUrls();
         return doc;
-      }),
+      })
     );
 
     return {
@@ -279,7 +268,7 @@ export const findVenuesNearby = async (
     };
   } catch (error) {
     throw new Error(
-      `Failed to find venues: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to find venues: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 };
@@ -291,7 +280,7 @@ export const getAllVenues = async (
     search?: string;
   },
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   venues: VenueDocument[];
   total: number;
@@ -360,7 +349,7 @@ const VENUE_PROTECTED_FIELDS = [
 export const updateVenue = async (
   id: string,
   ownerId: string,
-  payload: Partial<CreateVenuePayload>,
+  payload: Partial<CreateVenuePayload>
 ): Promise<VenueDocument | null> => {
   // Strip protected fields so they cannot be mass-assigned, and scope the
   // update to the owner so a lister can only edit their OWN venue (IDOR).
@@ -381,9 +370,6 @@ export const updateVenue = async (
   return Venue.findOneAndUpdate({ _id: id, ownerId }, sanitized, { new: true });
 };
 
-export const deleteVenue = async (
-  id: string,
-  ownerId: string,
-): Promise<VenueDocument | null> => {
+export const deleteVenue = async (id: string, ownerId: string): Promise<VenueDocument | null> => {
   return Venue.findOneAndDelete({ _id: id, ownerId });
 };

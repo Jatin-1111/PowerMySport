@@ -62,18 +62,15 @@ export default function Step4Venues({
   previousData,
 }: Step4VenuesProps) {
   const [venues, setVenues] = useState<AcademyOwnedVenueInput[]>(
-    previousData?.academyVenues?.length
-      ? previousData.academyVenues
-      : [createEmptyVenue()],
+    previousData?.academyVenues?.length ? previousData.academyVenues : [createEmptyVenue()]
   );
   const [addressQueries, setAddressQueries] = useState<string[]>(
     previousData?.academyVenues?.length
       ? previousData.academyVenues.map((venue) => venue.address)
-      : [""],
+      : [""]
   );
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
-  const [activeSuggestionIndex, setActiveSuggestionIndex] =
-    useState<number>(-1);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(-1);
   const [isSearching, setIsSearching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -116,12 +113,10 @@ export default function Step4Venues({
 
   const updateVenue = (
     index: number,
-    updater: (venue: AcademyOwnedVenueInput) => AcademyOwnedVenueInput,
+    updater: (venue: AcademyOwnedVenueInput) => AcademyOwnedVenueInput
   ) => {
     setVenues((prev) =>
-      prev.map((venue, currentIndex) =>
-        currentIndex === index ? updater(venue) : venue,
-      ),
+      prev.map((venue, currentIndex) => (currentIndex === index ? updater(venue) : venue))
     );
   };
 
@@ -129,7 +124,7 @@ export default function Step4Venues({
     imageUrls: string[],
     imageKeys: string[],
     coverUrl: string,
-    fallback: string,
+    fallback: string
   ) => {
     const coverIndex = imageUrls.findIndex((url) => url === coverUrl);
     return coverIndex >= 0 ? imageKeys[coverIndex] || fallback : fallback;
@@ -139,7 +134,7 @@ export default function Step4Venues({
     index: number,
     type: "general" | "sport",
     slotIndex: number,
-    sport?: string,
+    sport?: string
   ) => `venue-${index}-${type}${sport ? `-${sport}` : ""}-${slotIndex}`;
 
   const setUploadState = (key: string, value: boolean) =>
@@ -165,10 +160,7 @@ export default function Step4Venues({
   };
 
   const fetchUploadUrls = async (imageTypes: string[]) => {
-    const response = await academyOnboardingApi.getImageUploadUrls(
-      academyId,
-      imageTypes,
-    );
+    const response = await academyOnboardingApi.getImageUploadUrls(academyId, imageTypes);
 
     if (!response.success || !response.data?.uploadUrls?.length) {
       throw new Error("Failed to prepare image uploads");
@@ -181,16 +173,14 @@ export default function Step4Venues({
     index: number,
     slotIndex: number,
     file?: File | null,
-    minFilledSlots?: number,
+    minFilledSlots?: number
   ): Promise<boolean> => {
     if (!file) return false;
 
     const venue = venues[index];
     const slotKey = getSlotKey(index, "general", slotIndex);
     const allowedSlots =
-      typeof minFilledSlots === "number"
-        ? minFilledSlots
-        : venue.generalImages.length;
+      typeof minFilledSlots === "number" ? minFilledSlots : venue.generalImages.length;
 
     if (slotIndex > allowedSlots) {
       setUploadError(slotKey, "Upload previous images first");
@@ -202,9 +192,7 @@ export default function Step4Venues({
 
     try {
       const uploadUrls = await fetchUploadUrls(["academyVenue_general"]);
-      const candidates = uploadUrls.filter((url) =>
-        url.field.startsWith("academyVenue_general"),
-      );
+      const candidates = uploadUrls.filter((url) => url.field.startsWith("academyVenue_general"));
       const upload = candidates[slotIndex] || candidates[0];
 
       if (!upload) {
@@ -217,11 +205,7 @@ export default function Step4Venues({
         return false;
       }
 
-      await uploadFileToPresignedUrl(
-        file,
-        upload.uploadUrl,
-        upload.contentType,
-      );
+      await uploadFileToPresignedUrl(file, upload.uploadUrl, upload.contentType);
 
       updateVenue(index, (v) => {
         const nextImages = [...v.generalImages];
@@ -243,12 +227,7 @@ export default function Step4Venues({
         }
 
         const nextCoverKey = nextCoverUrl
-          ? getCoverKeyFromImages(
-              nextImages,
-              nextKeys,
-              nextCoverUrl,
-              v.coverPhotoKey || "",
-            )
+          ? getCoverKeyFromImages(nextImages, nextKeys, nextCoverUrl, v.coverPhotoKey || "")
           : "";
 
         return {
@@ -262,10 +241,7 @@ export default function Step4Venues({
 
       return true;
     } catch (error) {
-      setUploadError(
-        slotKey,
-        error instanceof Error ? error.message : "Upload failed",
-      );
+      setUploadError(slotKey, error instanceof Error ? error.message : "Upload failed");
       return false;
     } finally {
       setUploadState(slotKey, false);
@@ -275,7 +251,7 @@ export default function Step4Venues({
   const uploadGeneralImagesBatchFromSlot = async (
     index: number,
     startSlot: number,
-    files?: FileList | null,
+    files?: FileList | null
   ) => {
     if (!files || files.length === 0) return;
 
@@ -283,10 +259,7 @@ export default function Step4Venues({
     const remaining = MAX_GENERAL_IMAGES - venue.generalImages.length;
 
     if (remaining <= 0) {
-      setUploadError(
-        getSlotKey(index, "general", startSlot),
-        "All general image slots are filled",
-      );
+      setUploadError(getSlotKey(index, "general", startSlot), "All general image slots are filled");
       return;
     }
 
@@ -297,12 +270,7 @@ export default function Step4Venues({
       const slotIndex = startSlot + i;
       if (slotIndex >= MAX_GENERAL_IMAGES) break;
 
-      const success = await uploadGeneralImageAtSlot(
-        index,
-        slotIndex,
-        selected[i],
-        expectedLength,
-      );
+      const success = await uploadGeneralImageAtSlot(index, slotIndex, selected[i], expectedLength);
 
       if (success && slotIndex >= expectedLength) {
         expectedLength += 1;
@@ -315,15 +283,14 @@ export default function Step4Venues({
     sport: string,
     slotIndex: number,
     file?: File | null,
-    minFilledSlots?: number,
+    minFilledSlots?: number
   ): Promise<boolean> => {
     if (!file) return false;
 
     const venue = venues[index];
     const current = venue.sportImages[sport] || [];
     const slotKey = getSlotKey(index, "sport", slotIndex, sport);
-    const allowedSlots =
-      typeof minFilledSlots === "number" ? minFilledSlots : current.length;
+    const allowedSlots = typeof minFilledSlots === "number" ? minFilledSlots : current.length;
 
     if (slotIndex > allowedSlots) {
       setUploadError(slotKey, "Upload previous images first");
@@ -335,9 +302,7 @@ export default function Step4Venues({
 
     try {
       const uploadUrls = await fetchUploadUrls(["academyVenue_sport"]);
-      const candidates = uploadUrls.filter((url) =>
-        url.field.startsWith("academyVenue_sport"),
-      );
+      const candidates = uploadUrls.filter((url) => url.field.startsWith("academyVenue_sport"));
       const upload = candidates[slotIndex] || candidates[0];
 
       if (!upload) {
@@ -350,11 +315,7 @@ export default function Step4Venues({
         return false;
       }
 
-      await uploadFileToPresignedUrl(
-        file,
-        upload.uploadUrl,
-        upload.contentType,
-      );
+      await uploadFileToPresignedUrl(file, upload.uploadUrl, upload.contentType);
 
       updateVenue(index, (v) => {
         const nextImages = [...(v.sportImages[sport] || [])];
@@ -383,10 +344,7 @@ export default function Step4Venues({
 
       return true;
     } catch (error) {
-      setUploadError(
-        slotKey,
-        error instanceof Error ? error.message : "Upload failed",
-      );
+      setUploadError(slotKey, error instanceof Error ? error.message : "Upload failed");
       return false;
     } finally {
       setUploadState(slotKey, false);
@@ -397,7 +355,7 @@ export default function Step4Venues({
     index: number,
     sport: string,
     startSlot: number,
-    files?: FileList | null,
+    files?: FileList | null
   ) => {
     if (!files || files.length === 0) return;
 
@@ -408,7 +366,7 @@ export default function Step4Venues({
     if (remaining <= 0) {
       setUploadError(
         getSlotKey(index, "sport", startSlot, sport),
-        "All sport image slots are filled",
+        "All sport image slots are filled"
       );
       return;
     }
@@ -425,7 +383,7 @@ export default function Step4Venues({
         sport,
         slotIndex,
         selected[i],
-        expectedLength,
+        expectedLength
       );
 
       if (success && slotIndex >= expectedLength) {
@@ -439,8 +397,7 @@ export default function Step4Venues({
       const nextImages = v.generalImages.filter((_, i) => i !== imageIndex);
       const nextKeys = v.generalImageKeys.filter((_, i) => i !== imageIndex);
       const removedUrl = v.generalImages[imageIndex];
-      const nextCoverUrl =
-        v.coverPhotoUrl === removedUrl ? nextImages[0] || "" : v.coverPhotoUrl;
+      const nextCoverUrl = v.coverPhotoUrl === removedUrl ? nextImages[0] || "" : v.coverPhotoUrl;
       const nextCoverKey = nextCoverUrl
         ? getCoverKeyFromImages(nextImages, nextKeys, nextCoverUrl, "")
         : "";
@@ -455,18 +412,10 @@ export default function Step4Venues({
     });
   };
 
-  const removeSportImage = (
-    index: number,
-    sport: string,
-    imageIndex: number,
-  ) => {
+  const removeSportImage = (index: number, sport: string, imageIndex: number) => {
     updateVenue(index, (v) => {
-      const nextImages = (v.sportImages[sport] || []).filter(
-        (_, i) => i !== imageIndex,
-      );
-      const nextKeys = (v.sportImageKeys[sport] || []).filter(
-        (_, i) => i !== imageIndex,
-      );
+      const nextImages = (v.sportImages[sport] || []).filter((_, i) => i !== imageIndex);
+      const nextKeys = (v.sportImageKeys[sport] || []).filter((_, i) => i !== imageIndex);
 
       return {
         ...v,
@@ -499,12 +448,8 @@ export default function Step4Venues({
   };
 
   const removeVenue = (index: number) => {
-    setVenues((prev) =>
-      prev.filter((_, currentIndex) => currentIndex !== index),
-    );
-    setAddressQueries((prev) =>
-      prev.filter((_, currentIndex) => currentIndex !== index),
-    );
+    setVenues((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+    setAddressQueries((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
     if (activeSuggestionIndex === index) {
       setActiveSuggestionIndex(-1);
       setSuggestions([]);
@@ -513,9 +458,7 @@ export default function Step4Venues({
 
   const handleAddressQueryChange = (index: number, value: string) => {
     setAddressQueries((prev) =>
-      prev.map((query, currentIndex) =>
-        currentIndex === index ? value : query,
-      ),
+      prev.map((query, currentIndex) => (currentIndex === index ? value : query))
     );
     setActiveSuggestionIndex(index);
     updateVenue(index, (venue) => ({
@@ -527,9 +470,7 @@ export default function Step4Venues({
   const handleSuggestionSelect = (index: number, suggestion: GeoSuggestion) => {
     skipAutocompleteRef.current = true;
     setAddressQueries((prev) =>
-      prev.map((query, currentIndex) =>
-        currentIndex === index ? suggestion.label : query,
-      ),
+      prev.map((query, currentIndex) => (currentIndex === index ? suggestion.label : query))
     );
     updateVenue(index, (venue) => ({
       ...venue,
@@ -553,8 +494,7 @@ export default function Step4Venues({
     venues.forEach((venue, index) => {
       const key = `venue_${index}`;
       if (!venue.name.trim()) errors[`${key}_name`] = "Venue name is required";
-      if (!venue.address.trim())
-        errors[`${key}_address`] = "Venue address is required";
+      if (!venue.address.trim()) errors[`${key}_address`] = "Venue address is required";
       if (!venue.city.trim()) errors[`${key}_city`] = "City is required";
       if (!venue.state.trim()) errors[`${key}_state`] = "State is required";
       if (!/^\d{6}$/.test(venue.pincode)) {
@@ -567,17 +507,14 @@ export default function Step4Venues({
         errors[`${key}_pricePerHour`] = "Price per hour must be at least Rs 1";
       }
       if (!venue.coverPhotoUrl.trim()) {
-        errors[`${key}_coverPhotoUrl`] =
-          "Select a cover photo from the uploaded S3 images";
+        errors[`${key}_coverPhotoUrl`] = "Select a cover photo from the uploaded S3 images";
       }
       if (venue.generalImages.length < 3) {
-        errors[`${key}_generalImages`] =
-          "At least 3 general images are required";
+        errors[`${key}_generalImages`] = "At least 3 general images are required";
       }
       for (const sport of venue.sports) {
         if (!venue.sportImages[sport] || venue.sportImages[sport].length < 5) {
-          errors[`${key}_sportImages_${sport}`] =
-            `Add at least 5 images for ${sport}`;
+          errors[`${key}_sportImages_${sport}`] = `Add at least 5 images for ${sport}`;
         }
       }
     });
@@ -601,9 +538,7 @@ export default function Step4Venues({
         academyVenues: venues,
       });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to save venues",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to save venues");
     } finally {
       setIsSubmitting(false);
     }
@@ -612,20 +547,16 @@ export default function Step4Venues({
   return (
     <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-3xl font-bold text-slate-900">
-          Step 4: Venue Details
-        </h2>
+        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 4: Venue Details</h2>
         <p className="text-slate-600">
-          Add full venue onboarding details, including sports, amenities, maps
-          location, and image uploads.
+          Add full venue onboarding details, including sports, amenities, maps location, and image
+          uploads.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">
-            Academy Venues
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-900">Academy Venues</h3>
           <Button
             type="button"
             variant="outline"
@@ -636,9 +567,7 @@ export default function Step4Venues({
           </Button>
         </div>
 
-        {fieldErrors.venues ? (
-          <p className="text-xs text-red-600">{fieldErrors.venues}</p>
-        ) : null}
+        {fieldErrors.venues ? <p className="text-xs text-red-600">{fieldErrors.venues}</p> : null}
 
         {venues.map((venue, index) => (
           <div
@@ -646,9 +575,7 @@ export default function Step4Venues({
             className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4"
           >
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-slate-900">
-                Venue {index + 1}
-              </h4>
+              <h4 className="font-semibold text-slate-900">Venue {index + 1}</h4>
               <button
                 type="button"
                 className="text-sm text-red-600 disabled:text-slate-400"
@@ -663,9 +590,7 @@ export default function Step4Venues({
               <input
                 type="text"
                 value={venue.name}
-                onChange={(e) =>
-                  updateVenue(index, (v) => ({ ...v, name: e.target.value }))
-                }
+                onChange={(e) => updateVenue(index, (v) => ({ ...v, name: e.target.value }))}
                 placeholder="Venue name"
                 className="rounded-lg border border-slate-300 px-3 py-2"
                 disabled={isSubmitting || loading}
@@ -674,18 +599,14 @@ export default function Step4Venues({
                 <input
                   type="text"
                   value={addressQueries[index] || ""}
-                  onChange={(e) =>
-                    handleAddressQueryChange(index, e.target.value)
-                  }
+                  onChange={(e) => handleAddressQueryChange(index, e.target.value)}
                   onFocus={() => setActiveSuggestionIndex(index)}
                   placeholder="Search venue address (Google Maps API)"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2"
                   disabled={isSubmitting || loading}
                 />
                 {isSearching && activeSuggestionIndex === index ? (
-                  <p className="mt-1 text-xs text-slate-500">
-                    Searching location...
-                  </p>
+                  <p className="mt-1 text-xs text-slate-500">Searching location...</p>
                 ) : null}
                 {activeSuggestionIndex === index && suggestions.length > 0 ? (
                   <div className="mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white">
@@ -693,9 +614,7 @@ export default function Step4Venues({
                       <button
                         key={`${suggestion.label}-${suggestion.lat}-${suggestion.lon}`}
                         type="button"
-                        onClick={() =>
-                          handleSuggestionSelect(index, suggestion)
-                        }
+                        onClick={() => handleSuggestionSelect(index, suggestion)}
                         className="block w-full border-b border-slate-100 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"
                       >
                         {suggestion.label}
@@ -712,9 +631,7 @@ export default function Step4Venues({
               <input
                 type="text"
                 value={venue.city}
-                onChange={(e) =>
-                  updateVenue(index, (v) => ({ ...v, city: e.target.value }))
-                }
+                onChange={(e) => updateVenue(index, (v) => ({ ...v, city: e.target.value }))}
                 placeholder="City"
                 className="rounded-lg border border-slate-300 px-3 py-2"
                 disabled={isSubmitting || loading}
@@ -722,9 +639,7 @@ export default function Step4Venues({
               <input
                 type="text"
                 value={venue.state}
-                onChange={(e) =>
-                  updateVenue(index, (v) => ({ ...v, state: e.target.value }))
-                }
+                onChange={(e) => updateVenue(index, (v) => ({ ...v, state: e.target.value }))}
                 placeholder="State"
                 className="rounded-lg border border-slate-300 px-3 py-2"
                 disabled={isSubmitting || loading}
@@ -732,9 +647,7 @@ export default function Step4Venues({
               <input
                 type="text"
                 value={venue.pincode}
-                onChange={(e) =>
-                  updateVenue(index, (v) => ({ ...v, pincode: e.target.value }))
-                }
+                onChange={(e) => updateVenue(index, (v) => ({ ...v, pincode: e.target.value }))}
                 placeholder="Pincode"
                 className="rounded-lg border border-slate-300 px-3 py-2"
                 disabled={isSubmitting || loading}
@@ -756,9 +669,7 @@ export default function Step4Venues({
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-900">
-                Sports *
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-900">Sports *</label>
               <SportsMultiSelect
                 value={venue.sports}
                 onChange={(sports) =>
@@ -766,16 +677,10 @@ export default function Step4Venues({
                     ...v,
                     sports,
                     sportImages: Object.fromEntries(
-                      sports.map((sport) => [
-                        sport,
-                        v.sportImages[sport] || [],
-                      ]),
+                      sports.map((sport) => [sport, v.sportImages[sport] || []])
                     ),
                     sportImageKeys: Object.fromEntries(
-                      sports.map((sport) => [
-                        sport,
-                        v.sportImageKeys[sport] || [],
-                      ]),
+                      sports.map((sport) => [sport, v.sportImageKeys[sport] || []])
                     ),
                   }))
                 }
@@ -783,34 +688,24 @@ export default function Step4Venues({
                 required
               />
               {fieldErrors[`venue_${index}_sports`] ? (
-                <p className="mt-1 text-xs text-red-600">
-                  {fieldErrors[`venue_${index}_sports`]}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{fieldErrors[`venue_${index}_sports`]}</p>
               ) : null}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-900">
-                Amenities
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-900">Amenities</label>
               <AmenitiesMultiSelect
                 value={venue.amenities}
-                onChange={(amenities) =>
-                  updateVenue(index, (v) => ({ ...v, amenities }))
-                }
+                onChange={(amenities) => updateVenue(index, (v) => ({ ...v, amenities }))}
                 disabled={isSubmitting || loading}
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-900">
-                Opening Hours
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-900">Opening Hours</label>
               <OpeningHoursInput
                 value={venue.openingHours}
-                onChange={(openingHours) =>
-                  updateVenue(index, (v) => ({ ...v, openingHours }))
-                }
+                onChange={(openingHours) => updateVenue(index, (v) => ({ ...v, openingHours }))}
               />
             </div>
 
@@ -845,12 +740,8 @@ export default function Step4Venues({
 
             <div className="rounded-xl border border-slate-200 bg-white p-4">
               <div className="mb-4">
-                <p className="text-sm font-semibold text-slate-900">
-                  Venue Photos
-                </p>
-                <p className="text-xs text-slate-500">
-                  Upload 3 general images and 5 per sport.
-                </p>
+                <p className="text-sm font-semibold text-slate-900">Venue Photos</p>
+                <p className="text-xs text-slate-500">Upload 3 general images and 5 per sport.</p>
               </div>
 
               <div className="space-y-3">
@@ -859,126 +750,94 @@ export default function Step4Venues({
                     Venue Images (3 required)
                   </p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {Array.from({ length: MAX_GENERAL_IMAGES }).map(
-                      (_, slotIndex) => {
-                        const slotKey = getSlotKey(index, "general", slotIndex);
-                        const slotUploading = uploading[slotKey];
-                        const slotDragActive = dragActive[slotKey];
-                        const slotError = uploadErrors[slotKey];
-                        const imageUrl = venue.generalImages[slotIndex];
-                        const slotEnabled =
-                          slotIndex <= venue.generalImages.length &&
-                          !isSubmitting &&
-                          !loading;
+                    {Array.from({ length: MAX_GENERAL_IMAGES }).map((_, slotIndex) => {
+                      const slotKey = getSlotKey(index, "general", slotIndex);
+                      const slotUploading = uploading[slotKey];
+                      const slotDragActive = dragActive[slotKey];
+                      const slotError = uploadErrors[slotKey];
+                      const imageUrl = venue.generalImages[slotIndex];
+                      const slotEnabled =
+                        slotIndex <= venue.generalImages.length && !isSubmitting && !loading;
 
-                        return (
-                          <div key={`general-${index}-${slotIndex}`}>
-                            {imageUrl ? (
-                              <div className="relative aspect-square">
-                                <img
-                                  src={imageUrl}
-                                  alt={`General ${slotIndex + 1}`}
-                                  className="h-full w-full rounded-lg border border-slate-200 object-cover"
-                                />
-                                {venue.coverPhotoUrl === imageUrl ? (
-                                  <span className="absolute bottom-2 left-2 rounded bg-green-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                    Cover
-                                  </span>
-                                ) : null}
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    removeGeneralImage(index, slotIndex)
-                                  }
-                                  className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </div>
-                            ) : (
-                              <label
-                                className={`flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-xs transition ${
-                                  slotDragActive
-                                    ? "border-power-orange bg-power-orange/5"
-                                    : "border-slate-300"
-                                } ${slotEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
-                                onDragOver={(event) => {
-                                  event.preventDefault();
-                                  if (!slotEnabled) return;
-                                  setDragState(slotKey, true);
-                                }}
-                                onDragLeave={(event) => {
-                                  event.preventDefault();
-                                  setDragState(slotKey, false);
-                                }}
-                                onDrop={(event) => {
-                                  event.preventDefault();
-                                  setDragState(slotKey, false);
-                                  if (!slotEnabled) return;
-                                  const files = event.dataTransfer.files;
+                      return (
+                        <div key={`general-${index}-${slotIndex}`}>
+                          {imageUrl ? (
+                            <div className="relative aspect-square">
+                              <img
+                                src={imageUrl}
+                                alt={`General ${slotIndex + 1}`}
+                                className="h-full w-full rounded-lg border border-slate-200 object-cover"
+                              />
+                              {venue.coverPhotoUrl === imageUrl ? (
+                                <span className="absolute bottom-2 left-2 rounded bg-green-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                  Cover
+                                </span>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => removeGeneralImage(index, slotIndex)}
+                                className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <label
+                              className={`flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-xs transition ${
+                                slotDragActive
+                                  ? "border-power-orange bg-power-orange/5"
+                                  : "border-slate-300"
+                              } ${slotEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+                              onDragOver={(event) => {
+                                event.preventDefault();
+                                if (!slotEnabled) return;
+                                setDragState(slotKey, true);
+                              }}
+                              onDragLeave={(event) => {
+                                event.preventDefault();
+                                setDragState(slotKey, false);
+                              }}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                setDragState(slotKey, false);
+                                if (!slotEnabled) return;
+                                const files = event.dataTransfer.files;
+                                if (files && files.length > 1) {
+                                  uploadGeneralImagesBatchFromSlot(index, slotIndex, files);
+                                  return;
+                                }
+                                uploadGeneralImageAtSlot(index, slotIndex, files?.[0]);
+                              }}
+                            >
+                              {slotUploading ? (
+                                <Loader className="text-power-orange mb-2 animate-spin" size={22} />
+                              ) : (
+                                <Upload className="mb-2 text-slate-400" size={22} />
+                              )}
+                              <span className="text-slate-600">Image {slotIndex + 1}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                disabled={!slotEnabled}
+                                onChange={(event) => {
+                                  const files = event.target.files;
                                   if (files && files.length > 1) {
-                                    uploadGeneralImagesBatchFromSlot(
-                                      index,
-                                      slotIndex,
-                                      files,
-                                    );
+                                    uploadGeneralImagesBatchFromSlot(index, slotIndex, files);
                                     return;
                                   }
-                                  uploadGeneralImageAtSlot(
-                                    index,
-                                    slotIndex,
-                                    files?.[0],
-                                  );
+                                  uploadGeneralImageAtSlot(index, slotIndex, files?.[0]);
                                 }}
-                              >
-                                {slotUploading ? (
-                                  <Loader
-                                    className="mb-2 animate-spin text-power-orange"
-                                    size={22}
-                                  />
-                                ) : (
-                                  <Upload
-                                    className="mb-2 text-slate-400"
-                                    size={22}
-                                  />
-                                )}
-                                <span className="text-slate-600">
-                                  Image {slotIndex + 1}
-                                </span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  multiple
-                                  className="hidden"
-                                  disabled={!slotEnabled}
-                                  onChange={(event) => {
-                                    const files = event.target.files;
-                                    if (files && files.length > 1) {
-                                      uploadGeneralImagesBatchFromSlot(
-                                        index,
-                                        slotIndex,
-                                        files,
-                                      );
-                                      return;
-                                    }
-                                    uploadGeneralImageAtSlot(
-                                      index,
-                                      slotIndex,
-                                      files?.[0],
-                                    );
-                                  }}
-                                />
-                              </label>
-                            )}
-                            {slotError ? (
-                              <p className="mt-1 text-xs text-red-600">
-                                {slotError}
-                              </p>
-                            ) : null}
-                          </div>
-                        );
-                      },
-                    )}
+                              />
+                            </label>
+                          )}
+                          {slotError ? (
+                            <p className="mt-1 text-xs text-red-600">{slotError}</p>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                   {venue.generalImages.length > 0 ? (
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
@@ -988,7 +847,7 @@ export default function Step4Venues({
                         onChange={(e) => {
                           const selectedUrl = e.target.value;
                           const selectedIndex = venue.generalImages.findIndex(
-                            (imageUrl) => imageUrl === selectedUrl,
+                            (imageUrl) => imageUrl === selectedUrl
                           );
 
                           updateVenue(index, (v) => ({
@@ -1005,10 +864,7 @@ export default function Step4Venues({
                       >
                         <option value="">Choose image</option>
                         {venue.generalImages.map((imageUrl, imageIndex) => (
-                          <option
-                            key={`${index}-cover-${imageIndex}`}
-                            value={imageUrl}
-                          >
+                          <option key={`${index}-cover-${imageIndex}`} value={imageUrl}>
                             Image {imageIndex + 1}
                           </option>
                         ))}
@@ -1044,7 +900,7 @@ export default function Step4Venues({
                           uploadGeneralImagesBatchFromSlot(
                             index,
                             venue.generalImages.length,
-                            event.target.files,
+                            event.target.files
                           )
                         }
                       />
@@ -1060,139 +916,106 @@ export default function Step4Venues({
                     <div key={`${index}-${sport}`} className="pt-4">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold text-slate-900">
-                          {sport} Images ({sportImages.length}/
-                          {MAX_SPORT_IMAGES})
+                          {sport} Images ({sportImages.length}/{MAX_SPORT_IMAGES})
                         </p>
                       </div>
                       <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                        {Array.from({ length: MAX_SPORT_IMAGES }).map(
-                          (_, slotIndex) => {
-                            const slotKey = getSlotKey(
-                              index,
-                              "sport",
-                              slotIndex,
-                              sport,
-                            );
-                            const slotUploading = uploading[slotKey];
-                            const slotDragActive = dragActive[slotKey];
-                            const slotError = uploadErrors[slotKey];
-                            const imageUrl = sportImages[slotIndex];
-                            const slotEnabled =
-                              slotIndex <= sportImages.length &&
-                              !isSubmitting &&
-                              !loading;
+                        {Array.from({ length: MAX_SPORT_IMAGES }).map((_, slotIndex) => {
+                          const slotKey = getSlotKey(index, "sport", slotIndex, sport);
+                          const slotUploading = uploading[slotKey];
+                          const slotDragActive = dragActive[slotKey];
+                          const slotError = uploadErrors[slotKey];
+                          const imageUrl = sportImages[slotIndex];
+                          const slotEnabled =
+                            slotIndex <= sportImages.length && !isSubmitting && !loading;
 
-                            return (
-                              <div key={`${sport}-${slotIndex}`}>
-                                {imageUrl ? (
-                                  <div className="relative aspect-square">
-                                    <img
-                                      src={imageUrl}
-                                      alt={`${sport} ${slotIndex + 1}`}
-                                      className="h-full w-full rounded-lg border border-slate-200 object-cover"
+                          return (
+                            <div key={`${sport}-${slotIndex}`}>
+                              {imageUrl ? (
+                                <div className="relative aspect-square">
+                                  <img
+                                    src={imageUrl}
+                                    alt={`${sport} ${slotIndex + 1}`}
+                                    className="h-full w-full rounded-lg border border-slate-200 object-cover"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSportImage(index, sport, slotIndex)}
+                                    className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label
+                                  className={`flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-xs transition ${
+                                    slotDragActive
+                                      ? "border-power-orange bg-power-orange/5"
+                                      : "border-slate-300"
+                                  } ${slotEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+                                  onDragOver={(event) => {
+                                    event.preventDefault();
+                                    if (!slotEnabled) return;
+                                    setDragState(slotKey, true);
+                                  }}
+                                  onDragLeave={(event) => {
+                                    event.preventDefault();
+                                    setDragState(slotKey, false);
+                                  }}
+                                  onDrop={(event) => {
+                                    event.preventDefault();
+                                    setDragState(slotKey, false);
+                                    if (!slotEnabled) return;
+                                    const files = event.dataTransfer.files;
+                                    if (files && files.length > 1) {
+                                      uploadSportImagesBatchFromSlot(
+                                        index,
+                                        sport,
+                                        slotIndex,
+                                        files
+                                      );
+                                      return;
+                                    }
+                                    uploadSportImageAtSlot(index, sport, slotIndex, files?.[0]);
+                                  }}
+                                >
+                                  {slotUploading ? (
+                                    <Loader
+                                      className="text-power-orange mb-2 animate-spin"
+                                      size={18}
                                     />
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        removeSportImage(
-                                          index,
-                                          sport,
-                                          slotIndex,
-                                        )
-                                      }
-                                      className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <label
-                                    className={`flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-xs transition ${
-                                      slotDragActive
-                                        ? "border-power-orange bg-power-orange/5"
-                                        : "border-slate-300"
-                                    } ${slotEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
-                                    onDragOver={(event) => {
-                                      event.preventDefault();
-                                      if (!slotEnabled) return;
-                                      setDragState(slotKey, true);
-                                    }}
-                                    onDragLeave={(event) => {
-                                      event.preventDefault();
-                                      setDragState(slotKey, false);
-                                    }}
-                                    onDrop={(event) => {
-                                      event.preventDefault();
-                                      setDragState(slotKey, false);
-                                      if (!slotEnabled) return;
-                                      const files = event.dataTransfer.files;
+                                  ) : (
+                                    <Camera className="mb-2 text-slate-400" size={18} />
+                                  )}
+                                  <span className="text-slate-600">Image {slotIndex + 1}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    disabled={!slotEnabled}
+                                    onChange={(event) => {
+                                      const files = event.target.files;
                                       if (files && files.length > 1) {
                                         uploadSportImagesBatchFromSlot(
                                           index,
                                           sport,
                                           slotIndex,
-                                          files,
+                                          files
                                         );
                                         return;
                                       }
-                                      uploadSportImageAtSlot(
-                                        index,
-                                        sport,
-                                        slotIndex,
-                                        files?.[0],
-                                      );
+                                      uploadSportImageAtSlot(index, sport, slotIndex, files?.[0]);
                                     }}
-                                  >
-                                    {slotUploading ? (
-                                      <Loader
-                                        className="mb-2 animate-spin text-power-orange"
-                                        size={18}
-                                      />
-                                    ) : (
-                                      <Camera
-                                        className="mb-2 text-slate-400"
-                                        size={18}
-                                      />
-                                    )}
-                                    <span className="text-slate-600">
-                                      Image {slotIndex + 1}
-                                    </span>
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      multiple
-                                      className="hidden"
-                                      disabled={!slotEnabled}
-                                      onChange={(event) => {
-                                        const files = event.target.files;
-                                        if (files && files.length > 1) {
-                                          uploadSportImagesBatchFromSlot(
-                                            index,
-                                            sport,
-                                            slotIndex,
-                                            files,
-                                          );
-                                          return;
-                                        }
-                                        uploadSportImageAtSlot(
-                                          index,
-                                          sport,
-                                          slotIndex,
-                                          files?.[0],
-                                        );
-                                      }}
-                                    />
-                                  </label>
-                                )}
-                                {slotError ? (
-                                  <p className="mt-1 text-xs text-red-600">
-                                    {slotError}
-                                  </p>
-                                ) : null}
-                              </div>
-                            );
-                          },
-                        )}
+                                  />
+                                </label>
+                              )}
+                              {slotError ? (
+                                <p className="mt-1 text-xs text-red-600">{slotError}</p>
+                              ) : null}
+                            </div>
+                          );
+                        })}
                       </div>
                       {fieldErrors[`venue_${index}_sportImages_${sport}`] ? (
                         <p className="mt-1 text-xs text-red-600">
@@ -1209,16 +1032,14 @@ export default function Step4Venues({
                             multiple
                             className="hidden"
                             disabled={
-                              isSubmitting ||
-                              loading ||
-                              sportImages.length >= MAX_SPORT_IMAGES
+                              isSubmitting || loading || sportImages.length >= MAX_SPORT_IMAGES
                             }
                             onChange={(event) =>
                               uploadSportImagesBatchFromSlot(
                                 index,
                                 sport,
                                 sportImages.length,
-                                event.target.files,
+                                event.target.files
                               )
                             }
                           />
@@ -1244,11 +1065,7 @@ export default function Step4Venues({
               Back
             </Button>
           ) : null}
-          <Button
-            type="submit"
-            disabled={isSubmitting || loading}
-            className="flex-1"
-          >
+          <Button type="submit" disabled={isSubmitting || loading} className="flex-1">
             {isSubmitting ? "Saving..." : "Continue to Step 5"}
           </Button>
         </div>

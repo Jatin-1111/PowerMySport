@@ -11,10 +11,7 @@
  */
 
 export type CoachOfferingDeliveryKind =
-  | "PLATFORM_VENUE"
-  | "PROVIDER_VENUE"
-  | "STUDENT_LOCATION"
-  | "ONLINE";
+  "PLATFORM_VENUE" | "PROVIDER_VENUE" | "STUDENT_LOCATION" | "ONLINE";
 
 export type CoachOfferingStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "ARCHIVED";
 
@@ -59,19 +56,11 @@ export interface CoachOffering {
   updatedAt: string;
 }
 
-export type CoachEnrollmentStatus =
-  | "PENDING"
-  | "ACTIVE"
-  | "PAUSED"
-  | "CANCELLED"
-  | "COMPLETED";
+export type CoachEnrollmentStatus = "PENDING" | "ACTIVE" | "PAUSED" | "CANCELLED" | "COMPLETED";
 
 /** Ledger balance, keyed by credit status. */
 export type CreditSummary = Partial<
-  Record<
-    "AVAILABLE" | "CONSUMED" | "EXPIRED" | "REFUNDED",
-    { count: number; amountPaise: number }
-  >
+  Record<"AVAILABLE" | "CONSUMED" | "EXPIRED" | "REFUNDED", { count: number; amountPaise: number }>
 >;
 
 export interface CoachEnrollment {
@@ -94,10 +83,7 @@ export interface CoachEnrollment {
 }
 
 export type CoachOccurrenceStatus =
-  | "SCHEDULED"
-  | "COMPLETED"
-  | "CANCELLED_BY_COACH"
-  | "CANCELLED_BY_PLATFORM";
+  "SCHEDULED" | "COMPLETED" | "CANCELLED_BY_COACH" | "CANCELLED_BY_PLATFORM";
 
 export type AttendanceMark = "PENDING" | "PRESENT" | "ABSENT";
 

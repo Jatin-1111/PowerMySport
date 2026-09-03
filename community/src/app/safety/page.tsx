@@ -40,9 +40,7 @@ export default function SafetyPage() {
       setBlockedUsers(blocked || []);
       setReports((reportData.items || []) as ReportItem[]);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load safety center",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load safety center");
     } finally {
       setIsLoading(false);
     }
@@ -55,14 +53,10 @@ export default function SafetyPage() {
   const unblock = async (userId: string) => {
     try {
       await communityService.unblockUser(userId);
-      setBlockedUsers((current) =>
-        current.filter((item) => item.id !== userId),
-      );
+      setBlockedUsers((current) => current.filter((item) => item.id !== userId));
       toast.success("User unblocked");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to unblock user",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to unblock user");
     }
   };
 
@@ -75,20 +69,15 @@ export default function SafetyPage() {
             <h1 className="community-section-title">Safety Center</h1>
           </div>
           <p className="community-section-copy">
-            Moderation status visibility and personal safety controls in one
-            place.
+            Moderation status visibility and personal safety controls in one place.
           </p>
 
           {isLoading ? (
-            <p className="mt-4 text-sm text-slate-500">
-              Loading safety data...
-            </p>
+            <p className="mt-4 text-sm text-slate-500">Loading safety data...</p>
           ) : (
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 shadow-sm">
-                <p className="text-sm font-semibold text-slate-900">
-                  Blocked Users
-                </p>
+                <p className="text-sm font-semibold text-slate-900">Blocked Users</p>
                 <p className="mt-1 text-xs text-slate-500">
                   Manage users you blocked from direct interactions.
                 </p>
@@ -101,12 +90,10 @@ export default function SafetyPage() {
                         key={user.id}
                         className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <p className="text-sm font-medium text-slate-800">
-                          {user.name}
-                        </p>
+                        <p className="text-sm font-medium text-slate-800">{user.name}</p>
                         <button
                           onClick={() => unblock(user.id)}
-                          className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-power-orange/40 px-3 py-2 text-xs font-semibold text-power-orange transition hover:bg-power-orange/10"
+                          className="border-power-orange/40 text-power-orange hover:bg-power-orange/10 inline-flex min-h-10 items-center justify-center rounded-2xl border px-3 py-2 text-xs font-semibold transition"
                         >
                           Unblock
                         </button>
@@ -117,17 +104,13 @@ export default function SafetyPage() {
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 shadow-sm">
-                <p className="text-sm font-semibold text-slate-900">
-                  My Report Status
-                </p>
+                <p className="text-sm font-semibold text-slate-900">My Report Status</p>
                 <p className="mt-1 text-xs text-slate-500">
                   Track moderation outcomes and resolutions.
                 </p>
                 <div className="mt-3 space-y-2">
                   {reports.length === 0 ? (
-                    <p className="text-xs text-slate-500">
-                      No reports submitted.
-                    </p>
+                    <p className="text-xs text-slate-500">No reports submitted.</p>
                   ) : (
                     reports.map((report) => (
                       <div
@@ -144,9 +127,7 @@ export default function SafetyPage() {
                             {report.status}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm leading-6 text-slate-800">
-                          {report.reason}
-                        </p>
+                        <p className="mt-1 text-sm leading-6 text-slate-800">{report.reason}</p>
                         {report.resolutionNote && (
                           <p className="mt-1 text-xs leading-6 text-slate-500">
                             {report.resolutionNote}
@@ -164,15 +145,11 @@ export default function SafetyPage() {
         <section className="community-card">
           <div className="flex items-center gap-2">
             <UserX size={18} className="text-rose-600" />
-            <h2 className="text-lg font-semibold text-slate-900">
-              How Safety Actions Work
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900">How Safety Actions Work</h2>
           </div>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
             <li>Blocked users cannot message you directly.</li>
-            <li>
-              Reports are reviewed by moderation and updated with status notes.
-            </li>
+            <li>Reports are reviewed by moderation and updated with status notes.</li>
             <li>Resolved reports remain visible for accountability.</li>
           </ul>
         </section>

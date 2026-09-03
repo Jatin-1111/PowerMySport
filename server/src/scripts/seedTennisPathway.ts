@@ -46,8 +46,7 @@ const HELP_LINKS = [
   { label: "Assessment", href: "/guidance" },
 ];
 
-const SITUATIONAL_LEAD =
-  "Your situation decides the step. Pick the line that describes you today.";
+const SITUATIONAL_LEAD = "Your situation decides the step. Pick the line that describes you today.";
 const ORDERED_LEAD = "The steps for this stage, in the order they are worth doing.";
 
 const GUIDE: PathwayGuideInput = {
@@ -133,8 +132,7 @@ const GUIDE: PathwayGuideInput = {
         { when: "Not started", action: "Find 2–3 age-appropriate trial options." },
         {
           when: "Just started",
-          action:
-            "Follow a 3–6 month starter period and observe enjoyment and progress.",
+          action: "Follow a 3–6 month starter period and observe enjoyment and progress.",
         },
         {
           when: "Enjoying tennis",
@@ -281,8 +279,7 @@ const GUIDE: PathwayGuideInput = {
         { when: "Step 4", action: "Conduct a parent–coach–player review." },
         {
           when: "Step 5",
-          action:
-            "Decide whether to move towards a serious competitive pathway.",
+          action: "Decide whether to move towards a serious competitive pathway.",
         },
       ],
       primaryAction: {
@@ -488,11 +485,11 @@ async function main(): Promise<void> {
           publishedAt: publish ? new Date() : null,
         },
       },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
     ).lean();
 
     console.log(
-      `Seeded ${saved?.sportName} — ${saved?.stages?.length} stages, status "${saved?.status}".`,
+      `Seeded ${saved?.sportName} — ${saved?.stages?.length} stages, status "${saved?.status}".`
     );
     if (!publish) {
       console.log("Saved as a DRAFT: it is not visible to parents.");

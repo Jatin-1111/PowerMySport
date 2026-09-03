@@ -80,12 +80,8 @@ export const notificationApi = {
    * Get list of failed reminders
    * @param limit - Maximum number of failed reminders to retrieve (default: 50, max: 100)
    */
-  getFailedReminders: async (
-    limit: number = 50,
-  ): Promise<ApiResponse<FailedReminder[]>> => {
-    const response = await axiosInstance.get(
-      `/reminders/monitoring/failed?limit=${limit}`,
-    );
+  getFailedReminders: async (limit: number = 50): Promise<ApiResponse<FailedReminder[]>> => {
+    const response = await axiosInstance.get(`/reminders/monitoring/failed?limit=${limit}`);
     return response.data;
   },
 
@@ -93,33 +89,23 @@ export const notificationApi = {
    * Manually trigger a health check (admin only)
    */
   triggerHealthCheck: async (): Promise<ApiResponse<HealthCheckResult>> => {
-    const response = await axiosInstance.post(
-      "/reminders/monitoring/health-check",
-    );
+    const response = await axiosInstance.post("/reminders/monitoring/health-check");
     return response.data;
   },
 
   /**
    * Manually trigger sending the daily summary email (admin only)
    */
-  sendDailySummary: async (): Promise<
-    ApiResponse<{ message: string; emailsSent: number }>
-  > => {
-    const response = await axiosInstance.post(
-      "/reminders/monitoring/send-summary",
-    );
+  sendDailySummary: async (): Promise<ApiResponse<{ message: string; emailsSent: number }>> => {
+    const response = await axiosInstance.post("/reminders/monitoring/send-summary");
     return response.data;
   },
 
   /**
    * Retry a single failed reminder
    */
-  retryReminder: async (
-    reminderId: string,
-  ): Promise<ApiResponse<{ message: string }>> => {
-    const response = await axiosInstance.post(
-      `/reminders/monitoring/retry/${reminderId}`,
-    );
+  retryReminder: async (reminderId: string): Promise<ApiResponse<{ message: string }>> => {
+    const response = await axiosInstance.post(`/reminders/monitoring/retry/${reminderId}`);
     return response.data;
   },
 
@@ -127,17 +113,14 @@ export const notificationApi = {
    * Retry multiple failed reminders
    */
   retryMultiple: async (
-    reminderIds: string[],
+    reminderIds: string[]
   ): Promise<
     ApiResponse<{
       message: string;
       results: { reminderId: string; success: boolean; message: string }[];
     }>
   > => {
-    const response = await axiosInstance.post(
-      "/reminders/monitoring/retry-batch",
-      { reminderIds },
-    );
+    const response = await axiosInstance.post("/reminders/monitoring/retry-batch", { reminderIds });
     return response.data;
   },
 };

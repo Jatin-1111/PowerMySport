@@ -4,13 +4,9 @@ import React from "react";
 
 export const metadata: Metadata = noindexMetadata(
   "Notifications",
-  "Your PowerMySport notifications.",
+  "Your PowerMySport notifications."
 );
 
-export default function NotificationsLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function NotificationsLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

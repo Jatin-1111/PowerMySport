@@ -41,11 +41,7 @@ export default function ExpertSessionsPage() {
 
   const updateOne = (updated: ExpertSession) =>
     setSessions((list) =>
-      list.map((s) =>
-        (s.id || s._id) === (updated.id || updated._id)
-          ? { ...s, ...updated }
-          : s,
-      ),
+      list.map((s) => ((s.id || s._id) === (updated.id || updated._id) ? { ...s, ...updated } : s))
     );
 
   const filteredSessions = useMemo(() => {
@@ -67,11 +63,11 @@ export default function ExpertSessionsPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            All Sessions
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">All Sessions</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {loading ? "Loading…" : `${sessions.length} session${sessions.length === 1 ? "" : "s"} total`}
+            {loading
+              ? "Loading…"
+              : `${sessions.length} session${sessions.length === 1 ? "" : "s"} total`}
           </p>
         </div>
       </div>
@@ -85,7 +81,7 @@ export default function ExpertSessionsPage() {
             className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-all ${
               filter === f.key
                 ? "border-power-orange bg-power-orange/10 text-power-orange"
-                : "border-slate-200 bg-white text-slate-600 hover:border-power-orange/50"
+                : "hover:border-power-orange/50 border-slate-200 bg-white text-slate-600"
             }`}
           >
             {f.label}

@@ -77,7 +77,7 @@ const blogPostSchema = new Schema<BlogPostDocument>(
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: { type: Date, default: null },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 blogPostSchema.index({ createdAt: -1 });
@@ -97,10 +97,7 @@ blogPostSchema.index(
   {
     name: "blog_search_v2",
     weights: { title: 10, tags: 6, excerpt: 4, content: 1 },
-  },
+  }
 );
 
-export const BlogPost = mongoose.model<BlogPostDocument>(
-  "BlogPost",
-  blogPostSchema,
-);
+export const BlogPost = mongoose.model<BlogPostDocument>("BlogPost", blogPostSchema);

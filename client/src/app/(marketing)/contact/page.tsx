@@ -8,17 +8,17 @@ import { Button } from "@/modules/shared/ui/Button";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import {
-    Award,
-    Building2,
-    Check,
-    ChevronDown,
-    HelpCircle,
-    Instagram,
-    Linkedin,
-    Mail,
-    MapPin,
-    Phone,
-    UserRound,
+  Award,
+  Building2,
+  Check,
+  ChevronDown,
+  HelpCircle,
+  Instagram,
+  Linkedin,
+  Mail,
+  MapPin,
+  Phone,
+  UserRound,
 } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
@@ -100,21 +100,14 @@ function FloatingDots() {
   return (
     <svg
       aria-hidden="true"
-      className="pointer-events-none absolute right-0 top-0 h-64 w-64 opacity-30"
+      className="pointer-events-none absolute top-0 right-0 h-64 w-64 opacity-30"
       viewBox="0 0 200 200"
     >
       {Array.from({ length: 36 }).map((_, i) => {
         const x = (i % 6) * 34 + 10;
         const y = Math.floor(i / 6) * 34 + 10;
         return (
-          <circle
-            key={i}
-            cx={x}
-            cy={y}
-            r="2.5"
-            fill="currentColor"
-            className="text-orange-400"
-          />
+          <circle key={i} cx={x} cy={y} r="2.5" fill="currentColor" className="text-orange-400" />
         );
       })}
     </svg>
@@ -139,7 +132,7 @@ function SkewedAccent() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute -left-12 top-1/4 h-80 w-[120%] -rotate-[6deg] rounded-3xl bg-gradient-to-r from-orange-500/8 via-amber-400/6 to-transparent"
+      className="pointer-events-none absolute top-1/4 -left-12 h-80 w-[120%] -rotate-[6deg] rounded-3xl bg-gradient-to-r from-orange-500/8 via-amber-400/6 to-transparent"
     />
   );
 }
@@ -191,7 +184,6 @@ function ClippedFrame({
 
 // ─── Geometric Overlay Backdrop ───────────────────────────────────────────────
 
-
 // ─── Info Card Component ───────────────────────────────────────────────────────
 
 interface InfoCardProps {
@@ -212,7 +204,7 @@ function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
       }}
     >
       <motion.div
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-50 text-power-orange"
+        className="text-power-orange flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-50"
         initial={iconPop.initial}
         whileInView={iconPop.whileInView}
         whileHover={iconPop.whileHover}
@@ -246,16 +238,13 @@ interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 function Field({ label, id, required, ...props }: FieldProps) {
   return (
     <div>
-      <label
-        htmlFor={id}
-        className="mb-2 block text-sm font-semibold text-slate-800"
-      >
+      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-slate-800">
         {label} {required && <span className="text-power-orange">*</span>}
       </label>
       <input
         id={id}
         required={required}
-        className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
+        className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-400/25 focus:outline-none"
         {...props}
       />
     </div>
@@ -342,7 +331,7 @@ function CustomSelect({
   const handleOptionKeyDown = (
     e: React.KeyboardEvent<HTMLButtonElement>,
     index: number,
-    opt: SelectOption,
+    opt: SelectOption
   ) => {
     switch (e.key) {
       case "ArrowDown":
@@ -381,9 +370,7 @@ function CustomSelect({
               ? typeaheadRef.current.buffer + e.key.toLowerCase()
               : e.key.toLowerCase();
           typeaheadRef.current = { buffer: buf, lastTime: now };
-          const match = options.findIndex((o) =>
-            o.label.toLowerCase().startsWith(buf),
-          );
+          const match = options.findIndex((o) => o.label.toLowerCase().startsWith(buf));
           if (match >= 0) focusOption(match);
         }
     }
@@ -394,10 +381,7 @@ function CustomSelect({
 
   return (
     <div ref={containerRef} className="relative">
-      <label
-        htmlFor={id}
-        className="mb-2 block text-sm font-semibold text-slate-800"
-      >
+      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-slate-800">
         {label} {required && <span className="text-power-orange">*</span>}
       </label>
 
@@ -410,7 +394,7 @@ function CustomSelect({
         onClick={() => setOpen((o) => !o)}
         onKeyDown={handleTriggerKeyDown}
         whileTap={{ scale: 0.985 }}
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-all duration-200 focus:bg-white focus:ring-2 focus:ring-orange-400/25 focus:outline-none ${
           open
             ? "border-orange-400 bg-white ring-2 ring-orange-400/25"
             : "border-slate-200 hover:border-orange-300 hover:shadow-md"
@@ -418,7 +402,7 @@ function CustomSelect({
       >
         <span className="flex items-center gap-2.5 truncate">
           {SelectedIcon && (
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-power-orange">
+            <span className="text-power-orange flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50">
               <SelectedIcon className="h-4 w-4" strokeWidth={2} />
             </span>
           )}
@@ -428,7 +412,7 @@ function CustomSelect({
         </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
-            open ? "rotate-180 text-power-orange" : ""
+            open ? "text-power-orange rotate-180" : ""
           }`}
         />
       </motion.button>
@@ -459,16 +443,14 @@ function CustomSelect({
                     onKeyDown={(e) => handleOptionKeyDown(e, index, opt)}
                     className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors focus:outline-none focus-visible:bg-orange-50/70 focus-visible:ring-2 focus-visible:ring-orange-400/40 ${
                       isSelected
-                        ? "bg-orange-50 font-semibold text-power-orange"
+                        ? "text-power-orange bg-orange-50 font-semibold"
                         : "text-slate-700 hover:bg-slate-50"
                     }`}
                   >
                     {OptIcon && (
                       <span
                         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
-                          isSelected
-                            ? "bg-white text-power-orange"
-                            : "bg-slate-100 text-slate-400"
+                          isSelected ? "text-power-orange bg-white" : "bg-slate-100 text-slate-400"
                         }`}
                       >
                         <OptIcon className="h-4 w-4" strokeWidth={2} />
@@ -488,7 +470,6 @@ function CustomSelect({
 }
 
 // ─── Stats Strip ──────────────────────────────────────────────────────────────
-
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -510,14 +491,10 @@ export default function ContactPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<
-    "idle" | "success" | "error"
-  >("idle");
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -577,7 +554,7 @@ export default function ContactPage() {
         {/* ── Background ambient blobs ── */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -left-32 top-24 h-[500px] w-[500px] rounded-full bg-orange-100/40 blur-[100px]"
+          className="pointer-events-none absolute top-24 -left-32 h-[500px] w-[500px] rounded-full bg-orange-100/40 blur-[100px]"
         />
         <div
           aria-hidden="true"
@@ -585,7 +562,7 @@ export default function ContactPage() {
         />
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-amber-100/20 blur-[60px]"
+          className="pointer-events-none absolute top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-amber-100/20 blur-[60px]"
         />
 
         {/* ── Dot grid pattern ── */}
@@ -593,8 +570,7 @@ export default function ContactPage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.025]"
           style={{
-            backgroundImage:
-              "radial-gradient(circle, #000 1px, transparent 1px)",
+            backgroundImage: "radial-gradient(circle, #000 1px, transparent 1px)",
             backgroundSize: "28px 28px",
           }}
         />
@@ -658,10 +634,9 @@ export default function ContactPage() {
 
                 <motion.p
                   variants={fadeSlideUp}
-                  className="mb-8 text-base text-slate-500 leading-relaxed"
+                  className="mb-8 text-base leading-relaxed text-slate-500"
                 >
-                  Fill out the form below and we&apos;ll get back to you within
-                  24 hours.
+                  Fill out the form below and we&apos;ll get back to you within 24 hours.
                 </motion.p>
 
                 {/* Status banners */}
@@ -745,9 +720,7 @@ export default function ContactPage() {
                       placeholder="Select an option"
                       value={formData.userType}
                       options={USER_TYPE_OPTIONS}
-                      onChange={(value) =>
-                        setFormData((prev) => ({ ...prev, userType: value }))
-                      }
+                      onChange={(value) => setFormData((prev) => ({ ...prev, userType: value }))}
                     />
                   </motion.div>
 
@@ -763,9 +736,7 @@ export default function ContactPage() {
                         value: opt,
                         label: opt,
                       }))}
-                      onChange={(value) =>
-                        setFormData((prev) => ({ ...prev, subject: value }))
-                      }
+                      onChange={(value) => setFormData((prev) => ({ ...prev, subject: value }))}
                     />
                   </motion.div>
 
@@ -784,17 +755,14 @@ export default function ContactPage() {
                       onChange={handleChange}
                       required
                       rows={5}
-                      className="w-full resize-none rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
+                      className="w-full resize-none rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-400/25 focus:outline-none"
                       placeholder="Tell us about your inquiry..."
                     />
                   </motion.div>
 
                   {/* Submit */}
                   <motion.div variants={fadeSlideUp}>
-                    <motion.div
-                      whileHover={{ scale: 1.015 }}
-                      whileTap={{ scale: 0.975 }}
-                    >
+                    <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.975 }}>
                       <Button
                         type="submit"
                         variant="primary"
@@ -811,10 +779,7 @@ export default function ContactPage() {
             </motion.div>
 
             {/* ── RIGHT COLUMN: Info + Image ───────────────────────────────── */}
-            <motion.div
-              variants={staggerContainer}
-              className="flex flex-col gap-5 lg:pt-2"
-            >
+            <motion.div variants={staggerContainer} className="flex flex-col gap-5 lg:pt-2">
               {/* Section header */}
               <motion.div variants={fadeSlideLeft}>
                 <SectionLabel label="Reach us directly" color="slate" />
@@ -838,13 +803,13 @@ export default function ContactPage() {
                 />
                 {/* Floating glass badge */}
                 <div className="absolute bottom-4 left-5 flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-slate-900 shadow-lg backdrop-blur-md">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-turf-green" />
+                  <span className="bg-turf-green h-2 w-2 animate-pulse rounded-full" />
                   Support team online
                 </div>
                 {/* Geo accent */}
                 <div
                   aria-hidden="true"
-                  className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-orange-400/30 blur-2xl"
+                  className="absolute -top-6 -right-6 h-20 w-20 rounded-full bg-orange-400/30 blur-2xl"
                 />
               </motion.div>
 
@@ -852,7 +817,7 @@ export default function ContactPage() {
               <InfoCard icon={Mail} title="Email">
                 <a
                   href="mailto:teams@powermysport.com"
-                  className="text-sm text-slate-600 transition-colors hover:text-power-orange"
+                  className="hover:text-power-orange text-sm text-slate-600 transition-colors"
                 >
                   teams@powermysport.com
                 </a>
@@ -862,13 +827,11 @@ export default function ContactPage() {
               <InfoCard icon={Phone} title="Phone">
                 <a
                   href="tel:+918968582443"
-                  className="text-sm text-slate-600 transition-colors hover:text-power-orange"
+                  className="hover:text-power-orange text-sm text-slate-600 transition-colors"
                 >
                   +91 89685 82443
                 </a>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  Mon–Sat: 9 AM – 8 PM IST
-                </p>
+                <p className="mt-0.5 text-xs text-slate-400">Mon–Sat: 9 AM – 8 PM IST</p>
               </InfoCard>
 
               {/* WhatsApp */}
@@ -877,13 +840,11 @@ export default function ContactPage() {
                   href={`https://wa.me/918968582443?text=${encodeURIComponent("Hi! I have a question about PowerMySport.")}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-slate-600 transition-colors hover:text-power-orange"
+                  className="hover:text-power-orange text-sm text-slate-600 transition-colors"
                 >
                   Chat with us on WhatsApp →
                 </a>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  Usually replies within minutes
-                </p>
+                <p className="mt-0.5 text-xs text-slate-400">Usually replies within minutes</p>
               </InfoCard>
 
               {/* Address */}
@@ -902,20 +863,17 @@ export default function ContactPage() {
                 transition={{ type: "spring", stiffness: 280, damping: 20 }}
                 className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md"
                 style={{
-                  boxShadow:
-                    "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
+                  boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
                 }}
               >
-                <h3 className="mb-4 text-base font-bold text-slate-900">
-                  Follow Us
-                </h3>
+                <h3 className="mb-4 text-base font-bold text-slate-900">Follow Us</h3>
                 <div className="flex gap-3">
                   {SOCIALS.map(({ Icon, label, href }) => (
                     <motion.a
                       key={label}
                       href={href}
                       aria-label={label}
-                      className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:bg-power-orange hover:text-white"
+                      className="hover:bg-power-orange flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:text-white"
                       whileHover={{ scale: 1.12, rotate: 7 }}
                       whileTap={{ scale: 0.93 }}
                       transition={{
@@ -944,7 +902,7 @@ export default function ContactPage() {
         {/* Background radial burst */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-power-orange/10 blur-[100px]"
+          className="bg-power-orange/10 pointer-events-none absolute top-0 left-1/2 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-[100px]"
         />
 
         {/* Diagonal stripe overlay */}
@@ -965,7 +923,7 @@ export default function ContactPage() {
             viewport={{ once: true, margin: "-80px" }}
           >
             <motion.div variants={scaleIn} className="mb-4 inline-flex">
-              <span className="rounded-full border border-power-orange/40 bg-power-orange/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
+              <span className="border-power-orange/40 bg-power-orange/10 rounded-full border px-4 py-1.5 text-xs font-bold tracking-widest text-orange-400 uppercase">
                 Ready to play?
               </span>
             </motion.div>
@@ -981,10 +939,9 @@ export default function ContactPage() {
               variants={fadeSlideUp}
               className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg"
             >
-              Whether you&apos;re a parent planning your child&apos;s sports
-              journey, a venue owner listing your facility, or a coach
-              expanding your practice — we&apos;re just a message away. Our team
-              typically responds within 24 hours.
+              Whether you&apos;re a parent planning your child&apos;s sports journey, a venue owner
+              listing your facility, or a coach expanding your practice — we&apos;re just a message
+              away. Our team typically responds within 24 hours.
             </motion.p>
 
             <motion.div
@@ -993,7 +950,7 @@ export default function ContactPage() {
             >
               <motion.a
                 href="/register"
-                className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/30 hover:shadow-xl"
+                className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-xl hover:shadow-orange-500/30"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >

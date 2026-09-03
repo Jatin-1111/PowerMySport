@@ -1,11 +1,5 @@
 import axiosInstance from "@/lib/api/axios";
-import {
-    ApiResponse,
-    Availability,
-    Booking,
-    InitiateBookingResponse,
-} from "@/types";
-
+import { ApiResponse, Availability, Booking, InitiateBookingResponse } from "@/types";
 
 export const bookingApi = {
   // Initiate booking with split payments
@@ -37,23 +31,18 @@ export const bookingApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/bookings/my-bookings?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/bookings/my-bookings?${params.toString()}`);
     return response.data;
   },
 
   // Get venue availability
   getVenueAvailability: async (
     venueId: string,
-    date: string,
+    date: string
   ): Promise<ApiResponse<Availability>> => {
-    const response = await axiosInstance.get(
-      `/bookings/availability/${venueId}`,
-      {
-        params: { date },
-      },
-    );
+    const response = await axiosInstance.get(`/bookings/availability/${venueId}`, {
+      params: { date },
+    });
     return response.data;
   },
 
@@ -61,14 +50,11 @@ export const bookingApi = {
     venueId: string,
     date: string,
     preferredStartTime: string,
-    preferredEndTime: string,
+    preferredEndTime: string
   ): Promise<ApiResponse<Availability & { alternateSlots?: string[] }>> => {
-    const response = await axiosInstance.get(
-      `/bookings/availability/${venueId}`,
-      {
-        params: { date, preferredStartTime, preferredEndTime },
-      },
-    );
+    const response = await axiosInstance.get(`/bookings/availability/${venueId}`, {
+      params: { date, preferredStartTime, preferredEndTime },
+    });
     return response.data;
   },
 
@@ -76,21 +62,18 @@ export const bookingApi = {
   getCoachAvailability: async (
     coachId: string,
     date: string,
-    sport?: string,
+    sport?: string
   ): Promise<ApiResponse<Availability>> => {
-    const response = await axiosInstance.get(
-      `/coaches/availability/${coachId}`,
-      {
-        params: { date, sport },
-      },
-    );
+    const response = await axiosInstance.get(`/coaches/availability/${coachId}`, {
+      params: { date, sport },
+    });
     return response.data;
   },
 
   // Cancel booking
   cancelBooking: async (
     bookingId: string,
-    cancellationReason?: string,
+    cancellationReason?: string
   ): Promise<ApiResponse<{ refundAmount: number; refundPercentage: number }>> => {
     const response = await axiosInstance.delete(`/bookings/${bookingId}`, {
       data: cancellationReason ? { cancellationReason } : undefined,
@@ -99,48 +82,38 @@ export const bookingApi = {
   },
 
   retryRefund: async (
-    bookingId: string,
+    bookingId: string
   ): Promise<ApiResponse<{ refundStatus: string; refundAmount: number }>> => {
-    const response = await axiosInstance.post(
-      `/bookings/${bookingId}/retry-refund`,
-    );
+    const response = await axiosInstance.post(`/bookings/${bookingId}/retry-refund`);
     return response.data;
   },
 
-  confirmBookingByProvider: async (
-    bookingId: string,
-  ): Promise<ApiResponse<Booking>> => {
-    const response = await axiosInstance.post(
-      `/bookings/${bookingId}/provider/confirm`,
-    );
+  confirmBookingByProvider: async (bookingId: string): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post(`/bookings/${bookingId}/provider/confirm`);
     return response.data;
   },
 
   rejectBookingByProvider: async (
     bookingId: string,
-    reason?: string,
+    reason?: string
   ): Promise<ApiResponse<{ booking: Booking; refundAmount?: number }>> => {
     const response = await axiosInstance.post(
       `/bookings/${bookingId}/provider/reject`,
-      reason ? { reason } : undefined,
+      reason ? { reason } : undefined
     );
     return response.data;
   },
 
   // Confirm mock payment success and trigger confirmation side effects
-  confirmMockPaymentSuccess: async (
-    bookingId: string,
-  ): Promise<ApiResponse<Booking>> => {
-    const response = await axiosInstance.post(
-      `/bookings/${bookingId}/mock-payment-success`,
-    );
+  confirmMockPaymentSuccess: async (bookingId: string): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post(`/bookings/${bookingId}/mock-payment-success`);
     return response.data;
   },
 
   // Initiate PhonePe payment for booking
   initiatePhonePePayment: async (
     bookingId: string,
-    payload?: { type?: "coach" | "venue" },
+    payload?: { type?: "coach" | "venue" }
   ): Promise<{
     redirectUrl: string;
     merchantOrderId: string;
@@ -148,33 +121,27 @@ export const bookingApi = {
   }> => {
     const response = await axiosInstance.post(
       `/bookings/${bookingId}/phonepe/initiate`,
-      payload || {},
+      payload || {}
     );
     return response.data.data;
   },
 
   // Pay for booking using wallet balance
   payWithWallet: async (bookingId: string): Promise<ApiResponse<null>> => {
-    const response = await axiosInstance.post(
-      `/bookings/${bookingId}/wallet/pay`,
-    );
+    const response = await axiosInstance.post(`/bookings/${bookingId}/wallet/pay`);
     return response.data;
   },
 
   // Verify PhonePe order status (fallback)
   verifyPhonePeOrderStatus: async (
-    merchantOrderId: string,
+    merchantOrderId: string
   ): Promise<{ state?: string; merchantOrderId: string }> => {
-    const response = await axiosInstance.get(
-      `/bookings/phonepe/status/${merchantOrderId}`,
-    );
+    const response = await axiosInstance.get(`/bookings/phonepe/status/${merchantOrderId}`);
     return response.data.data;
   },
 
   // Check-in booking using player-provided random code
-  checkInBookingByCode: async (
-    checkInCode: string,
-  ): Promise<ApiResponse<Booking>> => {
+  checkInBookingByCode: async (checkInCode: string): Promise<ApiResponse<Booking>> => {
     const response = await axiosInstance.post("/bookings/check-in/code", {
       checkInCode,
     });
@@ -188,10 +155,9 @@ export const bookingApi = {
   },
 
   downloadInvoicePdf: async (bookingId: string): Promise<Blob> => {
-    const response = await axiosInstance.get(
-      `/bookings/${bookingId}/invoice/pdf`,
-      { responseType: "blob" },
-    );
+    const response = await axiosInstance.get(`/bookings/${bookingId}/invoice/pdf`, {
+      responseType: "blob",
+    });
     return response.data as Blob;
   },
 
@@ -204,10 +170,7 @@ export const bookingApi = {
     discountAmount: number;
     message?: string;
   }> => {
-    const response = await axiosInstance.post(
-      "/bookings/promo/validate",
-      payload,
-    );
+    const response = await axiosInstance.post("/bookings/promo/validate", payload);
     return response.data.data;
   },
 
@@ -249,9 +212,7 @@ export const bookingApi = {
   },
 
   // Get booking invitations
-  getMyInvitations: async (
-    status?: "PENDING" | "ACCEPTED" | "DECLINED",
-  ): Promise<any[]> => {
+  getMyInvitations: async (status?: "PENDING" | "ACCEPTED" | "DECLINED"): Promise<any[]> => {
     const params = status ? { status } : {};
     const response = await axiosInstance.get("/bookings/invitations", {
       params,
@@ -262,30 +223,23 @@ export const bookingApi = {
   // Respond to booking invitation
   respondToInvitation: async (
     invitationId: string,
-    accept: boolean,
+    accept: boolean
   ): Promise<ApiResponse<Booking>> => {
-    const response = await axiosInstance.post(
-      `/bookings/invitations/${invitationId}/respond`,
-      { accept },
-    );
+    const response = await axiosInstance.post(`/bookings/invitations/${invitationId}/respond`, {
+      accept,
+    });
     return response.data;
   },
 
   // Organizer covers unpaid shares
-  coverUnpaidShares: async (
-    bookingId: string,
-  ): Promise<ApiResponse<Booking>> => {
-    const response = await axiosInstance.post(
-      `/bookings/${bookingId}/cover-payments`,
-    );
+  coverUnpaidShares: async (bookingId: string): Promise<ApiResponse<Booking>> => {
+    const response = await axiosInstance.post(`/bookings/${bookingId}/cover-payments`);
     return response.data;
   },
 
   // Get count of pending booking invitations
   getPendingInvitationsCount: async (): Promise<{ count: number }> => {
-    const response = await axiosInstance.get(
-      "/bookings/invitations/pending-count",
-    );
+    const response = await axiosInstance.get("/bookings/invitations/pending-count");
     return response.data.data;
   },
 
@@ -296,12 +250,9 @@ export const bookingApi = {
       newDate: string;
       newStartTime: string;
       newEndTime: string;
-    },
+    }
   ): Promise<ApiResponse<Booking>> => {
-    const response = await axiosInstance.post(
-      `/bookings/${bookingId}/reschedule`,
-      payload,
-    );
+    const response = await axiosInstance.post(`/bookings/${bookingId}/reschedule`, payload);
     return response.data;
   },
 };

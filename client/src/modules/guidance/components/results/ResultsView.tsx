@@ -6,18 +6,18 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { roadmapHref } from "../../../pathway/data/sports";
 import { motion } from "framer-motion";
 import {
-    ArrowRight,
-    CalendarCheck,
-    Download,
-    Loader2,
-    MessageCircle,
-    Route,
-    Sparkles,
-    TrendingUp,
-    Trophy,
-    UserPlus,
-    Users,
-    X,
+  ArrowRight,
+  CalendarCheck,
+  Download,
+  Loader2,
+  MessageCircle,
+  Route,
+  Sparkles,
+  TrendingUp,
+  Trophy,
+  UserPlus,
+  Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -36,7 +36,8 @@ function getActionUrl(step: string, sport?: string): string | null {
   if (s.includes("communit") || s.includes("parent")) return "/community";
   if (s.includes("tournament") || s.includes("compet") || s.includes("opportunit")) return roadmap;
   if (s.includes("roadmap") || s.includes("pathway")) return roadmap;
-  if (s.includes("guidance") || s.includes("assessment") || s.includes("personalised")) return "/guidance";
+  if (s.includes("guidance") || s.includes("assessment") || s.includes("personalised"))
+    return "/guidance";
   return null;
 }
 
@@ -83,9 +84,7 @@ export function ResultsView({
 
   // Time-phased roadmap from the AI, or synthesised from existing fields
   const journeyPhases =
-    r.journeyPhases && r.journeyPhases.length > 0
-      ? r.journeyPhases
-      : buildFallbackJourney(r);
+    r.journeyPhases && r.journeyPhases.length > 0 ? r.journeyPhases : buildFallbackJourney(r);
 
   // recommendedPlatformActions might come as a single paragraph, newlines, or numbered lists.
   // We split by sentence boundaries or newlines, then strip any leading bullets, numbers, or dashes.
@@ -95,7 +94,7 @@ export function ResultsView({
       s
         .trim()
         .replace(/^[\d\-\*\•]+[\.\)]?\s*/, "")
-        .replace(/\.$/, ""),
+        .replace(/\.$/, "")
     )
     .filter((s) => s.length > 3);
 
@@ -124,23 +123,20 @@ export function ResultsView({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 rounded-2xl border border-power-orange/25 bg-power-orange/5 px-4 py-3"
+          className="border-power-orange/25 bg-power-orange/5 flex items-center gap-3 rounded-2xl border px-4 py-3"
         >
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white">
-            <UserPlus className="h-4 w-4 text-power-orange" />
+            <UserPlus className="text-power-orange h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-slate-800">
-              Don't lose this plan
-            </p>
+            <p className="text-xs font-bold text-slate-800">Don't lose this plan</p>
             <p className="text-[11px] text-slate-500">
-              Create a free account to save it and pick up right where you left
-              off.
+              Create a free account to save it and pick up right where you left off.
             </p>
           </div>
           <Link
             href={`/register?redirect=${encodeURIComponent("/guidance")}`}
-            className="shrink-0 rounded-lg bg-power-orange px-3 py-2 text-[11px] font-bold text-white hover:bg-orange-600 transition"
+            className="bg-power-orange shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold text-white transition hover:bg-orange-600"
           >
             Save free
           </Link>
@@ -148,7 +144,7 @@ export function ResultsView({
             type="button"
             onClick={() => setBannerDismissed(true)}
             aria-label="Dismiss"
-            className="shrink-0 text-slate-300 hover:text-slate-500 transition"
+            className="shrink-0 text-slate-300 transition hover:text-slate-500"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -159,25 +155,21 @@ export function ResultsView({
       {shortPlan ? (
         <ShortTermPlanCard plan={shortPlan} />
       ) : (
-        <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-5">
+        <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6">
+          <div className="mb-5 flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50">
-              <Route className="h-5 w-5 text-power-orange" />
+              <Route className="text-power-orange h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+              <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
                 Your Path Forward
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Step-by-step from today to the goal
-              </p>
+              <p className="mt-0.5 text-xs text-slate-500">Step-by-step from today to the goal</p>
             </div>
           </div>
           <JourneyMap
             phases={journeyPhases}
-            goal={
-              r.goalAssessment?.statedGoal || submission.query.primary_objective
-            }
+            goal={r.goalAssessment?.statedGoal || submission.query.primary_objective}
             sport={submission.query.sport}
           />
         </div>
@@ -187,18 +179,16 @@ export function ResultsView({
       {r.costBreakdown && <CostBreakdownCard c={r.costBreakdown} />}
 
       {/* Do This Next */}
-      <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
             <TrendingUp className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
-            <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+            <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
               Do This Next
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Immediate actions on PowerMySport
-            </p>
+            <p className="mt-0.5 text-xs text-slate-500">Immediate actions on PowerMySport</p>
           </div>
         </div>
         {actions ? (
@@ -206,14 +196,16 @@ export function ResultsView({
             {/* Book an Expert */}
             <Link
               href="/booking?tab=experts"
-              className="group flex flex-col items-start gap-3 rounded-2xl border border-orange-100 bg-orange-50 p-4 transition hover:border-orange-200 hover:bg-orange-100/60 cursor-pointer"
+              className="group flex cursor-pointer flex-col items-start gap-3 rounded-2xl border border-orange-100 bg-orange-50 p-4 transition hover:border-orange-200 hover:bg-orange-100/60"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 group-hover:bg-orange-200/70 transition">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 transition group-hover:bg-orange-200/70">
                 <CalendarCheck className="h-4 w-4 text-orange-600" />
               </div>
               <div>
-                <p className="text-[13px] font-bold leading-tight text-slate-800">Book an Expert</p>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">1-on-1 with a certified expert</p>
+                <p className="text-[13px] leading-tight font-bold text-slate-800">Book an Expert</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+                  1-on-1 with a certified expert
+                </p>
               </div>
             </Link>
 
@@ -222,14 +214,18 @@ export function ResultsView({
               id="chat-with-coach-btn"
               type="button"
               onClick={actions.onChatClick}
-              className="group flex flex-col items-start gap-3 rounded-2xl border border-violet-100 bg-violet-50 p-4 text-left transition hover:border-violet-200 hover:bg-violet-100/60 cursor-pointer"
+              className="group flex cursor-pointer flex-col items-start gap-3 rounded-2xl border border-violet-100 bg-violet-50 p-4 text-left transition hover:border-violet-200 hover:bg-violet-100/60"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 group-hover:bg-violet-200/70 transition">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 transition group-hover:bg-violet-200/70">
                 <Sparkles className="h-4 w-4 text-violet-600" />
               </div>
               <div>
-                <p className="text-[13px] font-bold leading-tight text-slate-800">Ask PowerMySport AI</p>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Follow-up on any part of this plan</p>
+                <p className="text-[13px] leading-tight font-bold text-slate-800">
+                  Ask PowerMySport AI
+                </p>
+                <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+                  Follow-up on any part of this plan
+                </p>
               </div>
             </button>
 
@@ -238,14 +234,16 @@ export function ResultsView({
               href={actions.waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex flex-col items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 transition hover:border-emerald-200 hover:bg-emerald-100/60 cursor-pointer"
+              className="group flex cursor-pointer flex-col items-start gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 transition hover:border-emerald-200 hover:bg-emerald-100/60"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 group-hover:bg-emerald-200/70 transition">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 transition group-hover:bg-emerald-200/70">
                 <WhatsAppIcon className="h-4 w-4 text-emerald-600" />
               </div>
               <div>
-                <p className="text-[13px] font-bold leading-tight text-slate-800">WhatsApp Us</p>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">A specialist replies personally</p>
+                <p className="text-[13px] leading-tight font-bold text-slate-800">WhatsApp Us</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+                  A specialist replies personally
+                </p>
               </div>
             </a>
 
@@ -254,9 +252,9 @@ export function ResultsView({
               type="button"
               onClick={actions.onDownloadPdf}
               disabled={actions.downloadingPdf}
-              className="group flex flex-col items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-slate-300 hover:bg-slate-100/60 disabled:opacity-50 cursor-pointer"
+              className="group flex cursor-pointer flex-col items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-slate-300 hover:bg-slate-100/60 disabled:opacity-50"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 group-hover:bg-slate-300/70 transition">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 transition group-hover:bg-slate-300/70">
                 {actions.downloadingPdf ? (
                   <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
                 ) : (
@@ -264,8 +262,10 @@ export function ResultsView({
                 )}
               </div>
               <div>
-                <p className="text-[13px] font-bold leading-tight text-slate-800">Download PDF</p>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Save or share offline</p>
+                <p className="text-[13px] leading-tight font-bold text-slate-800">Download PDF</p>
+                <p className="mt-0.5 text-[11px] leading-snug text-slate-500">
+                  Save or share offline
+                </p>
               </div>
             </button>
           </div>
@@ -278,14 +278,14 @@ export function ResultsView({
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">
                     {i + 1}
                   </span>
-                  <div className="flex flex-1 items-start justify-between gap-3 min-w-0">
-                    <span className="text-sm leading-relaxed text-emerald-900/90 font-medium">
+                  <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+                    <span className="text-sm leading-relaxed font-medium text-emerald-900/90">
                       {step}.
                     </span>
                     {actionUrl && (
                       <Link
                         href={actionUrl}
-                        className="shrink-0 flex items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 transition whitespace-nowrap"
+                        className="flex shrink-0 items-center gap-1 rounded-lg border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap text-emerald-700 transition hover:bg-emerald-50"
                       >
                         Go <ArrowRight className="h-3 w-3" />
                       </Link>
@@ -303,21 +303,19 @@ export function ResultsView({
 
       {/* Recommended Sports */}
       {hasSports && (
-        <div className="rounded-3xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-5">
+        <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6">
+          <div className="mb-5 flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50">
               <Trophy className="h-5 w-5 text-amber-500" />
             </div>
             <div>
-              <h3 className="font-title text-lg font-bold text-slate-900 leading-tight">
+              <h3 className="font-title text-lg leading-tight font-bold text-slate-900">
                 Top Recommended Sports
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Based on your child's profile
-              </p>
+              <p className="mt-0.5 text-xs text-slate-500">Based on your child's profile</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {r.recommendedSports!.map((sport, idx) => (
               <motion.div
                 key={idx}
@@ -325,14 +323,12 @@ export function ResultsView({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.07 }}
                 whileHover={{ y: -3 }}
-                className="flex items-center gap-3 rounded-2xl border border-power-orange/20 bg-gradient-to-br from-power-orange/[0.07] to-amber-50/60 p-3 transition-shadow hover:shadow-md"
+                className="border-power-orange/20 from-power-orange/[0.07] flex items-center gap-3 rounded-2xl border bg-gradient-to-br to-amber-50/60 p-3 transition-shadow hover:shadow-md"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-power-orange font-bold shadow-sm">
+                <div className="text-power-orange flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white font-bold shadow-sm">
                   #{idx + 1}
                 </div>
-                <p className="font-semibold text-slate-800 leading-tight">
-                  {sport}
-                </p>
+                <p className="leading-tight font-semibold text-slate-800">{sport}</p>
               </motion.div>
             ))}
           </div>

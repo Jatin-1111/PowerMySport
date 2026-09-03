@@ -21,12 +21,7 @@ import { CoachVerificationDocument, ServiceMode, Coach } from "@/types";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const ALLOWED_DOC_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/pdf",
-];
+const ALLOWED_DOC_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 type Step = 1 | 2 | 3;
 type PricingMode = "SAME" | "PER_SPORT";
@@ -93,10 +88,8 @@ interface FormErrors {
 
 const emptyVenueHours = (): OpeningHours => getDefaultOpeningHours();
 
-const isValidMobileNumber = (value: string) =>
-  /^[+]?[0-9\s().\-]+$/.test(value.trim());
-const sanitizeMobileNumber = (value: string) =>
-  value.replace(/[^0-9+\s().\-]/g, "");
+const isValidMobileNumber = (value: string) => /^[+]?[0-9\s().\-]+$/.test(value.trim());
+const sanitizeMobileNumber = (value: string) => value.replace(/[^0-9+\s().\-]/g, "");
 
 const formatOpeningHoursToString = (hours: OpeningHours): string => {
   const openDays = Object.entries(hours).filter(([, day]) => day.isOpen);
@@ -107,9 +100,7 @@ const formatOpeningHoursToString = (hours: OpeningHours): string => {
 
   const firstDay = openDays[0][1];
   const allSame = openDays.every(
-    ([, day]) =>
-      day.openTime === firstDay.openTime &&
-      day.closeTime === firstDay.closeTime,
+    ([, day]) => day.openTime === firstDay.openTime && day.closeTime === firstDay.closeTime
   );
 
   if (allSame && openDays.length === 7) {
@@ -121,9 +112,7 @@ const formatOpeningHoursToString = (hours: OpeningHours): string => {
     return `${firstDay.openTime}-${firstDay.closeTime} (${dayNames})`;
   }
 
-  return openDays
-    .map(([day, hours]) => `${day}: ${hours.openTime}-${hours.closeTime}`)
-    .join("; ");
+  return openDays.map(([day, hours]) => `${day}: ${hours.openTime}-${hours.closeTime}`).join("; ");
 };
 
 const toCoachId = (payload: unknown): string => {
@@ -172,40 +161,27 @@ export function CoachOnboardingForm() {
   const [travelBufferTimeInput, setTravelBufferTimeInput] = useState("30");
 
   const [baseLocationQuery, setBaseLocationQuery] = useState("");
-  const [baseLocationSuggestions, setBaseLocationSuggestions] = useState<
-    GeoSuggestion[]
-  >([]);
+  const [baseLocationSuggestions, setBaseLocationSuggestions] = useState<GeoSuggestion[]>([]);
   const [baseLocationSearching, setBaseLocationSearching] = useState(false);
   const [baseLocationError, setBaseLocationError] = useState("");
-  const [baseLocation, setBaseLocation] = useState<[number, number] | null>(
-    null,
-  );
+  const [baseLocation, setBaseLocation] = useState<[number, number] | null>(null);
   const baseLocationSkipRef = useRef(false);
 
   const [venueAddressQuery, setVenueAddressQuery] = useState("");
-  const [venueAddressSuggestions, setVenueAddressSuggestions] = useState<
-    GeoSuggestion[]
-  >([]);
+  const [venueAddressSuggestions, setVenueAddressSuggestions] = useState<GeoSuggestion[]>([]);
   const [venueAddressSearching, setVenueAddressSearching] = useState(false);
   const [venueAddressError, setVenueAddressError] = useState("");
-  const [venueLocation, setVenueLocation] = useState<[number, number] | null>(
-    null,
-  );
+  const [venueLocation, setVenueLocation] = useState<[number, number] | null>(null);
   const venueLocationSkipRef = useRef(false);
 
   const [venueName, setVenueName] = useState("");
   const [venueDescription, setVenueDescription] = useState("");
-  const [venueOpeningHours, setVenueOpeningHours] =
-    useState<OpeningHours>(emptyVenueHours());
-  const [venueImageDrafts, setVenueImageDrafts] = useState<
-    UploadedVenueImage[]
-  >([]);
+  const [venueOpeningHours, setVenueOpeningHours] = useState<OpeningHours>(emptyVenueHours());
+  const [venueImageDrafts, setVenueImageDrafts] = useState<UploadedVenueImage[]>([]);
   const venueImageInputRef = useRef<HTMLInputElement | null>(null);
   const venueImagePreviewUrlsRef = useRef<string[]>([]);
 
-  const [verificationDocs, setVerificationDocs] = useState<UploadedDocument[]>(
-    [],
-  );
+  const [verificationDocs, setVerificationDocs] = useState<UploadedDocument[]>([]);
 
   const isOwnVenue = serviceMode === "OWN_VENUE" || serviceMode === "HYBRID";
   const needsBaseLocation = serviceMode !== "OWN_VENUE";
@@ -237,15 +213,12 @@ export function CoachOnboardingForm() {
 
     if (firstName.trim().length < 2)
       nextErrors.firstName = "First name must be at least 2 characters";
-    if (lastName.trim().length < 2)
-      nextErrors.lastName = "Last name must be at least 2 characters";
+    if (lastName.trim().length < 2) nextErrors.lastName = "Last name must be at least 2 characters";
     if (!email.trim()) nextErrors.email = "Email is required";
     if (!phone.trim()) nextErrors.phone = "Phone is required";
     if (!bio.trim()) nextErrors.bio = "Bio is required";
-    if (bio.trim().length < 20)
-      nextErrors.bio = "Bio must be at least 20 characters";
-    if (!isValidMobileNumber(phone))
-      nextErrors.phone = "Please provide a valid phone number";
+    if (bio.trim().length < 20) nextErrors.bio = "Bio must be at least 20 characters";
+    if (!isValidMobileNumber(phone)) nextErrors.phone = "Please provide a valid phone number";
 
     if (!profilePhotoUrl.trim()) {
       nextErrors.profilePhoto = "Profile photo is required";
@@ -258,8 +231,7 @@ export function CoachOnboardingForm() {
   const validateStep2 = () => {
     const nextErrors: FormErrors = {};
 
-    if (sports.length === 0)
-      nextErrors.sports = "At least one sport is required";
+    if (sports.length === 0) nextErrors.sports = "At least one sport is required";
 
     if (pricingMode === "SAME") {
       if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
@@ -277,8 +249,7 @@ export function CoachOnboardingForm() {
 
     if (needsBaseLocation) {
       if (!baseLocation) {
-        nextErrors.baseLocation =
-          "Base location is required for this service mode";
+        nextErrors.baseLocation = "Base location is required for this service mode";
       }
       const serviceRadiusKm = Number(serviceRadiusKmInput || "0");
       if (!Number.isFinite(serviceRadiusKm) || serviceRadiusKm <= 0) {
@@ -292,10 +263,8 @@ export function CoachOnboardingForm() {
 
     if (isOwnVenue) {
       if (!venueName.trim()) nextErrors.venueName = "Venue name is required";
-      if (!venueAddressQuery.trim())
-        nextErrors.venueAddress = "Venue address is required";
-      if (!venueLocation)
-        nextErrors.venueAddress = "Select a venue location from suggestions";
+      if (!venueAddressQuery.trim()) nextErrors.venueAddress = "Venue address is required";
+      if (!venueLocation) nextErrors.venueAddress = "Select a venue location from suggestions";
     }
 
     setErrors(nextErrors);
@@ -306,8 +275,7 @@ export function CoachOnboardingForm() {
     const nextErrors: FormErrors = {};
 
     if (isOwnVenue && venueImageDrafts.length < 3) {
-      nextErrors.venueImages =
-        "OWN_VENUE coaches require at least 3 venue images";
+      nextErrors.venueImages = "OWN_VENUE coaches require at least 3 venue images";
     }
 
     setErrors(nextErrors);
@@ -399,9 +367,7 @@ export function CoachOnboardingForm() {
         return false;
       }
       if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-        toast.error(
-          `Invalid image type for ${file.name}. Use JPG, PNG, or WebP.`,
-        );
+        toast.error(`Invalid image type for ${file.name}. Use JPG, PNG, or WebP.`);
         return false;
       }
       return true;
@@ -436,30 +402,23 @@ export function CoachOnboardingForm() {
     }
 
     if (!ALLOWED_DOC_TYPES.includes(file.type)) {
-      toast.error(
-        `Invalid file type for ${file.name}. Use JPG, PNG, WebP or PDF.`,
-      );
+      toast.error(`Invalid file type for ${file.name}. Use JPG, PNG, WebP or PDF.`);
       return;
     }
 
     setVerificationDocs((prev) =>
       prev.map((doc, currentIndex) =>
-        currentIndex === index ? { ...doc, file, fileName: file.name } : doc,
-      ),
+        currentIndex === index ? { ...doc, file, fileName: file.name } : doc
+      )
     );
   };
 
   const addDocumentRow = () => {
-    setVerificationDocs((prev) => [
-      ...prev,
-      { type: "CERTIFICATION", file: null, fileName: "" },
-    ]);
+    setVerificationDocs((prev) => [...prev, { type: "CERTIFICATION", file: null, fileName: "" }]);
   };
 
   const removeDocumentRow = (index: number) => {
-    setVerificationDocs((prev) =>
-      prev.filter((_, currentIndex) => currentIndex !== index),
-    );
+    setVerificationDocs((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
   };
 
   const removeVenueImage = (index: number) => {
@@ -467,15 +426,14 @@ export function CoachOnboardingForm() {
       prev.filter((image, currentIndex) => {
         if (currentIndex === index) {
           URL.revokeObjectURL(image.previewUrl);
-          venueImagePreviewUrlsRef.current =
-            venueImagePreviewUrlsRef.current.filter(
-              (previewUrl) => previewUrl !== image.previewUrl,
-            );
+          venueImagePreviewUrlsRef.current = venueImagePreviewUrlsRef.current.filter(
+            (previewUrl) => previewUrl !== image.previewUrl
+          );
           return false;
         }
 
         return true;
-      }),
+      })
     );
   };
 
@@ -494,7 +452,7 @@ export function CoachOnboardingForm() {
       file: File;
       documentType?: CoachVerificationDocument["type"];
       purpose: "DOCUMENT" | "VENUE_IMAGE";
-    }>,
+    }>
   ) => {
     const results: Array<{
       url: string;
@@ -518,7 +476,7 @@ export function CoachOnboardingForm() {
       await uploadFileToPresignedUrl(
         item.file,
         response.data.uploadUrl,
-        item.file.type || "application/octet-stream",
+        item.file.type || "application/octet-stream"
       );
 
       results.push({
@@ -615,8 +573,7 @@ export function CoachOnboardingForm() {
 
         if (status === 409 && data?.requiresConversion) {
           const shouldConvert = window.confirm(
-            data.message ||
-              "An account already exists. Convert it to a coach account to continue?",
+            data.message || "An account already exists. Convert it to a coach account to continue?"
           );
 
           if (shouldConvert) {
@@ -658,16 +615,12 @@ export function CoachOnboardingForm() {
       const uploadedDocuments = documentFiles.length
         ? await uploadFiles(coachId, documentFiles)
         : [];
-      const uploadedVenueImages = venueFiles.length
-        ? await uploadFiles(coachId, venueFiles)
-        : [];
+      const uploadedVenueImages = venueFiles.length ? await uploadFiles(coachId, venueFiles) : [];
 
       if (uploadedVenueImages.length > 0 && isOwnVenue) {
         const responseData = createResponse.data as CreateCoachResponseData;
         const existingOwnVenue =
-          responseData.coach?.ownVenueDetails ||
-          responseData.data?.coach?.ownVenueDetails ||
-          {};
+          responseData.coach?.ownVenueDetails || responseData.data?.coach?.ownVenueDetails || {};
         await adminApi.updateCoach(coachId, {
           ownVenueDetails: {
             ...existingOwnVenue,
@@ -710,9 +663,7 @@ export function CoachOnboardingForm() {
       toast.success("Coach onboarded and activated successfully");
       setStep(3);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create coach",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to create coach");
     } finally {
       setCreating(false);
       setLoading(false);
@@ -724,7 +675,7 @@ export function CoachOnboardingForm() {
       <Card className="border border-emerald-200 bg-linear-to-br from-white to-emerald-50 p-6 shadow-sm">
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+            <p className="text-xs font-semibold tracking-[0.2em] text-emerald-700 uppercase">
               Onboarding complete
             </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-950">
@@ -737,32 +688,18 @@ export function CoachOnboardingForm() {
 
           <div className="rounded-2xl border border-emerald-200 bg-white p-4 text-sm text-slate-700">
             <p>
-              Coach ID:{" "}
-              <span className="font-semibold text-slate-900">
-                {successCoachId}
-              </span>
+              Coach ID: <span className="font-semibold text-slate-900">{successCoachId}</span>
             </p>
             <p className="mt-1">
-              Profile link:{" "}
-              <span className="font-semibold text-slate-900">
-                {successCoachLink}
-              </span>
+              Profile link: <span className="font-semibold text-slate-900">{successCoachLink}</span>
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() => router.push(successCoachLink)}
-            >
+            <Button type="button" variant="primary" onClick={() => router.push(successCoachLink)}>
               Open coach review
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => router.push("/admin/coaches")}
-            >
+            <Button type="button" variant="secondary" onClick={() => router.push("/admin/coaches")}>
               Back to coaches
             </Button>
           </div>
@@ -773,27 +710,22 @@ export function CoachOnboardingForm() {
 
   return (
     <Card className="overflow-hidden border-slate-200 bg-white/90 shadow-sm">
-      <div className="border-b border-slate-200 bg-linear-to-r from-slate-950 via-slate-900 to-power-orange px-6 py-6 text-white">
+      <div className="to-power-orange border-b border-slate-200 bg-linear-to-r from-slate-950 via-slate-900 px-6 py-6 text-white">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-orange-200">
+            <p className="text-xs tracking-[0.24em] text-orange-200 uppercase">
               Coach onboarding on behalf of
             </p>
-            <h1 className="mt-2 text-3xl font-bold">
-              Create a coach account as admin
-            </h1>
+            <h1 className="mt-2 text-3xl font-bold">Create a coach account as admin</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-200">
-              Mirror the client onboarding flow while creating the account,
-              profile, venue details, and verification records on the
-              coach&apos;s behalf.
+              Mirror the client onboarding flow while creating the account, profile, venue details,
+              and verification records on the coach&apos;s behalf.
             </p>
           </div>
 
           <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm backdrop-blur">
             <p className="font-semibold">Steps</p>
-            <p className="text-slate-200">
-              1. Identity 2. Coaching setup 3. Review & submit
-            </p>
+            <p className="text-slate-200">1. Identity 2. Coaching setup 3. Review & submit</p>
           </div>
         </div>
       </div>
@@ -807,11 +739,11 @@ export function CoachOnboardingForm() {
               onClick={() => setStep(current as Step)}
               className={`rounded-2xl border px-4 py-3 text-left transition ${
                 step === current
-                  ? "border-power-orange bg-orange-50 text-power-orange"
+                  ? "border-power-orange text-power-orange bg-orange-50"
                   : "border-slate-200 bg-slate-50 text-slate-500"
               }`}
             >
-              <p className="text-xs uppercase tracking-wide">Step {current}</p>
+              <p className="text-xs tracking-wide uppercase">Step {current}</p>
               <p className="mt-1 text-sm font-semibold">
                 {current === 1 && "Identity"}
                 {current === 2 && "Coaching setup"}
@@ -835,18 +767,16 @@ export function CoachOnboardingForm() {
                   <input
                     value={firstName}
                     onChange={(event) => setFirstName(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                       errors.firstName
                         ? "border-red-400 focus:ring-red-200"
-                        : "border-slate-300 focus:ring-power-orange/30"
+                        : "focus:ring-power-orange/30 border-slate-300"
                     }`}
                     placeholder="First name"
                     disabled={loading}
                   />
                   {errors.firstName ? (
-                    <p className="mt-1 text-xs text-red-600">
-                      {errors.firstName}
-                    </p>
+                    <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
                   ) : null}
                 </div>
 
@@ -857,35 +787,31 @@ export function CoachOnboardingForm() {
                   <input
                     value={lastName}
                     onChange={(event) => setLastName(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                       errors.lastName
                         ? "border-red-400 focus:ring-red-200"
-                        : "border-slate-300 focus:ring-power-orange/30"
+                        : "focus:ring-power-orange/30 border-slate-300"
                     }`}
                     placeholder="Last name"
                     disabled={loading}
                   />
                   {errors.lastName ? (
-                    <p className="mt-1 text-xs text-red-600">
-                      {errors.lastName}
-                    </p>
+                    <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
                   ) : null}
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-900">
-                    Email *
-                  </label>
+                  <label className="mb-2 block text-sm font-semibold text-slate-900">Email *</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                       errors.email
                         ? "border-red-400 focus:ring-red-200"
-                        : "border-slate-300 focus:ring-power-orange/30"
+                        : "focus:ring-power-orange/30 border-slate-300"
                     }`}
                     placeholder="coach@example.com"
                     disabled={loading}
@@ -896,19 +822,15 @@ export function CoachOnboardingForm() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-slate-900">
-                    Phone *
-                  </label>
+                  <label className="mb-2 block text-sm font-semibold text-slate-900">Phone *</label>
                   <input
                     type="tel"
                     value={phone}
-                    onChange={(event) =>
-                      setPhone(sanitizeMobileNumber(event.target.value))
-                    }
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                    onChange={(event) => setPhone(sanitizeMobileNumber(event.target.value))}
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                       errors.phone
                         ? "border-red-400 focus:ring-red-200"
-                        : "border-slate-300 focus:ring-power-orange/30"
+                        : "focus:ring-power-orange/30 border-slate-300"
                     }`}
                     placeholder="+91 98765 43210"
                     disabled={loading}
@@ -920,18 +842,16 @@ export function CoachOnboardingForm() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-900">
-                  Bio *
-                </label>
+                <label className="mb-2 block text-sm font-semibold text-slate-900">Bio *</label>
                 <textarea
                   value={bio}
                   onChange={(event) => setBio(event.target.value)}
                   rows={5}
                   maxLength={2000}
-                  className={`w-full rounded-2xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                     errors.bio
                       ? "border-red-400 focus:ring-red-200"
-                      : "border-slate-300 focus:ring-power-orange/30"
+                      : "focus:ring-power-orange/30 border-slate-300"
                   }`}
                   placeholder="Tell players about the coach's experience, style, and certifications."
                   disabled={loading}
@@ -961,9 +881,7 @@ export function CoachOnboardingForm() {
                     disabled={loading}
                   />
                   {errors.profilePhoto ? (
-                    <p className="mt-2 text-center text-xs text-red-600">
-                      {errors.profilePhoto}
-                    </p>
+                    <p className="mt-2 text-center text-xs text-red-600">{errors.profilePhoto}</p>
                   ) : null}
                 </div>
               </div>
@@ -1025,18 +943,16 @@ export function CoachOnboardingForm() {
                     step={0.01}
                     value={hourlyRateInput}
                     onChange={(event) => setHourlyRateInput(event.target.value)}
-                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                    className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                       errors.hourlyRate
                         ? "border-red-400 focus:ring-red-200"
-                        : "border-slate-300 focus:ring-power-orange/30"
+                        : "focus:ring-power-orange/30 border-slate-300"
                     }`}
                     placeholder="500"
                     disabled={loading}
                   />
                   {errors.hourlyRate ? (
-                    <p className="mt-1 text-xs text-red-600">
-                      {errors.hourlyRate}
-                    </p>
+                    <p className="mt-1 text-xs text-red-600">{errors.hourlyRate}</p>
                   ) : null}
                 </div>
               ) : null}
@@ -1054,8 +970,7 @@ export function CoachOnboardingForm() {
                       const updated = { ...prev };
                       for (const sport of nextSports) {
                         if (!updated[sport]) {
-                          updated[sport] =
-                            pricingMode === "SAME" ? hourlyRateInput : "";
+                          updated[sport] = pricingMode === "SAME" ? hourlyRateInput : "";
                         }
                       }
                       for (const sport of Object.keys(updated)) {
@@ -1076,17 +991,13 @@ export function CoachOnboardingForm() {
 
               {pricingMode === "PER_SPORT" && sports.length > 0 ? (
                 <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-sm font-semibold text-slate-900">
-                    Price per sport
-                  </p>
+                  <p className="text-sm font-semibold text-slate-900">Price per sport</p>
                   {sports.map((sport) => (
                     <div
                       key={sport}
                       className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
                     >
-                      <label className="w-40 text-sm font-medium text-slate-700">
-                        {sport}
-                      </label>
+                      <label className="w-40 text-sm font-medium text-slate-700">{sport}</label>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-500">₹</span>
                         <input
@@ -1100,7 +1011,7 @@ export function CoachOnboardingForm() {
                               [sport]: event.target.value,
                             }))
                           }
-                          className="w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-power-orange/30"
+                          className="focus:ring-power-orange/30 w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2"
                           placeholder="500"
                           disabled={loading}
                         />
@@ -1108,17 +1019,13 @@ export function CoachOnboardingForm() {
                     </div>
                   ))}
                   {errors.sportPricing ? (
-                    <p className="text-xs text-red-600">
-                      {errors.sportPricing}
-                    </p>
+                    <p className="text-xs text-red-600">{errors.sportPricing}</p>
                   ) : null}
                 </div>
               ) : null}
 
               <div>
-                <p className="mb-2 text-sm font-semibold text-slate-900">
-                  Service mode
-                </p>
+                <p className="mb-2 text-sm font-semibold text-slate-900">Service mode</p>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {(
                     [
@@ -1133,19 +1040,16 @@ export function CoachOnboardingForm() {
                       onClick={() => setServiceMode(value)}
                       className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
                         serviceMode === value
-                          ? "border-power-orange bg-orange-50 text-power-orange"
+                          ? "border-power-orange text-power-orange bg-orange-50"
                           : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                       }`}
                       disabled={loading}
                     >
                       <p className="font-semibold">{label}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {value === "OWN_VENUE" &&
-                          "Coach teaches from a private venue."}
-                        {value === "FREELANCE" &&
-                          "Coach travels to players' locations."}
-                        {value === "HYBRID" &&
-                          "Coach offers both venue and travel options."}
+                        {value === "OWN_VENUE" && "Coach teaches from a private venue."}
+                        {value === "FREELANCE" && "Coach travels to players' locations."}
+                        {value === "HYBRID" && "Coach offers both venue and travel options."}
                       </p>
                     </button>
                   ))}
@@ -1155,10 +1059,8 @@ export function CoachOnboardingForm() {
               {needsBaseLocation ? (
                 <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-power-orange" />
-                    <p className="text-sm font-semibold text-slate-900">
-                      Base location
-                    </p>
+                    <MapPin className="text-power-orange h-4 w-4" />
+                    <p className="text-sm font-semibold text-slate-900">Base location</p>
                   </div>
                   <div>
                     <input
@@ -1169,22 +1071,18 @@ export function CoachOnboardingForm() {
                         setBaseLocationError("");
                       }}
                       placeholder="Search base location"
-                      className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                      className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                         errors.baseLocation
                           ? "border-red-400 focus:ring-red-200"
-                          : "border-slate-300 focus:ring-power-orange/30"
+                          : "focus:ring-power-orange/30 border-slate-300"
                       }`}
                       disabled={loading}
                     />
                     {baseLocationSearching ? (
-                      <p className="mt-1 text-xs text-slate-500">
-                        Searching...
-                      </p>
+                      <p className="mt-1 text-xs text-slate-500">Searching...</p>
                     ) : null}
                     {baseLocationError ? (
-                      <p className="mt-1 text-xs text-red-600">
-                        {baseLocationError}
-                      </p>
+                      <p className="mt-1 text-xs text-red-600">{baseLocationError}</p>
                     ) : null}
                     {baseLocationSuggestions.length > 0 ? (
                       <div className="mt-2 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -1202,9 +1100,7 @@ export function CoachOnboardingForm() {
                     ) : null}
                   </div>
                   {errors.baseLocation ? (
-                    <p className="text-xs text-red-600">
-                      {errors.baseLocation}
-                    </p>
+                    <p className="text-xs text-red-600">{errors.baseLocation}</p>
                   ) : null}
 
                   <div className="grid gap-4 md:grid-cols-2">
@@ -1216,20 +1112,16 @@ export function CoachOnboardingForm() {
                         type="number"
                         min={1}
                         value={serviceRadiusKmInput}
-                        onChange={(event) =>
-                          setServiceRadiusKmInput(event.target.value)
-                        }
-                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                        onChange={(event) => setServiceRadiusKmInput(event.target.value)}
+                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                           errors.serviceRadiusKm
                             ? "border-red-400 focus:ring-red-200"
-                            : "border-slate-300 focus:ring-power-orange/30"
+                            : "focus:ring-power-orange/30 border-slate-300"
                         }`}
                         disabled={loading}
                       />
                       {errors.serviceRadiusKm ? (
-                        <p className="mt-1 text-xs text-red-600">
-                          {errors.serviceRadiusKm}
-                        </p>
+                        <p className="mt-1 text-xs text-red-600">{errors.serviceRadiusKm}</p>
                       ) : null}
                     </div>
                     <div>
@@ -1240,20 +1132,16 @@ export function CoachOnboardingForm() {
                         type="number"
                         min={0}
                         value={travelBufferTimeInput}
-                        onChange={(event) =>
-                          setTravelBufferTimeInput(event.target.value)
-                        }
-                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                        onChange={(event) => setTravelBufferTimeInput(event.target.value)}
+                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                           errors.travelBufferTime
                             ? "border-red-400 focus:ring-red-200"
-                            : "border-slate-300 focus:ring-power-orange/30"
+                            : "focus:ring-power-orange/30 border-slate-300"
                         }`}
                         disabled={loading}
                       />
                       {errors.travelBufferTime ? (
-                        <p className="mt-1 text-xs text-red-600">
-                          {errors.travelBufferTime}
-                        </p>
+                        <p className="mt-1 text-xs text-red-600">{errors.travelBufferTime}</p>
                       ) : null}
                     </div>
                   </div>
@@ -1263,12 +1151,9 @@ export function CoachOnboardingForm() {
               {isOwnVenue ? (
                 <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Venue details
-                    </p>
+                    <p className="text-sm font-semibold text-slate-900">Venue details</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      Admins can enter and lock these details on the
-                      coach&apos;s behalf.
+                      Admins can enter and lock these details on the coach&apos;s behalf.
                     </p>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
@@ -1279,18 +1164,16 @@ export function CoachOnboardingForm() {
                       <input
                         value={venueName}
                         onChange={(event) => setVenueName(event.target.value)}
-                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                           errors.venueName
                             ? "border-red-400 focus:ring-red-200"
-                            : "border-slate-300 focus:ring-power-orange/30"
+                            : "focus:ring-power-orange/30 border-slate-300"
                         }`}
                         placeholder="Venue name"
                         disabled={loading}
                       />
                       {errors.venueName ? (
-                        <p className="mt-1 text-xs text-red-600">
-                          {errors.venueName}
-                        </p>
+                        <p className="mt-1 text-xs text-red-600">{errors.venueName}</p>
                       ) : null}
                     </div>
                     <div>
@@ -1304,23 +1187,19 @@ export function CoachOnboardingForm() {
                           setVenueLocation(null);
                           setVenueAddressError("");
                         }}
-                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
+                        className={`w-full rounded-xl border px-4 py-3 text-slate-900 transition outline-none focus:ring-2 ${
                           errors.venueAddress
                             ? "border-red-400 focus:ring-red-200"
-                            : "border-slate-300 focus:ring-power-orange/30"
+                            : "focus:ring-power-orange/30 border-slate-300"
                         }`}
                         placeholder="Search venue address"
                         disabled={loading}
                       />
                       {venueAddressSearching ? (
-                        <p className="mt-1 text-xs text-slate-500">
-                          Searching...
-                        </p>
+                        <p className="mt-1 text-xs text-slate-500">Searching...</p>
                       ) : null}
                       {venueAddressError ? (
-                        <p className="mt-1 text-xs text-red-600">
-                          {venueAddressError}
-                        </p>
+                        <p className="mt-1 text-xs text-red-600">{venueAddressError}</p>
                       ) : null}
                       {venueAddressSuggestions.length > 0 ? (
                         <div className="mt-2 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -1328,9 +1207,7 @@ export function CoachOnboardingForm() {
                             <button
                               key={`${suggestion.label}-${suggestion.lat}-${suggestion.lon}`}
                               type="button"
-                              onClick={() =>
-                                handleSelectVenueLocation(suggestion)
-                              }
+                              onClick={() => handleSelectVenueLocation(suggestion)}
                               className="block w-full border-b border-slate-100 px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50"
                             >
                               {suggestion.label}
@@ -1341,9 +1218,7 @@ export function CoachOnboardingForm() {
                     </div>
                   </div>
                   {errors.venueAddress ? (
-                    <p className="text-xs text-red-600">
-                      {errors.venueAddress}
-                    </p>
+                    <p className="text-xs text-red-600">{errors.venueAddress}</p>
                   ) : null}
 
                   <div>
@@ -1352,20 +1227,15 @@ export function CoachOnboardingForm() {
                     </label>
                     <textarea
                       value={venueDescription}
-                      onChange={(event) =>
-                        setVenueDescription(event.target.value)
-                      }
+                      onChange={(event) => setVenueDescription(event.target.value)}
                       rows={4}
-                      className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:ring-2 focus:ring-power-orange/30"
+                      className="focus:ring-power-orange/30 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 transition outline-none focus:ring-2"
                       placeholder="Optional venue description"
                       disabled={loading}
                     />
                   </div>
 
-                  <OpeningHoursInput
-                    value={venueOpeningHours}
-                    onChange={setVenueOpeningHours}
-                  />
+                  <OpeningHoursInput value={venueOpeningHours} onChange={setVenueOpeningHours} />
                 </div>
               ) : null}
             </OnboardingSectionCard>
@@ -1399,62 +1269,45 @@ export function CoachOnboardingForm() {
             >
               <div className="grid gap-4 lg:grid-cols-2">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Identity
                   </p>
                   <div className="mt-3 space-y-2 text-sm text-slate-700">
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Name:
-                      </span>{" "}
-                      {firstName} {lastName}
+                      <span className="font-semibold text-slate-900">Name:</span> {firstName}{" "}
+                      {lastName}
                     </p>
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Email:
-                      </span>{" "}
-                      {email}
+                      <span className="font-semibold text-slate-900">Email:</span> {email}
                     </p>
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Phone:
-                      </span>{" "}
-                      {phone}
+                      <span className="font-semibold text-slate-900">Phone:</span> {phone}
                     </p>
                     <p>
-                      <span className="font-semibold text-slate-900">Bio:</span>{" "}
-                      {bio}
+                      <span className="font-semibold text-slate-900">Bio:</span> {bio}
                     </p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Coaching setup
                   </p>
                   <div className="mt-3 space-y-2 text-sm text-slate-700">
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Sports:
-                      </span>{" "}
+                      <span className="font-semibold text-slate-900">Sports:</span>{" "}
                       {sports.join(", ") || "None"}
                     </p>
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Pricing mode:
-                      </span>{" "}
+                      <span className="font-semibold text-slate-900">Pricing mode:</span>{" "}
                       {pricingMode}
                     </p>
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Service mode:
-                      </span>{" "}
+                      <span className="font-semibold text-slate-900">Service mode:</span>{" "}
                       {serviceMode}
                     </p>
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Profile photo:
-                      </span>{" "}
+                      <span className="font-semibold text-slate-900">Profile photo:</span>{" "}
                       {profilePhotoUrl ? "Uploaded" : "Missing"}
                     </p>
                   </div>
@@ -1463,26 +1316,19 @@ export function CoachOnboardingForm() {
 
               {isOwnVenue ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                     Venue details
                   </p>
                   <div className="mt-3 space-y-2 text-sm text-slate-700">
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Venue name:
-                      </span>{" "}
-                      {venueName}
+                      <span className="font-semibold text-slate-900">Venue name:</span> {venueName}
                     </p>
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Venue address:
-                      </span>{" "}
+                      <span className="font-semibold text-slate-900">Venue address:</span>{" "}
                       {venueAddressQuery}
                     </p>
                     <p>
-                      <span className="font-semibold text-slate-900">
-                        Venue images queued:
-                      </span>{" "}
+                      <span className="font-semibold text-slate-900">Venue images queued:</span>{" "}
                       {venueImageDrafts.length}
                     </p>
                   </div>
@@ -1492,12 +1338,12 @@ export function CoachOnboardingForm() {
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                       Verification documents
                     </p>
                     <p className="text-sm text-slate-600">
-                      Optional for admin-created coaches. Add documents only if
-                      you want them stored for review.
+                      Optional for admin-created coaches. Add documents only if you want them stored
+                      for review.
                     </p>
                   </div>
                   <Button
@@ -1518,7 +1364,7 @@ export function CoachOnboardingForm() {
                     >
                       <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
                         <div>
-                          <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+                          <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase">
                             Document type
                           </label>
                           <select
@@ -1532,8 +1378,8 @@ export function CoachOnboardingForm() {
                                         type: event.target
                                           .value as CoachVerificationDocument["type"],
                                       }
-                                    : item,
-                                ),
+                                    : item
+                                )
                               )
                             }
                             className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
@@ -1542,16 +1388,14 @@ export function CoachOnboardingForm() {
                             <option value="CERTIFICATION">Certification</option>
                             <option value="ID_PROOF">ID Proof</option>
                             <option value="ADDRESS_PROOF">Address Proof</option>
-                            <option value="BACKGROUND_CHECK">
-                              Background Check
-                            </option>
+                            <option value="BACKGROUND_CHECK">Background Check</option>
                             <option value="INSURANCE">Insurance</option>
                             <option value="OTHER">Other</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+                          <label className="mb-1 block text-xs font-semibold text-slate-500 uppercase">
                             Uploaded file
                           </label>
                           <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
@@ -1568,10 +1412,7 @@ export function CoachOnboardingForm() {
                               className="hidden"
                               disabled={loading}
                               onChange={(event) =>
-                                handleDocumentSelect(
-                                  index,
-                                  event.target.files?.[0] || null,
-                                )
+                                handleDocumentSelect(index, event.target.files?.[0] || null)
                               }
                             />
                           </label>
@@ -1591,9 +1432,7 @@ export function CoachOnboardingForm() {
                   ))}
                 </div>
                 {errors.venueImages ? (
-                  <p className="mt-3 text-xs text-red-600">
-                    {errors.venueImages}
-                  </p>
+                  <p className="mt-3 text-xs text-red-600">{errors.venueImages}</p>
                 ) : null}
               </div>
 
@@ -1601,12 +1440,12 @@ export function CoachOnboardingForm() {
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                         Venue images
                       </p>
                       <p className="text-sm text-slate-600">
-                        Upload files now, then the final submit will create,
-                        attach, and activate the coach.
+                        Upload files now, then the final submit will create, attach, and activate
+                        the coach.
                       </p>
                     </div>
                     <button

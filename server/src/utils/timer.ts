@@ -52,7 +52,7 @@ export const expireOldBookings = async (): Promise<number> => {
             _id: booking._id,
             status: { $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER"] },
           },
-          { $set: { status: "EXPIRED" } },
+          { $set: { status: "EXPIRED" } }
         );
         if (!updated) continue;
         expiredCount++;
@@ -86,8 +86,7 @@ export const expireOldBookings = async (): Promise<number> => {
             await initiateRefund({
               bookingPaymentTransactionId: transaction._id.toString(),
               amount: transaction.amount,
-              reason:
-                "Booking expired — not confirmed by the venue/coach in time",
+              reason: "Booking expired — not confirmed by the venue/coach in time",
             });
 
             await recordBookingEventFor(booking, {
@@ -104,7 +103,7 @@ export const expireOldBookings = async (): Promise<number> => {
             });
 
             log.info(
-              `Auto-refunded expired booking ${booking._id} (transaction ${transaction._id})`,
+              `Auto-refunded expired booking ${booking._id} (transaction ${transaction._id})`
             );
 
             // Let the parent know why — a silent refund with no explanation
@@ -119,21 +118,18 @@ export const expireOldBookings = async (): Promise<number> => {
                 message: `Your ${booking.sport} booking on ${booking.startTime}-${booking.endTime} wasn't confirmed by the venue/coach in time, so it has expired. We've initiated a refund of ₹${rupees} to your original payment method.`,
                 data: { bookingId: booking._id.toString() },
               },
-              { sendEmail: true },
+              { sendEmail: true }
             ).catch((notifyError) => {
               log.error(
                 `Failed to send expiration/refund notification for booking ${booking._id}:`,
-                notifyError,
+                notifyError
               );
             });
           } catch (refundError) {
             // Don't let a refund failure block expiring the rest of the
             // batch — this booking stays EXPIRED and needs manual refund
             // follow-up, which is preferable to silently retrying forever.
-            log.error(
-              `Failed to auto-refund expired booking ${booking._id}:`,
-              refundError,
-            );
+            log.error(`Failed to auto-refund expired booking ${booking._id}:`, refundError);
 
             // This is exactly the case that needs a durable trace: the booking
             // is EXPIRED, the customer is owed money, and nothing else records
@@ -143,16 +139,12 @@ export const expireOldBookings = async (): Promise<number> => {
               actorType: "SYSTEM",
               channel: "CRON",
               amountPaise: transaction.amount,
-              summary:
-                "Auto-refund for an expired booking failed — needs manual follow-up",
+              summary: "Auto-refund for an expired booking failed — needs manual follow-up",
               metadata: {
                 transactionId: transaction._id.toString(),
                 merchantOrderId: transaction.merchantOrderId,
                 trigger: "expiry_auto_refund",
-                error:
-                  refundError instanceof Error
-                    ? refundError.message
-                    : String(refundError),
+                error: refundError instanceof Error ? refundError.message : String(refundError),
               },
             });
           }

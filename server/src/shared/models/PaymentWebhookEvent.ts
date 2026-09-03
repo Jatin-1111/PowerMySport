@@ -15,12 +15,9 @@ const PaymentWebhookEventSchema = new mongoose.Schema(
     processedAt: { type: Date },
     lastError: { type: String, default: null },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-const PaymentWebhookEvent = mongoose.model(
-  "PaymentWebhookEvent",
-  PaymentWebhookEventSchema,
-);
+const PaymentWebhookEvent = mongoose.model("PaymentWebhookEvent", PaymentWebhookEventSchema);
 
 export default PaymentWebhookEvent;

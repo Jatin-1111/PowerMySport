@@ -56,9 +56,7 @@ const buildAllowedOrigins = (): Set<string> => {
  * @returns the target if it is a site-relative path or an allowlisted origin,
  *   otherwise `null` — callers fall back to their own default destination.
  */
-export const safeReturnPath = (
-  raw: string | null | undefined,
-): string | null => {
+export const safeReturnPath = (raw: string | null | undefined): string | null => {
   if (!raw) return null;
 
   const target = raw.trim();
@@ -96,8 +94,7 @@ export const safeReturnPath = (
 };
 
 /** True when `target` needs a full document navigation rather than the router. */
-export const isExternalReturnPath = (target: string): boolean =>
-  /^https?:\/\//i.test(target);
+export const isExternalReturnPath = (target: string): boolean => /^https?:\/\//i.test(target);
 
 /**
  * A validated return path for the page the visitor is currently on.
@@ -107,11 +104,7 @@ export const isExternalReturnPath = (target: string): boolean =>
  * one the routing decision was made from. `search` defaults to the live query
  * string, which is only read on the client.
  */
-export const currentReturnPath = (
-  pathname: string,
-  search?: string,
-): string | null => {
-  const query =
-    search ?? (typeof window !== "undefined" ? window.location.search : "");
+export const currentReturnPath = (pathname: string, search?: string): string | null => {
+  const query = search ?? (typeof window !== "undefined" ? window.location.search : "");
   return safeReturnPath(`${pathname}${query}`);
 };

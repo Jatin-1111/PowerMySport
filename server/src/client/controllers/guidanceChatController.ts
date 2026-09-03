@@ -16,7 +16,7 @@ import {
 function buildOpeningMessage(
   sport: string | undefined,
   childAge: number,
-  parentQuestion: string | undefined,
+  parentQuestion: string | undefined
 ): string {
   const sportLabel = sport || "sport";
   const opener = parentQuestion
@@ -30,32 +30,23 @@ Feel free to ask me about specific drills, how to adjust the weekly schedule, wh
 
 // ─── GET /api/guidance/:submissionId/chat ────────────────────────────────────
 
-export const getGuidanceChat = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const getGuidanceChat = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
-      res
-        .status(401)
-        .json({ success: false, message: "Authentication required" });
+      res.status(401).json({ success: false, message: "Authentication required" });
       return;
     }
 
     const { submissionId } = req.params;
     if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
-      res
-        .status(400)
-        .json({ success: false, message: "Invalid submission ID" });
+      res.status(400).json({ success: false, message: "Invalid submission ID" });
       return;
     }
 
     // Load submission to verify existence & ownership
     const submission = await GuidanceSubmission.findById(submissionId).lean();
     if (!submission) {
-      res
-        .status(404)
-        .json({ success: false, message: "Guidance submission not found" });
+      res.status(404).json({ success: false, message: "Guidance submission not found" });
       return;
     }
 
@@ -67,10 +58,7 @@ export const getGuidanceChat = async (
 
     // Lazily claim ownership if submission was created as guest
     if (!submission.userId) {
-      await GuidanceSubmission.updateOne(
-        { _id: submissionId },
-        { $set: { userId: req.user.id } },
-      );
+      await GuidanceSubmission.updateOne({ _id: submissionId }, { $set: { userId: req.user.id } });
     }
 
     // Find or create the session
@@ -84,7 +72,7 @@ export const getGuidanceChat = async (
       const openingContent = buildOpeningMessage(
         submission.request.sport,
         submission.request.child_age,
-        submission.request.parent_specific_question,
+        submission.request.parent_specific_question
       );
       const newSession = await GuidanceChatSession.create({
         submissionId,
@@ -109,40 +97,29 @@ export const getGuidanceChat = async (
         dailyMessageCount,
         totalMessageCount: session.totalMessageCount,
         dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
-        lifetimeRemaining: Math.max(
-          0,
-          LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0),
-        ),
+        lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0)),
       },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch chat session",
+      message: error instanceof Error ? error.message : "Failed to fetch chat session",
     });
   }
 };
 
 // ─── POST /api/guidance/:submissionId/chat ───────────────────────────────────
 
-export const sendGuidanceChatMessage = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
+export const sendGuidanceChatMessage = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
-      res
-        .status(401)
-        .json({ success: false, message: "Authentication required" });
+      res.status(401).json({ success: false, message: "Authentication required" });
       return;
     }
 
     const { submissionId } = req.params;
     if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
-      res
-        .status(400)
-        .json({ success: false, message: "Invalid submission ID" });
+      res.status(400).json({ success: false, message: "Invalid submission ID" });
       return;
     }
 
@@ -152,21 +129,17 @@ export const sendGuidanceChatMessage = async (
       return;
     }
     if (userMessage.length > 2000) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          message: "Message too long (max 2000 characters)",
-        });
+      res.status(400).json({
+        success: false,
+        message: "Message too long (max 2000 characters)",
+      });
       return;
     }
 
     // Load submission
     const submission = await GuidanceSubmission.findById(submissionId).lean();
     if (!submission) {
-      res
-        .status(404)
-        .json({ success: false, message: "Guidance submission not found" });
+      res.status(404).json({ success: false, message: "Guidance submission not found" });
       return;
     }
 
@@ -178,10 +151,7 @@ export const sendGuidanceChatMessage = async (
 
     // Claim guest submission
     if (!submission.userId) {
-      await GuidanceSubmission.updateOne(
-        { _id: submissionId },
-        { $set: { userId: req.user.id } },
-      );
+      await GuidanceSubmission.updateOne({ _id: submissionId }, { $set: { userId: req.user.id } });
     }
 
     // Load or create session
@@ -194,14 +164,12 @@ export const sendGuidanceChatMessage = async (
       const openingContent = buildOpeningMessage(
         submission.request.sport,
         submission.request.child_age,
-        submission.request.parent_specific_question,
+        submission.request.parent_specific_question
       );
       session = await GuidanceChatSession.create({
         submissionId,
         userId: req.user.id,
-        messages: [
-          { role: "assistant", content: openingContent, createdAt: new Date() },
-        ],
+        messages: [{ role: "assistant", content: openingContent, createdAt: new Date() }],
       });
     }
 
@@ -225,7 +193,7 @@ export const sendGuidanceChatMessage = async (
     // ── Build system prompt ──────────────────────────────────────────────────
     const systemPrompt = buildChatSystemPrompt(
       submission.request as any,
-      submission.response as any,
+      submission.response as any
     );
 
     // ── Stream response and persist both turns ───────────────────────────────
@@ -239,7 +207,7 @@ export const sendGuidanceChatMessage = async (
       });
     } else {
       res.write(
-        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`,
+        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
       );
       res.end();
     }

@@ -34,14 +34,12 @@ import { io, Socket } from "socket.io-client";
 const NotificationStatusChart = dynamic(
   () =>
     import("@/modules/admin/components/NotificationStatusChart").then(
-      (module) => module.NotificationStatusChart,
+      (module) => module.NotificationStatusChart
     ),
   {
     ssr: false,
-    loading: () => (
-      <div className="h-75 animate-pulse rounded-lg bg-slate-100" />
-    ),
-  },
+    loading: () => <div className="h-75 animate-pulse rounded-lg bg-slate-100" />,
+  }
 );
 
 // Filter interface
@@ -57,16 +55,12 @@ export default function NotificationsPage() {
   const [stats, setStats] = useState<MonitoringStats | null>(null);
   const [health, setHealth] = useState<SchedulerHealth | null>(null);
   const [failedReminders, setFailedReminders] = useState<FailedReminder[]>([]);
-  const [filteredReminders, setFilteredReminders] = useState<FailedReminder[]>(
-    [],
-  );
+  const [filteredReminders, setFilteredReminders] = useState<FailedReminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [failedLimit, setFailedLimit] = useState(50);
-  const [selectedReminders, setSelectedReminders] = useState<Set<string>>(
-    new Set(),
-  );
+  const [selectedReminders, setSelectedReminders] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     bookingId: "",
@@ -76,9 +70,7 @@ export default function NotificationsPage() {
     dateTo: "",
   });
   const socketRef = useRef<Socket | null>(null);
-  const updateFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const updateFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingStatsRef = useRef<MonitoringStats | null>(null);
   const pendingHealthRef = useRef<SchedulerHealth | null>(null);
 
@@ -110,13 +102,11 @@ export default function NotificationsPage() {
       setLoading(true);
       setError(null);
 
-      const [statsResponse, healthResponse, failedResponse] = await Promise.all(
-        [
-          notificationApi.getStats(),
-          notificationApi.getHealth(),
-          notificationApi.getFailedReminders(failedLimit),
-        ],
-      );
+      const [statsResponse, healthResponse, failedResponse] = await Promise.all([
+        notificationApi.getStats(),
+        notificationApi.getHealth(),
+        notificationApi.getFailedReminders(failedLimit),
+      ]);
 
       if (statsResponse.success && statsResponse.data) {
         setStats(statsResponse.data);
@@ -147,7 +137,7 @@ export default function NotificationsPage() {
 
     if (filters.bookingId) {
       filtered = filtered.filter((r) =>
-        r.bookingId?.toLowerCase().includes(filters.bookingId.toLowerCase()),
+        r.bookingId?.toLowerCase().includes(filters.bookingId.toLowerCase())
       );
     }
     if (filters.userId) {
@@ -156,7 +146,7 @@ export default function NotificationsPage() {
         (r) =>
           r.userId.toLowerCase().includes(needle) ||
           r.userName.toLowerCase().includes(needle) ||
-          r.userEmail.toLowerCase().includes(needle),
+          r.userEmail.toLowerCase().includes(needle)
       );
     }
     if (filters.interval) {
@@ -177,8 +167,7 @@ export default function NotificationsPage() {
 
   // Socket.IO connection for real-time updates
   useEffect(() => {
-    const API_BASE_URL =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
     const socket = io(API_BASE_URL, {
       transports: ["websocket", "polling"],
@@ -253,9 +242,7 @@ export default function NotificationsPage() {
       const response = await notificationApi.sendDailySummary();
 
       if (response.success && response.data) {
-        toast.success(
-          `Daily summary sent successfully! (${response.data.emailsSent} emails)`,
-        );
+        toast.success(`Daily summary sent successfully! (${response.data.emailsSent} emails)`);
       } else {
         toast.error(response.message || "Failed to send daily summary.");
       }
@@ -294,14 +281,10 @@ export default function NotificationsPage() {
 
     try {
       setActionLoading(true);
-      const response = await notificationApi.retryMultiple(
-        Array.from(selectedReminders),
-      );
+      const response = await notificationApi.retryMultiple(Array.from(selectedReminders));
 
       if (response.success && response.data) {
-        const successCount = response.data.results.filter(
-          (r) => r.success,
-        ).length;
+        const successCount = response.data.results.filter((r) => r.success).length;
         toast.success(`${successCount} reminders queued for retry!`);
         setSelectedReminders(new Set());
         await fetchData();
@@ -348,19 +331,14 @@ export default function NotificationsPage() {
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) =>
-        row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","),
-      ),
+      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")),
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `failed-reminders-${new Date().toISOString().split("T")[0]}.csv`,
-    );
+    link.setAttribute("download", `failed-reminders-${new Date().toISOString().split("T")[0]}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -400,7 +378,7 @@ export default function NotificationsPage() {
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   if (loading) {
-    return <div className="text-center py-12">Loading notifications...</div>;
+    return <div className="py-12 text-center">Loading notifications...</div>;
   }
 
   if (error || !stats) {
@@ -412,11 +390,11 @@ export default function NotificationsPage() {
           subtitle="Monitor booking reminders and scheduler health."
         />
         <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
+          <div className="space-y-3 py-10 text-center">
+            <p className="font-semibold text-red-600">{error}</p>
             <button
               onClick={fetchData}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
             >
               Retry
             </button>
@@ -435,57 +413,54 @@ export default function NotificationsPage() {
       />
 
       {/* Manual Action Buttons */}
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex flex-wrap gap-3">
         <Button
           onClick={handleHealthCheck}
           disabled={actionLoading}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="bg-blue-600 text-white hover:bg-blue-700"
         >
-          <Activity className="w-4 h-4 mr-2" />
+          <Activity className="mr-2 h-4 w-4" />
           Run Health Check
         </Button>
         <Button
           onClick={handleSendDailySummary}
           disabled={actionLoading}
-          className="bg-green-600 hover:bg-green-700 text-white"
+          className="bg-green-600 text-white hover:bg-green-700"
         >
-          <Send className="w-4 h-4 mr-2" />
+          <Send className="mr-2 h-4 w-4" />
           Send Daily Summary
         </Button>
-        <Button
-          onClick={handleExportCSV}
-          className="bg-purple-600 hover:bg-purple-700 text-white"
-        >
-          <Download className="w-4 h-4 mr-2" />
+        <Button onClick={handleExportCSV} className="bg-purple-600 text-white hover:bg-purple-700">
+          <Download className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
         {selectedReminders.size > 0 && (
           <Button
             onClick={handleRetrySelected}
             disabled={actionLoading}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
+            className="bg-orange-600 text-white hover:bg-orange-700"
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
+            <RotateCcw className="mr-2 h-4 w-4" />
             Retry Selected ({selectedReminders.size})
           </Button>
         )}
         <Button
           onClick={fetchData}
           disabled={loading}
-          className="bg-slate-600 hover:bg-slate-700 text-white ml-auto"
+          className="ml-auto bg-slate-600 text-white hover:bg-slate-700"
         >
-          <RefreshCw className="w-4 h-4 mr-2" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       </div>
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card className="bg-white p-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Bell className="w-6 h-6 text-blue-600" />
+            <div className="mb-2 flex items-center justify-between">
+              <div className="rounded-lg bg-blue-100 p-2">
+                <Bell className="h-6 w-6 text-blue-600" />
               </div>
               <span className="text-sm text-slate-500">24h Total</span>
             </div>
@@ -498,9 +473,9 @@ export default function NotificationsPage() {
           </Card>
 
           <Card className="bg-white p-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
+            <div className="mb-2 flex items-center justify-between">
+              <div className="rounded-lg bg-green-100 p-2">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
               </div>
               <span className="text-sm text-slate-500">24h Sent</span>
             </div>
@@ -513,9 +488,9 @@ export default function NotificationsPage() {
           </Card>
 
           <Card className="bg-white p-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <XCircle className="w-6 h-6 text-red-600" />
+            <div className="mb-2 flex items-center justify-between">
+              <div className="rounded-lg bg-red-100 p-2">
+                <XCircle className="h-6 w-6 text-red-600" />
               </div>
               <span className="text-sm text-slate-500">24h Failed</span>
             </div>
@@ -528,9 +503,9 @@ export default function NotificationsPage() {
           </Card>
 
           <Card className="bg-white p-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <AlertTriangle className="w-6 h-6 text-orange-600" />
+            <div className="mb-2 flex items-center justify-between">
+              <div className="rounded-lg bg-orange-100 p-2">
+                <AlertTriangle className="h-6 w-6 text-orange-600" />
               </div>
               <span className="text-sm text-slate-500">Failure Rate</span>
             </div>
@@ -552,11 +527,9 @@ export default function NotificationsPage() {
 
       {/* Analytics Charts */}
       {stats && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card className="bg-white p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">
-              Status Distribution (24h)
-            </h3>
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Status Distribution (24h)</h3>
             <NotificationStatusChart
               totalProcessed={stats.totalProcessed || 0}
               totalSent={stats.totalSent || 0}
@@ -566,26 +539,21 @@ export default function NotificationsPage() {
           </Card>
 
           <Card className="bg-white p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">
-              Performance Metrics
-            </h3>
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Performance Metrics</h3>
             <div className="space-y-4">
               <div>
-                <div className="flex justify-between mb-1">
+                <div className="mb-1 flex justify-between">
                   <span className="text-sm text-slate-600">Success Rate</span>
                   <span className="text-sm font-semibold text-green-600">
                     {stats?.totalProcessed
-                      ? (
-                          (stats.totalSent / stats.totalProcessed) *
-                          100
-                        ).toFixed(1)
+                      ? ((stats.totalSent / stats.totalProcessed) * 100).toFixed(1)
                       : "0.0"}
                     %
                   </span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="h-2 w-full rounded-full bg-slate-200">
                   <div
-                    className="bg-green-500 h-2 rounded-full"
+                    className="h-2 rounded-full bg-green-500"
                     style={{
                       width: stats?.totalProcessed
                         ? `${(stats.totalSent / stats.totalProcessed) * 100}%`
@@ -595,37 +563,32 @@ export default function NotificationsPage() {
                 </div>
               </div>
               <div>
-                <div className="flex justify-between mb-1">
+                <div className="mb-1 flex justify-between">
                   <span className="text-sm text-slate-600">Failure Rate</span>
                   <span className="text-sm font-semibold text-red-600">
                     {stats?.failureRate?.toFixed(1) || "0.0"}%
                   </span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="h-2 w-full rounded-full bg-slate-200">
                   <div
-                    className="bg-red-500 h-2 rounded-full"
+                    className="h-2 rounded-full bg-red-500"
                     style={{ width: `${stats?.failureRate || 0}%` }}
                   />
                 </div>
               </div>
               <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm text-slate-600">
-                    Cancellation Rate
-                  </span>
+                <div className="mb-1 flex justify-between">
+                  <span className="text-sm text-slate-600">Cancellation Rate</span>
                   <span className="text-sm font-semibold text-slate-600">
                     {stats?.totalProcessed
-                      ? (
-                          (stats.totalCancelled / stats.totalProcessed) *
-                          100
-                        ).toFixed(1)
+                      ? ((stats.totalCancelled / stats.totalProcessed) * 100).toFixed(1)
                       : "0.0"}
                     %
                   </span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-2">
+                <div className="h-2 w-full rounded-full bg-slate-200">
                   <div
-                    className="bg-slate-500 h-2 rounded-full"
+                    className="h-2 rounded-full bg-slate-500"
                     style={{
                       width: stats?.totalProcessed
                         ? `${(stats.totalCancelled / stats.totalProcessed) * 100}%`
@@ -642,16 +605,14 @@ export default function NotificationsPage() {
       {/* Health Status */}
       {health && (
         <Card className="bg-white p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Activity className="w-5 h-5" />
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+              <Activity className="h-5 w-5" />
               Scheduler Health
             </h2>
             <div
-              className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                health?.isHealthy
-                  ? "bg-green-100 text-green-700"
-                  : "bg-red-100 text-red-700"
+              className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                health?.isHealthy ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
               }`}
             >
               {health?.isHealthy ? (
@@ -666,7 +627,7 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <p className="text-sm text-slate-600">Last Run</p>
               <p className="text-base font-semibold text-slate-900">
@@ -677,17 +638,13 @@ export default function NotificationsPage() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-slate-600">Pending</p>
-              <p className="text-base font-semibold text-slate-900">
-                {health?.pendingCount || 0}
-              </p>
+              <p className="text-base font-semibold text-slate-900">{health?.pendingCount || 0}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-slate-600">Overdue</p>
               <p
                 className={`text-base font-semibold ${
-                  (health?.overdueCount || 0) > 50
-                    ? "text-red-600"
-                    : "text-slate-900"
+                  (health?.overdueCount || 0) > 50 ? "text-red-600" : "text-slate-900"
                 }`}
               >
                 {health?.overdueCount || 0}
@@ -697,9 +654,7 @@ export default function NotificationsPage() {
               <p className="text-sm text-slate-600">Failure Rate</p>
               <p
                 className={`text-base font-semibold ${
-                  (health?.failureRate || 0) > 10
-                    ? "text-red-600"
-                    : "text-slate-900"
+                  (health?.failureRate || 0) > 10 ? "text-red-600" : "text-slate-900"
                 }`}
               >
                 {health?.failureRate?.toFixed(2) || "0.00"}%
@@ -708,10 +663,8 @@ export default function NotificationsPage() {
           </div>
 
           {health.issues && health.issues.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-red-900 mb-2">
-                Issues Detected:
-              </h3>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+              <h3 className="mb-2 text-sm font-semibold text-red-900">Issues Detected:</h3>
               <ul className="space-y-1">
                 {health.issues.map((issue, index) => (
                   <li key={index} className="text-sm text-red-800">
@@ -726,9 +679,9 @@ export default function NotificationsPage() {
 
       {/* Failed Reminders Table */}
       <Card className="bg-white p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <XCircle className="w-5 h-5" />
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+            <XCircle className="h-5 w-5" />
             Failed Reminders
             {hasActiveFilters && (
               <span className="text-sm font-normal text-slate-500">
@@ -741,13 +694,13 @@ export default function NotificationsPage() {
               onClick={() => setShowFilters(!showFilters)}
               className={`${showFilters ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-700"}`}
             >
-              <Filter className="w-4 h-4 mr-2" />
+              <Filter className="mr-2 h-4 w-4" />
               Filters
             </Button>
             <select
               value={failedLimit}
               onChange={(e) => setFailedLimit(Number(e.target.value))}
-              className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
             >
               <option value={10}>Show 10</option>
               <option value={25}>Show 25</option>
@@ -759,46 +712,34 @@ export default function NotificationsPage() {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Booking ID
-                </label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Booking ID</label>
                 <input
                   type="text"
                   value={filters.bookingId}
-                  onChange={(e) =>
-                    setFilters({ ...filters, bookingId: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ ...filters, bookingId: e.target.value })}
                   placeholder="Search by booking ID..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  User
-                </label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">User</label>
                 <input
                   type="text"
                   value={filters.userId}
-                  onChange={(e) =>
-                    setFilters({ ...filters, userId: e.target.value })
-                  }
+                  onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
                   placeholder="Search by name, email, or user ID..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Interval
-                </label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Interval</label>
                 <select
                   value={filters.interval}
-                  onChange={(e) =>
-                    setFilters({ ...filters, interval: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  onChange={(e) => setFilters({ ...filters, interval: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 >
                   <option value="">All intervals</option>
                   <option value="24h">24 Hours</option>
@@ -807,29 +748,21 @@ export default function NotificationsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Date From
-                </label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Date From</label>
                 <input
                   type="date"
                   value={filters.dateFrom}
-                  onChange={(e) =>
-                    setFilters({ ...filters, dateFrom: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Date To
-                </label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Date To</label>
                 <input
                   type="date"
                   value={filters.dateTo}
-                  onChange={(e) =>
-                    setFilters({ ...filters, dateTo: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 />
               </div>
               <div className="flex items-end">
@@ -838,7 +771,7 @@ export default function NotificationsPage() {
                   disabled={!hasActiveFilters}
                   className="w-full bg-slate-600 text-white hover:bg-slate-700"
                 >
-                  <X className="w-4 h-4 mr-2" />
+                  <X className="mr-2 h-4 w-4" />
                   Clear Filters
                 </Button>
               </div>
@@ -847,8 +780,8 @@ export default function NotificationsPage() {
         )}
 
         {filteredReminders.length === 0 ? (
-          <div className="text-center py-8">
-            <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
+          <div className="py-8 text-center">
+            <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-green-500" />
             <p className="text-slate-600">
               {hasActiveFilters
                 ? "No failed reminders match your filters."
@@ -860,7 +793,7 @@ export default function NotificationsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4">
+                  <th className="px-4 py-3 text-left">
                     <input
                       type="checkbox"
                       checked={
@@ -871,36 +804,31 @@ export default function NotificationsPage() {
                       className="rounded"
                     />
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                     Reminder ID
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
-                    User
-                  </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">User</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                     Interval
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                     Scheduled For
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                     Retry Count
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                     Failure Reason
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredReminders.map((reminder) => (
-                  <tr
-                    key={reminder._id}
-                    className="border-b border-slate-100 hover:bg-slate-50"
-                  >
-                    <td className="py-3 px-4">
+                  <tr key={reminder._id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="px-4 py-3">
                       <input
                         type="checkbox"
                         checked={selectedReminders.has(reminder._id)}
@@ -908,7 +836,7 @@ export default function NotificationsPage() {
                         className="rounded"
                       />
                     </td>
-                    <td className="py-3 px-4 text-sm font-mono text-slate-600">
+                    <td className="px-4 py-3 font-mono text-sm text-slate-600">
                       <button
                         type="button"
                         onClick={() => {
@@ -919,20 +847,18 @@ export default function NotificationsPage() {
                         className="inline-flex items-center gap-1 hover:text-slate-900"
                       >
                         {reminder._id}
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="h-3.5 w-3.5" />
                       </button>
                     </td>
-                    <td className="py-3 px-4 text-sm text-slate-700">
+                    <td className="px-4 py-3 text-sm text-slate-700">
                       <div className="font-medium">{reminder.userName}</div>
                       {reminder.userEmail && (
-                        <div className="text-xs text-slate-400">
-                          {reminder.userEmail}
-                        </div>
+                        <div className="text-xs text-slate-400">{reminder.userEmail}</div>
                       )}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                        className={`rounded px-2 py-1 text-xs font-semibold ${
                           reminder.interval === "24h"
                             ? "bg-blue-100 text-blue-700"
                             : reminder.interval === "1h"
@@ -943,27 +869,25 @@ export default function NotificationsPage() {
                         {reminder.interval}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-sm text-slate-600">
+                    <td className="px-4 py-3 text-sm text-slate-600">
                       <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
+                        <Calendar className="h-4 w-4" />
                         {formatDate(reminder.failedAt)}
-                        <Clock className="w-4 h-4 ml-2" />
+                        <Clock className="ml-2 h-4 w-4" />
                         {formatTime(reminder.failedAt)}
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-sm text-slate-600">
-                      {reminder.retryCount}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-red-600">
+                    <td className="px-4 py-3 text-sm text-slate-600">{reminder.retryCount}</td>
+                    <td className="px-4 py-3 text-sm text-red-600">
                       {reminder.failureReason || "Unknown error"}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="px-4 py-3">
                       <Button
                         onClick={() => handleRetryReminder(reminder._id)}
                         disabled={actionLoading}
-                        className="bg-orange-600 text-white hover:bg-orange-700 text-xs py-1 px-2"
+                        className="bg-orange-600 px-2 py-1 text-xs text-white hover:bg-orange-700"
                       >
-                        <RotateCcw className="w-3 h-3 mr-1" />
+                        <RotateCcw className="mr-1 h-3 w-3" />
                         Retry
                       </Button>
                     </td>

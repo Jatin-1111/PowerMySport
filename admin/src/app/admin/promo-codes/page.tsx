@@ -1,11 +1,7 @@
 "use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import {
-  PromoCodeRecord,
-  PromoCodeStats,
-  adminApi,
-} from "@/modules/admin/services/admin";
+import { PromoCodeRecord, PromoCodeStats, adminApi } from "@/modules/admin/services/admin";
 import { Card } from "@/modules/shared/ui/Card";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { Fragment, useCallback, useEffect, useState } from "react";
@@ -105,10 +101,7 @@ export default function AdminPromoCodesPage() {
     const validFromDate = new Date(`${form.validFrom}T00:00:00.000Z`);
     const validUntilDate = new Date(`${form.validUntil}T23:59:59.999Z`);
 
-    if (
-      Number.isNaN(validFromDate.getTime()) ||
-      Number.isNaN(validUntilDate.getTime())
-    ) {
+    if (Number.isNaN(validFromDate.getTime()) || Number.isNaN(validUntilDate.getTime())) {
       setFormError("Please provide valid dates.");
       return;
     }
@@ -128,18 +121,10 @@ export default function AdminPromoCodesPage() {
         applicableTo: form.applicableTo,
         validFrom: validFromDate.toISOString(),
         validUntil: validUntilDate.toISOString(),
-        ...(form.minBookingAmount
-          ? { minBookingAmount: Number(form.minBookingAmount) }
-          : {}),
-        ...(form.maxDiscountAmount
-          ? { maxDiscountAmount: Number(form.maxDiscountAmount) }
-          : {}),
-        ...(form.maxUsageTotal
-          ? { maxUsageTotal: Number(form.maxUsageTotal) }
-          : {}),
-        ...(form.maxUsagePerUser
-          ? { maxUsagePerUser: Number(form.maxUsagePerUser) }
-          : {}),
+        ...(form.minBookingAmount ? { minBookingAmount: Number(form.minBookingAmount) } : {}),
+        ...(form.maxDiscountAmount ? { maxDiscountAmount: Number(form.maxDiscountAmount) } : {}),
+        ...(form.maxUsageTotal ? { maxUsageTotal: Number(form.maxUsageTotal) } : {}),
+        ...(form.maxUsagePerUser ? { maxUsagePerUser: Number(form.maxUsagePerUser) } : {}),
       };
 
       const response = await adminApi.createPromoCode(payload);
@@ -174,7 +159,7 @@ export default function AdminPromoCodesPage() {
             setShowForm((v) => !v);
             setFormError(null);
           }}
-          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
+          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
         >
           {showForm ? "Cancel" : "+ New Promo Code"}
         </button>
@@ -182,13 +167,11 @@ export default function AdminPromoCodesPage() {
 
       {showForm && (
         <Card className="bg-white">
-          <h2 className="text-base font-semibold text-slate-900 mb-4">
-            Create Promo Code
-          </h2>
+          <h2 className="mb-4 text-base font-semibold text-slate-900">Create Promo Code</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Code *
                 </label>
                 <input
@@ -204,20 +187,18 @@ export default function AdminPromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Description *
                 </label>
                 <input
                   className={inputCls}
                   placeholder="e.g. 20% off all venues"
                   value={form.description}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, description: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Discount Type *
                 </label>
                 <select
@@ -226,8 +207,7 @@ export default function AdminPromoCodesPage() {
                   onChange={(e) =>
                     setForm((f) => ({
                       ...f,
-                      discountType: e.target.value as
-                        "PERCENTAGE" | "FIXED_AMOUNT",
+                      discountType: e.target.value as "PERCENTAGE" | "FIXED_AMOUNT",
                     }))
                   }
                 >
@@ -236,24 +216,20 @@ export default function AdminPromoCodesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Discount Value *
                 </label>
                 <input
                   type="number"
                   min="0"
                   className={inputCls}
-                  placeholder={
-                    form.discountType === "PERCENTAGE" ? "e.g. 20" : "e.g. 200"
-                  }
+                  placeholder={form.discountType === "PERCENTAGE" ? "e.g. 20" : "e.g. 200"}
                   value={form.discountValue}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, discountValue: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Applicable To
                 </label>
                 <select
@@ -262,8 +238,7 @@ export default function AdminPromoCodesPage() {
                   onChange={(e) =>
                     setForm((f) => ({
                       ...f,
-                      applicableTo: e.target.value as
-                        "ALL" | "VENUE_ONLY" | "COACH_ONLY",
+                      applicableTo: e.target.value as "ALL" | "VENUE_ONLY" | "COACH_ONLY",
                     }))
                   }
                 >
@@ -273,7 +248,7 @@ export default function AdminPromoCodesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Min Booking Amount (₹)
                 </label>
                 <input
@@ -292,7 +267,7 @@ export default function AdminPromoCodesPage() {
               </div>
               {form.discountType === "PERCENTAGE" && (
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                  <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                     Max Discount Cap (₹)
                   </label>
                   <input
@@ -311,7 +286,7 @@ export default function AdminPromoCodesPage() {
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Max Total Uses
                 </label>
                 <input
@@ -320,13 +295,11 @@ export default function AdminPromoCodesPage() {
                   className={inputCls}
                   placeholder="Unlimited if empty"
                   value={form.maxUsageTotal}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, maxUsageTotal: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, maxUsageTotal: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Max Uses Per User
                 </label>
                 <input
@@ -335,42 +308,34 @@ export default function AdminPromoCodesPage() {
                   className={inputCls}
                   placeholder="Unlimited if empty"
                   value={form.maxUsagePerUser}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, maxUsagePerUser: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, maxUsagePerUser: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Valid From *
                 </label>
                 <input
                   type="date"
                   className={inputCls}
                   value={form.validFrom}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, validFrom: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase">
                   Valid Until *
                 </label>
                 <input
                   type="date"
                   className={inputCls}
                   value={form.validUntil}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, validUntil: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
                 />
               </div>
             </div>
 
-            {formError && (
-              <p className="text-sm text-red-600 font-medium">{formError}</p>
-            )}
+            {formError && <p className="text-sm font-medium text-red-600">{formError}</p>}
 
             <div className="flex justify-end gap-3 pt-2">
               <button
@@ -396,15 +361,11 @@ export default function AdminPromoCodesPage() {
         </Card>
       )}
 
-      <Card className="bg-white space-y-4">
+      <Card className="space-y-4 bg-white">
         {loading ? (
-          <div className="py-10 text-center text-slate-500">
-            Loading promo codes...
-          </div>
+          <div className="py-10 text-center text-slate-500">Loading promo codes...</div>
         ) : codes.length === 0 ? (
-          <div className="py-10 text-center text-slate-500">
-            No promo codes yet.
-          </div>
+          <div className="py-10 text-center text-slate-500">No promo codes yet.</div>
         ) : (
           <div className="space-y-3">
             <div className="flex justify-end">
@@ -456,7 +417,7 @@ export default function AdminPromoCodesPage() {
                     ].map((h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500"
+                        className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
                       >
                         {h}
                       </th>
@@ -467,24 +428,20 @@ export default function AdminPromoCodesPage() {
                   {codes.map((pc) => (
                     <Fragment key={pc._id}>
                       <tr>
-                        <td className="px-4 py-3 text-sm font-mono font-semibold text-slate-900">
+                        <td className="px-4 py-3 font-mono text-sm font-semibold text-slate-900">
                           {pc.code}
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-700 max-w-48">
+                        <td className="max-w-48 px-4 py-3 text-sm text-slate-700">
                           {pc.description}
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">
+                        <td className="px-4 py-3 text-sm whitespace-nowrap text-slate-700">
                           {pc.discountType === "PERCENTAGE"
                             ? `${pc.discountValue}%`
                             : `₹${pc.discountValue}`}
-                          {pc.maxDiscountAmount
-                            ? ` (cap ₹${pc.maxDiscountAmount})`
-                            : ""}
+                          {pc.maxDiscountAmount ? ` (cap ₹${pc.maxDiscountAmount})` : ""}
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {pc.applicableTo}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+                        <td className="px-4 py-3 text-sm text-slate-700">{pc.applicableTo}</td>
+                        <td className="px-4 py-3 text-xs whitespace-nowrap text-slate-500">
                           {new Date(pc.validFrom).toLocaleDateString()} –{" "}
                           {new Date(pc.validUntil).toLocaleDateString()}
                         </td>
@@ -530,13 +487,10 @@ export default function AdminPromoCodesPage() {
                       </tr>
                       {selectedStats?.id === pc._id && (
                         <tr key={`${pc._id}-stats`}>
-                          <td
-                            colSpan={8}
-                            className="bg-slate-50 px-4 py-3 text-sm"
-                          >
+                          <td colSpan={8} className="bg-slate-50 px-4 py-3 text-sm">
                             <div className="flex flex-wrap gap-6">
                               <div>
-                                <span className="text-xs text-slate-500 uppercase tracking-wide">
+                                <span className="text-xs tracking-wide text-slate-500 uppercase">
                                   Total Uses
                                 </span>
                                 <p className="text-lg font-bold text-slate-900">
@@ -544,7 +498,7 @@ export default function AdminPromoCodesPage() {
                                 </p>
                               </div>
                               <div>
-                                <span className="text-xs text-slate-500 uppercase tracking-wide">
+                                <span className="text-xs tracking-wide text-slate-500 uppercase">
                                   Total Discount Given
                                 </span>
                                 <p className="text-lg font-bold text-slate-900">
@@ -552,7 +506,7 @@ export default function AdminPromoCodesPage() {
                                 </p>
                               </div>
                               <div>
-                                <span className="text-xs text-slate-500 uppercase tracking-wide">
+                                <span className="text-xs tracking-wide text-slate-500 uppercase">
                                   Unique Users
                                 </span>
                                 <p className="text-lg font-bold text-slate-900">
@@ -562,22 +516,17 @@ export default function AdminPromoCodesPage() {
                             </div>
                             {selectedStats.stats.recentUsages.length > 0 && (
                               <div className="mt-3">
-                                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">
+                                <p className="mb-1 text-xs font-semibold text-slate-500 uppercase">
                                   Recent Usages
                                 </p>
                                 <ul className="space-y-0.5 text-xs text-slate-600">
-                                  {selectedStats.stats.recentUsages.map(
-                                    (u, i) => (
-                                      <li key={i}>
-                                        {u.userName}
-                                        {u.userEmail && ` (${u.userEmail})`} — ₹
-                                        {u.discountApplied} on{" "}
-                                        {new Date(
-                                          u.usedAt,
-                                        ).toLocaleDateString()}
-                                      </li>
-                                    ),
-                                  )}
+                                  {selectedStats.stats.recentUsages.map((u, i) => (
+                                    <li key={i}>
+                                      {u.userName}
+                                      {u.userEmail && ` (${u.userEmail})`} — ₹{u.discountApplied} on{" "}
+                                      {new Date(u.usedAt).toLocaleDateString()}
+                                    </li>
+                                  ))}
                                 </ul>
                               </div>
                             )}

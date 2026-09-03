@@ -24,9 +24,7 @@ import { UserRole } from "@/types";
  * they did nothing and served protected pages to anonymous visitors.
  */
 export type SessionState =
-  | { status: "unknown" }
-  | { status: "anonymous" }
-  | { status: "authenticated"; role: UserRole };
+  { status: "unknown" } | { status: "anonymous" } | { status: "authenticated"; role: UserRole };
 
 // ─── Console policies ─────────────────────────────────────────────────────────
 
@@ -85,8 +83,7 @@ export const policyForPath = (pathname: string): ConsolePolicy | null => {
   let match: ConsolePolicy | null = null;
 
   for (const policy of CONSOLE_POLICIES) {
-    const isUnderPrefix =
-      pathname === policy.prefix || pathname.startsWith(`${policy.prefix}/`);
+    const isUnderPrefix = pathname === policy.prefix || pathname.startsWith(`${policy.prefix}/`);
     if (!isUnderPrefix) continue;
     if (!match || policy.prefix.length > match.prefix.length) {
       match = policy;
@@ -118,17 +115,14 @@ export type AccessDecision =
  * exactly one decision, which is what makes the access matrix testable as a
  * table rather than by clicking through the app.
  */
-export const resolveAccess = (
-  pathname: string,
-  session: SessionState,
-): AccessDecision => {
+export const resolveAccess = (pathname: string, session: SessionState): AccessDecision => {
   const policy = policyForPath(pathname);
 
   // Not a protected console.
   if (!policy) return { kind: "allow" };
 
   const isPublicPath = (policy.publicPaths ?? []).some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
   if (isPublicPath) return { kind: "allow" };
 
@@ -225,11 +219,7 @@ export const settingsHomeFor = (role?: UserRole | null): string =>
 
 // ─── Return paths ─────────────────────────────────────────────────────────────
 
-export {
-  currentReturnPath,
-  isExternalReturnPath,
-  safeReturnPath,
-} from "@/lib/returnPath";
+export { currentReturnPath, isExternalReturnPath, safeReturnPath } from "@/lib/returnPath";
 
 /** A login URL that remembers where the visitor was trying to go. */
 export const loginUrlFor = (returnTo: string | null): string =>

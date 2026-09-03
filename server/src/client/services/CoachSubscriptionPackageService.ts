@@ -52,7 +52,7 @@ export const createCoachSubscriptionPackage = async (payload: {
  */
 export const getCoachSubscriptionPackages = async (
   coachId: string,
-  options?: { isActive?: boolean },
+  options?: { isActive?: boolean }
 ): Promise<CoachSubscriptionPackageDocument[]> => {
   const filters: Record<string, any> = {
     coachId: toObjectId(coachId),
@@ -71,7 +71,7 @@ export const getCoachSubscriptionPackages = async (
  * Get a specific package by ID
  */
 export const getCoachSubscriptionPackageById = async (
-  packageId: string,
+  packageId: string
 ): Promise<CoachSubscriptionPackageDocument | null> => {
   return CoachSubscriptionPackage.findById(toObjectId(packageId)).lean();
 };
@@ -80,7 +80,7 @@ export const getCoachSubscriptionPackageById = async (
  * Get package with coach info
  */
 export const getCoachSubscriptionPackageWithCoach = async (
-  packageId: string,
+  packageId: string
 ): Promise<CoachSubscriptionPackageDocument | null> => {
   return CoachSubscriptionPackage.findById(toObjectId(packageId))
     .populate("coachId", "bio sports rating reviewCount")
@@ -100,7 +100,7 @@ export const updateCoachSubscriptionPackage = async (
     maxStudents: number | null;
     maxSessions: number | null;
     isActive: boolean;
-  }>,
+  }>
 ): Promise<CoachSubscriptionPackageDocument | null> => {
   if (payload.price !== undefined && payload.price < 0) {
     throw new Error("Price cannot be negative");
@@ -130,19 +130,16 @@ export const updateCoachSubscriptionPackage = async (
     updateData.isActive = payload.isActive;
   }
 
-  return CoachSubscriptionPackage.findByIdAndUpdate(
-    toObjectId(packageId),
-    updateData,
-    { new: true, runValidators: true },
-  ).lean();
+  return CoachSubscriptionPackage.findByIdAndUpdate(toObjectId(packageId), updateData, {
+    new: true,
+    runValidators: true,
+  }).lean();
 };
 
 /**
  * Delete a subscription package
  */
-export const deleteCoachSubscriptionPackage = async (
-  packageId: string,
-): Promise<boolean> => {
+export const deleteCoachSubscriptionPackage = async (packageId: string): Promise<boolean> => {
   const result = await CoachSubscriptionPackage.deleteOne({
     _id: toObjectId(packageId),
   });
@@ -154,7 +151,7 @@ export const deleteCoachSubscriptionPackage = async (
  */
 export const getCoachPackagesByFrequency = async (
   coachId: string,
-  frequency: SubscriptionFrequency,
+  frequency: SubscriptionFrequency
 ): Promise<CoachSubscriptionPackageDocument | null> => {
   return CoachSubscriptionPackage.findOne({
     coachId: toObjectId(coachId),
@@ -167,7 +164,7 @@ export const getCoachPackagesByFrequency = async (
  * Get all packages for a coach by frequency
  */
 export const getCoachAllPackagesByFrequency = async (
-  coachId: string,
+  coachId: string
 ): Promise<{
   monthly: CoachSubscriptionPackageDocument | undefined;
   quarterly: CoachSubscriptionPackageDocument | undefined;
@@ -188,9 +185,7 @@ export const getCoachAllPackagesByFrequency = async (
 /**
  * Count active packages for a coach
  */
-export const countCoachSubscriptionPackages = async (
-  coachId: string,
-): Promise<number> => {
+export const countCoachSubscriptionPackages = async (coachId: string): Promise<number> => {
   return CoachSubscriptionPackage.countDocuments({
     coachId: toObjectId(coachId),
     isActive: true,
@@ -202,7 +197,7 @@ export const countCoachSubscriptionPackages = async (
  */
 export const validateCoachOwnsPackage = async (
   coachId: string,
-  packageId: string,
+  packageId: string
 ): Promise<boolean> => {
   const result = await CoachSubscriptionPackage.exists({
     _id: toObjectId(packageId),
