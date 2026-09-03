@@ -7,7 +7,6 @@
   "app/(booking)/(player)/dashboard/page.tsx": 458,
   "app/(booking)/academies/[slug]/AcademyProfileClient.tsx": 582,
   "app/(booking)/academy/earnings/page.tsx": 545,
-  "app/(booking)/checkout/page.tsx": 1603,
   "app/(booking)/coach/billing/page.tsx": 1128,
   "app/(booking)/coach/clients/[clientId]/page.tsx": 774,
   "app/(booking)/coach/reviews/page.tsx": 434,
