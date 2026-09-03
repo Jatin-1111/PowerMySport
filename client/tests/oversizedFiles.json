@@ -14,7 +14,6 @@
   "app/(booking)/coach/profile/page.tsx": 1999,
   "app/(booking)/coach/reviews/page.tsx": 434,
   "app/(booking)/coach/schedule/page.tsx": 1345,
-  "app/(booking)/coach/verification/page.tsx": 2063,
   "app/(booking)/coaches/[coachId]/CoachDetailClient.tsx": 1101,
   "app/(booking)/experts/sessions/[sessionId]/page.tsx": 638,
   "app/(booking)/experts/[expertId]/ExpertDetailClient.tsx": 572,
