@@ -11,7 +11,6 @@
   "app/(booking)/checkout/page.tsx": 1603,
   "app/(booking)/coach/billing/page.tsx": 1128,
   "app/(booking)/coach/clients/[clientId]/page.tsx": 774,
-  "app/(booking)/coach/profile/page.tsx": 1999,
   "app/(booking)/coach/reviews/page.tsx": 434,
   "app/(booking)/coach/schedule/page.tsx": 1345,
   "app/(booking)/coaches/[coachId]/CoachDetailClient.tsx": 1101,
