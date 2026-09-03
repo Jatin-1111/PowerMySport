@@ -5,7 +5,6 @@
   "app/(booking)/(player)/dashboard/my-bookings/page.tsx": 581,
   "app/(booking)/(player)/dashboard/my-profile/page.tsx": 1135,
   "app/(booking)/(player)/dashboard/page.tsx": 458,
-  "app/(booking)/(venue-lister)/venue-lister/inventory/page.tsx": 1803,
   "app/(booking)/academies/[slug]/AcademyProfileClient.tsx": 582,
   "app/(booking)/academy/earnings/page.tsx": 545,
   "app/(booking)/checkout/page.tsx": 1603,
