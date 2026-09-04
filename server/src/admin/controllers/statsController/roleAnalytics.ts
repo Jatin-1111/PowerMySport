@@ -3,9 +3,10 @@ import { Coach } from "../../../client/models/Coach";
 import { User } from "../../../client/models/User";
 import { Venue } from "../../../client/models/Venue";
 import { getStartOfCurrentMonth, getTwentyFourHoursAgo } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
 
-export const getPlayersAnalytics = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getPlayersAnalytics = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const monthStart = getStartOfCurrentMonth();
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
@@ -41,16 +42,11 @@ export const getPlayersAnalytics = async (req: Request, res: Response): Promise<
         newAccountsLast24Hours,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve players analytics",
-    });
   }
-};
+);
 
-export const getCoachesAnalytics = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCoachesAnalytics = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
     const [
@@ -90,16 +86,11 @@ export const getCoachesAnalytics = async (req: Request, res: Response): Promise<
         newAccountsLast24Hours,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve coaches analytics",
-    });
   }
-};
+);
 
-export const getVenueListersAnalytics = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getVenueListersAnalytics = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
     const [totalVenueListers, newAccountsLast24Hours, venueCountAggregates] = await Promise.all([
@@ -154,11 +145,5 @@ export const getVenueListersAnalytics = async (req: Request, res: Response): Pro
         pendingVenuesCount: aggregates?.pendingVenuesCount ?? 0,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to retrieve venue listers analytics",
-    });
   }
-};
+);

@@ -26,6 +26,8 @@ import {
   toSupportedSlug,
 } from "../../shared/constants/supportedSports";
 import { log as __rootLog } from "../../utils/logger";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 const log = __rootLog.child("dataSourceAdmin");
 
 const ALLOWED_PDF_TYPES = ["application/pdf"];
@@ -76,30 +78,21 @@ async function notifyReviewers(submission: {
 
 // ─── POST /api/admin/data-sources/upload-url ───────────────────────────────────
 
-export const getDataSourceUploadUrl = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getDataSourceUploadUrl = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { fileName, contentType, sportSlug } = req.body as {
       fileName?: string;
       contentType?: string;
       sportSlug?: string;
     };
     if (!fileName || !contentType || !sportSlug) {
-      res.status(400).json({
-        success: false,
-        message: "fileName, contentType, and sportSlug are required",
-      });
-      return;
+      throw new AppError("fileName, contentType, and sportSlug are required", 400);
     }
     if (!isSupportedSport(sportSlug)) {
-      res.status(400).json({ success: false, message: "Unsupported sportSlug" });
-      return;
+      throw new AppError("Unsupported sportSlug", 400);
     }
     if (!ALLOWED_PDF_TYPES.includes(contentType)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid content type. Allowed: ${ALLOWED_PDF_TYPES.join(", ")}`,
-      });
-      return;
+      throw new AppError(`Invalid content type. Allowed: ${ALLOWED_PDF_TYPES.join(", ")}`, 400);
     }
 
     const uploadData = await s3Service.generateDataSourceUploadUrl(
@@ -108,28 +101,21 @@ export const getDataSourceUploadUrl = async (req: Request, res: Response): Promi
       toSupportedSlug(sportSlug)
     );
     res.status(200).json({ success: true, data: uploadData });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to generate upload URL",
-    });
   }
-};
+);
 
 // ─── GET /api/admin/data-sources/targets ───────────────────────────────────────
 // Backs the "pick an existing Federation/Tournament, or create new" selector.
 
-export const listDataSourceTargets = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listDataSourceTargets = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const targetType = req.query.targetType as DataSourceTargetType | undefined;
     const rawSportSlug = req.query.sportSlug as string | undefined;
     if (!targetType || !rawSportSlug) {
-      res.status(400).json({ success: false, message: "targetType and sportSlug are required" });
-      return;
+      throw new AppError("targetType and sportSlug are required", 400);
     }
     if (!isSupportedSport(rawSportSlug)) {
-      res.status(400).json({ success: false, message: "Unsupported sportSlug" });
-      return;
+      throw new AppError("Unsupported sportSlug", 400);
     }
     const sportSlug = toSupportedSlug(rawSportSlug);
 
@@ -152,21 +138,16 @@ export const listDataSourceTargets = async (req: Request, res: Response): Promis
 
     // TOURNAMENT_CALENDAR has no "target document" to pick — it's always keyed by sportSlug.
     res.status(200).json({ success: true, data: [] });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch targets",
-    });
   }
-};
+);
 
 // ─── GET /api/admin/data-sources/calendar-freshness ────────────────────────────
 // One row per supported sport — when was its TournamentEdition data last
 // touched by an approved calendar source. Replaces the visibility the old
 // every-2-days cron gave for free; nothing here refreshes anything.
 
-export const getCalendarFreshness = async (_req: Request, res: Response): Promise<void> => {
-  try {
+export const getCalendarFreshness = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
     const rows = await Promise.all(
       SUPPORTED_SPORTS.map(async (sport) => {
         const latest = await TournamentEdition.findOne({ sportSlug: sport.slug })
@@ -181,13 +162,8 @@ export const getCalendarFreshness = async (_req: Request, res: Response): Promis
       })
     );
     res.status(200).json({ success: true, data: rows });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch calendar freshness",
-    });
   }
-};
+);
 
 // ─── Shared: current live data for a submission's target (diff + rollback snapshot) ──
 
@@ -217,221 +193,171 @@ async function getCurrentLiveData(submission: {
 
 // ─── POST /api/admin/data-sources ──────────────────────────────────────────────
 
-export const createDataSource = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-
-    const body = req.body as {
-      targetType?: DataSourceTargetType;
-      sportSlug?: string;
-      federationSlug?: string;
-      tournamentSlug?: string;
-      sourceKind?: "PDF" | "LINK";
-      sourceUrl?: string;
-      s3Key?: string;
-      fileName?: string;
-      originUrl?: string;
-    };
-
-    if (!body.targetType || !body.sportSlug || !body.sourceKind) {
-      res
-        .status(400)
-        .json({ success: false, message: "targetType, sportSlug, and sourceKind are required" });
-      return;
-    }
-    if (!isSupportedSport(body.sportSlug)) {
-      res.status(400).json({ success: false, message: "Unsupported sportSlug" });
-      return;
-    }
-    if (body.targetType === "FEDERATION" && !body.federationSlug) {
-      res
-        .status(400)
-        .json({ success: false, message: "federationSlug is required for a FEDERATION source" });
-      return;
-    }
-    if (
-      body.targetType === "CURATED_TOURNAMENT" &&
-      (!body.federationSlug || !body.tournamentSlug)
-    ) {
-      res.status(400).json({
-        success: false,
-        message: "federationSlug and tournamentSlug are required for a CURATED_TOURNAMENT source",
-      });
-      return;
-    }
-    if (body.sourceKind === "LINK" && !body.sourceUrl) {
-      res.status(400).json({ success: false, message: "sourceUrl is required for a LINK source" });
-      return;
-    }
-    if (body.sourceKind === "PDF" && !body.s3Key) {
-      res
-        .status(400)
-        .json({ success: false, message: "s3Key is required for a PDF source (upload it first)" });
-      return;
-    }
-
-    const submission = await DataSourceSubmission.create({
-      targetType: body.targetType,
-      sportSlug: toSupportedSlug(body.sportSlug),
-      federationSlug: body.federationSlug?.toLowerCase(),
-      tournamentSlug: body.tournamentSlug?.toLowerCase(),
-      sourceKind: body.sourceKind,
-      sourceUrl: body.sourceUrl,
-      s3Key: body.s3Key,
-      fileName: body.fileName,
-      originUrl: body.originUrl,
-      status: "PENDING_EXTRACTION",
-      submittedBy: req.user.id,
-    });
-
-    const result = await extractForSubmission(submission);
-    submission.status = result.status;
-    submission.extractedData = result.extractedData;
-    submission.citations = result.citations;
-    submission.extractionError = result.extractionError;
-    submission.extractionWarnings = result.extractionWarnings;
-    submission.extractionModel = result.extractionModel;
-    submission.extractedAt = new Date();
-    await submission.save();
-
-    if (result.status === "PENDING_REVIEW") {
-      void notifyReviewers(submission);
-    }
-
-    res.status(201).json({ success: true, message: "Source submitted", data: submission });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create data source",
-    });
+export const createDataSource = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
   }
-};
+
+  const body = req.body as {
+    targetType?: DataSourceTargetType;
+    sportSlug?: string;
+    federationSlug?: string;
+    tournamentSlug?: string;
+    sourceKind?: "PDF" | "LINK";
+    sourceUrl?: string;
+    s3Key?: string;
+    fileName?: string;
+    originUrl?: string;
+  };
+
+  if (!body.targetType || !body.sportSlug || !body.sourceKind) {
+    throw new AppError("targetType, sportSlug, and sourceKind are required", 400);
+  }
+  if (!isSupportedSport(body.sportSlug)) {
+    throw new AppError("Unsupported sportSlug", 400);
+  }
+  if (body.targetType === "FEDERATION" && !body.federationSlug) {
+    throw new AppError("federationSlug is required for a FEDERATION source", 400);
+  }
+  if (body.targetType === "CURATED_TOURNAMENT" && (!body.federationSlug || !body.tournamentSlug)) {
+    throw new AppError(
+      "federationSlug and tournamentSlug are required for a CURATED_TOURNAMENT source",
+      400
+    );
+  }
+  if (body.sourceKind === "LINK" && !body.sourceUrl) {
+    throw new AppError("sourceUrl is required for a LINK source", 400);
+  }
+  if (body.sourceKind === "PDF" && !body.s3Key) {
+    throw new AppError("s3Key is required for a PDF source (upload it first)", 400);
+  }
+
+  const submission = await DataSourceSubmission.create({
+    targetType: body.targetType,
+    sportSlug: toSupportedSlug(body.sportSlug),
+    federationSlug: body.federationSlug?.toLowerCase(),
+    tournamentSlug: body.tournamentSlug?.toLowerCase(),
+    sourceKind: body.sourceKind,
+    sourceUrl: body.sourceUrl,
+    s3Key: body.s3Key,
+    fileName: body.fileName,
+    originUrl: body.originUrl,
+    status: "PENDING_EXTRACTION",
+    submittedBy: req.user.id,
+  });
+
+  const result = await extractForSubmission(submission);
+  submission.status = result.status;
+  submission.extractedData = result.extractedData;
+  submission.citations = result.citations;
+  submission.extractionError = result.extractionError;
+  submission.extractionWarnings = result.extractionWarnings;
+  submission.extractionModel = result.extractionModel;
+  submission.extractedAt = new Date();
+  await submission.save();
+
+  if (result.status === "PENDING_REVIEW") {
+    void notifyReviewers(submission);
+  }
+
+  res.status(201).json({ success: true, message: "Source submitted", data: submission });
+});
 
 // ─── GET /api/admin/data-sources ───────────────────────────────────────────────
 
-export const listDataSources = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt((req.query.limit as string) || "20", 10)));
-    const filter: Record<string, unknown> = {};
-    if (req.query.status) filter.status = req.query.status;
-    if (req.query.targetType) filter.targetType = req.query.targetType;
-    if (req.query.sportSlug) filter.sportSlug = (req.query.sportSlug as string).toLowerCase();
+export const listDataSources = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
+  const limit = Math.min(100, Math.max(1, parseInt((req.query.limit as string) || "20", 10)));
+  const filter: Record<string, unknown> = {};
+  if (req.query.status) filter.status = req.query.status;
+  if (req.query.targetType) filter.targetType = req.query.targetType;
+  if (req.query.sportSlug) filter.sportSlug = (req.query.sportSlug as string).toLowerCase();
 
-    const [docs, total] = await Promise.all([
-      DataSourceSubmission.find(filter)
-        .populate("submittedBy", "name email")
-        .populate("reviewedBy", "name email")
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      DataSourceSubmission.countDocuments(filter),
-    ]);
+  const [docs, total] = await Promise.all([
+    DataSourceSubmission.find(filter)
+      .populate("submittedBy", "name email")
+      .populate("reviewedBy", "name email")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    DataSourceSubmission.countDocuments(filter),
+  ]);
 
-    res.status(200).json({
-      success: true,
-      data: docs,
-      pagination: { total, page, totalPages: Math.max(1, Math.ceil(total / limit)) },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch data sources",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    data: docs,
+    pagination: { total, page, totalPages: Math.max(1, Math.ceil(total / limit)) },
+  });
+});
 
 // ─── GET /api/admin/data-sources/:id ────────────────────────────────────────────
 
-export const getDataSourceDetail = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getDataSourceDetail = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid data source ID" });
-      return;
+      throw new AppError("Invalid data source ID", 400);
     }
     const submission = await DataSourceSubmission.findById(id)
       .populate("submittedBy", "name email")
       .populate("reviewedBy", "name email")
       .lean();
     if (!submission) {
-      res.status(404).json({ success: false, message: "Data source not found" });
-      return;
+      throw new AppError("Data source not found", 404);
     }
 
     const currentLiveData = await getCurrentLiveData(submission);
     res.status(200).json({ success: true, data: { ...submission, currentLiveData } });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch data source",
-    });
   }
-};
+);
 
 // ─── PATCH /api/admin/data-sources/:id ──────────────────────────────────────────
 // Lets an admin edit the extracted payload before approving it.
 
-export const updateDataSource = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-    const { id } = req.params;
-    if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid data source ID" });
-      return;
-    }
-    if (req.body.extractedData === undefined) {
-      res.status(400).json({ success: false, message: "extractedData is required" });
-      return;
-    }
-
-    const submission = await DataSourceSubmission.findByIdAndUpdate(
-      id,
-      { $set: { extractedData: req.body.extractedData } },
-      { new: true }
-    );
-    if (!submission) {
-      res.status(404).json({ success: false, message: "Data source not found" });
-      return;
-    }
-
-    void recordAuditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email || "",
-      action: "data-source.edit",
-      targetType: "DataSourceSubmission",
-      targetId: id,
-    });
-
-    res.status(200).json({ success: true, message: "Data source updated", data: submission });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update data source",
-    });
+export const updateDataSource = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
   }
-};
+  const { id } = req.params;
+  if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+    throw new AppError("Invalid data source ID", 400);
+  }
+  if (req.body.extractedData === undefined) {
+    throw new AppError("extractedData is required", 400);
+  }
+
+  const submission = await DataSourceSubmission.findByIdAndUpdate(
+    id,
+    { $set: { extractedData: req.body.extractedData } },
+    { new: true }
+  );
+  if (!submission) {
+    throw new AppError("Data source not found", 404);
+  }
+
+  void recordAuditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email || "",
+    action: "data-source.edit",
+    targetType: "DataSourceSubmission",
+    targetId: id,
+  });
+
+  res.status(200).json({ success: true, message: "Data source updated", data: submission });
+});
 
 // ─── POST /api/admin/data-sources/:id/re-extract ────────────────────────────────
 
-export const reExtractDataSource = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const reExtractDataSource = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid data source ID" });
-      return;
+      throw new AppError("Invalid data source ID", 400);
     }
     const submission = await DataSourceSubmission.findById(id);
     if (!submission) {
-      res.status(404).json({ success: false, message: "Data source not found" });
-      return;
+      throw new AppError("Data source not found", 404);
     }
 
     submission.status = "PENDING_EXTRACTION";
@@ -452,13 +378,8 @@ export const reExtractDataSource = async (req: Request, res: Response): Promise<
     }
 
     res.status(200).json({ success: true, message: "Re-extraction complete", data: submission });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to re-extract",
-    });
   }
-};
+);
 
 // ─── POST /api/admin/data-sources/:id/enrich-details ───────────────────────────
 // Follows each extracted entry's per-tournament link and merges in what only
@@ -467,40 +388,29 @@ export const reExtractDataSource = async (req: Request, res: Response): Promise<
 // pages: doing it inline would run the create/re-extract request past the load
 // balancer's timeout, and would spend AI quota on submissions that get rejected.
 
-export const enrichDataSourceDetails = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const enrichDataSourceDetails = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
     const { id } = req.params;
     if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid data source ID" });
-      return;
+      throw new AppError("Invalid data source ID", 400);
     }
 
     const submission = await DataSourceSubmission.findById(id);
     if (!submission) {
-      res.status(404).json({ success: false, message: "Data source not found" });
-      return;
+      throw new AppError("Data source not found", 404);
     }
     if (submission.targetType !== "TOURNAMENT_CALENDAR") {
-      res.status(400).json({
-        success: false,
-        message: "Detail enrichment only applies to tournament calendar sources.",
-      });
-      return;
+      throw new AppError("Detail enrichment only applies to tournament calendar sources.", 400);
     }
 
     // Work from the saved draft, so a reviewer's edits (deleted rows, corrected
     // names) are respected rather than overwritten by a stale extraction.
     const { valid, errors } = validateEditions(submission.extractedData);
     if (valid.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: `Nothing to enrich: ${errors.join(" ")}`,
-      });
-      return;
+      throw new AppError(`Nothing to enrich: ${errors.join(" ")}`, 400);
     }
 
     const result = await enrichEditionsWithDetailPages(valid, submission.sportSlug);
@@ -528,95 +438,75 @@ export const enrichDataSourceDetails = async (req: Request, res: Response): Prom
       message: `Read ${result.enriched} detail page(s); ${result.documentsFound} entry(s) now have documents.`,
       data: submission,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to enrich details",
-    });
   }
-};
+);
 
 // ─── POST /api/admin/data-sources/:id/reject ────────────────────────────────────
 
-export const rejectDataSource = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-    const { id } = req.params;
-    if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid data source ID" });
-      return;
-    }
-    const reason = (req.body?.reason as string | undefined)?.trim();
-    if (!reason) {
-      res.status(400).json({ success: false, message: "A rejection reason is required" });
-      return;
-    }
-
-    const submission = await DataSourceSubmission.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          status: "REJECTED",
-          reviewNotes: reason,
-          reviewedBy: req.user.id,
-          reviewedAt: new Date(),
-        },
-      },
-      { new: true }
-    );
-    if (!submission) {
-      res.status(404).json({ success: false, message: "Data source not found" });
-      return;
-    }
-
-    void recordAuditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email || "",
-      action: "data-source.reject",
-      targetType: "DataSourceSubmission",
-      targetId: id,
-      metadata: { reason },
-    });
-
-    res.status(200).json({ success: true, message: "Data source rejected", data: submission });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to reject data source",
-    });
+export const rejectDataSource = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
   }
-};
+  const { id } = req.params;
+  if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+    throw new AppError("Invalid data source ID", 400);
+  }
+  const reason = (req.body?.reason as string | undefined)?.trim();
+  if (!reason) {
+    throw new AppError("A rejection reason is required", 400);
+  }
+
+  const submission = await DataSourceSubmission.findByIdAndUpdate(
+    id,
+    {
+      $set: {
+        status: "REJECTED",
+        reviewNotes: reason,
+        reviewedBy: req.user.id,
+        reviewedAt: new Date(),
+      },
+    },
+    { new: true }
+  );
+  if (!submission) {
+    throw new AppError("Data source not found", 404);
+  }
+
+  void recordAuditLog({
+    adminId: req.user.id,
+    adminEmail: req.user.email || "",
+    action: "data-source.reject",
+    targetType: "DataSourceSubmission",
+    targetId: id,
+    metadata: { reason },
+  });
+
+  res.status(200).json({ success: true, message: "Data source rejected", data: submission });
+});
 
 // ─── POST /api/admin/data-sources/:id/approve ───────────────────────────────────
 // The only place extracted data is ever written into the live Federation /
 // Tournament / TournamentEdition collections.
 
-export const approveDataSource = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const approveDataSource = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
     const { id } = req.params;
     if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid data source ID" });
-      return;
+      throw new AppError("Invalid data source ID", 400);
     }
 
     const submission = await DataSourceSubmission.findById(id);
     if (!submission) {
-      res.status(404).json({ success: false, message: "Data source not found" });
-      return;
+      throw new AppError("Data source not found", 404);
     }
     if (submission.status !== "PENDING_REVIEW") {
-      res.status(400).json({
-        success: false,
-        message: `Cannot approve a submission in status ${submission.status} — it must be PENDING_REVIEW`,
-      });
-      return;
+      throw new AppError(
+        `Cannot approve a submission in status ${submission.status} — it must be PENDING_REVIEW`,
+        400
+      );
     }
 
     // Re-validate (defense in depth — the admin may have hand-edited extractedData via PATCH).
@@ -631,8 +521,7 @@ export const approveDataSource = async (req: Request, res: Response): Promise<vo
     if (submission.targetType === "FEDERATION") {
       const { valid, errors } = validateFederationPayload(submission.extractedData);
       if (!valid) {
-        res.status(400).json({ success: false, message: `Cannot approve: ${errors.join(" ")}` });
-        return;
+        throw new AppError(`Cannot approve: ${errors.join(" ")}`, 400);
       }
       // Old acronym (pre-update) — tournaments approved before federationSlug
       // existed on Tournament are only findable via this denormalized match.
@@ -696,8 +585,7 @@ export const approveDataSource = async (req: Request, res: Response): Promise<vo
     } else if (submission.targetType === "CURATED_TOURNAMENT") {
       const { valid, errors } = validateCuratedTournamentPayload(submission.extractedData);
       if (!valid) {
-        res.status(400).json({ success: false, message: `Cannot approve: ${errors.join(" ")}` });
-        return;
+        throw new AppError(`Cannot approve: ${errors.join(" ")}`, 400);
       }
       const federation = submission.federationSlug
         ? await Federation.findOne({ slug: submission.federationSlug }).lean()
@@ -739,8 +627,7 @@ export const approveDataSource = async (req: Request, res: Response): Promise<vo
     } else {
       const { valid, errors } = validateEditions(submission.extractedData);
       if (valid.length === 0) {
-        res.status(400).json({ success: false, message: `Cannot approve: ${errors.join(" ")}` });
-        return;
+        throw new AppError(`Cannot approve: ${errors.join(" ")}`, 400);
       }
       const sourceUrl = citedSourceUrls[0] || "admin-submitted";
       const editionEntries = (valid as ValidEdition[]).map((edition) => {
@@ -813,10 +700,5 @@ export const approveDataSource = async (req: Request, res: Response): Promise<vo
     res
       .status(200)
       .json({ success: true, message: "Data source approved and published", data: submission });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to approve data source",
-    });
   }
-};
+);

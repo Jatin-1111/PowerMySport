@@ -4,6 +4,8 @@ import { RankingSnapshot } from "../models/RankingSnapshot";
 import { AitaRankingIngestService } from "../services/aita/AitaRankingIngestService";
 import { nextTierFor, TOP_BAND, type Benchmark } from "../services/aita/rankingInsights";
 import { LIVE_COMBOS } from "../services/aita/types";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 /**
  * Public read API for the ranking mirror.
@@ -48,12 +50,6 @@ const withMovement = <T extends { rank: number; prevRank?: number }>(entry: T) =
 const MAX_PAGE_SIZE = 200;
 const DEFAULT_PAGE_SIZE = 50;
 
-const fail = (res: Response, error: unknown, code = 400) =>
-  res.status(code).json({
-    success: false,
-    message: error instanceof Error ? error.message : "Request failed",
-  });
-
 /** Mongo treats a raw string as a pattern; a name with "(" would 500 without this. */
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -75,156 +71,143 @@ const sportOf = (req: Request): string =>
     .trim()
     .toLowerCase() || "tennis";
 
-export const listRankings = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const sportSlug = sportOf(req);
-    const category = String(req.query.category ?? "").trim();
-    const subcategory = String(req.query.subcategory ?? "").trim();
-    if (!category || !subcategory) {
-      res.status(400).json({
-        success: false,
-        message: "category and subcategory are both required.",
-      });
-      return;
-    }
-
-    const page = Math.max(1, Number.parseInt(String(req.query.page ?? "1"), 10) || 1);
-    const limit = Math.min(
-      MAX_PAGE_SIZE,
-      Math.max(1, Number.parseInt(String(req.query.limit ?? ""), 10) || DEFAULT_PAGE_SIZE)
-    );
-
-    const filter: Record<string, unknown> = { sportSlug, category, subcategory };
-
-    const date = String(req.query.date ?? "").trim();
-    if (date) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        res.status(400).json({ success: false, message: "date must be YYYY-MM-DD." });
-        return;
-      }
-      filter.asOnDate = new Date(date);
-    } else {
-      filter.isLatest = true;
-    }
-
-    const state = String(req.query.state ?? "").trim();
-    if (state) filter.state = state;
-
-    const search = String(req.query.search ?? "").trim();
-    if (search) {
-      // Anchored so the nameSearch index is usable. Matches on either name part
-      // because "Given Family" order is not what a parent types half the time.
-      const pattern = escapeRegex(search.toLowerCase());
-      filter.$or = [
-        { nameSearch: { $regex: `^${pattern}` } },
-        { nameSearch: { $regex: `\\s${pattern}` } },
-        { regNo: search },
-      ];
-    }
-
-    const [entries, total, snapshot] = await Promise.all([
-      RankingEntry.find(filter)
-        .sort({ rank: 1, totalPoints: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .select(PUBLIC_ENTRY_FIELDS)
-        .lean(),
-      RankingEntry.countDocuments(filter),
-      RankingSnapshot.findOne({
-        sportSlug,
-        category,
-        subcategory,
-        status: "published",
-        ...(date ? { asOnDate: new Date(date) } : { isLatestForCombo: true }),
-      })
-        .select(SNAPSHOT_INSIGHT_FIELDS)
-        .lean(),
-    ]);
-
-    // How many ranked players share each row's state, so "#18 in Maharashtra"
-    // can be read as "#18 of 214" rather than an unscaled number. Comes off the
-    // snapshot aggregate — the alternative is a count query per distinct state
-    // on the page.
-    const stateSizes = new Map<string, number>(
-      ((snapshot?.stateCounts ?? []) as Array<{ state: string; count: number }>).map((bucket) => [
-        bucket.state,
-        bucket.count,
-      ])
-    );
-
-    const benchmarks = (snapshot?.benchmarks ?? []) as Benchmark[];
-
-    res.json({
-      success: true,
-      data: {
-        entries: entries.map((entry) => ({
-          ...withMovement(entry),
-          stateSize: entry.state ? (stateSizes.get(entry.state) ?? null) : null,
-          // Computed here rather than in the browser so the rule for "which
-          // rung is next" lives in exactly one place.
-          nextTier:
-            benchmarks.length > 0 ? nextTierFor(entry.rank, entry.totalPoints, benchmarks) : null,
-        })),
-        // The source page this list came from, so a parent can check us against
-        // AITA rather than taking our word for it.
-        snapshot: snapshot ?? null,
-        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-      },
-    });
-  } catch (err) {
-    fail(res, err, 500);
+export const listRankings = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const sportSlug = sportOf(req);
+  const category = String(req.query.category ?? "").trim();
+  const subcategory = String(req.query.subcategory ?? "").trim();
+  if (!category || !subcategory) {
+    throw new AppError("category and subcategory are both required.", 400);
   }
-};
+
+  const page = Math.max(1, Number.parseInt(String(req.query.page ?? "1"), 10) || 1);
+  const limit = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(1, Number.parseInt(String(req.query.limit ?? ""), 10) || DEFAULT_PAGE_SIZE)
+  );
+
+  const filter: Record<string, unknown> = { sportSlug, category, subcategory };
+
+  const date = String(req.query.date ?? "").trim();
+  if (date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new AppError("date must be YYYY-MM-DD.", 400);
+    }
+    filter.asOnDate = new Date(date);
+  } else {
+    filter.isLatest = true;
+  }
+
+  const state = String(req.query.state ?? "").trim();
+  if (state) filter.state = state;
+
+  const search = String(req.query.search ?? "").trim();
+  if (search) {
+    // Anchored so the nameSearch index is usable. Matches on either name part
+    // because "Given Family" order is not what a parent types half the time.
+    const pattern = escapeRegex(search.toLowerCase());
+    filter.$or = [
+      { nameSearch: { $regex: `^${pattern}` } },
+      { nameSearch: { $regex: `\\s${pattern}` } },
+      { regNo: search },
+    ];
+  }
+
+  const [entries, total, snapshot] = await Promise.all([
+    RankingEntry.find(filter)
+      .sort({ rank: 1, totalPoints: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select(PUBLIC_ENTRY_FIELDS)
+      .lean(),
+    RankingEntry.countDocuments(filter),
+    RankingSnapshot.findOne({
+      sportSlug,
+      category,
+      subcategory,
+      status: "published",
+      ...(date ? { asOnDate: new Date(date) } : { isLatestForCombo: true }),
+    })
+      .select(SNAPSHOT_INSIGHT_FIELDS)
+      .lean(),
+  ]);
+
+  // How many ranked players share each row's state, so "#18 in Maharashtra"
+  // can be read as "#18 of 214" rather than an unscaled number. Comes off the
+  // snapshot aggregate — the alternative is a count query per distinct state
+  // on the page.
+  const stateSizes = new Map<string, number>(
+    ((snapshot?.stateCounts ?? []) as Array<{ state: string; count: number }>).map((bucket) => [
+      bucket.state,
+      bucket.count,
+    ])
+  );
+
+  const benchmarks = (snapshot?.benchmarks ?? []) as Benchmark[];
+
+  res.json({
+    success: true,
+    data: {
+      entries: entries.map((entry) => ({
+        ...withMovement(entry),
+        stateSize: entry.state ? (stateSizes.get(entry.state) ?? null) : null,
+        // Computed here rather than in the browser so the rule for "which
+        // rung is next" lives in exactly one place.
+        nextTier:
+          benchmarks.length > 0 ? nextTierFor(entry.rank, entry.totalPoints, benchmarks) : null,
+      })),
+      // The source page this list came from, so a parent can check us against
+      // AITA rather than taking our word for it.
+      snapshot: snapshot ?? null,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    },
+  });
+});
 
 /**
  * GET /api/rankings/meta
  * Which combos exist, what each one's current list is dated, and which states
  * appear in it — everything a filter UI needs in one call.
  */
-export const getRankingMeta = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const snapshots = await RankingSnapshot.find({
-      sportSlug: sportOf(req),
-      status: "published",
-      isLatestForCombo: true,
-    })
-      .select("category subcategory asOnDate rowCount columns")
-      .lean();
+export const getRankingMeta = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const snapshots = await RankingSnapshot.find({
+    sportSlug: sportOf(req),
+    status: "published",
+    isLatestForCombo: true,
+  })
+    .select("category subcategory asOnDate rowCount columns")
+    .lean();
 
-    const combos = LIVE_COMBOS.map(({ category, subcategory }) => {
-      const snapshot = snapshots.find(
-        (s) => s.category === category && s.subcategory === subcategory
-      );
-      return {
-        category,
-        subcategory,
-        asOnDate: snapshot?.asOnDate ?? null,
-        rowCount: snapshot?.rowCount ?? 0,
-        columns: snapshot?.columns ?? [],
-        available: Boolean(snapshot),
-      };
-    });
+  const combos = LIVE_COMBOS.map(({ category, subcategory }) => {
+    const snapshot = snapshots.find(
+      (s) => s.category === category && s.subcategory === subcategory
+    );
+    return {
+      category,
+      subcategory,
+      asOnDate: snapshot?.asOnDate ?? null,
+      rowCount: snapshot?.rowCount ?? 0,
+      columns: snapshot?.columns ?? [],
+      available: Boolean(snapshot),
+    };
+  });
 
-    const states = await RankingEntry.distinct("state", { isLatest: true });
+  const states = await RankingEntry.distinct("state", { isLatest: true });
 
-    res.json({
-      success: true,
-      data: {
-        combos,
-        states: (states as string[]).filter(Boolean).sort(),
-        source: {
-          federation: "All India Tennis Association",
-          acronym: "AITA",
-          // The new platform's ranking index. The old /playerranking/ path died
-          // with the August 2026 move to hitcourt.com.
-          url: "https://www.aita.hitcourt.com/ranking",
-        },
+  res.json({
+    success: true,
+    data: {
+      combos,
+      states: (states as string[]).filter(Boolean).sort(),
+      source: {
+        federation: "All India Tennis Association",
+        acronym: "AITA",
+        // The new platform's ranking index. The old /playerranking/ path died
+        // with the August 2026 move to hitcourt.com.
+        url: "https://www.aita.hitcourt.com/ranking",
       },
-    });
-  } catch (err) {
-    fail(res, err, 500);
-  }
-};
+    },
+  });
+});
 
 /**
  * GET /api/rankings/dates?category=Boys&subcategory=U-14
@@ -234,40 +217,32 @@ export const getRankingMeta = async (req: Request, res: Response): Promise<void>
  * /meta: /meta is fetched on every hub render and would otherwise carry twelve
  * lists of up to 250 dates each for a control most visitors never touch.
  */
-export const listRankingDates = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const category = String(req.query.category ?? "").trim();
-    const subcategory = String(req.query.subcategory ?? "").trim();
-    if (!category || !subcategory) {
-      res.status(400).json({
-        success: false,
-        message: "category and subcategory are both required.",
-      });
-      return;
-    }
-
-    const snapshots = await RankingSnapshot.find({
-      sportSlug: sportOf(req),
-      category,
-      subcategory,
-      status: "published",
-    })
-      .sort({ asOnDate: -1 })
-      .select("asOnDate rowCount isLatestForCombo")
-      .lean();
-
-    res.json({
-      success: true,
-      data: snapshots.map((s) => ({
-        asOnDate: s.asOnDate,
-        rowCount: s.rowCount ?? 0,
-        isLatest: Boolean(s.isLatestForCombo),
-      })),
-    });
-  } catch (err) {
-    fail(res, err, 500);
+export const listRankingDates = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const category = String(req.query.category ?? "").trim();
+  const subcategory = String(req.query.subcategory ?? "").trim();
+  if (!category || !subcategory) {
+    throw new AppError("category and subcategory are both required.", 400);
   }
-};
+
+  const snapshots = await RankingSnapshot.find({
+    sportSlug: sportOf(req),
+    category,
+    subcategory,
+    status: "published",
+  })
+    .sort({ asOnDate: -1 })
+    .select("asOnDate rowCount isLatestForCombo")
+    .lean();
+
+  res.json({
+    success: true,
+    data: snapshots.map((s) => ({
+      asOnDate: s.asOnDate,
+      rowCount: s.rowCount ?? 0,
+      isLatest: Boolean(s.isLatestForCombo),
+    })),
+  });
+});
 
 /**
  * GET /api/rankings/players/:regNo
@@ -281,12 +256,11 @@ export const listRankingDates = async (req: Request, res: Response): Promise<voi
  * on the RankingEntry model). The API is safe; a crawlable page keyed on a
  * child's name is a separate call that has not been made.
  */
-export const getPlayerRankingHistory = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getPlayerRankingHistory = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const regNo = String(req.params.regNo ?? "").trim();
     if (!/^\d{4,8}$/.test(regNo)) {
-      res.status(400).json({ success: false, message: "Invalid registration number." });
-      return;
+      throw new AppError("Invalid registration number.", 400);
     }
 
     const sportSlug = sportOf(req);
@@ -297,8 +271,7 @@ export const getPlayerRankingHistory = async (req: Request, res: Response): Prom
     if (current.length === 0) {
       const everRanked = await RankingEntry.exists({ sportSlug, regNo });
       if (!everRanked) {
-        res.status(404).json({ success: false, message: "Player not found." });
-        return;
+        throw new AppError("Player not found.", 404);
       }
     }
 
@@ -349,10 +322,8 @@ export const getPlayerRankingHistory = async (req: Request, res: Response): Prom
         history,
       },
     });
-  } catch (err) {
-    fail(res, err, 500);
   }
-};
+);
 
 /**
  * The context one standing needs to mean something.
@@ -432,11 +403,9 @@ function buildPlayerInsight(
  * Staleness and quarantine counts. Public because it says nothing a ranking
  * page does not already, and because "how fresh is this?" is a fair question.
  */
-export const getRankingHealth = async (_req: Request, res: Response): Promise<void> => {
-  try {
+export const getRankingHealth = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
     const health = await new AitaRankingIngestService().getHealth();
     res.json({ success: true, data: health });
-  } catch (err) {
-    fail(res, err, 500);
   }
-};
+);

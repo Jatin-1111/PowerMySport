@@ -8,166 +8,126 @@ import {
 } from "../../services/CoachService";
 import { transformDocument } from "../../../middleware/responseTransform";
 import { log } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 /**
  * Create a new coach profile
  * POST /api/coaches
  */
-export const createNewCoach = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
-
-    // Validate required fields
-    const { bio, certifications, sports, hourlyRate, serviceMode } = req.body;
-
-    if (!serviceMode) {
-      res.status(400).json({
-        success: false,
-        message: "Service mode is required",
-      });
-      return;
-    }
-
-    if (!sports || !Array.isArray(sports) || sports.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "At least one sport is required",
-      });
-      return;
-    }
-
-    // Check if user already has a coach profile
-    const existingCoach = await getCoachByUserId(req.user.id);
-    if (existingCoach) {
-      res.status(400).json({
-        success: false,
-        message: "Coach profile already exists for this user",
-      });
-      return;
-    }
-
-    const {
-      certifications: certBody,
-      sports: sportsBody,
-      sportPricing,
-      serviceMode: serviceModeBody,
-      ownVenueDetails,
-      baseLocation,
-      serviceRadiusKm,
-      travelBufferTime,
-      availability,
-      availabilityBySport,
-    } = req.body;
-
-    const coach = await createCoach({
-      userId: req.user.id,
-      bio,
-      certifications: certBody,
-      sports: sportsBody,
-      hourlyRate,
-      sportPricing,
-      serviceMode: serviceModeBody,
-      ownVenueDetails,
-      baseLocation,
-      serviceRadiusKm,
-      travelBufferTime,
-      availability,
-      availabilityBySport,
-    });
-
-    log.info("Created coach:", {
-      id: coach.id,
-      serviceMode: coach.serviceMode,
-    });
-
-    // Convert to JSON and transform _id to id
-    const coachData = transformDocument(coach.toJSON());
-
-    log.info("Coach JSON response:", {
-      id: coachData.id,
-      serviceMode: coachData.serviceMode,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Coach profile created successfully",
-      data: coachData,
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create coach profile",
-    });
+export const createNewCoach = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
   }
-};
+
+  // Validate required fields
+  const { bio, certifications, sports, hourlyRate, serviceMode } = req.body;
+
+  if (!serviceMode) {
+    throw new AppError("Service mode is required", 400);
+  }
+
+  if (!sports || !Array.isArray(sports) || sports.length === 0) {
+    throw new AppError("At least one sport is required", 400);
+  }
+
+  // Check if user already has a coach profile
+  const existingCoach = await getCoachByUserId(req.user.id);
+  if (existingCoach) {
+    throw new AppError("Coach profile already exists for this user", 400);
+  }
+
+  const {
+    certifications: certBody,
+    sports: sportsBody,
+    sportPricing,
+    serviceMode: serviceModeBody,
+    ownVenueDetails,
+    baseLocation,
+    serviceRadiusKm,
+    travelBufferTime,
+    availability,
+    availabilityBySport,
+  } = req.body;
+
+  const coach = await createCoach({
+    userId: req.user.id,
+    bio,
+    certifications: certBody,
+    sports: sportsBody,
+    hourlyRate,
+    sportPricing,
+    serviceMode: serviceModeBody,
+    ownVenueDetails,
+    baseLocation,
+    serviceRadiusKm,
+    travelBufferTime,
+    availability,
+    availabilityBySport,
+  });
+
+  log.info("Created coach:", {
+    id: coach.id,
+    serviceMode: coach.serviceMode,
+  });
+
+  // Convert to JSON and transform _id to id
+  const coachData = transformDocument(coach.toJSON());
+
+  log.info("Coach JSON response:", {
+    id: coachData.id,
+    serviceMode: coachData.serviceMode,
+  });
+
+  res.status(201).json({
+    success: true,
+    message: "Coach profile created successfully",
+    data: coachData,
+  });
+});
 
 /**
  * Get coach profile by ID
  * GET /api/coaches/:coachId
  */
-export const getCoach = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const coachId = (req.params as Record<string, unknown>).coachId as string;
+export const getCoach = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const coachId = (req.params as Record<string, unknown>).coachId as string;
 
-    // Public, unauthenticated endpoint — only the fields an actual coach
-    // card renders. This used to populate the entire User document
-    // (including email/phone) into every response here.
-    const coach = await getCoachById(coachId, {
-      populateUserFields: "name photoUrl",
-    });
+  // Public, unauthenticated endpoint — only the fields an actual coach
+  // card renders. This used to populate the entire User document
+  // (including email/phone) into every response here.
+  const coach = await getCoachById(coachId, {
+    populateUserFields: "name photoUrl",
+  });
 
-    if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach not found",
-      });
-      return;
-    }
-
-    const isPubliclyVisible = coach.isVerified || coach.verificationStatus === "VERIFIED";
-
-    if (!isPubliclyVisible) {
-      res.status(404).json({
-        success: false,
-        message: "Coach not found",
-      });
-      return;
-    }
-
-    // Convert to JSON and transform _id to id
-    const coachData = transformDocument(coach.toJSON());
-
-    res.status(200).json({
-      success: true,
-      message: "Coach retrieved successfully",
-      data: coachData,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch coach",
-    });
+  if (!coach) {
+    throw new AppError("Coach not found", 404);
   }
-};
+
+  const isPubliclyVisible = coach.isVerified || coach.verificationStatus === "VERIFIED";
+
+  if (!isPubliclyVisible) {
+    throw new AppError("Coach not found", 404);
+  }
+
+  // Convert to JSON and transform _id to id
+  const coachData = transformDocument(coach.toJSON());
+
+  res.status(200).json({
+    success: true,
+    message: "Coach retrieved successfully",
+    data: coachData,
+  });
+});
 
 /**
  * Get current user's coach profile
  * GET /api/coaches/my-profile
  */
-export const getMyCoachProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getMyCoachProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     // Self-view — matches the known-good field set already used elsewhere
@@ -177,11 +137,7 @@ export const getMyCoachProfile = async (req: Request, res: Response): Promise<vo
     });
 
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     // Convert to JSON and transform _id to id
@@ -197,39 +153,26 @@ export const getMyCoachProfile = async (req: Request, res: Response): Promise<vo
       message: "Coach profile retrieved successfully",
       data: coachData,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch coach profile",
-    });
   }
-};
+);
 
 /**
  * Update coach profile
  * PUT /api/coaches/:coachId
  */
-export const updateCoachProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateCoachProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
 
     // Validate coachId is provided and is a valid MongoDB ObjectId
     if (!coachId || coachId === "undefined") {
-      res.status(400).json({
-        success: false,
-        message: "Invalid coach ID provided",
-      });
-      return;
+      throw new AppError("Invalid coach ID provided", 400);
     }
 
     // Verify ownership
     const existingCoach = await getCoachById(coachId);
     if (!existingCoach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach not found",
-      });
-      return;
+      throw new AppError("Coach not found", 404);
     }
 
     // Handle both populated userId (object) and unpopulated userId (ObjectId)
@@ -240,11 +183,7 @@ export const updateCoachProfile = async (req: Request, res: Response): Promise<v
         : userId.toString();
 
     if (coachUserId !== req.user?.id) {
-      res.status(403).json({
-        success: false,
-        message: "You can only update your own coach profile",
-      });
-      return;
+      throw new AppError("You can only update your own coach profile", 403);
     }
 
     // Handle ownVenueDetails validation and preservation
@@ -275,30 +214,21 @@ export const updateCoachProfile = async (req: Request, res: Response): Promise<v
       message: "Coach profile updated successfully",
       data: coachData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update coach profile",
-    });
   }
-};
+);
 
 /**
  * Delete coach profile
  * DELETE /api/coaches/:coachId
  */
-export const deleteCoachProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteCoachProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
 
     // Verify ownership
     const existingCoach = await getCoachById(coachId);
     if (!existingCoach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach not found",
-      });
-      return;
+      throw new AppError("Coach not found", 404);
     }
 
     // Handle both populated userId (object) and unpopulated userId (ObjectId)
@@ -309,11 +239,7 @@ export const deleteCoachProfile = async (req: Request, res: Response): Promise<v
         : userId.toString();
 
     if (coachUserId !== req.user?.id) {
-      res.status(403).json({
-        success: false,
-        message: "You can only delete your own coach profile",
-      });
-      return;
+      throw new AppError("You can only delete your own coach profile", 403);
     }
 
     await deleteCoach(coachId);
@@ -322,10 +248,5 @@ export const deleteCoachProfile = async (req: Request, res: Response): Promise<v
       success: true,
       message: "Coach profile deleted successfully",
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to delete coach profile",
-    });
   }
-};
+);

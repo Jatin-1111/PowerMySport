@@ -8,19 +8,17 @@ import {
 } from "../../services/CoachService";
 import { doTimesOverlap } from "../../../utils/booking";
 import { transformDocument } from "../../../middleware/responseTransform";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 /**
  * Update coach availability by sport
  * PUT /api/coaches/my-profile/availability
  */
-export const updateMyCoachAvailability = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateMyCoachAvailability = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || req.user.role !== "Coach") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+      throw new AppError("Coach role required", 403);
     }
 
     const { availabilityBySport } = req.body as {
@@ -31,20 +29,12 @@ export const updateMyCoachAvailability = async (req: Request, res: Response): Pr
     };
 
     if (!availabilityBySport || typeof availabilityBySport !== "object") {
-      res.status(400).json({
-        success: false,
-        message: "availabilityBySport is required",
-      });
-      return;
+      throw new AppError("availabilityBySport is required", 400);
     }
 
     const coach = await getCoachByUserId(req.user.id);
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const normalizedBySport: Record<
@@ -91,29 +81,20 @@ export const updateMyCoachAvailability = async (req: Request, res: Response): Pr
       message: "Availability updated successfully",
       data: transformDocument(updated?.toJSON()),
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update coach availability",
-    });
   }
-};
+);
 
 /**
  * Check coach availability
  * GET /api/coaches/availability/:coachId
  */
-export const getCoachAvailability = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCoachAvailability = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     const { date, startTime, endTime, sport } = req.query;
 
     if (!date) {
-      res.status(400).json({
-        success: false,
-        message: "date is required",
-      });
-      return;
+      throw new AppError("date is required", 400);
     }
 
     if (startTime && endTime) {
@@ -136,20 +117,12 @@ export const getCoachAvailability = async (req: Request, res: Response): Promise
 
     const coach = await getCoachById(coachId);
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach not found",
-      });
-      return;
+      throw new AppError("Coach not found", 404);
     }
 
     const targetDate = new Date(date as string);
     if (isNaN(targetDate.getTime())) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid date format. Use YYYY-MM-DD.",
-      });
-      return;
+      throw new AppError("Invalid date format. Use YYYY-MM-DD.", 400);
     }
     const dayOfWeek = targetDate.getDay();
     const availabilityBySport = (coach as any).availabilityBySport as
@@ -241,10 +214,5 @@ export const getCoachAvailability = async (req: Request, res: Response): Promise
         bookedSlots,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to check availability",
-    });
   }
-};
+);

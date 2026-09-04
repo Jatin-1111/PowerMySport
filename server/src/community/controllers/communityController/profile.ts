@@ -1,21 +1,24 @@
 import { Request, Response } from "express";
 import { CommunityService } from "../../services/CommunityService";
-import { getUserId, handleError } from "./shared";
+import { getUserId, toAppError } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
 
-export const getCommunityProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const data = await CommunityService.getMyProfile(getUserId(req));
-    res.status(200).json({
-      success: true,
-      message: "Community profile fetched",
-      data,
-    });
-  } catch (error) {
-    handleError(res, error, "Failed to fetch community profile");
+export const getCommunityProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const data = await CommunityService.getMyProfile(getUserId(req));
+      res.status(200).json({
+        success: true,
+        message: "Community profile fetched",
+        data,
+      });
+    } catch (error) {
+      throw toAppError(error, "Failed to fetch community profile");
+    }
   }
-};
+);
 
-export const searchPlayers = async (req: Request, res: Response): Promise<void> => {
+export const searchPlayers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const rawQuery = req.query.q;
     const query = typeof rawQuery === "string" ? rawQuery : "";
@@ -34,11 +37,11 @@ export const searchPlayers = async (req: Request, res: Response): Promise<void> 
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to search players");
+    throw toAppError(error, "Failed to search players");
   }
-};
+});
 
-export const getPlayerProfile = async (req: Request, res: Response): Promise<void> => {
+export const getPlayerProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const targetUserId = String(req.params.userId || "");
     if (!targetUserId) {
@@ -53,24 +56,26 @@ export const getPlayerProfile = async (req: Request, res: Response): Promise<voi
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to fetch player profile");
+    throw toAppError(error, "Failed to fetch player profile");
   }
-};
+});
 
-export const updateCommunityProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const data = await CommunityService.updateMyProfile(getUserId(req), req.body);
-    res.status(200).json({
-      success: true,
-      message: "Community privacy settings updated",
-      data,
-    });
-  } catch (error) {
-    handleError(res, error, "Failed to update community profile");
+export const updateCommunityProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const data = await CommunityService.updateMyProfile(getUserId(req), req.body);
+      res.status(200).json({
+        success: true,
+        message: "Community privacy settings updated",
+        data,
+      });
+    } catch (error) {
+      throw toAppError(error, "Failed to update community profile");
+    }
   }
-};
+);
 
-export const getBlockedUsers = async (req: Request, res: Response): Promise<void> => {
+export const getBlockedUsers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const data = await CommunityService.getBlockedUsers(getUserId(req));
     res.status(200).json({
@@ -79,11 +84,11 @@ export const getBlockedUsers = async (req: Request, res: Response): Promise<void
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to fetch blocked users");
+    throw toAppError(error, "Failed to fetch blocked users");
   }
-};
+});
 
-export const blockUser = async (req: Request, res: Response): Promise<void> => {
+export const blockUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const { targetUserId } = req.body as { targetUserId: string };
     const data = await CommunityService.blockUser(getUserId(req), targetUserId);
@@ -93,11 +98,11 @@ export const blockUser = async (req: Request, res: Response): Promise<void> => {
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to block user");
+    throw toAppError(error, "Failed to block user");
   }
-};
+});
 
-export const unblockUser = async (req: Request, res: Response): Promise<void> => {
+export const unblockUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const { targetUserId } = req.body as { targetUserId: string };
     const data = await CommunityService.unblockUser(getUserId(req), targetUserId);
@@ -107,6 +112,6 @@ export const unblockUser = async (req: Request, res: Response): Promise<void> =>
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to unblock user");
+    throw toAppError(error, "Failed to unblock user");
   }
-};
+});

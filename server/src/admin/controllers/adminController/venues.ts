@@ -5,19 +5,17 @@ import Admin from "../../models/Admin";
 import { recordAuditLog } from "../../services/AuditLogService";
 import { sendVenueAdminCredentialsEmail } from "../../../utils/email";
 import { log, buildUserSummary, generateTempPassword } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 /**
  * Create venue directly from admin
  * POST /api/admin/venues/create
  */
-export const createVenueAdminHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createVenueAdminHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const {
@@ -72,26 +70,17 @@ export const createVenueAdminHandler = async (req: Request, res: Response): Prom
       message: "Venue created successfully",
       data: venue,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create venue",
-    });
   }
-};
+);
 
 /**
  * Update venue directly from admin
  * PUT /api/admin/venues/:venueId
  */
-export const updateVenueAdminHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateVenueAdminHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const venueId = (req.params as Record<string, unknown>).venueId as string;
@@ -99,11 +88,7 @@ export const updateVenueAdminHandler = async (req: Request, res: Response): Prom
     const venue = await Venue.findById(venueId);
 
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     const updatePayload = { ...req.body } as Record<string, unknown>;
@@ -139,6 +124,12 @@ export const updateVenueAdminHandler = async (req: Request, res: Response): Prom
         if (existingUser.role === "VenueLister") {
           ownerUser = existingUser._id;
         } else if (existingUser.role === "Player" || existingUser.role === "Parent") {
+          // NOTE: this guard's 409 response carries extra structured fields
+          // (requiresConversion/existingRole/targetRole/existingUser) that the
+          // client's account-conversion flow depends on. AppError only carries
+          // a message + status code, so converting to it would silently drop
+          // that payload and change client behavior — left as a direct
+          // res.json(...) response rather than a thrown AppError.
           if (!convertExistingUser) {
             res.status(409).json({
               success: false,
@@ -156,6 +147,9 @@ export const updateVenueAdminHandler = async (req: Request, res: Response): Prom
           await existingUser.save();
           ownerUser = existingUser._id;
         } else {
+          // NOTE: same rationale as above — requiresSeparateAccount/existingRole/
+          // targetRole/existingUser are consumed by the client and would be lost
+          // if collapsed into a thrown AppError, so this stays a direct response.
           res.status(409).json({
             success: false,
             message:
@@ -195,11 +189,7 @@ export const updateVenueAdminHandler = async (req: Request, res: Response): Prom
     });
 
     if (!updatedVenue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     if (createdUser && tempPassword) {
@@ -232,10 +222,5 @@ export const updateVenueAdminHandler = async (req: Request, res: Response): Prom
       message: "Venue updated successfully",
       data: updatedVenue,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update venue",
-    });
   }
-};
+);

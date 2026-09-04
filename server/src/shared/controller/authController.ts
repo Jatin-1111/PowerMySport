@@ -25,8 +25,8 @@ import {
   updateDependent,
   updateProfile,
 } from "../services/AuthService";
-import { log as __rootLog } from "../../utils/logger";
-const log = __rootLog.child("auth");
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
 
@@ -49,77 +49,63 @@ const authCookieOptions = {
     : {}),
 };
 
-export const register = async (req: Request, res: Response): Promise<void> => {
-  try {
-    // role always arrives already defaulted here — registerSchema (applied by
-    // the validateRequest middleware ahead of this handler) guarantees it's
-    // present and valid before req.body reaches this point.
-    const user = await registerUser({ ...req.body });
+export const register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  // role always arrives already defaulted here — registerSchema (applied by
+  // the validateRequest middleware ahead of this handler) guarantees it's
+  // present and valid before req.body reaches this point.
+  const user = await registerUser({ ...req.body });
 
-    const token = generateToken({
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-    });
+  const token = generateToken({
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  });
 
-    res.cookie("token", token, authCookieOptions);
+  res.cookie("token", token, authCookieOptions);
 
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+  res.status(201).json({
+    success: true,
+    message: "User registered successfully",
+    data: {
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Registration failed",
-    });
-  }
-};
+    },
+  });
+});
 
-export const login = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { user, deletionCancelled } = await loginUser(req.body);
+export const login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { user, deletionCancelled } = await loginUser(req.body);
 
-    const token = generateToken({
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-    });
+  const token = generateToken({
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  });
 
-    res.cookie("token", token, authCookieOptions);
+  res.cookie("token", token, authCookieOptions);
 
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      data: {
-        token,
-        deletionCancelled,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+  res.status(200).json({
+    success: true,
+    message: "Login successful",
+    data: {
+      token,
+      deletionCancelled,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       },
-    });
-  } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Login failed",
-    });
-  }
-};
+    },
+  });
+});
 
-export const logout = async (req: Request, res: Response): Promise<void> => {
+export const logout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const token = req.cookies?.token || req.headers.authorization?.slice(7).trim();
   if (token) {
     await revokeToken(token);
@@ -130,182 +116,148 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
     success: true,
     message: "Logout successful",
   });
-};
+});
 
-export const getProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
+export const getProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
+  }
 
-    const user = await getUserById(req.user.id);
+  const user = await getUserById(req.user.id);
 
-    if (!user) {
-      res.clearCookie("token", authCookieOptions);
-      res.status(401).json({
-        success: false,
-        message: "Session expired. Please login again.",
-      });
-      return;
-    }
+  if (!user) {
+    res.clearCookie("token", authCookieOptions);
+    throw new AppError("Session expired. Please login again.", 401);
+  }
 
-    // Refresh profile photo URL if S3 key exists
-    if (user.photoS3Key) {
-      await user.refreshPhotoUrl();
-    }
+  // Refresh profile photo URL if S3 key exists
+  if (user.photoS3Key) {
+    await user.refreshPhotoUrl();
+  }
 
-    const allPlayers = await getPlayersByUserId(user._id.toString());
-    const dependents = allPlayers
-      .filter((p: any) => p.type === "DEPENDENT")
-      .map((p: any) => ({
-        _id: p._id,
-        name: p.name,
-        dob: p.dob || null,
-        age: p.age,
-        gender: p.gender,
-        relation: p.relation,
-        sportsFocus: p.sportsFocus || [],
-        skillLevel: p.skillLevel,
-        yearsPlaying: p.yearsPlaying,
-        personalityTags: p.personalityTags,
-        primaryObjective: p.primaryObjective,
-        weeklyTimeCommitment: p.weeklyTimeCommitment,
-        budgetTier: p.budgetTier,
-        location: p.location,
-        heightCm: p.heightCm,
-        weightKg: p.weightKg,
-        medicalConditions: p.medicalConditions || [],
-        // Wizard physical
-        build: p.build,
-        heightCategory: p.heightCategory,
-        energyType: p.energyType,
-        motorType: p.motorType,
-        visualTracking: p.visualTracking,
-        eyesight: p.eyesight,
-        agility: p.agility,
-        // Wizard personality
-        teamIndividual: p.teamIndividual,
-        competitiveResponse: p.competitiveResponse,
-        focusStyle: p.focusStyle,
-        decisionStyle: p.decisionStyle,
-        pressureResponse: p.pressureResponse,
-        repetitionTolerance: p.repetitionTolerance,
-        // Wizard comfort
-        contactComfort: p.contactComfort,
-        environment: p.environment,
-        waterComfort: p.waterComfort,
-        // Wizard practical
-        consideringSports: p.consideringSports || [],
-        budgetRange: p.budgetRange,
-        ambition: p.ambition,
-        weeklyHoursCategory: p.weeklyHoursCategory,
-        experienceLevel: p.experienceLevel,
-        trainingType: p.trainingType,
-        // Results
-        sportMatches: p.sportMatches || [],
-        wizardCompletedAt: p.wizardCompletedAt,
-      }));
+  const allPlayers = await getPlayersByUserId(user._id.toString());
+  const dependents = allPlayers
+    .filter((p: any) => p.type === "DEPENDENT")
+    .map((p: any) => ({
+      _id: p._id,
+      name: p.name,
+      dob: p.dob || null,
+      age: p.age,
+      gender: p.gender,
+      relation: p.relation,
+      sportsFocus: p.sportsFocus || [],
+      skillLevel: p.skillLevel,
+      yearsPlaying: p.yearsPlaying,
+      personalityTags: p.personalityTags,
+      primaryObjective: p.primaryObjective,
+      weeklyTimeCommitment: p.weeklyTimeCommitment,
+      budgetTier: p.budgetTier,
+      location: p.location,
+      heightCm: p.heightCm,
+      weightKg: p.weightKg,
+      medicalConditions: p.medicalConditions || [],
+      // Wizard physical
+      build: p.build,
+      heightCategory: p.heightCategory,
+      energyType: p.energyType,
+      motorType: p.motorType,
+      visualTracking: p.visualTracking,
+      eyesight: p.eyesight,
+      agility: p.agility,
+      // Wizard personality
+      teamIndividual: p.teamIndividual,
+      competitiveResponse: p.competitiveResponse,
+      focusStyle: p.focusStyle,
+      decisionStyle: p.decisionStyle,
+      pressureResponse: p.pressureResponse,
+      repetitionTolerance: p.repetitionTolerance,
+      // Wizard comfort
+      contactComfort: p.contactComfort,
+      environment: p.environment,
+      waterComfort: p.waterComfort,
+      // Wizard practical
+      consideringSports: p.consideringSports || [],
+      budgetRange: p.budgetRange,
+      ambition: p.ambition,
+      weeklyHoursCategory: p.weeklyHoursCategory,
+      experienceLevel: p.experienceLevel,
+      trainingType: p.trainingType,
+      // Results
+      sportMatches: p.sportMatches || [],
+      wizardCompletedAt: p.wizardCompletedAt,
+    }));
 
-    const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
-    const playerProfile = selfPlayer
+  const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
+  const playerProfile = selfPlayer
+    ? {
+        sportsFocus: selfPlayer.sportsFocus || [],
+        yearsPlaying: selfPlayer.yearsPlaying,
+        personalityTags: selfPlayer.personalityTags,
+        primaryObjective: selfPlayer.primaryObjective,
+        weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
+        budgetTier: selfPlayer.budgetTier,
+        location: selfPlayer.location,
+      }
+    : undefined;
+
+  const parentProfile =
+    user.role === "Parent"
       ? {
-          sportsFocus: selfPlayer.sportsFocus || [],
-          yearsPlaying: selfPlayer.yearsPlaying,
-          personalityTags: selfPlayer.personalityTags,
-          primaryObjective: selfPlayer.primaryObjective,
-          weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
-          budgetTier: selfPlayer.budgetTier,
-          location: selfPlayer.location,
+          bio: (user as any).bio ?? undefined,
+          sportInterests: (user as any).sportInterests ?? [],
+          involvementYears: (user as any).involvementYears ?? undefined,
         }
       : undefined;
 
-    const parentProfile =
-      user.role === "Parent"
-        ? {
-            bio: (user as any).bio ?? undefined,
-            sportInterests: (user as any).sportInterests ?? [],
-            involvementYears: (user as any).involvementYears ?? undefined,
-          }
-        : undefined;
+  res.status(200).json({
+    success: true,
+    message: "Profile retrieved successfully",
+    data: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      dob: user.dob,
+      photoUrl: user.photoUrl,
+      photoS3Key: user.photoS3Key,
+      playerProfile,
+      parentProfile,
+      dependents,
+      shippingAddress: user.shippingAddress,
+      hasPassword: !!user.password,
+    },
+  });
+});
 
-    res.status(200).json({
-      success: true,
-      message: "Profile retrieved successfully",
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        dob: user.dob,
-        photoUrl: user.photoUrl,
-        photoS3Key: user.photoS3Key,
-        playerProfile,
-        parentProfile,
-        dependents,
-        shippingAddress: user.shippingAddress,
-        hasPassword: !!user.password,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch profile",
-    });
+export const getAuthBridge = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
   }
-};
 
-export const getAuthBridge = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
+  const user = await getUserById(req.user.id);
 
-    const user = await getUserById(req.user.id);
-
-    if (!user) {
-      res.clearCookie("token", authCookieOptions);
-      res.status(401).json({
-        success: false,
-        message: "Session expired. Please login again.",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Session valid",
-      data: {
-        id: user._id,
-        role: user.role,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to validate session",
-    });
+  if (!user) {
+    res.clearCookie("token", authCookieOptions);
+    throw new AppError("Session expired. Please login again.", 401);
   }
-};
 
-export const updateProfileHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+  res.status(200).json({
+    success: true,
+    message: "Session valid",
+    data: {
+      id: user._id,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+    },
+  });
+});
+
+export const updateProfileHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { name, email, phone, dob, parentProfile, playerProfile, shippingAddress } = req.body;
@@ -345,33 +297,21 @@ export const updateProfileHandler = async (req: Request, res: Response): Promise
         parentProfile: updatedParentProfile,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update profile",
-    });
   }
-};
+);
 
-export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { email } = req.body;
-    await requestPasswordReset(email);
+export const forgotPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+  await requestPasswordReset(email);
 
-    res.status(200).json({
-      success: true,
-      message: "Password reset instructions sent to your email",
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Request failed",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Password reset instructions sent to your email",
+  });
+});
 
-export const resetPasswordHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const resetPasswordHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { token, newPassword } = req.body;
     await resetPassword(token, newPassword);
 
@@ -379,38 +319,21 @@ export const resetPasswordHandler = async (req: Request, res: Response): Promise
       success: true,
       message: "Password reset successfully",
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Password reset failed",
-    });
   }
-};
+);
 
-export const changePasswordHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const changePasswordHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) {
-      res.status(400).json({
-        success: false,
-        message: "Current password and new password are required",
-      });
-      return;
+      throw new AppError("Current password and new password are required", 400);
     }
     if (newPassword.length < 6) {
-      res.status(400).json({
-        success: false,
-        message: "New password must be at least 6 characters",
-      });
-      return;
+      throw new AppError("New password must be at least 6 characters", 400);
     }
 
     await changePassword(req.user.id, currentPassword, newPassword);
@@ -419,22 +342,13 @@ export const changePasswordHandler = async (req: Request, res: Response): Promis
       success: true,
       message: "Password changed successfully",
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to change password",
-    });
   }
-};
+);
 
-export const deleteAccountHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteAccountHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { password } = req.body;
@@ -451,106 +365,74 @@ export const deleteAccountHandler = async (req: Request, res: Response): Promise
       message:
         "Your account has been deactivated and is scheduled for permanent deletion in 30 days. Log back in before then to cancel.",
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to delete account",
-    });
   }
-};
+);
 
-export const googleAuth = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { credential, role, action, acceptedTerms, acceptedPrivacy } = req.body;
+export const googleAuth = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { credential, role, action, acceptedTerms, acceptedPrivacy } = req.body;
 
-    // Verify the Google ID token server-side. Identity (googleId/email/name) is
-    // derived ONLY from the verified token — never from client-supplied fields.
-    const identity = await verifyGoogleCredential(credential);
+  // Verify the Google ID token server-side. Identity (googleId/email/name) is
+  // derived ONLY from the verified token — never from client-supplied fields.
+  const identity = await verifyGoogleCredential(credential);
 
-    const user = await googleLogin({
-      googleId: identity.googleId,
-      email: identity.email,
-      name: identity.name || identity.email.split("@")[0] || "User",
-      ...(identity.photoUrl ? { photoUrl: identity.photoUrl } : {}),
-      role,
-      action,
-      acceptedTerms,
-      acceptedPrivacy,
-    });
+  const user = await googleLogin({
+    googleId: identity.googleId,
+    email: identity.email,
+    name: identity.name || identity.email.split("@")[0] || "User",
+    ...(identity.photoUrl ? { photoUrl: identity.photoUrl } : {}),
+    role,
+    action,
+    acceptedTerms,
+    acceptedPrivacy,
+  });
 
-    const token = generateToken({
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-    });
+  const token = generateToken({
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  });
 
-    res.cookie("token", token, authCookieOptions);
+  res.cookie("token", token, authCookieOptions);
 
-    res.status(200).json({
-      success: true,
-      message: "Google login successful",
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          photoUrl: user.photoUrl,
-        },
+  res.status(200).json({
+    success: true,
+    message: "Google login successful",
+    data: {
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        photoUrl: user.photoUrl,
       },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Google login failed",
-    });
-  }
-};
+    },
+  });
+});
 
-export const graduateDependentHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const graduateDependentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { dependentId, email, password, phone } = req.body;
 
     // Validate required fields
     if (!dependentId) {
-      res.status(400).json({
-        success: false,
-        message: "Dependent ID is required",
-      });
-      return;
+      throw new AppError("Dependent ID is required", 400);
     }
 
     if (!email || !email.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-      return;
+      throw new AppError("Email is required", 400);
     }
 
     if (!password || password.length < 8) {
-      res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters",
-      });
-      return;
+      throw new AppError("Password must be at least 8 characters", 400);
     }
 
     if (!phone || !phone.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Phone number is required",
-      });
-      return;
+      throw new AppError("Phone number is required", 400);
     }
 
     const newUser = await graduateDependent({
@@ -574,23 +456,13 @@ export const graduateDependentHandler = async (req: Request, res: Response): Pro
         },
       },
     });
-  } catch (error) {
-    log.error("Graduate dependent error:", error);
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Graduation failed",
-    });
   }
-};
+);
 
-export const getMyPlayersHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getMyPlayersHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const players = await getPlayersByUserId(req.user.id);
@@ -600,22 +472,13 @@ export const getMyPlayersHandler = async (req: Request, res: Response): Promise<
       message: "Players fetched successfully",
       data: players,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch players",
-    });
   }
-};
+);
 
-export const addDependentHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const addDependentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const dependent = await addDependent(req.user.id, req.body);
@@ -625,31 +488,18 @@ export const addDependentHandler = async (req: Request, res: Response): Promise<
       message: "Dependent added successfully",
       data: dependent,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to add dependent",
-    });
   }
-};
+);
 
-export const updateDependentHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateDependentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { dependentId } = req.params;
     if (!dependentId || typeof dependentId !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "Invalid dependent ID",
-      });
-      return;
+      throw new AppError("Invalid dependent ID", 400);
     }
     const dependent = await updateDependent(req.user.id, dependentId, req.body);
 
@@ -658,31 +508,18 @@ export const updateDependentHandler = async (req: Request, res: Response): Promi
       message: "Dependent updated successfully",
       data: dependent,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update dependent",
-    });
   }
-};
+);
 
-export const deleteDependentHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteDependentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { dependentId } = req.params;
     if (!dependentId || typeof dependentId !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "Invalid dependent ID",
-      });
-      return;
+      throw new AppError("Invalid dependent ID", 400);
     }
     await deleteDependent(req.user.id, dependentId);
 
@@ -690,47 +527,27 @@ export const deleteDependentHandler = async (req: Request, res: Response): Promi
       success: true,
       message: "Dependent deleted successfully",
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to delete dependent",
-    });
   }
-};
+);
 
 /**
  * Get presigned URL for profile picture upload
  */
-export const getProfilePictureUploadUrlHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const getProfilePictureUploadUrlHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { fileName, contentType } = req.body;
 
     if (!fileName || !contentType) {
-      res.status(400).json({
-        success: false,
-        message: "fileName and contentType are required",
-      });
-      return;
+      throw new AppError("fileName and contentType are required", 400);
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(contentType)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid content type. Allowed: ${allowedTypes.join(", ")}`,
-      });
-      return;
+      throw new AppError(`Invalid content type. Allowed: ${allowedTypes.join(", ")}`, 400);
     }
 
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const result = await getProfilePictureUploadUrl(req.user.id, fileName, contentType);
@@ -740,39 +557,22 @@ export const getProfilePictureUploadUrlHandler = async (
       message: "Presigned URL generated successfully",
       data: result,
     });
-  } catch (error) {
-    log.error("Profile picture upload URL error:", error);
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to generate upload URL",
-    });
   }
-};
+);
 
 /**
  * Confirm profile picture upload
  */
-export const confirmProfilePictureUploadHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const confirmProfilePictureUploadHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { photoUrl, photoS3Key } = req.body;
 
     if (!photoUrl || !photoS3Key) {
-      res.status(400).json({
-        success: false,
-        message: "photoUrl and photoS3Key are required",
-      });
-      return;
+      throw new AppError("photoUrl and photoS3Key are required", 400);
     }
 
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const user = await confirmProfilePictureUpload(req.user.id, photoUrl, photoS3Key);
@@ -790,36 +590,23 @@ export const confirmProfilePictureUploadHandler = async (
         photoS3Key: user.photoS3Key,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to confirm profile picture upload",
-    });
   }
-};
+);
 
 /**
  * Add a new address for the user
  */
-export const addAddressHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const addAddressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { fullName, email, phone, addressLine1, addressLine2, city, state, postalCode, country } =
       req.body;
 
     if (!fullName || !email || !phone || !addressLine1 || !city || !state || !postalCode) {
-      res.status(400).json({
-        success: false,
-        message: "All required fields must be provided",
-      });
-      return;
+      throw new AppError("All required fields must be provided", 400);
     }
 
     const user = await addAddress(req.user.id, {
@@ -842,25 +629,16 @@ export const addAddressHandler = async (req: Request, res: Response): Promise<vo
         defaultAddressId: user.defaultAddressId,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to add address",
-    });
   }
-};
+);
 
 /**
  * Get all addresses for the user
  */
-export const getAddressesHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getAddressesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const addresses = await getUserAddresses(req.user.id);
@@ -869,34 +647,21 @@ export const getAddressesHandler = async (req: Request, res: Response): Promise<
       success: true,
       data: addresses,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch addresses",
-    });
   }
-};
+);
 
 /**
  * Update an existing address
  */
-export const updateAddressHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateAddressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { addressId } = req.params;
     if (!addressId || typeof addressId !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "Invalid address ID",
-      });
-      return;
+      throw new AppError("Invalid address ID", 400);
     }
     const { fullName, email, phone, addressLine1, addressLine2, city, state, postalCode, country } =
       req.body;
@@ -921,34 +686,21 @@ export const updateAddressHandler = async (req: Request, res: Response): Promise
         defaultAddressId: user.defaultAddressId,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update address",
-    });
   }
-};
+);
 
 /**
  * Delete an address
  */
-export const deleteAddressHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteAddressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { addressId } = req.params;
     if (!addressId || typeof addressId !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "Invalid address ID",
-      });
-      return;
+      throw new AppError("Invalid address ID", 400);
     }
 
     const user = await deleteAddress(req.user.id, addressId);
@@ -961,34 +713,21 @@ export const deleteAddressHandler = async (req: Request, res: Response): Promise
         defaultAddressId: user.defaultAddressId,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to delete address",
-    });
   }
-};
+);
 
 /**
  * Set default address
  */
-export const setDefaultAddressHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const setDefaultAddressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { addressId } = req.params;
     if (!addressId || typeof addressId !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "Invalid address ID",
-      });
-      return;
+      throw new AppError("Invalid address ID", 400);
     }
 
     const user = await setDefaultAddress(req.user.id, addressId);
@@ -1001,25 +740,18 @@ export const setDefaultAddressHandler = async (req: Request, res: Response): Pro
         defaultAddressId: user.defaultAddressId,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to set default address",
-    });
   }
-};
+);
 
-export const linkGoogleHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const linkGoogleHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { credential } = req.body;
     if (!credential) {
-      res.status(400).json({ success: false, message: "Credential is required" });
-      return;
+      throw new AppError("Credential is required", 400);
     }
 
     const user = await linkGoogleAccount(req.user.id, credential);
@@ -1038,10 +770,5 @@ export const linkGoogleHandler = async (req: Request, res: Response): Promise<vo
         },
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to link Google account",
-    });
   }
-};
+);

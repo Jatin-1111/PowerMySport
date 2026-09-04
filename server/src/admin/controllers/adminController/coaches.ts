@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 import { S3Service } from "../../../shared/services/S3Service";
 import { User } from "../../../client/models/User";
 import { Coach } from "../../../client/models/Coach";
@@ -47,81 +49,64 @@ const normalizeCoachResponse = (coach: unknown) => {
  * Admin: List coaches
  * GET /api/admin/coaches
  */
-export const listCoaches = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
-
-    const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 12));
-    const skip = (page - 1) * limit;
-    const statusFilter = typeof req.query.status === "string" ? req.query.status.trim() : "";
-
-    const filter: Record<string, unknown> = {};
-    if (statusFilter && statusFilter !== "ALL") {
-      filter.verificationStatus = statusFilter;
-    }
-
-    const [total, coaches] = await Promise.all([
-      Coach.countDocuments(filter),
-      Coach.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate({
-          path: "userId",
-          select: "_id name email phone photoUrl photoS3Key role",
-        })
-        .lean(),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      message: "Coaches retrieved successfully",
-      data: coaches.map((coach) => normalizeCoachResponse(coach)),
-      pagination: {
-        total,
-        page,
-        totalPages: Math.max(1, Math.ceil(total / limit)),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch coaches",
-    });
+export const listCoaches = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
   }
-};
+
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 12));
+  const skip = (page - 1) * limit;
+  const statusFilter = typeof req.query.status === "string" ? req.query.status.trim() : "";
+
+  const filter: Record<string, unknown> = {};
+  if (statusFilter && statusFilter !== "ALL") {
+    filter.verificationStatus = statusFilter;
+  }
+
+  const [total, coaches] = await Promise.all([
+    Coach.countDocuments(filter),
+    Coach.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate({
+        path: "userId",
+        select: "_id name email phone photoUrl photoS3Key role",
+      })
+      .lean(),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: "Coaches retrieved successfully",
+    data: coaches.map((coach) => normalizeCoachResponse(coach)),
+    pagination: {
+      total,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    },
+  });
+});
 
 /**
  * Admin: Get presigned upload URL for coach verification documents / venue images
  * POST /api/admin/coaches/:coachId/verification/upload-url
  */
-export const getAdminCoachVerificationUploadUrlHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const getAdminCoachVerificationUploadUrlHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     if (!coachId) {
-      res.status(400).json({ success: false, message: "coachId is required" });
-      return;
+      throw new AppError("coachId is required", 400);
     }
 
     const coach = await getCoachById(coachId);
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach not found" });
-      return;
+      throw new AppError("Coach not found", 404);
     }
 
     const { fileName, contentType, documentType, purpose } = req.body as {
@@ -132,11 +117,7 @@ export const getAdminCoachVerificationUploadUrlHandler = async (
     };
 
     if (!fileName || !contentType) {
-      res.status(400).json({
-        success: false,
-        message: "fileName and contentType are required",
-      });
-      return;
+      throw new AppError("fileName and contentType are required", 400);
     }
 
     const s3Service = new S3Service();
@@ -163,29 +144,22 @@ export const getAdminCoachVerificationUploadUrlHandler = async (
           : "Verification document upload URL generated",
       data: uploadData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to generate upload URL",
-    });
   }
-};
+);
 
 /**
  * Admin: Update coach profile (partial) by coachId
  * PUT /api/admin/coaches/:coachId
  */
-export const updateCoachAdminHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateCoachAdminHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     if (!coachId) {
-      res.status(400).json({ success: false, message: "coachId is required" });
-      return;
+      throw new AppError("coachId is required", 400);
     }
 
     // Strip fields an admin must not set via the generic coach update — these
@@ -205,8 +179,7 @@ export const updateCoachAdminHandler = async (req: Request, res: Response): Prom
 
     const updated = await updateCoach(coachId, updates as any);
     if (!updated) {
-      res.status(404).json({ success: false, message: "Coach not found" });
-      return;
+      throw new AppError("Coach not found", 404);
     }
 
     res.status(200).json({
@@ -214,38 +187,27 @@ export const updateCoachAdminHandler = async (req: Request, res: Response): Prom
       message: "Coach updated successfully",
       data: transformDocument(updated.toJSON()),
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update coach",
-    });
   }
-};
+);
 
 /**
  * Admin: Submit coach verification on behalf of coach
  * POST /api/admin/coaches/:coachId/verification/submit
  */
-export const submitCoachVerificationAdminHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const submitCoachVerificationAdminHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     if (!coachId) {
-      res.status(400).json({ success: false, message: "coachId is required" });
-      return;
+      throw new AppError("coachId is required", 400);
     }
 
     const coach = await getCoachById(coachId);
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach not found" });
-      return;
+      throw new AppError("Coach not found", 404);
     }
 
     const payload = req.body as { documents?: any[] };
@@ -259,20 +221,15 @@ export const submitCoachVerificationAdminHandler = async (
       message: "Verification submitted successfully",
       data: transformDocument(submitted.toJSON()),
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to submit verification",
-    });
   }
-};
+);
 
 /**
  * List coach verification requests
  * GET /api/admin/coaches/verification?status=PENDING&page=1&limit=20
  */
-export const listCoachVerifications = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listCoachVerifications = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const status = req.query.status as
       "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED" | undefined;
     const page = parseInt((req.query.page as string) || "1", 10);
@@ -290,29 +247,20 @@ export const listCoachVerifications = async (req: Request, res: Response): Promi
         totalPages: result.totalPages,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch coach verifications",
-    });
   }
-};
+);
 
 /**
  * Get single coach details for admin verification review
  * GET /api/admin/coaches/:coachId
  */
-export const getCoachVerificationDetails = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCoachVerificationDetails = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     const coach = await getCoachById(coachId);
 
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach not found",
-      });
-      return;
+      throw new AppError("Coach not found", 404);
     }
 
     res.status(200).json({
@@ -320,26 +268,17 @@ export const getCoachVerificationDetails = async (req: Request, res: Response): 
       message: "Coach details retrieved",
       data: normalizeAdminResponse(coach),
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch coach details",
-    });
   }
-};
+);
 
 /**
  * Approve coach verification
  * POST /api/admin/coaches/:coachId/verify
  */
-export const approveCoachVerification = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const approveCoachVerification = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coachId = (req.params as Record<string, unknown>).coachId as string;
@@ -385,36 +324,23 @@ export const approveCoachVerification = async (req: Request, res: Response): Pro
       message: "Coach verified successfully",
       data: coach,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to verify coach",
-    });
   }
-};
+);
 
 /**
  * Reject coach verification
  * POST /api/admin/coaches/:coachId/reject
  */
-export const rejectCoachVerification = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const rejectCoachVerification = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     const { reason } = req.body as { reason?: string };
     if (!reason) {
-      res.status(400).json({
-        success: false,
-        message: "Rejection reason is required",
-      });
-      return;
+      throw new AppError("Rejection reason is required", 400);
     }
 
     const coach = await updateCoachVerificationStatus(coachId, "REJECTED", req.user.id, reason);
@@ -462,29 +388,17 @@ export const rejectCoachVerification = async (req: Request, res: Response): Prom
       message: "Coach verification rejected",
       data: coach,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to reject coach",
-    });
   }
-};
+);
 
 /**
  * Mark coach verification for review
  * POST /api/admin/coaches/:coachId/mark-review
  */
-export const markCoachVerificationForReview = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const markCoachVerificationForReview = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coachId = (req.params as Record<string, unknown>).coachId as string;
@@ -526,50 +440,30 @@ export const markCoachVerificationForReview = async (
       message: "Coach verification marked for review",
       data: coach,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to mark coach for review",
-    });
   }
-};
+);
 
 /**
  * Notify coach to complete/submit verification
  * POST /api/admin/coaches/:coachId/notify
  */
-export const notifyCoachVerificationPending = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const notifyCoachVerificationPending = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const REMINDER_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coachId = (req.params as Record<string, unknown>).coachId as string;
     const coach = await getCoachById(coachId);
 
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach not found",
-      });
-      return;
+      throw new AppError("Coach not found", 404);
     }
 
     if (coach.verificationStatus === "VERIFIED") {
-      res.status(400).json({
-        success: false,
-        message: "Coach is already verified",
-      });
-      return;
+      throw new AppError("Coach is already verified", 400);
     }
 
     if (coach.lastVerificationReminderAt) {
@@ -577,29 +471,20 @@ export const notifyCoachVerificationPending = async (
       if (elapsedMs < REMINDER_COOLDOWN_MS) {
         const remainingMs = REMINDER_COOLDOWN_MS - elapsedMs;
         const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
-        res.status(429).json({
-          success: false,
-          message: `Reminder cooldown active. Try again in ${remainingMinutes} minute(s).`,
-        });
-        return;
+        throw new AppError(
+          `Reminder cooldown active. Try again in ${remainingMinutes} minute(s).`,
+          429
+        );
       }
     }
 
     const user = await User.findById(coach.userId).select("_id name email");
     if (!user?._id) {
-      res.status(404).json({
-        success: false,
-        message: "Coach user not found",
-      });
-      return;
+      throw new AppError("Coach user not found", 404);
     }
 
     if (!user.email) {
-      res.status(400).json({
-        success: false,
-        message: "Coach does not have an email address",
-      });
-      return;
+      throw new AppError("Coach does not have an email address", 400);
     }
 
     await sendCoachVerificationReminderEmail({
@@ -627,26 +512,17 @@ export const notifyCoachVerificationPending = async (
       success: true,
       message: "Verification reminder email sent",
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to send verification reminder",
-    });
   }
-};
+);
 
 /**
  * Create coach directly from admin
  * POST /api/admin/coaches/create
  */
-export const createCoachAdminHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createCoachAdminHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const {
@@ -817,10 +693,5 @@ export const createCoachAdminHandler = async (req: Request, res: Response): Prom
       message: "Coach created successfully",
       data: { coach, user },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create coach",
-    });
   }
-};
+);

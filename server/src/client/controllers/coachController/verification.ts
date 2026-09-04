@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { S3Service } from "../../../shared/services/S3Service";
 import { User } from "../../models/User";
 import {
@@ -8,6 +8,8 @@ import {
   updateCoach,
 } from "../../services/CoachService";
 import { transformDocument } from "../../../middleware/responseTransform";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 const normalizeVerificationDocuments = (
   documents?: Array<{
@@ -87,19 +89,14 @@ const hasStep1Completed = async (userId: string, bioCandidate?: string) => {
  * Save coach verification step 1 (Bio)
  * POST /api/coaches/verification/step1
  */
-export const saveCoachVerificationStep1Handler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const saveCoachVerificationStep1Handler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     if (req.user.role !== "Coach") {
-      res.status(403).json({ success: false, message: "Coach role required" });
-      return;
+      throw new AppError("Coach role required", 403);
     }
 
     const { bio, mobileNumber } = req.body as {
@@ -108,28 +105,16 @@ export const saveCoachVerificationStep1Handler = async (
     };
 
     if (!hasValidBio(bio)) {
-      res.status(400).json({
-        success: false,
-        message: "Bio is required to complete step 1",
-      });
-      return;
+      throw new AppError("Bio is required to complete step 1", 400);
     }
 
     if (!hasValidMobileNumber(mobileNumber)) {
-      res.status(400).json({
-        success: false,
-        message: "A valid mobile number is required to complete step 1",
-      });
-      return;
+      throw new AppError("A valid mobile number is required to complete step 1", 400);
     }
 
     const user = await User.findById(req.user.id).select("photoUrl");
     if (!user?.photoUrl?.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Profile picture is required before continuing",
-      });
-      return;
+      throw new AppError("Profile picture is required before continuing", 400);
     }
 
     await User.findByIdAndUpdate(req.user.id, { phone: mobileNumber });
@@ -159,31 +144,21 @@ export const saveCoachVerificationStep1Handler = async (
       message: "Step 1 saved successfully",
       data: coachData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to save verification step 1",
-    });
   }
-};
+);
 
 /**
  * Save coach verification step 2 (Sports + hourly rate + core profile)
  * POST /api/coaches/verification/step2
  */
-export const saveCoachVerificationStep2Handler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const saveCoachVerificationStep2Handler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     if (req.user.role !== "Coach") {
-      res.status(403).json({ success: false, message: "Coach role required" });
-      return;
+      throw new AppError("Coach role required", 403);
     }
 
     const {
@@ -227,83 +202,52 @@ export const saveCoachVerificationStep2Handler = async (
 
     const step1Completed = await hasStep1Completed(req.user.id, bio);
     if (!step1Completed) {
-      res.status(400).json({
-        success: false,
-        message:
-          "Complete step 1 first: profile picture, bio, and valid mobile number are required",
-      });
-      return;
+      throw new AppError(
+        "Complete step 1 first: profile picture, bio, and valid mobile number are required",
+        400
+      );
     }
 
     if (!Array.isArray(sports) || sports.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "At least one sport is required to complete step 2",
-      });
-      return;
+      throw new AppError("At least one sport is required to complete step 2", 400);
     }
 
     if (!Number.isFinite(Number(hourlyRate)) || Number(hourlyRate) <= 0) {
-      res.status(400).json({
-        success: false,
-        message: "A valid hourly rate greater than 0 is required",
-      });
-      return;
+      throw new AppError("A valid hourly rate greater than 0 is required", 400);
     }
 
     if (serviceMode !== "OWN_VENUE" && serviceMode !== "FREELANCE" && serviceMode !== "HYBRID") {
-      res.status(400).json({
-        success: false,
-        message: "A valid service mode is required for step 2",
-      });
-      return;
+      throw new AppError("A valid service mode is required for step 2", 400);
     }
 
     const effectiveServiceMode = serviceMode;
 
     if (effectiveServiceMode === "OWN_VENUE" || effectiveServiceMode === "HYBRID") {
       if (!ownVenueDetails?.name?.trim() || !ownVenueDetails?.address?.trim()) {
-        res.status(400).json({
-          success: false,
-          message: "Venue name and address are required for OWN_VENUE or HYBRID mode",
-        });
-        return;
+        throw new AppError("Venue name and address are required for OWN_VENUE or HYBRID mode", 400);
       }
 
       const ownVenueCoordinates =
         ownVenueDetails.location?.coordinates || ownVenueDetails.coordinates;
       if (!hasCoordinates(ownVenueCoordinates)) {
-        res.status(400).json({
-          success: false,
-          message: "Venue coordinates are required for OWN_VENUE or HYBRID mode",
-        });
-        return;
+        throw new AppError("Venue coordinates are required for OWN_VENUE or HYBRID mode", 400);
       }
     }
 
     if (effectiveServiceMode !== "OWN_VENUE") {
       if (!hasCoordinates(baseLocation?.coordinates)) {
-        res.status(400).json({
-          success: false,
-          message: "Base location coordinates are required for FREELANCE or HYBRID mode",
-        });
-        return;
+        throw new AppError(
+          "Base location coordinates are required for FREELANCE or HYBRID mode",
+          400
+        );
       }
 
       if (!Number.isFinite(Number(serviceRadiusKm)) || Number(serviceRadiusKm) <= 0) {
-        res.status(400).json({
-          success: false,
-          message: "Service radius must be a valid number greater than 0",
-        });
-        return;
+        throw new AppError("Service radius must be a valid number greater than 0", 400);
       }
 
       if (!Number.isFinite(Number(travelBufferTime)) || Number(travelBufferTime) < 0) {
-        res.status(400).json({
-          success: false,
-          message: "Travel buffer time must be a valid non-negative number",
-        });
-        return;
+        throw new AppError("Travel buffer time must be a valid non-negative number", 400);
       }
     }
 
@@ -314,11 +258,7 @@ export const saveCoachVerificationStep2Handler = async (
       const coordinates = ownVenueDetails.location?.coordinates || ownVenueDetails.coordinates;
 
       if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
-        res.status(400).json({
-          success: false,
-          message: "Venue coordinates are required and must be [longitude, latitude]",
-        });
-        return;
+        throw new AppError("Venue coordinates are required and must be [longitude, latitude]", 400);
       }
 
       // Pass through the ownVenueDetails as-is, ensuring coordinates are at the right level
@@ -418,37 +358,21 @@ export const saveCoachVerificationStep2Handler = async (
       message: "Step 2 saved successfully",
       data: coachData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to save verification step 2",
-    });
   }
-};
+);
 
 /**
  * Submit coach verification step 3 (Documents)
  * POST /api/coaches/verification/step3
  */
-export const submitCoachVerificationStep3Handler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const submitCoachVerificationStep3Handler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     if (req.user.role !== "Coach") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+      throw new AppError("Coach role required", 403);
     }
 
     const { documents } = req.body as {
@@ -463,39 +387,29 @@ export const submitCoachVerificationStep3Handler = async (
 
     const existingCoach = await getCoachByUserId(req.user.id);
     if (!existingCoach) {
-      res.status(400).json({
-        success: false,
-        message: "Complete step 2 before submitting verification",
-      });
-      return;
+      throw new AppError("Complete step 2 before submitting verification", 400);
     }
 
     const step1Completed = await hasStep1Completed(req.user.id, existingCoach.bio);
     if (!step1Completed) {
-      res.status(400).json({
-        success: false,
-        message: "Step 1 is incomplete. Add profile picture, bio, and mobile number first",
-      });
-      return;
+      throw new AppError(
+        "Step 1 is incomplete. Add profile picture, bio, and mobile number first",
+        400
+      );
     }
 
     if (!Array.isArray(existingCoach.sports) || existingCoach.sports.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "Step 2 is incomplete. Add at least one sport and pricing before submitting",
-      });
-      return;
+      throw new AppError(
+        "Step 2 is incomplete. Add at least one sport and pricing before submitting",
+        400
+      );
     }
 
     if (
       !Number.isFinite(Number(existingCoach.hourlyRate)) ||
       Number(existingCoach.hourlyRate) <= 0
     ) {
-      res.status(400).json({
-        success: false,
-        message: "Step 2 is incomplete. Add a valid hourly rate before submitting",
-      });
-      return;
+      throw new AppError("Step 2 is incomplete. Add a valid hourly rate before submitting", 400);
     }
 
     const normalizedDocs = normalizeVerificationDocuments(documents);
@@ -511,48 +425,31 @@ export const submitCoachVerificationStep3Handler = async (
       message: "Verification submitted successfully",
       data: coachData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to submit verification",
-    });
   }
-};
+);
 
 /**
  * Submit coach verification documents
  * POST /api/coaches/verification
  */
-export const submitCoachVerificationHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  await submitCoachVerificationStep3Handler(req, res);
-};
+export const submitCoachVerificationHandler = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    await submitCoachVerificationStep3Handler(req, res, next);
+  }
+);
 
 /**
  * Get presigned URL for coach verification document upload
  * POST /api/coaches/verification/upload-url
  */
-export const getCoachVerificationUploadUrlHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const getCoachVerificationUploadUrlHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     if (req.user.role !== "Coach") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+      throw new AppError("Coach role required", 403);
     }
 
     const { fileName, contentType, documentType, purpose } = req.body as {
@@ -564,11 +461,7 @@ export const getCoachVerificationUploadUrlHandler = async (
     };
 
     if (!fileName || !contentType || !documentType) {
-      res.status(400).json({
-        success: false,
-        message: "fileName, contentType, and documentType are required",
-      });
-      return;
+      throw new AppError("fileName, contentType, and documentType are required", 400);
     }
 
     const allowedDocumentTypes = ["application/pdf", "image/jpeg", "image/png"];
@@ -576,20 +469,12 @@ export const getCoachVerificationUploadUrlHandler = async (
 
     const allowedTypes = purpose === "VENUE_IMAGE" ? allowedImageTypes : allowedDocumentTypes;
     if (!allowedTypes.includes(contentType)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid content type. Allowed: ${allowedTypes.join(", ")}`,
-      });
-      return;
+      throw new AppError(`Invalid content type. Allowed: ${allowedTypes.join(", ")}`, 400);
     }
 
     const coach = await getCoachByUserId(req.user.id);
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const s3Service = new S3Service();
@@ -615,10 +500,5 @@ export const getCoachVerificationUploadUrlHandler = async (
           : "Verification document upload URL generated",
       data: uploadData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to generate upload URL",
-    });
   }
-};
+);

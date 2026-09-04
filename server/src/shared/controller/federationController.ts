@@ -2,56 +2,43 @@ import { Request, Response } from "express";
 import { Federation } from "../models/Federation";
 import { Tournament } from "../models/Tournament";
 import { TournamentEdition } from "../models/TournamentEdition";
-
-const fail = (res: Response, error: unknown, code = 400) =>
-  res.status(code).json({
-    success: false,
-    message: error instanceof Error ? error.message : "Request failed",
-  });
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 /**
  * GET /api/federations?sport=tennis
  */
-export const listFederations = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { sport } = req.query;
-    const filter: Record<string, unknown> = { isActive: true };
-    if (sport && typeof sport === "string") {
-      filter.sportSlug = sport.toLowerCase().trim();
-    }
-    const federations = await Federation.find(filter)
-      .select(
-        "-stateAssociations -eligibilityCriteria -registrationSteps -requiredDocuments -sourceUrls"
-      )
-      .lean();
-    res.json({ success: true, data: federations });
-  } catch (err) {
-    fail(res, err, 500);
+export const listFederations = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { sport } = req.query;
+  const filter: Record<string, unknown> = { isActive: true };
+  if (sport && typeof sport === "string") {
+    filter.sportSlug = sport.toLowerCase().trim();
   }
-};
+  const federations = await Federation.find(filter)
+    .select(
+      "-stateAssociations -eligibilityCriteria -registrationSteps -requiredDocuments -sourceUrls"
+    )
+    .lean();
+  res.json({ success: true, data: federations });
+});
 
 /**
  * GET /api/federations/:slug
  */
-export const getFederation = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const slug = typeof req.params.slug === "string" ? req.params.slug : "";
-    const fed = await Federation.findOne({ slug: slug.toLowerCase() }).lean();
-    if (!fed) {
-      res.status(404).json({ success: false, message: "Federation not found." });
-      return;
-    }
-    res.json({ success: true, data: fed });
-  } catch (err) {
-    fail(res, err, 500);
+export const getFederation = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const slug = typeof req.params.slug === "string" ? req.params.slug : "";
+  const fed = await Federation.findOne({ slug: slug.toLowerCase() }).lean();
+  if (!fed) {
+    throw new AppError("Federation not found.", 404);
   }
-};
+  res.json({ success: true, data: fed });
+});
 
 /**
  * GET /api/federations/:slug/tournaments?level=national&ageGroup=U-14&page=1&limit=20
  */
-export const getFederationTournaments = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getFederationTournaments = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const slug = typeof req.params.slug === "string" ? req.params.slug : "";
     const { level, ageGroup, page = "1", limit = "20" } = req.query;
 
@@ -59,8 +46,7 @@ export const getFederationTournaments = async (req: Request, res: Response): Pro
       .select("sportSlug acronym")
       .lean();
     if (!fed) {
-      res.status(404).json({ success: false, message: "Federation not found." });
-      return;
+      throw new AppError("Federation not found.", 404);
     }
 
     // Prefer the hard federationSlug reference; fall back to matching the
@@ -110,10 +96,8 @@ export const getFederationTournaments = async (req: Request, res: Response): Pro
         },
       },
     });
-  } catch (err) {
-    fail(res, err, 500);
   }
-};
+);
 
 /**
  * GET /api/federations/:slug/editions?limit=50
@@ -123,15 +107,14 @@ export const getFederationTournaments = async (req: Request, res: Response): Pro
  * are keyed by sportSlug only (not a specific federation), so this is the
  * sport-wide calendar, not filtered to this federation's own events.
  */
-export const getFederationEditions = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getFederationEditions = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const slug = typeof req.params.slug === "string" ? req.params.slug : "";
     const { limit = "50" } = req.query;
 
     const fed = await Federation.findOne({ slug: slug.toLowerCase() }).select("sportSlug").lean();
     if (!fed) {
-      res.status(404).json({ success: false, message: "Federation not found." });
-      return;
+      throw new AppError("Federation not found.", 404);
     }
 
     // Generous ceiling on purpose: the client renders a month-navigated
@@ -157,7 +140,5 @@ export const getFederationEditions = async (req: Request, res: Response): Promis
     );
 
     res.json({ success: true, data: { editions, lastCheckedAt } });
-  } catch (err) {
-    fail(res, err, 500);
   }
-};
+);

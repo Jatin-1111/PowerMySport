@@ -13,31 +13,25 @@ import {
   combineDateAndTimeIST,
   IST_OFFSET_MINUTES,
 } from "../../../utils/openingHours";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 /**
  * Get venue availability
  * GET /api/bookings/availability/:venueId
  */
-export const getVenueAvailability = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getVenueAvailability = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
     const { date } = req.query;
 
     if (!date) {
-      res.status(400).json({
-        success: false,
-        message: "Date parameter is required",
-      });
-      return;
+      throw new AppError("Date parameter is required", 400);
     }
 
     const venue = await Venue.findById(venueId).select("openingHours");
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     // Get all bookings for this venue on the specified date
@@ -143,13 +137,8 @@ export const getVenueAvailability = async (req: Request, res: Response): Promise
         alternateSlots,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch availability",
-    });
   }
-};
+);
 
 /**
  * The authoritative fee breakdown for a booking subtotal.
@@ -161,38 +150,28 @@ export const getVenueAvailability = async (req: Request, res: Response): Promise
  * displays what this returns, so there is one source for what a customer is
  * shown and what they are charged.
  */
-export const getBookingQuote = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { subtotal, discount } = req.body as {
-      subtotal: number;
-      discount?: number;
-    };
+export const getBookingQuote = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { subtotal, discount } = req.body as {
+    subtotal: number;
+    discount?: number;
+  };
 
-    if (!Number.isFinite(subtotal) || subtotal < 0) {
-      res.status(400).json({ success: false, message: "A non-negative subtotal is required" });
-      return;
-    }
-
-    const safeDiscount =
-      Number.isFinite(discount) && (discount ?? 0) > 0 ? (discount as number) : 0;
-
-    res.status(200).json({
-      success: true,
-      data: computeBookingFees(subtotal, safeDiscount),
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to price booking",
-    });
+  if (!Number.isFinite(subtotal) || subtotal < 0) {
+    throw new AppError("A non-negative subtotal is required", 400);
   }
-};
 
-export const validateBookingPromoCode = async (req: Request, res: Response): Promise<void> => {
-  try {
+  const safeDiscount = Number.isFinite(discount) && (discount ?? 0) > 0 ? (discount as number) : 0;
+
+  res.status(200).json({
+    success: true,
+    data: computeBookingFees(subtotal, safeDiscount),
+  });
+});
+
+export const validateBookingPromoCode = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { code, subtotal, hasCoach } = req.body as {
@@ -208,19 +187,13 @@ export const validateBookingPromoCode = async (req: Request, res: Response): Pro
       message: result.message || "Promo validated",
       data: result,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to validate promo",
-    });
   }
-};
+);
 
-export const joinBookingWaitlist = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const joinBookingWaitlist = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { venueId, coachId, sport, date, startTime, endTime, alternateSlots } = req.body as {
@@ -252,10 +225,5 @@ export const joinBookingWaitlist = async (req: Request, res: Response): Promise<
         status: entry.status,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to join waitlist",
-    });
   }
-};
+);

@@ -14,6 +14,8 @@ import {
 import { getPaginationParams } from "../../utils/pagination";
 import { transformDocument, transformDocuments } from "../../middleware/responseTransform";
 import { log as __rootLog } from "../../utils/logger";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 const log = __rootLog.child("venue");
 
 interface DiscoveryContext {
@@ -73,228 +75,167 @@ const fetchDiscoveryVenues = async (ctx: DiscoveryContext) => {
   );
 };
 
-export const createNewVenue = async (req: Request, res: Response): Promise<void> => {
-  try {
-    log.info("=== Create Venue Request ===");
-    log.info("User:", req.user);
-    log.info("Request body:", req.body);
+export const createNewVenue = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  log.info("=== Create Venue Request ===");
+  log.info("User:", req.user);
+  log.info("Request body:", req.body);
 
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
-
-    // Only venue listers can create venues
-    // Coaches store venue details in their profile and cannot create marketplace venues
-    const user = await User.findById(req.user.id);
-
-    if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
-    }
-
-    log.info("Venue Lister user:", {
-      id: user._id,
-      role: user.role,
-    });
-
-    const venue = await createVenue({
-      ...req.body,
-      ownerId: req.user.id,
-      approvalStatus: "PENDING", // Require admin approval for quality control
-    });
-
-    const venueData = transformDocument(venue);
-
-    res.status(201).json({
-      success: true,
-      message: "Venue created successfully and pending admin approval",
-      data: venueData,
-    });
-  } catch (error) {
-    log.error("Venue creation error:", error);
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create venue",
-    });
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
   }
-};
 
-export const getVenue = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const venueId = (req.params as Record<string, unknown>).venueId as string;
+  // Only venue listers can create venues
+  // Coaches store venue details in their profile and cannot create marketplace venues
+  const user = await User.findById(req.user.id);
 
-    const venue = await getVenueById(venueId);
-
-    if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
-    }
-
-    const venueData = transformDocument(venue);
-
-    res.status(200).json({
-      success: true,
-      message: "Venue retrieved successfully",
-      data: venueData,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch venue",
-    });
+  if (!user) {
+    throw new AppError("User not found", 404);
   }
-};
 
-export const getMyVenues = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
+  log.info("Venue Lister user:", {
+    id: user._id,
+    role: user.role,
+  });
 
-    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
+  const venue = await createVenue({
+    ...req.body,
+    ownerId: req.user.id,
+    approvalStatus: "PENDING", // Require admin approval for quality control
+  });
 
-    const result = await getVenuesByOwner(req.user.id, page, limit);
+  const venueData = transformDocument(venue);
 
-    res.status(200).json({
-      success: true,
-      message: "Venues retrieved successfully",
-      data: result.venues,
-      pagination: {
-        total: result.total,
-        page: result.page,
-        totalPages: result.totalPages,
-      },
-    });
-  } catch (error) {
-    log.error("Get my venues error:", error);
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch venues",
-    });
+  res.status(201).json({
+    success: true,
+    message: "Venue created successfully and pending admin approval",
+    data: venueData,
+  });
+});
+
+export const getVenue = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const venueId = (req.params as Record<string, unknown>).venueId as string;
+
+  const venue = await getVenueById(venueId);
+
+  if (!venue) {
+    throw new AppError("Venue not found", 404);
   }
-};
+
+  const venueData = transformDocument(venue);
+
+  res.status(200).json({
+    success: true,
+    message: "Venue retrieved successfully",
+    data: venueData,
+  });
+});
+
+export const getMyVenues = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
+
+  const result = await getVenuesByOwner(req.user.id, page, limit);
+
+  res.status(200).json({
+    success: true,
+    message: "Venues retrieved successfully",
+    data: result.venues,
+    pagination: {
+      total: result.total,
+      page: result.page,
+      totalPages: result.totalPages,
+    },
+  });
+});
 
 /**
  * Discovery endpoint: Search for venues near a location
  * GET /api/search?lat=28.6139&lng=77.2090&radius=5000&sport=cricket
  */
-export const discoverNearby = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const requestStartedAt = Date.now();
-    const context = buildDiscoveryContext(req);
+export const discoverNearby = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const requestStartedAt = Date.now();
+  const context = buildDiscoveryContext(req);
 
-    const startedAt = Date.now();
-    const venuesResult = await fetchDiscoveryVenues(context);
-    const venuesFetchMs = Date.now() - startedAt;
+  const startedAt = Date.now();
+  const venuesResult = await fetchDiscoveryVenues(context);
+  const venuesFetchMs = Date.now() - startedAt;
 
-    const totalDurationMs = Date.now() - requestStartedAt;
-    const venueCount = venuesResult?.venues?.length ?? 0;
+  const totalDurationMs = Date.now() - requestStartedAt;
+  const venueCount = venuesResult?.venues?.length ?? 0;
 
-    log.info(
-      "[discoverNearby]",
-      JSON.stringify({
-        hasLocation: context.hasLocation,
-        radiusMeters: context.radiusMeters,
-        sportFilter: context.sportFilter || null,
-        page: context.page,
-        limit: context.limit,
-        venueCount,
-        venuesFetchMs,
-        totalDurationMs,
-      })
-    );
+  log.info(
+    "[discoverNearby]",
+    JSON.stringify({
+      hasLocation: context.hasLocation,
+      radiusMeters: context.radiusMeters,
+      sportFilter: context.sportFilter || null,
+      page: context.page,
+      limit: context.limit,
+      venueCount,
+      venuesFetchMs,
+      totalDurationMs,
+    })
+  );
 
-    res.status(200).json({
-      success: true,
-      message: "Discovery results retrieved successfully",
-      data: {
-        venues: transformDocuments(venuesResult.venues),
+  res.status(200).json({
+    success: true,
+    message: "Discovery results retrieved successfully",
+    data: {
+      venues: transformDocuments(venuesResult.venues),
+    },
+    pagination: {
+      venues: {
+        total: venuesResult.total,
+        page: venuesResult.page,
+        totalPages: venuesResult.totalPages,
       },
-      pagination: {
-        venues: {
-          total: venuesResult.total,
-          page: venuesResult.page,
-          totalPages: venuesResult.totalPages,
-        },
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Discovery failed",
-    });
-  }
-};
+    },
+  });
+});
 
 /**
  * Legacy search endpoint (for backward compatibility)
  */
-export const searchVenues = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { sports, page: queryPage, limit: queryLimit } = req.query;
+export const searchVenues = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { sports, page: queryPage, limit: queryLimit } = req.query;
 
-    const filters: { sports?: string[] } = {};
-    if (sports) {
-      filters.sports = Array.isArray(sports) ? (sports as string[]) : [sports as string];
-    }
-
-    const { page, limit } = getPaginationParams(queryPage, queryLimit, 20, 100);
-
-    const result = await getAllVenues({ ...filters, approvalStatus: "APPROVED" }, page, limit);
-
-    res.status(200).json({
-      success: true,
-      message: "Search results retrieved successfully",
-      data: transformDocuments(result.venues),
-      pagination: {
-        total: result.total,
-        page: result.page,
-        totalPages: result.totalPages,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Search failed",
-    });
+  const filters: { sports?: string[] } = {};
+  if (sports) {
+    filters.sports = Array.isArray(sports) ? (sports as string[]) : [sports as string];
   }
-};
 
-export const updateVenueDetails = async (req: Request, res: Response): Promise<void> => {
-  try {
+  const { page, limit } = getPaginationParams(queryPage, queryLimit, 20, 100);
+
+  const result = await getAllVenues({ ...filters, approvalStatus: "APPROVED" }, page, limit);
+
+  res.status(200).json({
+    success: true,
+    message: "Search results retrieved successfully",
+    data: transformDocuments(result.venues),
+    pagination: {
+      total: result.total,
+      page: result.page,
+      totalPages: result.totalPages,
+    },
+  });
+});
+
+export const updateVenueDetails = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
     const ownerId = req.user?.id;
     if (!ownerId) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const venue = await updateVenue(venueId, ownerId, req.body);
 
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     const venueData = transformDocument(venue);
@@ -304,57 +245,33 @@ export const updateVenueDetails = async (req: Request, res: Response): Promise<v
       message: "Venue updated successfully",
       data: venueData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update venue",
-    });
   }
-};
+);
 
-export const deleteVenueById = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const venueId = (req.params as Record<string, unknown>).venueId as string;
+export const deleteVenueById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const venueId = (req.params as Record<string, unknown>).venueId as string;
 
-    const ownerId = req.user?.id;
-    if (!ownerId) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
-      return;
-    }
-
-    const venue = await deleteVenue(venueId, ownerId);
-
-    if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Venue deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to delete venue",
-    });
+  const ownerId = req.user?.id;
+  if (!ownerId) {
+    throw new AppError("Authentication required", 401);
   }
-};
 
-export const getVenueImageUploadUrls = async (req: Request, res: Response): Promise<void> => {
-  try {
+  const venue = await deleteVenue(venueId, ownerId);
+
+  if (!venue) {
+    throw new AppError("Venue not found", 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Venue deleted successfully",
+  });
+});
+
+export const getVenueImageUploadUrls = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const venueId = (req.params as Record<string, unknown>).venueId as string;
@@ -365,27 +282,15 @@ export const getVenueImageUploadUrls = async (req: Request, res: Response): Prom
 
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     if (venue.ownerId?.toString() !== req.user.id) {
-      res.status(403).json({
-        success: false,
-        message: "Access denied. You do not own this venue.",
-      });
-      return;
+      throw new AppError("Access denied. You do not own this venue.", 403);
     }
 
     if (coverPhotoIndex < 0 || coverPhotoIndex >= files.length) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid cover photo index",
-      });
-      return;
+      throw new AppError("Invalid cover photo index", 400);
     }
 
     const uploadUrls = [] as Array<{
@@ -431,10 +336,5 @@ export const getVenueImageUploadUrls = async (req: Request, res: Response): Prom
         uploadUrls,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to generate image upload URLs",
-    });
   }
-};
+);

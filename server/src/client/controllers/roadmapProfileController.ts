@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { UserPathwayProfile } from "../../shared/models/UserPathwayProfile";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 // Accepts a dependentId from the query/body only if it's a real ObjectId —
 // anything else (missing, empty string, garbage) falls back to the null
@@ -8,11 +10,10 @@ import { UserPathwayProfile } from "../../shared/models/UserPathwayProfile";
 const parseDependentId = (raw: unknown): string | null =>
   typeof raw === "string" && mongoose.isValidObjectId(raw) ? raw : null;
 
-export const getRoadmapProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getRoadmapProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const dependentId = parseDependentId(req.query.dependentId);
@@ -33,16 +34,13 @@ export const getRoadmapProfile = async (req: Request, res: Response): Promise<vo
       success: true,
       data: profile,
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch roadmap profile" });
   }
-};
+);
 
-export const updateRoadmapProfile = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateRoadmapProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const dependentId = parseDependentId(req.body.dependentId);
@@ -64,7 +62,5 @@ export const updateRoadmapProfile = async (req: Request, res: Response): Promise
       success: true,
       data: profile,
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to update roadmap profile" });
   }
-};
+);

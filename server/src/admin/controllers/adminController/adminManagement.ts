@@ -9,31 +9,26 @@ import {
 } from "../../services/AdminService";
 import { recordAuditLog, listAuditLogs } from "../../services/AuditLogService";
 import { auditContext, normalizeAdminResponse } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 // Get all admins (super admin only)
-export const listAdmins = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const admins = await getAllAdmins();
+export const listAdmins = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const admins = await getAllAdmins();
 
-    res.status(200).json({
-      success: true,
-      message: "Admins retrieved successfully",
-      data: admins.map((admin) => normalizeAdminResponse(admin)),
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to get admins",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Admins retrieved successfully",
+    data: admins.map((admin) => normalizeAdminResponse(admin)),
+  });
+});
 
 /**
  * Admin: List audit log entries (Super Admin only)
  * GET /api/admin/audit-logs?page=1&limit=25
  */
-export const listAuditLogsHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listAuditLogsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
     const adminId = typeof req.query.adminId === "string" ? req.query.adminId : undefined;
@@ -54,44 +49,28 @@ export const listAuditLogsHandler = async (req: Request, res: Response): Promise
         totalPages: result.totalPages,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to get audit logs",
-    });
   }
-};
+);
 
 // Get role templates
-export const getRoleTemplates = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const templates = getRoleTemplatesData();
+export const getRoleTemplates = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const templates = getRoleTemplatesData();
 
-    res.status(200).json({
-      success: true,
-      message: "Role templates retrieved successfully",
-      data: templates,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to get role templates",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Role templates retrieved successfully",
+    data: templates,
+  });
+});
 
 // Update admin permissions
-export const updateAdminPermissionsHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateAdminPermissionsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { adminId } = req.params;
     const { permissions } = req.body;
 
     if (!Array.isArray(permissions)) {
-      res.status(400).json({
-        success: false,
-        message: "Permissions must be an array",
-      });
-      return;
+      throw new AppError("Permissions must be an array", 400);
     }
 
     const updatedAdmin = await updateAdminPermissions(adminId as string, permissions as string[]);
@@ -112,26 +91,17 @@ export const updateAdminPermissionsHandler = async (req: Request, res: Response)
       message: "Admin permissions updated successfully",
       data: normalizeAdminResponse(updatedAdmin),
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update permissions",
-    });
   }
-};
+);
 
 // Update admin role
-export const updateAdminRoleHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateAdminRoleHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { adminId } = req.params;
     const { role } = req.body;
 
     if (!role) {
-      res.status(400).json({
-        success: false,
-        message: "Role is required",
-      });
-      return;
+      throw new AppError("Role is required", 400);
     }
 
     const updatedAdmin = await updateAdminRole(adminId as string, role as string);
@@ -152,26 +122,17 @@ export const updateAdminRoleHandler = async (req: Request, res: Response): Promi
       message: "Admin role updated successfully",
       data: normalizeAdminResponse(updatedAdmin),
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update role",
-    });
   }
-};
+);
 
 // Update admin name
-export const updateAdminProfileHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateAdminProfileHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { adminId } = req.params;
     const { name } = req.body;
 
     if (typeof name !== "string" || !name.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Name is required",
-      });
-      return;
+      throw new AppError("Name is required", 400);
     }
 
     const updatedAdmin = await updateAdmin(adminId as string, {
@@ -179,11 +140,7 @@ export const updateAdminProfileHandler = async (req: Request, res: Response): Pr
     });
 
     if (!updatedAdmin) {
-      res.status(404).json({
-        success: false,
-        message: "Admin not found",
-      });
-      return;
+      throw new AppError("Admin not found", 404);
     }
 
     const audit = auditContext(req);
@@ -202,34 +159,21 @@ export const updateAdminProfileHandler = async (req: Request, res: Response): Pr
       message: "Admin profile updated successfully",
       data: normalizeAdminResponse(updatedAdmin),
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update profile",
-    });
   }
-};
+);
 
 // Activate or deactivate an admin account
-export const updateAdminStatusHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateAdminStatusHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { adminId } = req.params;
     const { isActive } = req.body;
 
     if (typeof isActive !== "boolean") {
-      res.status(400).json({
-        success: false,
-        message: "isActive must be a boolean",
-      });
-      return;
+      throw new AppError("isActive must be a boolean", 400);
     }
 
     if (!isActive && req.user?.id === adminId) {
-      res.status(400).json({
-        success: false,
-        message: "You cannot deactivate your own account",
-      });
-      return;
+      throw new AppError("You cannot deactivate your own account", 400);
     }
 
     const updatedAdmin = await setAdminActiveStatus(adminId as string, isActive);
@@ -249,10 +193,5 @@ export const updateAdminStatusHandler = async (req: Request, res: Response): Pro
       message: `Admin ${isActive ? "activated" : "deactivated"} successfully`,
       data: normalizeAdminResponse(updatedAdmin),
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update status",
-    });
   }
-};
+);

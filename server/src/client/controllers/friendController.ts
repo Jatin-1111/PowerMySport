@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import friendService from "../services/FriendService";
 import { z } from "zod";
 import { NotificationService } from "../services/NotificationService";
@@ -6,6 +6,8 @@ import { sendFriendRequestEmail, sendFriendRequestAcceptedEmail } from "../../ut
 import { User } from "../models/User";
 import { S3Service } from "../../shared/services/S3Service";
 import { log as __rootLog } from "../../utils/logger";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 const log = __rootLog.child("friend");
 
 const s3Service = new S3Service();
@@ -53,85 +55,79 @@ const requestTypeSchema = z.object({
 /**
  * Send a friend request
  */
-export const sendFriendRequest = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { recipientId } = sendRequestSchema.parse(req.body);
-    const userId = req.user!.id;
+export const sendFriendRequest = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { recipientId } = sendRequestSchema.parse(req.body);
+      const userId = req.user!.id;
 
-    const friendRequest = await friendService.sendFriendRequest(userId, recipientId);
+      const friendRequest = await friendService.sendFriendRequest(userId, recipientId);
 
-    // Get user details for notifications
-    const [requester, recipient] = await Promise.all([
-      User.findById(userId).select("name email photoUrl photoS3Key"),
-      User.findById(recipientId).select("name email photoUrl photoS3Key"),
-    ]);
+      // Get user details for notifications
+      const [requester, recipient] = await Promise.all([
+        User.findById(userId).select("name email photoUrl photoS3Key"),
+        User.findById(recipientId).select("name email photoUrl photoS3Key"),
+      ]);
 
-    if (requester && recipient) {
-      const requesterPhotoUrl = await resolveUserPhotoUrl(requester);
+      if (requester && recipient) {
+        const requesterPhotoUrl = await resolveUserPhotoUrl(requester);
 
-      // Send notification via NotificationService (socket + persist to DB) - wait for this
-      // But send emails asynchronously in the background
-      NotificationService.send(
-        {
-          userId: recipientId,
-          type: "FRIEND_REQUEST",
-          title: "New Friend Request",
-          message: `${requester.name} sent you a friend request`,
-          data: {
-            requestId: friendRequest._id.toString(),
-            requesterId: requester._id.toString(),
-            requesterName: requester.name,
-            requesterEmail: requester.email,
-            requesterPhotoUrl,
+        // Send notification via NotificationService (socket + persist to DB) - wait for this
+        // But send emails asynchronously in the background
+        NotificationService.send(
+          {
+            userId: recipientId,
+            type: "FRIEND_REQUEST",
+            title: "New Friend Request",
+            message: `${requester.name} sent you a friend request`,
+            data: {
+              requestId: friendRequest._id.toString(),
+              requesterId: requester._id.toString(),
+              requesterName: requester.name,
+              requesterEmail: requester.email,
+              requesterPhotoUrl,
+            },
           },
-        },
-        {
-          persistToDb: true,
-          sendSocket: true,
-          sendEmail: false, // Don't await email - send async below
-        }
-      ).catch((err) => log.error("Failed to send notification:", err));
+          {
+            persistToDb: true,
+            sendSocket: true,
+            sendEmail: false, // Don't await email - send async below
+          }
+        ).catch((err) => log.error("Failed to send notification:", err));
 
-      // Send detailed email notification asynchronously (don't wait)
-      sendFriendRequestEmail({
-        recipientName: recipient.name,
-        recipientEmail: recipient.email,
-        requesterName: requester.name,
-        ...(requesterPhotoUrl && { requesterPhotoUrl }),
-      }).catch((err) => log.error("Failed to send friend request email:", err));
-    }
+        // Send detailed email notification asynchronously (don't wait)
+        sendFriendRequestEmail({
+          recipientName: recipient.name,
+          recipientEmail: recipient.email,
+          requesterName: requester.name,
+          ...(requesterPhotoUrl && { requesterPhotoUrl }),
+        }).catch((err) => log.error("Failed to send friend request email:", err));
+      }
 
-    res.status(201).json({
-      success: true,
-      message: "Friend request sent successfully",
-      data: friendRequest,
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        success: false,
-        message: "Validation error",
-        errors: error.issues,
+      res.status(201).json({
+        success: true,
+        message: "Friend request sent successfully",
+        data: friendRequest,
       });
-    } else {
-      next(error);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Validation error",
+          errors: error.issues,
+        });
+      } else {
+        throw error;
+      }
     }
   }
-};
+);
 
 /**
  * Accept a friend request
  */
-export const acceptFriendRequest = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const acceptFriendRequest = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const requestId = req.params.requestId as string;
     const userId = req.user!.id;
 
@@ -184,20 +180,14 @@ export const acceptFriendRequest = async (
       message: "Friend request accepted",
       data: connection,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Decline a friend request
  */
-export const declineFriendRequest = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const declineFriendRequest = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const requestId = req.params.requestId as string;
     const userId = req.user!.id;
 
@@ -208,93 +198,63 @@ export const declineFriendRequest = async (
       message: "Friend request declined",
       data: connection,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Remove a friend (unfriend)
  */
-export const removeFriend = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const friendId = req.params.friendId as string;
-    const userId = req.user!.id;
+export const removeFriend = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const friendId = req.params.friendId as string;
+  const userId = req.user!.id;
 
-    await friendService.removeFriend(userId, friendId);
+  await friendService.removeFriend(userId, friendId);
 
-    res.json({
-      success: true,
-      message: "Friend removed successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  res.json({
+    success: true,
+    message: "Friend removed successfully",
+  });
+});
 
 /**
  * Block a user
  */
-export const blockUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const { userId: targetId } = req.body;
-    const userId = req.user!.id;
+export const blockUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { userId: targetId } = req.body;
+  const userId = req.user!.id;
 
-    if (!targetId) {
-      res.status(400).json({
-        success: false,
-        message: "User ID is required",
-      });
-      return;
-    }
-
-    const connection = await friendService.blockUser(userId, targetId);
-
-    res.json({
-      success: true,
-      message: "User blocked successfully",
-      data: connection,
-    });
-  } catch (error) {
-    next(error);
+  if (!targetId) {
+    throw new AppError("User ID is required", 400);
   }
-};
+
+  const connection = await friendService.blockUser(userId, targetId);
+
+  res.json({
+    success: true,
+    message: "User blocked successfully",
+    data: connection,
+  });
+});
 
 /**
  * Unblock a user
  */
-export const unblockUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const targetId = req.params.userId as string;
-    const userId = req.user!.id;
+export const unblockUser = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const targetId = req.params.userId as string;
+  const userId = req.user!.id;
 
-    await friendService.unblockUser(userId, targetId);
+  await friendService.unblockUser(userId, targetId);
 
-    res.json({
-      success: true,
-      message: "User unblocked successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  res.json({
+    success: true,
+    message: "User unblocked successfully",
+  });
+});
 
 /**
  * Get all friends (paginated)
  */
-export const getFriends = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const getFriends = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const { page, limit } = paginationSchema.parse(req.query);
     const userId = req.user!.id;
@@ -314,116 +274,96 @@ export const getFriends = async (
         errors: error.issues,
       });
     } else {
-      next(error);
+      throw error;
     }
   }
-};
+});
 
 /**
  * Get pending friend requests
  */
-export const getPendingRequests = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { type } = requestTypeSchema.parse(req.query);
-    const userId = req.user!.id;
+export const getPendingRequests = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { type } = requestTypeSchema.parse(req.query);
+      const userId = req.user!.id;
 
-    const requests = await friendService.getPendingRequests(userId, type);
+      const requests = await friendService.getPendingRequests(userId, type);
 
-    res.json({
-      success: true,
-      message: "Pending requests retrieved successfully",
-      data: requests,
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        success: false,
-        message: "Validation error",
-        errors: error.issues,
+      res.json({
+        success: true,
+        message: "Pending requests retrieved successfully",
+        data: requests,
       });
-    } else {
-      next(error);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Validation error",
+          errors: error.issues,
+        });
+      } else {
+        throw error;
+      }
     }
   }
-};
+);
 
 /**
  * Search friends for booking
  */
-export const searchFriendsForBooking = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { q } = searchFriendsSchema.parse(req.query);
-    const userId = req.user!.id;
+export const searchFriendsForBooking = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { q } = searchFriendsSchema.parse(req.query);
+      const userId = req.user!.id;
 
-    const friends = await friendService.searchFriendsForBooking(userId, q);
+      const friends = await friendService.searchFriendsForBooking(userId, q);
 
-    res.json({
-      success: true,
-      message: "Friends retrieved successfully",
-      data: friends,
-    });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        success: false,
-        message: "Validation error",
-        errors: error.issues,
+      res.json({
+        success: true,
+        message: "Friends retrieved successfully",
+        data: friends,
       });
-    } else {
-      next(error);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Validation error",
+          errors: error.issues,
+        });
+      } else {
+        throw error;
+      }
     }
   }
-};
+);
 
 /**
  * Get friend status with another user
  */
-export const getFriendStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const targetId = req.params.targetId as string;
-    const userId = req.user!.id;
+export const getFriendStatus = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const targetId = req.params.targetId as string;
+  const userId = req.user!.id;
 
-    const status = await friendService.getFriendStatus(userId, targetId);
+  const status = await friendService.getFriendStatus(userId, targetId);
 
-    res.json({
-      success: true,
-      data: { status },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  res.json({
+    success: true,
+    data: { status },
+  });
+});
 
 /**
  * Search for users to add as friends
  */
-export const searchUsers = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const searchUsers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const { q } = searchFriendsSchema.parse(req.query);
     const userId = req.user!.id;
 
     if (!q || q.trim().length < 2) {
-      res.status(400).json({
-        success: false,
-        message: "Search query must be at least 2 characters",
-      });
-      return;
+      throw new AppError("Search query must be at least 2 characters", 400);
     }
 
     const users = await friendService.searchUsers(userId, q);
@@ -441,20 +381,16 @@ export const searchUsers = async (
         errors: error.issues,
       });
     } else {
-      next(error);
+      throw error;
     }
   }
-};
+});
 
 /**
  * Get count of pending friend requests (received)
  */
-export const getPendingRequestsCount = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const getPendingRequestsCount = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
     const count = await friendService.countPendingRequests(userId, "RECEIVED");
 
@@ -462,7 +398,5 @@ export const getPendingRequestsCount = async (
       success: true,
       data: { count },
     });
-  } catch (error) {
-    next(error);
   }
-};
+);

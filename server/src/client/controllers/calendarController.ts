@@ -2,20 +2,19 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
 import { UserCalendarEvent } from "../models/UserCalendarEvent";
-import { log as __rootLog } from "../../utils/logger";
-const log = __rootLog.child("calendar");
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 /**
  * GET /api/calendar/bookings?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  * Returns all non-cancelled bookings for the authenticated user in the given date range.
  * Optimised for calendar dot rendering — only selects fields needed for the UI.
  */
-export const getCalendarBookings = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCalendarBookings = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const user = req.user;
     if (!user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { startDate, endDate } = req.query as {
@@ -24,11 +23,7 @@ export const getCalendarBookings = async (req: Request, res: Response): Promise<
     };
 
     if (!startDate || !endDate) {
-      res.status(400).json({
-        success: false,
-        message: "startDate and endDate are required",
-      });
-      return;
+      throw new AppError("startDate and endDate are required", 400);
     }
 
     const start = new Date(startDate);
@@ -36,8 +31,7 @@ export const getCalendarBookings = async (req: Request, res: Response): Promise<
     end.setHours(23, 59, 59, 999);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      res.status(400).json({ success: false, message: "Invalid date format" });
-      return;
+      throw new AppError("Invalid date format", 400);
     }
 
     const bookings = await Booking.find({
@@ -55,22 +49,18 @@ export const getCalendarBookings = async (req: Request, res: Response): Promise<
       .lean();
 
     res.json({ success: true, data: { bookings } });
-  } catch (error) {
-    log.error("[getCalendarBookings]", error);
-    res.status(500).json({ success: false, message: "Failed to fetch calendar bookings" });
   }
-};
+);
 
 /**
  * GET /api/calendar/events?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  * Returns all personal calendar events for the user (optionally filtered by date range).
  */
-export const getCalendarEvents = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCalendarEvents = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const user = req.user;
     if (!user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { startDate, endDate } = req.query as {
@@ -95,22 +85,18 @@ export const getCalendarEvents = async (req: Request, res: Response): Promise<vo
       .lean();
 
     res.json({ success: true, data: { events } });
-  } catch (error) {
-    log.error("[getCalendarEvents]", error);
-    res.status(500).json({ success: false, message: "Failed to fetch calendar events" });
   }
-};
+);
 
 /**
  * POST /api/calendar/events
  * Create a new personal calendar event.
  */
-export const createCalendarEvent = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createCalendarEvent = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const user = req.user;
     if (!user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { title, date, color, type, notes } = req.body as {
@@ -122,14 +108,12 @@ export const createCalendarEvent = async (req: Request, res: Response): Promise<
     };
 
     if (!title?.trim() || !date) {
-      res.status(400).json({ success: false, message: "title and date are required" });
-      return;
+      throw new AppError("title and date are required", 400);
     }
 
     const parsedDate = new Date(date);
     if (isNaN(parsedDate.getTime())) {
-      res.status(400).json({ success: false, message: "Invalid date" });
-      return;
+      throw new AppError("Invalid date", 400);
     }
 
     // Enforce per-user event cap to prevent unbounded growth
@@ -137,11 +121,7 @@ export const createCalendarEvent = async (req: Request, res: Response): Promise<
       userId: new mongoose.Types.ObjectId(user.id),
     });
     if (count >= 200) {
-      res.status(400).json({
-        success: false,
-        message: "Maximum 200 calendar events allowed",
-      });
-      return;
+      throw new AppError("Maximum 200 calendar events allowed", 400);
     }
 
     const payload: Record<string, unknown> = {
@@ -162,22 +142,18 @@ export const createCalendarEvent = async (req: Request, res: Response): Promise<
       message: "Event created",
       data: { event: (event as any).toJSON() },
     });
-  } catch (error) {
-    log.error("[createCalendarEvent]", error);
-    res.status(500).json({ success: false, message: "Failed to create calendar event" });
   }
-};
+);
 
 /**
  * PUT /api/calendar/events/:id
  * Update an existing personal calendar event (owner-scoped).
  */
-export const updateCalendarEvent = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateCalendarEvent = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const user = req.user;
     if (!user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { id } = req.params as { id: string };
@@ -194,8 +170,7 @@ export const updateCalendarEvent = async (req: Request, res: Response): Promise<
     if (date !== undefined) {
       const parsed = new Date(date);
       if (isNaN(parsed.getTime())) {
-        res.status(400).json({ success: false, message: "Invalid date" });
-        return;
+        throw new AppError("Invalid date", 400);
       }
       update.date = parsed;
     }
@@ -213,27 +188,22 @@ export const updateCalendarEvent = async (req: Request, res: Response): Promise<
     );
 
     if (!event) {
-      res.status(404).json({ success: false, message: "Event not found" });
-      return;
+      throw new AppError("Event not found", 404);
     }
 
     res.json({ success: true, data: { event: (event as any).toJSON() } });
-  } catch (error) {
-    log.error("[updateCalendarEvent]", error);
-    res.status(500).json({ success: false, message: "Failed to update calendar event" });
   }
-};
+);
 
 /**
  * DELETE /api/calendar/events/:id
  * Delete a personal calendar event (owner-scoped).
  */
-export const deleteCalendarEvent = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteCalendarEvent = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const user = req.user;
     if (!user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { id } = req.params as { id: string };
@@ -243,13 +213,9 @@ export const deleteCalendarEvent = async (req: Request, res: Response): Promise<
     } as any);
 
     if (!event) {
-      res.status(404).json({ success: false, message: "Event not found" });
-      return;
+      throw new AppError("Event not found", 404);
     }
 
     res.json({ success: true, message: "Event deleted" });
-  } catch (error) {
-    log.error("[deleteCalendarEvent]", error);
-    res.status(500).json({ success: false, message: "Failed to delete calendar event" });
   }
-};
+);

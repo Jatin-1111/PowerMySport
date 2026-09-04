@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import { getInfraMetrics, getInfraOverview } from "../services/InfraMonitoringService";
+import { asyncHandler } from "../../middleware/asyncHandler";
 
-export const getInfraOverviewController = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getInfraOverviewController = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const forceFresh = req.query.fresh === "true";
     const data = await getInfraOverview(forceFresh);
     res.status(200).json({
@@ -10,17 +11,11 @@ export const getInfraOverviewController = async (req: Request, res: Response): P
       message: "Infrastructure overview retrieved",
       data,
     });
-  } catch (error) {
-    res.status(502).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to retrieve infrastructure overview",
-    });
   }
-};
+);
 
-export const getInfraMetricsController = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getInfraMetricsController = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const hours = Math.min(168, Math.max(1, Number(req.query.hours) || 6));
     const forceFresh = req.query.fresh === "true";
     const data = await getInfraMetrics(hours, forceFresh);
@@ -29,10 +24,5 @@ export const getInfraMetricsController = async (req: Request, res: Response): Pr
       message: "Infrastructure metrics retrieved",
       data,
     });
-  } catch (error) {
-    res.status(502).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve infrastructure metrics",
-    });
   }
-};
+);

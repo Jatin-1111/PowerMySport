@@ -6,8 +6,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { scoreSports } from "../utils/findSportTestScorer";
-import { log as __rootLog } from "../../utils/logger";
-const log = __rootLog.child("findSportTest");
+import { asyncHandler } from "../../middleware/asyncHandler";
 
 const wizardAnswersSchema = z.object({
   childName: z.string().default(""),
@@ -45,25 +44,17 @@ const wizardAnswersSchema = z.object({
  * Every field is optional; omitted fields default to null/empty so a caller can
  * send a minimal payload focused on just the fields they're exercising.
  */
-export const scoreSport = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const parsed = wizardAnswersSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid payload",
-        issues: parsed.error.flatten(),
-      });
-      return;
-    }
-
-    const results = scoreSports(parsed.data);
-    res.json({ success: true, data: results });
-  } catch (error) {
-    log.error("Error scoring sport (test endpoint):", error);
-    res.status(500).json({
+export const scoreSport = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const parsed = wizardAnswersSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
       success: false,
-      message: "Failed to score sport",
+      message: "Invalid payload",
+      issues: parsed.error.flatten(),
     });
+    return;
   }
-};
+
+  const results = scoreSports(parsed.data);
+  res.json({ success: true, data: results });
+});

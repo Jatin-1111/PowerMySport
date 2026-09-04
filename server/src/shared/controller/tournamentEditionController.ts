@@ -1,12 +1,8 @@
 import { Request, Response } from "express";
 import { Federation } from "../models/Federation";
 import { TournamentEdition } from "../models/TournamentEdition";
-
-const fail = (res: Response, error: unknown, code = 400) =>
-  res.status(code).json({
-    success: false,
-    message: error instanceof Error ? error.message : "Request failed",
-  });
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 /**
  * The federation to attribute an edition to.
@@ -35,18 +31,16 @@ async function resolveEditionFederation(
  * GET /api/tournament-editions/:slug
  * One dated edition, for the public /tournaments/[slug] page.
  */
-export const getTournamentEdition = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getTournamentEdition = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const slug = typeof req.params.slug === "string" ? req.params.slug.toLowerCase() : "";
     if (!slug) {
-      res.status(400).json({ success: false, message: "A slug is required." });
-      return;
+      throw new AppError("A slug is required.", 400);
     }
 
     const edition = await TournamentEdition.findOne({ slug }).lean();
     if (!edition) {
-      res.status(404).json({ success: false, message: "Tournament not found." });
-      return;
+      throw new AppError("Tournament not found.", 404);
     }
 
     const federation = await resolveEditionFederation(edition.sportSlug, edition.name);
@@ -70,18 +64,16 @@ export const getTournamentEdition = async (req: Request, res: Response): Promise
       .lean();
 
     res.json({ success: true, data: { edition, federation, related } });
-  } catch (err) {
-    fail(res, err, 500);
   }
-};
+);
 
 /**
  * GET /api/tournament-editions?limit=1000
  * Slug + timestamp only — this exists to feed the sitemap, so it deliberately
  * returns no content fields and skips editions that have already finished.
  */
-export const listTournamentEditionSlugs = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listTournamentEditionSlugs = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const limit = Math.min(5000, Math.max(1, parseInt((req.query.limit as string) || "2000", 10)));
     const startOfToday = new Date();
     startOfToday.setUTCHours(0, 0, 0, 0);
@@ -97,7 +89,5 @@ export const listTournamentEditionSlugs = async (req: Request, res: Response): P
       .lean();
 
     res.json({ success: true, data: editions });
-  } catch (err) {
-    fail(res, err, 500);
   }
-};
+);

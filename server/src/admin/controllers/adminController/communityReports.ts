@@ -6,6 +6,8 @@ import { CommunityGroup } from "../../../community/models/CommunityGroup";
 import { CommunityPost } from "../../../community/models/CommunityPost";
 import { CommunityAnswer } from "../../../community/models/CommunityAnswer";
 import { recordAuditLog } from "../../services/AuditLogService";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 const TARGET_PREVIEW_MAX_LENGTH = 140;
 
@@ -83,8 +85,8 @@ const resolveCommunityReportTargets = async (
   return result;
 };
 
-export const listCommunityReports = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listCommunityReports = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
@@ -152,25 +154,18 @@ export const listCommunityReports = async (req: Request, res: Response): Promise
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch community reports",
-    });
   }
-};
+);
 
-export const reviewCommunityReport = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const reviewCommunityReport = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const reportId = String(req.params.reportId || "");
     if (!reportId || !mongoose.Types.ObjectId.isValid(reportId)) {
-      res.status(400).json({ success: false, message: "Invalid report id" });
-      return;
+      throw new AppError("Invalid report id", 400);
     }
 
     const { status, resolutionNote } = req.body as {
@@ -192,8 +187,7 @@ export const reviewCommunityReport = async (req: Request, res: Response): Promis
     ).lean();
 
     if (!updated) {
-      res.status(404).json({ success: false, message: "Report not found" });
-      return;
+      throw new AppError("Report not found", 404);
     }
 
     void recordAuditLog({
@@ -214,23 +208,17 @@ export const reviewCommunityReport = async (req: Request, res: Response): Promis
         reviewedAt: updated.reviewedAt,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update community report",
-    });
   }
-};
+);
 
 /**
  * Bulk-review community reports (resolve/reject several at once)
  * PATCH /api/admin/community/reports/bulk-review
  */
-export const bulkReviewCommunityReports = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const bulkReviewCommunityReports = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { reportIds, status, resolutionNote } = req.body as {
@@ -240,22 +228,16 @@ export const bulkReviewCommunityReports = async (req: Request, res: Response): P
     };
 
     if (!Array.isArray(reportIds) || reportIds.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "reportIds must be a non-empty array",
-      });
-      return;
+      throw new AppError("reportIds must be a non-empty array", 400);
     }
 
     const validIds = reportIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
     if (validIds.length === 0) {
-      res.status(400).json({ success: false, message: "No valid report ids" });
-      return;
+      throw new AppError("No valid report ids", 400);
     }
 
     if (!["UNDER_REVIEW", "RESOLVED", "REJECTED"].includes(status)) {
-      res.status(400).json({ success: false, message: "Invalid status" });
-      return;
+      throw new AppError("Invalid status", 400);
     }
 
     const result = await CommunityReport.updateMany(
@@ -287,10 +269,5 @@ export const bulkReviewCommunityReports = async (req: Request, res: Response): P
       message: `${result.modifiedCount} report(s) updated`,
       data: { modifiedCount: result.modifiedCount },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to bulk-update community reports",
-    });
   }
-};
+);

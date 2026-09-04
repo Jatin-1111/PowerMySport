@@ -8,35 +8,30 @@ import { isPhonePeGatewayError } from "../../../shared/services/PhonePeService";
 import { sendDisputeStatusEmail } from "../../../utils/email";
 import { recordAuditLog } from "../../services/AuditLogService";
 import { auditContext, log } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 /**
  * List all disputes
  * GET /api/admin/disputes
  */
-export const listDisputes = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const disputes = await Dispute.find()
-      .populate({
-        path: "bookingId",
-        populate: { path: "venueId", select: "name" },
-      })
-      .populate("userId", "firstName lastName email phone")
-      .sort({ createdAt: -1 })
-      .limit(1000)
-      .lean();
+export const listDisputes = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const disputes = await Dispute.find()
+    .populate({
+      path: "bookingId",
+      populate: { path: "venueId", select: "name" },
+    })
+    .populate("userId", "firstName lastName email phone")
+    .sort({ createdAt: -1 })
+    .limit(1000)
+    .lean();
 
-    res.status(200).json({
-      success: true,
-      message: "Disputes retrieved successfully",
-      data: disputes,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch disputes",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Disputes retrieved successfully",
+    data: disputes,
+  });
+});
 
 /**
  * Full audit timeline for one booking or expert session.
@@ -47,13 +42,12 @@ export const listDisputes = async (req: Request, res: Response): Promise<void> =
  * to know which of the two systems it belongs to. `subjectType` is returned on
  * each event so the caller can still tell them apart.
  */
-export const getBookingTimeline = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getBookingTimeline = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const subjectId = String((req.params as Record<string, unknown>).subjectId ?? "");
 
     if (!subjectId) {
-      res.status(400).json({ success: false, message: "subjectId is required" });
-      return;
+      throw new AppError("subjectId is required", 400);
     }
 
     const events = await BookingEventService.getTimelineByIdAcrossSubjects(subjectId);
@@ -63,13 +57,8 @@ export const getBookingTimeline = async (req: Request, res: Response): Promise<v
       message: "Booking timeline retrieved successfully",
       data: events,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch booking timeline",
-    });
   }
-};
+);
 
 /**
  * Handle dispute for a booking (STUB - requires payment gateway integration)
@@ -82,8 +71,15 @@ export const getBookingTimeline = async (req: Request, res: Response): Promise<v
  * - Process appropriate financial transactions
  * - Update booking status
  * - Notify all parties
+ *
+ * NOTE: this handler keeps its own try/catch. The catch block does not simply
+ * log-and-respond a generic message — it classifies PhonePe gateway errors
+ * (via isPhonePeGatewayError) to surface their specific statusCode plus a
+ * machine-readable `code`/`retryable` payload that the client depends on.
+ * Collapsing this into a thrown AppError would silently drop that payload for
+ * every gateway failure, so the explicit handling is preserved as-is.
  */
-export const handleDispute = async (req: Request, res: Response): Promise<void> => {
+export const handleDispute = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const bookingId = (req.params as Record<string, unknown>).bookingId as string;
     const { disputeType, resolution, evidence, reason } = req.body as {
@@ -94,38 +90,25 @@ export const handleDispute = async (req: Request, res: Response): Promise<void> 
     };
 
     if (!bookingId || !mongoose.Types.ObjectId.isValid(bookingId)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid booking ID",
-      });
-      return;
+      throw new AppError("Invalid booking ID", 400);
     }
 
     if (!disputeType || !resolution) {
-      res.status(400).json({
-        success: false,
-        message: "disputeType and resolution are required",
-      });
-      return;
+      throw new AppError("disputeType and resolution are required", 400);
     }
 
     const validDisputeTypes = ["NO_SHOW", "POOR_QUALITY", "PAYMENT_ISSUE", "OTHER"];
     const validResolutions = ["FULL_REFUND", "PARTIAL_REFUND", "NO_REFUND"];
 
     if (!validDisputeTypes.includes(disputeType)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid disputeType. Must be one of: ${validDisputeTypes.join(", ")}`,
-      });
-      return;
+      throw new AppError(
+        `Invalid disputeType. Must be one of: ${validDisputeTypes.join(", ")}`,
+        400
+      );
     }
 
     if (!validResolutions.includes(resolution)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid resolution. Must be one of: ${validResolutions.join(", ")}`,
-      });
-      return;
+      throw new AppError(`Invalid resolution. Must be one of: ${validResolutions.join(", ")}`, 400);
     }
 
     const disputeReason =
@@ -218,6 +201,9 @@ export const handleDispute = async (req: Request, res: Response): Promise<void> 
       },
     });
   } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
     const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 500;
     res.status(statusCode).json({
       success: false,
@@ -227,4 +213,4 @@ export const handleDispute = async (req: Request, res: Response): Promise<void> 
         : {}),
     });
   }
-};
+});

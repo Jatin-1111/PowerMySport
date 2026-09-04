@@ -10,13 +10,15 @@ import {
   processBookingRefund,
 } from "../../services/BookingService";
 import { transformDocument } from "../../../middleware/responseTransform";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 /**
  * Cancel a booking
  * DELETE /api/bookings/:bookingId
  */
-export const cancelBookingById = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const cancelBookingById = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const bookingId = (req.params as Record<string, unknown>).bookingId as string;
     const { cancellationReason } = (req.body ?? {}) as {
       cancellationReason?: string;
@@ -24,21 +26,13 @@ export const cancelBookingById = async (req: Request, res: Response): Promise<vo
 
     const requesterId = req.user?.id;
     if (!requesterId) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const result = await cancelBooking(bookingId, requesterId, cancellationReason);
 
     if (!result.booking) {
-      res.status(404).json({
-        success: false,
-        message: "Booking not found",
-      });
-      return;
+      throw new AppError("Booking not found", 404);
     }
 
     res.status(200).json({
@@ -50,40 +44,29 @@ export const cancelBookingById = async (req: Request, res: Response): Promise<vo
         refundPercentage: result.refundPercentage,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to cancel booking",
-    });
   }
-};
+);
 
 /**
  * Retry a failed refund — player-initiated
  * POST /api/bookings/:bookingId/retry-refund
  */
-export const retryBookingRefund = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const retryBookingRefund = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const bookingId = (req.params as Record<string, unknown>).bookingId as string;
     const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const booking = await Booking.findOne({ _id: bookingId, userId }).lean();
     if (!booking) {
-      res.status(404).json({ success: false, message: "Booking not found" });
-      return;
+      throw new AppError("Booking not found", 404);
     }
 
     if (booking.refundStatus !== "REJECTED") {
-      res.status(400).json({
-        success: false,
-        message: "No failed refund to retry for this booking",
-      });
-      return;
+      throw new AppError("No failed refund to retry for this booking", 400);
     }
 
     // Compute refund percentage from the stored refundAmount; fall back to 100%.
@@ -108,29 +91,17 @@ export const retryBookingRefund = async (req: Request, res: Response): Promise<v
         refundAmount: result.refundAmount,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retry refund",
-    });
   }
-};
+);
 
 /**
  * Confirm booking by provider (coach/venue)
  * POST /api/bookings/:bookingId/provider/confirm
  */
-export const confirmBookingByProviderHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const confirmBookingByProviderHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const bookingId = (req.params as Record<string, unknown>).bookingId as string;
@@ -142,29 +113,17 @@ export const confirmBookingByProviderHandler = async (
       message: "Booking confirmed successfully",
       data: booking,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to confirm booking",
-    });
   }
-};
+);
 
 /**
  * Reject booking by provider (coach/venue)
  * POST /api/bookings/:bookingId/provider/reject
  */
-export const rejectBookingByProviderHandler = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const rejectBookingByProviderHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const bookingId = (req.params as Record<string, unknown>).bookingId as string;
@@ -181,26 +140,17 @@ export const rejectBookingByProviderHandler = async (
         refundStatus: result.refundStatus,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to reject booking",
-    });
   }
-};
+);
 
 /**
  * Check-in to booking using random check-in code
  * POST /api/bookings/check-in/code
  */
-export const checkInBookingWithCode = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const checkInBookingWithCode = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { checkInCode } = req.body as { checkInCode: string };
@@ -212,26 +162,17 @@ export const checkInBookingWithCode = async (req: Request, res: Response): Promi
       message: "Checked in successfully",
       data: booking,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Check-in failed",
-    });
   }
-};
+);
 
 /**
  * Confirm mock payment success for a booking
  * POST /api/bookings/:bookingId/mock-payment-success
  */
-export const confirmMockPaymentSuccessById = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const confirmMockPaymentSuccessById = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const bookingId = (req.params as Record<string, unknown>).bookingId as string;
@@ -243,23 +184,17 @@ export const confirmMockPaymentSuccessById = async (req: Request, res: Response)
       message: "Mock payment confirmed successfully",
       data: booking,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to confirm mock payment",
-    });
   }
-};
+);
 
 /**
  * Reschedule a confirmed booking — coach only
  * POST /api/bookings/:bookingId/reschedule
  */
-export const rescheduleBookingHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const rescheduleBookingHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { bookingId } = req.params as { bookingId: string };
@@ -270,34 +205,21 @@ export const rescheduleBookingHandler = async (req: Request, res: Response): Pro
     };
 
     if (!newDate || !newStartTime || !newEndTime) {
-      res.status(400).json({
-        success: false,
-        message: "newDate, newStartTime, and newEndTime are required",
-      });
-      return;
+      throw new AppError("newDate, newStartTime, and newEndTime are required", 400);
     }
 
     const parsedDate = new Date(newDate);
     if (isNaN(parsedDate.getTime())) {
-      res.status(400).json({ success: false, message: "Invalid date format" });
-      return;
+      throw new AppError("Invalid date format", 400);
     }
 
     const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
     if (!timeRegex.test(newStartTime) || !timeRegex.test(newEndTime)) {
-      res.status(400).json({
-        success: false,
-        message: "Time must be in HH:mm format",
-      });
-      return;
+      throw new AppError("Time must be in HH:mm format", 400);
     }
 
     if (newStartTime >= newEndTime) {
-      res.status(400).json({
-        success: false,
-        message: "End time must be after start time",
-      });
-      return;
+      throw new AppError("End time must be after start time", 400);
     }
 
     const booking = await rescheduleBookingByCoach(
@@ -313,15 +235,5 @@ export const rescheduleBookingHandler = async (req: Request, res: Response): Pro
       message: "Booking rescheduled successfully",
       data: transformDocument(booking.toJSON()),
     });
-  } catch (error) {
-    const status =
-      error instanceof Error &&
-      (error.message.includes("Not authorized") || error.message.includes("not found"))
-        ? 403
-        : 400;
-    res.status(status).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to reschedule booking",
-    });
   }
-};
+);

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { findCoachesNearby, getAllCoaches } from "../../services/CoachService";
 import { getPaginationParams } from "../../../utils/pagination";
 import { log } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
 
 interface CoachDiscoveryContext {
   page: number;
@@ -41,8 +42,8 @@ const buildCoachDiscoveryContext = (req: Request): CoachDiscoveryContext => {
  * Discovery endpoint: Search for coaches near a location
  * GET /api/coaches/discover?lat=28.6139&lng=77.2090&radius=5000&sport=cricket
  */
-export const discoverCoachesNearby = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const discoverCoachesNearby = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const requestStartedAt = Date.now();
     const context = buildCoachDiscoveryContext(req);
 
@@ -83,10 +84,5 @@ export const discoverCoachesNearby = async (req: Request, res: Response): Promis
         coaches,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Coach discovery failed",
-    });
   }
-};
+);

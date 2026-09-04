@@ -16,6 +16,8 @@ import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
 import { PlanCheckInService } from "../../shared/services/PlanCheckInService";
 import { isSupportedSport, SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
 import { log as __rootLog } from "../../utils/logger";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 const log = __rootLog.child("guidance");
 
 // ─── Rule-based burnout risk — zero AI cost ───────────────────────────────────
@@ -71,169 +73,123 @@ function calculateBurnoutRisk(age: number, weeklyHours: number) {
   };
 }
 
-export const submitGuidance = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const parsed = guidanceRequestSchema.safeParse(req.body);
+export const submitGuidance = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const parsed = guidanceRequestSchema.safeParse(req.body);
 
-    if (!parsed.success) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid guidance payload",
-        issues: parsed.error.flatten(),
-      });
-      return;
-    }
-
-    const requestedSport = parsed.data.sport?.trim();
-    if (requestedSport && !isSupportedSport(requestedSport)) {
-      AnalyticsEvent.create({
-        eventName: "unsupported_sport_search",
-        metadata: { sport: requestedSport, source: "guidance" },
-        source: "WEB",
-        ...(req.user ? { userId: req.user.id } : {}),
-      }).catch(() => {});
-
-      res.status(200).json({
-        success: false,
-        status: "not_supported",
-        sport: requestedSport,
-        supportedSports: SUPPORTED_SPORTS,
-        message: `We're building the ${requestedSport} pathway — our team is working on it! In the meantime, explore one of our 10 supported sports.`,
-      });
-      return;
-    }
-
-    const guidance = await generateYouthSportsGuidance(parsed.data);
-
-    // Enrich with server-computed fields (zero AI cost)
-    const burnoutRisk = calculateBurnoutRisk(
-      parsed.data.child_age,
-      parsed.data.weekly_time_commitment
-    );
-    const enrichedGuidance = { ...guidance, burnoutRisk };
-
-    const createPayload: any = {
-      request: parsed.data,
-      response: enrichedGuidance,
-    };
-    if (req.user?.id) {
-      createPayload.userId = req.user.id;
-    }
-    const guidanceSubmission = await GuidanceSubmission.create(createPayload);
-
-    // Fire-and-forget — a scheduling failure shouldn't fail the guidance
-    // response the parent is actively waiting on.
-    PlanCheckInService.scheduleFromGuidance({
-      userId: req.user?.id,
-      dependentId: parsed.data.dependent_id,
-      sourceId: guidanceSubmission._id.toString(),
-      sport: parsed.data.sport || "General",
-      response: enrichedGuidance,
-    }).catch((err) => log.error("Failed to schedule plan check-in:", err));
-
-    res.status(201).json({
-      success: true,
-      message: "Guidance generated and saved",
-      data: {
-        id: guidanceSubmission._id.toString(),
-        query: guidanceSubmission.request,
-        response: enrichedGuidance,
-        createdAt: guidanceSubmission.createdAt,
-        updatedAt: guidanceSubmission.updatedAt,
-      },
-    });
-  } catch (error) {
-    let errorMessage = error instanceof Error ? error.message : "Failed to generate guidance";
-
-    // Attempt to parse Gemini's raw JSON error array
-    try {
-      const parsedError = JSON.parse(errorMessage);
-      if (Array.isArray(parsedError) && parsedError[0]?.error?.message) {
-        errorMessage = parsedError[0].error.message;
-      } else if (parsedError?.error?.message) {
-        errorMessage = parsedError.error.message;
-      }
-    } catch {
-      // Not a JSON string, ignore and use as is
-    }
-
-    const normalizedMessage = errorMessage.toLowerCase();
-    const isTemporarilyUnavailable =
-      normalizedMessage.includes("quota") ||
-      normalizedMessage.includes("rate limit") ||
-      normalizedMessage.includes("too many requests") ||
-      normalizedMessage.includes("temporarily unavailable");
-
-    res.status(isTemporarilyUnavailable ? 503 : 500).json({
+  if (!parsed.success) {
+    res.status(400).json({
       success: false,
-      message: errorMessage,
+      message: "Invalid guidance payload",
+      issues: parsed.error.flatten(),
     });
+    return;
   }
-};
+
+  const requestedSport = parsed.data.sport?.trim();
+  if (requestedSport && !isSupportedSport(requestedSport)) {
+    AnalyticsEvent.create({
+      eventName: "unsupported_sport_search",
+      metadata: { sport: requestedSport, source: "guidance" },
+      source: "WEB",
+      ...(req.user ? { userId: req.user.id } : {}),
+    }).catch(() => {});
+
+    res.status(200).json({
+      success: false,
+      status: "not_supported",
+      sport: requestedSport,
+      supportedSports: SUPPORTED_SPORTS,
+      message: `We're building the ${requestedSport} pathway — our team is working on it! In the meantime, explore one of our 10 supported sports.`,
+    });
+    return;
+  }
+
+  const guidance = await generateYouthSportsGuidance(parsed.data);
+
+  // Enrich with server-computed fields (zero AI cost)
+  const burnoutRisk = calculateBurnoutRisk(
+    parsed.data.child_age,
+    parsed.data.weekly_time_commitment
+  );
+  const enrichedGuidance = { ...guidance, burnoutRisk };
+
+  const createPayload: any = {
+    request: parsed.data,
+    response: enrichedGuidance,
+  };
+  if (req.user?.id) {
+    createPayload.userId = req.user.id;
+  }
+  const guidanceSubmission = await GuidanceSubmission.create(createPayload);
+
+  // Fire-and-forget — a scheduling failure shouldn't fail the guidance
+  // response the parent is actively waiting on.
+  PlanCheckInService.scheduleFromGuidance({
+    userId: req.user?.id,
+    dependentId: parsed.data.dependent_id,
+    sourceId: guidanceSubmission._id.toString(),
+    sport: parsed.data.sport || "General",
+    response: enrichedGuidance,
+  }).catch((err) => log.error("Failed to schedule plan check-in:", err));
+
+  res.status(201).json({
+    success: true,
+    message: "Guidance generated and saved",
+    data: {
+      id: guidanceSubmission._id.toString(),
+      query: guidanceSubmission.request,
+      response: enrichedGuidance,
+      createdAt: guidanceSubmission.createdAt,
+      updatedAt: guidanceSubmission.updatedAt,
+    },
+  });
+});
 
 /**
  * Diagnosis-confirmation step, run before full plan generation.
  * POST /guidance/diagnose
  */
-export const diagnoseGuidance = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const parsed = diagnosisRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid diagnosis payload",
-        issues: parsed.error.flatten(),
-      });
-      return;
-    }
-
-    const diagnosis = await generateGuidanceDiagnosis(parsed.data);
-    res.status(200).json({ success: true, data: diagnosis });
-  } catch (error) {
-    res.status(500).json({
+export const diagnoseGuidance = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const parsed = diagnosisRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to generate diagnosis",
+      message: "Invalid diagnosis payload",
+      issues: parsed.error.flatten(),
     });
+    return;
   }
-};
 
-export const deleteGuidance = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
+  const diagnosis = await generateGuidanceDiagnosis(parsed.data);
+  res.status(200).json({ success: true, data: diagnosis });
+});
 
-    const id = req.params.id;
-    if (!id || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid guidance id" });
-      return;
-    }
-
-    const deleted = await GuidanceSubmission.findOneAndDelete({
-      _id: id,
-      userId: req.user.id,
-    });
-
-    if (!deleted) {
-      res.status(404).json({ success: false, message: "Guidance not found" });
-      return;
-    }
-
-    res.status(200).json({ success: true, message: "Guidance deleted" });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete guidance",
-    });
+export const deleteGuidance = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new AppError("Unauthorized", 401);
   }
-};
 
-export const getGuidanceHistory = async (req: Request, res: Response): Promise<void> => {
-  try {
+  const id = req.params.id;
+  if (!id || !mongoose.isValidObjectId(id)) {
+    throw new AppError("Invalid guidance id", 400);
+  }
+
+  const deleted = await GuidanceSubmission.findOneAndDelete({
+    _id: id,
+    userId: req.user.id,
+  });
+
+  if (!deleted) {
+    throw new AppError("Guidance not found", 404);
+  }
+
+  res.status(200).json({ success: true, message: "Guidance deleted" });
+});
+
+export const getGuidanceHistory = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     // Unbounded by construction — capped defensively since this can grow
@@ -253,13 +209,8 @@ export const getGuidanceHistory = async (req: Request, res: Response): Promise<v
         updatedAt: doc.updatedAt,
       })),
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch guidance history",
-    });
   }
-};
+);
 
 // ─── Full report PDF ───────────────────────────────────────────────────────────
 
@@ -288,25 +239,22 @@ const BRAND = {
  * Download the full detailed guidance report as a PDF
  * GET /guidance/:id/report/pdf
  */
-export const downloadGuidanceReportPdf = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const downloadGuidanceReportPdf = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id;
     if (!id || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid guidance id" });
-      return;
+      throw new AppError("Invalid guidance id", 400);
     }
 
     const submission = await GuidanceSubmission.findById(id);
     if (!submission) {
-      res.status(404).json({ success: false, message: "Guidance not found" });
-      return;
+      throw new AppError("Guidance not found", 404);
     }
 
     // Guest-generated submissions have no userId and are trusted by id
     // possession (same model already used to show guests their own results).
     if (submission.userId && submission.userId.toString() !== req.user?.id) {
-      res.status(403).json({ success: false, message: "Forbidden" });
-      return;
+      throw new AppError("Forbidden", 403);
     }
 
     const q = submission.request;
@@ -597,13 +545,8 @@ export const downloadGuidanceReportPdf = async (req: Request, res: Response): Pr
       `attachment; filename="guidance-report-${submission._id.toString()}.pdf"`
     );
     res.status(200).send(pdfBuffer);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to generate report",
-    });
   }
-};
+);
 
 const WHATSAPP_TEAM_NUMBER = "918968582443";
 
@@ -614,25 +557,22 @@ const WHATSAPP_TEAM_NUMBER = "918968582443";
  * link click-tracking, or DOM-scraping analytics.
  * GET /guidance/:id/whatsapp
  */
-export const redirectToWhatsApp = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const redirectToWhatsApp = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const id = req.params.id;
     if (!id || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid guidance id" });
-      return;
+      throw new AppError("Invalid guidance id", 400);
     }
 
     const submission = await GuidanceSubmission.findById(id).lean();
     if (!submission) {
-      res.status(404).json({ success: false, message: "Guidance not found" });
-      return;
+      throw new AppError("Guidance not found", 404);
     }
 
     // Same trust model as the PDF download: guest-generated submissions are
     // trusted by id possession, ownership is only enforced when a userId exists.
     if (submission.userId && submission.userId.toString() !== req.user?.id) {
-      res.status(403).json({ success: false, message: "Forbidden" });
-      return;
+      throw new AppError("Forbidden", 403);
     }
 
     const q = submission.request;
@@ -650,13 +590,8 @@ export const redirectToWhatsApp = async (req: Request, res: Response): Promise<v
     const waUrl = `https://wa.me/${WHATSAPP_TEAM_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
 
     res.redirect(302, waUrl);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to open WhatsApp",
-    });
   }
-};
+);
 
 const getCategoryScore = (tags: string[], attributes?: any): number => {
   if (!attributes) return 0;
@@ -810,125 +745,109 @@ const getAgeScore = (age: number, rangeStr: string): number => {
   return 0;
 };
 
-export const recommendSport = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const parsed = sportMatchRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid payload",
-        issues: parsed.error.flatten(),
-      });
-      return;
-    }
+export const recommendSport = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const parsed = sportMatchRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid payload",
+      issues: parsed.error.flatten(),
+    });
+    return;
+  }
 
-    // Step A: Rule-based ranking
+  // Step A: Rule-based ranking
 
-    // 1. Get all verified sports (the full catalog), and 2. every published
-    // pathway guide (one document per sport) — independent of each other.
-    const [allSports, publishedGuides] = await Promise.all([
-      Sport.find({ isVerified: true }).lean(),
-      PathwayGuide.find({ status: "published" }).select("sportSlug sportIntro stages").lean(),
-    ]);
+  // 1. Get all verified sports (the full catalog), and 2. every published
+  // pathway guide (one document per sport) — independent of each other.
+  const [allSports, publishedGuides] = await Promise.all([
+    Sport.find({ isVerified: true }).lean(),
+    PathwayGuide.find({ status: "published" }).select("sportSlug sportIntro stages").lean(),
+  ]);
 
-    // 3. Keyed by sport. This used to pick a state overlay over the national
-    //    guide; there is one guide per sport now, so the lookup is direct.
-    const pathwayBySlug = new Map<string, (typeof publishedGuides)[number]>(
-      publishedGuides.map((guide) => [guide.sportSlug, guide])
+  // 3. Keyed by sport. This used to pick a state overlay over the national
+  //    guide; there is one guide per sport now, so the lookup is direct.
+  const pathwayBySlug = new Map<string, (typeof publishedGuides)[number]>(
+    publishedGuides.map((guide) => [guide.sportSlug, guide])
+  );
+
+  // 4. Which sports have a readable pathway at all.
+  const sportsWithAnyPathway = new Set<string>(publishedGuides.map((guide) => guide.sportSlug));
+
+  if (allSports.length === 0) {
+    throw new AppError("No sports available", 404);
+  }
+
+  const rawScoredSports = allSports.map((sport) => {
+    let score = 0;
+
+    score += getCategoryScore(parsed.data.personality_tags, sport.attributes);
+    score += getPreferenceScore(
+      parsed.data.team_preference,
+      parsed.data.intensity_preference,
+      sport.attributes,
+      parsed.data.child_age,
+      parsed.data.medical_conditions
     );
 
-    // 4. Which sports have a readable pathway at all.
-    const sportsWithAnyPathway = new Set<string>(publishedGuides.map((guide) => guide.sportSlug));
+    const p = pathwayBySlug.get(sport.slug);
+    const hasGeneratedPathway = !!p;
 
-    if (allSports.length === 0) {
-      res.status(404).json({ success: false, message: "No sports available" });
-      return;
+    // The first stage is the one a family choosing a sport is actually about
+    // to live through, so it is the stage that grounds the recommendation.
+    const stage1 = p?.stages?.length ? [...p.stages].sort((a, b) => a.order - b.order)[0] : null;
+    let overview = sport.description || "";
+
+    if (stage1) {
+      if (p?.sportIntro?.length) overview = p.sportIntro.join(" ");
+      if (stage1.ageRange) {
+        score += getAgeScore(parsed.data.child_age, stage1.ageRange);
+      }
     }
 
-    const rawScoredSports = allSports.map((sport) => {
-      let score = 0;
+    // NOTE: budget scoring no longer contributes here. It used to key off the
+    // old pathway's per-level equipment cost estimate, and the authored
+    // pathway carries no cost figures — an invented one would be worse than
+    // an absent one in a recommendation a parent acts on.
+    return {
+      _rawScore: score,
+      sportSlug: sport.slug,
+      sportName: sport.name,
+      category: sport.category || "Other",
+      sportDescription: sport.description || "",
+      attributes: sport.attributes || null,
+      keyFocus: stage1?.coreQuestion || null,
+      mentalSkillsFocus: null,
+      levelDescription: stage1?.overview || null,
+      talentSignals: stage1?.signals?.length
+        ? JSON.stringify(stage1.signals.map((s) => s.title))
+        : "None",
+      equipmentCost: "Unknown",
+      overview: overview,
+      hasGeneratedPathway,
+    };
+  });
 
-      score += getCategoryScore(parsed.data.personality_tags, sport.attributes);
-      score += getPreferenceScore(
-        parsed.data.team_preference,
-        parsed.data.intensity_preference,
-        sport.attributes,
-        parsed.data.child_age,
-        parsed.data.medical_conditions
-      );
+  // Dynamic normalization: scale relative to the actual highest raw score so
+  // differentiation is always visible. Floor at a minimum of 6 points to
+  // avoid dividing by near-zero when all sports lack pathway data.
+  const maxRaw = Math.max(...rawScoredSports.map((s) => s._rawScore), 6);
+  const scoredSports = rawScoredSports.map((s) => ({
+    ...s,
+    matchScore: Math.max(0, Math.min(95, Math.round((s._rawScore / maxRaw) * 95))),
+  }));
 
-      const p = pathwayBySlug.get(sport.slug);
-      const hasGeneratedPathway = !!p;
+  scoredSports.sort((a, b) => b.matchScore - a.matchScore);
+  const top3 = scoredSports.slice(0, 3);
 
-      // The first stage is the one a family choosing a sport is actually about
-      // to live through, so it is the stage that grounds the recommendation.
-      const stage1 = p?.stages?.length ? [...p.stages].sort((a, b) => a.order - b.order)[0] : null;
-      let overview = sport.description || "";
+  // Step B: Grounded AI Call
+  const recommendationResponse = await generateSportMatchRecommendation(parsed.data, top3);
 
-      if (stage1) {
-        if (p?.sportIntro?.length) overview = p.sportIntro.join(" ");
-        if (stage1.ageRange) {
-          score += getAgeScore(parsed.data.child_age, stage1.ageRange);
-        }
-      }
+  // Re-sort by AI-computed scores (AI may reorder relative to rule-based ranking)
+  recommendationResponse.recommendations.sort((a, b) => b.matchScore - a.matchScore);
 
-      // NOTE: budget scoring no longer contributes here. It used to key off the
-      // old pathway's per-level equipment cost estimate, and the authored
-      // pathway carries no cost figures — an invented one would be worse than
-      // an absent one in a recommendation a parent acts on.
-      return {
-        _rawScore: score,
-        sportSlug: sport.slug,
-        sportName: sport.name,
-        category: sport.category || "Other",
-        sportDescription: sport.description || "",
-        attributes: sport.attributes || null,
-        keyFocus: stage1?.coreQuestion || null,
-        mentalSkillsFocus: null,
-        levelDescription: stage1?.overview || null,
-        talentSignals: stage1?.signals?.length
-          ? JSON.stringify(stage1.signals.map((s) => s.title))
-          : "None",
-        equipmentCost: "Unknown",
-        overview: overview,
-        hasGeneratedPathway,
-      };
-    });
-
-    // Dynamic normalization: scale relative to the actual highest raw score so
-    // differentiation is always visible. Floor at a minimum of 6 points to
-    // avoid dividing by near-zero when all sports lack pathway data.
-    const maxRaw = Math.max(...rawScoredSports.map((s) => s._rawScore), 6);
-    const scoredSports = rawScoredSports.map((s) => ({
-      ...s,
-      matchScore: Math.max(0, Math.min(95, Math.round((s._rawScore / maxRaw) * 95))),
-    }));
-
-    scoredSports.sort((a, b) => b.matchScore - a.matchScore);
-    const top3 = scoredSports.slice(0, 3);
-
-    // Step B: Grounded AI Call
-    const recommendationResponse = await generateSportMatchRecommendation(parsed.data, top3);
-
-    // Re-sort by AI-computed scores (AI may reorder relative to rule-based ranking)
-    recommendationResponse.recommendations.sort((a, b) => b.matchScore - a.matchScore);
-
-    res.status(200).json({
-      success: true,
-      data: recommendationResponse,
-    });
-  } catch (error) {
-    let errorMessage = error instanceof Error ? error.message : "Failed to generate recommendation";
-    const normalizedMessage = errorMessage.toLowerCase();
-    const isTemporarilyUnavailable =
-      normalizedMessage.includes("quota") ||
-      normalizedMessage.includes("rate limit") ||
-      normalizedMessage.includes("too many requests") ||
-      normalizedMessage.includes("temporarily unavailable");
-
-    res.status(isTemporarilyUnavailable ? 503 : 500).json({
-      success: false,
-      message: errorMessage,
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    data: recommendationResponse,
+  });
+});

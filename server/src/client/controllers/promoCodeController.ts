@@ -5,12 +5,13 @@ import {
   getAllPromoCodes,
   getPromoCodeStats,
 } from "../services/PromoCodeService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
-export const createPromoCodeHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createPromoCodeHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const payload = {
@@ -26,38 +27,27 @@ export const createPromoCodeHandler = async (req: Request, res: Response): Promi
       message: "Promo code created",
       data: promo,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create promo",
-    });
   }
-};
+);
 
-export const listPromoCodesHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listPromoCodesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const data = await getAllPromoCodes();
     res.status(200).json({
       success: true,
       message: "Promo codes fetched",
       data,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch promo codes",
-    });
   }
-};
+);
 
-export const deactivatePromoCodeHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deactivatePromoCodeHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const codeId = String(req.params.codeId || "");
     const promo = await deactivatePromoCode(codeId);
 
     if (!promo) {
-      res.status(404).json({ success: false, message: "Promo code not found" });
-      return;
+      throw new AppError("Promo code not found", 404);
     }
 
     res.status(200).json({
@@ -65,16 +55,11 @@ export const deactivatePromoCodeHandler = async (req: Request, res: Response): P
       message: "Promo code deactivated",
       data: promo,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to deactivate promo",
-    });
   }
-};
+);
 
-export const promoCodeStatsHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const promoCodeStatsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const codeId = String(req.params.codeId || "");
     const data = await getPromoCodeStats(codeId);
     res.status(200).json({
@@ -82,10 +67,5 @@ export const promoCodeStatsHandler = async (req: Request, res: Response): Promis
       message: "Promo code stats fetched",
       data,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch promo stats",
-    });
   }
-};
+);

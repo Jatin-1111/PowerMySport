@@ -4,13 +4,15 @@ import { User } from "../../../client/models/User";
 import { recordAuditLog } from "../../services/AuditLogService";
 import { sendAccountStatusEmail } from "../../../utils/email";
 import { auditContext, log } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 /**
  * List users for safety operations
  * GET /api/admin/users/safety?role=PLAYER&status=ACTIVE
  */
-export const listUsersForSafety = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listUsersForSafety = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const role = typeof req.query.role === "string" ? req.query.role : undefined;
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const page = Math.max(1, Number(req.query.page) || 1);
@@ -59,24 +61,18 @@ export const listUsersForSafety = async (req: Request, res: Response): Promise<v
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve users",
-    });
   }
-};
+);
 
 /**
  * Update user safety status
  * PATCH /api/admin/users/:userId/safety
  */
-export const updateUserSafetyStatus = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateUserSafetyStatus = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = (req.params as Record<string, unknown>).userId as string;
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-      res.status(400).json({ success: false, message: "Invalid user id" });
-      return;
+      throw new AppError("Invalid user id", 400);
     }
 
     const { action, reason } = req.body as {
@@ -85,22 +81,14 @@ export const updateUserSafetyStatus = async (req: Request, res: Response): Promi
     };
 
     if (!action || !["SUSPEND", "REACTIVATE", "DEACTIVATE"].includes(action)) {
-      res.status(400).json({
-        success: false,
-        message: "action must be SUSPEND, REACTIVATE, or DEACTIVATE",
-      });
-      return;
+      throw new AppError("action must be SUSPEND, REACTIVATE, or DEACTIVATE", 400);
     }
 
     const update: Record<string, unknown> = {};
 
     if (action === "SUSPEND") {
       if (!reason?.trim()) {
-        res.status(400).json({
-          success: false,
-          message: "reason is required for SUSPEND",
-        });
-        return;
+        throw new AppError("reason is required for SUSPEND", 400);
       }
 
       update.isActive = false;
@@ -133,8 +121,7 @@ export const updateUserSafetyStatus = async (req: Request, res: Response): Promi
       .lean();
 
     if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
+      throw new AppError("User not found", 404);
     }
 
     // Notify the user their account status changed (fire-and-forget).
@@ -166,10 +153,5 @@ export const updateUserSafetyStatus = async (req: Request, res: Response): Promi
         ...user,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update user safety status",
-    });
   }
-};
+);

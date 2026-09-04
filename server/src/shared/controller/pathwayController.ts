@@ -5,6 +5,8 @@ import { PathwayGuide } from "../models/PathwayGuide";
 import { Tournament } from "../models/Tournament";
 import { realDataScraperService } from "../services/RealDataScraperService";
 import { log as __rootLog } from "../../utils/logger";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 const log = __rootLog.child("pathway");
 
 // ─── Pathways (public) ───────────────────────────────────────────────────────
@@ -16,12 +18,6 @@ const log = __rootLog.child("pathway");
 // Everything served here is identical for every reader of a sport — it holds no
 // personal data — so it is safely cacheable at the edge.
 
-const fail = (res: Response, error: unknown, code = 400) =>
-  res.status(code).json({
-    success: false,
-    message: error instanceof Error ? error.message : "Request failed",
-  });
-
 const slugify = (value: string): string => value.trim().toLowerCase().replace(/\s+/g, "-");
 
 /** Only published guides are ever visible here — drafts stay in the CMS. */
@@ -31,49 +27,37 @@ const PUBLISHED = { status: "published" as const };
 //
 // One guide per sport. This used to take a `?state=` overlay that won over the
 // national guide; removed Aug 2026 along with the rest of the state dimension.
-export const getPathwayGuide = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const sport = req.query.sport;
-    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
-      res.status(400).json({
-        success: false,
-        message: "Please provide a sport (at least 2 characters).",
-      });
-      return;
-    }
-
-    const sportSlug = slugify(sport);
-
-    const guide = await PathwayGuide.findOne({
-      ...PUBLISHED,
-      sportSlug,
-    }).lean();
-
-    if (!guide) {
-      res.status(404).json({
-        success: false,
-        message: `No published pathway for "${sport}" yet.`,
-      });
-      return;
-    }
-
-    res.json({
-      success: true,
-      data: {
-        sportSlug: guide.sportSlug,
-        sportName: guide.sportName,
-        formatVersion: guide.formatVersion,
-        intro: guide.intro ?? {},
-        sportIntro: guide.sportIntro ?? [],
-        reviewedOn: guide.reviewedOn ?? null,
-        updatedAt: guide.updatedAt,
-        stages: [...(guide.stages ?? [])].sort((a, b) => a.order - b.order),
-      },
-    });
-  } catch (error) {
-    fail(res, error, 500);
+export const getPathwayGuide = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const sport = req.query.sport;
+  if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
+    throw new AppError("Please provide a sport (at least 2 characters).", 400);
   }
-};
+
+  const sportSlug = slugify(sport);
+
+  const guide = await PathwayGuide.findOne({
+    ...PUBLISHED,
+    sportSlug,
+  }).lean();
+
+  if (!guide) {
+    throw new AppError(`No published pathway for "${sport}" yet.`, 404);
+  }
+
+  res.json({
+    success: true,
+    data: {
+      sportSlug: guide.sportSlug,
+      sportName: guide.sportName,
+      formatVersion: guide.formatVersion,
+      intro: guide.intro ?? {},
+      sportIntro: guide.sportIntro ?? [],
+      reviewedOn: guide.reviewedOn ?? null,
+      updatedAt: guide.updatedAt,
+      stages: [...(guide.stages ?? [])].sort((a, b) => a.order - b.order),
+    },
+  });
+});
 
 // ─── GET /api/pathways/guides ────────────────────────────────────────────────
 //
@@ -90,8 +74,8 @@ export const getPathwayGuide = async (req: Request, res: Response): Promise<void
 // against fifty round-trips for the same information a document at a time.
 // Everything long — overviews, questions, answers — is still only in the
 // per-sport endpoint.
-export const listPublishedPathwayGuides = async (_req: Request, res: Response): Promise<void> => {
-  try {
+export const listPublishedPathwayGuides = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
     const docs = await PathwayGuide.find(PUBLISHED)
       .select(
         "sportSlug sportName stages.key stages.name stages.ageRange stages.coreQuestion stages.order updatedAt"
@@ -119,10 +103,8 @@ export const listPublishedPathwayGuides = async (_req: Request, res: Response): 
         };
       }),
     });
-  } catch (error) {
-    fail(res, error, 500);
   }
-};
+);
 
 // ─── GET /api/pathways/questions ─────────────────────────────────────────────
 //
@@ -146,8 +128,8 @@ export const listPublishedPathwayGuides = async (_req: Request, res: Response): 
 // own today and still bounds a fifty-sport response to a few tens of kilobytes.
 const MAX_QUESTIONS_PER_SPORT = 8;
 
-export const listPathwayQuestions = async (_req: Request, res: Response): Promise<void> => {
-  try {
+export const listPathwayQuestions = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
     const rows = await PathwayGuide.aggregate([
       { $match: PUBLISHED },
       { $unwind: "$stages" },
@@ -186,19 +168,16 @@ export const listPathwayQuestions = async (_req: Request, res: Response): Promis
     ]);
 
     res.json({ success: true, data: rows });
-  } catch (error) {
-    fail(res, error, 500);
   }
-};
+);
 
 // ─── GET /api/pathways/stories?sport=cricket&level=2 ─────────────────────────
-export const getPathwayStories = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getPathwayStories = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { sport, level, state } = req.query;
 
     if (!sport || typeof sport !== "string") {
-      res.status(400).json({ success: false, message: "Provide a sport parameter" });
-      return;
+      throw new AppError("Provide a sport parameter", 400);
     }
 
     const sportSlug = sport.toLowerCase();
@@ -233,18 +212,15 @@ export const getPathwayStories = async (req: Request, res: Response): Promise<vo
     }
 
     res.json({ success: true, data: stories });
-  } catch {
-    res.status(500).json({ success: false, message: "Failed to fetch stories" });
   }
-};
+);
 
 // ─── GET /api/pathways/tournaments/:slug ─────────────────────────────────────
-export const getCuratedTournamentBySlug = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCuratedTournamentBySlug = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { slug } = req.params;
     if (!slug) {
-      res.status(400).json({ success: false, message: "Missing slug" });
-      return;
+      throw new AppError("Missing slug", 400);
     }
 
     const slugStr = (Array.isArray(slug) ? slug[0] : slug) ?? "";
@@ -254,19 +230,16 @@ export const getCuratedTournamentBySlug = async (req: Request, res: Response): P
     }).lean();
 
     if (!tournament) {
-      res.status(404).json({ success: false, message: "Tournament not found" });
-      return;
+      throw new AppError("Tournament not found", 404);
     }
 
     res.json({ success: true, data: tournament });
-  } catch (error) {
-    fail(res, error, 500);
   }
-};
+);
 
 // ─── GET /api/pathways/tournaments?sport=cricket ─────────────────────────────
-export const getCuratedTournaments = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCuratedTournaments = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { sport } = req.query;
     const query: Record<string, unknown> = { isCurated: true };
     if (sport && typeof sport === "string") {
@@ -276,7 +249,5 @@ export const getCuratedTournaments = async (req: Request, res: Response): Promis
     const tournaments = await Tournament.find(query).sort({ sportSlug: 1, prestige: 1 }).lean();
 
     res.json({ success: true, data: tournaments });
-  } catch (error) {
-    fail(res, error, 500);
   }
-};
+);

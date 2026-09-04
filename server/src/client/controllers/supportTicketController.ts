@@ -4,6 +4,8 @@ import { SupportTicket } from "../models/SupportTicket";
 import { User } from "../models/User";
 import { sendSupportTicketReceivedEmail, sendSupportTicketStatusEmail } from "../../utils/email";
 import { log as __rootLog } from "../../utils/logger";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 const log = __rootLog.child("supportTicket");
 
 const parsePagination = (pageRaw: unknown, limitRaw: unknown) => {
@@ -14,35 +16,24 @@ const parsePagination = (pageRaw: unknown, limitRaw: unknown) => {
   return { page, limit, skip };
 };
 
-export const createSupportTicket = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createSupportTicket = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     await createTicketFromRequest(req, res, {
       requireAuth: true,
       authorId: req.user.id,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create ticket",
-    });
   }
-};
+);
 
-export const createPublicSupportTicket = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createPublicSupportTicket = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     await createTicketFromRequest(req, res, { requireAuth: false });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create ticket",
-    });
   }
-};
+);
 
 const createTicketFromRequest = async (
   req: Request,
@@ -72,20 +63,12 @@ const createTicketFromRequest = async (
   } = req.body;
 
   if (!subject?.trim() || !description?.trim()) {
-    res.status(400).json({
-      success: false,
-      message: "subject and description are required",
-    });
-    return;
+    throw new AppError("subject and description are required", 400);
   }
 
   if (!options.requireAuth) {
     if (!requesterName?.trim() || !requesterEmail?.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "name and email are required",
-      });
-      return;
+      throw new AppError("name and email are required", 400);
     }
   }
 
@@ -150,11 +133,10 @@ const createTicketFromRequest = async (
   });
 };
 
-export const getMySupportTickets = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getMySupportTickets = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { page, limit, skip } = parsePagination(req.query.page, req.query.limit);
@@ -184,16 +166,11 @@ export const getMySupportTickets = async (req: Request, res: Response): Promise<
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve support tickets",
-    });
   }
-};
+);
 
-export const getSupportTicketsForAdmin = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getSupportTicketsForAdmin = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { page, limit, skip } = parsePagination(req.query.page, req.query.limit);
     const status = typeof req.query.status === "string" ? req.query.status : undefined;
     const priority = typeof req.query.priority === "string" ? req.query.priority : undefined;
@@ -227,25 +204,18 @@ export const getSupportTicketsForAdmin = async (req: Request, res: Response): Pr
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve support tickets",
-    });
   }
-};
+);
 
-export const updateSupportTicketByAdmin = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateSupportTicketByAdmin = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const ticketId = (req.params as Record<string, unknown>).ticketId as string;
     if (!ticketId || !mongoose.Types.ObjectId.isValid(ticketId)) {
-      res.status(400).json({ success: false, message: "Invalid ticket id" });
-      return;
+      throw new AppError("Invalid ticket id", 400);
     }
 
     const {
@@ -304,8 +274,7 @@ export const updateSupportTicketByAdmin = async (req: Request, res: Response): P
       .populate("assignedAdminId", "name email role");
 
     if (!ticket) {
-      res.status(404).json({ success: false, message: "Ticket not found" });
-      return;
+      throw new AppError("Ticket not found", 404);
     }
 
     // Notify the requester when the status changes (fire-and-forget).
@@ -333,10 +302,5 @@ export const updateSupportTicketByAdmin = async (req: Request, res: Response): P
       message: "Support ticket updated",
       data: ticket,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to update ticket",
-    });
   }
-};
+);

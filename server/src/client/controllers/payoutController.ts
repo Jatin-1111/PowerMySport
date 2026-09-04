@@ -3,8 +3,8 @@ import { Coach, IPayoutMethod } from "../../client/models/Coach";
 import { Venue } from "../../client/models/Venue";
 import { Expert } from "../../client/models/ExpertProfile";
 import { encryptValue, decryptValue } from "../../shared/utils/encryption";
-import { log as __rootLog } from "../../utils/logger";
-const log = __rootLog.child("payout");
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 type PayoutMethodRecord = IPayoutMethod & {
   _id?: unknown;
@@ -78,18 +78,16 @@ const getPrimaryPayoutMethod = (payoutMethods?: IPayoutMethod[]): IPayoutMethod 
  * GET /api/payouts/coach/my-payout-method
  * Get the current coach's saved payout method
  */
-export const getCoachPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCoachPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coach = await Coach.findOne({ userId }).select("payoutMethods").lean();
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const primary = getPrimaryPayoutMethod(coach.payoutMethods as IPayoutMethod[] | undefined);
@@ -100,28 +98,23 @@ export const getCoachPayoutMethod = async (req: Request, res: Response): Promise
         payoutMethod: primary ? decryptPayoutMethod(primary) : null,
       },
     });
-  } catch (error) {
-    log.error("getCoachPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to retrieve payout method" });
   }
-};
+);
 
 /**
  * GET /api/payouts/coach/my-payout-methods
  * Get all of the current coach's saved payout methods
  */
-export const getCoachPayoutMethods = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCoachPayoutMethods = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coach = await Coach.findOne({ userId }).select("payoutMethods").lean();
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     res.json({
@@ -133,22 +126,18 @@ export const getCoachPayoutMethods = async (req: Request, res: Response): Promis
         ),
       },
     });
-  } catch (error) {
-    log.error("getCoachPayoutMethods error:", error);
-    res.status(500).json({ success: false, message: "Failed to retrieve payout methods" });
   }
-};
+);
 
 /**
  * PUT /api/payouts/coach/my-payout-method
  * Save or update the current coach's payout method (add new or update existing)
  */
-export const upsertCoachPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const upsertCoachPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { id, type, accountHolderName, accountNumber, ifscCode, bankName, upiId } = req.body as {
@@ -163,11 +152,7 @@ export const upsertCoachPayoutMethod = async (req: Request, res: Response): Prom
 
     // Basic validation
     if (!type || !["BANK_TRANSFER", "UPI"].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid payout method type. Must be BANK_TRANSFER or UPI.",
-      });
-      return;
+      throw new AppError("Invalid payout method type. Must be BANK_TRANSFER or UPI.", 400);
     }
 
     if (type === "BANK_TRANSFER") {
@@ -177,45 +162,31 @@ export const upsertCoachPayoutMethod = async (req: Request, res: Response): Prom
         !ifscCode?.trim() ||
         !bankName?.trim()
       ) {
-        res.status(400).json({
-          success: false,
-          message: "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
-        });
-        return;
+        throw new AppError(
+          "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
+          400
+        );
       }
       // Validate IFSC format (basic)
       if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode.toUpperCase().trim())) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid IFSC code format (e.g., SBIN0001234)",
-        });
-        return;
+        throw new AppError("Invalid IFSC code format (e.g., SBIN0001234)", 400);
       }
     }
 
     if (type === "UPI") {
       if (!upiId?.trim()) {
-        res.status(400).json({
-          success: false,
-          message: "UPI method requires a valid UPI ID",
-        });
-        return;
+        throw new AppError("UPI method requires a valid UPI ID", 400);
       }
       // Basic UPI ID validation
       if (!/^[\w.\-+]+@[\w]+$/.test(upiId.trim())) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid UPI ID format (e.g., yourname@okaxis)",
-        });
-        return;
+        throw new AppError("Invalid UPI ID format (e.g., yourname@okaxis)", 400);
       }
     }
 
     const now = new Date();
     const coach = await Coach.findOne({ userId });
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const payoutMethods = coach.payoutMethods ?? [];
@@ -243,8 +214,7 @@ export const upsertCoachPayoutMethod = async (req: Request, res: Response): Prom
         (method) => getPayoutMethodId(method as PayoutMethodRecord) === id
       );
       if (methodIndex === -1) {
-        res.status(404).json({ success: false, message: "Payout method not found" });
-        return;
+        throw new AppError("Payout method not found", 404);
       }
       encryptedPayoutMethodData.id = id;
       encryptedPayoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
@@ -267,30 +237,25 @@ export const upsertCoachPayoutMethod = async (req: Request, res: Response): Prom
         ),
       },
     });
-  } catch (error) {
-    log.error("upsertCoachPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to save payout method" });
   }
-};
+);
 
 /**
  * DELETE /api/payouts/coach/my-payout-method/:methodId
  * Remove a specific payout method by ID (or all if no ID provided)
  */
-export const deleteCoachPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteCoachPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { methodId } = req.params;
 
     const coach = await Coach.findOne({ userId });
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const payoutMethods = coach.payoutMethods ?? [];
@@ -303,8 +268,7 @@ export const deleteCoachPayoutMethod = async (req: Request, res: Response): Prom
       );
 
       if ((coach.payoutMethods ?? []).length === initialLength) {
-        res.status(404).json({ success: false, message: "Payout method not found" });
-        return;
+        throw new AppError("Payout method not found", 404);
       }
 
       // If the deleted method was default and there are remaining methods, set first as default
@@ -330,30 +294,25 @@ export const deleteCoachPayoutMethod = async (req: Request, res: Response): Prom
         ),
       },
     });
-  } catch (error) {
-    log.error("deleteCoachPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to remove payout method" });
   }
-};
+);
 
 /**
  * PUT /api/payouts/coach/my-payout-method/:methodId/set-default
  * Set a specific payout method as the default
  */
-export const setCoachDefaultPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const setCoachDefaultPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { methodId } = req.params;
 
     const coach = await Coach.findOne({ userId });
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const methods = coach.payoutMethods || [];
@@ -362,8 +321,7 @@ export const setCoachDefaultPayoutMethod = async (req: Request, res: Response): 
     );
 
     if (methodIndex === -1) {
-      res.status(404).json({ success: false, message: "Payout method not found" });
-      return;
+      throw new AppError("Payout method not found", 404);
     }
 
     // Set all to non-default except the one being set
@@ -382,11 +340,8 @@ export const setCoachDefaultPayoutMethod = async (req: Request, res: Response): 
         ),
       },
     });
-  } catch (error) {
-    log.error("setCoachDefaultPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to set default payout method" });
   }
-};
+);
 
 // ============================================
 // VENUE OWNER PAYOUT METHODS
@@ -396,12 +351,11 @@ export const setCoachDefaultPayoutMethod = async (req: Request, res: Response): 
  * GET /api/payouts/venue/my-payout-method
  * Get the venue owner's payout method (for their primary venue)
  */
-export const getVenuePayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getVenuePayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const venue = await Venue.findOne({ ownerId: userId })
@@ -410,8 +364,7 @@ export const getVenuePayoutMethod = async (req: Request, res: Response): Promise
       .lean();
 
     if (!venue) {
-      res.status(404).json({ success: false, message: "No venue found for this account" });
-      return;
+      throw new AppError("No venue found for this account", 404);
     }
 
     const primary = getPrimaryPayoutMethod(venue.payoutMethods as IPayoutMethod[] | undefined);
@@ -423,22 +376,18 @@ export const getVenuePayoutMethod = async (req: Request, res: Response): Promise
         venueName: venue.name,
       },
     });
-  } catch (error) {
-    log.error("getVenuePayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to retrieve payout method" });
   }
-};
+);
 
 /**
  * PUT /api/payouts/venue/my-payout-method
  * Save or update payout method for a venue owner (applies to all their venues)
  */
-export const upsertVenuePayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const upsertVenuePayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { id, type, accountHolderName, accountNumber, ifscCode, bankName, upiId } = req.body as {
@@ -453,11 +402,7 @@ export const upsertVenuePayoutMethod = async (req: Request, res: Response): Prom
 
     // Basic validation
     if (!type || !["BANK_TRANSFER", "UPI"].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid payout method type. Must be BANK_TRANSFER or UPI.",
-      });
-      return;
+      throw new AppError("Invalid payout method type. Must be BANK_TRANSFER or UPI.", 400);
     }
 
     if (type === "BANK_TRANSFER") {
@@ -467,35 +412,22 @@ export const upsertVenuePayoutMethod = async (req: Request, res: Response): Prom
         !ifscCode?.trim() ||
         !bankName?.trim()
       ) {
-        res.status(400).json({
-          success: false,
-          message: "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
-        });
-        return;
+        throw new AppError(
+          "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
+          400
+        );
       }
       if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode.toUpperCase().trim())) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid IFSC code format (e.g., SBIN0001234)",
-        });
-        return;
+        throw new AppError("Invalid IFSC code format (e.g., SBIN0001234)", 400);
       }
     }
 
     if (type === "UPI") {
       if (!upiId?.trim()) {
-        res.status(400).json({
-          success: false,
-          message: "UPI method requires a valid UPI ID",
-        });
-        return;
+        throw new AppError("UPI method requires a valid UPI ID", 400);
       }
       if (!/^[\w.\-+]+@[\w]+$/.test(upiId.trim())) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid UPI ID format (e.g., yourname@okaxis)",
-        });
-        return;
+        throw new AppError("Invalid UPI ID format (e.g., yourname@okaxis)", 400);
       }
     }
 
@@ -505,8 +437,7 @@ export const upsertVenuePayoutMethod = async (req: Request, res: Response): Prom
       .select("payoutMethods");
 
     if (!existingVenue) {
-      res.status(404).json({ success: false, message: "No venue found for this account" });
-      return;
+      throw new AppError("No venue found for this account", 404);
     }
 
     const now = new Date();
@@ -569,22 +500,18 @@ export const upsertVenuePayoutMethod = async (req: Request, res: Response): Prom
         ),
       },
     });
-  } catch (error) {
-    log.error("upsertVenuePayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to save payout method" });
   }
-};
+);
 
 /**
  * DELETE /api/payouts/venue/my-payout-method/:methodId
  * Remove a specific payout method from all venues (or all if no ID provided)
  */
-export const deleteVenuePayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteVenuePayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { methodId } = req.params;
@@ -628,8 +555,7 @@ export const deleteVenuePayoutMethod = async (req: Request, res: Response): Prom
       const result = await Venue.updateMany({ ownerId: userId }, { $set: { payoutMethods: [] } });
 
       if (result.matchedCount === 0) {
-        res.status(404).json({ success: false, message: "No venue found for this account" });
-        return;
+        throw new AppError("No venue found for this account", 404);
       }
 
       res.json({
@@ -638,30 +564,25 @@ export const deleteVenuePayoutMethod = async (req: Request, res: Response): Prom
         data: { payoutMethods: [] },
       });
     }
-  } catch (error) {
-    log.error("deleteVenuePayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to remove payout method" });
   }
-};
+);
 
 /**
  * PUT /api/payouts/venue/my-payout-method/:methodId/set-default
  * Set a specific payout method as the default for all venues
  */
-export const setVenueDefaultPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const setVenueDefaultPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { methodId } = req.params;
 
     const venues = await Venue.find({ ownerId: userId });
     if (venues.length === 0) {
-      res.status(404).json({ success: false, message: "No venue found for this account" });
-      return;
+      throw new AppError("No venue found for this account", 404);
     }
 
     let updated = false;
@@ -681,8 +602,7 @@ export const setVenueDefaultPayoutMethod = async (req: Request, res: Response): 
     }
 
     if (!updated) {
-      res.status(404).json({ success: false, message: "Payout method not found" });
-      return;
+      throw new AppError("Payout method not found", 404);
     }
 
     const updatedVenue = await Venue.findOne({ ownerId: userId })
@@ -698,11 +618,8 @@ export const setVenueDefaultPayoutMethod = async (req: Request, res: Response): 
         ),
       },
     });
-  } catch (error) {
-    log.error("setVenueDefaultPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to set default payout method" });
   }
-};
+);
 
 // ============================================
 // EXPERT PAYOUT METHODS
@@ -712,18 +629,16 @@ export const setVenueDefaultPayoutMethod = async (req: Request, res: Response): 
  * GET /api/payouts/expert/my-payout-method
  * Get the current expert's saved payout method
  */
-export const getExpertPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getExpertPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const expert = await Expert.findOne({ userId }).select("payoutMethods").lean();
     if (!expert) {
-      res.status(404).json({ success: false, message: "Expert profile not found" });
-      return;
+      throw new AppError("Expert profile not found", 404);
     }
 
     const primary = getPrimaryPayoutMethod(expert.payoutMethods as IPayoutMethod[] | undefined);
@@ -734,28 +649,23 @@ export const getExpertPayoutMethod = async (req: Request, res: Response): Promis
         payoutMethod: primary ? decryptPayoutMethod(primary) : null,
       },
     });
-  } catch (error) {
-    log.error("getExpertPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to retrieve payout method" });
   }
-};
+);
 
 /**
  * GET /api/payouts/expert/my-payout-methods
  * Get all of the current expert's saved payout methods
  */
-export const getExpertPayoutMethods = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getExpertPayoutMethods = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const expert = await Expert.findOne({ userId }).select("payoutMethods").lean();
     if (!expert) {
-      res.status(404).json({ success: false, message: "Expert profile not found" });
-      return;
+      throw new AppError("Expert profile not found", 404);
     }
 
     res.json({
@@ -767,22 +677,18 @@ export const getExpertPayoutMethods = async (req: Request, res: Response): Promi
         ),
       },
     });
-  } catch (error) {
-    log.error("getExpertPayoutMethods error:", error);
-    res.status(500).json({ success: false, message: "Failed to retrieve payout methods" });
   }
-};
+);
 
 /**
  * PUT /api/payouts/expert/my-payout-method
  * Save or update the current expert's payout method (add new or update existing)
  */
-export const upsertExpertPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const upsertExpertPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { id, type, accountHolderName, accountNumber, ifscCode, bankName, upiId } = req.body as {
@@ -797,11 +703,7 @@ export const upsertExpertPayoutMethod = async (req: Request, res: Response): Pro
 
     // Basic validation
     if (!type || !["BANK_TRANSFER", "UPI"].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid payout method type. Must be BANK_TRANSFER or UPI.",
-      });
-      return;
+      throw new AppError("Invalid payout method type. Must be BANK_TRANSFER or UPI.", 400);
     }
 
     if (type === "BANK_TRANSFER") {
@@ -811,45 +713,31 @@ export const upsertExpertPayoutMethod = async (req: Request, res: Response): Pro
         !ifscCode?.trim() ||
         !bankName?.trim()
       ) {
-        res.status(400).json({
-          success: false,
-          message: "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
-        });
-        return;
+        throw new AppError(
+          "Bank transfer requires: accountHolderName, accountNumber, ifscCode, bankName",
+          400
+        );
       }
       // Validate IFSC format (basic)
       if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode.toUpperCase().trim())) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid IFSC code format (e.g., SBIN0001234)",
-        });
-        return;
+        throw new AppError("Invalid IFSC code format (e.g., SBIN0001234)", 400);
       }
     }
 
     if (type === "UPI") {
       if (!upiId?.trim()) {
-        res.status(400).json({
-          success: false,
-          message: "UPI method requires a valid UPI ID",
-        });
-        return;
+        throw new AppError("UPI method requires a valid UPI ID", 400);
       }
       // Basic UPI ID validation
       if (!/^[\w.\-+]+@[\w]+$/.test(upiId.trim())) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid UPI ID format (e.g., yourname@okaxis)",
-        });
-        return;
+        throw new AppError("Invalid UPI ID format (e.g., yourname@okaxis)", 400);
       }
     }
 
     const now = new Date();
     const expert = await Expert.findOne({ userId });
     if (!expert) {
-      res.status(404).json({ success: false, message: "Expert profile not found" });
-      return;
+      throw new AppError("Expert profile not found", 404);
     }
     // Payout details can be captured while onboarding (UNVERIFIED/REJECTED,
     // so an admin has something concrete to review alongside the rest of the
@@ -858,12 +746,10 @@ export const upsertExpertPayoutMethod = async (req: Request, res: Response): Pro
     // PENDING: the expert has already submitted for review and every other
     // field is frozen until an admin acts (see submitExpertForReview).
     if (expert.verificationStatus === "PENDING") {
-      res.status(403).json({
-        success: false,
-        message:
-          "Your profile is awaiting review — payout details can't be changed until it's reviewed.",
-      });
-      return;
+      throw new AppError(
+        "Your profile is awaiting review — payout details can't be changed until it's reviewed.",
+        403
+      );
     }
 
     const payoutMethods = expert.payoutMethods ?? [];
@@ -891,8 +777,7 @@ export const upsertExpertPayoutMethod = async (req: Request, res: Response): Pro
         (method: IPayoutMethod) => getPayoutMethodId(method as PayoutMethodRecord) === id
       );
       if (methodIndex === -1) {
-        res.status(404).json({ success: false, message: "Payout method not found" });
-        return;
+        throw new AppError("Payout method not found", 404);
       }
       encryptedPayoutMethodData.id = id;
       encryptedPayoutMethodData.addedAt = payoutMethods[methodIndex]!.addedAt;
@@ -915,30 +800,25 @@ export const upsertExpertPayoutMethod = async (req: Request, res: Response): Pro
         ),
       },
     });
-  } catch (error) {
-    log.error("upsertExpertPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to save payout method" });
   }
-};
+);
 
 /**
  * DELETE /api/payouts/expert/my-payout-method/:methodId
  * Remove a specific payout method by ID (or all if no ID provided)
  */
-export const deleteExpertPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteExpertPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { methodId } = req.params;
 
     const expert = await Expert.findOne({ userId });
     if (!expert) {
-      res.status(404).json({ success: false, message: "Expert profile not found" });
-      return;
+      throw new AppError("Expert profile not found", 404);
     }
 
     const payoutMethods = expert.payoutMethods ?? [];
@@ -951,8 +831,7 @@ export const deleteExpertPayoutMethod = async (req: Request, res: Response): Pro
       );
 
       if ((expert.payoutMethods ?? []).length === initialLength) {
-        res.status(404).json({ success: false, message: "Payout method not found" });
-        return;
+        throw new AppError("Payout method not found", 404);
       }
 
       // If the deleted method was default and there are remaining methods, set first as default
@@ -978,30 +857,25 @@ export const deleteExpertPayoutMethod = async (req: Request, res: Response): Pro
         ),
       },
     });
-  } catch (error) {
-    log.error("deleteExpertPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to remove payout method" });
   }
-};
+);
 
 /**
  * PUT /api/payouts/expert/my-payout-method/:methodId/set-default
  * Set a specific payout method as the default
  */
-export const setExpertDefaultPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const setExpertDefaultPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { methodId } = req.params;
 
     const expert = await Expert.findOne({ userId });
     if (!expert) {
-      res.status(404).json({ success: false, message: "Expert profile not found" });
-      return;
+      throw new AppError("Expert profile not found", 404);
     }
 
     const methods = expert.payoutMethods || [];
@@ -1010,8 +884,7 @@ export const setExpertDefaultPayoutMethod = async (req: Request, res: Response):
     );
 
     if (methodIndex === -1) {
-      res.status(404).json({ success: false, message: "Payout method not found" });
-      return;
+      throw new AppError("Payout method not found", 404);
     }
 
     // Set all to non-default except the one being set
@@ -1030,8 +903,5 @@ export const setExpertDefaultPayoutMethod = async (req: Request, res: Response):
         ),
       },
     });
-  } catch (error) {
-    log.error("setExpertDefaultPayoutMethod error:", error);
-    res.status(500).json({ success: false, message: "Failed to set default payout method" });
   }
-};
+);

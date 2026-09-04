@@ -1,28 +1,31 @@
 import { Request, Response } from "express";
 import { CommunityService } from "../../services/CommunityService";
-import { getOptionalUserId, getUserId, handleError } from "./shared";
+import { getOptionalUserId, getUserId, toAppError } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
 
 type GroupVisibilityInput = "PUBLIC" | "INVITE_ONLY" | "PRIVATE";
 
 /**
  * POST /community/groups/upload-url
  */
-export const getGroupImageUploadUrl = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { contentType } = req.body as {
-      contentType: "image/jpeg" | "image/png" | "image/webp";
-    };
-    // Reusing the blog image generator for general public images
-    const { S3Service } = await import("../../../shared/services/S3Service");
-    const s3Service = new S3Service();
-    const data = await s3Service.generateBlogImageUploadUrl(getUserId(req), contentType);
-    res.status(200).json({ success: true, message: "Upload URL generated", data });
-  } catch (error) {
-    handleError(res, error, "Failed to generate upload URL");
+export const getGroupImageUploadUrl = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { contentType } = req.body as {
+        contentType: "image/jpeg" | "image/png" | "image/webp";
+      };
+      // Reusing the blog image generator for general public images
+      const { S3Service } = await import("../../../shared/services/S3Service");
+      const s3Service = new S3Service();
+      const data = await s3Service.generateBlogImageUploadUrl(getUserId(req), contentType);
+      res.status(200).json({ success: true, message: "Upload URL generated", data });
+    } catch (error) {
+      throw toAppError(error, "Failed to generate upload URL");
+    }
   }
-};
+);
 
-export const listGroups = async (req: Request, res: Response): Promise<void> => {
+export const listGroups = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const query = typeof req.query.q === "string" ? req.query.q : "";
     const limit = Number.isFinite(Number(req.query.limit)) ? Number(req.query.limit) : 20;
@@ -34,11 +37,11 @@ export const listGroups = async (req: Request, res: Response): Promise<void> => 
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to fetch groups");
+    throw toAppError(error, "Failed to fetch groups");
   }
-};
+});
 
-export const createGroup = async (req: Request, res: Response): Promise<void> => {
+export const createGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       name,
@@ -100,11 +103,11 @@ export const createGroup = async (req: Request, res: Response): Promise<void> =>
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to create group");
+    throw toAppError(error, "Failed to create group");
   }
-};
+});
 
-export const updateGroup = async (req: Request, res: Response): Promise<void> => {
+export const updateGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     const {
@@ -154,11 +157,11 @@ export const updateGroup = async (req: Request, res: Response): Promise<void> =>
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to update group");
+    throw toAppError(error, "Failed to update group");
   }
-};
+});
 
-export const joinGroup = async (req: Request, res: Response): Promise<void> => {
+export const joinGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     if (!groupId) {
@@ -172,11 +175,11 @@ export const joinGroup = async (req: Request, res: Response): Promise<void> => {
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to join group");
+    throw toAppError(error, "Failed to join group");
   }
-};
+});
 
-export const deleteGroup = async (req: Request, res: Response): Promise<void> => {
+export const deleteGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     if (!groupId) {
@@ -190,11 +193,11 @@ export const deleteGroup = async (req: Request, res: Response): Promise<void> =>
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to delete group");
+    throw toAppError(error, "Failed to delete group");
   }
-};
+});
 
-export const leaveGroup = async (req: Request, res: Response): Promise<void> => {
+export const leaveGroup = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     if (!groupId) {
@@ -208,11 +211,11 @@ export const leaveGroup = async (req: Request, res: Response): Promise<void> => 
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to leave group");
+    throw toAppError(error, "Failed to leave group");
   }
-};
+});
 
-export const addGroupMember = async (req: Request, res: Response): Promise<void> => {
+export const addGroupMember = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = String(req.params.groupId || "");
     if (!groupId) {
@@ -228,37 +231,39 @@ export const addGroupMember = async (req: Request, res: Response): Promise<void>
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to add group member");
+    throw toAppError(error, "Failed to add group member");
   }
-};
+});
 
-export const updateGroupSettings = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const groupId = String(req.params.groupId || "");
-    if (!groupId) {
-      throw new Error("groupId is required");
+export const updateGroupSettings = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const groupId = String(req.params.groupId || "");
+      if (!groupId) {
+        throw new Error("groupId is required");
+      }
+
+      const { memberAddPolicy, postPolicy } = req.body as {
+        memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
+        postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
+      };
+      const data = await CommunityService.updateGroupSettings(getUserId(req), groupId, {
+        ...(memberAddPolicy ? { memberAddPolicy } : {}),
+        ...(postPolicy ? { postPolicy } : {}),
+      });
+
+      res.status(200).json({
+        success: true,
+        message: "Group settings updated",
+        data,
+      });
+    } catch (error) {
+      throw toAppError(error, "Failed to update group settings");
     }
-
-    const { memberAddPolicy, postPolicy } = req.body as {
-      memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
-      postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
-    };
-    const data = await CommunityService.updateGroupSettings(getUserId(req), groupId, {
-      ...(memberAddPolicy ? { memberAddPolicy } : {}),
-      ...(postPolicy ? { postPolicy } : {}),
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "Group settings updated",
-      data,
-    });
-  } catch (error) {
-    handleError(res, error, "Failed to update group settings");
   }
-};
+);
 
-export const getGroupMembers = async (req: Request, res: Response): Promise<void> => {
+export const getGroupMembers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const groupId = req.params.groupId as string;
     const page = Math.max(1, Number(req.query.page) || 1);
@@ -271,11 +276,11 @@ export const getGroupMembers = async (req: Request, res: Response): Promise<void
       pagination: data.pagination,
     });
   } catch (error) {
-    handleError(res, error, "Failed to fetch group members");
+    throw toAppError(error, "Failed to fetch group members");
   }
-};
+});
 
-export const joinGroupByCode = async (req: Request, res: Response): Promise<void> => {
+export const joinGroupByCode = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const inviteCode = req.params.inviteCode as string;
     const data = await CommunityService.joinGroupByCode(getUserId(req), inviteCode);
@@ -285,20 +290,22 @@ export const joinGroupByCode = async (req: Request, res: Response): Promise<void
       data,
     });
   } catch (error) {
-    handleError(res, error, "Failed to join group");
+    throw toAppError(error, "Failed to join group");
   }
-};
+});
 
-export const getGroupInviteCode = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const groupId = req.params.groupId as string;
-    const data = await CommunityService.getGroupInviteCode(getUserId(req), groupId);
-    res.status(200).json({
-      success: true,
-      message: "Invite code fetched",
-      data,
-    });
-  } catch (error) {
-    handleError(res, error, "Failed to fetch invite code");
+export const getGroupInviteCode = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const groupId = req.params.groupId as string;
+      const data = await CommunityService.getGroupInviteCode(getUserId(req), groupId);
+      res.status(200).json({
+        success: true,
+        message: "Invite code fetched",
+        data,
+      });
+    } catch (error) {
+      throw toAppError(error, "Failed to fetch invite code");
+    }
   }
-};
+);

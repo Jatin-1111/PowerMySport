@@ -6,94 +6,67 @@ import {
   reviewInquiry,
   deleteInquiry,
 } from "../services/VenueInquiryService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 // Submit venue inquiry (public endpoint)
-export const submitInquiry = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const inquiry = await createVenueInquiry(req.body);
+export const submitInquiry = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const inquiry = await createVenueInquiry(req.body);
 
-    res.status(201).json({
-      success: true,
-      message: "Inquiry submitted successfully. Our team will contact you soon.",
-      data: {
-        id: inquiry._id,
-        venueName: inquiry.venueName,
-        status: inquiry.status,
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to submit inquiry",
-    });
-  }
-};
+  res.status(201).json({
+    success: true,
+    message: "Inquiry submitted successfully. Our team will contact you soon.",
+    data: {
+      id: inquiry._id,
+      venueName: inquiry.venueName,
+      status: inquiry.status,
+    },
+  });
+});
 
 // Get all inquiries (admin only)
-export const getInquiries = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { status } = req.query;
-    const inquiries = await getAllInquiries(status as string);
+export const getInquiries = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { status } = req.query;
+  const inquiries = await getAllInquiries(status as string);
 
-    // Transform _id to id for frontend
-    const transformedInquiries = inquiries.map((inquiry) => ({
-      ...inquiry.toObject(),
-      id: inquiry._id.toString(),
-    }));
+  // Transform _id to id for frontend
+  const transformedInquiries = inquiries.map((inquiry) => ({
+    ...inquiry.toObject(),
+    id: inquiry._id.toString(),
+  }));
 
-    res.status(200).json({
-      success: true,
-      message: "Inquiries retrieved successfully",
-      data: transformedInquiries,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch inquiries",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Inquiries retrieved successfully",
+    data: transformedInquiries,
+  });
+});
 
 // Get single inquiry (admin only)
-export const getInquiry = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const inquiry = await getInquiryById(req.params.id as string);
+export const getInquiry = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const inquiry = await getInquiryById(req.params.id as string);
 
-    if (!inquiry) {
-      res.status(404).json({
-        success: false,
-        message: "Inquiry not found",
-      });
-      return;
-    }
-
-    const transformedInquiry = {
-      ...inquiry.toObject(),
-      id: inquiry._id.toString(),
-    };
-
-    res.status(200).json({
-      success: true,
-      message: "Inquiry retrieved successfully",
-      data: transformedInquiry,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch inquiry",
-    });
+  if (!inquiry) {
+    throw new AppError("Inquiry not found", 404);
   }
-};
+
+  const transformedInquiry = {
+    ...inquiry.toObject(),
+    id: inquiry._id.toString(),
+  };
+
+  res.status(200).json({
+    success: true,
+    message: "Inquiry retrieved successfully",
+    data: transformedInquiry,
+  });
+});
 
 // Review inquiry - approve or reject (admin only)
-export const reviewInquiryRequest = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const reviewInquiryRequest = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const result = await reviewInquiry(req.params.id as string, {
@@ -118,27 +91,15 @@ export const reviewInquiryRequest = async (req: Request, res: Response): Promise
         : "Inquiry reviewed successfully",
       data: responseData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to review inquiry",
-    });
   }
-};
+);
 
 // Delete inquiry (admin only)
-export const removeInquiry = async (req: Request, res: Response): Promise<void> => {
-  try {
-    await deleteInquiry(req.params.id as string);
+export const removeInquiry = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  await deleteInquiry(req.params.id as string);
 
-    res.status(200).json({
-      success: true,
-      message: "Inquiry deleted successfully",
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to delete inquiry",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Inquiry deleted successfully",
+  });
+});

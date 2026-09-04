@@ -1,4 +1,6 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 import { ScheduledNotificationService } from "../services/ScheduledNotificationService";
 import { ScheduledNotification } from "../models/ScheduledNotification";
 import { ReminderMonitoringService } from "../services/ReminderMonitoringService";
@@ -9,22 +11,14 @@ import { User } from "../models/User";
  * Get user's reminder preferences
  * GET /api/reminders/preferences
  */
-export const getReminderPreferences = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const getReminderPreferences = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
 
     const user = await User.findById(userId).select("reminderPreferences");
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
+      throw new AppError("User not found", 404);
     }
 
     // Return default preferences if not set
@@ -43,21 +37,15 @@ export const getReminderPreferences = async (
       success: true,
       data: reminderPreferences,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Update user's reminder preferences
  * PATCH /api/reminders/preferences
  */
-export const updateReminderPreferences = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const updateReminderPreferences = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
 
     // Validate request body
@@ -76,7 +64,20 @@ export const updateReminderPreferences = async (
         .optional(),
     });
 
-    const validatedData = schema.parse(req.body);
+    let validatedData;
+    try {
+      validatedData = schema.parse(req.body);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid request data",
+          errors: error.issues,
+        });
+        return;
+      }
+      throw error;
+    }
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -89,11 +90,7 @@ export const updateReminderPreferences = async (
     ).select("reminderPreferences");
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
+      throw new AppError("User not found", 404);
     }
 
     res.json({
@@ -101,29 +98,15 @@ export const updateReminderPreferences = async (
       message: "Reminder preferences updated successfully",
       data: user.reminderPreferences,
     });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid request data",
-        errors: error.issues,
-      });
-      return;
-    }
-    next(error);
   }
-};
+);
 
 /**
  * Get user's upcoming reminders
  * GET /api/reminders/upcoming
  */
-export const getUpcomingReminders = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const getUpcomingReminders = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
     const limit = Math.min(parseInt(req.query.limit as string) || 10, 50);
 
@@ -136,44 +119,30 @@ export const getUpcomingReminders = async (
       success: true,
       data: reminders,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Get user's reminder statistics
  * GET /api/reminders/stats
  */
-export const getReminderStats = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const userId = req.user!.id;
+export const getReminderStats = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.id;
 
-    const stats = await ScheduledNotificationService.getUserReminderStats(userId as any);
+  const stats = await ScheduledNotificationService.getUserReminderStats(userId as any);
 
-    res.json({
-      success: true,
-      data: stats,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  res.json({
+    success: true,
+    data: stats,
+  });
+});
 
 /**
  * Manually trigger reminder processing (admin/dev only)
  * POST /api/reminders/process
  */
-export const processRemindersManually = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const processRemindersManually = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     // Optional: Add admin check
     // if (req.user!.role !== "Admin") {
     //   res.status(403).json({ success: false, message: "Forbidden" });
@@ -189,62 +158,44 @@ export const processRemindersManually = async (
       message: "Reminders processed successfully",
       data: stats,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 /**
  * Get monitoring statistics
  * GET /api/reminders/monitoring/stats
  */
-export const getMonitoringStats = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const getMonitoringStats = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const stats = await ReminderMonitoringService.getMonitoringStats();
 
     res.json({
       success: true,
       data: stats,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Check scheduler health
  * GET /api/reminders/monitoring/health
  */
-export const checkSchedulerHealth = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const checkSchedulerHealth = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const healthStatus = await ReminderMonitoringService.checkSchedulerHealth();
 
     res.json({
       success: true,
       data: healthStatus,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Get failed reminders
  * GET /api/reminders/monitoring/failed
  */
-export const getFailedReminders = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const getFailedReminders = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
     const failedReminders = await ReminderMonitoringService.getFailedReminders(limit);
 
@@ -253,21 +204,15 @@ export const getFailedReminders = async (
       data: failedReminders,
       count: failedReminders.length,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Trigger health check manually (admin)
  * POST /api/reminders/monitoring/health-check
  */
-export const triggerHealthCheck = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const triggerHealthCheck = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     // Optional: Add admin role check here
     // if (req.user?.role !== 'Admin') {
     //   res.status(403).json({ success: false, message: 'Admin access required' });
@@ -280,52 +225,34 @@ export const triggerHealthCheck = async (
       success: true,
       message: "Health check performed successfully",
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Send daily summary manually (admin)
  * POST /api/reminders/monitoring/send-summary
  */
-export const sendDailySummary = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    // Optional: Add admin role check here
+export const sendDailySummary = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  // Optional: Add admin role check here
 
-    await ReminderMonitoringService.sendDailySummary();
+  await ReminderMonitoringService.sendDailySummary();
 
-    res.json({
-      success: true,
-      message: "Daily summary sent successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  res.json({
+    success: true,
+    message: "Daily summary sent successfully",
+  });
+});
 
 /**
  * Retry a single failed reminder
  * POST /api/reminders/monitoring/retry/:id
  */
-export const retryFailedReminder = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const retryFailedReminder = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
 
     if (!id || Array.isArray(id)) {
-      res.status(400).json({
-        success: false,
-        message: "Reminder ID is required",
-      });
-      return;
+      throw new AppError("Reminder ID is required", 400);
     }
 
     const result = await ReminderMonitoringService.retryFailedReminder(id);
@@ -341,45 +268,27 @@ export const retryFailedReminder = async (
         message: result.message,
       });
     }
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Retry multiple failed reminders
  * POST /api/reminders/monitoring/retry-batch
  */
-export const retryMultipleReminders = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const retryMultipleReminders = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { reminderIds } = req.body;
 
     if (!reminderIds || !Array.isArray(reminderIds)) {
-      res.status(400).json({
-        success: false,
-        message: "reminderIds array is required",
-      });
-      return;
+      throw new AppError("reminderIds array is required", 400);
     }
 
     if (reminderIds.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "At least one reminder ID is required",
-      });
-      return;
+      throw new AppError("At least one reminder ID is required", 400);
     }
 
     if (reminderIds.length > 100) {
-      res.status(400).json({
-        success: false,
-        message: "Maximum 100 reminders can be retried at once",
-      });
-      return;
+      throw new AppError("Maximum 100 reminders can be retried at once", 400);
     }
 
     const result = await ReminderMonitoringService.retryMultipleReminders(reminderIds);
@@ -389,46 +298,36 @@ export const retryMultipleReminders = async (
       data: result.results,
       message: `${result.results.filter((r) => r.success).length} of ${reminderIds.length} reminders queued for retry`,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Create a new reminder
  * POST /api/reminders
  */
-export const createReminder = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-    const { type, itemName, itemType, daysFromNow } = req.body;
+export const createReminder = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const { type, itemName, itemType, daysFromNow } = req.body;
 
-    if (type === "PATHWAY_DOCUMENT_REMINDER") {
-      const scheduledFor = new Date();
-      scheduledFor.setDate(scheduledFor.getDate() + (daysFromNow || 7));
+  if (type === "PATHWAY_DOCUMENT_REMINDER") {
+    const scheduledFor = new Date();
+    scheduledFor.setDate(scheduledFor.getDate() + (daysFromNow || 7));
 
-      await ScheduledNotification.create({
-        userId,
-        type,
-        interval: "7_DAYS",
-        scheduledFor,
-        status: "PENDING",
-        title: "Document Reminder",
-        body: `It's time to gather your documents for ${itemName}!`,
-        data: { itemName, itemType },
-        channels: { inApp: true, email: true },
-      });
+    await ScheduledNotification.create({
+      userId,
+      type,
+      interval: "7_DAYS",
+      scheduledFor,
+      status: "PENDING",
+      title: "Document Reminder",
+      body: `It's time to gather your documents for ${itemName}!`,
+      data: { itemName, itemType },
+      channels: { inApp: true, email: true },
+    });
 
-      res.json({ success: true, message: "Reminder created successfully" });
-      return;
-    }
-
-    res.status(400).json({ success: false, message: "Invalid type" });
-  } catch (error) {
-    next(error);
+    res.json({ success: true, message: "Reminder created successfully" });
+    return;
   }
-};
+
+  res.status(400).json({ success: false, message: "Invalid type" });
+});

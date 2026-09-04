@@ -9,8 +9,8 @@ import {
   PathwayGuideSchema,
 } from "../../shared/validation/pathwayGuideFormat";
 import { recordAuditLog } from "../services/AuditLogService";
-import { log as __rootLog } from "../../utils/logger";
-const log = __rootLog.child("pathwayGuideAdmin");
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 // ─── Pathway CMS (admin) ─────────────────────────────────────────────────────
 //
@@ -69,19 +69,10 @@ const badRequest = (res: Response, message: string, errors?: string[]): void => 
   res.status(400).json({ success: false, message, ...(errors ? { errors } : {}) });
 };
 
-const notFound = (res: Response, message = "No pathway guide with that id."): void => {
-  res.status(404).json({ success: false, message });
-};
-
-const failed = (res: Response, scope: string, error: unknown): void => {
-  log.error(`[pathwayGuideAdmin] ${scope} failed`, error);
-  res.status(500).json({ success: false, message: `Failed to ${scope}.` });
-};
-
 // ─── GET /api/admin/pathway-guides ───────────────────────────────────────────
 // The index the CMS opens on: one row per sport, no stage bodies.
-export const listPathwayGuides = async (_req: Request, res: Response): Promise<void> => {
-  try {
+export const listPathwayGuides = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
     const docs = await PathwayGuide.find({})
       .select("sportSlug sportName status reviewedOn updatedAt publishedAt stages.key")
       .sort({ sportName: 1 })
@@ -100,28 +91,22 @@ export const listPathwayGuides = async (_req: Request, res: Response): Promise<v
         updatedAt: doc.updatedAt,
       })),
     });
-  } catch (error) {
-    failed(res, "list the pathway guides", error);
   }
-};
+);
 
 // ─── GET /api/admin/pathway-guides/:id ───────────────────────────────────────
-export const getPathwayGuide = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const doc = await PathwayGuide.findById(req.params.id).lean();
-    if (!doc) return notFound(res);
-    res.json({ success: true, data: doc });
-  } catch (error) {
-    failed(res, "load the pathway guide", error);
-  }
-};
+export const getPathwayGuide = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const doc = await PathwayGuide.findById(req.params.id).lean();
+  if (!doc) throw new AppError("No pathway guide with that id.", 404);
+  res.json({ success: true, data: doc });
+});
 
 // ─── POST /api/admin/pathway-guides ──────────────────────────────────────────
 // Create the shell for a sport. Stages are added afterwards, one at a time —
 // asking for a full six-stage guide before anything can be saved is exactly the
 // friction the old JSON-upload CMS had.
-export const createPathwayGuide = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createPathwayGuide = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const body = req.body ?? {};
     const meta = PathwayGuideSchema.pick({
       sport: true,
@@ -139,9 +124,9 @@ export const createPathwayGuide = async (req: Request, res: Response): Promise<v
 
     const exists = await PathwayGuide.exists({ sportSlug: meta.data.sport.slug });
     if (exists) {
-      return badRequest(
-        res,
-        `A pathway guide already exists for ${meta.data.sport.name}. Edit that one instead.`
+      throw new AppError(
+        `A pathway guide already exists for ${meta.data.sport.name}. Edit that one instead.`,
+        400
       );
     }
 
@@ -166,16 +151,14 @@ export const createPathwayGuide = async (req: Request, res: Response): Promise<v
       message: `Created a draft pathway for ${created.sportName}.`,
       data: created.toObject(),
     });
-  } catch (error) {
-    failed(res, "create the pathway guide", error);
   }
-};
+);
 
 // ─── PUT /api/admin/pathway-guides/:id ───────────────────────────────────────
 // Guide-level fields only. Stages have their own endpoints, so a save here can
 // never silently drop them.
-export const updatePathwayGuide = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updatePathwayGuide = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const body = req.body ?? {};
     const meta = PathwayGuideSchema.pick({ intro: true, sportIntro: true })
       .extend({ reviewedOn: PathwayGuideSchema.shape.reviewedOn })
@@ -202,42 +185,38 @@ export const updatePathwayGuide = async (req: Request, res: Response): Promise<v
       { new: true }
     ).lean();
 
-    if (!updated) return notFound(res);
+    if (!updated) throw new AppError("No pathway guide with that id.", 404);
 
     audit(req, "pathwayGuide.update", String(updated._id), {
       sportSlug: updated.sportSlug,
     });
     res.json({ success: true, message: "Saved.", data: updated });
-  } catch (error) {
-    failed(res, "save the pathway guide", error);
   }
-};
+);
 
 // ─── DELETE /api/admin/pathway-guides/:id ────────────────────────────────────
-export const deletePathwayGuide = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deletePathwayGuide = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const deleted = await PathwayGuide.findByIdAndDelete(req.params.id).lean();
-    if (!deleted) return notFound(res);
+    if (!deleted) throw new AppError("No pathway guide with that id.", 404);
 
     audit(req, "pathwayGuide.delete", String(deleted._id), {
       sportSlug: deleted.sportSlug,
       stageCount: deleted.stages?.length ?? 0,
     });
     res.json({ success: true, message: `Deleted the ${deleted.sportName} pathway.` });
-  } catch (error) {
-    failed(res, "delete the pathway guide", error);
   }
-};
+);
 
 // ─── POST /api/admin/pathway-guides/:id/publish ──────────────────────────────
 // Publishing is a separate action from saving, and it re-validates the whole
 // guide: a draft is allowed to be half-written, a published one is not. This is
 // the only gate between an author's working copy and a parent reading it.
-export const setPathwayGuideStatus = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const setPathwayGuideStatus = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const publish = req.body?.status !== "draft";
     const doc = await PathwayGuide.findById(req.params.id);
-    if (!doc) return notFound(res);
+    if (!doc) throw new AppError("No pathway guide with that id.", 404);
 
     if (publish) {
       const check = parsePathwayGuide({
@@ -269,63 +248,57 @@ export const setPathwayGuideStatus = async (req: Request, res: Response): Promis
         : `${doc.sportName} is back to a draft.`,
       data: { status: doc.status, publishedAt: doc.publishedAt },
     });
-  } catch (error) {
-    failed(res, "change the publish status", error);
   }
-};
+);
 
 // ─── POST /api/admin/pathway-guides/:id/stages ───────────────────────────────
 // Append one stage.
-export const addPathwayStage = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const parsed = parsePathwayStage(req.body ?? {});
-    if (!parsed.ok) return badRequest(res, "Check the stage.", parsed.errors);
+export const addPathwayStage = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const parsed = parsePathwayStage(req.body ?? {});
+  if (!parsed.ok) return badRequest(res, "Check the stage.", parsed.errors);
 
-    const doc = await PathwayGuide.findById(req.params.id);
-    if (!doc) return notFound(res);
+  const doc = await PathwayGuide.findById(req.params.id);
+  if (!doc) throw new AppError("No pathway guide with that id.", 404);
 
-    if (doc.stages.some((stage) => stage.key === parsed.stage.key)) {
-      return badRequest(res, `This pathway already has a stage keyed "${parsed.stage.key}".`);
-    }
-
-    doc.set(
-      "stages",
-      resequence([
-        ...plainStages(doc),
-        { ...parsed.stage, order: doc.stages.length + 1 } as PathwayStageDocument,
-      ])
-    );
-    if (req.user?.id) doc.set("updatedBy", req.user.id);
-    await doc.save();
-
-    audit(req, "pathwayGuide.stage.add", String(doc._id), {
-      sportSlug: doc.sportSlug,
-      stageKey: parsed.stage.key,
-    });
-    res.status(201).json({
-      success: true,
-      message: `Added "${parsed.stage.name}".`,
-      data: doc.toObject(),
-    });
-  } catch (error) {
-    failed(res, "add the stage", error);
+  if (doc.stages.some((stage) => stage.key === parsed.stage.key)) {
+    throw new AppError(`This pathway already has a stage keyed "${parsed.stage.key}".`, 400);
   }
-};
+
+  doc.set(
+    "stages",
+    resequence([
+      ...plainStages(doc),
+      { ...parsed.stage, order: doc.stages.length + 1 } as PathwayStageDocument,
+    ])
+  );
+  if (req.user?.id) doc.set("updatedBy", req.user.id);
+  await doc.save();
+
+  audit(req, "pathwayGuide.stage.add", String(doc._id), {
+    sportSlug: doc.sportSlug,
+    stageKey: parsed.stage.key,
+  });
+  res.status(201).json({
+    success: true,
+    message: `Added "${parsed.stage.name}".`,
+    data: doc.toObject(),
+  });
+});
 
 // ─── PUT /api/admin/pathway-guides/:id/stages/:stageKey ──────────────────────
 // Replace one stage in place. The stage's position is preserved even if the key
 // itself is renamed, so re-keying a stage doesn't send it to the end of the list.
-export const updatePathwayStage = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updatePathwayStage = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const parsed = parsePathwayStage(req.body ?? {});
     if (!parsed.ok) return badRequest(res, "Check the stage.", parsed.errors);
 
     const doc = await PathwayGuide.findById(req.params.id);
-    if (!doc) return notFound(res);
+    if (!doc) throw new AppError("No pathway guide with that id.", 404);
 
     const stageKey = String(req.params.stageKey).toLowerCase();
     const index = doc.stages.findIndex((stage) => stage.key === stageKey);
-    if (index === -1) return notFound(res, "No stage with that key.");
+    if (index === -1) throw new AppError("No stage with that key.", 404);
 
     const clash = doc.stages.findIndex((stage, i) => i !== index && stage.key === parsed.stage.key);
     if (clash !== -1) {
@@ -343,20 +316,18 @@ export const updatePathwayStage = async (req: Request, res: Response): Promise<v
       stageKey,
     });
     res.json({ success: true, message: "Stage saved.", data: doc.toObject() });
-  } catch (error) {
-    failed(res, "save the stage", error);
   }
-};
+);
 
 // ─── DELETE /api/admin/pathway-guides/:id/stages/:stageKey ───────────────────
-export const deletePathwayStage = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deletePathwayStage = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const doc = await PathwayGuide.findById(req.params.id);
-    if (!doc) return notFound(res);
+    if (!doc) throw new AppError("No pathway guide with that id.", 404);
 
     const stageKey = String(req.params.stageKey).toLowerCase();
     const index = doc.stages.findIndex((stage) => stage.key === stageKey);
-    if (index === -1) return notFound(res, "No stage with that key.");
+    if (index === -1) throw new AppError("No stage with that key.", 404);
 
     const remaining = plainStages(doc);
     remaining.splice(index, 1);
@@ -369,23 +340,21 @@ export const deletePathwayStage = async (req: Request, res: Response): Promise<v
       stageKey,
     });
     res.json({ success: true, message: "Stage deleted.", data: doc.toObject() });
-  } catch (error) {
-    failed(res, "delete the stage", error);
   }
-};
+);
 
 // ─── PUT /api/admin/pathway-guides/:id/stages/order ──────────────────────────
 // Body: { keys: string[] } — the full ordering, so a reorder is one idempotent
 // write rather than a sequence of swaps that can half-apply.
-export const reorderPathwayStages = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const reorderPathwayStages = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const keys: unknown = req.body?.keys;
     if (!Array.isArray(keys) || keys.some((key) => typeof key !== "string")) {
-      return badRequest(res, "Send the new order as { keys: [...] }.");
+      throw new AppError("Send the new order as { keys: [...] }.", 400);
     }
 
     const doc = await PathwayGuide.findById(req.params.id);
-    if (!doc) return notFound(res);
+    if (!doc) throw new AppError("No pathway guide with that id.", 404);
 
     const wanted = (keys as string[]).map((key) => key.toLowerCase());
     const current = doc.stages.map((stage) => stage.key);
@@ -395,7 +364,7 @@ export const reorderPathwayStages = async (req: Request, res: Response): Promise
       current.every((key) => wanted.includes(key));
 
     if (!sameSet) {
-      return badRequest(res, "The new order must list every existing stage exactly once.");
+      throw new AppError("The new order must list every existing stage exactly once.", 400);
     }
 
     const byKey = new Map(plainStages(doc).map((stage) => [stage.key, stage]));
@@ -408,7 +377,5 @@ export const reorderPathwayStages = async (req: Request, res: Response): Promise
       order: wanted,
     });
     res.json({ success: true, message: "Order saved.", data: doc.toObject() });
-  } catch (error) {
-    failed(res, "reorder the stages", error);
   }
-};
+);

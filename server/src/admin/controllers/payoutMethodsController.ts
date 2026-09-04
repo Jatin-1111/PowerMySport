@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 import { Coach, IPayoutMethod } from "../../client/models/Coach";
 import { Venue } from "../../client/models/Venue";
 
@@ -147,40 +149,34 @@ const ensureDefaultMethod = (methods: IPayoutMethod[]): IPayoutMethod[] => {
   return methods;
 };
 
-export const listCoachPayoutMethods = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listCoachPayoutMethods = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coach = await Coach.findOne({ userId }).select("payoutMethods").lean();
     res.json({ success: true, data: coach?.payoutMethods || [] });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to load payout methods" });
   }
-};
+);
 
-export const addCoachPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const addCoachPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const type = req.body.type === "UPI" ? "UPI" : "BANK_TRANSFER";
     const validationError = validateMethodPayload(type, req.body as Record<string, unknown>);
     if (validationError) {
-      res.status(400).json({ success: false, message: validationError });
-      return;
+      throw new AppError(validationError, 400);
     }
 
     const coach = await Coach.findOne({ userId });
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const methods = ensureDefaultMethod(coach.payoutMethods || []);
@@ -191,31 +187,26 @@ export const addCoachPayoutMethod = async (req: Request, res: Response): Promise
     await coach.save();
 
     res.status(201).json({ success: true, data: coach.payoutMethods });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to add payout method" });
   }
-};
+);
 
-export const updateCoachPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateCoachPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coach = await Coach.findOne({ userId });
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const existing = (coach.payoutMethods || []).find((method) => method.id === methodId);
     if (!existing) {
-      res.status(404).json({ success: false, message: "Payout method not found" });
-      return;
+      throw new AppError("Payout method not found", 404);
     }
 
     const validationError = validateMethodPayload(
@@ -223,8 +214,7 @@ export const updateCoachPayoutMethod = async (req: Request, res: Response): Prom
       req.body as Record<string, unknown>
     );
     if (validationError) {
-      res.status(400).json({ success: false, message: validationError });
-      return;
+      throw new AppError(validationError, 400);
     }
 
     const updated = buildMethodFromBody(req.body as Record<string, unknown>, existing);
@@ -237,25 +227,21 @@ export const updateCoachPayoutMethod = async (req: Request, res: Response): Prom
     await coach.save();
 
     res.json({ success: true, data: coach.payoutMethods });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to update payout method" });
   }
-};
+);
 
-export const deleteCoachPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteCoachPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coach = await Coach.findOne({ userId });
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     coach.payoutMethods = (coach.payoutMethods || []).filter((method) => method.id !== methodId);
@@ -263,25 +249,21 @@ export const deleteCoachPayoutMethod = async (req: Request, res: Response): Prom
     await coach.save();
 
     res.json({ success: true, data: coach.payoutMethods });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to delete payout method" });
   }
-};
+);
 
-export const setDefaultCoachPayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const setDefaultCoachPayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const coach = await Coach.findOne({ userId });
     if (!coach) {
-      res.status(404).json({ success: false, message: "Coach profile not found" });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     coach.payoutMethods = (coach.payoutMethods || []).map((method) => ({
@@ -291,17 +273,14 @@ export const setDefaultCoachPayoutMethod = async (req: Request, res: Response): 
     await coach.save();
 
     res.json({ success: true, data: coach.payoutMethods });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to set default payout method" });
   }
-};
+);
 
-export const listVenuePayoutMethods = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listVenuePayoutMethods = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const venue = await Venue.findOne({ ownerId: userId })
@@ -309,30 +288,25 @@ export const listVenuePayoutMethods = async (req: Request, res: Response): Promi
       .select("payoutMethods")
       .lean();
     res.json({ success: true, data: venue?.payoutMethods || [] });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to load payout methods" });
   }
-};
+);
 
-export const addVenuePayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const addVenuePayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const type = req.body.type === "UPI" ? "UPI" : "BANK_TRANSFER";
     const validationError = validateMethodPayload(type, req.body as Record<string, unknown>);
     if (validationError) {
-      res.status(400).json({ success: false, message: validationError });
-      return;
+      throw new AppError(validationError, 400);
     }
 
     const venues = await Venue.find({ ownerId: userId }).sort({ createdAt: 1 });
     if (venues.length === 0) {
-      res.status(404).json({ success: false, message: "No venues found for this account" });
-      return;
+      throw new AppError("No venues found for this account", 404);
     }
 
     const nextMethod = buildMethodFromBody(req.body as Record<string, unknown>);
@@ -348,25 +322,21 @@ export const addVenuePayoutMethod = async (req: Request, res: Response): Promise
     );
 
     res.status(201).json({ success: true, data: primaryVenue.payoutMethods });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to add payout method" });
   }
-};
+);
 
-export const updateVenuePayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateVenuePayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const venues = await Venue.find({ ownerId: userId }).sort({ createdAt: 1 });
     if (venues.length === 0) {
-      res.status(404).json({ success: false, message: "No venues found for this account" });
-      return;
+      throw new AppError("No venues found for this account", 404);
     }
 
     // Payout methods are mirrored across every venue an owner has, so the
@@ -383,8 +353,7 @@ export const updateVenuePayoutMethod = async (req: Request, res: Response): Prom
         req.body as Record<string, unknown>
       );
       if (validationError) {
-        res.status(400).json({ success: false, message: validationError });
-        return;
+        throw new AppError(validationError, 400);
       }
     }
 
@@ -410,25 +379,21 @@ export const updateVenuePayoutMethod = async (req: Request, res: Response): Prom
       success: true,
       data: venues[0]!.payoutMethods || [],
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to update payout method" });
   }
-};
+);
 
-export const deleteVenuePayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const deleteVenuePayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const venues = await Venue.find({ ownerId: userId }).sort({ createdAt: 1 });
     if (venues.length === 0) {
-      res.status(404).json({ success: false, message: "No venues found for this account" });
-      return;
+      throw new AppError("No venues found for this account", 404);
     }
 
     await Promise.all(
@@ -445,25 +410,21 @@ export const deleteVenuePayoutMethod = async (req: Request, res: Response): Prom
       success: true,
       data: venues[0]!.payoutMethods || [],
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to delete payout method" });
   }
-};
+);
 
-export const setDefaultVenuePayoutMethod = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const setDefaultVenuePayoutMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const venues = await Venue.find({ ownerId: userId }).sort({ createdAt: 1 });
     if (venues.length === 0) {
-      res.status(404).json({ success: false, message: "No venues found for this account" });
-      return;
+      throw new AppError("No venues found for this account", 404);
     }
 
     await Promise.all(
@@ -480,7 +441,5 @@ export const setDefaultVenuePayoutMethod = async (req: Request, res: Response): 
       success: true,
       data: venues[0]!.payoutMethods || [],
     });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to set default payout method" });
   }
-};
+);

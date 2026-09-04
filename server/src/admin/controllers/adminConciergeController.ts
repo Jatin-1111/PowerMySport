@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
 import { ConciergeRequest } from "../../shared/models/ConciergeRequest";
 import { S3Service } from "../../shared/services/S3Service";
-import { log as __rootLog } from "../../utils/logger";
-const log = __rootLog.child("adminConcierge");
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 /**
  * Fetch all concierge requests for the admin panel, sorted by newest first
  */
-export const getAllConciergeRequests = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getAllConciergeRequests = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const requests = await ConciergeRequest.find()
       .populate("userId", "name email phone")
       .sort({ createdAt: -1 })
@@ -16,23 +16,19 @@ export const getAllConciergeRequests = async (req: Request, res: Response): Prom
       .lean();
 
     res.status(200).json({ success: true, requests });
-  } catch (error) {
-    log.error("Error fetching admin concierge requests:", error);
-    res.status(500).json({ success: false, error: "Failed to fetch requests" });
   }
-};
+);
 
 /**
  * Update the status and optional admin notes of a specific concierge request
  */
-export const updateConciergeRequestStatus = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const updateConciergeRequestStatus = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
 
     if (!["pending", "processing", "completed", "rejected"].includes(status)) {
-      res.status(400).json({ success: false, error: "Invalid status value" });
-      return;
+      throw new AppError("Invalid status value", 400);
     }
 
     const updatePayload: Record<string, any> = { status };
@@ -45,52 +41,39 @@ export const updateConciergeRequestStatus = async (req: Request, res: Response):
     }).populate("userId", "name email phone");
 
     if (!updatedRequest) {
-      res.status(404).json({ success: false, error: "Request not found" });
-      return;
+      throw new AppError("Request not found", 404);
     }
 
     res.status(200).json({ success: true, request: updatedRequest });
-  } catch (error) {
-    log.error("Error updating concierge request status:", error);
-    res.status(500).json({ success: false, error: "Failed to update status" });
   }
-};
+);
 
 /**
  * Get a presigned download URL for a specific document key attached to a request
  */
-export const getConciergeDocumentDownloadUrl = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const getConciergeDocumentDownloadUrl = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const { key } = req.query;
 
     if (!key || typeof key !== "string") {
-      res.status(400).json({ success: false, error: "Missing document key" });
-      return;
+      throw new AppError("Missing document key", 400);
     }
 
     // Verify the request exists and contains this document key
     const request = await ConciergeRequest.findById(id);
     if (!request) {
-      res.status(404).json({ success: false, error: "Request not found" });
-      return;
+      throw new AppError("Request not found", 404);
     }
 
     const docExists = request.documents.some((doc) => doc.s3Key === key);
     if (!docExists) {
-      res.status(404).json({ success: false, error: "Document not found in request" });
-      return;
+      throw new AppError("Document not found in request", 404);
     }
 
     const s3Service = new S3Service();
     const downloadUrl = await s3Service.generateConciergeDocumentDownloadUrl(key);
 
     res.status(200).json({ success: true, url: downloadUrl });
-  } catch (error) {
-    log.error("Error generating document download URL:", error);
-    res.status(500).json({ success: false, error: "Failed to generate URL" });
   }
-};
+);

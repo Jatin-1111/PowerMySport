@@ -11,6 +11,8 @@ import {
 import { formatStateWithGstCode, guessPlaceOfSupply } from "../../../shared/utils/invoiceGst";
 import { extractPhonePePaymentMethodLabel } from "../../../shared/utils/paymentMethod";
 import { deliveryAddressLine } from "../../services/BookingDelivery";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 const buildInvoiceNumber = (bookingId: string, bookingDate: Date): string => {
   const datePart = bookingDate.toISOString().slice(0, 10).replace(/-/g, "");
@@ -54,11 +56,10 @@ const diffMinutes = (startTime: string, endTime: string): number => {
  * Download booking invoice PDF (venue / coach / academy bookings)
  * GET /api/bookings/:bookingId/invoice/pdf
  */
-export const downloadBookingInvoicePdf = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const downloadBookingInvoicePdf = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const bookingId = (req.params as Record<string, unknown>).bookingId as string;
@@ -77,8 +78,7 @@ export const downloadBookingInvoicePdf = async (req: Request, res: Response): Pr
       ]);
 
     if (!booking) {
-      res.status(404).json({ success: false, message: "Booking not found" });
-      return;
+      throw new AppError("Booking not found", 404);
     }
 
     const isAdmin = req.user.role === "Admin";
@@ -94,16 +94,11 @@ export const downloadBookingInvoicePdf = async (req: Request, res: Response): Pr
     }
 
     if (!isAdmin && !isBookingOwner && !isVenueOwner) {
-      res.status(403).json({ success: false, message: "Forbidden" });
-      return;
+      throw new AppError("Forbidden", 403);
     }
 
     if (!canGenerateInvoiceForStatus(booking.status)) {
-      res.status(409).json({
-        success: false,
-        message: "Invoice will be available after the coach confirms your booking.",
-      });
-      return;
+      throw new AppError("Invoice will be available after the coach confirms your booking.", 409);
     }
 
     const bookingDate = new Date(booking.date);
@@ -279,10 +274,5 @@ export const downloadBookingInvoicePdf = async (req: Request, res: Response): Pr
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${invoiceNumber}.pdf"`);
     res.status(200).send(pdfBuffer);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to generate invoice",
-    });
   }
-};
+);

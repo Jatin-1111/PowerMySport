@@ -1,8 +1,9 @@
-import { Request, Response } from "express";
+import { Request } from "express";
+import { AppError } from "../../../utils/AppError";
 
 export const getUserId = (req: Request): string => {
   if (!req.user?.id) {
-    throw new Error("Unauthorized");
+    throw new AppError("Unauthorized", 401);
   }
 
   return req.user.id;
@@ -36,10 +37,16 @@ const getStatusCode = (message: string): number => {
   return 500;
 };
 
-export const handleError = (res: Response, error: unknown, fallback: string) => {
+/**
+ * Classifies a caught error's message into the status code this domain's
+ * handlers have always used (see getStatusCode), then wraps it as an
+ * AppError so a single `throw toAppError(error, fallback)` in each handler's
+ * catch replaces what used to be a manual `res.status(...).json(...)` call —
+ * the actual response is now written once, centrally, by the global error
+ * middleware.
+ */
+export const toAppError = (error: unknown, fallback: string): AppError => {
+  if (error instanceof AppError) return error;
   const message = error instanceof Error ? error.message : fallback;
-  res.status(getStatusCode(message)).json({
-    success: false,
-    message,
-  });
+  return new AppError(message, getStatusCode(message));
 };

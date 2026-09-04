@@ -10,6 +10,8 @@ import {
   getDailyMessageCount,
   checkChatRateLimit,
 } from "../../shared/services/chatRateLimitService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 // ─── Opening assistant message ────────────────────────────────────────────────
 
@@ -30,186 +32,172 @@ Feel free to ask me about specific drills, how to adjust the weekly schedule, wh
 
 // ─── GET /api/guidance/:submissionId/chat ────────────────────────────────────
 
-export const getGuidanceChat = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
-    }
+export const getGuidanceChat = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new AppError("Authentication required", 401);
+  }
 
-    const { submissionId } = req.params;
-    if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
-      res.status(400).json({ success: false, message: "Invalid submission ID" });
-      return;
-    }
+  const { submissionId } = req.params;
+  if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
+    throw new AppError("Invalid submission ID", 400);
+  }
 
-    // Load submission to verify existence & ownership
-    const submission = await GuidanceSubmission.findById(submissionId).lean();
-    if (!submission) {
-      res.status(404).json({ success: false, message: "Guidance submission not found" });
-      return;
-    }
+  // Load submission to verify existence & ownership
+  const submission = await GuidanceSubmission.findById(submissionId).lean();
+  if (!submission) {
+    throw new AppError("Guidance submission not found", 404);
+  }
 
-    // Ownership: if the submission has a userId, it must match the requester
-    if (submission.userId && submission.userId.toString() !== req.user.id) {
-      res.status(403).json({ success: false, message: "Access denied" });
-      return;
-    }
+  // Ownership: if the submission has a userId, it must match the requester
+  if (submission.userId && submission.userId.toString() !== req.user.id) {
+    throw new AppError("Access denied", 403);
+  }
 
-    // Lazily claim ownership if submission was created as guest
-    if (!submission.userId) {
-      await GuidanceSubmission.updateOne({ _id: submissionId }, { $set: { userId: req.user.id } });
-    }
+  // Lazily claim ownership if submission was created as guest
+  if (!submission.userId) {
+    await GuidanceSubmission.updateOne({ _id: submissionId }, { $set: { userId: req.user.id } });
+  }
 
-    // Find or create the session
-    let session = await GuidanceChatSession.findOne({
+  // Find or create the session
+  let session = await GuidanceChatSession.findOne({
+    submissionId,
+    userId: req.user.id,
+  }).lean();
+
+  if (!session) {
+    // Seed with the opening assistant message
+    const openingContent = buildOpeningMessage(
+      submission.request.sport,
+      submission.request.child_age,
+      submission.request.parent_specific_question
+    );
+    const newSession = await GuidanceChatSession.create({
       submissionId,
       userId: req.user.id,
-    }).lean();
-
-    if (!session) {
-      // Seed with the opening assistant message
-      const openingContent = buildOpeningMessage(
-        submission.request.sport,
-        submission.request.child_age,
-        submission.request.parent_specific_question
-      );
-      const newSession = await GuidanceChatSession.create({
-        submissionId,
-        userId: req.user.id,
-        messages: [
-          {
-            role: "assistant",
-            content: openingContent,
-            createdAt: new Date(),
-          },
-        ],
-      });
-      session = newSession.toObject();
-    }
-
-    const dailyMessageCount = await getDailyMessageCount(req.user.id);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        messages: session.messages,
-        dailyMessageCount,
-        totalMessageCount: session.totalMessageCount,
-        dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
-        lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0)),
-      },
+      messages: [
+        {
+          role: "assistant",
+          content: openingContent,
+          createdAt: new Date(),
+        },
+      ],
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch chat session",
-    });
+    session = newSession.toObject();
   }
-};
+
+  const dailyMessageCount = await getDailyMessageCount(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      messages: session.messages,
+      dailyMessageCount,
+      totalMessageCount: session.totalMessageCount,
+      dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
+      lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0)),
+    },
+  });
+});
 
 // ─── POST /api/guidance/:submissionId/chat ───────────────────────────────────
 
-export const sendGuidanceChatMessage = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
-    }
+export const sendGuidanceChatMessage = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new AppError("Authentication required", 401);
+      }
 
-    const { submissionId } = req.params;
-    if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
-      res.status(400).json({ success: false, message: "Invalid submission ID" });
-      return;
-    }
+      const { submissionId } = req.params;
+      if (!submissionId || !mongoose.isValidObjectId(submissionId)) {
+        throw new AppError("Invalid submission ID", 400);
+      }
 
-    const userMessage: string = (req.body?.message ?? "").trim();
-    if (!userMessage) {
-      res.status(400).json({ success: false, message: "Message is required" });
-      return;
-    }
-    if (userMessage.length > 2000) {
-      res.status(400).json({
-        success: false,
-        message: "Message too long (max 2000 characters)",
-      });
-      return;
-    }
+      const userMessage: string = (req.body?.message ?? "").trim();
+      if (!userMessage) {
+        throw new AppError("Message is required", 400);
+      }
+      if (userMessage.length > 2000) {
+        throw new AppError("Message too long (max 2000 characters)", 400);
+      }
 
-    // Load submission
-    const submission = await GuidanceSubmission.findById(submissionId).lean();
-    if (!submission) {
-      res.status(404).json({ success: false, message: "Guidance submission not found" });
-      return;
-    }
+      // Load submission
+      const submission = await GuidanceSubmission.findById(submissionId).lean();
+      if (!submission) {
+        throw new AppError("Guidance submission not found", 404);
+      }
 
-    // Ownership check
-    if (submission.userId && submission.userId.toString() !== req.user.id) {
-      res.status(403).json({ success: false, message: "Access denied" });
-      return;
-    }
+      // Ownership check
+      if (submission.userId && submission.userId.toString() !== req.user.id) {
+        throw new AppError("Access denied", 403);
+      }
 
-    // Claim guest submission
-    if (!submission.userId) {
-      await GuidanceSubmission.updateOne({ _id: submissionId }, { $set: { userId: req.user.id } });
-    }
+      // Claim guest submission
+      if (!submission.userId) {
+        await GuidanceSubmission.updateOne(
+          { _id: submissionId },
+          { $set: { userId: req.user.id } }
+        );
+      }
 
-    // Load or create session
-    let session = await GuidanceChatSession.findOne({
-      submissionId,
-      userId: req.user.id,
-    });
-
-    if (!session) {
-      const openingContent = buildOpeningMessage(
-        submission.request.sport,
-        submission.request.child_age,
-        submission.request.parent_specific_question
-      );
-      session = await GuidanceChatSession.create({
+      // Load or create session
+      let session = await GuidanceChatSession.findOne({
         submissionId,
         userId: req.user.id,
-        messages: [{ role: "assistant", content: openingContent, createdAt: new Date() }],
       });
-    }
 
-    // ── Rate limit checks (§10) ──────────────────────────────────────────────
-    // Daily cap is global per user (across all their guidance submissions), not
-    // per session — reserved atomically via Redis so concurrent requests can't
-    // both slip past the cap.
-    const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
-      dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow to continue the conversation!`,
-      lifetimeReached: `You've had an in-depth coaching conversation for this guidance plan! Consider generating a fresh roadmap to continue your journey.`,
-    });
-    if (!rateLimit.ok) {
-      res.status(rateLimit.status).json({
-        success: false,
-        message: rateLimit.message,
-        code: rateLimit.code,
+      if (!session) {
+        const openingContent = buildOpeningMessage(
+          submission.request.sport,
+          submission.request.child_age,
+          submission.request.parent_specific_question
+        );
+        session = await GuidanceChatSession.create({
+          submissionId,
+          userId: req.user.id,
+          messages: [{ role: "assistant", content: openingContent, createdAt: new Date() }],
+        });
+      }
+
+      // ── Rate limit checks (§10) ──────────────────────────────────────────────
+      // Daily cap is global per user (across all their guidance submissions), not
+      // per session — reserved atomically via Redis so concurrent requests can't
+      // both slip past the cap.
+      const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
+        dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow to continue the conversation!`,
+        lifetimeReached: `You've had an in-depth coaching conversation for this guidance plan! Consider generating a fresh roadmap to continue your journey.`,
       });
-      return;
-    }
+      if (!rateLimit.ok) {
+        res.status(rateLimit.status).json({
+          success: false,
+          message: rateLimit.message,
+          code: rateLimit.code,
+        });
+        return;
+      }
 
-    // ── Build system prompt ──────────────────────────────────────────────────
-    const systemPrompt = buildChatSystemPrompt(
-      submission.request as any,
-      submission.response as any
-    );
-
-    // ── Stream response and persist both turns ───────────────────────────────
-    await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
-  } catch (error) {
-    // If headers not sent yet, return JSON error; otherwise end the stream
-    if (!res.headersSent) {
-      res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Chat request failed",
-      });
-    } else {
-      res.write(
-        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+      // ── Build system prompt ──────────────────────────────────────────────────
+      const systemPrompt = buildChatSystemPrompt(
+        submission.request as any,
+        submission.response as any
       );
-      res.end();
+
+      // ── Stream response and persist both turns ───────────────────────────────
+      await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
+    } catch (error) {
+      // If headers not sent yet, return JSON error; otherwise end the stream
+      if (!res.headersSent) {
+        const statusCode = error instanceof AppError ? error.statusCode : 500;
+        res.status(statusCode).json({
+          success: false,
+          message: error instanceof Error ? error.message : "Chat request failed",
+        });
+      } else {
+        res.write(
+          `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+        );
+        res.end();
+      }
     }
   }
-};
+);

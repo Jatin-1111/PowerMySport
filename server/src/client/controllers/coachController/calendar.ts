@@ -1,15 +1,16 @@
 import { Request, Response } from "express";
 import { blockCoachDates, getCoachCalendar, unblockCoachDate } from "../../services/CoachService";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 /**
  * Get coach calendar data for a date range
  * GET /api/coaches/my-profile/calendar?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
  */
-export const getCoachCalendarHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getCoachCalendarHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { startDate, endDate } = req.query as {
@@ -18,11 +19,7 @@ export const getCoachCalendarHandler = async (req: Request, res: Response): Prom
     };
 
     if (!startDate || !endDate) {
-      res.status(400).json({
-        success: false,
-        message: "startDate and endDate query params are required (YYYY-MM-DD)",
-      });
-      return;
+      throw new AppError("startDate and endDate query params are required (YYYY-MM-DD)", 400);
     }
 
     const start = new Date(startDate);
@@ -31,19 +28,11 @@ export const getCoachCalendarHandler = async (req: Request, res: Response): Prom
     end.setHours(23, 59, 59, 999);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid date format. Use YYYY-MM-DD.",
-      });
-      return;
+      throw new AppError("Invalid date format. Use YYYY-MM-DD.", 400);
     }
 
     if (end < start) {
-      res.status(400).json({
-        success: false,
-        message: "endDate must be after startDate",
-      });
-      return;
+      throw new AppError("endDate must be after startDate", 400);
     }
 
     const data = await getCoachCalendar(req.user.id, start, end);
@@ -53,23 +42,17 @@ export const getCoachCalendarHandler = async (req: Request, res: Response): Prom
       message: "Calendar data retrieved",
       data,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch calendar",
-    });
   }
-};
+);
 
 /**
  * Block a date or date range for the coach
  * POST /api/coaches/my-profile/block-dates
  */
-export const blockCoachDatesHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const blockCoachDatesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { startDate, endDate, reason, allDay } = req.body as {
@@ -80,19 +63,14 @@ export const blockCoachDatesHandler = async (req: Request, res: Response): Promi
     };
 
     if (!startDate || !endDate) {
-      res.status(400).json({
-        success: false,
-        message: "startDate and endDate are required",
-      });
-      return;
+      throw new AppError("startDate and endDate are required", 400);
     }
 
     const start = new Date(startDate);
     const end = new Date(endDate);
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      res.status(400).json({ success: false, message: "Invalid date format" });
-      return;
+      throw new AppError("Invalid date format", 400);
     }
 
     const block = await blockCoachDates(req.user.id, {
@@ -107,29 +85,22 @@ export const blockCoachDatesHandler = async (req: Request, res: Response): Promi
       message: "Date range blocked successfully",
       data: block,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to block dates",
-    });
   }
-};
+);
 
 /**
  * Remove a blocked date entry
  * DELETE /api/coaches/my-profile/block-dates/:blockId
  */
-export const unblockCoachDateHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const unblockCoachDateHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { blockId } = req.params as { blockId: string };
     if (!blockId) {
-      res.status(400).json({ success: false, message: "blockId is required" });
-      return;
+      throw new AppError("blockId is required", 400);
     }
 
     await unblockCoachDate(req.user.id, blockId);
@@ -138,10 +109,5 @@ export const unblockCoachDateHandler = async (req: Request, res: Response): Prom
       success: true,
       message: "Blocked date removed",
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to unblock date",
-    });
   }
-};
+);

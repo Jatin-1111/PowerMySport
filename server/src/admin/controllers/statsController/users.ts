@@ -6,86 +6,72 @@ import { Venue } from "../../../client/models/Venue";
 import { areUsersOnline } from "../../../shared/services/UserPresenceService";
 import { getPaginationParams } from "../../../utils/pagination";
 import { AdminUserRole, getRoleFromQuery, buildMonthSeries } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
 
 // Get all users
-export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const role = getRoleFromQuery(req.query.role);
-    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
+export const getAllUsers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const role = getRoleFromQuery(req.query.role);
+  const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
 
-    const query = role ? { role } : {};
+  const query = role ? { role } : {};
+  const [total, users] = await Promise.all([
+    User.countDocuments(query),
+    User.find(query)
+      .select("name email phone role createdAt lastActiveAt")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+  ]);
+
+  // Transform _id to id for frontend
+  const transformedUsers = users.map((user) => ({
+    ...user,
+    id: user._id.toString(),
+  }));
+
+  res.status(200).json({
+    success: true,
+    message: "Users retrieved successfully",
+    data: transformedUsers,
+    pagination: {
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+});
+
+const makeRoleUsersHandler = (role: AdminUserRole) =>
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
     const [total, users] = await Promise.all([
-      User.countDocuments(query),
-      User.find(query)
+      User.countDocuments({ role }),
+      User.find({ role })
         .select("name email phone role createdAt lastActiveAt")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
     ]);
-
-    // Transform _id to id for frontend
     const transformedUsers = users.map((user) => ({
       ...user,
       id: user._id.toString(),
     }));
-
     res.status(200).json({
       success: true,
-      message: "Users retrieved successfully",
+      message: `${role} users retrieved successfully`,
       data: transformedUsers,
-      pagination: {
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: { total, page, totalPages: Math.ceil(total / limit) },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to get users",
-    });
-  }
-};
-
-const makeRoleUsersHandler =
-  (role: AdminUserRole) =>
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
-      const [total, users] = await Promise.all([
-        User.countDocuments({ role }),
-        User.find({ role })
-          .select("name email phone role createdAt lastActiveAt")
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean(),
-      ]);
-      const transformedUsers = users.map((user) => ({
-        ...user,
-        id: user._id.toString(),
-      }));
-      res.status(200).json({
-        success: true,
-        message: `${role} users retrieved successfully`,
-        data: transformedUsers,
-        pagination: { total, page, totalPages: Math.ceil(total / limit) },
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Failed to get users",
-      });
-    }
-  };
+  });
 
 export const getExpertUsers = makeRoleUsersHandler("EXPERT");
 
 export const getParentUsers = makeRoleUsersHandler("Parent");
 
-export const getUserRoleSummary = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getUserRoleSummary = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const roleCounts = await User.aggregate<{ _id: string; count: number }>([
       {
         $match: {
@@ -119,16 +105,11 @@ export const getUserRoleSummary = async (req: Request, res: Response): Promise<v
       message: "User role summary retrieved successfully",
       data: summary,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve user role summary",
-    });
   }
-};
+);
 
-export const getUserGrowthAnalytics = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getUserGrowthAnalytics = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const months = Math.min(12, Math.max(3, Number(req.query.months) || 6));
     const start = new Date();
     start.setMonth(start.getMonth() - (months - 1));
@@ -194,168 +175,147 @@ export const getUserGrowthAnalytics = async (req: Request, res: Response): Promi
         series: Array.from(monthBuckets.values()),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve user growth analytics",
-    });
   }
-};
+);
 
-export const getPlayersUsers = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
+export const getPlayersUsers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
 
-    const query = { role: "Player" };
-    const [total, users] = await Promise.all([
-      User.countDocuments(query),
-      User.find(query)
-        .select("name email phone createdAt lastActiveAt")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-    ]);
-
-    const userIds = users.map((user) => user._id);
-    const playerProfiles = await Player.find({
-      userId: { $in: userIds },
-    }).lean();
-
-    const profilesByUserId = new Map<string, any[]>();
-    for (const profile of playerProfiles) {
-      const uidStr = profile.userId.toString();
-      if (!profilesByUserId.has(uidStr)) {
-        profilesByUserId.set(uidStr, []);
-      }
-      profilesByUserId.get(uidStr)!.push(profile);
-    }
-
-    const onlineByUserId = await areUsersOnline(users.map((user) => user._id.toString()));
-
-    const data = users.map((user) => {
-      const userProfiles = profilesByUserId.get(user._id.toString()) || [];
-
-      const selfProfile = userProfiles.find((p) => p.type === "SELF");
-      const dependentsProfiles = userProfiles.filter((p) => p.type === "DEPENDENT");
-
-      const sports = selfProfile?.sportsFocus || [];
-      const sportsCount = sports.length;
-      const dependentsCount = dependentsProfiles.length;
-      const hasSportsProfile = sportsCount > 0;
-
-      const dependents = dependentsProfiles.map((d) => ({
-        id: d._id.toString(),
-        name: d.name,
-        age: d.age,
-        gender: d.gender,
-        sports: d.sportsFocus || [],
-        skillLevel: d.skillLevel,
-      }));
-
-      return {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: "Player",
-        createdAt: user.createdAt,
-        lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: onlineByUserId.get(user._id.toString()) ?? false,
-        sports,
-        sportsCount,
-        hasSportsProfile,
-        dependents,
-        dependentsCount,
-      };
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "Players retrieved successfully",
-      data,
-      pagination: {
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve players",
-    });
-  }
-};
-
-export const getCoachUsers = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
-
-    const query = { role: "Coach" };
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
+  const query = { role: "Player" };
+  const [total, users] = await Promise.all([
+    User.countDocuments(query),
+    User.find(query)
       .select("name email phone createdAt lastActiveAt")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean();
+      .lean(),
+  ]);
 
-    const userIds = users.map((user) => user._id);
-    const coachProfiles = await Coach.find({ userId: { $in: userIds } })
-      .select(
-        "userId sports hourlyRate serviceMode verificationStatus isVerified rating reviewCount"
-      )
-      .lean();
+  const userIds = users.map((user) => user._id);
+  const playerProfiles = await Player.find({
+    userId: { $in: userIds },
+  }).lean();
 
-    const coachByUserId = new Map(
-      coachProfiles.map((profile) => [profile.userId.toString(), profile])
-    );
-
-    const onlineByUserId = await areUsersOnline(users.map((user) => user._id.toString()));
-
-    const data = users.map((user) => {
-      const profile = coachByUserId.get(user._id.toString());
-      return {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: "Coach",
-        createdAt: user.createdAt,
-        lastActiveAt: user.lastActiveAt || user.createdAt,
-        isOnlineNow: onlineByUserId.get(user._id.toString()) ?? false,
-        sports: profile?.sports || [],
-        hourlyRate: profile?.hourlyRate ?? null,
-        serviceMode: profile?.serviceMode ?? null,
-        verificationStatus: profile?.verificationStatus ?? "UNVERIFIED",
-        isVerified: profile?.isVerified ?? false,
-        rating: profile?.rating ?? 0,
-        reviewCount: profile?.reviewCount ?? 0,
-        profileIncomplete: !profile,
-      };
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "Coaches retrieved successfully",
-      data,
-      pagination: {
-        total,
-        page,
-        totalPages: Math.ceil(total / limit),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve coaches",
-    });
+  const profilesByUserId = new Map<string, any[]>();
+  for (const profile of playerProfiles) {
+    const uidStr = profile.userId.toString();
+    if (!profilesByUserId.has(uidStr)) {
+      profilesByUserId.set(uidStr, []);
+    }
+    profilesByUserId.get(uidStr)!.push(profile);
   }
-};
 
-export const getVenueListerUsers = async (req: Request, res: Response): Promise<void> => {
-  try {
+  const onlineByUserId = await areUsersOnline(users.map((user) => user._id.toString()));
+
+  const data = users.map((user) => {
+    const userProfiles = profilesByUserId.get(user._id.toString()) || [];
+
+    const selfProfile = userProfiles.find((p) => p.type === "SELF");
+    const dependentsProfiles = userProfiles.filter((p) => p.type === "DEPENDENT");
+
+    const sports = selfProfile?.sportsFocus || [];
+    const sportsCount = sports.length;
+    const dependentsCount = dependentsProfiles.length;
+    const hasSportsProfile = sportsCount > 0;
+
+    const dependents = dependentsProfiles.map((d) => ({
+      id: d._id.toString(),
+      name: d.name,
+      age: d.age,
+      gender: d.gender,
+      sports: d.sportsFocus || [],
+      skillLevel: d.skillLevel,
+    }));
+
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: "Player",
+      createdAt: user.createdAt,
+      lastActiveAt: user.lastActiveAt || user.createdAt,
+      isOnlineNow: onlineByUserId.get(user._id.toString()) ?? false,
+      sports,
+      sportsCount,
+      hasSportsProfile,
+      dependents,
+      dependentsCount,
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Players retrieved successfully",
+    data,
+    pagination: {
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+});
+
+export const getCoachUsers = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
+
+  const query = { role: "Coach" };
+  const total = await User.countDocuments(query);
+  const users = await User.find(query)
+    .select("name email phone createdAt lastActiveAt")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  const userIds = users.map((user) => user._id);
+  const coachProfiles = await Coach.find({ userId: { $in: userIds } })
+    .select("userId sports hourlyRate serviceMode verificationStatus isVerified rating reviewCount")
+    .lean();
+
+  const coachByUserId = new Map(
+    coachProfiles.map((profile) => [profile.userId.toString(), profile])
+  );
+
+  const onlineByUserId = await areUsersOnline(users.map((user) => user._id.toString()));
+
+  const data = users.map((user) => {
+    const profile = coachByUserId.get(user._id.toString());
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: "Coach",
+      createdAt: user.createdAt,
+      lastActiveAt: user.lastActiveAt || user.createdAt,
+      isOnlineNow: onlineByUserId.get(user._id.toString()) ?? false,
+      sports: profile?.sports || [],
+      hourlyRate: profile?.hourlyRate ?? null,
+      serviceMode: profile?.serviceMode ?? null,
+      verificationStatus: profile?.verificationStatus ?? "UNVERIFIED",
+      isVerified: profile?.isVerified ?? false,
+      rating: profile?.rating ?? 0,
+      reviewCount: profile?.reviewCount ?? 0,
+      profileIncomplete: !profile,
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Coaches retrieved successfully",
+    data,
+    pagination: {
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+});
+
+export const getVenueListerUsers = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
 
     const query = { role: "VenueLister" };
@@ -430,10 +390,5 @@ export const getVenueListerUsers = async (req: Request, res: Response): Promise<
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve venue listers",
-    });
   }
-};
+);

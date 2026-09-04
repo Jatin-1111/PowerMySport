@@ -13,9 +13,10 @@ import Academy from "../../models/Academy";
 import { DataSourceSubmission } from "../../../shared/models/DataSourceSubmission";
 import { WebhookRecoveryService } from "../../../shared/controllers/WebhookController";
 import { getLatencyProfiles, getObservabilitySnapshot } from "../../../middleware/observability";
+import { asyncHandler } from "../../../middleware/asyncHandler";
 
-export const getPublicPlatformStats = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getPublicPlatformStats = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const [totalUsers, roleCounts] = await Promise.all([
       User.countDocuments(),
       User.aggregate<{ _id: string; count: number }>([
@@ -53,57 +54,45 @@ export const getPublicPlatformStats = async (req: Request, res: Response): Promi
         roleCounts: summary,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to get stats",
-    });
   }
-};
+);
 
 // Get platform statistics
-export const getPlatformStats = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const [totalUsers, totalVenues, totalBookings, pendingInquiries, revenueResult] =
-      await Promise.all([
-        User.countDocuments(),
-        Venue.countDocuments(),
-        Booking.countDocuments(),
-        VenueInquiry.countDocuments({ status: "PENDING" }),
-        Booking.aggregate([
-          { $match: { status: "CONFIRMED" } },
-          {
-            $group: {
-              _id: null,
-              totalRevenue: { $sum: "$totalAmount" },
-            },
+export const getPlatformStats = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const [totalUsers, totalVenues, totalBookings, pendingInquiries, revenueResult] =
+    await Promise.all([
+      User.countDocuments(),
+      Venue.countDocuments(),
+      Booking.countDocuments(),
+      VenueInquiry.countDocuments({ status: "PENDING" }),
+      Booking.aggregate([
+        { $match: { status: "CONFIRMED" } },
+        {
+          $group: {
+            _id: null,
+            totalRevenue: { $sum: "$totalAmount" },
           },
-        ]),
-      ]);
+        },
+      ]),
+    ]);
 
-    const revenue = revenueResult[0]?.totalRevenue || 0;
+  const revenue = revenueResult[0]?.totalRevenue || 0;
 
-    res.status(200).json({
-      success: true,
-      message: "Platform stats retrieved",
-      data: {
-        totalUsers,
-        totalVenues,
-        totalBookings,
-        pendingInquiries,
-        revenue,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to get stats",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Platform stats retrieved",
+    data: {
+      totalUsers,
+      totalVenues,
+      totalBookings,
+      pendingInquiries,
+      revenue,
+    },
+  });
+});
 
-export const getFinanceReconciliation = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getFinanceReconciliation = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     // Run entirely in MongoDB – no data pulled into Node memory. Both the
     // summary counts and the sample mismatches need the same
     // paidAmount/delta computation over the same document set, so a single
@@ -188,36 +177,26 @@ export const getFinanceReconciliation = async (req: Request, res: Response): Pro
         sampleMismatches: mismatches,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to generate reconciliation",
-    });
   }
-};
+);
 
-export const getObservabilityStats = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getObservabilityStats = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       success: true,
       message: "Observability snapshot retrieved",
       data: getObservabilitySnapshot(),
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve observability stats",
-    });
   }
-};
+);
 
 /**
  * Lifetime per-route p50/p95/p99 plus budget status. Kept separate from
  * getObservabilityStats so that payload's shape stays frozen for the
  * existing admin Server tab.
  */
-export const getLatencyProfileStats = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getLatencyProfileStats = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       success: true,
       message: "Latency profiles retrieved",
@@ -226,21 +205,38 @@ export const getLatencyProfileStats = async (req: Request, res: Response): Promi
         generatedAt: new Date().toISOString(),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve latency profiles",
-    });
   }
-};
+);
 
 /**
  * Lightweight actionable-item counts for admin nav badges. Each count mirrors
  * the exact filter its own list page treats as "still needs admin action".
  */
-export const getPendingCounts = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const [
+export const getPendingCounts = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const [
+    academyOnboarding,
+    coachVerification,
+    venueApprovals,
+    communityReports,
+    disputes,
+    supportTickets,
+    conciergeRequests,
+    dataSourcesPending,
+  ] = await Promise.all([
+    Academy.countDocuments({ onboardingCompleted: true, isApproved: false }),
+    Coach.countDocuments({ verificationStatus: "PENDING" }),
+    Venue.countDocuments({ approvalStatus: "PENDING" }),
+    CommunityReport.countDocuments({ status: "OPEN" }),
+    Dispute.countDocuments({ status: "OPEN" }),
+    SupportTicket.countDocuments({ status: "OPEN" }),
+    ConciergeRequest.countDocuments({ status: "pending" }),
+    DataSourceSubmission.countDocuments({ status: "PENDING_REVIEW" }),
+  ]);
+
+  res.status(200).json({
+    success: true,
+    message: "Pending counts retrieved",
+    data: {
       academyOnboarding,
       coachVerification,
       venueApprovals,
@@ -248,47 +244,18 @@ export const getPendingCounts = async (req: Request, res: Response): Promise<voi
       disputes,
       supportTickets,
       conciergeRequests,
+      webhookErrors: WebhookRecoveryService.listErrors().length,
       dataSourcesPending,
-    ] = await Promise.all([
-      Academy.countDocuments({ onboardingCompleted: true, isApproved: false }),
-      Coach.countDocuments({ verificationStatus: "PENDING" }),
-      Venue.countDocuments({ approvalStatus: "PENDING" }),
-      CommunityReport.countDocuments({ status: "OPEN" }),
-      Dispute.countDocuments({ status: "OPEN" }),
-      SupportTicket.countDocuments({ status: "OPEN" }),
-      ConciergeRequest.countDocuments({ status: "pending" }),
-      DataSourceSubmission.countDocuments({ status: "PENDING_REVIEW" }),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      message: "Pending counts retrieved",
-      data: {
-        academyOnboarding,
-        coachVerification,
-        venueApprovals,
-        communityReports,
-        disputes,
-        supportTickets,
-        conciergeRequests,
-        webhookErrors: WebhookRecoveryService.listErrors().length,
-        dataSourcesPending,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to retrieve pending counts",
-    });
-  }
-};
+    },
+  });
+});
 
 /**
  * GET /admin/stats/unsupported-sports
  * Returns the top unsupported sports searched by users, ranked by frequency.
  */
-export const getUnsupportedSportsStats = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getUnsupportedSportsStats = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const days = Math.min(365, Math.max(7, Number(req.query.days) || 30));
     const since = new Date();
     since.setDate(since.getDate() - days);
@@ -332,11 +299,5 @@ export const getUnsupportedSportsStats = async (req: Request, res: Response): Pr
       success: true,
       data: { rows, totalSearches, days },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to retrieve unsupported sports stats",
-    });
   }
-};
+);

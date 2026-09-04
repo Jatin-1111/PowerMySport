@@ -1,123 +1,89 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { NotificationService } from "../services/NotificationService";
 import { NotificationCategory } from "../models/Notification";
 import { z } from "zod";
 import * as pushNotificationService from "../services/pushNotificationService";
 import { User } from "../models/User";
-import { log as __rootLog } from "../../utils/logger";
-const log = __rootLog.child("notification");
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 /**
  * Get notifications for the authenticated user
  * GET /api/notifications
  */
-export const getNotifications = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
-    const category = req.query.category as NotificationCategory | undefined;
-    const isRead =
-      req.query.isRead === "true" ? true : req.query.isRead === "false" ? false : undefined;
+export const getNotifications = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+  const category = req.query.category as NotificationCategory | undefined;
+  const isRead =
+    req.query.isRead === "true" ? true : req.query.isRead === "false" ? false : undefined;
 
-    const result = await NotificationService.getUserNotifications(userId, page, limit, {
-      ...(category && { category }),
-      ...(isRead !== undefined && { isRead }),
-    });
+  const result = await NotificationService.getUserNotifications(userId, page, limit, {
+    ...(category && { category }),
+    ...(isRead !== undefined && { isRead }),
+  });
 
-    res.json({
-      success: true,
-      data: result.notifications,
-      pagination: {
-        page,
-        limit,
-        total: result.total,
-        pages: result.pages,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  res.json({
+    success: true,
+    data: result.notifications,
+    pagination: {
+      page,
+      limit,
+      total: result.total,
+      pages: result.pages,
+    },
+  });
+});
 
 /**
  * Get unread notification count
  * GET /api/notifications/unread-count
  */
-export const getUnreadCount = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-    const category = req.query.category as NotificationCategory | undefined;
+export const getUnreadCount = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.id;
+  const category = req.query.category as NotificationCategory | undefined;
 
-    const count = await NotificationService.getUnreadCount(userId, category);
+  const count = await NotificationService.getUnreadCount(userId, category);
 
-    res.json({
-      success: true,
-      count,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  res.json({
+    success: true,
+    count,
+  });
+});
 
 /**
  * Mark a notification as read
  * PATCH /api/notifications/:id/read
  */
-export const markNotificationRead = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const markNotificationRead = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
     const notificationId = req.params.id;
 
     if (!notificationId || Array.isArray(notificationId)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid notification ID",
-      });
-      return;
+      throw new AppError("Invalid notification ID", 400);
     }
 
     const notification = await NotificationService.markRead(notificationId, userId);
 
     if (!notification) {
-      res.status(404).json({
-        success: false,
-        message: "Notification not found",
-      });
-      return;
+      throw new AppError("Notification not found", 404);
     }
 
     res.json({
       success: true,
       data: notification,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Mark all notifications as read
  * PATCH /api/notifications/read-all
  */
-export const markAllNotificationsRead = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const markAllNotificationsRead = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
 
     const count = await NotificationService.markAllRead(userId);
@@ -127,81 +93,55 @@ export const markAllNotificationsRead = async (
       message: `${count} notifications marked as read`,
       count,
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Delete a notification (soft delete)
  * DELETE /api/notifications/:id
  */
-export const deleteNotification = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const deleteNotification = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
     const notificationId = req.params.id;
 
     if (!notificationId || Array.isArray(notificationId)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid notification ID",
-      });
-      return;
+      throw new AppError("Invalid notification ID", 400);
     }
 
     const notification = await NotificationService.deleteNotification(notificationId, userId);
 
     if (!notification) {
-      res.status(404).json({
-        success: false,
-        message: "Notification not found",
-      });
-      return;
+      throw new AppError("Notification not found", 404);
     }
 
     res.json({
       success: true,
       message: "Notification deleted",
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Get user's notification preferences
  * GET /api/users/me/notification-preferences
  */
-export const getNotificationPreferences = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const getNotificationPreferences = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
 
     const user = await User.findById(userId).select("notificationPreferences");
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
+      throw new AppError("User not found", 404);
     }
 
     res.json({
       success: true,
       data: user.notificationPreferences || {},
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 const notificationPreferencesSchema = z.object({
   email: z
@@ -249,62 +189,52 @@ const notificationPreferencesSchema = z.object({
  * Update user's notification preferences
  * PATCH /api/users/me/notification-preferences
  */
-export const updateNotificationPreferences = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-    const preferences = notificationPreferencesSchema.parse(req.body);
+export const updateNotificationPreferences = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const preferences = notificationPreferencesSchema.parse(req.body);
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          "notificationPreferences.email": preferences.email,
-          "notificationPreferences.push": preferences.push,
-          "notificationPreferences.inApp": preferences.inApp,
+      const user = await User.findByIdAndUpdate(
+        userId,
+        {
+          $set: {
+            "notificationPreferences.email": preferences.email,
+            "notificationPreferences.push": preferences.push,
+            "notificationPreferences.inApp": preferences.inApp,
+          },
         },
-      },
-      { new: true, runValidators: true }
-    ).select("notificationPreferences");
+        { new: true, runValidators: true }
+      ).select("notificationPreferences");
 
-    if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
-    }
+      if (!user) {
+        throw new AppError("User not found", 404);
+      }
 
-    res.json({
-      success: true,
-      message: "Notification preferences updated",
-      data: user.notificationPreferences,
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid preferences format",
-        errors: error.issues,
+      res.json({
+        success: true,
+        message: "Notification preferences updated",
+        data: user.notificationPreferences,
       });
-      return;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid preferences format",
+          errors: error.issues,
+        });
+        return;
+      }
+      throw error;
     }
-    next(error);
   }
-};
+);
 
 /**
  * Subscribe to push notifications
  * POST /api/notifications/push/subscribe
  */
-export const subscribeToPush = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
+export const subscribeToPush = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
 
@@ -322,11 +252,7 @@ export const subscribeToPush = async (
     // Check if subscription already exists
     const user = await User.findById(userId);
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
+      throw new AppError("User not found", 404);
     }
 
     const existingSubscription = user.pushSubscriptions?.find(
@@ -372,126 +298,101 @@ export const subscribeToPush = async (
       });
       return;
     }
-    next(error);
+    throw error;
   }
-};
+});
 
 /**
  * Unsubscribe from push notifications
  * DELETE /api/notifications/push/unsubscribe
  */
-export const unsubscribeFromPush = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const userId = req.user!.id;
+export const unsubscribeFromPush = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
 
-    const endpointSchema = z.object({
-      endpoint: z.string().url(),
-    });
+      const endpointSchema = z.object({
+        endpoint: z.string().url(),
+      });
 
-    const { endpoint } = endpointSchema.parse(req.body);
+      const { endpoint } = endpointSchema.parse(req.body);
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $pull: {
-          pushSubscriptions: { endpoint },
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        {
+          $pull: {
+            pushSubscriptions: { endpoint },
+          },
         },
-      },
-      { new: true }
-    ).select("pushSubscriptions");
+        { new: true }
+      ).select("pushSubscriptions");
 
-    if (!updatedUser) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
-    }
+      if (!updatedUser) {
+        throw new AppError("User not found", 404);
+      }
 
-    res.json({
-      success: true,
-      message: "Push subscription removed successfully",
-      data: updatedUser.pushSubscriptions,
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid endpoint format",
-        errors: error.issues,
+      res.json({
+        success: true,
+        message: "Push subscription removed successfully",
+        data: updatedUser.pushSubscriptions,
       });
-      return;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid endpoint format",
+          errors: error.issues,
+        });
+        return;
+      }
+      throw error;
     }
-    next(error);
   }
-};
+);
 
 /**
  * Get user's push subscriptions
  * GET /api/notifications/push/subscriptions
  */
-export const getPushSubscriptions = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const getPushSubscriptions = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.id;
 
     const user = await User.findById(userId).select("pushSubscriptions");
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
+      throw new AppError("User not found", 404);
     }
 
     res.json({
       success: true,
       data: user.pushSubscriptions || [],
     });
-  } catch (error) {
-    next(error);
   }
-};
+);
 
 /**
  * Send test push notification
  * POST /api/notifications/push/test
  */
-export const sendTestPushNotification = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
+export const sendTestPushNotification = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const pushService = pushNotificationService;
     const userId = req.user!.id;
 
     // Check if VAPID is configured
     if (!pushService.isVapidConfigured()) {
-      res.status(500).json({
-        success: false,
-        message: "VAPID keys are not configured on the server",
-      });
-      return;
+      throw new AppError("VAPID keys are not configured on the server", 500);
     }
 
     // Get user's push subscriptions
     const user = await User.findById(userId).select("pushSubscriptions");
 
     if (!user || !user.pushSubscriptions || user.pushSubscriptions.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "No push subscriptions found. Please enable push notifications first.",
-      });
-      return;
+      throw new AppError(
+        "No push subscriptions found. Please enable push notifications first.",
+        400
+      );
     }
 
     // Send test notification to all user's subscriptions
@@ -532,34 +433,23 @@ export const sendTestPushNotification = async (
         expiredSubscriptions: result.expiredEndpoints.length,
       },
     });
-  } catch (error) {
-    log.error("Error sending test push notification:", error);
-    next(error);
   }
-};
+);
 
 /**
  * Get VAPID configuration status
  * GET /api/notifications/push/vapid-status
  */
-export const getVapidStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const pushService = pushNotificationService;
+export const getVapidStatus = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const pushService = pushNotificationService;
 
-    const isConfigured = pushService.isVapidConfigured();
+  const isConfigured = pushService.isVapidConfigured();
 
-    res.json({
-      success: true,
-      data: {
-        configured: isConfigured,
-        publicKey: isConfigured ? pushService.getVapidPublicKey() : null,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+  res.json({
+    success: true,
+    data: {
+      configured: isConfigured,
+      publicKey: isConfigured ? pushService.getVapidPublicKey() : null,
+    },
+  });
+});

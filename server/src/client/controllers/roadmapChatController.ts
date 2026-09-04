@@ -11,6 +11,8 @@ import {
   getDailyMessageCount,
   checkChatRateLimit,
 } from "../../shared/services/chatRateLimitService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 function buildOpeningMessage(sportName: string): string {
   return `Hi! 👋 I can see you're exploring the ${sportName} pathway. I'm your sports coach — ask me anything about this stage: what to do next, what it costs, how to find a coach, or what a term on this page means. What would you like to know?`;
@@ -45,11 +47,10 @@ function toPathwayContext(pathway: NonNullable<Awaited<ReturnType<typeof loadPat
 // ─── GET /api/roadmap-chat/sessions ──────────────────────────────────────────
 // List all chat sessions for the authenticated user, newest first.
 
-export const listRoadmapChatSessions = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const listRoadmapChatSessions = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const { sportSlug } = req.query;
@@ -63,34 +64,26 @@ export const listRoadmapChatSessions = async (req: Request, res: Response): Prom
       .lean();
 
     res.status(200).json({ success: true, data: sessions });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to list sessions",
-    });
   }
-};
+);
 
 // ─── POST /api/roadmap-chat/sessions ─────────────────────────────────────────
 // Create a new blank session for a sport.
 
-export const createRoadmapChatSession = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createRoadmapChatSession = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const { sportSlug } = req.body;
     if (!sportSlug || typeof sportSlug !== "string") {
-      res.status(400).json({ success: false, message: "sportSlug is required" });
-      return;
+      throw new AppError("sportSlug is required", 400);
     }
 
     const pathway = await loadPathway(sportSlug);
     if (!pathway) {
-      res.status(404).json({ success: false, message: "No published pathway for this sport yet" });
-      return;
+      throw new AppError("No published pathway for this sport yet", 404);
     }
 
     const session = await RoadmapChatSession.create({
@@ -119,28 +112,21 @@ export const createRoadmapChatSession = async (req: Request, res: Response): Pro
         lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - session.totalMessageCount),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create session",
-    });
   }
-};
+);
 
 // ─── GET /api/roadmap-chat/sessions/:sessionId ───────────────────────────────
 // Load a specific session by ID.
 
-export const getRoadmapChatSession = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const getRoadmapChatSession = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const { sessionId } = req.params;
     if (!mongoose.isValidObjectId(sessionId)) {
-      res.status(400).json({ success: false, message: "Invalid session ID" });
-      return;
+      throw new AppError("Invalid session ID", 400);
     }
 
     const session = await RoadmapChatSession.findOne({
@@ -149,8 +135,7 @@ export const getRoadmapChatSession = async (req: Request, res: Response): Promis
     }).lean();
 
     if (!session) {
-      res.status(404).json({ success: false, message: "Session not found" });
-      return;
+      throw new AppError("Session not found", 404);
     }
 
     const dailyMessageCount = await getDailyMessageCount(req.user.id);
@@ -168,262 +153,248 @@ export const getRoadmapChatSession = async (req: Request, res: Response): Promis
         lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - session.totalMessageCount),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch session",
-    });
   }
-};
+);
 
 // ─── POST /api/roadmap-chat/sessions/:sessionId ──────────────────────────────
 // Send a message to a specific session.
+//
+// NOTE: this handler keeps its own try/catch. The response here is a
+// server-sent-events stream (see streamChatAndPersist), so once headers are
+// sent the catch must write an SSE-formatted error frame instead of a JSON
+// body — that isn't something the global JSON error handler can do, so this
+// isn't a case of "just log and respond" and is preserved as-is.
+export const sendRoadmapChatSessionMessage = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new AppError("Authentication required", 401);
+      }
 
-export const sendRoadmapChatSessionMessage = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
-    }
+      const { sessionId } = req.params;
+      if (!mongoose.isValidObjectId(sessionId)) {
+        throw new AppError("Invalid session ID", 400);
+      }
 
-    const { sessionId } = req.params;
-    if (!mongoose.isValidObjectId(sessionId)) {
-      res.status(400).json({ success: false, message: "Invalid session ID" });
-      return;
-    }
+      const userMessage: string = (req.body?.message ?? "").trim();
+      const stageKey: string | undefined =
+        typeof req.body?.stage === "string" && req.body.stage.trim()
+          ? req.body.stage.trim().toLowerCase()
+          : undefined;
 
-    const userMessage: string = (req.body?.message ?? "").trim();
-    const stageKey: string | undefined =
-      typeof req.body?.stage === "string" && req.body.stage.trim()
-        ? req.body.stage.trim().toLowerCase()
-        : undefined;
+      if (!userMessage) {
+        throw new AppError("Message is required", 400);
+      }
+      if (userMessage.length > 2000) {
+        throw new AppError("Message too long (max 2000 characters)", 400);
+      }
 
-    if (!userMessage) {
-      res.status(400).json({ success: false, message: "Message is required" });
-      return;
-    }
-    if (userMessage.length > 2000) {
-      res.status(400).json({ success: false, message: "Message too long (max 2000 characters)" });
-      return;
-    }
-
-    const session = await RoadmapChatSession.findOne({
-      _id: sessionId as string,
-      userId: req.user.id,
-    });
-
-    if (!session) {
-      res.status(404).json({ success: false, message: "Session not found" });
-      return;
-    }
-
-    const pathway = await loadPathway(session.sportSlug);
-    if (!pathway) {
-      res.status(404).json({ success: false, message: "No published pathway for this sport yet" });
-      return;
-    }
-
-    // ── Rate limit checks ──────────────────────────────────────────────────────
-    const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
-      dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow!`,
-      lifetimeReached: `You've had an in-depth conversation about this sport! Start a new chat or explore another sport.`,
-    });
-    if (!rateLimit.ok) {
-      res.status(rateLimit.status).json({
-        success: false,
-        message: rateLimit.message,
-        code: rateLimit.code,
+      const session = await RoadmapChatSession.findOne({
+        _id: sessionId as string,
+        userId: req.user.id,
       });
-      return;
-    }
 
-    // ── Auto-title on first user message ──────────────────────────────────────
-    const isFirstUserMessage = !session.messages.some((m) => m.role === "user");
-    if (isFirstUserMessage && !session.title) {
-      session.title = deriveTitle(userMessage);
-    }
+      if (!session) {
+        throw new AppError("Session not found", 404);
+      }
 
-    // ── Build system prompt ────────────────────────────────────────────────────
-    const upcomingTournaments = await getUpcomingEditions(session.sportSlug, 5).catch(() => []);
-    const systemPrompt = buildRoadmapChatSystemPrompt(
-      toPathwayContext(pathway),
-      stageKey,
-      upcomingTournaments
-    );
+      const pathway = await loadPathway(session.sportSlug);
+      if (!pathway) {
+        throw new AppError("No published pathway for this sport yet", 404);
+      }
 
-    // ── Stream response and persist both turns ─────────────────────────────────
-    await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
-  } catch (error) {
-    if (!res.headersSent) {
-      res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Chat request failed",
+      // ── Rate limit checks ──────────────────────────────────────────────────────
+      const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
+        dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow!`,
+        lifetimeReached: `You've had an in-depth conversation about this sport! Start a new chat or explore another sport.`,
       });
-    } else {
-      res.write(
-        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+      if (!rateLimit.ok) {
+        res.status(rateLimit.status).json({
+          success: false,
+          message: rateLimit.message,
+          code: rateLimit.code,
+        });
+        return;
+      }
+
+      // ── Auto-title on first user message ──────────────────────────────────────
+      const isFirstUserMessage = !session.messages.some((m) => m.role === "user");
+      if (isFirstUserMessage && !session.title) {
+        session.title = deriveTitle(userMessage);
+      }
+
+      // ── Build system prompt ────────────────────────────────────────────────────
+      const upcomingTournaments = await getUpcomingEditions(session.sportSlug, 5).catch(() => []);
+      const systemPrompt = buildRoadmapChatSystemPrompt(
+        toPathwayContext(pathway),
+        stageKey,
+        upcomingTournaments
       );
-      res.end();
+
+      // ── Stream response and persist both turns ─────────────────────────────────
+      await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
+    } catch (error) {
+      if (!res.headersSent) {
+        res.status(error instanceof AppError ? error.statusCode : 500).json({
+          success: false,
+          message: error instanceof Error ? error.message : "Chat request failed",
+        });
+      } else {
+        res.write(
+          `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+        );
+        res.end();
+      }
     }
   }
-};
+);
 
 // ─── GET /api/roadmap-chat/:sportSlug ────────────────────────────────────────
 // Gets the most recent session for a sport, or creates one (backward compat).
 
-export const getRoadmapChat = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
-    }
-
-    const { sportSlug } = req.params;
-    if (!sportSlug || typeof sportSlug !== "string") {
-      res.status(400).json({ success: false, message: "Invalid sport" });
-      return;
-    }
-
-    const pathway = await loadPathway(sportSlug);
-    if (!pathway) {
-      res.status(404).json({ success: false, message: "No published pathway for this sport yet" });
-      return;
-    }
-
-    let session = await RoadmapChatSession.findOne({ sportSlug, userId: req.user.id })
-      .sort({ updatedAt: -1 })
-      .lean();
-
-    if (!session) {
-      const newSession = await RoadmapChatSession.create({
-        sportSlug,
-        userId: req.user.id,
-        title: null,
-        messages: [
-          {
-            role: "assistant",
-            content: buildOpeningMessage(pathway.sportName),
-            createdAt: new Date(),
-          },
-        ],
-      });
-      session = newSession.toObject();
-    }
-
-    const dailyMessageCount = await getDailyMessageCount(req.user.id);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        sessionId: session._id,
-        messages: session.messages,
-        dailyMessageCount,
-        totalMessageCount: session.totalMessageCount,
-        dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
-        lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0)),
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to fetch chat session",
-    });
+export const getRoadmapChat = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new AppError("Authentication required", 401);
   }
-};
+
+  const { sportSlug } = req.params;
+  if (!sportSlug || typeof sportSlug !== "string") {
+    throw new AppError("Invalid sport", 400);
+  }
+
+  const pathway = await loadPathway(sportSlug);
+  if (!pathway) {
+    throw new AppError("No published pathway for this sport yet", 404);
+  }
+
+  let session = await RoadmapChatSession.findOne({ sportSlug, userId: req.user.id })
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  if (!session) {
+    const newSession = await RoadmapChatSession.create({
+      sportSlug,
+      userId: req.user.id,
+      title: null,
+      messages: [
+        {
+          role: "assistant",
+          content: buildOpeningMessage(pathway.sportName),
+          createdAt: new Date(),
+        },
+      ],
+    });
+    session = newSession.toObject();
+  }
+
+  const dailyMessageCount = await getDailyMessageCount(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      sessionId: session._id,
+      messages: session.messages,
+      dailyMessageCount,
+      totalMessageCount: session.totalMessageCount,
+      dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
+      lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - (session.totalMessageCount || 0)),
+    },
+  });
+});
 
 // ─── POST /api/roadmap-chat/:sportSlug ───────────────────────────────────────
 // Backward-compat: send to the most recent session for a sport.
+//
+// NOTE: same rationale as sendRoadmapChatSessionMessage above — this streams
+// an SSE response, so the catch must branch on res.headersSent to send either
+// a JSON error or an SSE error frame. Preserved as-is.
+export const sendRoadmapChatMessage = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new AppError("Authentication required", 401);
+      }
 
-export const sendRoadmapChatMessage = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Authentication required" });
-      return;
-    }
+      const { sportSlug } = req.params;
+      if (!sportSlug || typeof sportSlug !== "string") {
+        throw new AppError("Invalid sport", 400);
+      }
 
-    const { sportSlug } = req.params;
-    if (!sportSlug || typeof sportSlug !== "string") {
-      res.status(400).json({ success: false, message: "Invalid sport" });
-      return;
-    }
+      const userMessage: string = (req.body?.message ?? "").trim();
+      const stageKey: string | undefined =
+        typeof req.body?.stage === "string" && req.body.stage.trim()
+          ? req.body.stage.trim().toLowerCase()
+          : undefined;
 
-    const userMessage: string = (req.body?.message ?? "").trim();
-    const stageKey: string | undefined =
-      typeof req.body?.stage === "string" && req.body.stage.trim()
-        ? req.body.stage.trim().toLowerCase()
-        : undefined;
+      if (!userMessage) {
+        throw new AppError("Message is required", 400);
+      }
+      if (userMessage.length > 2000) {
+        throw new AppError("Message too long (max 2000 characters)", 400);
+      }
 
-    if (!userMessage) {
-      res.status(400).json({ success: false, message: "Message is required" });
-      return;
-    }
-    if (userMessage.length > 2000) {
-      res.status(400).json({ success: false, message: "Message too long (max 2000 characters)" });
-      return;
-    }
+      const pathway = await loadPathway(sportSlug);
+      if (!pathway) {
+        throw new AppError("No published pathway for this sport yet", 404);
+      }
 
-    const pathway = await loadPathway(sportSlug);
-    if (!pathway) {
-      res.status(404).json({ success: false, message: "No published pathway for this sport yet" });
-      return;
-    }
-
-    let session = await RoadmapChatSession.findOne({ sportSlug, userId: req.user.id }).sort({
-      updatedAt: -1,
-    });
-
-    if (!session) {
-      session = await RoadmapChatSession.create({
-        sportSlug,
-        userId: req.user.id,
-        title: null,
-        messages: [
-          {
-            role: "assistant",
-            content: buildOpeningMessage(pathway.sportName),
-            createdAt: new Date(),
-          },
-        ],
+      let session = await RoadmapChatSession.findOne({ sportSlug, userId: req.user.id }).sort({
+        updatedAt: -1,
       });
-    }
 
-    const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
-      dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow!`,
-      lifetimeReached: `You've had an in-depth conversation about this sport! Start a new chat or explore another sport.`,
-    });
-    if (!rateLimit.ok) {
-      res.status(rateLimit.status).json({
-        success: false,
-        message: rateLimit.message,
-        code: rateLimit.code,
+      if (!session) {
+        session = await RoadmapChatSession.create({
+          sportSlug,
+          userId: req.user.id,
+          title: null,
+          messages: [
+            {
+              role: "assistant",
+              content: buildOpeningMessage(pathway.sportName),
+              createdAt: new Date(),
+            },
+          ],
+        });
+      }
+
+      const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
+        dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow!`,
+        lifetimeReached: `You've had an in-depth conversation about this sport! Start a new chat or explore another sport.`,
       });
-      return;
-    }
+      if (!rateLimit.ok) {
+        res.status(rateLimit.status).json({
+          success: false,
+          message: rateLimit.message,
+          code: rateLimit.code,
+        });
+        return;
+      }
 
-    const isFirstUserMessage = !session.messages.some((m) => m.role === "user");
-    if (isFirstUserMessage && !session.title) {
-      session.title = deriveTitle(userMessage);
-    }
+      const isFirstUserMessage = !session.messages.some((m) => m.role === "user");
+      if (isFirstUserMessage && !session.title) {
+        session.title = deriveTitle(userMessage);
+      }
 
-    const upcomingTournaments = await getUpcomingEditions(sportSlug, 5).catch(() => []);
-    const systemPrompt = buildRoadmapChatSystemPrompt(
-      toPathwayContext(pathway),
-      stageKey,
-      upcomingTournaments
-    );
-
-    await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
-  } catch (error) {
-    if (!res.headersSent) {
-      res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Chat request failed",
-      });
-    } else {
-      res.write(
-        `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+      const upcomingTournaments = await getUpcomingEditions(sportSlug, 5).catch(() => []);
+      const systemPrompt = buildRoadmapChatSystemPrompt(
+        toPathwayContext(pathway),
+        stageKey,
+        upcomingTournaments
       );
-      res.end();
+
+      await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);
+    } catch (error) {
+      if (!res.headersSent) {
+        res.status(error instanceof AppError ? error.statusCode : 500).json({
+          success: false,
+          message: error instanceof Error ? error.message : "Chat request failed",
+        });
+      } else {
+        res.write(
+          `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+        );
+        res.end();
+      }
     }
   }
-};
+);

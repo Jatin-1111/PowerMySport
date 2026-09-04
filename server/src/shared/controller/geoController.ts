@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import redis from "../../config/redis";
 import { normalizeStateName } from "../../constants/indianStates";
 import { log as __rootLog } from "../../utils/logger";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 const log = __rootLog.child("geo");
 
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
@@ -90,15 +92,11 @@ const fetchJson = async (url: string): Promise<any> => {
  * the large majority of Indian addresses for ₹0, keeping the paid Google layer
  * (autocompleteLocation, Tier 3) as a last resort.
  */
-export const lookupPincode = async (req: Request, res: Response) => {
+export const lookupPincode = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const pincode = String(req.params.pincode || "").trim();
 
   if (!/^\d{6}$/.test(pincode)) {
-    return res.status(400).json({
-      success: false,
-      message: "A valid 6-digit pincode is required",
-      data: null,
-    });
+    throw new AppError("A valid 6-digit pincode is required", 400);
   }
 
   const cacheKey = `geo:pincode:${pincode}`;
@@ -107,74 +105,61 @@ export const lookupPincode = async (req: Request, res: Response) => {
   try {
     const cached = await redis.get(cacheKey);
     if (cached) {
-      return res.json({
+      res.json({
         success: true,
         message: "Pincode resolved (cache)",
         data: JSON.parse(cached),
       });
+      return;
     }
   } catch {
     // fail open — proceed to live lookup if Redis is unavailable
   }
 
   // Tier 1 — free India Post lookup
-  try {
-    const data: any = await fetchJson(`https://api.postalpincode.in/pincode/${pincode}`);
-    const entry = Array.isArray(data) ? data[0] : null;
-    const postOffice = entry?.Status === "Success" ? entry?.PostOffice?.[0] : null;
+  const data: any = await fetchJson(`https://api.postalpincode.in/pincode/${pincode}`);
+  const entry = Array.isArray(data) ? data[0] : null;
+  const postOffice = entry?.Status === "Success" ? entry?.PostOffice?.[0] : null;
 
-    if (!postOffice) {
-      // Tier 3 extension point: a paid provider (e.g. the Google layer above)
-      // could be consulted here for addresses India Post can't resolve. Left as
-      // free-only to keep cost at zero.
-      return res.json({
-        success: true,
-        message: "No match for pincode",
-        data: null,
-      });
-    }
-
-    const payload = {
-      pincode,
-      city: postOffice.District || postOffice.Block || postOffice.Name || "",
-      state: normalizeStateName(postOffice.State || ""),
-      district: postOffice.District || "",
-    };
-
-    try {
-      await redis.set(cacheKey, JSON.stringify(payload), "EX", PINCODE_CACHE_TTL_SECONDS);
-    } catch {
-      // fail open — caching is best effort
-    }
-
-    return res.json({
+  if (!postOffice) {
+    // Tier 3 extension point: a paid provider (e.g. the Google layer above)
+    // could be consulted here for addresses India Post can't resolve. Left as
+    // free-only to keep cost at zero.
+    res.json({
       success: true,
-      message: "Pincode resolved",
-      data: payload,
-    });
-  } catch (error) {
-    if (isDev) {
-      log.error("[GEO] Pincode lookup error:", error);
-    }
-    return res.status(502).json({
-      success: false,
-      message: "Failed to resolve pincode",
+      message: "No match for pincode",
       data: null,
     });
+    return;
   }
-};
 
-export const autocompleteLocation = async (req: Request, res: Response) => {
-  const query = String(req.query.q || "").trim();
-  if (!query) {
-    return res.status(400).json({
-      success: false,
-      message: "Query is required",
-      data: [],
-    });
-  }
+  const payload = {
+    pincode,
+    city: postOffice.District || postOffice.Block || postOffice.Name || "",
+    state: normalizeStateName(postOffice.State || ""),
+    district: postOffice.District || "",
+  };
 
   try {
+    await redis.set(cacheKey, JSON.stringify(payload), "EX", PINCODE_CACHE_TTL_SECONDS);
+  } catch {
+    // fail open — caching is best effort
+  }
+
+  res.json({
+    success: true,
+    message: "Pincode resolved",
+    data: payload,
+  });
+});
+
+export const autocompleteLocation = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const query = String(req.query.q || "").trim();
+    if (!query) {
+      throw new AppError("Query is required", 400);
+    }
+
     const cacheKey = `autocomplete:${query.toLowerCase()}`;
     const cached = getFromCache<
       Array<{
@@ -188,19 +173,16 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
       }>
     >(cacheKey);
     if (cached) {
-      return res.json({
+      res.json({
         success: true,
         message: "Locations fetched from cache",
         data: cached,
       });
+      return;
     }
 
     if (!GOOGLE_PLACES_API_KEY) {
-      return res.status(500).json({
-        success: false,
-        message: "Google Maps API key not configured",
-        data: [],
-      });
+      throw new AppError("Google Maps API key not configured", 500);
     }
 
     if (isDev) {
@@ -216,11 +198,7 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
       if (isDev) {
         log.error(`[GEO] Google status: ${googleData?.status} - ${googleData?.error_message}`);
       }
-      return res.status(400).json({
-        success: false,
-        message: googleData?.error_message || "No results found",
-        data: [],
-      });
+      throw new AppError(googleData?.error_message || "No results found", 400);
     }
 
     const predictions = (googleData.predictions || []).slice(0, 6);
@@ -290,191 +268,146 @@ export const autocompleteLocation = async (req: Request, res: Response) => {
     if (isDev) {
       log.info(`[GEO] Total results: ${results.length}`);
     }
-    return res.json({
+    res.json({
       success: true,
       message: "Locations fetched from Google Places",
       data: results,
     });
-  } catch (error) {
-    if (isDev) {
-      log.error(`[GEO] Autocomplete error:`, error);
-    }
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch location suggestions",
-      data: [],
-    });
   }
-};
+);
 
-export const geocodeAddress = async (req: Request, res: Response) => {
+export const geocodeAddress = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const address = String(req.query.address || "").trim();
   if (!address) {
-    return res.status(400).json({
-      success: false,
-      message: "Address is required",
-      data: null,
-    });
+    throw new AppError("Address is required", 400);
   }
 
-  try {
-    const cacheKey = `geocode:${address.toLowerCase()}`;
-    const cached = getFromCache<{
-      label: string;
-      lat: number;
-      lon: number;
-    } | null>(cacheKey);
-    if (cached !== null) {
-      return res.json({
-        success: true,
-        message: "Geocode success (cache)",
-        data: cached,
-      });
-    }
-
-    if (!GOOGLE_PLACES_API_KEY) {
-      return res.status(500).json({
-        success: false,
-        message: "Google Maps API key not configured",
-        data: null,
-      });
-    }
-
-    if (isDev) {
-      log.info(`[GEO] Geocoding address: "${address}"`);
-    }
-    const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-      address
-    )}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&region=in&components=country:in`;
-
-    const googleData: any = await fetchJson(googleUrl);
-
-    if (googleData?.status !== "OK" || !googleData?.results?.[0]) {
-      if (isDev) {
-        log.error(`[GEO] Geocode status: ${googleData?.status}`);
-      }
-      setCache(cacheKey, null);
-      return res.json({
-        success: true,
-        message: "No results",
-        data: null,
-      });
-    }
-
-    const result = googleData.results[0];
-    if (isDev) {
-      log.info(`[GEO] Geocoded: ${result.formatted_address}`);
-    }
-
-    const payload = {
-      label: result.formatted_address,
-      lat: result.geometry.location.lat,
-      lon: result.geometry.location.lng,
-    };
-
-    setCache(cacheKey, payload);
-
-    return res.json({
+  const cacheKey = `geocode:${address.toLowerCase()}`;
+  const cached = getFromCache<{
+    label: string;
+    lat: number;
+    lon: number;
+  } | null>(cacheKey);
+  if (cached !== null) {
+    res.json({
       success: true,
-      message: "Geocode success",
-      data: payload,
+      message: "Geocode success (cache)",
+      data: cached,
     });
-  } catch (error) {
+    return;
+  }
+
+  if (!GOOGLE_PLACES_API_KEY) {
+    throw new AppError("Google Maps API key not configured", 500);
+  }
+
+  if (isDev) {
+    log.info(`[GEO] Geocoding address: "${address}"`);
+  }
+  const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+    address
+  )}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&region=in&components=country:in`;
+
+  const googleData: any = await fetchJson(googleUrl);
+
+  if (googleData?.status !== "OK" || !googleData?.results?.[0]) {
     if (isDev) {
-      log.error(`[GEO] Geocode error:`, error);
+      log.error(`[GEO] Geocode status: ${googleData?.status}`);
     }
-    return res.status(500).json({
-      success: false,
-      message: "Failed to geocode address",
+    setCache(cacheKey, null);
+    res.json({
+      success: true,
+      message: "No results",
       data: null,
     });
+    return;
   }
-};
 
-export const reverseGeocode = async (req: Request, res: Response) => {
+  const result = googleData.results[0];
+  if (isDev) {
+    log.info(`[GEO] Geocoded: ${result.formatted_address}`);
+  }
+
+  const payload = {
+    label: result.formatted_address,
+    lat: result.geometry.location.lat,
+    lon: result.geometry.location.lng,
+  };
+
+  setCache(cacheKey, payload);
+
+  res.json({
+    success: true,
+    message: "Geocode success",
+    data: payload,
+  });
+});
+
+export const reverseGeocode = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const lat = Number(req.query.lat);
   const lon = Number(req.query.lon);
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    return res.status(400).json({
-      success: false,
-      message: "Latitude and longitude are required",
-      data: null,
-    });
+    throw new AppError("Latitude and longitude are required", 400);
   }
 
-  try {
-    const cacheKey = `reverse:${lat}:${lon}`;
-    const cached = getFromCache<{
-      label: string;
-      lat: number;
-      lon: number;
-    } | null>(cacheKey);
-    if (cached !== null) {
-      return res.json({
-        success: true,
-        message: "Reverse geocode success (cache)",
-        data: cached,
-      });
-    }
-
-    if (!GOOGLE_PLACES_API_KEY) {
-      return res.status(500).json({
-        success: false,
-        message: "Google Maps API key not configured",
-        data: null,
-      });
-    }
-
-    if (isDev) {
-      log.info(`[GEO] Reverse geocoding: lat=${lat}, lon=${lon}`);
-    }
-    const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(
-      String(lat)
-    )},${encodeURIComponent(String(lon))}&key=${encodeURIComponent(
-      GOOGLE_PLACES_API_KEY
-    )}&region=in`;
-
-    const googleData: any = await fetchJson(googleUrl);
-
-    if (googleData?.status !== "OK" || !googleData?.results?.[0]) {
-      if (isDev) {
-        log.error(`[GEO] Reverse geocode status: ${googleData?.status}`);
-      }
-      setCache(cacheKey, null);
-      return res.json({
-        success: true,
-        message: "No results",
-        data: null,
-      });
-    }
-
-    const result = googleData.results[0];
-    if (isDev) {
-      log.info(`[GEO] Reverse geocoded: ${result.formatted_address}`);
-    }
-
-    const payload = {
-      label: result.formatted_address,
-      lat,
-      lon,
-    };
-
-    setCache(cacheKey, payload);
-
-    return res.json({
+  const cacheKey = `reverse:${lat}:${lon}`;
+  const cached = getFromCache<{
+    label: string;
+    lat: number;
+    lon: number;
+  } | null>(cacheKey);
+  if (cached !== null) {
+    res.json({
       success: true,
-      message: "Reverse geocode success",
-      data: payload,
+      message: "Reverse geocode success (cache)",
+      data: cached,
     });
-  } catch (error) {
+    return;
+  }
+
+  if (!GOOGLE_PLACES_API_KEY) {
+    throw new AppError("Google Maps API key not configured", 500);
+  }
+
+  if (isDev) {
+    log.info(`[GEO] Reverse geocoding: lat=${lat}, lon=${lon}`);
+  }
+  const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(
+    String(lat)
+  )},${encodeURIComponent(String(lon))}&key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&region=in`;
+
+  const googleData: any = await fetchJson(googleUrl);
+
+  if (googleData?.status !== "OK" || !googleData?.results?.[0]) {
     if (isDev) {
-      log.error(`[GEO] Reverse geocode error:`, error);
+      log.error(`[GEO] Reverse geocode status: ${googleData?.status}`);
     }
-    return res.status(500).json({
-      success: false,
-      message: "Failed to reverse geocode",
+    setCache(cacheKey, null);
+    res.json({
+      success: true,
+      message: "No results",
       data: null,
     });
+    return;
   }
-};
+
+  const result = googleData.results[0];
+  if (isDev) {
+    log.info(`[GEO] Reverse geocoded: ${result.formatted_address}`);
+  }
+
+  const payload = {
+    label: result.formatted_address,
+    lat,
+    lon,
+  };
+
+  setCache(cacheKey, payload);
+
+  res.json({
+    success: true,
+    message: "Reverse geocode success",
+    data: payload,
+  });
+});

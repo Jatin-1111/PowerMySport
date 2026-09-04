@@ -8,11 +8,10 @@ import { updatePaymentStatus } from "../../services/BookingService";
 import {
   getPhonePeOrderStatus,
   initiatePhonePePayment,
-  isPhonePeGatewayError,
   validatePhonePeCallback,
 } from "../../../shared/services/PhonePeService";
-import { log as __rootLog } from "../../../utils/logger";
-const log = __rootLog.child("booking");
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 const getBookingPaymentAmount = (booking: any, userId: string): number => {
   if (booking.payments && booking.payments.length > 0) {
@@ -42,18 +41,11 @@ const getBookingPaymentAmount = (booking: any, userId: string): number => {
  * Initiate PhonePe payment for a booking
  * POST /api/bookings/:bookingId/phonepe/initiate
  */
-export const initiatePhonePePaymentForBooking = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
+export const initiatePhonePePaymentForBooking = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const authUser = req.user;
     if (!authUser?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const userId = authUser.id;
@@ -64,19 +56,11 @@ export const initiatePhonePePaymentForBooking = async (
     );
 
     if (!booking) {
-      res.status(404).json({
-        success: false,
-        message: "Booking not found",
-      });
-      return;
+      throw new AppError("Booking not found", 404);
     }
 
     if (booking.status === "CANCELLED") {
-      res.status(400).json({
-        success: false,
-        message: "Cannot initiate payment for a cancelled booking",
-      });
-      return;
+      throw new AppError("Cannot initiate payment for a cancelled booking", 400);
     }
 
     const isOrganizer = booking.userId.toString() === userId;
@@ -85,22 +69,14 @@ export const initiatePhonePePaymentForBooking = async (
       booking.payments?.some((payment) => payment.userId.toString() === userId);
 
     if (!isOrganizer && !isSplitPayer) {
-      res.status(403).json({
-        success: false,
-        message: "You are not authorized to pay for this booking",
-      });
-      return;
+      throw new AppError("You are not authorized to pay for this booking", 403);
     }
 
     const amount = getBookingPaymentAmount(booking, userId);
     const amountInPaise = Math.round(amount * 100);
 
     if (amountInPaise < 100) {
-      res.status(400).json({
-        success: false,
-        message: "Payment amount must be at least 1 INR",
-      });
-      return;
+      throw new AppError("Payment amount must be at least 1 INR", 400);
     }
 
     const merchantOrderId = `bk_${bookingId}_${Date.now()}`;
@@ -178,32 +154,18 @@ export const initiatePhonePePaymentForBooking = async (
         state: initResult.state,
       },
     });
-  } catch (error) {
-    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
-
-    res.status(statusCode).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to initiate PhonePe payment",
-      ...(isPhonePeGatewayError(error)
-        ? { data: { code: error.code, retryable: error.retryable } }
-        : {}),
-    });
   }
-};
+);
 
 /**
  * Handle PhonePe callback
  * POST /api/bookings/phonepe/callback
  */
-export const handlePhonePeCallback = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const handlePhonePeCallback = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const authorizationHeader = req.headers["authorization"] as string;
     if (!authorizationHeader) {
-      res.status(401).json({
-        success: false,
-        message: "Missing PhonePe authorization header",
-      });
-      return;
+      throw new AppError("Missing PhonePe authorization header", 401);
     }
 
     const rawBody = (req as any).rawBody || JSON.stringify(req.body);
@@ -212,22 +174,14 @@ export const handlePhonePeCallback = async (req: Request, res: Response): Promis
 
     const merchantOrderId = payload.originalMerchantOrderId;
     if (!merchantOrderId) {
-      res.status(400).json({
-        success: false,
-        message: "Missing merchant order id in callback",
-      });
-      return;
+      throw new AppError("Missing merchant order id in callback", 400);
     }
 
     const transaction = await BookingPaymentTransaction.findOne({
       merchantOrderId,
     });
     if (!transaction) {
-      res.status(404).json({
-        success: false,
-        message: "Payment transaction not found",
-      });
-      return;
+      throw new AppError("Payment transaction not found", 404);
     }
 
     transaction.callbackPayload = callback as any;
@@ -276,42 +230,24 @@ export const handlePhonePeCallback = async (req: Request, res: Response): Promis
       success: true,
       message: "PhonePe callback processed",
     });
-  } catch (error) {
-    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
-
-    res.status(statusCode).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to process PhonePe callback",
-      ...(isPhonePeGatewayError(error)
-        ? { data: { code: error.code, retryable: error.retryable } }
-        : {}),
-    });
   }
-};
+);
 
 /**
  * Verify PhonePe order status
  * GET /api/bookings/phonepe/status/:merchantOrderId
  */
-export const verifyPhonePeOrderStatus = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const verifyPhonePeOrderStatus = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const merchantOrderIdParam = Array.isArray(req.params.merchantOrderId)
       ? req.params.merchantOrderId[0]
       : req.params.merchantOrderId;
     if (!merchantOrderIdParam) {
-      res.status(400).json({
-        success: false,
-        message: "merchantOrderId is required",
-      });
-      return;
+      throw new AppError("merchantOrderId is required", 400);
     }
 
     const merchantOrderId = merchantOrderIdParam;
@@ -321,19 +257,11 @@ export const verifyPhonePeOrderStatus = async (req: Request, res: Response): Pro
     });
 
     if (!transaction) {
-      res.status(404).json({
-        success: false,
-        message: "Payment transaction not found",
-      });
-      return;
+      throw new AppError("Payment transaction not found", 404);
     }
 
     if (transaction.userId.toString() !== req.user.id) {
-      res.status(403).json({
-        success: false,
-        message: "You are not authorized to access this payment",
-      });
-      return;
+      throw new AppError("You are not authorized to access this payment", 403);
     }
 
     const status = await getPhonePeOrderStatus(merchantOrderId);
@@ -388,48 +316,32 @@ export const verifyPhonePeOrderStatus = async (req: Request, res: Response): Pro
         merchantOrderId,
       },
     });
-  } catch (error) {
-    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
-
-    res.status(statusCode).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to verify PhonePe order status",
-      ...(isPhonePeGatewayError(error)
-        ? { data: { code: error.code, retryable: error.retryable } }
-        : {}),
-    });
   }
-};
+);
 
 /**
  * Pay for a booking using Wallet Balance
  * POST /api/bookings/:bookingId/wallet/pay
  */
-export const payBookingWithWallet = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const payBookingWithWallet = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const bookingId = req.params.bookingId as string;
     const user = req.user;
 
     if (!user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const booking = await Booking.findById(bookingId);
     if (!booking) {
-      res.status(404).json({ success: false, message: "Booking not found" });
-      return;
+      throw new AppError("Booking not found", 404);
     }
 
     // Only a booking still awaiting payment can be paid for. AWAITING_PROVIDER
     // means the money already landed, so accepting another payment there would
     // charge the customer twice.
     if (booking.status !== "AWAITING_PAYMENT" && booking.status !== "PENDING_INVITES") {
-      res.status(400).json({
-        success: false,
-        message: "Booking cannot be paid for in its current state",
-      });
-      return;
+      throw new AppError("Booking cannot be paid for in its current state", 400);
     }
 
     // Verify user is part of the booking (organizer or participant)
@@ -437,11 +349,7 @@ export const payBookingWithWallet = async (req: Request, res: Response): Promise
       // Find if they are a participant
       const isParticipant = booking.payments?.some((p) => p.userId.toString() === user.id);
       if (!isParticipant) {
-        res.status(403).json({
-          success: false,
-          message: "Not authorized to pay for this booking",
-        });
-        return;
+        throw new AppError("Not authorized to pay for this booking", 403);
       }
     }
 
@@ -451,19 +359,11 @@ export const payBookingWithWallet = async (req: Request, res: Response): Promise
     const amount = paymentShare ? paymentShare.amount : booking.totalAmount;
 
     if (paymentShare && paymentShare.status === "PAID") {
-      res.status(400).json({
-        success: false,
-        message: "Your share of this booking is already paid",
-      });
-      return;
+      throw new AppError("Your share of this booking is already paid", 400);
     }
 
     if (!paymentShare && booking.paymentConfirmedAt) {
-      res.status(400).json({
-        success: false,
-        message: "Booking is already paid",
-      });
-      return;
+      throw new AppError("Booking is already paid", 400);
     }
 
     // Deduct from wallet
@@ -510,11 +410,5 @@ export const payBookingWithWallet = async (req: Request, res: Response): Promise
       success: true,
       message: "Paid via wallet successfully",
     });
-  } catch (error) {
-    log.error("[payBookingWithWallet]", error);
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to pay via wallet",
-    });
   }
-};
+);

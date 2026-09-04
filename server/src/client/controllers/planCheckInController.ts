@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import { PlanCheckIn } from "../../shared/models/PlanCheckIn";
 import { PlanCheckInService } from "../../shared/services/PlanCheckInService";
 import { Player } from "../models/Player";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 const TRIAL_WEEKS = 4;
 
@@ -13,17 +15,15 @@ const TRIAL_WEEKS = 4;
  * scorer runs in the browser), so this is the one check-in type the client
  * initiates directly rather than the server creating it as a side effect.
  */
-export const createFindSportTrialCheckIn = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const createFindSportTrialCheckIn = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { dependentId, sport, signals } = req.body;
     if (!sport || typeof sport !== "string" || !sport.trim()) {
-      res.status(400).json({ success: false, message: "sport is required" });
-      return;
+      throw new AppError("sport is required", 400);
     }
 
     let validDependentId: string | null = null;
@@ -53,10 +53,8 @@ export const createFindSportTrialCheckIn = async (req: Request, res: Response): 
     });
 
     res.status(201).json({ success: true, data: checkIn });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to schedule trial check-in" });
   }
-};
+);
 
 /**
  * POST /plan-checkins/find-sport-trial/choice
@@ -69,17 +67,15 @@ export const createFindSportTrialCheckIn = async (req: Request, res: Response): 
  *   1. `chosenSport` on the dependent — the durable record of the decision.
  *   2. The already-scheduled trial check-in, repointed at that sport.
  */
-export const recordFindSportChoice = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const recordFindSportChoice = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { dependentId, sport, signals } = req.body;
     if (!sport || typeof sport !== "string" || !sport.trim()) {
-      res.status(400).json({ success: false, message: "sport is required" });
-      return;
+      throw new AppError("sport is required", 400);
     }
     const sportName = sport.trim().slice(0, 60);
 
@@ -123,67 +119,52 @@ export const recordFindSportChoice = async (req: Request, res: Response): Promis
       }));
 
     res.status(200).json({ success: true, data: checkIn });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to record sport choice" });
   }
-};
+);
 
 /**
  * GET /plan-checkins/:id
  * Fetch a single check-in — this is what the emailed link lands on.
  */
-export const getPlanCheckIn = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-
-    const { id } = req.params;
-    if (!id || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid check-in id" });
-      return;
-    }
-
-    const checkIn = await PlanCheckIn.findById(id).lean();
-    if (!checkIn) {
-      res.status(404).json({ success: false, message: "Check-in not found" });
-      return;
-    }
-    if (checkIn.userId.toString() !== req.user.id) {
-      res.status(403).json({ success: false, message: "Forbidden" });
-      return;
-    }
-
-    res.status(200).json({ success: true, data: checkIn });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch check-in" });
+export const getPlanCheckIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new AppError("Unauthorized", 401);
   }
-};
+
+  const { id } = req.params;
+  if (!id || !mongoose.isValidObjectId(id)) {
+    throw new AppError("Invalid check-in id", 400);
+  }
+
+  const checkIn = await PlanCheckIn.findById(id).lean();
+  if (!checkIn) {
+    throw new AppError("Check-in not found", 404);
+  }
+  if (checkIn.userId.toString() !== req.user.id) {
+    throw new AppError("Forbidden", 403);
+  }
+
+  res.status(200).json({ success: true, data: checkIn });
+});
 
 /**
  * GET /plan-checkins
  * Active/due check-ins for the logged-in parent (e.g. an "active plans" list).
  */
-export const listPlanCheckIns = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-
-    const checkIns = await PlanCheckIn.find({
-      userId: req.user.id,
-      status: { $in: ["active", "due"] },
-    })
-      .sort({ checkInDueAt: 1 })
-      .lean();
-
-    res.status(200).json({ success: true, data: checkIns });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch check-ins" });
+export const listPlanCheckIns = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new AppError("Unauthorized", 401);
   }
-};
+
+  const checkIns = await PlanCheckIn.find({
+    userId: req.user.id,
+    status: { $in: ["active", "due"] },
+  })
+    .sort({ checkInDueAt: 1 })
+    .lean();
+
+  res.status(200).json({ success: true, data: checkIns });
+});
 
 const RESPOND_STATUSES = ["progressing", "not_progressing", "ambiguous", "abandoned"];
 
@@ -192,36 +173,28 @@ const RESPOND_STATUSES = ["progressing", "not_progressing", "ambiguous", "abando
  * The parent's answer to "how's it going?" — returns what the client should
  * offer next (re-diagnose, escalate to the team, try another sport, or done).
  */
-export const respondToPlanCheckIn = async (req: Request, res: Response): Promise<void> => {
-  try {
+export const respondToPlanCheckIn = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { id } = req.params;
     if (!id || !mongoose.isValidObjectId(id)) {
-      res.status(400).json({ success: false, message: "Invalid check-in id" });
-      return;
+      throw new AppError("Invalid check-in id", 400);
     }
 
     const { status, outcomeNote } = req.body;
     if (!RESPOND_STATUSES.includes(status)) {
-      res.status(400).json({
-        success: false,
-        message: `status must be one of: ${RESPOND_STATUSES.join(", ")}`,
-      });
-      return;
+      throw new AppError(`status must be one of: ${RESPOND_STATUSES.join(", ")}`, 400);
     }
 
     const checkIn = await PlanCheckIn.findById(id);
     if (!checkIn) {
-      res.status(404).json({ success: false, message: "Check-in not found" });
-      return;
+      throw new AppError("Check-in not found", 404);
     }
     if (checkIn.userId.toString() !== req.user.id) {
-      res.status(403).json({ success: false, message: "Forbidden" });
-      return;
+      throw new AppError("Forbidden", 403);
     }
 
     checkIn.status = status;
@@ -234,7 +207,5 @@ export const respondToPlanCheckIn = async (req: Request, res: Response): Promise
     const followUp = PlanCheckInService.computeFollowUp(checkIn);
 
     res.status(200).json({ success: true, data: { checkIn, followUp } });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to record response" });
   }
-};
+);
