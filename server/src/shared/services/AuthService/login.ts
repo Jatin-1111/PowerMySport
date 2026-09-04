@@ -1,5 +1,5 @@
 import { User, UserDocument } from "../../../client/models/User";
-import { ACCOUNT_DELETION_GRACE_PERIOD_MS } from "./shared";
+import { restoreIfPendingDeletion } from "./shared";
 
 export interface LoginPayload {
   email: string;
@@ -24,23 +24,7 @@ export const loginUser = async (
   // A successful login within the grace period cancels a pending
   // self-deletion and restores full access — the standard pattern big
   // platforms use, rather than requiring a separate "undo" action.
-  let deletionCancelled = false;
-  if (
-    user.pendingDeletion &&
-    user.deletionRequestedAt &&
-    Date.now() - user.deletionRequestedAt.getTime() < ACCOUNT_DELETION_GRACE_PERIOD_MS
-  ) {
-    await User.updateOne(
-      { _id: user._id },
-      {
-        $set: { isActive: true, pendingDeletion: false },
-        $unset: { deletionRequestedAt: "", deactivatedAt: "" },
-      }
-    );
-    user.isActive = true;
-    user.pendingDeletion = false;
-    deletionCancelled = true;
-  }
+  const deletionCancelled = await restoreIfPendingDeletion(user);
 
   return { user, deletionCancelled };
 };

@@ -106,6 +106,9 @@ function LoginContent() {
         setToken(response.data.token);
         setUser(response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+        if (response.data.deletionCancelled) {
+          toast.success("Account deletion cancelled.");
+        }
         goToRedirect(redirectTo || postLoginFor(response.data.user.role));
       }
     } catch (error: unknown) {

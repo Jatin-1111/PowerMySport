@@ -375,7 +375,7 @@ export const googleAuth = asyncHandler(async (req: Request, res: Response): Prom
   // derived ONLY from the verified token — never from client-supplied fields.
   const identity = await verifyGoogleCredential(credential);
 
-  const user = await googleLogin({
+  const { user, deletionCancelled } = await googleLogin({
     googleId: identity.googleId,
     email: identity.email,
     name: identity.name || identity.email.split("@")[0] || "User",
@@ -399,6 +399,7 @@ export const googleAuth = asyncHandler(async (req: Request, res: Response): Prom
     message: "Google login successful",
     data: {
       token,
+      deletionCancelled,
       user: {
         id: user._id,
         name: user.name,

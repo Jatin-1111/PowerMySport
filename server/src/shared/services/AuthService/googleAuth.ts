@@ -2,7 +2,7 @@ import { OAuth2Client } from "google-auth-library";
 import { User, UserDocument } from "../../../client/models/User";
 import { Expert } from "../../../client/models/ExpertProfile";
 import { sendWelcomeEmail } from "../../../utils/email";
-import { log, LEGAL_POLICY_VERSION } from "./shared";
+import { log, LEGAL_POLICY_VERSION, restoreIfPendingDeletion } from "./shared";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
@@ -73,7 +73,9 @@ export interface GoogleLoginPayload {
   acceptedPrivacy?: boolean;
 }
 
-export const googleLogin = async (payload: GoogleLoginPayload): Promise<UserDocument> => {
+export const googleLogin = async (
+  payload: GoogleLoginPayload
+): Promise<{ user: UserDocument; deletionCancelled: boolean }> => {
   let user = await User.findOne({ googleId: payload.googleId });
 
   if (!user) {
@@ -149,7 +151,11 @@ export const googleLogin = async (payload: GoogleLoginPayload): Promise<UserDocu
     }
   }
 
-  return user;
+  // Same restore-on-login behaviour as password sign-in (`loginUser`) — a
+  // no-op for a brand-new registration or an account with nothing pending.
+  const deletionCancelled = await restoreIfPendingDeletion(user);
+
+  return { user, deletionCancelled };
 };
 
 /**

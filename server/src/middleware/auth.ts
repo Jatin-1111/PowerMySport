@@ -85,6 +85,22 @@ const cacheAccountStatus = (userId: string, status: CachedAccountStatus): void =
 };
 
 /**
+ * Clears the cached verdict for a user whose `isActive`/`suspensionReason`
+ * just changed outside of a request that would naturally repopulate it
+ * (account deletion request/finalize, deletion-cancel-on-login). Without
+ * this, a status flip can be masked for up to ACCOUNT_STATUS_CACHE_TTL_SECONDS
+ * by an entry cached moments earlier under the old value — e.g. a login that
+ * restores a pending-deletion account can still get 403'd by its own very
+ * next request if some earlier request (still holding the pre-deletion
+ * token) had cached `isActive:false` within the last 15 seconds.
+ */
+export const invalidateAccountStatusCache = (userId: string): void => {
+  redis.del(accountStatusCacheKey(userId)).catch((error) => {
+    log.error("Failed to invalidate cached account status:", error);
+  });
+};
+
+/**
  * Roles whose account record must still exist and be un-suspended for the
  * token to count. A JWT only proves the signature was ours when it was minted —
  * it says nothing about whether the account survived.

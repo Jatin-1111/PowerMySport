@@ -1,5 +1,6 @@
 import { Player } from "../../../client/models/Player";
 import { User } from "../../../client/models/User";
+import { invalidateAccountStatusCache } from "../../../middleware/auth";
 import { S3Service } from "../S3Service";
 import { log, ACCOUNT_DELETION_GRACE_PERIOD_MS } from "./shared";
 
@@ -40,6 +41,10 @@ export const requestAccountDeletion = async (
       },
     }
   );
+  // Mirrors the invalidation in loginUser's restore branch: without this, a
+  // request cached isActive:true moments earlier could keep succeeding for
+  // up to ACCOUNT_STATUS_CACHE_TTL_SECONDS after the lockout should apply.
+  invalidateAccountStatusCache(user._id.toString());
 };
 
 /**
@@ -102,6 +107,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
       },
     }
   );
+  invalidateAccountStatusCache(user._id.toString());
 
   // Cascade-delete data with no legal/financial retention need. Each is
   // independently try/caught so one failure doesn't block the rest —
