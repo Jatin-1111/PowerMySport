@@ -645,7 +645,14 @@ describe("completing a session", () => {
 
   it("refuses to reopen a session that has already been paid out", async () => {
     const { occurrence } = await seedSession();
-    await lifecycle.completeOccurrence({ occurrenceId: occurrence._id });
+    // An explicit `at` (rather than the real wall clock) keeps this test's
+    // 24h release hold from drifting past the fixed `asOf` below as real
+    // time advances — see "schedules the payout 24 hours out" for the same
+    // pattern.
+    await lifecycle.completeOccurrence({
+      occurrenceId: occurrence._id,
+      at: new Date("2026-09-01T12:30:00.000Z"),
+    });
     await lifecycle.releaseDuePayouts({
       asOf: new Date("2026-09-05T00:00:00.000Z"),
     });
