@@ -583,7 +583,6 @@ export default function DependentDetailPage() {
         onSubmit={handleSaveDependent}
         initialDependent={dependent}
         isLoading={isSaving}
-        mode="edit"
       />
 
       <Modal

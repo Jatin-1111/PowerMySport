@@ -32,12 +32,13 @@ export function useProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDependentModal, setShowDependentModal] = useState(false);
-  const [dependentModalMode, setDependentModalMode] = useState<"add" | "edit">("add");
+  const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [dependentModalStepId, setDependentModalStepId] = useState<
     DependentModalStepId | undefined
   >(undefined);
   const [selectedDependent, setSelectedDependent] = useState<Dependent | null>(null);
   const [savingDependentId, setSavingDependentId] = useState<string | null>(null);
+  const [isAddingDependent, setIsAddingDependent] = useState(false);
   const [isDeletingDependentId, setDeletingDependentId] = useState<string | null>(null);
   const [dependentToDelete, setDependentToDelete] = useState<Dependent | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -91,7 +92,6 @@ export function useProfilePage() {
     const dependent = user.dependents?.find((d) => d._id?.toString() === editDependentId);
     if (!dependent) return;
     setSelectedDependent(dependent);
-    setDependentModalMode("edit");
     setDependentModalStepId((searchParams.get("step") as DependentModalStepId | null) ?? undefined);
     setShowDependentModal(true);
     router.replace("/dashboard/my-profile", { scroll: false });
@@ -99,23 +99,28 @@ export function useProfilePage() {
   }, [user, searchParams]);
 
   const handleAddDependent = () => {
-    setSelectedDependent(null);
-    setDependentModalMode("add");
-    setDependentModalStepId(undefined);
-    setShowDependentModal(true);
+    setShowQuickAddModal(true);
+  };
+
+  const handleQuickAddDependent = async (dependentData: Dependent) => {
+    setIsAddingDependent(true);
+    try {
+      await authApi.addDependent(dependentData);
+      toast.success("Dependent added successfully");
+      await fetchProfile();
+    } catch (error: unknown) {
+      throw error;
+    } finally {
+      setIsAddingDependent(false);
+    }
   };
 
   const handleSaveDependent = async (dependentData: Dependent) => {
+    if (!selectedDependent?._id) return;
+    setSavingDependentId(selectedDependent._id);
     try {
-      if (dependentModalMode === "add") {
-        setSavingDependentId("new");
-        await authApi.addDependent(dependentData);
-        toast.success("Dependent added successfully");
-      } else if (selectedDependent?._id) {
-        setSavingDependentId(selectedDependent._id);
-        await authApi.updateDependent(selectedDependent._id, dependentData);
-        toast.success("Dependent updated successfully");
-      }
+      await authApi.updateDependent(selectedDependent._id, dependentData);
+      toast.success("Dependent updated successfully");
       await fetchProfile();
     } catch (error: unknown) {
       throw error;
@@ -266,10 +271,12 @@ export function useProfilePage() {
     isLoading,
     showDependentModal,
     setShowDependentModal,
-    dependentModalMode,
+    showQuickAddModal,
+    setShowQuickAddModal,
     dependentModalStepId,
     selectedDependent,
     savingDependentId,
+    isAddingDependent,
     isDeletingDependentId,
     dependentToDelete,
     setDependentToDelete,
@@ -285,6 +292,7 @@ export function useProfilePage() {
     setPlayerProfileForm,
 
     handleAddDependent,
+    handleQuickAddDependent,
     handleSaveDependent,
     handleDeleteDependent,
     handleEditProfileClick,

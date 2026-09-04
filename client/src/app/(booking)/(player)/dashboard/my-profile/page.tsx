@@ -2,6 +2,7 @@
 
 import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
+import QuickAddDependentModal from "@/modules/player/components/QuickAddDependentModal";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
@@ -36,10 +37,12 @@ function ProfilePageContent() {
     isLoading,
     showDependentModal,
     setShowDependentModal,
-    dependentModalMode,
+    showQuickAddModal,
+    setShowQuickAddModal,
     dependentModalStepId,
     selectedDependent,
     savingDependentId,
+    isAddingDependent,
     isDeletingDependentId,
     dependentToDelete,
     setDependentToDelete,
@@ -54,6 +57,7 @@ function ProfilePageContent() {
     playerProfileForm,
     setPlayerProfileForm,
     handleAddDependent,
+    handleQuickAddDependent,
     handleSaveDependent,
     handleDeleteDependent,
     handleEditProfileClick,
@@ -163,15 +167,23 @@ function ProfilePageContent() {
         />
       )}
 
-      <DependentManagementModal
-        isOpen={showDependentModal}
-        onClose={() => setShowDependentModal(false)}
-        onSubmit={handleSaveDependent}
-        initialDependent={selectedDependent}
-        isLoading={savingDependentId !== null}
-        mode={dependentModalMode}
-        initialStepId={dependentModalStepId}
+      <QuickAddDependentModal
+        isOpen={showQuickAddModal}
+        onClose={() => setShowQuickAddModal(false)}
+        onSubmit={handleQuickAddDependent}
+        isLoading={isAddingDependent}
       />
+
+      {selectedDependent && (
+        <DependentManagementModal
+          isOpen={showDependentModal}
+          onClose={() => setShowDependentModal(false)}
+          onSubmit={handleSaveDependent}
+          initialDependent={selectedDependent}
+          isLoading={savingDependentId !== null}
+          initialStepId={dependentModalStepId}
+        />
+      )}
 
       <Modal
         isOpen={Boolean(dependentToDelete)}

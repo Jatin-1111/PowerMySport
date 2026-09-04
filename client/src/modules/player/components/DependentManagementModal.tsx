@@ -62,9 +62,11 @@ interface DependentManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: Dependent) => Promise<void>;
-  initialDependent?: Dependent | null;
+  /** This modal is edit-only — creating a new dependent is the shorter
+   * `QuickAddDependentModal` flow instead, so a dependent always exists by
+   * the time this one opens. */
+  initialDependent: Dependent;
   isLoading?: boolean;
-  mode: "add" | "edit";
   /** Deep-link to a specific step on open (e.g. from a "complete your profile"
    * nudge elsewhere) instead of always starting at step 0. */
   initialStepId?: DependentModalStepId;
@@ -130,7 +132,6 @@ export default function DependentManagementModal({
   onSubmit,
   initialDependent,
   isLoading = false,
-  mode,
   initialStepId,
 }: DependentManagementModalProps) {
   const [formData, setFormData] = useState<DependentFormData>(EMPTY_FORM);
@@ -149,22 +150,18 @@ export default function DependentManagementModal({
     const deepLinkIndex = initialStepId ? STEPS.findIndex((s) => s.id === initialStepId) : -1;
     setStepIndex(deepLinkIndex >= 0 ? deepLinkIndex : 0);
     setDir(1);
-    if (initialDependent) {
-      const flat = denormalizeDependent(initialDependent);
-      setFormData({
-        ...EMPTY_FORM,
-        ...flat,
-        name: initialDependent.name,
-        dob: initialDependent.dob ? new Date(initialDependent.dob).toISOString().split("T")[0] : "",
-        relation: normalizeDependentRelation(flat.relation),
-        // Same reason as the relation above: a dependent saved with the old
-        // "Jammu & Kashmir" spelling matches no option in the canonical list, so
-        // the field would render blank and lose the state on the next save.
-        location: normalizeStoredState(flat.location),
-      });
-    } else {
-      setFormData(EMPTY_FORM);
-    }
+    const flat = denormalizeDependent(initialDependent);
+    setFormData({
+      ...EMPTY_FORM,
+      ...flat,
+      name: initialDependent.name,
+      dob: initialDependent.dob ? new Date(initialDependent.dob).toISOString().split("T")[0] : "",
+      relation: normalizeDependentRelation(flat.relation),
+      // Same reason as the relation above: a dependent saved with the old
+      // "Jammu & Kashmir" spelling matches no option in the canonical list, so
+      // the field would render blank and lose the state on the next save.
+      location: normalizeStoredState(flat.location),
+    });
   }, [isOpen, initialDependent, initialStepId]);
 
   const handleChange = (field: keyof DependentFormData, value: unknown) =>
@@ -263,7 +260,7 @@ export default function DependentManagementModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={mode === "add" ? "Add Child Profile" : `Edit ${formData.name || "Profile"}`}
+      title={`Edit ${formData.name || "Profile"}`}
       size="xl"
       footer={
         <div className="flex w-full items-center justify-between gap-3">
@@ -277,7 +274,7 @@ export default function DependentManagementModal({
               loading={isLoading}
               className="min-w-[140px]"
             >
-              {mode === "add" ? "Save profile" : "Save changes"}
+              Save changes
             </Button>
           ) : (
             <Button
