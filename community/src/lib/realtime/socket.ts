@@ -62,6 +62,9 @@ export const getCommunitySocket = (): Socket => {
     for (const room of subscribedRooms) {
       socket?.emit("community:subscribe", room);
     }
+    for (const conversationId of activeConversationRooms) {
+      socket?.emit("community:joinConversation", { conversationId });
+    }
   });
 
   return socket;
@@ -71,6 +74,15 @@ export const getCommunitySocket = (): Socket => {
  *  Ref-counted: two components on one page can both want `blog:<id>` and the
  *  first to unmount must not unsubscribe the second. */
 const subscribedRooms = new Map<string, number>();
+
+/** Conversation rooms this tab has joined, replayed on reconnect the same way
+ *  as subscribedRooms above. The server also auto-joins a socket's 30 most
+ *  recent conversations on connect, so this is belt-and-suspenders for
+ *  conversations outside that window (e.g. one just created this session) —
+ *  not the only path to correct room membership. There's no server-side
+ *  "leave conversation" event, so unlike subscribedRooms this only grows for
+ *  the life of the tab; that's a small, bounded set of ids, not a leak. */
+const activeConversationRooms = new Set<string>();
 
 export const QNA_FEED_ROOM = "qna:feed";
 export const BLOG_FEED_ROOM = "blog:feed";
@@ -114,4 +126,26 @@ export const subscribeToCommunityRoom = (room: string): (() => void) => {
 
     subscribedRooms.set(room, current - 1);
   };
+};
+
+/**
+ * Join a conversation's message room, replayed automatically on reconnect.
+ * Safe to call repeatedly for the same conversation (join is idempotent
+ * server-side); callers don't need to track whether they've already joined.
+ */
+export const joinConversationRoom = (conversationId: string): void => {
+  if (!conversationId) {
+    return;
+  }
+
+  activeConversationRooms.add(conversationId);
+  const activeSocket = getCommunitySocket();
+  if (activeSocket.connected) {
+    activeSocket.emit("community:joinConversation", { conversationId });
+  } else {
+    // The `connect` handler above replays everything in the set, so a
+    // conversation joined while offline is joined as soon as the socket
+    // comes up.
+    activeSocket.connect();
+  }
 };

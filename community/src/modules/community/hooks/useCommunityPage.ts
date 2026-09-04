@@ -1,6 +1,6 @@
 "use client";
 
-import { getCommunitySocket } from "@/lib/realtime/socket";
+import { getCommunitySocket, joinConversationRoom } from "@/lib/realtime/socket";
 import { getMainAppUrl, redirectToMainLogin } from "@/lib/auth/redirect";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { toast } from "@/lib/toast";
@@ -965,9 +965,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
         currentConversationId &&
         safeConversationsRef.current.find((c) => c.id === currentConversationId)
       ) {
-        socket.emit("community:joinConversation", {
-          conversationId: currentConversationId,
-        });
+        joinConversationRoom(currentConversationId);
         void loadMessages(currentConversationId);
       }
       void refreshConversationsNow();
@@ -1031,10 +1029,8 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
       });
     };
     const handleConversationUpdated = (payload?: { conversationId?: string }) => {
-      if (payload?.conversationId && socket.connected) {
-        socket.emit("community:joinConversation", {
-          conversationId: payload.conversationId,
-        });
+      if (payload?.conversationId) {
+        joinConversationRoom(payload.conversationId);
       }
       queueConversationRefresh(100);
     };
@@ -1147,11 +1143,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
 
   useEffect(() => {
     if (!selectedConversationId || !selectedConversation) return;
-    const socket = getCommunitySocket();
-    if (socket.connected)
-      socket.emit("community:joinConversation", {
-        conversationId: selectedConversationId,
-      });
+    joinConversationRoom(selectedConversationId);
   }, [selectedConversationId, selectedConversation, isSocketConnected]);
 
   useEffect(() => {
