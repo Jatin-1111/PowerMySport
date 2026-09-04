@@ -477,6 +477,7 @@ export const blogCreateSchema = z.object({
     .max(8, "A blog can have at most 8 tags")
     .optional(),
   content: blogContentSchema,
+  status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
 });
 
 export const blogUpdateSchema = z.object({
@@ -486,6 +487,7 @@ export const blogUpdateSchema = z.object({
   topic: z.string().trim().max(60).optional(),
   tags: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
   content: blogContentSchema,
+  status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
 });
 
 export const blogLikeSchema = z.object({
