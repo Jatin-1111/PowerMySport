@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import type { TournamentEdition } from "@/modules/pathway/services/pathway";
+import { useCallback, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
 import { federationApi } from "@/modules/pathway/services/pathway";
 import { calendarApi } from "@/modules/booking/services/calendarApi";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -13,10 +14,6 @@ import type { TabId } from "../federationShared";
  *  reader's own saved-to-calendar state. Lazy-loaded on first visit to the
  *  tab, same as useFederationTournaments' tournaments fetch. */
 export function useFederationCalendar(slug: string, activeTab: TabId) {
-  const [editions, setEditions] = useState<TournamentEdition[]>([]);
-  const [editionsLoading, setEditionsLoading] = useState(false);
-  const [editionsLoaded, setEditionsLoaded] = useState(false);
-  const [editionsLastChecked, setEditionsLastChecked] = useState<string | null>(null);
   /** "YYYY-MM"; "" means auto — the soonest month that has events. */
   const [editionMonth, setEditionMonth] = useState("");
   const [editionAgeGroup, setEditionAgeGroup] = useState("All");
@@ -28,28 +25,27 @@ export function useFederationCalendar(slug: string, activeTab: TabId) {
   const [editionDate, setEditionDate] = useState<string | null>(null);
   /** Refinements stay folded away by default — they are secondary to the calendar. */
   const [showEditionFilters, setShowEditionFilters] = useState(false);
-  /** `title|YYYY-MM-DD` for each edition already in this reader's own calendar. */
-  const [savedEventKeys, setSavedEventKeys] = useState<Set<string>>(new Set());
-  const [savedEventsLoaded, setSavedEventsLoaded] = useState(false);
+  /** Keys marked saved this session, ahead of the saved-events query noticing —
+   *  see markSavedToCalendar below. */
+  const [locallyMarkedKeys, setLocallyMarkedKeys] = useState<Set<string>>(new Set());
 
   const user = useAuthStore((state) => state.user);
 
-  // Load calendar editions lazily when tab is first opened
-  useEffect(() => {
-    if (activeTab !== "calendar" || editionsLoaded) return;
-    setEditionsLoading(true);
-    federationApi
-      .getEditions(slug, { limit: 400 })
-      .then((data) => {
-        if (data) {
-          setEditions(data.editions);
-          setEditionsLastChecked(data.lastCheckedAt);
-        }
-        setEditionsLoaded(true);
-      })
-      .catch(() => setEditionsLoaded(true))
-      .finally(() => setEditionsLoading(false));
-  }, [activeTab, slug, editionsLoaded]);
+  // Load calendar editions lazily when tab is first opened. `getEditions`
+  // never rejects (it swallows its own errors and resolves null), so
+  // `isSuccess` after settling covers both the ok and failed case — same as
+  // the old `editionsLoaded` flag, which was set in both the `.then` and
+  // `.catch`.
+  const editionsQuery = useQuery({
+    queryKey: queryKeys.federations.editions(slug),
+    queryFn: () => federationApi.getEditions(slug, { limit: 400 }),
+    enabled: activeTab === "calendar",
+  });
+
+  const editions = useMemo(() => editionsQuery.data?.editions ?? [], [editionsQuery.data]);
+  const editionsLastChecked = editionsQuery.data?.lastCheckedAt ?? null;
+  const editionsLoading = editionsQuery.isFetching;
+  const editionsLoaded = editionsQuery.isSuccess || editionsQuery.isError;
 
   /**
    * Tournaments this reader already keeps in their own calendar.
@@ -59,31 +55,34 @@ export function useFederationCalendar(slug: string, activeTab: TabId) {
    * the same date is silently addable over and over. Logged-out readers skip it
    * entirely; the button sends them to login instead.
    */
-  useEffect(() => {
-    if (activeTab !== "calendar" || !user || editions.length === 0 || savedEventsLoaded) return;
+  const dateRange = useMemo(() => {
+    if (editions.length === 0) return null;
     const dates = editions.map((e) => new Date(e.startDate).getTime());
-    setSavedEventsLoaded(true);
-    calendarApi
-      .getEvents(
-        new Date(Math.min(...dates)).toISOString().slice(0, 10),
-        new Date(Math.max(...dates)).toISOString().slice(0, 10)
-      )
-      .then((events) =>
-        setSavedEventKeys(
-          new Set(
-            events
-              .filter((ev) => ev.type === "COMPETITION")
-              .map((ev) => savedEventKey(ev.title, ev.date))
-          )
-        )
-      )
-      // A failed lookup only costs the saved-state badge, so leave the tab usable.
-      .catch(() => undefined);
-  }, [activeTab, user, editions, savedEventsLoaded]);
+    return {
+      from: new Date(Math.min(...dates)).toISOString().slice(0, 10),
+      to: new Date(Math.max(...dates)).toISOString().slice(0, 10),
+    };
+  }, [editions]);
 
+  const savedEventsQuery = useQuery({
+    queryKey: queryKeys.federations.savedEvents(slug, dateRange?.from ?? "", dateRange?.to ?? ""),
+    queryFn: () => calendarApi.getEvents(dateRange!.from, dateRange!.to),
+    enabled: activeTab === "calendar" && !!user && !!dateRange,
+  });
+
+  // A save elsewhere on the page (AddToCalendarButton) doesn't refetch this
+  // query — it just needs the button to flip to "saved" immediately, so the
+  // key is tracked locally and unioned with whatever the query already knows.
   const markSavedToCalendar = useCallback((key: string) => {
-    setSavedEventKeys((prev) => new Set(prev).add(key));
+    setLocallyMarkedKeys((prev) => new Set(prev).add(key));
   }, []);
+
+  const savedEventKeys = useMemo(() => {
+    const fromQuery = (savedEventsQuery.data ?? [])
+      .filter((ev) => ev.type === "COMPETITION")
+      .map((ev) => savedEventKey(ev.title, ev.date));
+    return new Set([...fromQuery, ...locallyMarkedKeys]);
+  }, [savedEventsQuery.data, locallyMarkedKeys]);
 
   // ── Calendar navigation (filters drive the month counts, so they stay honest) ──
   const editionAgeGroupOptions = Array.from(

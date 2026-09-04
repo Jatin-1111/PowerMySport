@@ -57,6 +57,23 @@ export const queryKeys = {
     pendingInvitationsCount: ["bookings", "pending-invitations-count"] as const,
   },
 
+  federations: {
+    tournaments: (slug: string) => ["federations", slug, "tournaments"] as const,
+    editions: (slug: string) => ["federations", slug, "editions"] as const,
+    savedEvents: (slug: string, from: string, to: string) =>
+      ["federations", slug, "saved-events", { from, to }] as const,
+  },
+
+  coachSchedule: {
+    calendar: (view: string, start: string, end: string) =>
+      ["coach-schedule", "calendar", { view, start, end }] as const,
+  },
+
+  sellerDashboard: {
+    products: ["seller-dashboard", "products"] as const,
+    orders: ["seller-dashboard", "orders"] as const,
+  },
+
   discovery: {
     all: ["discovery"] as const,
     nearbyVenues: (params: unknown) => ["discovery", "nearby-venues", params] as const,

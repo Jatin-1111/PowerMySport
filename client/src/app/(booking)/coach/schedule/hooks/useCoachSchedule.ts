@@ -3,8 +3,10 @@
 import { toast } from "@/lib/toast";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
-import { Booking, CoachCalendarData } from "@/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { queryKeys } from "@/lib/query/keys";
+import { Booking } from "@/types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import {
   type CalendarView,
   MONTH_NAMES,
@@ -15,14 +17,13 @@ import {
 } from "../scheduleUtils";
 
 export function useCoachSchedule() {
+  const queryClient = useQueryClient();
   const [view, setView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   });
-  const [calendarData, setCalendarData] = useState<CoachCalendarData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -42,24 +43,28 @@ export function useCoachSchedule() {
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
-  const fetchCalendar = useCallback(async (v: CalendarView, d: Date) => {
-    setIsLoading(true);
-    try {
-      const { start, end } = getCalendarRange(v, d);
-      const res = await coachApi.getCalendar(toISODate(start), toISODate(end));
-      if (res.success && res.data) {
-        setCalendarData(res.data);
+  const { start: rangeStart, end: rangeEnd } = getCalendarRange(view, currentDate);
+  const rangeStartISO = toISODate(rangeStart);
+  const rangeEndISO = toISODate(rangeEnd);
+
+  const calendarQuery = useQuery({
+    queryKey: queryKeys.coachSchedule.calendar(view, rangeStartISO, rangeEndISO),
+    queryFn: async () => {
+      const res = await coachApi.getCalendar(rangeStartISO, rangeEndISO);
+      if (!res.success || !res.data) {
+        throw new Error("Failed to load calendar.");
       }
-    } catch {
-      toast.error("Failed to load calendar.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      return res.data;
+    },
+  });
 
   useEffect(() => {
-    void fetchCalendar(view, currentDate);
-  }, [view, currentDate, fetchCalendar]);
+    if (calendarQuery.isError) toast.error("Failed to load calendar.");
+  }, [calendarQuery.isError]);
+
+  const refetchCalendar = () => {
+    void queryClient.invalidateQueries({ queryKey: ["coach-schedule", "calendar"] });
+  };
 
   // ── Navigation ─────────────────────────────────────────────────────────────
 
@@ -112,7 +117,7 @@ export function useCoachSchedule() {
       if (res.success) {
         toast.success("Booking approved.");
         setSelectedBooking(null);
-        void fetchCalendar(view, currentDate);
+        refetchCalendar();
       }
     } catch {
       toast.error("Failed to approve booking.");
@@ -128,7 +133,7 @@ export function useCoachSchedule() {
       if (res.success) {
         toast.success("Booking declined.");
         setSelectedBooking(null);
-        void fetchCalendar(view, currentDate);
+        refetchCalendar();
       }
     } catch {
       toast.error("Failed to decline booking.");
@@ -148,7 +153,7 @@ export function useCoachSchedule() {
       if (res.success) {
         toast.success("Booking rescheduled.");
         setSelectedBooking(null);
-        void fetchCalendar(view, currentDate);
+        refetchCalendar();
       }
     } catch {
       toast.error("Failed to reschedule booking.");
@@ -179,7 +184,7 @@ export function useCoachSchedule() {
         setBlockStart("");
         setBlockEnd("");
         setBlockReason("");
-        void fetchCalendar(view, currentDate);
+        refetchCalendar();
       }
     } catch {
       toast.error("Failed to block dates.");
@@ -194,7 +199,7 @@ export function useCoachSchedule() {
       const res = await coachApi.unblockDate(blockId);
       if (res.success) {
         toast.success("Date unblocked.");
-        void fetchCalendar(view, currentDate);
+        refetchCalendar();
       }
     } catch {
       toast.error("Failed to unblock date.");
@@ -225,7 +230,7 @@ export function useCoachSchedule() {
       if (res.success) {
         toast.success("Block updated.");
         setEditingBlockId(null);
-        void fetchCalendar(view, currentDate);
+        refetchCalendar();
       }
     } catch {
       toast.error("Failed to update block.");
@@ -241,9 +246,9 @@ export function useCoachSchedule() {
 
   // ── Derived data ───────────────────────────────────────────────────────────
 
-  const bookings = calendarData?.bookings ?? [];
-  const blockedDates = calendarData?.blockedDates ?? [];
-  const bufferTime = calendarData?.travelBufferTime ?? 0;
+  const bookings = calendarQuery.data?.bookings ?? [];
+  const blockedDates = calendarQuery.data?.blockedDates ?? [];
+  const bufferTime = calendarQuery.data?.travelBufferTime ?? 0;
 
   // Only paid bookings are actionable by the coach — an AWAITING_PAYMENT
   // booking is still the customer's to complete, not the coach's to approve.
@@ -253,8 +258,8 @@ export function useCoachSchedule() {
     view,
     setView,
     currentDate,
-    isLoading,
-    hasCalendarData: calendarData !== null,
+    isLoading: calendarQuery.isFetching,
+    hasCalendarData: calendarQuery.data !== undefined,
     selectedBooking,
     setSelectedBooking,
     actionLoading,

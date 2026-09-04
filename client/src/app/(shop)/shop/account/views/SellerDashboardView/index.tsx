@@ -7,10 +7,10 @@ import {
   listSellerProducts,
   updateSellerOrderItemFulfillment,
   updateSellerProduct,
-  type Order,
-  type Product,
 } from "@/lib/shop/ecommerce-api";
+import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/utils/cn";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -19,10 +19,9 @@ import { SellerListingForm } from "./SellerListingForm";
 import { SellerOrdersList } from "./SellerOrdersList";
 
 export function SellerDashboardView() {
+  const queryClient = useQueryClient();
   const [sellingTab, setSellingTab] = useState<"listings" | "sell" | "orders">("listings");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Edit Listing state
@@ -36,36 +35,47 @@ export function SellerDashboardView() {
     Record<string, { status: string; tracking: string }>
   >({});
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const fetchedProducts = await listSellerProducts();
-      setProducts(fetchedProducts);
-      const fetchedOrders = await listSellerOrders();
-      setOrders(fetchedOrders);
+  const productsQuery = useQuery({
+    queryKey: queryKeys.sellerDashboard.products,
+    queryFn: listSellerProducts,
+  });
+  const ordersQuery = useQuery({
+    queryKey: queryKeys.sellerDashboard.orders,
+    queryFn: listSellerOrders,
+  });
 
-      // Initialize status inputs for orders
-      const statuses: Record<string, { status: string; tracking: string }> = {};
-      fetchedOrders.forEach((o) => {
-        o.items.forEach((item) => {
-          const key = `${o.id}_${item.productVariantId}`;
-          statuses[key] = {
-            status: item.fulfillmentStatus || "PENDING",
-            tracking: item.trackingNumber || "",
-          };
-        });
-      });
-      setItemStatuses(statuses);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load seller dashboard details");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const products = productsQuery.data ?? [];
+  const orders = ordersQuery.data ?? [];
+  const loading = isMutating || productsQuery.isFetching || ordersQuery.isFetching;
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (productsQuery.isError || ordersQuery.isError) {
+      toast.error("Failed to load seller dashboard details");
+    }
+  }, [productsQuery.isError, ordersQuery.isError]);
+
+  // Fulfillment status/tracking inputs are seeded from the server on every
+  // successful orders fetch — same as the previous single fetchData() did,
+  // including the "in-progress edit on a different row gets clobbered by an
+  // unrelated refetch" quirk, which this preserves rather than fixes.
+  useEffect(() => {
+    if (!ordersQuery.data) return;
+    const statuses: Record<string, { status: string; tracking: string }> = {};
+    ordersQuery.data.forEach((o) => {
+      o.items.forEach((item) => {
+        const key = `${o.id}_${item.productVariantId}`;
+        statuses[key] = {
+          status: item.fulfillmentStatus || "PENDING",
+          tracking: item.trackingNumber || "",
+        };
+      });
+    });
+    setItemStatuses(statuses);
+  }, [ordersQuery.data]);
+
+  const refreshAll = () => {
+    void queryClient.invalidateQueries({ queryKey: ["seller-dashboard"] });
+  };
 
   const handleCreateProduct = async (fields: {
     name: string;
@@ -77,7 +87,7 @@ export function SellerDashboardView() {
     stock: string;
     imageUrl: string;
   }): Promise<boolean> => {
-    setLoading(true);
+    setIsMutating(true);
 
     try {
       const images = fields.imageUrl.trim() ? [fields.imageUrl.trim()] : [];
@@ -94,18 +104,18 @@ export function SellerDashboardView() {
 
       toast.success("Gear listed on the marketplace.");
       setSellingTab("listings");
-      await fetchData();
+      refreshAll();
       return true;
     } catch (err: any) {
       toast.error(err.message || "Failed to list product. Please verify fields.");
       return false;
     } finally {
-      setLoading(false);
+      setIsMutating(false);
     }
   };
 
   const handleUpdateProduct = async (productId: string) => {
-    setLoading(true);
+    setIsMutating(true);
 
     try {
       await updateSellerProduct(productId, {
@@ -114,26 +124,26 @@ export function SellerDashboardView() {
       });
       toast.success("Listing updated.");
       setEditingId(null);
-      await fetchData();
+      refreshAll();
     } catch (err: any) {
       toast.error(err.message || "Failed to update listing.");
     } finally {
-      setLoading(false);
+      setIsMutating(false);
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    setLoading(true);
+    setIsMutating(true);
 
     try {
       await deleteSellerProduct(productId);
       toast.success("Listing removed.");
       setDeleteConfirmId(null);
-      await fetchData();
+      refreshAll();
     } catch (err: any) {
       toast.error(err.message || "Failed to delete listing.");
     } finally {
-      setLoading(false);
+      setIsMutating(false);
     }
   };
 
@@ -152,7 +162,7 @@ export function SellerDashboardView() {
         statusData.tracking
       );
       toast.success("Fulfillment updated.");
-      await fetchData();
+      refreshAll();
     } catch (err: any) {
       toast.error(err.message || "Failed to update fulfillment.");
     } finally {
@@ -171,7 +181,7 @@ export function SellerDashboardView() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={fetchData}
+            onClick={refreshAll}
             className="rounded-xl border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
             title="Refresh"
             disabled={loading}
