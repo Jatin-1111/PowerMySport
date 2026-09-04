@@ -476,11 +476,6 @@ function CustomSelect({
 export default function ContactPage() {
   const [initialSubject, setInitialSubject] = useState("");
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setInitialSubject(params.get("subject") || "");
-  }, []);
-
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -489,6 +484,20 @@ export default function ContactPage() {
     message: "",
     userType: "player",
   });
+
+  // Reading window.location must wait for this client-only effect to avoid
+  // an SSR/CSR mismatch, so formData's useState initializer above always
+  // captures "" on the first render — without also syncing formData.subject
+  // here, a deep link like /contact?subject=Partnership never actually
+  // prefilled the form.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const subjectFromUrl = params.get("subject") || "";
+    setInitialSubject(subjectFromUrl);
+    if (subjectFromUrl) {
+      setFormData((prev) => ({ ...prev, subject: subjectFromUrl }));
+    }
+  }, []);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");

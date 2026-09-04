@@ -16,7 +16,7 @@
   "app/(booking)/venues/[venueId]/VenueDetailClient.tsx": 1022,
   "app/(expert)/expert/onboarding/page.tsx": 990,
   "app/(expert)/expert/sessions/[sessionId]/page.tsx": 563,
-  "app/(marketing)/contact/page.tsx": 986,
+  "app/(marketing)/contact/page.tsx": 995,
   "app/(marketing)/faq/page.tsx": 481,
   "app/(marketing)/HomeClient.tsx": 463,
   "app/(marketing)/how-it-works/page.tsx": 730,

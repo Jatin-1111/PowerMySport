@@ -12,3 +12,23 @@ afterEach(() => {
     cleanup();
   }
 });
+
+// jsdom has no IntersectionObserver, but framer-motion's `whileInView`
+// (used throughout the app/ marketing and booking pages) reaches for it on
+// mount — without a stub, rendering any such page throws
+// "IntersectionObserver is not defined" before a single assertion runs.
+if (typeof window !== "undefined" && typeof window.IntersectionObserver === "undefined") {
+  class IntersectionObserverStub {
+    readonly root: Element | null = null;
+    readonly rootMargin: string = "";
+    readonly thresholds: ReadonlyArray<number> = [];
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+  window.IntersectionObserver = IntersectionObserverStub;
+  globalThis.IntersectionObserver = IntersectionObserverStub;
+}
