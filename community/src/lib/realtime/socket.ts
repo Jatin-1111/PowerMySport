@@ -59,7 +59,7 @@ export const getCommunitySocket = (): Socket => {
   // worse failure than the old broadcast-to-everyone: silent, and only on the
   // connections least likely to notice.
   socket.on("connect", () => {
-    for (const room of subscribedRooms) {
+    for (const room of subscribedRooms.keys()) {
       socket?.emit("community:subscribe", room);
     }
     for (const conversationId of activeConversationRooms) {
