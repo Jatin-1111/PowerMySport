@@ -387,6 +387,8 @@ export const communityCreatePostSchema = z.object({
     .optional(),
   sport: z.string().trim().max(60, "Sport cannot exceed 60 characters").optional(),
   city: z.string().trim().max(80, "City cannot exceed 80 characters").optional(),
+  category: z.string().trim().max(60, "Category cannot exceed 60 characters").optional(),
+  isAnonymous: z.boolean().optional(),
 });
 
 export const communityUpdatePostSchema = z.object({
