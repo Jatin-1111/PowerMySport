@@ -31,7 +31,7 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           transition={{ duration: 0.35, delay: 0.05 }}
           className="font-title mt-4 text-3xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
         >
-          Where Athletes Share What They Know
+          Where Parents Share What They Know
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 14 }}
