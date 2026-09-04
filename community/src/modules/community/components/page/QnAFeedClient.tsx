@@ -139,7 +139,6 @@ export default function QnAFeedClient() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingActivity, setIsLoadingActivity] = useState(false);
   const [isMarkingActivityRead, setIsMarkingActivityRead] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [activity, setActivity] = useState<CommunityActivityItem[]>([]);
   const [activityUnreadCount, setActivityUnreadCount] = useState(0);

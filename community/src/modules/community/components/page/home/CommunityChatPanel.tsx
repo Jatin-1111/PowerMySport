@@ -3,7 +3,6 @@
 import {
   ArrowUp,
   Check,
-  CheckCheck,
   ChevronLeft,
   Loader2,
   Megaphone,
@@ -29,7 +28,7 @@ import ConfirmActionModal from "@/modules/community/components/chat/ConfirmActio
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
 import { useRef, useEffect, useLayoutEffect, useCallback, useState, useMemo } from "react";
 import { getCommunitySocket } from "@/lib/realtime/socket";
-import { getMessageTimestamp, formatLastSeen } from "@/modules/community/utils/chatUtils";
+import { formatLastSeen } from "@/modules/community/utils/chatUtils";
 
 type Props = { page: CommunityPageViewModel };
 
@@ -93,7 +92,6 @@ export default function CommunityChatPanel({ page }: Props) {
     handleMarkConversationAsUnread,
     pinGroupMessage,
     selectedConversationPinnedId,
-    setSelectedConversationPinnedId,
     setForwardingMessages,
     setSelectChatsMode,
     pinnedConversationIds,
@@ -192,13 +190,6 @@ export default function CommunityChatPanel({ page }: Props) {
       hasCalculatedUnreadRef.current = selectedConversation.id;
     }
   }, [messages, profile?.userId, selectedConversation?.id]);
-
-  // Close header menu on click outside
-  const handleClickOutsideHeaderMenu = useCallback((e: MouseEvent) => {
-    if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
-      setShowHeaderMenu(false);
-    }
-  }, []);
 
   // Preserve scroll position when prepending older messages, and auto-scroll to bottom
   useLayoutEffect(() => {

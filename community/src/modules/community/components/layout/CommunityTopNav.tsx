@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getMainAppUrl } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
 import { communityService } from "@/modules/community/services/community";
 import { getCommunitySocket } from "@/lib/realtime/socket";
@@ -19,11 +18,8 @@ import {
   Trophy,
   UserX,
   ExternalLink,
-  Settings2,
   ChevronDown,
-  ChevronLeft,
   MessagesSquare,
-  BrainCircuit,
   Heart,
   Compass,
   Newspaper,
@@ -42,9 +38,6 @@ const SETTINGS_ITEMS = [
 
 export default function CommunityTopNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const sidebar = searchParams?.get("sidebar");
-  const mainAppUrl = getMainAppUrl();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -147,7 +140,7 @@ export default function CommunityTopNav() {
           {/* Left section: Back button & Logo */}
           <div className="flex flex-shrink-0 items-center">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
-            <a href="/" className="inline-flex h-full flex-col items-start justify-center">
+            <Link href="/" className="inline-flex h-full flex-col items-start justify-center">
               <span className="font-title text-xl font-extrabold leading-none tracking-tight xl:text-2xl">
                 <span className="text-slate-900">Power</span>
                 <span className="text-power-orange">My</span>
@@ -156,7 +149,7 @@ export default function CommunityTopNav() {
               <span className="mt-1.5 text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400">
                 Community
               </span>
-            </a>
+            </Link>
           </div>
 
           {/* ── Desktop Center Nav ────────────────────────────────────────── */}
@@ -333,7 +326,7 @@ export default function CommunityTopNav() {
 
                   {/* Main App link */}
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <a
+                    <Link
                       href="/"
                       className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
                     >
@@ -344,7 +337,7 @@ export default function CommunityTopNav() {
                         <p className="text-sm font-semibold text-slate-900">Main App</p>
                         <p className="text-xs text-slate-500">Return to main site</p>
                       </div>
-                    </a>
+                    </Link>
                   </div>
 
                   {/* Primary nav items */}

@@ -121,7 +121,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
 
   const [isLoading, setIsLoading] = useState(true);
   const [isTogglingBlockUser, setIsTogglingBlockUser] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [isConversationSidebarOpen, setIsConversationSidebarOpen] = useState(true);
   const [showGroupMembersPanel, setShowGroupMembersPanel] = useState(false);
 

@@ -170,7 +170,7 @@ export default function SportsSelect({
 
               {filteredSports.length === 0 && (
                 <div className="px-4 py-6 text-center text-sm text-slate-500">
-                  No sports match "{searchQuery}"
+                  No sports match &ldquo;{searchQuery}&rdquo;
                 </div>
               )}
             </>

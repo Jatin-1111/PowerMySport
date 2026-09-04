@@ -14,7 +14,7 @@ export default function DynamicCommunityPosts() {
       try {
         const response = await communityService.listPosts(1, 3);
         setPosts(response.items || []);
-      } catch (err) {
+      } catch {
         // fallback to empty
       } finally {
         setIsLoading(false);

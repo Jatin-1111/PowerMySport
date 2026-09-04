@@ -15,7 +15,6 @@ import PlayerDetailsModal from "@/modules/community/components/discover/PlayerDe
 import {
   Search,
   Users,
-  MapPin,
   Trophy,
   Loader2,
   User,
@@ -133,10 +132,6 @@ export default function DiscoverPageClient() {
       isMounted = false;
     };
   }, [debouncedQuery, refreshTrigger, activeTab]);
-
-  const handleCommunityCreated = () => {
-    setRefreshTrigger((prev) => prev + 1);
-  };
 
   const handleJoinGroup = async (groupId: string) => {
     if (!hasAuthToken()) {

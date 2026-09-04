@@ -2,7 +2,6 @@ import { memo, useRef, useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertCircle,
-  BookmarkCheck,
   Check,
   CheckCheck,
   Copy,
@@ -149,7 +148,6 @@ export const MessageBubble = memo(function MessageBubble({
   onJumpToMessage,
   onForward,
   onPin,
-  onMarkUnread,
   isPinned,
   isSelectMode,
   isSelected,

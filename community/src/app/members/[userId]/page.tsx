@@ -6,7 +6,6 @@ import { CommunityMemberProfile } from "@/modules/community/types";
 import {
   ArrowLeft,
   BadgeCheck,
-  CalendarDays,
   Clock3,
   MapPin,
   MessageSquare,

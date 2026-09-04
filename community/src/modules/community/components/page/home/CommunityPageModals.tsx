@@ -7,10 +7,6 @@ import { ReportModal } from "@/modules/community/components/chat/ReportModal";
 import { ChatAddModal } from "./ChatAddModal";
 import { BlockedUsersModal } from "./BlockedUsersModal";
 import { DeleteMessageModal } from "@/modules/community/components/chat/DeleteMessageModal";
-import {
-  COMMUNITY_DIRECTORY_VIEW_KEY,
-  resolveSidebarQueryState,
-} from "@/modules/community/constants/communityPage";
 import { useSearchParams } from "next/navigation";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
 

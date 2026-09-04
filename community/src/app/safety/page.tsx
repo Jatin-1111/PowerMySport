@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Shield, UserX } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";

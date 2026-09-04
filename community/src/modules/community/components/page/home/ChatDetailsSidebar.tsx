@@ -20,22 +20,9 @@ import {
 } from "lucide-react";
 import { GroupMembersList } from "@/modules/community/components/GroupMembersList";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
-import { getAvatarCharacter, formatLastSeen } from "@/modules/community/utils/chatUtils";
+import { formatLastSeen } from "@/modules/community/utils/chatUtils";
 
 type Props = { page: CommunityPageViewModel };
-
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-
-const formatDate = (value?: string | null) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return dateFormatter.format(date);
-};
 
 export default function ChatDetailsSidebar({ page }: Props) {
   const {
@@ -52,8 +39,6 @@ export default function ChatDetailsSidebar({ page }: Props) {
     isLeavingGroupId,
     handleMemberClick,
     selectedMemberProfile,
-    isLoadingMemberProfile,
-    handleOpenMemberProfile,
     handleCloseMemberProfile,
     handleToggleConversationBlock,
     isTogglingBlockUser,

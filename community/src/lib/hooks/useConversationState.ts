@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 
 export interface Conversation {
@@ -53,7 +53,7 @@ export function useConversationState(
 
   // Loading states consolidated into one async operation per logical flow
   const initialLoadAsync = useAsync(
-    async (signal) => {
+    async () => {
       const result = await fetchConversations(1, {
         search: searchQuery,
         groupId: groupFilter,
@@ -73,7 +73,7 @@ export function useConversationState(
   );
 
   const loadMoreAsync = useAsync(
-    async (signal) => {
+    async () => {
       const result = await fetchConversations(page + 1, {
         search: searchQuery,
         groupId: groupFilter,

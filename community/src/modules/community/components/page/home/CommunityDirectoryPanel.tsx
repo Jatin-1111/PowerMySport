@@ -263,7 +263,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                   toast.success(
                     `${prefix} forwarded to ${page.selectedChatIds.length} ${page.selectedChatIds.length === 1 ? "chat" : "chats"}`
                   );
-                } catch (err) {
+                } catch {
                   toast.error("Failed to forward messages");
                 } finally {
                   page.setSelectChatsMode(false);

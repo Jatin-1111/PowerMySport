@@ -30,7 +30,7 @@ export function GroupMembersList({
   const prefersReducedMotion = useReducedMotion();
 
   const { data, isLoading, error, execute } = useAsync(
-    async (signal) => {
+    async () => {
       const data = await communityService.getGroupMembers(groupId);
       return Array.isArray(data) ? data : [];
     },

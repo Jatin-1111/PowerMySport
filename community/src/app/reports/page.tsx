@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { FileText, Flag } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
@@ -32,7 +31,7 @@ type ReportItem = {
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<ReportItem[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   const loadReports = useCallback(async () => {
     try {

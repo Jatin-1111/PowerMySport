@@ -21,7 +21,7 @@ export default function DynamicFeaturedQA() {
           const details = await communityService.getPostDetails(topAnsweredPost.id);
           setData(details);
         }
-      } catch (err) {
+      } catch {
         // Silent catch
       } finally {
         setIsLoading(false);

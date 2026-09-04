@@ -6,7 +6,6 @@ import { communityService } from "@/modules/community/services/community";
 import { CommunityGroupVisibility } from "@/modules/community/types";
 import SportsSelect from "@/modules/sports/components/SportsSelect";
 import { X, Upload, Loader2, Users, MapPin, AlignLeft, Shield } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 interface CreateCommunityModalProps {
   isOpen: boolean;
@@ -41,8 +40,6 @@ export default function CreateCommunityModal({
   onClose,
   onSuccess,
 }: CreateCommunityModalProps) {
-  const router = useRouter();
-
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [sport, setSport] = useState("");
@@ -100,7 +97,7 @@ export default function CreateCommunityModal({
         finalProfilePictureKey = key;
       }
 
-      const newGroup = await communityService.createGroup({
+      await communityService.createGroup({
         name,
         description,
         sport,

@@ -11,7 +11,7 @@ import {
   UserCircle2,
   X,
 } from "lucide-react";
-import { getAvatarCharacter, formatLastSeen } from "@/modules/community/utils/chatUtils";
+import { formatLastSeen } from "@/modules/community/utils/chatUtils";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 interface CommunityMemberProfileModalProps {
