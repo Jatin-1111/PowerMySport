@@ -33,7 +33,10 @@ const imageTag = dirtyFiles ? `${gitSha}-dirty` : gitSha;
 run(
   `aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ECR_URI.split("/")[0]}`
 );
-run(`docker build -t ${ECR_URI}:${imageTag} -t ${ECR_URI}:latest .`);
+// Build context is the monorepo root — server consumes packages/shared-types
+// (see server/Dockerfile) — so point -f at this file but hand Docker the
+// parent directory as the context, run from server/ via `npm run deploy`.
+run(`docker build -f Dockerfile -t ${ECR_URI}:${imageTag} -t ${ECR_URI}:latest ..`);
 run(`docker push ${ECR_URI}:${imageTag}`);
 run(`docker push ${ECR_URI}:latest`);
 run(`eb deploy ${EB_ENV}`);

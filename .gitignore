@@ -2,6 +2,7 @@ node_modules
 .next
 _*.ps1
 .turbo
+packages/*/dist
 
 # Environment files — never commit real secrets
 .env

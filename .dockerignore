@@ -13,7 +13,6 @@
 **/tsconfig.tsbuildinfo
 
 # Env & secrets — never sent to the Docker daemon
-.env
-.env.*
-!.env.example
+**/.env
+**/.env.*
 !**/.env.example
