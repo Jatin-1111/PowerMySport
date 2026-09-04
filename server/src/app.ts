@@ -12,7 +12,13 @@ import { errorLogger, requestLogger } from "./middleware/logger";
 import { observabilityMiddleware } from "./middleware/observability";
 import { requestContextMiddleware } from "./utils/requestContext";
 import { installTimingInstrumentation } from "./utils/timings";
-import { apiRateLimitMiddleware, securityHeadersMiddleware } from "./middleware/security";
+import {
+  apiRateLimitMiddleware,
+  permissionsPolicyMiddleware,
+  productionOnlyHstsMiddleware,
+  robotsTagMiddleware,
+  securityHeadersMiddleware,
+} from "./middleware/security";
 
 import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
@@ -145,6 +151,9 @@ app.use(requestContextMiddleware);
 app.use(cors(corsOptions));
 app.use(observabilityMiddleware);
 app.use(securityHeadersMiddleware);
+app.use(productionOnlyHstsMiddleware);
+app.use(permissionsPolicyMiddleware);
+app.use(robotsTagMiddleware);
 // Gzip/Brotli-negotiated compression for every JSON response below. Placed
 // before the raw-body PhonePe route: compression only touches what the
 // response *sends*, so it has no effect on how incoming webhook bodies are

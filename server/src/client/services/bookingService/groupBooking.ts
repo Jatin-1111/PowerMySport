@@ -36,12 +36,20 @@ export const initiateGroupBooking = async (
       throw new Error("At least one friend must be invited for group booking");
     }
 
+    // Batch-fetch invitee names up front for the friendship-check error message
+    // below, instead of a `findById` per iteration of that loop.
+    const invitedUsersById = new Map(
+      (await User.find({ _id: { $in: payload.invitedFriendIds } })).map((u) => [
+        u._id.toString(),
+        u,
+      ])
+    );
+
     // Verify all invitees are accepted friends
     for (const friendId of payload.invitedFriendIds) {
       const areFriends = await friendService.areFriends(payload.userId, friendId);
       if (!areFriends) {
-        const friendUser = await User.findById(friendId);
-        throw new Error(`${friendUser?.name || "User"} is not your friend`);
+        throw new Error(`${invitedUsersById.get(friendId)?.name || "User"} is not your friend`);
       }
     }
 
@@ -428,9 +436,16 @@ export const respondToBookingInvitation = async (
           (p) => p.status === "ACCEPTED" && p.userId.toString() !== booking.organizerId.toString()
         );
 
+        const acceptedUserIds = new Set(
+          (
+            await User.find({ _id: { $in: acceptedParticipants.map((p) => p.userId) } }).select(
+              "_id"
+            )
+          ).map((u) => u._id.toString())
+        );
+
         for (const participant of acceptedParticipants) {
-          const participantUser = await User.findById(participant.userId);
-          if (participantUser) {
+          if (acceptedUserIds.has(participant.userId.toString())) {
             NotificationService.send({
               userId: participant.userId.toString(),
               type: "BOOKING_STATUS_UPDATED",

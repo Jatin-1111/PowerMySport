@@ -402,9 +402,17 @@ export const notifyWaitlistForFreedSlot = async (booking: BookingDocument): Prom
       venueName = venue?.name || "the venue";
     }
 
+    const usersById = new Map(
+      (
+        await User.find({ _id: { $in: entries.map((e) => e.userId) } })
+          .select("name email")
+          .lean()
+      ).map((u) => [u._id.toString(), u])
+    );
+
     for (const entry of entries) {
       try {
-        const user = await User.findById(entry.userId).select("name email").lean();
+        const user = usersById.get(entry.userId.toString());
         if (user?.email) {
           await sendWaitlistSlotAvailableEmail({
             name: user.name,
