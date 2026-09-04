@@ -27,6 +27,9 @@
     "server/**/*.{ts,js,mjs}": [
       "eslint --fix --no-warn-ignored --config server/eslint.config.mjs"
     ],
+    "community/**/*.{ts,tsx,js,jsx,mjs}": [
+      "eslint --fix --no-warn-ignored --config community/eslint.config.mjs"
+    ],
     "**/*.{json,css,md,yml,yaml}": [
       "prettier --write"
     ]
