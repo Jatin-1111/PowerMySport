@@ -81,6 +81,35 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       icon: LayoutDashboard,
       section: "Overview",
     },
+    // Community sits above Activity: the sections render in array order, and
+    // the people-shaped items are the ones the dashboard now leads with.
+    {
+      href: "/dashboard/friends",
+      label: "Friends",
+      icon: UserPlus,
+      badge: counts.friendRequests > 0 ? counts.friendRequests : undefined,
+      section: "Community",
+    },
+    {
+      href: "/dashboard/invitations",
+      label: "Invitations",
+      icon: Mail,
+      badge: counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
+      section: "Community",
+    },
+    {
+      href: "/notifications",
+      label: "Notifications",
+      icon: Bell,
+      badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,
+      section: "Community",
+    },
+    {
+      href: "/saved",
+      label: "Saved",
+      icon: Calendar,
+      section: "Community",
+    },
     {
       href: "/dashboard/my-bookings",
       label: "My Bookings",
@@ -112,33 +141,6 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       label: "Reminders",
       icon: Bell,
       section: "Activity",
-    },
-    {
-      href: "/dashboard/friends",
-      label: "Friends",
-      icon: UserPlus,
-      badge: counts.friendRequests > 0 ? counts.friendRequests : undefined,
-      section: "Community",
-    },
-    {
-      href: "/dashboard/invitations",
-      label: "Invitations",
-      icon: Mail,
-      badge: counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
-      section: "Community",
-    },
-    {
-      href: "/notifications",
-      label: "Notifications",
-      icon: Bell,
-      badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,
-      section: "Community",
-    },
-    {
-      href: "/saved",
-      label: "Saved",
-      icon: Calendar,
-      section: "Community",
     },
     {
       href: "/dashboard/support",
