@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "../../shared/ui/Badge";
+import { Badge } from "@/modules/shared/ui/Badge";
 import { toast } from "@/lib/toast";
 import {
   calendarApi,
@@ -429,7 +429,7 @@ function AddEventForm({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function DashboardCalendar() {
+export function BookingCalendar() {
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);

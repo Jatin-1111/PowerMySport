@@ -3,7 +3,6 @@
   "app/(booking)/(player)/dashboard/dependents/[id]/page.tsx": 710,
   "app/(booking)/(player)/dashboard/friends/page.tsx": 652,
   "app/(booking)/(player)/dashboard/my-bookings/page.tsx": 581,
-  "app/(booking)/(player)/dashboard/page.tsx": 458,
   "app/(booking)/academies/[slug]/AcademyProfileClient.tsx": 582,
   "app/(booking)/academy/earnings/page.tsx": 545,
   "app/(booking)/coach/billing/page.tsx": 1128,

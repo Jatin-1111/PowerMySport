@@ -33,6 +33,12 @@ import {
   BookingTabBar,
   bookingTabConfig,
 } from "@/modules/booking/components/myBookingsTabs";
+import { BookingCalendar } from "@/modules/booking/components/calendar/BookingCalendar";
+import {
+  BookingStatsStrip,
+  BookingsViewSwitch,
+  type BookingsView,
+} from "@/modules/booking/components/myBookingsChrome";
 import { bucketBookings, type BookingTabId } from "@/modules/booking/utils/bookingBuckets";
 
 interface PaginationInfo {
@@ -257,8 +263,7 @@ export default function BookingsPage() {
   const activeTabConfig = bookingTabConfig(activeTab);
 
   // Stats
-  const confirmedCount = bookings.filter((b) => b.status === "CONFIRMED").length;
-  const upcomingCount = bookings.filter((b) => new Date(b.date) >= new Date()).length;
+  const [view, setView] = useState<BookingsView>("list");
 
   if (isLoading) {
     return (
@@ -297,23 +302,13 @@ export default function BookingsPage() {
         }
       />
 
-      {/* Stats strip */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{bookings.length}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Upcoming</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{upcomingCount}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Confirmed</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{confirmedCount}</p>
-        </div>
-      </div>
+      <BookingStatsStrip bookings={bookings} />
 
-      {bookings.length === 0 ? (
+      <BookingsViewSwitch view={view} onChange={setView} />
+
+      {view === "calendar" ? (
+        <BookingCalendar />
+      ) : bookings.length === 0 ? (
         <Card className="shop-surface premium-shadow">
           <EmptyState
             icon={CalendarX}

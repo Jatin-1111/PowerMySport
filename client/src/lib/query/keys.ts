@@ -22,6 +22,24 @@ export const queryKeys = {
     unreadCount: ["notifications", "unread-count"] as const,
   },
 
+  /**
+   * The user-oriented dashboard.
+   *
+   * `all` is the invalidation handle for socket events that could change
+   * anything the dashboard shows; individual sections read from their own
+   * domain's keys (profile, friends, bookings) so a mutation there refreshes
+   * the dashboard without the dashboard owning a copy of that data.
+   */
+  dashboard: {
+    all: ["dashboard"] as const,
+  },
+
+  community: {
+    all: ["community"] as const,
+    /** Contribution counters for the dashboard's community link-out card. */
+    reputation: ["community", "reputation"] as const,
+  },
+
   friends: {
     all: ["friends"] as const,
     list: (page: number, limit: number, search?: string) =>
