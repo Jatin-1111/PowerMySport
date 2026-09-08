@@ -283,6 +283,22 @@ export const messagesService = {
       if (requester !== userId) {
         throw new Error("Please accept this message request first");
       }
+
+      // A request carries exactly one message — enough to say who you are and
+      // why — and the channel then stays shut until the recipient accepts.
+      // Without this cap a "request" is not a request at all: the sender could
+      // deliver an unlimited stream to someone who never agreed to hear from
+      // them, which is the harassment vector the request step exists to close.
+      //
+      // Soft-deleted messages are counted deliberately. `isDeleted` only hides
+      // a message, so excluding them would let a sender delete their intro and
+      // send another, repeating for as long as they liked.
+      const alreadySent = await CommunityMessage.countDocuments({ conversationId });
+      if (alreadySent >= 1) {
+        throw new Error(
+          "You've already sent your message request. You can send more once it's accepted."
+        );
+      }
     }
 
     const messageType = options?.type || "TEXT";

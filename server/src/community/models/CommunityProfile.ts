@@ -51,7 +51,14 @@ const communityProfileSchema = new Schema<CommunityProfileDocument>(
     messagePrivacy: {
       type: String,
       enum: ["EVERYONE", "REQUEST_ONLY", "NONE"],
-      default: "EVERYONE",
+      // Request-only by default: this is a community of parents, many of them
+      // posting about their children, so an unsolicited DM is the interaction
+      // most worth putting a consent step in front of. `EVERYONE` remains
+      // available for anyone who opts into it.
+      //
+      // Note this governs messaging only — `isIdentityPublic` and profile
+      // visibility are deliberately unchanged.
+      default: "REQUEST_ONLY",
     },
     readReceiptsEnabled: {
       type: Boolean,
