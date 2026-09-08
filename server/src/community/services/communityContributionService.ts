@@ -1,7 +1,7 @@
 import { User } from "../../client/models/User";
 import { CommunityProfile } from "../models/CommunityProfile";
 import { CommunityReputation } from "../models/CommunityReputation";
-import { ensureProfile, resolveUserPhotoUrl } from "./communityShared";
+import { ensureCommunityUser, ensureProfile, resolveUserPhotoUrl } from "./communityShared";
 
 /**
  * Reputation totals and the contributor leaderboard.
@@ -11,21 +11,31 @@ import { ensureProfile, resolveUserPhotoUrl } from "./communityShared";
  * unchanged.
  */
 export const communityContributionService = {
+  /**
+   * Read-only on purpose.
+   *
+   * This used to `ensureProfile` and then upsert the reputation row — two
+   * writes on a GET. That was invisible while only the community app called it
+   * once per visit, but the dashboard reads it on every page load, which would
+   * have meant writing to the database every time anyone opened their
+   * dashboard, and materialising a community profile for people who never
+   * opted into the community.
+   *
+   * Neither write changed the response: both rows are created with zeroes, and
+   * the mapping below already defaults every counter to 0 when the row is
+   * absent. So a missing row and a freshly-upserted empty row are the same
+   * answer — the upsert bought nothing and cost a write.
+   *
+   * `ensureCommunityUser` rather than `ensureProfile` keeps the authorization
+   * this endpoint has always had (it 4xxs for non-parent accounts) while
+   * dropping the side effect: it is a `findById().lean()` plus the role check.
+   * Anything that actually needs a profile row still calls `ensureProfile` on
+   * its own write path.
+   */
   async getMyReputation(userId: string) {
-    await ensureProfile(userId);
+    await ensureCommunityUser(userId);
 
-    const reputation = await CommunityReputation.findOneAndUpdate(
-      { userId },
-      {
-        $setOnInsert: {
-          totalPoints: 0,
-          questionCount: 0,
-          answerCount: 0,
-          receivedUpvotes: 0,
-        },
-      },
-      { upsert: true, new: true }
-    ).lean();
+    const reputation = await CommunityReputation.findOne({ userId }).lean();
 
     return {
       userId,
