@@ -111,6 +111,15 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       section: "Community",
     },
     {
+      // Last in the section on purpose: the in-app items above are destinations
+      // within this app, and this one leaves it for the community app.
+      href: communityUrl,
+      label: "Community",
+      icon: Users,
+      external: true,
+      section: "Community",
+    },
+    {
       href: "/dashboard/my-bookings",
       label: "My Bookings",
       icon: Calendar,
@@ -164,13 +173,6 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       href: "/dashboard/settings",
       label: "Settings",
       icon: Settings,
-      section: "Account",
-    },
-    {
-      href: communityUrl,
-      label: "Community",
-      icon: Users,
-      external: true,
       section: "Account",
     },
   ] satisfies DashboardNavItem[];
