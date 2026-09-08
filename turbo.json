@@ -3,7 +3,16 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        // `packages/*` compile to dist/. Without this turbo caches their build
+        // as producing nothing, so a cache *hit* skips the compile and restores
+        // no dist — and every app that imports the package then fails to
+        // resolve it. That is not hypothetical: it is how a green local build
+        // and a red CI build coexisted here.
+        "dist/**"
+      ]
     },
     "lint": {
       "outputs": []

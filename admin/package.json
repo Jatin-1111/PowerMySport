@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@powermysport/shared-types": "*",
     "axios": "^1.13.4",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
