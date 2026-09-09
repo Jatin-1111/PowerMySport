@@ -182,6 +182,18 @@ export interface ModerationReview {
   createdAt: string;
 }
 
+export interface ModerationExperience {
+  id: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  author: { id: string; name: string; email: string };
+  subject: { kind: string; name: string } | null;
+  moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
+  moderationNotes?: string;
+  createdAt: string;
+}
+
 export interface UserSafetyRecord {
   id: string;
   name: string;
@@ -612,6 +624,31 @@ export const adminApi = {
     }
   ): Promise<ApiResponse<ModerationReview>> => {
     const response = await axiosInstance.patch(`/reviews/${reviewId}/moderate`, data);
+    return response.data;
+  },
+
+  getExperienceModerationQueue: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<ModerationExperience[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(
+      `/admin/experiences/moderation/queue?${params.toString()}`
+    );
+    return response.data;
+  },
+
+  moderateExperience: async (
+    experienceId: string,
+    data: {
+      action: "APPROVE" | "FLAG" | "REMOVE";
+      moderationNotes?: string;
+    }
+  ): Promise<ApiResponse<ModerationExperience>> => {
+    const response = await axiosInstance.patch(`/admin/experiences/${experienceId}/moderate`, data);
     return response.data;
   },
 
