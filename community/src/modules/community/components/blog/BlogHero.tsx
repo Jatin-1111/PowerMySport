@@ -23,7 +23,7 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600"
         >
           <Sparkles size={13} className="text-power-orange" />
-          PowerMySport Stories
+          PowerMySport Experiences
         </motion.p>
         <motion.h1
           initial={{ opacity: 0, y: 14 }}
@@ -31,7 +31,7 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           transition={{ duration: 0.35, delay: 0.05 }}
           className="font-title mt-4 text-3xl font-semibold leading-[1.08] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl"
         >
-          Where Parents Share What They Know
+          Share Your Experience
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 14 }}
@@ -39,8 +39,8 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           transition={{ duration: 0.35, delay: 0.12 }}
           className="mx-auto mt-4 max-w-2xl text-sm text-slate-600 sm:text-base"
         >
-          Training breakthroughs, match-day lessons, gear reviews, and mindset — real stories from
-          parents across every sport.
+          Help another parent make a better decision. Match days, academies, gear, travel, costs —
+          two lines is enough.
         </motion.p>
 
         <motion.div
@@ -54,10 +54,10 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
             className="group inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-700"
           >
             <PenLine size={17} className="transition-transform group-hover:-rotate-12" />
-            Write a story
+            Share your experience
           </Link>
           <p className="text-xs font-medium text-slate-400">
-            {totalBlogs} {totalBlogs === 1 ? "story" : "stories"} published so far
+            {totalBlogs} {totalBlogs === 1 ? "experience" : "experiences"} shared so far
           </p>
         </motion.div>
       </div>

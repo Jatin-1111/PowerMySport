@@ -12,7 +12,6 @@ import { CommunityReport } from "../models/CommunityReport";
 import { CommunityPost } from "../models/CommunityPost";
 import { CommunityAnswer } from "../models/CommunityAnswer";
 import { CommunityAnswerComment } from "../models/CommunityAnswerComment";
-import { BlogPost } from "../models/BlogPost";
 import { CommunityVote } from "../models/CommunityVote";
 import { CommunityReputation } from "../models/CommunityReputation";
 import { CommunityFollow, type CommunityFollowKind } from "../models/CommunityFollow";

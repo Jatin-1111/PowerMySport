@@ -1,4 +1,4 @@
-import { BlogPost } from "../models/BlogPost";
+import { Experience } from "../models/Experience";
 import { CommunityPost } from "../models/CommunityPost";
 import { clampForSnippet, stripHtml } from "./communityShared";
 import { log as __rootLog } from "../../utils/logger";
@@ -80,7 +80,7 @@ export const communitySearchService = {
         : Promise.resolve([]),
       wantBlogs
         ? searchSide("stories", () =>
-            BlogPost.find(
+            Experience.find(
               {
                 $text: { $search: term },
                 isDeleted: false,

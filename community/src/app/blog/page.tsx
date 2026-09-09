@@ -8,7 +8,7 @@ import {
 import { buildMetadata, communityUrl, fetchPublicData, SITE_NAME } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Sports Blog — Stories, Tips & Expert Advice",
+  title: "Parent Experiences — Tournaments, Academies, Gear & Costs",
   description:
     "Read the PowerMySport community blog: coaching tips, training insights, and expert sports advice written by parents.",
   path: "/blog",
@@ -43,7 +43,7 @@ export default async function CommunityBlogPage() {
           blogCollectionSchema,
           breadcrumbSchema([
             { name: "Community", path: "/" },
-            { name: "Blog", path: "/blog" },
+            { name: "Experiences", path: "/blog" },
           ]),
           ...(recent?.items?.length
             ? [
@@ -65,7 +65,7 @@ export default async function CommunityBlogPage() {
             <div className="community-content-wrap border-border rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
               <div className="h-5 w-40 animate-pulse rounded-full bg-slate-200" />
               <div className="mt-4 h-24 animate-pulse rounded-2xl bg-slate-100" />
-              <p className="mt-4 text-sm text-slate-500">Loading stories...</p>
+              <p className="mt-4 text-sm text-slate-500">Loading experiences...</p>
             </div>
           </div>
         }

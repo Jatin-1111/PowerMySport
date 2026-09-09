@@ -35,7 +35,7 @@ export default function BlogGrid({
   isLoading,
   onToggleLike,
   likePendingId,
-  emptyMessage = "No stories here yet. Be the first to publish one.",
+  emptyMessage = "Be the first parent to share this.",
 }: BlogGridProps) {
   if (isLoading && blogs.length === 0) {
     return (

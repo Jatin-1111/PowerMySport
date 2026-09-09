@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { LayoutGrid } from "lucide-react";
-import { BLOG_TOPICS } from "@/modules/community/constants/blogTopics";
+import { ALL_TOPICS } from "@/modules/community/constants/experienceTaxonomy";
 
 interface BlogTopicStripProps {
   activeTopic: string;
@@ -25,7 +25,7 @@ export default function BlogTopicStrip({ activeTopic, onSelect }: BlogTopicStrip
         <LayoutGrid size={15} />
         All
       </button>
-      {BLOG_TOPICS.map((topic) => {
+      {ALL_TOPICS.map((topic) => {
         const active = activeTopic.toLowerCase() === topic.slug.toLowerCase();
         return (
           <motion.button

@@ -10,7 +10,7 @@ import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
-import { BLOG_TOPICS } from "@/modules/community/constants/blogTopics";
+import { ALL_TOPICS } from "@/modules/community/constants/experienceTaxonomy";
 import { htmlToText } from "@/modules/community/utils/sanitizeHtml";
 import RichTextCanvas from "./editor/RichTextCanvas";
 import ImageBlockUploader from "./editor/ImageBlockUploader";
@@ -84,7 +84,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
       if (mode === "edit" && blogId) {
         const blog = await blogService.getBlog(blogId);
         if (!blog.isMine) {
-          toast.error("You can only edit your own stories");
+          toast.error("You can only edit your own experiences");
           router.push(`/blog/${blogId}`);
           return;
         }
@@ -319,10 +319,10 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             )}
             <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
               {postStatus === "PUBLISHED"
-                ? "Editing story"
+                ? "Editing experience"
                 : postStatus === "DRAFT"
                   ? "Draft"
-                  : "New story"}
+                  : "Share your experience"}
             </span>
           </div>
         </div>
@@ -355,7 +355,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             event.target.style.height = "auto";
             event.target.style.height = `${event.target.scrollHeight}px`;
           }}
-          placeholder="Story title"
+          placeholder="Give it a title (optional)"
           className="font-title mt-5 w-full resize-none bg-transparent text-3xl font-bold leading-tight tracking-tight text-slate-900 outline-none placeholder:text-slate-300 sm:text-4xl"
         />
 
@@ -385,7 +385,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
               onChange={(event) => setTopic(event.target.value)}
               className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none"
             >
-              {BLOG_TOPICS.map((option) => (
+              {ALL_TOPICS.map((option) => (
                 <option key={option.slug} value={option.slug}>
                   {option.label}
                 </option>

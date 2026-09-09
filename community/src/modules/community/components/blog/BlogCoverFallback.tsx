@@ -1,6 +1,6 @@
 "use client";
 
-import { getBlogTopic } from "@/modules/community/constants/blogTopics";
+import { getTopicMeta } from "@/modules/community/constants/experienceTaxonomy";
 
 /**
  * Default cover shown when a blog has no uploaded image. Renders a topic-tinted
@@ -13,7 +13,7 @@ export default function BlogCoverFallback({
   topic?: string | null;
   className?: string;
 }) {
-  const { label, Icon } = getBlogTopic(topic);
+  const { label, Icon } = getTopicMeta(topic);
 
   return (
     <div

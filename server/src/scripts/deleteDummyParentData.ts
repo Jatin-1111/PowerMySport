@@ -5,7 +5,7 @@ import { CommunityPost } from "../community/models/CommunityPost";
 import { CommunityAnswer } from "../community/models/CommunityAnswer";
 import { CommunityProfile } from "../community/models/CommunityProfile";
 import { CommunityReputation } from "../community/models/CommunityReputation";
-import { BlogPost } from "../community/models/BlogPost";
+import { Experience } from "../community/models/Experience";
 
 /**
  * Deletes the dummy Parent accounts (and everything they authored: Q&A posts,
@@ -46,7 +46,7 @@ async function deleteDummyParentData() {
     const posts = await CommunityPost.deleteMany({ authorId: { $in: userIds } });
     console.log(`- Deleted ${posts.deletedCount} community post(s)`);
 
-    const blogs = await BlogPost.deleteMany({ authorId: { $in: userIds } });
+    const blogs = await Experience.deleteMany({ authorId: { $in: userIds } });
     console.log(`- Deleted ${blogs.deletedCount} blog post(s)`);
 
     const profiles = await CommunityProfile.deleteMany({ userId: { $in: userIds } });

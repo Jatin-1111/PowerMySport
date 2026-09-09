@@ -18,14 +18,14 @@ export async function generateMetadata({
   if (!author) {
     return buildMetadata({
       title: "Writer Profile",
-      description: "Explore blogs and stories from PowerMySport community writers.",
+      description: "Explore experiences shared by parents in the PowerMySport community.",
       path: `/blog/writer/${identifier}`,
     });
   }
 
   const description = author.bio
     ? clampText(author.bio, 160)
-    : `Read ${author.blogCount} sports ${author.blogCount === 1 ? "story" : "stories"} by ${author.name} on the PowerMySport community blog.`;
+    : `Read ${author.blogCount} ${author.blogCount === 1 ? "experience" : "experiences"} shared by ${author.name} in the PowerMySport community.`;
 
   return buildMetadata({
     title: `${author.name} (@${author.username})`,
@@ -67,7 +67,7 @@ export default async function WriterProfilePage({
             profileSchema,
             breadcrumbSchema([
               { name: "Community", path: "/" },
-              { name: "Blog", path: "/blog" },
+              { name: "Experiences", path: "/blog" },
               { name: author.name, path: `/blog/writer/${identifier}` },
             ]),
           ]}

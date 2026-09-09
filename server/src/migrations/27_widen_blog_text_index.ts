@@ -1,6 +1,5 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import { BlogPost } from "../community/models/BlogPost";
 
 /**
  * Migration 27: rebuild the blog text index so it covers the article body.
@@ -41,6 +40,18 @@ import { BlogPost } from "../community/models/BlogPost";
  *   npm run migrate:blog-search -- --down --apply   # back to the narrow index
  */
 
+/**
+ * NOTE (migration 39): the `blogposts` collection was renamed to `experiences`
+ * when the blog became Experience. This migration is historical — it is kept
+ * for the record and addresses the old collection by name, so on any database
+ * that has already run 39 it correctly finds nothing to do.
+ */
+const legacyBlogCollection = () => {
+  const db = mongoose.connection.db;
+  if (!db) throw new Error("Not connected to MongoDB");
+  return db.collection("blogposts");
+};
+
 const NEW_INDEX_NAME = "blog_search_v2";
 
 const NEW_INDEX_SPEC = {
@@ -63,7 +74,7 @@ interface Options {
 }
 
 const findTextIndexes = async () => {
-  const collection = BlogPost.collection;
+  const collection = legacyBlogCollection();
   const indexes = await collection.indexes();
   return indexes.filter((index) => Object.values(index.key || {}).includes("text"));
 };
@@ -72,7 +83,7 @@ export const up = async (options: Options = {}) => {
   const apply = Boolean(options.apply);
   console.log(`Starting migration 27: widen blog text index (${apply ? "APPLY" : "DRY RUN"})...`);
 
-  const collection = BlogPost.collection;
+  const collection = legacyBlogCollection();
   const total = await collection.countDocuments();
   const textIndexes = await findTextIndexes();
 
@@ -117,7 +128,7 @@ export const down = async (options: Options = {}) => {
     `Reverting migration 27 (${apply ? "APPLY" : "DRY RUN"}) — narrowing the blog text index...`
   );
 
-  const collection = BlogPost.collection;
+  const collection = legacyBlogCollection();
   const textIndexes = await findTextIndexes();
 
   if (!apply) {

@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export interface BlogCommentDocument extends Document {
-  blogId: mongoose.Types.ObjectId;
+export interface ExperienceCommentDocument extends Document {
+  experienceId: mongoose.Types.ObjectId;
   authorId: mongoose.Types.ObjectId;
   content: string;
   /** null for top-level comments, set for one-level replies. */
@@ -13,11 +13,11 @@ export interface BlogCommentDocument extends Document {
   updatedAt: Date;
 }
 
-const blogCommentSchema = new Schema<BlogCommentDocument>(
+const experienceCommentSchema = new Schema<ExperienceCommentDocument>(
   {
-    blogId: {
+    experienceId: {
       type: Schema.Types.ObjectId,
-      ref: "BlogPost",
+      ref: "Experience",
       required: true,
       index: true,
     },
@@ -36,7 +36,7 @@ const blogCommentSchema = new Schema<BlogCommentDocument>(
     },
     parentId: {
       type: Schema.Types.ObjectId,
-      ref: "BlogComment",
+      ref: "ExperienceComment",
       default: null,
       index: true,
     },
@@ -47,7 +47,10 @@ const blogCommentSchema = new Schema<BlogCommentDocument>(
   { timestamps: true }
 );
 
-blogCommentSchema.index({ blogId: 1, createdAt: -1 });
-blogCommentSchema.index({ blogId: 1, parentId: 1, createdAt: 1 });
+experienceCommentSchema.index({ experienceId: 1, createdAt: -1 });
+experienceCommentSchema.index({ experienceId: 1, parentId: 1, createdAt: 1 });
 
-export const BlogComment = mongoose.model<BlogCommentDocument>("BlogComment", blogCommentSchema);
+export const ExperienceComment = mongoose.model<ExperienceCommentDocument>(
+  "ExperienceComment",
+  experienceCommentSchema
+);

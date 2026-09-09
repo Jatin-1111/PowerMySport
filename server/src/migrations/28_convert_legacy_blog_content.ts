@@ -2,7 +2,6 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
-import { BlogPost } from "../community/models/BlogPost";
 import { toContentHtml } from "../community/services/BlogService";
 
 /**
@@ -40,6 +39,18 @@ import { toContentHtml } from "../community/services/BlogService";
  *   npm run migrate:blog-content -- --restore <file>   # put the blocks back
  */
 
+/**
+ * NOTE (migration 39): the `blogposts` collection was renamed to `experiences`
+ * when the blog became Experience. This migration is historical — it is kept
+ * for the record and addresses the old collection by name, so on any database
+ * that has already run 39 it correctly finds nothing to do.
+ */
+const legacyBlogCollection = () => {
+  const db = mongoose.connection.db;
+  if (!db) throw new Error("Not connected to MongoDB");
+  return db.collection("blogposts");
+};
+
 interface Options {
   apply?: boolean;
   restore?: string;
@@ -53,7 +64,7 @@ export const up = async (options: Options = {}) => {
     `Starting migration 28: convert legacy blog content (${apply ? "APPLY" : "DRY RUN"})...`
   );
 
-  const collection = BlogPost.collection;
+  const collection = legacyBlogCollection();
   const all = await collection.find({}).toArray();
   const legacy = all.filter((doc) => typeof doc.content !== "string");
 
@@ -131,7 +142,7 @@ export const restore = async (file: string, apply: boolean) => {
   }
 
   for (const doc of docs) {
-    await BlogPost.collection.updateOne(
+    await legacyBlogCollection().updateOne(
       { _id: new mongoose.Types.ObjectId(String(doc._id)) },
       { $set: { content: doc.content } }
     );

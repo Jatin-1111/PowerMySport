@@ -15,7 +15,7 @@ type SearchScope = "ALL" | "POST" | "BLOG";
 const SCOPES: { value: SearchScope; label: string }[] = [
   { value: "ALL", label: "Everything" },
   { value: "POST", label: "Questions" },
-  { value: "BLOG", label: "Stories" },
+  { value: "BLOG", label: "Experiences" },
 ];
 
 export default function CommunitySearchPage() {
@@ -89,7 +89,7 @@ function SearchPageContent() {
       <div className="community-content-wrap space-y-4">
         <CommunityPageHeader
           title="Search"
-          subtitle="Find questions and stories across the community."
+          subtitle="Find questions and experiences across the community."
           badge="Search"
         />
 
@@ -103,7 +103,7 @@ function SearchPageContent() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               autoFocus
-              placeholder="Search questions and stories..."
+              placeholder="Search questions and experiences..."
               className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 focus:outline-none"
             />
           </div>
@@ -166,7 +166,7 @@ function SearchPageContent() {
                       </>
                     ) : (
                       <>
-                        <Newspaper size={11} /> Story
+                        <Newspaper size={11} /> Experience
                       </>
                     )}
                   </span>

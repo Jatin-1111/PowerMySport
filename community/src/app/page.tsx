@@ -47,9 +47,9 @@ const valueProps: ValueProp[] = [
   },
   {
     title: "Knowledge",
-    description: "Read & share blogs, experiences.",
+    description: "Real experiences from parents, on the things you are deciding.",
     href: "/blog",
-    cta: "Read the blog",
+    cta: "Read experiences",
     icon: Newspaper,
   },
   {

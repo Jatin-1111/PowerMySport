@@ -37,7 +37,7 @@ export function HeroSearch() {
       <input
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search questions and stories..."
+        placeholder="Search questions and experiences..."
         aria-label="Search questions and stories"
         className="min-w-0 flex-1 bg-transparent py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
       />

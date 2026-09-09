@@ -67,7 +67,7 @@ export default function BlogProfileView({
             <div className="flex items-center gap-2">
               <Newspaper size={18} className="text-power-orange" />
               <h2 className="font-title text-xl font-bold tracking-tight text-slate-900">
-                {isOwner ? "Your stories" : `Stories by ${profile.name}`}
+                {isOwner ? "Your experiences" : `Experiences by ${profile.name}`}
               </h2>
             </div>
 
@@ -80,10 +80,10 @@ export default function BlogProfileView({
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                   <Newspaper size={22} />
                 </span>
-                <p className="mt-3 font-semibold text-slate-700">No stories yet</p>
+                <p className="mt-3 font-semibold text-slate-700">No experiences yet</p>
                 <p className="mt-1 text-sm text-slate-500">
                   {isOwner
-                    ? "Publish your first story to see it here."
+                    ? "Share your first experience to see it here."
                     : "This writer hasn't published anything yet."}
                 </p>
                 {isOwner ? (
@@ -92,7 +92,7 @@ export default function BlogProfileView({
                     className="bg-power-orange mt-4 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white"
                   >
                     <PenLine size={15} />
-                    Write your first story
+                    Share your first experience
                   </Link>
                 ) : null}
               </div>
@@ -136,7 +136,7 @@ export default function BlogProfileView({
                       {formatCount(profile.blogCount)}
                     </p>
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                      {profile.blogCount === 1 ? "Blog" : "Blogs"}
+                      {profile.blogCount === 1 ? "Experience" : "Experiences"}
                     </p>
                   </div>
                   <div className="flex-1 rounded-2xl bg-slate-50 py-2.5">

@@ -354,7 +354,7 @@ export default function CommunityTopNav() {
                         badge: unreadChatsCount,
                       },
                       { href: "/discover", icon: Compass, label: "Discover" },
-                      { href: "/blog", icon: Newspaper, label: "Blog" },
+                      { href: "/blog", icon: Newspaper, label: "Experiences" },
                       { href: "/questions", icon: MessageSquare, label: "Questions" },
                       {
                         href: "/contributors",

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { getBlogTopic } from "@/modules/community/constants/blogTopics";
+import { getTopicMeta } from "@/modules/community/constants/experienceTaxonomy";
 import { formatBlogDate } from "@/modules/community/utils/blogFormat";
 import BlogContentRenderer from "./BlogContentRenderer";
 import BlogCoverFallback from "./BlogCoverFallback";
@@ -37,7 +37,7 @@ export default function BlogPreviewModal({
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
-  const topicMeta = getBlogTopic(topic);
+  const topicMeta = getTopicMeta(topic);
   const coverUrl = coverImageUrl || "";
 
   return createPortal(
@@ -64,7 +64,7 @@ export default function BlogPreviewModal({
                   <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
                     Preview
                   </span>
-                  <span className="text-sm text-slate-500">How your story will look</span>
+                  <span className="text-sm text-slate-500">How your experience will look</span>
                 </div>
                 <button
                   onClick={onClose}
@@ -91,7 +91,7 @@ export default function BlogPreviewModal({
                 </div>
 
                 <h1 className="font-title mt-5 text-3xl font-bold leading-tight tracking-tight text-slate-900">
-                  {title || "Untitled story"}
+                  {title || "Untitled experience"}
                 </h1>
 
                 <div className="mt-3 flex items-center gap-3 border-b border-slate-100 pb-5">

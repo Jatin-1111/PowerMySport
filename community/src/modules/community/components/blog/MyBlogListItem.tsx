@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { BlogListItem } from "@/modules/community/types";
-import { getBlogTopic } from "@/modules/community/constants/blogTopics";
+import { getTopicMeta } from "@/modules/community/constants/experienceTaxonomy";
 import { formatBlogDate, formatCount } from "@/modules/community/utils/blogFormat";
 import BlogCoverFallback from "./BlogCoverFallback";
 
@@ -15,7 +15,7 @@ interface MyBlogListItemProps {
 }
 
 export default function MyBlogListItem({ blog, owner, onDelete }: MyBlogListItemProps) {
-  const topic = getBlogTopic(blog.topic);
+  const topic = getTopicMeta(blog.topic);
   const coverUrl = blog.coverImageUrl || "";
 
   return (

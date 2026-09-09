@@ -64,7 +64,7 @@ export default function BlogLandingClient() {
         setPage(targetPage);
         setHasMore(targetPage < (data.pagination?.totalPages || 0));
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to load stories");
+        toast.error(error instanceof Error ? error.message : "Failed to load experiences");
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -184,7 +184,7 @@ export default function BlogLandingClient() {
             <input
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search stories, topics, tags..."
+              placeholder="Search experiences, topics, tags..."
               className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
             />
             {searchInput ? (
@@ -202,7 +202,7 @@ export default function BlogLandingClient() {
               Explore trending topics
             </h2>
             <p className="mt-0.5 text-sm text-slate-500">
-              Browse stories by the sport or theme you care about.
+              Browse experiences by the sport or topic you care about.
             </p>
           </div>
           <BlogTopicStrip activeTopic={topic} onSelect={setTopic} />
@@ -216,8 +216,8 @@ export default function BlogLandingClient() {
             likePendingId={likePendingId}
             emptyMessage={
               topic || q
-                ? "No stories match this filter yet. Try another topic."
-                : "No stories here yet. Be the first to publish one."
+                ? "No experiences match this filter yet. Try another topic."
+                : "Be the first parent to share this."
             }
           />
 
@@ -228,7 +228,7 @@ export default function BlogLandingClient() {
                 disabled={isLoadingMore}
                 className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
               >
-                {isLoadingMore ? "Loading..." : "Load more stories"}
+                {isLoadingMore ? "Loading..." : "Load more experiences"}
               </button>
             </div>
           ) : null}

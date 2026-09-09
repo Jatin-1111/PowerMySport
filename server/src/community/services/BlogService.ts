@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
-import { BlogPost } from "../models/BlogPost";
-import { BlogComment } from "../models/BlogComment";
-import { BlogLike, BlogLikeTargetType } from "../models/BlogLike";
+import { Experience } from "../models/Experience";
+import { ExperienceComment } from "../models/ExperienceComment";
+import {
+  isExperienceSport,
+  normalizeExperienceCategory,
+  type ExperienceCategory,
+} from "../constants/experience";
+import { ExperienceLike, ExperienceLikeTargetType } from "../models/ExperienceLike";
 import { CommunityProfile, CommunitySocialLinks } from "../models/CommunityProfile";
 import { User } from "../../client/models/User";
 import { S3Service } from "../../shared/services/S3Service";
@@ -238,9 +243,9 @@ interface LegacyBlogBlock {
 
 /**
  * Posts published before the Tiptap editor stored `content` as an array of
- * blocks (see git history of BlogPost.ts). `.lean()` reads return whatever
- * shape is actually persisted, so old documents still surface as arrays here
- * — convert them to the equivalent HTML on the fly rather than migrating
+ * blocks (see git history of BlogPost.ts, now Experience.ts). `.lean()` reads
+ * return whatever shape is actually persisted, so old documents still surface
+ * as arrays here — convert them to the equivalent HTML on the fly rather than migrating
  * (and potentially corrupting) other authors' stored content.
  */
 const legacyBlocksToHtml = (blocks: LegacyBlogBlock[]): string =>
@@ -388,6 +393,66 @@ const buildAuthorMaps = async (authorIds: mongoose.Types.ObjectId[]) => {
   return { buildAuthor };
 };
 
+// ─── `topic` compatibility ────────────────────────────────────────────────────
+// The stored `topic` field split into `sport` (Cricket, Tennis, …) and
+// `category` (match-day, gear, …) — it had been carrying both, which is why the
+// old topic strip mixed sports and themes in one row. The API still speaks
+// `topic` so the community app keeps working unchanged; these three helpers are
+// the whole of the translation and go away when the app moves to explicit
+// `sport` / `category` params.
+
+/** A read: collapse the two stored fields back into the one the API returns. */
+const topicOf = (doc: { sport?: string | null; category?: string | null }): string =>
+  doc.sport || doc.category || "general";
+
+/** A filter: `topic=Tennis` and `topic=gear` both have to keep matching. */
+const topicFilter = (topic: string): Record<string, unknown> =>
+  isExperienceSport(topic) ? { sport: topic } : { category: normalizeExperienceCategory(topic) };
+
+/** A write: route the incoming topic into whichever field it belongs to. */
+const topicToFields = (
+  topic?: string | null
+): { sport: string | null; category: ExperienceCategory } => {
+  const value = (topic || "").trim();
+  return isExperienceSport(value)
+    ? { sport: value, category: "general" }
+    : { sport: null, category: normalizeExperienceCategory(value) };
+};
+
+/**
+ * `title` is optional on the model now — two lines and a photo is a complete
+ * experience, and demanding a headline first was most of what made the old
+ * composer read as "write an essay". The API still always returns one, so it is
+ * derived from the opening sentence when the author did not write it.
+ */
+const deriveTitle = (doc: {
+  title?: string | null;
+  excerpt?: string | null;
+  content?: string | null;
+}): string => {
+  const explicit = (doc.title || "").trim();
+  if (explicit) return explicit;
+
+  // `excerpt` before `content`: it is derived from the body at write time and,
+  // unlike the body, is projected by the list query — so a derived title is the
+  // same string in the feed and on the detail page.
+  const plain = (doc.excerpt || "").trim() || stripHtml(toContentHtml(doc.content ?? ""));
+  if (!plain) return "Untitled experience";
+
+  // First sentence, or the first 80 characters on a word boundary.
+  const sentence = plain.split(/(?<=[.!?])\s/)[0] || plain;
+  if (sentence.length <= 80) return sentence;
+  return `${sentence.slice(0, 80).replace(/\s+\S*$/, "")}…`;
+};
+
+/**
+ * "BLOG" is what every existing client sends and what the old rows stored.
+ * Migration 39 rewrites the rows; this keeps the wire backwards-compatible in
+ * the meantime.
+ */
+const normalizeLikeTargetType = (raw: string): ExperienceLikeTargetType =>
+  raw === "COMMENT" ? "COMMENT" : "EXPERIENCE";
+
 export const BlogService = {
   async listBlogs(
     userId: string | undefined,
@@ -423,34 +488,43 @@ export const BlogService = {
 
     const topic = (filters?.topic || "").trim();
     if (topic && topic.toLowerCase() !== "all") {
-      query.topic = topic;
+      Object.assign(query, topicFilter(topic));
     }
 
-    // Case-insensitive "contains" match across title, excerpt, tags, topic.
+    // Case-insensitive "contains" match across title, excerpt, tags, sport,
+    // category and — once experiences are anchored — the subject's name, so
+    // searching a tournament by name finds what parents wrote about it.
     const search = (filters?.q || "").trim();
     if (search) {
       const safe = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const rx = new RegExp(safe, "i");
-      query.$or = [{ title: rx }, { excerpt: rx }, { tags: rx }, { topic: rx }];
+      query.$or = [
+        { title: rx },
+        { excerpt: rx },
+        { tags: rx },
+        { sport: rx },
+        { category: rx },
+        { "subject.nameSnapshot": rx },
+      ];
     }
 
     const [posts, total] = await Promise.all([
-      BlogPost.find(query)
+      Experience.find(query)
         .select(
-          "title excerpt coverImageKey topic tags status likeCount commentCount viewCount createdAt authorId"
+          "title excerpt coverImageKey category sport tags status likeCount commentCount viewCount createdAt authorId subject attendedAt"
         )
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(safeLimit)
         .lean(),
-      BlogPost.countDocuments(query),
+      Experience.countDocuments(query),
     ]);
 
     const { buildAuthor } = await buildAuthorMaps(posts.map((post) => post.authorId));
 
     const likedSet = await this.buildLikedSet(
       userId,
-      "BLOG",
+      "EXPERIENCE",
       posts.map((post) => String(post._id))
     );
 
@@ -460,11 +534,11 @@ export const BlogService = {
 
     const items: BlogListItem[] = posts.map((post, index) => ({
       id: String(post._id),
-      title: post.title,
+      title: deriveTitle(post),
       excerpt: post.excerpt || "",
       coverImageKey: post.coverImageKey || null,
       coverImageUrl: coverUrls[index] ?? null,
-      topic: post.topic || "General",
+      topic: topicOf(post),
       tags: post.tags || [],
       status: post.status,
       likeCount: post.likeCount || 0,
@@ -487,13 +561,13 @@ export const BlogService = {
 
   async buildLikedSet(
     userId: string | undefined,
-    targetType: BlogLikeTargetType,
+    targetType: ExperienceLikeTargetType,
     targetIds: string[]
   ): Promise<Set<string>> {
     if (!targetIds.length || !userId) {
       return new Set();
     }
-    const likes = await BlogLike.find({
+    const likes = await ExperienceLike.find({
       userId,
       targetType,
       targetId: { $in: targetIds },
@@ -505,7 +579,7 @@ export const BlogService = {
 
   async getBlog(userId: string | undefined, blogId: string): Promise<BlogDetail> {
     const id = toObjectId(blogId, "blog id");
-    const post = await BlogPost.findOne({ _id: id, isDeleted: false }).lean();
+    const post = await Experience.findOne({ _id: id, isDeleted: false }).lean();
     if (!post) {
       throw new Error("Blog not found");
     }
@@ -521,23 +595,23 @@ export const BlogService = {
     // Fire-and-forget view increment (don't block the read) — skip for the
     // author viewing their own draft, no point counting those.
     if (!(post.status === "DRAFT" && isMine)) {
-      BlogPost.updateOne({ _id: id }, { $inc: { viewCount: 1 } }).catch(() => {});
+      Experience.updateOne({ _id: id }, { $inc: { viewCount: 1 } }).catch(() => {});
     }
 
     const [{ buildAuthor }, likedSet, coverImageUrl, content] = await Promise.all([
       buildAuthorMaps([post.authorId]),
-      this.buildLikedSet(userId, "BLOG", [String(post._id)]),
+      this.buildLikedSet(userId, "EXPERIENCE", [String(post._id)]),
       resolveBlogImageUrl(post.coverImageKey),
       resolveContentImageUrls(toContentHtml(post.content)),
     ]);
 
     return {
       id: String(post._id),
-      title: post.title,
+      title: deriveTitle(post),
       excerpt: post.excerpt || "",
       coverImageKey: post.coverImageKey || null,
       coverImageUrl,
-      topic: post.topic || "General",
+      topic: topicOf(post),
       tags: post.tags || [],
       status: post.status,
       likeCount: post.likeCount || 0,
@@ -567,12 +641,12 @@ export const BlogService = {
     await ensureBlogProfile(userId);
 
     const content = stripContentImageSrc(payload.content || "");
-    const post = await BlogPost.create({
+    const post = await Experience.create({
       authorId: userId,
       title: payload.title.trim(),
       excerpt: deriveExcerpt(payload.excerpt, content),
       coverImageKey: payload.coverImageKey || null,
-      topic: (payload.topic || "General").trim() || "General",
+      ...topicToFields(payload.topic),
       tags: normalizeTags(payload.tags),
       content,
       status: payload.status === "DRAFT" ? "DRAFT" : "PUBLISHED",
@@ -595,7 +669,7 @@ export const BlogService = {
     }
   ): Promise<BlogDetail> {
     const id = toObjectId(blogId, "blog id");
-    const post = await BlogPost.findOne({ _id: id, isDeleted: false });
+    const post = await Experience.findOne({ _id: id, isDeleted: false });
     if (!post) {
       throw new Error("Blog not found");
     }
@@ -607,7 +681,9 @@ export const BlogService = {
       post.title = payload.title.trim();
     }
     if (typeof payload.topic === "string") {
-      post.topic = payload.topic.trim() || "General";
+      const { sport, category } = topicToFields(payload.topic);
+      post.sport = sport;
+      post.category = category;
     }
     if (Array.isArray(payload.tags)) {
       post.tags = normalizeTags(payload.tags);
@@ -635,7 +711,7 @@ export const BlogService = {
 
   async deleteBlog(userId: string, blogId: string): Promise<{ id: string; deleted: boolean }> {
     const id = toObjectId(blogId, "blog id");
-    const post = await BlogPost.findOne({ _id: id, isDeleted: false });
+    const post = await Experience.findOne({ _id: id, isDeleted: false });
     if (!post) {
       throw new Error("Blog not found");
     }
@@ -652,43 +728,47 @@ export const BlogService = {
 
   async toggleLike(
     userId: string,
-    targetType: BlogLikeTargetType,
+    targetType: ExperienceLikeTargetType | "BLOG",
     targetId: string
   ): Promise<{ liked: boolean; likeCount: number; blogId: string }> {
     await ensureBlogProfile(userId);
     const id = toObjectId(targetId, "target id");
 
-    const Model = (targetType === "BLOG" ? BlogPost : BlogComment) as mongoose.Model<{
+    const kind = normalizeLikeTargetType(targetType);
+    const isExperience = kind === "EXPERIENCE";
+
+    const Model = (isExperience ? Experience : ExperienceComment) as mongoose.Model<{
       likeCount: number;
     }>;
-    // A comment like has to resolve its parent blog so the realtime event can
-    // be addressed to that blog's room rather than to everyone.
+    // A comment like has to resolve its parent experience so the realtime event
+    // can be addressed to that experience's room rather than to everyone.
     const target = await Model.findOne({ _id: id, isDeleted: false }).select(
-      targetType === "BLOG" ? "_id" : "_id blogId"
+      isExperience ? "_id" : "_id experienceId"
     );
     if (!target) {
-      throw new Error(targetType === "BLOG" ? "Blog not found" : "Comment not found");
+      throw new Error(isExperience ? "Blog not found" : "Comment not found");
     }
 
-    const blogId =
-      targetType === "BLOG"
-        ? String(id)
-        : String((target as unknown as { blogId?: mongoose.Types.ObjectId }).blogId || "");
+    const blogId = isExperience
+      ? String(id)
+      : String(
+          (target as unknown as { experienceId?: mongoose.Types.ObjectId }).experienceId || ""
+        );
 
-    const existing = await BlogLike.findOne({
+    const existing = await ExperienceLike.findOne({
       userId,
-      targetType,
+      targetType: kind,
       targetId: id,
     });
 
     let liked: boolean;
     if (existing) {
-      await BlogLike.deleteOne({ _id: existing._id });
+      await ExperienceLike.deleteOne({ _id: existing._id });
       await Model.updateOne({ _id: id }, { $inc: { likeCount: -1 } });
       liked = false;
     } else {
       try {
-        await BlogLike.create({ userId, targetType, targetId: id });
+        await ExperienceLike.create({ userId, targetType: kind, targetId: id });
         await Model.updateOne({ _id: id }, { $inc: { likeCount: 1 } });
         liked = true;
       } catch (error) {
@@ -718,13 +798,13 @@ export const BlogService = {
     const skip = (safePage - 1) * safeLimit;
 
     const [topLevel, total] = await Promise.all([
-      BlogComment.find({ blogId: id, parentId: null, isDeleted: false })
+      ExperienceComment.find({ experienceId: id, parentId: null, isDeleted: false })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(safeLimit)
         .lean(),
-      BlogComment.countDocuments({
-        blogId: id,
+      ExperienceComment.countDocuments({
+        experienceId: id,
         parentId: null,
         isDeleted: false,
       }),
@@ -738,7 +818,7 @@ export const BlogService = {
     const MAX_REPLIES_PER_PAGE = 500;
     const topIds = topLevel.map((comment) => comment._id);
     const replies = topIds.length
-      ? await BlogComment.find({
+      ? await ExperienceComment.find({
           parentId: { $in: topIds },
           isDeleted: false,
         })
@@ -757,7 +837,7 @@ export const BlogService = {
 
     const toItem = (comment: (typeof all)[number]): BlogCommentItem => ({
       id: String(comment._id),
-      blogId: String(comment.blogId),
+      blogId: String(comment.experienceId),
       content: comment.content,
       parentId: comment.parentId ? String(comment.parentId) : null,
       likeCount: comment.likeCount || 0,
@@ -801,7 +881,7 @@ export const BlogService = {
     await ensureBlogProfile(userId);
     const id = toObjectId(blogId, "blog id");
 
-    const blog = await BlogPost.findOne({ _id: id, isDeleted: false }).select("_id");
+    const blog = await Experience.findOne({ _id: id, isDeleted: false }).select("_id");
     if (!blog) {
       throw new Error("Blog not found");
     }
@@ -809,9 +889,9 @@ export const BlogService = {
     let parent: mongoose.Types.ObjectId | null = null;
     if (parentId) {
       const parentObjId = toObjectId(parentId, "parent id");
-      const parentComment = await BlogComment.findOne({
+      const parentComment = await ExperienceComment.findOne({
         _id: parentObjId,
-        blogId: id,
+        experienceId: id,
         isDeleted: false,
       }).select("_id parentId");
       if (!parentComment) {
@@ -823,18 +903,18 @@ export const BlogService = {
         : (parentComment._id as mongoose.Types.ObjectId);
     }
 
-    const comment = await BlogComment.create({
-      blogId: id,
+    const comment = await ExperienceComment.create({
+      experienceId: id,
       authorId: userId,
       content: content.trim(),
       parentId: parent,
     });
-    await BlogPost.updateOne({ _id: id }, { $inc: { commentCount: 1 } });
+    await Experience.updateOne({ _id: id }, { $inc: { commentCount: 1 } });
 
     const { buildAuthor } = await buildAuthorMaps([comment.authorId]);
     return {
       id: String(comment._id),
-      blogId: String(comment.blogId),
+      blogId: String(comment.experienceId),
       content: comment.content,
       parentId: comment.parentId ? String(comment.parentId) : null,
       likeCount: 0,
@@ -851,7 +931,7 @@ export const BlogService = {
     commentId: string
   ): Promise<{ id: string; deleted: boolean }> {
     const id = toObjectId(commentId, "comment id");
-    const comment = await BlogComment.findOne({ _id: id, isDeleted: false });
+    const comment = await ExperienceComment.findOne({ _id: id, isDeleted: false });
     if (!comment) {
       throw new Error("Comment not found");
     }
@@ -862,7 +942,7 @@ export const BlogService = {
     comment.isDeleted = true;
     comment.deletedAt = new Date();
     await comment.save();
-    await BlogPost.updateOne({ _id: comment.blogId }, { $inc: { commentCount: -1 } });
+    await Experience.updateOne({ _id: comment.experienceId }, { $inc: { commentCount: -1 } });
 
     return { id: String(comment._id), deleted: true };
   },
@@ -883,12 +963,12 @@ export const BlogService = {
 
     const [photoUrl, blogCount, likeAgg] = await Promise.all([
       resolveUserPhotoUrl(user),
-      BlogPost.countDocuments({
+      Experience.countDocuments({
         authorId: targetUserId,
         isDeleted: false,
         status: "PUBLISHED",
       }),
-      BlogPost.aggregate<{ total: number }>([
+      Experience.aggregate<{ total: number }>([
         {
           $match: {
             authorId: new mongoose.Types.ObjectId(targetUserId),

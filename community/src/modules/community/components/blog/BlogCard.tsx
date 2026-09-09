@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { BlogListItem } from "@/modules/community/types";
-import { getBlogTopic } from "@/modules/community/constants/blogTopics";
+import { getTopicMeta } from "@/modules/community/constants/experienceTaxonomy";
 import { toRelativeTime } from "@/modules/community/utils/blogFormat";
 import BlogCoverFallback from "./BlogCoverFallback";
 import AuthorAvatar from "./AuthorAvatar";
@@ -17,7 +17,7 @@ interface BlogCardProps {
 }
 
 export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardProps) {
-  const topic = getBlogTopic(blog.topic);
+  const topic = getTopicMeta(blog.topic);
   const coverUrl = blog.coverImageUrl || "";
 
   return (

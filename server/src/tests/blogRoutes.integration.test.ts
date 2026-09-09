@@ -3,7 +3,7 @@
 //
 // blogController.ts and BlogService.ts had zero test coverage at any layer
 // before this file (per a Phase 5 testing-plan audit) — the only blog-adjacent
-// test seeded BlogPost documents directly to exercise search indexing, never
+// test seeded Experience documents directly to exercise search indexing, never
 // the controller/service. These tests go through the real `app`, so the real
 // route table, `authMiddleware`/`optionalAuthMiddleware`, and the real Zod
 // validation schemas are all exercised, matching the pattern established in
@@ -23,7 +23,7 @@ const request = require("supertest");
 const { app } = require("../app");
 const { generateToken } = require("../utils/jwt");
 const { User } = require("../client/models/User");
-const { BlogPost } = require("../community/models/BlogPost");
+const { Experience } = require("../community/models/Experience");
 const redis = require("../config/redis").default;
 
 const oid = () => new mongoose.Types.ObjectId();
@@ -42,7 +42,13 @@ after(async () => {
 });
 
 beforeEach(async () => {
-  for (const name of ["users", "blogposts", "blogcomments", "bloglikes", "communityprofiles"]) {
+  for (const name of [
+    "users",
+    "experiences",
+    "experiencecomments",
+    "experiencelikes",
+    "communityprofiles",
+  ]) {
     await mongoose.connection.db.collection(name).deleteMany({});
   }
 });
@@ -251,7 +257,7 @@ describe("updating and deleting a blog post over HTTP", () => {
 
     assert.equal(response.status, 403);
 
-    const untouched = await BlogPost.findById(blogId);
+    const untouched = await Experience.findById(blogId);
     assert.equal(untouched.title, "How I trained for my first tournament");
   });
 
@@ -267,7 +273,7 @@ describe("updating and deleting a blog post over HTTP", () => {
     const getResponse = await request(app).get(`/api/community/blog/posts/${blogId}`);
     assert.equal(getResponse.status, 404);
 
-    const stillInDb = await BlogPost.findById(blogId);
+    const stillInDb = await Experience.findById(blogId);
     assert.ok(stillInDb, "soft delete must not remove the document");
     assert.equal(stillInDb.isDeleted, true);
   });

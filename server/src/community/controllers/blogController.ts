@@ -120,7 +120,7 @@ export const deleteBlog = asyncHandler(async (req: Request, res: Response): Prom
 export const toggleBlogLike = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
     const { targetType, targetId } = req.body as {
-      targetType: "BLOG" | "COMMENT";
+      targetType: "BLOG" | "EXPERIENCE" | "COMMENT";
       targetId: string;
     };
     const data = await BlogService.toggleLike(getUserId(req), targetType, targetId);

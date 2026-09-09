@@ -23,9 +23,9 @@ export async function generateMetadata({
 
   if (!blog) {
     return buildMetadata({
-      title: "Blog Post",
+      title: "Parent Experience",
       description:
-        "Read stories, coaching tips, and expert sports advice on the PowerMySport community blog.",
+        "Read what other parents experienced — tournaments, academies, gear, travel and costs.",
       path: `/blog/${blogId}`,
     });
   }
@@ -88,7 +88,7 @@ export default async function CommunityBlogDetailPage({
             articleSchema,
             breadcrumbSchema([
               { name: "Community", path: "/" },
-              { name: "Blog", path: "/blog" },
+              { name: "Experiences", path: "/blog" },
               { name: blog.title, path: `/blog/${blogId}` },
             ]),
           ]}
