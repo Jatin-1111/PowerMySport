@@ -35,7 +35,8 @@ export type NotificationType =
   | "DISPUTE_FILED"
   | "DISPUTE_RESOLVED"
   | "MESSAGE_RECEIVED"
-  | "PLAN_CHECKIN";
+  | "PLAN_CHECKIN"
+  | "EXPERIENCE_NUDGE";
 
 export type NotificationCategory =
   "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
@@ -103,6 +104,7 @@ const notificationSchema = new Schema<INotification, {}, {}, NotificationQueryHe
         "DISPUTE_RESOLVED",
         "MESSAGE_RECEIVED",
         "PLAN_CHECKIN",
+        "EXPERIENCE_NUDGE",
       ],
       required: true,
     },

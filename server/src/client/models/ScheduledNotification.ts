@@ -1,6 +1,15 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type ReminderType = "BOOKING_REMINDER" | "PATHWAY_DOCUMENT_REMINDER" | "PLAN_CHECKIN";
+export type ReminderType =
+  | "BOOKING_REMINDER"
+  | "PATHWAY_DOCUMENT_REMINDER"
+  | "PLAN_CHECKIN"
+  // Post-event, not pre-event like the others: "you were at X, want to share
+  // your experience?" — see ExperienceNudgeService. Fires through the same
+  // ScheduledNotificationService.processPendingReminders sweep; it needs no
+  // type-specific handling there because it sends in-app only (no booking
+  // lookup, no email template).
+  | "EXPERIENCE_NUDGE";
 // "CUSTOM" is for reminders whose timing isn't "X before an event" (e.g. a
 // plan check-in due N weeks out) — scheduledFor is the only date that matters.
 export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS" | "CUSTOM";
@@ -48,7 +57,7 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
     },
     type: {
       type: String,
-      enum: ["BOOKING_REMINDER", "PATHWAY_DOCUMENT_REMINDER", "PLAN_CHECKIN"],
+      enum: ["BOOKING_REMINDER", "PATHWAY_DOCUMENT_REMINDER", "PLAN_CHECKIN", "EXPERIENCE_NUDGE"],
       required: true,
       default: "BOOKING_REMINDER",
     },

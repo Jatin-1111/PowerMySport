@@ -219,12 +219,20 @@ export class ScheduledNotificationService {
           const sendPromises: Promise<any>[] = [];
 
           // In-app notification
+          //
+          // type/category were hardcoded to BOOKING_REMINDER/BOOKING here
+          // regardless of `reminder.type` — harmless while every reminder
+          // really was a booking reminder, but EXPERIENCE_NUDGE (a
+          // post-event "share your experience?" prompt, not a pre-event
+          // booking reminder) needs its own, or every nudge would show up
+          // mislabeled in anything that groups by notification type.
           if (reminder.channels.inApp) {
+            const isExperienceNudge = reminder.type === "EXPERIENCE_NUDGE";
             sendPromises.push(
               NotificationService.create({
                 userId: reminder.userId._id.toString(),
-                type: "BOOKING_REMINDER",
-                category: "BOOKING",
+                type: isExperienceNudge ? "EXPERIENCE_NUDGE" : "BOOKING_REMINDER",
+                category: isExperienceNudge ? "COMMUNITY" : "BOOKING",
                 title: reminder.title,
                 message: reminder.body,
                 data: reminder.data || {},

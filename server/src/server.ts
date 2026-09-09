@@ -14,6 +14,7 @@ import { setNotificationSocketInstance } from "./client/services/NotificationSer
 import { setCommunityRealtimeSocketInstance } from "./community/services/CommunityRealtimeService";
 import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
+import { initializeExperienceNudgeScheduler } from "./utils/experienceNudgeScheduler";
 import { startOutboxWorker } from "./shared/services/OutboxService";
 import { initializeScraperScheduler } from "./utils/scraperScheduler";
 import { initializeAitaRankingScheduler } from "./utils/aitaRankingScheduler";
@@ -159,6 +160,10 @@ const startServer = async () => {
 
           // Start reminder scheduler
           initializeReminderScheduler();
+
+          // Daily sweep: "share your experience?" nudges for recently-
+          // completed venue/academy/coach bookings and expert sessions.
+          initializeExperienceNudgeScheduler();
 
           // Start outbox worker to handle message notification delivery and retries
           stopOutboxWorker = startOutboxWorker();
