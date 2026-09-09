@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Eye, Loader2, Send } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogAuthorProfile } from "@/modules/community/types";
@@ -13,6 +13,7 @@ import { toast } from "@/lib/toast";
 import { EXPERIENCE_SPORTS, getExperienceCategory } from "@/modules/community/constants/experienceTaxonomy"; // prettier-ignore
 import {
   MODERATED_SUBJECT_KINDS,
+  SUBJECT_KINDS,
   type SignalKey,
   type SignalValue,
 } from "@/modules/community/constants/experienceSubjects";
@@ -47,8 +48,33 @@ type FormSnapshot = {
 
 const emptySignals: Partial<Record<SignalKey, SignalValue>> = {};
 
+const VALID_SUBJECT_KINDS = new Set(SUBJECT_KINDS.map((meta) => meta.kind));
+
+/**
+ * The entity page's "Share your experience" CTA (ParentExperiencesBand in the
+ * client app) deep-links here with the subject already known, via
+ * getCommunityAppUrl({ path: "experiences/new", searchParams: {...} }).
+ * Malformed or missing params simply fall back to the ordinary picker rather
+ * than failing the page.
+ */
+const readSubjectFromSearchParams = (params: URLSearchParams): SelectedSubject | null => {
+  const kind = params.get("subjectKind");
+  const refId = params.get("subjectRefId");
+  const nameSnapshot = params.get("subjectName");
+  if (!kind || !refId || !nameSnapshot) return null;
+  if (!VALID_SUBJECT_KINDS.has(kind as SelectedSubject["kind"])) return null;
+
+  return {
+    kind: kind as SelectedSubject["kind"],
+    refId,
+    nameSnapshot,
+    slugSnapshot: params.get("subjectSlug"),
+  };
+};
+
 export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -140,6 +166,12 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
           attendedAt: blog.attendedAt ? blog.attendedAt.slice(0, 10) : "",
         };
       } else {
+        // Deep-linked from an entity page's "Share your experience" CTA
+        // (ParentExperiencesBand in the client app) — the subject is already
+        // known, so skip straight past the search step.
+        const deepLinkedSubject = readSubjectFromSearchParams(searchParams);
+        if (deepLinkedSubject) setSubject(deepLinkedSubject);
+
         savedSnapshotRef.current = {
           title: "",
           excerpt: "",
@@ -148,7 +180,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
           tagsInput: "",
           coverImageKey: null,
           content: "",
-          subject: null,
+          subject: deepLinkedSubject,
           signals: emptySignals,
           attendedAt: "",
         };
@@ -158,7 +190,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
     } finally {
       setIsLoading(false);
     }
-  }, [mode, blogId, router]);
+  }, [mode, blogId, router, searchParams]);
 
   useEffect(() => {
     void init();

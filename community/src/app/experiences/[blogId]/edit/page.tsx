@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import WriteBlogClient from "@/modules/community/components/blog/WriteBlogClient";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -24,5 +25,12 @@ export default async function EditExperiencePage({
   params: Promise<{ blogId: string }>;
 }) {
   const { blogId } = await params;
-  return <WriteBlogClient mode="edit" blogId={blogId} />;
+  // WriteBlogClient calls useSearchParams (for the create-mode subject
+  // deep-link) unconditionally, which Next.js requires a Suspense boundary
+  // for during static generation, even here in edit mode where it's unused.
+  return (
+    <Suspense fallback={null}>
+      <WriteBlogClient mode="edit" blogId={blogId} />
+    </Suspense>
+  );
 }
