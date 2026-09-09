@@ -3,12 +3,18 @@ import { motion } from "framer-motion";
 import { Flag, X } from "lucide-react";
 
 interface ReportModalProps {
-  targetType: "MESSAGE" | "GROUP";
+  targetType: "MESSAGE" | "GROUP" | "EXPERIENCE";
   targetId: string;
   isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (reason: string, details: string) => Promise<void>;
 }
+
+const TARGET_LABELS: Record<ReportModalProps["targetType"], string> = {
+  GROUP: "Group",
+  MESSAGE: "Message",
+  EXPERIENCE: "Experience",
+};
 
 export function ReportModal({ targetType, isSubmitting, onClose, onSubmit }: ReportModalProps) {
   const [reason, setReason] = useState("");
@@ -34,7 +40,7 @@ export function ReportModal({ targetType, isSubmitting, onClose, onSubmit }: Rep
           <div className="flex items-center gap-2">
             <Flag size={18} className="text-red-500" />
             <h3 className="text-base font-semibold text-slate-900">
-              Report {targetType === "GROUP" ? "Group" : "Message"}
+              Report {TARGET_LABELS[targetType]}
             </h3>
           </div>
           <button

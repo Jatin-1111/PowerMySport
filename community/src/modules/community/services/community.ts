@@ -727,21 +727,21 @@ export const communityService = {
   },
 
   async reportContent(payload: {
-    targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+    targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE";
     targetId: string;
     reason: string;
     details?: string;
   }): Promise<{
     id: string;
     status: string;
-    targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+    targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE";
     createdAt: string;
   }> {
     const response = await axiosInstance.post<
       ApiResponse<{
         id: string;
         status: string;
-        targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+        targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE";
         createdAt: string;
       }>
     >("/community/reports", payload);
@@ -754,7 +754,7 @@ export const communityService = {
   ): Promise<{
     items: Array<{
       id: string;
-      targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+      targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE";
       targetId: string;
       reason: string;
       details?: string;
@@ -782,7 +782,7 @@ export const communityService = {
       PaginatedApiResponse<
         Array<{
           id: string;
-          targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+          targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE";
           targetId: string;
           reason: string;
           details?: string;

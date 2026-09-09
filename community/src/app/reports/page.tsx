@@ -10,7 +10,7 @@ import { getCommunitySocket } from "@/lib/realtime/socket";
 
 type ReportItem = {
   id: string;
-  targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+  targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE";
   targetId: string;
   reason: string;
   details?: string;

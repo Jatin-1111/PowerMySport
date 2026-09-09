@@ -6,12 +6,15 @@ import { communityService } from "@/modules/community/services/community";
 
 export function useReportModal() {
   const [reportModal, setReportModal] = useState<{
-    targetType: "MESSAGE" | "GROUP";
+    targetType: "MESSAGE" | "GROUP" | "EXPERIENCE";
     targetId: string;
   } | null>(null);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
-  const handleOpenReportModal = (targetType: "MESSAGE" | "GROUP", targetId: string) => {
+  const handleOpenReportModal = (
+    targetType: "MESSAGE" | "GROUP" | "EXPERIENCE",
+    targetId: string
+  ) => {
     setReportModal({ targetType, targetId });
   };
 

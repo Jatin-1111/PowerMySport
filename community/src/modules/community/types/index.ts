@@ -346,6 +346,10 @@ export interface BlogDetail extends BlogListItem {
   isMine: boolean;
   signals: Record<string, string> | null;
   moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
+  /** The named coach/expert's one right of reply, if they have posted it. */
+  subjectReply: { content: string; authorName: string | null; createdAt: string } | null;
+  /** True only for the specific coach/expert `subject` names, while unreplied. */
+  canReply: boolean;
 }
 
 export interface BlogComment {

@@ -201,6 +201,17 @@ export const blogService = {
     return response.data.data;
   },
 
+  // The named coach/expert's one right of reply. Ownership is re-checked
+  // server-side (postSubjectReply) — this call succeeding is not itself proof
+  // of who the caller is.
+  async postSubjectReply(blogId: string, content: string): Promise<BlogDetail> {
+    const response = await axiosInstance.post<ApiResponse<BlogDetail>>(
+      `/community/experiences/posts/${blogId}/reply`,
+      { content }
+    );
+    return response.data.data;
+  },
+
   async getImageUploadUrl(
     contentType: string
   ): Promise<{ uploadUrl: string; downloadUrl: string; key: string }> {

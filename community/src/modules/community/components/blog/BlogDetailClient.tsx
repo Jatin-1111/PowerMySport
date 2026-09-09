@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ChevronLeft,
+  Flag,
   Link as LinkIcon,
   Loader2,
   MessageCircle,
@@ -21,11 +22,14 @@ import { getCommunitySocket, blogRoom, subscribeToCommunityRoom } from "@/lib/re
 import { toast } from "@/lib/toast";
 import { getTopicMeta } from "@/modules/community/constants/experienceTaxonomy";
 import { formatBlogDate } from "@/modules/community/utils/blogFormat";
+import { useReportModal } from "@/modules/community/hooks/useReportModal";
+import { ReportModal } from "@/modules/community/components/chat/ReportModal";
 import BlogContentRenderer from "./BlogContentRenderer";
 import BlogCommentsSidebar from "./BlogCommentsSidebar";
 import BlogCoverFallback from "./BlogCoverFallback";
 import AuthorAvatar from "./AuthorAvatar";
 import LikeButton from "./LikeButton";
+import SubjectReplyBand from "./SubjectReplyBand";
 
 const authorHref = (author: BlogDetail["author"]) =>
   author.username ? `/experiences/by/${author.username}` : `/experiences/by/${author.id}`;
@@ -45,6 +49,8 @@ export default function BlogDetailClient({
   const [likePending, setLikePending] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { reportModal, handleOpenReportModal, setReportModal, isSubmittingReport, handleSubmitReportWrapper } = // prettier-ignore
+    useReportModal();
 
   // Never swap rendered content back to a loading state on refresh — that
   // would undo the server render the moment the client hydrates.
@@ -259,7 +265,15 @@ export default function BlogDetailClient({
                 Delete
               </button>
             </div>
-          ) : null}
+          ) : (
+            <button
+              onClick={() => handleOpenReportModal("EXPERIENCE", blog.id)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+            >
+              <Flag size={13} />
+              Report
+            </button>
+          )}
         </div>
 
         {/* Reactions bar */}
@@ -297,6 +311,15 @@ export default function BlogDetailClient({
               </span>
             ))}
           </div>
+        ) : null}
+
+        {/* Right of reply — a coach or expert named in `subject` can post one
+            response to what was written about them. */}
+        {blog.subject ? (
+          <SubjectReplyBand
+            blog={blog}
+            onReplyPosted={(reply) => setBlog((current) => (current ? { ...current, subjectReply: reply } : current))} // prettier-ignore
+          />
         ) : null}
 
         {/* Share */}
@@ -337,6 +360,16 @@ export default function BlogDetailClient({
           )
         }
       />
+
+      {reportModal ? (
+        <ReportModal
+          targetType={reportModal.targetType}
+          targetId={reportModal.targetId}
+          isSubmitting={isSubmittingReport}
+          onClose={() => setReportModal(null)}
+          onSubmit={handleSubmitReportWrapper}
+        />
+      ) : null}
     </div>
   );
 }
