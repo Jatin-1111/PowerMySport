@@ -7,11 +7,34 @@ import {
   BlogListResponse,
   SocialLinks,
 } from "../types";
+import type { ExperienceSubjectKind } from "../constants/experienceSubjects";
 
 interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
+}
+
+/** What create/updateBlog send for `subject` — a snapshot, not a live ref. */
+export interface ExperienceSubjectInput {
+  kind: ExperienceSubjectKind;
+  refId: string;
+  nameSnapshot: string;
+  slugSnapshot?: string | null;
+}
+
+export interface SubjectSearchResult {
+  kind: ExperienceSubjectKind;
+  refId: string;
+  name: string;
+  slug: string | null;
+  meta?: string;
+}
+
+export interface ExperienceSubjectSummary {
+  count: number;
+  signals: Partial<Record<string, { good: number; okay: number; poor: number }>>;
+  recent: Array<{ id: string; excerpt: string; createdAt: string; authorName: string | null }>;
 }
 
 export const blogService = {
@@ -49,13 +72,16 @@ export const blogService = {
   },
 
   async createBlog(payload: {
-    title: string;
+    title?: string;
     excerpt?: string;
     coverImageKey?: string | null;
     topic?: string;
     tags?: string[];
     content?: string;
     status?: "DRAFT" | "PUBLISHED";
+    subject?: ExperienceSubjectInput | null;
+    signals?: Record<string, string> | null;
+    attendedAt?: string | null;
   }): Promise<BlogDetail> {
     const response = await axiosInstance.post<ApiResponse<BlogDetail>>(
       "/community/blog/posts",
@@ -74,6 +100,9 @@ export const blogService = {
       tags?: string[];
       content?: string;
       status?: "DRAFT" | "PUBLISHED";
+      subject?: ExperienceSubjectInput | null;
+      signals?: Record<string, string> | null;
+      attendedAt?: string | null;
     }
   ): Promise<BlogDetail> {
     const response = await axiosInstance.patch<ApiResponse<BlogDetail>>(
@@ -145,6 +174,28 @@ export const blogService = {
     const response = await axiosInstance.patch<ApiResponse<BlogAuthorProfile>>(
       "/community/blog/profile",
       payload
+    );
+    return response.data.data;
+  },
+
+  // ─── Subjects ───────────────────────────────────────────────────────────
+  // The composer's "was this about a tournament, venue, academy or coach?"
+  // autocomplete, and an entity page's "Parent experiences" summary band.
+  async searchSubjects(q: string, kind?: ExperienceSubjectKind): Promise<SubjectSearchResult[]> {
+    const response = await axiosInstance.get<ApiResponse<{ items: SubjectSearchResult[] }>>(
+      "/community/experiences/subjects/search",
+      { params: { q, ...(kind ? { kind } : {}) } }
+    );
+    return response.data.data.items;
+  },
+
+  async getSubjectSummary(
+    kind: ExperienceSubjectKind,
+    refId: string
+  ): Promise<ExperienceSubjectSummary> {
+    const response = await axiosInstance.get<ApiResponse<ExperienceSubjectSummary>>(
+      "/community/experiences/subjects/summary",
+      { params: { kind, refId } }
     );
     return response.data.data;
   },

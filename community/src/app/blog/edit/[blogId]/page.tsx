@@ -11,8 +11,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { blogId } = await params;
   return buildMetadata({
-    title: "Edit Blog",
-    description: "Edit your PowerMySport community blog post.",
+    title: "Edit Experience",
+    description: "Edit the experience you shared with the PowerMySport community.",
     path: `/blog/edit/${blogId}`,
     noindex: true,
   });

@@ -310,13 +310,23 @@ export interface BlogAuthorSummary {
   photoUrl: string | null;
 }
 
+export interface ExperienceSubject {
+  kind: "TOURNAMENT" | "TOURNAMENT_EDITION" | "VENUE" | "ACADEMY" | "COACH" | "EXPERT";
+  refId: string;
+  name: string;
+  slug: string | null;
+}
+
 export interface BlogListItem {
   id: string;
   title: string;
   excerpt: string;
   coverImageKey: string | null;
   coverImageUrl: string | null;
+  /** @deprecated Collapsed sport-or-category. Use `category`/`sport`. */
   topic: string;
+  category: string;
+  sport: string | null;
   tags: string[];
   status: "PUBLISHED" | "DRAFT";
   likeCount: number;
@@ -325,6 +335,8 @@ export interface BlogListItem {
   likedByMe: boolean;
   createdAt: string;
   author: BlogAuthorSummary;
+  subject: ExperienceSubject | null;
+  attendedAt: string | null;
 }
 
 export interface BlogDetail extends BlogListItem {
@@ -332,6 +344,8 @@ export interface BlogDetail extends BlogListItem {
   content: string;
   updatedAt: string;
   isMine: boolean;
+  signals: Record<string, string> | null;
+  moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
 }
 
 export interface BlogComment {

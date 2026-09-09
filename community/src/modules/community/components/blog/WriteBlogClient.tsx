@@ -10,11 +10,19 @@ import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
-import { ALL_TOPICS } from "@/modules/community/constants/experienceTaxonomy";
+import { EXPERIENCE_SPORTS, getExperienceCategory } from "@/modules/community/constants/experienceTaxonomy"; // prettier-ignore
+import {
+  MODERATED_SUBJECT_KINDS,
+  type SignalKey,
+  type SignalValue,
+} from "@/modules/community/constants/experienceSubjects";
 import { htmlToText } from "@/modules/community/utils/sanitizeHtml";
 import RichTextCanvas from "./editor/RichTextCanvas";
 import ImageBlockUploader from "./editor/ImageBlockUploader";
 import BlogPreviewModal from "./BlogPreviewModal";
+import CategoryPicker from "./CategoryPicker";
+import SubjectPicker, { type SelectedSubject } from "./SubjectPicker";
+import SignalQuestions from "./SignalQuestions";
 
 interface WriteBlogClientProps {
   mode: "create" | "edit";
@@ -22,28 +30,39 @@ interface WriteBlogClientProps {
 }
 
 const EXCERPT_MAX_LENGTH = 300;
-const MIN_TITLE_LENGTH = 5;
 const AUTOSAVE_DEBOUNCE_MS = 2500;
 
 type FormSnapshot = {
   title: string;
   excerpt: string;
-  topic: string;
+  category: string;
+  sport: string;
   tagsInput: string;
   coverImageKey: string | null;
   content: string;
+  subject: SelectedSubject | null;
+  signals: Partial<Record<SignalKey, SignalValue>>;
+  attendedAt: string;
 };
+
+const emptySignals: Partial<Record<SignalKey, SignalValue>> = {};
 
 export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) {
   const router = useRouter();
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
-  const [topic, setTopic] = useState("General");
+  // Empty until picked (create) or hydrated from the loaded post (edit) — an
+  // empty category is what puts the picker screen up front.
+  const [category, setCategory] = useState("");
+  const [sport, setSport] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [coverImageKey, setCoverImageKey] = useState<string | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [content, setContent] = useState("");
+  const [subject, setSubject] = useState<SelectedSubject | null>(null);
+  const [signals, setSignals] = useState<Partial<Record<SignalKey, SignalValue>>>(emptySignals);
+  const [attendedAt, setAttendedAt] = useState("");
   const [profile, setProfile] = useState<BlogAuthorProfile | null>(null);
 
   // The post this session is actually writing to — starts as the `blogId`
@@ -90,28 +109,48 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         }
         setTitle(blog.title);
         setExcerpt(blog.excerpt || "");
-        setTopic(blog.topic || "General");
+        setCategory(blog.category || "general");
+        setSport(blog.sport || "");
         setTagsInput((blog.tags || []).join(", "));
         setCoverImageKey(blog.coverImageKey);
         setCoverImageUrl(blog.coverImageUrl);
         setContent(blog.content || "");
         setPostStatus(blog.status);
+        const loadedSubject: SelectedSubject | null = blog.subject
+          ? {
+              kind: blog.subject.kind,
+              refId: blog.subject.refId,
+              nameSnapshot: blog.subject.name,
+              slugSnapshot: blog.subject.slug,
+            }
+          : null;
+        setSubject(loadedSubject);
+        setSignals((blog.signals as Partial<Record<SignalKey, SignalValue>>) || emptySignals);
+        setAttendedAt(blog.attendedAt ? blog.attendedAt.slice(0, 10) : "");
         savedSnapshotRef.current = {
           title: blog.title,
           excerpt: blog.excerpt || "",
-          topic: blog.topic || "General",
+          category: blog.category || "general",
+          sport: blog.sport || "",
           tagsInput: (blog.tags || []).join(", "),
           coverImageKey: blog.coverImageKey,
           content: blog.content || "",
+          subject: loadedSubject,
+          signals: (blog.signals as Partial<Record<SignalKey, SignalValue>>) || emptySignals,
+          attendedAt: blog.attendedAt ? blog.attendedAt.slice(0, 10) : "",
         };
       } else {
         savedSnapshotRef.current = {
           title: "",
           excerpt: "",
-          topic: "General",
+          category: "",
+          sport: "",
           tagsInput: "",
           coverImageKey: null,
           content: "",
+          subject: null,
+          signals: emptySignals,
+          attendedAt: "",
         };
       }
     } catch (error) {
@@ -132,30 +171,74 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
       .filter(Boolean)
       .slice(0, 8);
 
+  // Signals only mean anything alongside a subject — dropping them the moment
+  // the subject is removed keeps a stale answer from lingering unseen.
+  const handleSubjectChange = useCallback((next: SelectedSubject | null) => {
+    setSubject(next);
+    if (!next) setSignals(emptySignals);
+  }, []);
+
   const buildPayload = useCallback(
     () => ({
-      title: title.trim(),
+      title: title.trim() || undefined,
       excerpt: excerpt.trim() || undefined,
-      topic,
+      category,
+      sport: sport || null,
       tags: parseTags(),
       coverImageKey,
       content,
+      subject: subject
+        ? {
+            kind: subject.kind,
+            refId: subject.refId,
+            nameSnapshot: subject.nameSnapshot,
+            slugSnapshot: subject.slugSnapshot,
+          }
+        : null,
+      signals: subject ? signals : null,
+      attendedAt: attendedAt || null,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [title, excerpt, topic, tagsInput, coverImageKey, content]
+    [
+      title,
+      excerpt,
+      category,
+      sport,
+      tagsInput,
+      coverImageKey,
+      content,
+      subject,
+      signals,
+      attendedAt,
+    ]
   );
 
   const markSaved = useCallback(() => {
     savedSnapshotRef.current = {
       title,
       excerpt,
-      topic,
+      category,
+      sport,
       tagsInput,
       coverImageKey,
       content,
+      subject,
+      signals,
+      attendedAt,
     };
     setIsDirty(false);
-  }, [title, excerpt, topic, tagsInput, coverImageKey, content]);
+  }, [
+    title,
+    excerpt,
+    category,
+    sport,
+    tagsInput,
+    coverImageKey,
+    content,
+    subject,
+    signals,
+    attendedAt,
+  ]);
 
   // ── Dirty tracking ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -164,13 +247,17 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
     const current: FormSnapshot = {
       title,
       excerpt,
-      topic,
+      category,
+      sport,
       tagsInput,
       coverImageKey,
       content,
+      subject,
+      signals,
+      attendedAt,
     };
     setIsDirty(!snap || JSON.stringify(snap) !== JSON.stringify(current));
-  }, [title, excerpt, topic, tagsInput, coverImageKey, content, isLoading]);
+  }, [title, excerpt, category, sport, tagsInput, coverImageKey, content, subject, signals, attendedAt, isLoading]); // prettier-ignore
 
   // ── Warn before leaving with unsaved changes (tab close / reload) ──────
   useEffect(() => {
@@ -183,10 +270,13 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
+  // A category has to be picked before there is anything worth saving — it is
+  // the one thing the composer cannot derive on its own.
+  const hasCategory = category.trim().length > 0;
+
   // ── Silent autosave (debounced) ─────────────────────────────────────────
   const autosave = useCallback(async () => {
-    if (autosavingRef.current || isPublishing || isSavingDraft) return;
-    if (title.trim().length < MIN_TITLE_LENGTH) return;
+    if (autosavingRef.current || isPublishing || isSavingDraft || !hasCategory) return;
 
     autosavingRef.current = true;
     setAutosaveState("saving");
@@ -210,18 +300,19 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
     } finally {
       autosavingRef.current = false;
     }
-  }, [activeBlogId, postStatus, title, isPublishing, isSavingDraft, buildPayload, markSaved]);
+  }, [activeBlogId, postStatus, isPublishing, isSavingDraft, hasCategory, buildPayload, markSaved]);
 
   useEffect(() => {
-    if (isLoading || !isDirty) return;
-    if (title.trim().length < MIN_TITLE_LENGTH) return;
+    if (isLoading || !isDirty || !hasCategory) return;
     const timer = setTimeout(() => void autosave(), AUTOSAVE_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [title, excerpt, topic, tagsInput, coverImageKey, content, isDirty, isLoading, autosave]);
+  }, [title, excerpt, category, sport, tagsInput, coverImageKey, content, subject, signals, attendedAt, isDirty, isLoading, hasCategory, autosave]); // prettier-ignore
+
+  const hasSomethingToPublish = () => Boolean(htmlToText(content).trim() || coverImageKey);
 
   const saveDraft = async () => {
-    if (title.trim().length < MIN_TITLE_LENGTH) {
-      toast.error(`Title must be at least ${MIN_TITLE_LENGTH} characters`);
+    if (!hasCategory) {
+      toast.error("Pick what this is about first");
       return;
     }
     setIsSavingDraft(true);
@@ -247,12 +338,12 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
   };
 
   const publish = async () => {
-    if (title.trim().length < MIN_TITLE_LENGTH) {
-      toast.error("Title must be at least 5 characters");
+    if (!hasCategory) {
+      toast.error("Pick what this is about first");
       return;
     }
-    if (!htmlToText(content).trim()) {
-      toast.error("Add content before publishing");
+    if (!hasSomethingToPublish()) {
+      toast.error("Add a few words or a photo before publishing");
       return;
     }
 
@@ -265,7 +356,14 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         : await blogService.createBlog(payload);
 
       markSaved();
-      toast.success(postStatus === "PUBLISHED" ? "Blog updated" : "Blog published");
+      const isModerated = subject && MODERATED_SUBJECT_KINDS.includes(subject.kind);
+      toast.success(
+        isModerated
+          ? "Submitted — this will be visible once it's reviewed"
+          : postStatus === "PUBLISHED"
+            ? "Experience updated"
+            : "Experience shared"
+      );
       router.push(`/blog/${result.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to publish");
@@ -294,6 +392,14 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
     );
   }
 
+  // Create mode, nothing picked or saved yet: ask what this is about before
+  // showing anything that looks like a form.
+  if (mode === "create" && !hasCategory && !activeBlogId) {
+    return <CategoryPicker onSelect={setCategory} />;
+  }
+
+  const categoryMeta = getExperienceCategory(category);
+
   return (
     <div className="relative min-h-[calc(100vh-5.5rem)] bg-[linear-gradient(180deg,#f5f8ff_0%,#ffffff_45%)]">
       <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
@@ -305,7 +411,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
           >
             <ChevronLeft size={16} />
-            Back to Blog
+            Back to Experiences
           </Link>
           <div className="flex items-center gap-2">
             {saveIndicator && (
@@ -327,8 +433,18 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
           </div>
         </div>
 
+        {/* Category chip — always changeable, never blocks editing */}
+        <button
+          type="button"
+          onClick={() => setCategory("")}
+          className={`mt-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80 ${categoryMeta.accent}`}
+        >
+          <categoryMeta.Icon size={13} />
+          {categoryMeta.label}
+        </button>
+
         {/* Banner */}
-        <div className="mt-5">
+        <div className="mt-4">
           <ImageBlockUploader
             imageUrl={coverImageUrl}
             onUploaded={(key, url) => {
@@ -340,8 +456,8 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
               setCoverImageUrl(null);
             }}
             className="aspect-[16/6]"
-            label="Add a cover image"
-            hint="Drag & drop or click — this is the banner readers see first"
+            label="Add a photo"
+            hint="A photo and a couple of lines is a complete experience on its own"
           />
         </div>
 
@@ -366,7 +482,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             rows={2}
             maxLength={EXCERPT_MAX_LENGTH}
             onChange={(event) => setExcerpt(event.target.value)}
-            placeholder="A one or two line subtitle — shown on blog cards and previews (optional, auto-generated from your content if left blank)"
+            placeholder="A one or two line subtitle — shown on cards and previews (optional, auto-generated from your content if left blank)"
             className="focus:border-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none placeholder:text-slate-300"
           />
           <p className="mt-1 text-right text-[11px] text-slate-400">
@@ -374,18 +490,36 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
           </p>
         </div>
 
-        {/* Topic + tags */}
-        <div className="mt-1 grid gap-3 sm:grid-cols-2">
+        {/* Subject anchor */}
+        <div className="mt-3">
+          <SubjectPicker value={subject} onChange={handleSubjectChange} />
+        </div>
+
+        {subject && (
+          <div className="mt-3">
+            <SignalQuestions
+              subjectKind={subject.kind}
+              values={signals}
+              onChange={(key, value) => setSignals((prev) => ({ ...prev, [key]: value }))}
+              attendedAt={attendedAt}
+              onAttendedAtChange={setAttendedAt}
+            />
+          </div>
+        )}
+
+        {/* Sport + tags */}
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Topic
+              Sport (optional)
             </label>
             <select
-              value={topic}
-              onChange={(event) => setTopic(event.target.value)}
+              value={sport}
+              onChange={(event) => setSport(event.target.value)}
               className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none"
             >
-              {ALL_TOPICS.map((option) => (
+              <option value="">Not sport-specific</option>
+              {EXPERIENCE_SPORTS.map((option) => (
                 <option key={option.slug} value={option.slug}>
                   {option.label}
                 </option>
@@ -407,8 +541,12 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
 
         <div className="my-5 h-px bg-slate-100" />
 
-        {/* Rich text editor */}
-        <RichTextCanvas initialContent={content} onChange={setContent} />
+        {/* Rich text editor — seeded with the category's own question */}
+        <RichTextCanvas
+          initialContent={content}
+          onChange={setContent}
+          placeholder={categoryMeta.prompt}
+        />
       </div>
 
       {/* Sticky action bar */}
@@ -446,7 +584,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}
         title={title}
-        topic={topic}
+        topic={category}
         coverImageUrl={coverImageUrl}
         content={content}
         authorName={profile?.name || "You"}
