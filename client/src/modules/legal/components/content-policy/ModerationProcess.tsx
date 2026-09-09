@@ -3,7 +3,7 @@ import { Flag } from "lucide-react";
 export function ModerationProcess() {
   return (
     <section id="moderation-process" className="mb-8">
-      <h2 className="mb-4 mt-8 text-2xl font-semibold">8. Content Moderation Process</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">9. Content Moderation Process</h2>
 
       <h3 className="mb-3 mt-6 text-xl font-semibold">8.1 How Content is Reviewed</h3>
       <p>We review content through:</p>

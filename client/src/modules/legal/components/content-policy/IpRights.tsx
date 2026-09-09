@@ -3,7 +3,7 @@ import { Copyright } from "lucide-react";
 export function IpRights() {
   return (
     <section id="ip-rights" className="mb-8">
-      <h2 className="mb-4 mt-8 text-2xl font-semibold">11. Intellectual Property Rights</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">12. Intellectual Property Rights</h2>
 
       <h3 className="mb-3 mt-6 text-xl font-semibold">11.1 Your Rights Over Your Content</h3>
       <p>By submitting content to PowerMySport, you:</p>

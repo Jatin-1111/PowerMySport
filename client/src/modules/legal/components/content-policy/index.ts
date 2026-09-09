@@ -5,6 +5,7 @@ export { ContentTypes } from "./ContentTypes";
 export { AcceptableContent } from "./AcceptableContent";
 export { ProhibitedContent } from "./ProhibitedContent";
 export { ReviewRules } from "./ReviewRules";
+export { ExperiencesNamedIndividuals } from "./ExperiencesNamedIndividuals";
 export { PhotoVideo } from "./PhotoVideo";
 export { Messages } from "./Messages";
 export { ModerationProcess } from "./ModerationProcess";

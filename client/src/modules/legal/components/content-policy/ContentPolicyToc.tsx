@@ -17,6 +17,7 @@ import {
   ScrollText,
   ShieldAlert,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 
 /**
@@ -35,6 +36,11 @@ const ITEMS: LegalTocItem[] = [
   { id: "acceptable-content", label: "Acceptable Content Guidelines", icon: ListChecks },
   { id: "prohibited-content", label: "Prohibited Content", icon: Ban },
   { id: "review-rules", label: "Review & Rating Specific Rules", icon: MessageSquarePlus },
+  {
+    id: "experiences-named-individuals",
+    label: "Experiences Naming a Coach, Academy, or Expert",
+    icon: UserRound,
+  },
   { id: "photo-video", label: "Photo & Video Guidelines", icon: Camera },
   { id: "messages", label: "Private Messages & Communication", icon: MessageCircle },
   { id: "moderation-process", label: "Content Moderation Process", icon: ShieldCheck },

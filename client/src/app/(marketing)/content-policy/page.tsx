@@ -12,6 +12,7 @@ import {
   AcceptableContent,
   ProhibitedContent,
   ReviewRules,
+  ExperiencesNamedIndividuals,
   PhotoVideo,
   Messages,
   ModerationProcess,
@@ -49,6 +50,7 @@ export default function ContentPolicy() {
             <AcceptableContent />
             <ProhibitedContent />
             <ReviewRules />
+            <ExperiencesNamedIndividuals />
             <PhotoVideo />
             <Messages />
             <ModerationProcess />

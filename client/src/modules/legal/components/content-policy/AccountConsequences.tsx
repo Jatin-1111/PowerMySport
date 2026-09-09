@@ -1,7 +1,7 @@
 export function AccountConsequences() {
   return (
     <section id="account-consequences" className="mb-8">
-      <h2 className="mb-4 mt-8 text-2xl font-semibold">10. Account Consequences</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">11. Account Consequences</h2>
 
       <h3 className="mb-3 mt-6 text-xl font-semibold">10.1 Warning</h3>
       <p>

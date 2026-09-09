@@ -1,7 +1,7 @@
 export function Appeals() {
   return (
     <section id="appeals" className="mb-8">
-      <h2 className="mb-4 mt-8 text-2xl font-semibold">9. Appeals & Disputes</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">10. Appeals & Disputes</h2>
 
       <h3 className="mb-3 mt-6 text-xl font-semibold">9.1 Appealing a Decision</h3>
       <p>If you believe your content was removed or restricted in error:</p>

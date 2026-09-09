@@ -1,7 +1,7 @@
 export function PhotoVideo() {
   return (
     <section id="photo-video" className="mb-8">
-      <h2 className="mb-4 mt-8 text-2xl font-semibold">6. Photo & Video Guidelines</h2>
+      <h2 className="mb-4 mt-8 text-2xl font-semibold">7. Photo & Video Guidelines</h2>
 
       <h3 className="mb-3 mt-6 text-xl font-semibold">6.1 Ownership & Consent Requirements</h3>
       <p>When uploading photos or videos, you must:</p>
