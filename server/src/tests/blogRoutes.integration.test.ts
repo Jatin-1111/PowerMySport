@@ -383,3 +383,180 @@ describe("commenting on a blog post over HTTP", () => {
     assert.equal(deleteResponse.status, 403);
   });
 });
+
+describe("anchoring an experience to a subject", () => {
+  const tournamentId = oid();
+
+  const tournamentSubject = () => ({
+    kind: "TOURNAMENT",
+    refId: String(tournamentId),
+    nameSnapshot: "Delhi U-14 Open",
+    slugSnapshot: "delhi-u14-open",
+  });
+
+  const coachSubject = () => ({
+    kind: "COACH",
+    refId: String(oid()),
+    nameSnapshot: "Coach Mehta",
+    slugSnapshot: null,
+  });
+
+  it("publishes immediately when anchored to an event, and returns the subject", async () => {
+    const { token } = await signedInAs("Player");
+
+    const response = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${token}`)
+      .send(
+        validCreatePayload({
+          subject: tournamentSubject(),
+          signals: { organisation: "GOOD", facilities: "OKAY" },
+          attendedAt: "2026-08-01T00:00:00.000Z",
+        })
+      );
+
+    assert.equal(response.status, 201);
+    assert.equal(response.body.data.moderationStatus, "APPROVED");
+    assert.deepEqual(response.body.data.subject, {
+      kind: "TOURNAMENT",
+      refId: String(tournamentId),
+      name: "Delhi U-14 Open",
+      slug: "delhi-u14-open",
+    });
+    assert.equal(response.body.data.signals.organisation, "GOOD");
+
+    // Visible in the open feed right away — no review needed for an event.
+    const feed = await request(app).get("/api/community/blog/posts");
+    assert.ok(feed.body.data.items.some((item: { id: string }) => item.id === response.body.data.id)); // prettier-ignore
+  });
+
+  it("drops a signal key that does not belong to the subject's kind", async () => {
+    const { token } = await signedInAs("Player");
+
+    const response = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${token}`)
+      .send(
+        validCreatePayload({
+          subject: tournamentSubject(),
+          // "coachingQuality" is a COACH/ACADEMY signal, not a TOURNAMENT one.
+          signals: { organisation: "GOOD", coachingQuality: "POOR" },
+        })
+      );
+
+    assert.equal(response.status, 201);
+    assert.equal(response.body.data.signals.organisation, "GOOD");
+    assert.equal(response.body.data.signals.coachingQuality, undefined);
+  });
+
+  it("holds a coach-anchored experience for review and hides it from the public feed", async () => {
+    const author = await signedInAs("Player");
+
+    const response = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${author.token}`)
+      .send(validCreatePayload({ subject: coachSubject() }));
+
+    assert.equal(response.status, 201);
+    assert.equal(response.body.data.moderationStatus, "PENDING");
+    const experienceId = response.body.data.id;
+
+    // Not in the open feed for anyone else...
+    const publicFeed = await request(app).get("/api/community/blog/posts");
+    assert.ok(!publicFeed.body.data.items.some((item: { id: string }) => item.id === experienceId));
+
+    // ...and not fetchable by another visitor either, same treatment as a
+    // draft that belongs to someone else.
+    const viewer = await signedInAs("Parent");
+    const viewerRead = await request(app)
+      .get(`/api/community/blog/posts/${experienceId}`)
+      .set("Authorization", `Bearer ${viewer.token}`);
+    assert.equal(viewerRead.status, 404);
+
+    // ...but the author can still see their own pending experience, both by
+    // id and in their own "mine" feed.
+    const authorRead = await request(app)
+      .get(`/api/community/blog/posts/${experienceId}`)
+      .set("Authorization", `Bearer ${author.token}`);
+    assert.equal(authorRead.status, 200);
+    assert.equal(authorRead.body.data.moderationStatus, "PENDING");
+
+    const mineFeed = await request(app)
+      .get("/api/community/blog/posts?mine=true")
+      .set("Authorization", `Bearer ${author.token}`);
+    assert.ok(mineFeed.body.data.items.some((item: { id: string }) => item.id === experienceId));
+  });
+
+  it("moves back to APPROVED when a coach anchor is removed on edit", async () => {
+    const { token } = await signedInAs("Player");
+
+    const createResponse = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${token}`)
+      .send(validCreatePayload({ subject: coachSubject() }));
+    const experienceId = createResponse.body.data.id;
+    assert.equal(createResponse.body.data.moderationStatus, "PENDING");
+
+    const updateResponse = await request(app)
+      .patch(`/api/community/blog/posts/${experienceId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ subject: null });
+
+    assert.equal(updateResponse.status, 200);
+    assert.equal(updateResponse.body.data.subject, null);
+    assert.equal(updateResponse.body.data.moderationStatus, "APPROVED");
+
+    const feed = await request(app).get("/api/community/blog/posts");
+    assert.ok(feed.body.data.items.some((item: { id: string }) => item.id === experienceId));
+  });
+
+  it("moves to PENDING when a coach anchor is added on edit to an approved post", async () => {
+    const { token } = await signedInAs("Player");
+    const createResponse = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${token}`)
+      .send(validCreatePayload());
+    const experienceId = createResponse.body.data.id;
+    assert.equal(createResponse.body.data.moderationStatus, "APPROVED");
+
+    const updateResponse = await request(app)
+      .patch(`/api/community/blog/posts/${experienceId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ subject: coachSubject() });
+
+    assert.equal(updateResponse.status, 200);
+    assert.equal(updateResponse.body.data.moderationStatus, "PENDING");
+  });
+
+  it("ignores a malformed subject rather than failing the request", async () => {
+    const { token } = await signedInAs("Player");
+
+    const response = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${token}`)
+      .send(
+        validCreatePayload({
+          subject: { kind: "TOURNAMENT", refId: "not-an-object-id", nameSnapshot: "X" },
+        })
+      );
+
+    assert.equal(response.status, 201);
+    assert.equal(response.body.data.subject, null);
+    assert.equal(response.body.data.moderationStatus, "APPROVED");
+  });
+
+  it("publishes with no title at all, deriving one from the content", async () => {
+    const { token } = await signedInAs("Player");
+
+    const response = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        content:
+          "<p>Two lines and a photo is enough. This was a good week for footwork drills.</p>",
+      });
+
+    assert.equal(response.status, 201);
+    assert.equal(response.body.data.title, "Two lines and a photo is enough.");
+  });
+});

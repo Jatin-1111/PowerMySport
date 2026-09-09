@@ -4,7 +4,13 @@ import { ExperienceComment } from "../models/ExperienceComment";
 import {
   isExperienceSport,
   normalizeExperienceCategory,
+  pickValidSignals,
+  requiresPreModeration,
+  EXPERIENCE_SUBJECT_KINDS,
   type ExperienceCategory,
+  type ExperienceSubjectKind,
+  type SignalKey,
+  type SignalValue,
 } from "../constants/experience";
 import { ExperienceLike, ExperienceLikeTargetType } from "../models/ExperienceLike";
 import { CommunityProfile, CommunitySocialLinks } from "../models/CommunityProfile";
@@ -35,13 +41,23 @@ export interface BlogAuthorSummary {
   photoUrl: string | null;
 }
 
+export interface ExperienceSubjectView {
+  kind: ExperienceSubjectKind;
+  refId: string;
+  name: string;
+  slug: string | null;
+}
+
 export interface BlogListItem {
   id: string;
   title: string;
   excerpt: string;
   coverImageKey: string | null;
   coverImageUrl: string | null;
+  /** @deprecated Collapsed sport-or-category, kept for old clients. Use `category`/`sport`. */
   topic: string;
+  category: string;
+  sport: string | null;
   tags: string[];
   status: "PUBLISHED" | "DRAFT";
   likeCount: number;
@@ -50,12 +66,22 @@ export interface BlogListItem {
   likedByMe: boolean;
   createdAt: Date;
   author: BlogAuthorSummary;
+  subject: ExperienceSubjectView | null;
+  attendedAt: Date | null;
 }
 
 export interface BlogDetail extends BlogListItem {
   content: string;
   updatedAt: Date;
   isMine: boolean;
+  signals: Partial<Record<SignalKey, SignalValue>> | null;
+  /**
+   * Only meaningful to the author: an experience anchored to a coach or
+   * expert is not publicly visible until this is APPROVED (see
+   * requiresPreModeration). Every other subject — and every unanchored
+   * experience — publishes as APPROVED immediately.
+   */
+  moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
 }
 
 export interface BlogCommentItem {
@@ -421,6 +447,28 @@ const topicToFields = (
 };
 
 /**
+ * The category-first composer sends `category` and `sport` explicitly rather
+ * than folding both into one `topic` string — that collapse is what mixed
+ * "Tennis" and "Nutrition" into one field in the first place (see migration
+ * 39). `topic` is kept working for anything that still sends it; either
+ * explicit field, when present, takes precedence over it.
+ */
+const resolveCategoryAndSport = (payload: {
+  topic?: string;
+  category?: string;
+  sport?: string | null;
+}): { sport: string | null; category: ExperienceCategory } => {
+  if (payload.category === undefined && payload.sport === undefined) {
+    return topicToFields(payload.topic);
+  }
+  const sport = payload.sport?.trim();
+  return {
+    sport: sport && isExperienceSport(sport) ? sport : null,
+    category: normalizeExperienceCategory(payload.category),
+  };
+};
+
+/**
  * `title` is optional on the model now — two lines and a photo is a complete
  * experience, and demanding a headline first was most of what made the old
  * composer read as "write an essay". The API still always returns one, so it is
@@ -454,6 +502,60 @@ const deriveTitle = (doc: {
 const normalizeLikeTargetType = (raw: string): ExperienceLikeTargetType =>
   raw === "COMMENT" ? "COMMENT" : "EXPERIENCE";
 
+interface SubjectInput {
+  kind: string;
+  refId: string;
+  nameSnapshot: string;
+  slugSnapshot?: string | null;
+}
+
+/**
+ * Validate and normalize an incoming subject from the composer. Returns
+ * undefined for anything malformed rather than throwing — a broken subject
+ * should fall back to an unanchored experience, not fail the whole write.
+ */
+const toSubjectDoc = (
+  input: SubjectInput | null | undefined
+):
+  | {
+      kind: ExperienceSubjectKind;
+      refId: mongoose.Types.ObjectId;
+      nameSnapshot: string;
+      slugSnapshot: string | null;
+    }
+  | null
+  | undefined => {
+  if (input === null) return null; // explicit clear
+  if (!input) return undefined; // omitted: leave as-is
+  if (!(EXPERIENCE_SUBJECT_KINDS as readonly string[]).includes(input.kind)) return undefined;
+  if (!input.nameSnapshot?.trim()) return undefined;
+  if (!mongoose.Types.ObjectId.isValid(input.refId)) return undefined;
+
+  return {
+    kind: input.kind as ExperienceSubjectKind,
+    refId: new mongoose.Types.ObjectId(input.refId),
+    nameSnapshot: input.nameSnapshot.trim().slice(0, 200),
+    slugSnapshot: input.slugSnapshot?.trim().slice(0, 200) || null,
+  };
+};
+
+const subjectToView = (doc: {
+  subject?: {
+    kind: ExperienceSubjectKind;
+    refId: mongoose.Types.ObjectId;
+    nameSnapshot: string;
+    slugSnapshot?: string | null;
+  } | null;
+}): ExperienceSubjectView | null =>
+  doc.subject
+    ? {
+        kind: doc.subject.kind,
+        refId: String(doc.subject.refId),
+        name: doc.subject.nameSnapshot,
+        slug: doc.subject.slugSnapshot || null,
+      }
+    : null;
+
 export const BlogService = {
   async listBlogs(
     userId: string | undefined,
@@ -481,10 +583,19 @@ export const BlogService = {
     if (filters?.mine && userId) {
       query.authorId = toObjectId(userId, "user id");
       // Only the owner's own list includes drafts — never shown to anyone
-      // browsing someone else's posts.
+      // browsing someone else's posts. An experience the author anchored to a
+      // coach or expert also stays visible to them here while it is PENDING —
+      // this is the one place they can see it is still awaiting review.
       query.status = { $in: ["PUBLISHED", "DRAFT"] };
     } else if (filters?.authorId) {
       query.authorId = toObjectId(filters.authorId, "author id");
+      // A public author-profile listing must not leak someone's
+      // still-under-review, coach/expert-anchored experience to visitors.
+      query.moderationStatus = "APPROVED";
+    } else {
+      // The open feed and any topic/search browse of it — never shows a
+      // PENDING (coach/expert, awaiting review), FLAGGED or REMOVED post.
+      query.moderationStatus = "APPROVED";
     }
 
     const topic = (filters?.topic || "").trim();
@@ -512,7 +623,7 @@ export const BlogService = {
     const [posts, total] = await Promise.all([
       Experience.find(query)
         .select(
-          "title excerpt coverImageKey category sport tags status likeCount commentCount viewCount createdAt authorId subject attendedAt"
+          "title excerpt coverImageKey category sport tags status likeCount commentCount viewCount createdAt authorId subject attendedAt moderationStatus"
         )
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -540,6 +651,8 @@ export const BlogService = {
       coverImageKey: post.coverImageKey || null,
       coverImageUrl: coverUrls[index] ?? null,
       topic: topicOf(post),
+      category: post.category || "general",
+      sport: post.sport || null,
       tags: post.tags || [],
       status: post.status,
       likeCount: post.likeCount || 0,
@@ -548,6 +661,8 @@ export const BlogService = {
       likedByMe: likedSet.has(String(post._id)),
       createdAt: post.createdAt,
       author: buildAuthor(String(post.authorId)),
+      subject: subjectToView(post),
+      attendedAt: post.attendedAt || null,
     }));
 
     return {
@@ -588,8 +703,11 @@ export const BlogService = {
     const isMine = Boolean(userId) && String(post.authorId) === userId;
     // A draft is only visible to its author — hide its existence entirely
     // from anyone else rather than leaking a 403 (which would confirm the id
-    // is real).
-    if (post.status === "DRAFT" && !isMine) {
+    // is real). Same treatment for an experience still PENDING review because
+    // it is anchored to a coach or expert: to anyone but its author, that link
+    // does not exist yet either.
+    const moderationStatus = post.moderationStatus || "APPROVED";
+    if ((post.status === "DRAFT" || moderationStatus !== "APPROVED") && !isMine) {
       throw new Error("Blog not found");
     }
 
@@ -613,6 +731,8 @@ export const BlogService = {
       coverImageKey: post.coverImageKey || null,
       coverImageUrl,
       topic: topicOf(post),
+      category: post.category || "general",
+      sport: post.sport || null,
       tags: post.tags || [],
       status: post.status,
       likeCount: post.likeCount || 0,
@@ -624,6 +744,10 @@ export const BlogService = {
       content,
       isMine,
       author: buildAuthor(String(post.authorId)),
+      subject: subjectToView(post),
+      attendedAt: post.attendedAt || null,
+      signals: post.signals || null,
+      moderationStatus,
     };
   },
 
@@ -637,9 +761,14 @@ export const BlogService = {
       excerpt?: string;
       coverImageKey?: string | null;
       topic?: string;
+      category?: string;
+      sport?: string | null;
       tags?: string[];
       content?: string;
       status?: "DRAFT" | "PUBLISHED";
+      subject?: SubjectInput | null;
+      signals?: Record<string, string> | null;
+      attendedAt?: string | null;
     }
   ): Promise<BlogDetail> {
     await ensureBlogProfile(userId);
@@ -647,15 +776,23 @@ export const BlogService = {
     const content = stripContentImageSrc(payload.content || "");
     const status = payload.status === "DRAFT" ? "DRAFT" : "PUBLISHED";
     const trimmedTitle = payload.title?.trim();
+    const subject = toSubjectDoc(payload.subject) || null;
     const post = await Experience.create({
       authorId: userId,
       ...(trimmedTitle ? { title: trimmedTitle } : {}),
       excerpt: deriveExcerpt(payload.excerpt, content),
       coverImageKey: payload.coverImageKey || null,
-      ...topicToFields(payload.topic),
+      ...resolveCategoryAndSport(payload),
       tags: normalizeTags(payload.tags),
       content,
       status,
+      subject,
+      signals: pickValidSignals(subject?.kind, payload.signals) || null,
+      attendedAt: payload.attendedAt ? new Date(payload.attendedAt) : null,
+      // A coach or expert cannot be named without a chance to have that
+      // reviewed first — every other subject (or none) publishes straight
+      // away, exactly as the blog always did.
+      moderationStatus: requiresPreModeration(subject?.kind) ? "PENDING" : "APPROVED",
     });
 
     // Points are for a published experience, never a draft — the same rule
@@ -675,9 +812,14 @@ export const BlogService = {
       excerpt?: string;
       coverImageKey?: string | null;
       topic?: string;
+      category?: string;
+      sport?: string | null;
       tags?: string[];
       content?: string;
       status?: "DRAFT" | "PUBLISHED";
+      subject?: SubjectInput | null;
+      signals?: Record<string, string> | null;
+      attendedAt?: string | null;
     }
   ): Promise<BlogDetail> {
     const id = toObjectId(blogId, "blog id");
@@ -692,8 +834,12 @@ export const BlogService = {
     if (typeof payload.title === "string") {
       post.title = payload.title.trim();
     }
-    if (typeof payload.topic === "string") {
-      const { sport, category } = topicToFields(payload.topic);
+    if (
+      typeof payload.topic === "string" ||
+      payload.category !== undefined ||
+      payload.sport !== undefined
+    ) {
+      const { sport, category } = resolveCategoryAndSport(payload);
       post.sport = sport;
       post.category = category;
     }
@@ -710,6 +856,27 @@ export const BlogService = {
     } else if (typeof payload.excerpt === "string") {
       post.excerpt = payload.excerpt.trim().slice(0, 300);
     }
+
+    // Subject is set-or-cleared, never merged: the composer always sends the
+    // whole thing, and `undefined` means "leave it alone" (an autosave that
+    // never touched the subject step must not silently drop it).
+    if (payload.subject !== undefined) {
+      post.subject = toSubjectDoc(payload.subject) || null;
+      // A moderator's FLAGGED/REMOVED call stands regardless of what the
+      // author does to the subject afterwards — only move the needle between
+      // PENDING and APPROVED, which is what adding or removing a coach/expert
+      // anchor actually changes.
+      if (post.moderationStatus === "PENDING" || post.moderationStatus === "APPROVED") {
+        post.moderationStatus = requiresPreModeration(post.subject?.kind) ? "PENDING" : "APPROVED";
+      }
+    }
+    if (payload.signals !== undefined) {
+      post.signals = pickValidSignals(post.subject?.kind, payload.signals) || null;
+    }
+    if (payload.attendedAt !== undefined) {
+      post.attendedAt = payload.attendedAt ? new Date(payload.attendedAt) : null;
+    }
+
     // Only change status when explicitly given — omitted means "keep as is"
     // (e.g. a periodic autosave on an already-published post must not
     // silently pull it back to draft).

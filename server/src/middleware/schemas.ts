@@ -476,17 +476,45 @@ const blogTitleSchema = z
   .max(200, "Title cannot exceed 200 characters")
   .optional();
 
+// What an experience can be anchored to, and the three-point signals asked
+// once it is. Kept loose here on purpose — BlogService re-validates the kind
+// against the real enum and drops any signal key that does not belong to it
+// (pickValidSignals); this layer only bounds sizes and shapes.
+const blogSubjectSchema = z
+  .object({
+    kind: z.string().trim().max(40),
+    refId: z.string().trim().min(1).max(64),
+    nameSnapshot: z.string().trim().min(1).max(200),
+    slugSnapshot: z.string().trim().max(200).nullable().optional(),
+  })
+  .nullable()
+  .optional();
+
+const blogSignalsSchema = z.record(z.string().max(40), z.string().max(20)).nullable().optional();
+
+// `category` and `sport`: the category-first composer sends these explicitly.
+// `topic` is kept working for anything that still sends it (either explicit
+// field wins — see resolveCategoryAndSport). Values are re-validated against
+// the real enums in BlogService; this layer only bounds size.
+const blogCategorySchema = z.string().trim().max(40).optional();
+const blogSportSchema = z.string().trim().max(60).nullable().optional();
+
 export const blogCreateSchema = z.object({
   title: blogTitleSchema,
   excerpt: z.string().trim().max(300).optional(),
   coverImageKey: z.string().trim().max(300).nullable().optional(),
   topic: z.string().trim().max(60).optional(),
+  category: blogCategorySchema,
+  sport: blogSportSchema,
   tags: z
     .array(z.string().trim().min(1).max(40))
     .max(8, "A blog can have at most 8 tags")
     .optional(),
   content: blogContentSchema,
   status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
+  subject: blogSubjectSchema,
+  signals: blogSignalsSchema,
+  attendedAt: z.string().trim().max(40).nullable().optional(),
 });
 
 export const blogUpdateSchema = z.object({
@@ -494,9 +522,14 @@ export const blogUpdateSchema = z.object({
   excerpt: z.string().trim().max(300).optional(),
   coverImageKey: z.string().trim().max(300).nullable().optional(),
   topic: z.string().trim().max(60).optional(),
+  category: blogCategorySchema,
+  sport: blogSportSchema,
   tags: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
   content: blogContentSchema,
   status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
+  subject: blogSubjectSchema,
+  signals: blogSignalsSchema,
+  attendedAt: z.string().trim().max(40).nullable().optional(),
 });
 
 export const blogLikeSchema = z.object({
