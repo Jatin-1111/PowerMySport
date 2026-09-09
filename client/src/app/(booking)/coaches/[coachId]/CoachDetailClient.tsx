@@ -6,6 +6,7 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
+import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
 import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { reviewApi } from "@/modules/review/services/review";
@@ -921,6 +922,10 @@ export function CoachDetailClient() {
                 )}
               </div>
             </Card>
+
+            <div className="mt-6">
+              <ParentExperiencesBand kind="COACH" refId={coachId} name={coachDisplayName} />
+            </div>
           </div>
 
           {/* Booking Sidebar */}

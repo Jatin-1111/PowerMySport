@@ -7,6 +7,7 @@ import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { CommunityInsightsCard } from "@/modules/community/components/CommunityInsightsCard";
+import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { reviewApi } from "@/modules/review/services/review";
 import { Button } from "@/modules/shared/ui/Button";
@@ -808,6 +809,10 @@ export function VenueDetailClient() {
                 </div>
               )}
             </Card>
+
+            <div className="mt-6">
+              <ParentExperiencesBand kind="VENUE" refId={venueId} name={venue.name} />
+            </div>
           </div>
 
           {/* Right Column - Booking Widget */}

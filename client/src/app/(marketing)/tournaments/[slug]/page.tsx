@@ -16,6 +16,7 @@ import {
   Trophy,
 } from "lucide-react";
 import type { EditionDocument, TournamentEditionDetail } from "@/modules/pathway/services/pathway";
+import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
 import { CAL_TZ, formatLocation, levelColor } from "../../federations/[slug]/editionUtils";
 import { AddToCalendarButton } from "../../federations/[slug]/AddToCalendarButton";
 import { groupDocumentsByKind } from "./documentGroups";
@@ -403,6 +404,18 @@ export default async function TournamentEditionPage({
                 </ul>
               </div>
             ))}
+          </section>
+        )}
+
+        {/* ── Parent experiences ── */}
+        {edition._id && (
+          <section>
+            <ParentExperiencesBand
+              kind="TOURNAMENT_EDITION"
+              refId={edition._id}
+              name={edition.name}
+              slug={edition.slug}
+            />
           </section>
         )}
 

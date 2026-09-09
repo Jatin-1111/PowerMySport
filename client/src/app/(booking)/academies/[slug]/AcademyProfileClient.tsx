@@ -1,5 +1,6 @@
 "use client";
 
+import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import { OnboardingAcademy } from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
@@ -545,6 +546,17 @@ export function AcademyProfileClient() {
                 Detailed review feed will be connected in the reviews module integration.
               </p>
             </Card>
+          )}
+
+          {activeTab === "reviews" && academyMongoId && (
+            <div className="mt-4">
+              <ParentExperiencesBand
+                kind="ACADEMY"
+                refId={academyMongoId}
+                name={academy.name}
+                slug={slug}
+              />
+            </div>
           )}
         </div>
 

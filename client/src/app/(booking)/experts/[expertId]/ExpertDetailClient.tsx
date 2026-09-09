@@ -2,6 +2,7 @@
 
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
 import {
   expertApi,
@@ -427,6 +428,14 @@ export function ExpertDetailClient() {
                 )}
               </div>
             </FadeIn>
+
+            <div className="mt-6">
+              <ParentExperiencesBand
+                kind="EXPERT"
+                refId={expertId}
+                name={expert.name || "this expert"}
+              />
+            </div>
           </div>
 
           {/* Right — booking */}
