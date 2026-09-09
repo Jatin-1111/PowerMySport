@@ -31,7 +31,10 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
       className="hover:border-power-orange/30 group flex h-full flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm transition hover:shadow-xl hover:shadow-slate-900/5"
     >
       {/* Cover */}
-      <Link href={`/blog/${blog.id}`} className="relative block aspect-[16/10] overflow-hidden">
+      <Link
+        href={`/experiences/${blog.id}`}
+        className="relative block aspect-[16/10] overflow-hidden"
+      >
         {coverUrl ? (
           <img
             src={coverUrl}
@@ -53,7 +56,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
 
       {/* Body */}
       <div className="flex flex-1 flex-col p-4 sm:p-5">
-        <Link href={`/blog/${blog.id}`} className="block">
+        <Link href={`/experiences/${blog.id}`} className="block">
           <h3 className="font-title group-hover:text-power-orange line-clamp-2 text-lg font-bold leading-snug text-slate-900 transition-colors">
             {blog.title}
           </h3>
@@ -80,8 +83,8 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
           <Link
             href={
               blog.author.username
-                ? `/blog/writer/${blog.author.username}`
-                : `/blog/writer/${blog.author.id}`
+                ? `/experiences/by/${blog.author.username}`
+                : `/experiences/by/${blog.author.id}`
             }
             className="flex min-w-0 items-center gap-2"
           >

@@ -10,49 +10,48 @@ import { buildMetadata, communityUrl, fetchPublicData, SITE_NAME } from "@/lib/s
 export const metadata = buildMetadata({
   title: "Parent Experiences — Tournaments, Academies, Gear & Costs",
   description:
-    "Read the PowerMySport community blog: coaching tips, training insights, and expert sports advice written by parents.",
-  path: "/blog",
+    "Real experiences from parents — tournaments, academies, coaches, gear, travel and costs. Help another parent make a better decision.",
+  path: "/experiences",
 });
 
-const blogCollectionSchema = {
+const experienceCollectionSchema = {
   "@context": "https://schema.org",
   "@type": "Blog",
-  name: `${SITE_NAME} Blog`,
-  description:
-    "Coaching tips, training insights, and expert sports advice from the PowerMySport community.",
-  url: communityUrl("/blog"),
+  name: `${SITE_NAME} Experiences`,
+  description: "Parent experiences from the PowerMySport community.",
+  url: communityUrl("/experiences"),
 };
 
-interface BlogListRow {
+interface ExperienceListRow {
   id: string;
   title: string;
 }
 
-export default async function CommunityBlogPage() {
+export default async function CommunityExperiencesPage() {
   // The landing UI fetches client-side, so without this the index page ships no
   // evidence of what it lists. One cached page of posts is enough to tell a
   // crawler this is a real, populated collection rather than an empty shell.
-  const recent = await fetchPublicData<{ items?: BlogListRow[] }>(
-    "/community/blog/posts?page=1&limit=20"
+  const recent = await fetchPublicData<{ items?: ExperienceListRow[] }>(
+    "/community/experiences/posts?page=1&limit=20"
   );
 
   return (
     <>
       <JsonLd
         data={[
-          blogCollectionSchema,
+          experienceCollectionSchema,
           breadcrumbSchema([
             { name: "Community", path: "/" },
-            { name: "Experiences", path: "/blog" },
+            { name: "Experiences", path: "/experiences" },
           ]),
           ...(recent?.items?.length
             ? [
                 itemListSchema({
-                  name: "Latest posts on the PowerMySport community blog",
-                  path: "/blog",
+                  name: "Latest parent experiences on PowerMySport",
+                  path: "/experiences",
                   items: recent.items.map((post) => ({
                     name: post.title,
-                    path: `/blog/${post.id}`,
+                    path: `/experiences/${post.id}`,
                   })),
                 }),
               ]

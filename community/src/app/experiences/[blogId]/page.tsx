@@ -11,7 +11,8 @@ import {
 } from "@/lib/seo";
 import type { BlogDetail } from "@/modules/community/types";
 
-const getBlog = (blogId: string) => fetchPublicData<BlogDetail>(`/community/blog/posts/${blogId}`);
+const getBlog = (blogId: string) =>
+  fetchPublicData<BlogDetail>(`/community/experiences/posts/${blogId}`);
 
 export async function generateMetadata({
   params,
@@ -26,7 +27,7 @@ export async function generateMetadata({
       title: "Parent Experience",
       description:
         "Read what other parents experienced — tournaments, academies, gear, travel and costs.",
-      path: `/blog/${blogId}`,
+      path: `/experiences/${blogId}`,
     });
   }
 
@@ -35,7 +36,7 @@ export async function generateMetadata({
   return buildMetadata({
     title: blog.title,
     description,
-    path: `/blog/${blogId}`,
+    path: `/experiences/${blogId}`,
     image: blog.coverImageUrl || OG_IMAGE,
     keywords: blog.tags?.length ? blog.tags : undefined,
     type: "article",
@@ -45,7 +46,7 @@ export async function generateMetadata({
   });
 }
 
-export default async function CommunityBlogDetailPage({
+export default async function CommunityExperienceDetailPage({
   params,
 }: {
   params: Promise<{ blogId: string }>;
@@ -62,9 +63,9 @@ export default async function CommunityBlogDetailPage({
         image: blog.coverImageUrl || OG_IMAGE,
         datePublished: blog.createdAt,
         dateModified: blog.updatedAt,
-        url: communityUrl(`/blog/${blogId}`),
+        url: communityUrl(`/experiences/${blogId}`),
         keywords: blog.tags?.join(", ") || undefined,
-        articleSection: blog.topic || undefined,
+        articleSection: blog.category || blog.topic || undefined,
         author: {
           "@type": "Person",
           name: blog.author?.name || "PowerMySport Community",
@@ -75,7 +76,7 @@ export default async function CommunityBlogDetailPage({
         },
         mainEntityOfPage: {
           "@type": "WebPage",
-          "@id": communityUrl(`/blog/${blogId}`),
+          "@id": communityUrl(`/experiences/${blogId}`),
         },
       }
     : null;
@@ -88,8 +89,8 @@ export default async function CommunityBlogDetailPage({
             articleSchema,
             breadcrumbSchema([
               { name: "Community", path: "/" },
-              { name: "Experiences", path: "/blog" },
-              { name: blog.title, path: `/blog/${blogId}` },
+              { name: "Experiences", path: "/experiences" },
+              { name: blog.title, path: `/experiences/${blogId}` },
             ]),
           ]}
         />

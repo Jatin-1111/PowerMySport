@@ -3,11 +3,11 @@ import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
   title: "My Writer Account",
-  description: "Manage your writer profile, blogs, and account settings.",
-  path: "/blog/account",
+  description: "Manage your writer profile, experiences, and account settings.",
+  path: "/experiences/account",
   noindex: true,
 });
 
-export default function BlogAccountPage() {
+export default function ExperienceAccountPage() {
   return <MyAccountClient />;
 }

@@ -19,7 +19,7 @@ const staticRoutes: {
   changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"];
 }[] = [
   { path: "/", priority: 1, changeFrequency: "daily" },
-  { path: "/blog", priority: 0.9, changeFrequency: "daily" },
+  { path: "/experiences", priority: 0.9, changeFrequency: "daily" },
   { path: "/questions", priority: 0.9, changeFrequency: "daily" },
   { path: "/discover", priority: 0.8, changeFrequency: "weekly" },
 ];
@@ -71,16 +71,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route.priority,
   }));
 
-  // Best-effort inclusion of published blog posts and Q&A threads. Any failure
-  // falls back to the static routes above.
+  // Best-effort inclusion of published experiences and Q&A threads. Any
+  // failure falls back to the static routes above.
   const [blogs, posts] = await Promise.all([
-    fetchAllItems("/community/blog/posts"),
+    fetchAllItems("/community/experiences/posts"),
     fetchAllItems("/community/posts"),
   ]);
 
   for (const blog of blogs) {
     entries.push({
-      url: `${COMMUNITY_BASE_URL}/blog/${blog.id}`,
+      url: `${COMMUNITY_BASE_URL}/experiences/${blog.id}`,
       lastModified: toDate(blog.updatedAt || blog.createdAt),
       changeFrequency: "weekly",
       priority: 0.7,
@@ -96,7 +96,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  // ── Writer profiles (/blog/writer/[identifier]) ──
+  // ── Writer profiles (/experiences/by/[identifier]) ──
   // These are indexable and carry ProfilePage + Person schema, but were absent
   // from the sitemap entirely — the only indexable route that was. There is no
   // author-list endpoint, so the set is derived from the authors who actually
@@ -109,7 +109,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const username of writerUsernames) {
     entries.push({
-      url: `${COMMUNITY_BASE_URL}/blog/writer/${encodeURIComponent(username)}`,
+      url: `${COMMUNITY_BASE_URL}/experiences/by/${encodeURIComponent(username)}`,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.5,

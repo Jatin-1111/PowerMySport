@@ -177,9 +177,9 @@ export default function CommunityTopNav() {
               )}
             </Link>
 
-            <Link href="/blog" className={navLinkCls(pathname.startsWith("/blog"))}>
+            <Link href="/experiences" className={navLinkCls(pathname.startsWith("/experiences"))}>
               <Newspaper size={16} />
-              Blog
+              Experiences
             </Link>
 
             <Link href="/questions" className={navLinkCls(pathname.startsWith("/questions"))}>
@@ -354,7 +354,7 @@ export default function CommunityTopNav() {
                         badge: unreadChatsCount,
                       },
                       { href: "/discover", icon: Compass, label: "Discover" },
-                      { href: "/blog", icon: Newspaper, label: "Experiences" },
+                      { href: "/experiences", icon: Newspaper, label: "Experiences" },
                       { href: "/questions", icon: MessageSquare, label: "Questions" },
                       {
                         href: "/contributors",

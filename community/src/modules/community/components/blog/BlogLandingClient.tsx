@@ -132,7 +132,7 @@ export default function BlogLandingClient() {
       )
     );
     try {
-      const result = await blogService.toggleLike("BLOG", blog.id);
+      const result = await blogService.toggleLike("EXPERIENCE", blog.id);
       setBlogs((current) =>
         current.map((item) =>
           item.id === blog.id

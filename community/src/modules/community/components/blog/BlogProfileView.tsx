@@ -44,7 +44,7 @@ export default function BlogProfileView({
       <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
         <div className="flex items-center justify-between gap-3">
           <Link
-            href="/blog"
+            href="/experiences"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
           >
             <ChevronLeft size={16} />
@@ -52,7 +52,7 @@ export default function BlogProfileView({
           </Link>
           {isOwner ? (
             <Link
-              href="/blog/write"
+              href="/experiences/new"
               className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
               <PenLine size={15} />
@@ -88,7 +88,7 @@ export default function BlogProfileView({
                 </p>
                 {isOwner ? (
                   <Link
-                    href="/blog/write"
+                    href="/experiences/new"
                     className="bg-power-orange mt-4 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white"
                   >
                     <PenLine size={15} />

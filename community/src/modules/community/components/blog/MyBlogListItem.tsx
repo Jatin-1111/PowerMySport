@@ -28,7 +28,7 @@ export default function MyBlogListItem({ blog, owner, onDelete }: MyBlogListItem
     >
       {/* Banner */}
       <Link
-        href={`/blog/${blog.id}`}
+        href={`/experiences/${blog.id}`}
         className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-40"
       >
         {coverUrl ? (
@@ -40,7 +40,7 @@ export default function MyBlogListItem({ blog, owner, onDelete }: MyBlogListItem
 
       {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <Link href={`/blog/${blog.id}`} className="min-w-0">
+        <Link href={`/experiences/${blog.id}`} className="min-w-0">
           <h3 className="font-title group-hover:text-power-orange truncate text-base font-bold text-slate-900 transition sm:text-lg">
             {blog.title}
           </h3>
@@ -77,7 +77,7 @@ export default function MyBlogListItem({ blog, owner, onDelete }: MyBlogListItem
         {owner ? (
           <div className="mt-2 flex items-center gap-2">
             <Link
-              href={`/blog/edit/${blog.id}`}
+              href={`/experiences/${blog.id}/edit`}
               className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
             >
               <Pencil size={12} />

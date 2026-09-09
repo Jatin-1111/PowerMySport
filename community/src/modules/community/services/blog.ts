@@ -49,7 +49,7 @@ export const blogService = {
     }
   ): Promise<BlogListResponse> {
     const response = await axiosInstance.get<ApiResponse<BlogListResponse>>(
-      "/community/blog/posts",
+      "/community/experiences/posts",
       {
         params: {
           page,
@@ -66,7 +66,7 @@ export const blogService = {
 
   async getBlog(blogId: string): Promise<BlogDetail> {
     const response = await axiosInstance.get<ApiResponse<BlogDetail>>(
-      `/community/blog/posts/${blogId}`
+      `/community/experiences/posts/${blogId}`
     );
     return response.data.data;
   },
@@ -84,7 +84,7 @@ export const blogService = {
     attendedAt?: string | null;
   }): Promise<BlogDetail> {
     const response = await axiosInstance.post<ApiResponse<BlogDetail>>(
-      "/community/blog/posts",
+      "/community/experiences/posts",
       payload
     );
     return response.data.data;
@@ -106,7 +106,7 @@ export const blogService = {
     }
   ): Promise<BlogDetail> {
     const response = await axiosInstance.patch<ApiResponse<BlogDetail>>(
-      `/community/blog/posts/${blogId}`,
+      `/community/experiences/posts/${blogId}`,
       payload
     );
     return response.data.data;
@@ -114,17 +114,17 @@ export const blogService = {
 
   async deleteBlog(blogId: string): Promise<{ id: string; deleted: boolean }> {
     const response = await axiosInstance.delete<ApiResponse<{ id: string; deleted: boolean }>>(
-      `/community/blog/posts/${blogId}`
+      `/community/experiences/posts/${blogId}`
     );
     return response.data.data;
   },
 
   async toggleLike(
-    targetType: "BLOG" | "COMMENT",
+    targetType: "EXPERIENCE" | "COMMENT",
     targetId: string
   ): Promise<{ liked: boolean; likeCount: number }> {
     const response = await axiosInstance.post<ApiResponse<{ liked: boolean; likeCount: number }>>(
-      "/community/blog/likes",
+      "/community/experiences/likes",
       { targetType, targetId }
     );
     return response.data.data;
@@ -132,7 +132,7 @@ export const blogService = {
 
   async listComments(blogId: string, page = 1, limit = 30): Promise<BlogCommentListResponse> {
     const response = await axiosInstance.get<ApiResponse<BlogCommentListResponse>>(
-      `/community/blog/posts/${blogId}/comments`,
+      `/community/experiences/posts/${blogId}/comments`,
       { params: { page, limit } }
     );
     return response.data.data;
@@ -140,7 +140,7 @@ export const blogService = {
 
   async createComment(blogId: string, content: string, parentId?: string): Promise<BlogComment> {
     const response = await axiosInstance.post<ApiResponse<BlogComment>>(
-      `/community/blog/posts/${blogId}/comments`,
+      `/community/experiences/posts/${blogId}/comments`,
       { content, ...(parentId ? { parentId } : {}) }
     );
     return response.data.data;
@@ -148,20 +148,21 @@ export const blogService = {
 
   async deleteComment(commentId: string): Promise<{ id: string; deleted: boolean }> {
     const response = await axiosInstance.delete<ApiResponse<{ id: string; deleted: boolean }>>(
-      `/community/blog/comments/${commentId}`
+      `/community/experiences/comments/${commentId}`
     );
     return response.data.data;
   },
 
   async getMyProfile(): Promise<BlogAuthorProfile> {
-    const response =
-      await axiosInstance.get<ApiResponse<BlogAuthorProfile>>("/community/blog/profile");
+    const response = await axiosInstance.get<ApiResponse<BlogAuthorProfile>>(
+      "/community/experiences/profile"
+    );
     return response.data.data;
   },
 
   async getAuthorProfile(identifier: string): Promise<BlogAuthorProfile> {
     const response = await axiosInstance.get<ApiResponse<BlogAuthorProfile>>(
-      `/community/blog/authors/${encodeURIComponent(identifier)}`
+      `/community/experiences/authors/${encodeURIComponent(identifier)}`
     );
     return response.data.data;
   },
@@ -172,7 +173,7 @@ export const blogService = {
     socialLinks?: Partial<SocialLinks>;
   }): Promise<BlogAuthorProfile> {
     const response = await axiosInstance.patch<ApiResponse<BlogAuthorProfile>>(
-      "/community/blog/profile",
+      "/community/experiences/profile",
       payload
     );
     return response.data.data;
@@ -205,7 +206,7 @@ export const blogService = {
   ): Promise<{ uploadUrl: string; downloadUrl: string; key: string }> {
     const response = await axiosInstance.post<
       ApiResponse<{ uploadUrl: string; downloadUrl: string; key: string }>
-    >("/community/blog/upload-url", { contentType });
+    >("/community/experiences/upload-url", { contentType });
     return response.data.data;
   },
 };

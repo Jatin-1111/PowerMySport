@@ -46,7 +46,7 @@ export default function MyAccountClient() {
   }, [load]);
 
   const handleDeleteBlog = (blog: BlogListItem) => {
-    toast("Delete this blog permanently?", {
+    toast("Delete this experience permanently?", {
       action: {
         label: "Delete",
         onClick: () => {
@@ -62,7 +62,7 @@ export default function MyAccountClient() {
                     }
                   : current
               );
-              toast.success("Blog deleted");
+              toast.success("Experience deleted");
             } catch (error) {
               toast.error(error instanceof Error ? error.message : "Failed to delete");
             }

@@ -28,7 +28,7 @@ import AuthorAvatar from "./AuthorAvatar";
 import LikeButton from "./LikeButton";
 
 const authorHref = (author: BlogDetail["author"]) =>
-  author.username ? `/blog/writer/${author.username}` : `/blog/writer/${author.id}`;
+  author.username ? `/experiences/by/${author.username}` : `/experiences/by/${author.id}`;
 
 export default function BlogDetailClient({
   blogId,
@@ -111,7 +111,7 @@ export default function BlogDetailClient({
       likeCount: Math.max(0, blog.likeCount + (optimisticLiked ? 1 : -1)),
     });
     try {
-      const result = await blogService.toggleLike("BLOG", blog.id);
+      const result = await blogService.toggleLike("EXPERIENCE", blog.id);
       setBlog((current) =>
         current ? { ...current, likedByMe: result.liked, likeCount: result.likeCount } : current
       );
@@ -130,8 +130,8 @@ export default function BlogDetailClient({
     setIsDeleting(true);
     try {
       await blogService.deleteBlog(blog.id);
-      toast.success("Blog deleted");
-      router.push("/blog");
+      toast.success("Experience deleted");
+      router.push("/experiences");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to delete");
       setIsDeleting(false);
@@ -139,7 +139,7 @@ export default function BlogDetailClient({
   };
 
   const confirmDelete = () => {
-    toast("Delete this blog permanently?", {
+    toast("Delete this experience permanently?", {
       action: { label: "Delete", onClick: () => void handleDelete() },
     });
   };
@@ -177,10 +177,10 @@ export default function BlogDetailClient({
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-slate-700">Experience not found.</p>
         <Link
-          href="/blog"
+          href="/experiences"
           className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
         >
-          Back to Blog
+          Back to Experiences
         </Link>
       </div>
     );
@@ -195,11 +195,11 @@ export default function BlogDetailClient({
         {/* Top bar */}
         <div className="flex items-center justify-between gap-3">
           <Link
-            href="/blog"
+            href="/experiences"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
           >
             <ChevronLeft size={16} />
-            Back to Blog
+            Back to Experiences
           </Link>
           <span
             className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${topic.accent}`}
@@ -244,7 +244,7 @@ export default function BlogDetailClient({
           {blog.isMine ? (
             <div className="flex items-center gap-2">
               <Link
-                href={`/blog/edit/${blog.id}`}
+                href={`/experiences/${blog.id}/edit`}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <Pencil size={14} />

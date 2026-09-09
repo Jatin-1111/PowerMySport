@@ -50,7 +50,7 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           className="mt-7 flex flex-col items-center gap-3"
         >
           <Link
-            href="/blog/write"
+            href="/experiences/new"
             className="group inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition hover:bg-slate-700"
           >
             <PenLine size={17} className="transition-transform group-hover:-rotate-12" />

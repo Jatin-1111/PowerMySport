@@ -61,7 +61,7 @@ export const LOGO_URL = `${COMMUNITY_BASE_URL}/android-chrome-512x512.png`;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
-/** Build a fully-qualified community URL for a given path (e.g. "/blog"). */
+/** Build a fully-qualified community URL for a given path (e.g. "/experiences"). */
 export function communityUrl(path = "/"): string {
   if (!path || path === "/") return COMMUNITY_BASE_URL;
   return `${COMMUNITY_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
@@ -106,7 +106,7 @@ export async function fetchPublicData<T>(path: string): Promise<T | null> {
 interface BuildMetadataInput {
   title?: string;
   description?: string;
-  /** Path relative to the community base, e.g. "/blog" or "/questions/123". */
+  /** Path relative to the community base, e.g. "/experiences" or "/questions/123". */
   path?: string;
   keywords?: string[];
   /** Absolute image URL. Defaults to the shared Open Graph image. */

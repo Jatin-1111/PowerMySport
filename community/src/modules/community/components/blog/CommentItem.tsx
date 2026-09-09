@@ -17,7 +17,7 @@ interface CommentItemProps {
 }
 
 const authorHref = (author: BlogComment["author"]) =>
-  author.username ? `/blog/writer/${author.username}` : `/blog/writer/${author.id}`;
+  author.username ? `/experiences/by/${author.username}` : `/experiences/by/${author.id}`;
 
 const MENTION_RE = /@([a-zA-Z0-9_]{2,30})/g;
 
@@ -36,7 +36,7 @@ const renderContent = (text: string) => {
     nodes.push(
       <Link
         key={key++}
-        href={`/blog/writer/${username}`}
+        href={`/experiences/by/${username}`}
         className="text-power-orange font-semibold hover:underline"
       >
         @{username}

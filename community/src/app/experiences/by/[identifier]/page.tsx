@@ -5,7 +5,9 @@ import { buildMetadata, clampText, communityUrl, fetchPublicData } from "@/lib/s
 import type { BlogAuthorProfile } from "@/modules/community/types";
 
 const getAuthor = (identifier: string) =>
-  fetchPublicData<BlogAuthorProfile>(`/community/blog/authors/${encodeURIComponent(identifier)}`);
+  fetchPublicData<BlogAuthorProfile>(
+    `/community/experiences/authors/${encodeURIComponent(identifier)}`
+  );
 
 export async function generateMetadata({
   params,
@@ -19,7 +21,7 @@ export async function generateMetadata({
     return buildMetadata({
       title: "Writer Profile",
       description: "Explore experiences shared by parents in the PowerMySport community.",
-      path: `/blog/writer/${identifier}`,
+      path: `/experiences/by/${identifier}`,
     });
   }
 
@@ -30,7 +32,7 @@ export async function generateMetadata({
   return buildMetadata({
     title: `${author.name} (@${author.username})`,
     description,
-    path: `/blog/writer/${identifier}`,
+    path: `/experiences/by/${identifier}`,
     image: author.photoUrl || undefined,
     type: "profile",
   });
@@ -48,7 +50,7 @@ export default async function WriterProfilePage({
     ? {
         "@context": "https://schema.org",
         "@type": "ProfilePage",
-        url: communityUrl(`/blog/writer/${identifier}`),
+        url: communityUrl(`/experiences/by/${identifier}`),
         mainEntity: {
           "@type": "Person",
           name: author.name,
@@ -67,8 +69,8 @@ export default async function WriterProfilePage({
             profileSchema,
             breadcrumbSchema([
               { name: "Community", path: "/" },
-              { name: "Experiences", path: "/blog" },
-              { name: author.name, path: `/blog/writer/${identifier}` },
+              { name: "Experiences", path: "/experiences" },
+              { name: author.name, path: `/experiences/by/${identifier}` },
             ]),
           ]}
         />

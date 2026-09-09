@@ -25,7 +25,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata = buildMetadata({
   title: "Youth Sports Community for Parents",
   description:
-    "A parent-first youth sports community. Find vetted coaches and trusted venues, ask questions, read expert blogs, and get AI guidance to choose the right next step for your child.",
+    "A parent-first youth sports community. Find vetted coaches and trusted venues, ask questions, read real parent experiences, and get AI guidance to choose the right next step for your child.",
   path: "/",
 });
 
@@ -48,7 +48,7 @@ const valueProps: ValueProp[] = [
   {
     title: "Knowledge",
     description: "Real experiences from parents, on the things you are deciding.",
-    href: "/blog",
+    href: "/experiences",
     cta: "Read experiences",
     icon: Newspaper,
   },

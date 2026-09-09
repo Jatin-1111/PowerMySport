@@ -2,7 +2,7 @@ import WriteBlogClient from "@/modules/community/components/blog/WriteBlogClient
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-// Per-post canonical — the static `path: "/blog/edit"` it replaced gave every
+// Per-post canonical — a static `path: "/experiences/edit"` would give every
 // blogId the same canonical URL. See the note in join/[code]/layout.tsx.
 export async function generateMetadata({
   params,
@@ -13,12 +13,16 @@ export async function generateMetadata({
   return buildMetadata({
     title: "Edit Experience",
     description: "Edit the experience you shared with the PowerMySport community.",
-    path: `/blog/edit/${blogId}`,
+    path: `/experiences/${blogId}/edit`,
     noindex: true,
   });
 }
 
-export default async function EditBlogPage({ params }: { params: Promise<{ blogId: string }> }) {
+export default async function EditExperiencePage({
+  params,
+}: {
+  params: Promise<{ blogId: string }>;
+}) {
   const { blogId } = await params;
   return <WriteBlogClient mode="edit" blogId={blogId} />;
 }

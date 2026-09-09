@@ -23,7 +23,7 @@ export default function WriterProfileClient({ identifier }: { identifier: string
 
       // Viewing your own writer page → send to the editable account page.
       if (author.isMe) {
-        router.replace("/blog/account");
+        router.replace("/experiences/account");
         return;
       }
       setProfile(author);
@@ -59,10 +59,10 @@ export default function WriterProfileClient({ identifier }: { identifier: string
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-slate-700">Writer not found.</p>
         <Link
-          href="/blog"
+          href="/experiences"
           className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
         >
-          Back to Blog
+          Back to Experiences
         </Link>
       </div>
     );

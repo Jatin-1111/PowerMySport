@@ -104,7 +104,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         const blog = await blogService.getBlog(blogId);
         if (!blog.isMine) {
           toast.error("You can only edit your own experiences");
-          router.push(`/blog/${blogId}`);
+          router.push(`/experiences/${blogId}`);
           return;
         }
         setTitle(blog.title);
@@ -364,7 +364,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             ? "Experience updated"
             : "Experience shared"
       );
-      router.push(`/blog/${result.id}`);
+      router.push(`/experiences/${result.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to publish");
       setIsPublishing(false);
@@ -406,7 +406,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <Link
-            href="/blog"
+            href="/experiences"
             onClick={handleBackClick}
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
           >

@@ -62,7 +62,7 @@ export default function BlogAccountChip({ className = "" }: { className?: string
       transition={{ duration: 0.25 }}
     >
       <Link
-        href="/blog/account"
+        href="/experiences/account"
         title="My Account"
         className={`hover:border-power-orange/40 group inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 py-1 pl-1 pr-3 shadow-sm backdrop-blur-sm transition hover:bg-white ${className}`}
       >

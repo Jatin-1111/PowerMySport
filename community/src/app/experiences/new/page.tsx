@@ -5,10 +5,10 @@ export const metadata = buildMetadata({
   title: "Share Your Experience",
   description:
     "Share an experience with the PowerMySport community and help another parent make a better decision.",
-  path: "/blog/write",
+  path: "/experiences/new",
   noindex: true,
 });
 
-export default function WriteBlogPage() {
+export default function NewExperiencePage() {
   return <WriteBlogClient mode="create" />;
 }
