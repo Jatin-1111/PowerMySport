@@ -11,6 +11,7 @@ import { CommunityProfile, CommunitySocialLinks } from "../models/CommunityProfi
 import { User } from "../../client/models/User";
 import { S3Service } from "../../shared/services/S3Service";
 import { normalizeTags } from "./communityQnaUtils";
+import { awardExperienceReputation } from "./communityShared";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("blog");
 
@@ -629,7 +630,10 @@ export const BlogService = {
   async createBlog(
     userId: string,
     payload: {
-      title: string;
+      // Optional: two lines and a photo is a complete experience, and
+      // requiring a headline first was most of what made the old composer
+      // read as "write an essay". `deriveTitle` fills one in on read.
+      title?: string;
       excerpt?: string;
       coverImageKey?: string | null;
       topic?: string;
@@ -641,16 +645,24 @@ export const BlogService = {
     await ensureBlogProfile(userId);
 
     const content = stripContentImageSrc(payload.content || "");
+    const status = payload.status === "DRAFT" ? "DRAFT" : "PUBLISHED";
+    const trimmedTitle = payload.title?.trim();
     const post = await Experience.create({
       authorId: userId,
-      title: payload.title.trim(),
+      ...(trimmedTitle ? { title: trimmedTitle } : {}),
       excerpt: deriveExcerpt(payload.excerpt, content),
       coverImageKey: payload.coverImageKey || null,
       ...topicToFields(payload.topic),
       tags: normalizeTags(payload.tags),
       content,
-      status: payload.status === "DRAFT" ? "DRAFT" : "PUBLISHED",
+      status,
     });
+
+    // Points are for a published experience, never a draft — the same rule
+    // question/answer creation already follows.
+    if (status === "PUBLISHED") {
+      await awardExperienceReputation(userId);
+    }
 
     return this.getBlog(userId, String(post._id));
   },
@@ -701,11 +713,19 @@ export const BlogService = {
     // Only change status when explicitly given — omitted means "keep as is"
     // (e.g. a periodic autosave on an already-published post must not
     // silently pull it back to draft).
+    const wasDraft = post.status === "DRAFT";
     if (payload.status === "DRAFT" || payload.status === "PUBLISHED") {
       post.status = payload.status;
     }
 
     await post.save();
+
+    // A draft going live for the first time earns the same points a fresh
+    // publish would; re-saving an already-published post never awards again.
+    if (wasDraft && post.status === "PUBLISHED") {
+      await awardExperienceReputation(userId);
+    }
+
     return this.getBlog(userId, String(post._id));
   },
 

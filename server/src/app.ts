@@ -50,6 +50,7 @@ import calendarRoutes from "./client/routes/calendarRoutes";
 import walletRoutes from "./client/routes/walletRoutes";
 import communityRoutes from "./community/routes/communityRoutes";
 import blogRoutes from "./community/routes/blogRoutes";
+import experienceRoutes from "./community/routes/experienceRoutes";
 import authRoutes from "./shared/routes/authRoutes";
 import geoRoutes from "./shared/routes/geoRoutes";
 import phonepeWebhook from "./shared/routes/phonepeWebhook";
@@ -225,6 +226,10 @@ app.use("/api/calendar", calendarRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/experts", expertsRoutes);
 // Community Domain
+// /experiences is the canonical mount; /blog stays as a deprecated alias on
+// the same handlers until the community app moves over (phase 5) and any
+// cached clients have had a release to catch up.
+app.use("/api/community/experiences", experienceRoutes);
 app.use("/api/community/blog", blogRoutes);
 app.use("/api/community", communityRoutes);
 

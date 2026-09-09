@@ -6,6 +6,8 @@ export interface CommunityReputationDocument extends Document {
   questionCount: number;
   answerCount: number;
   receivedUpvotes: number;
+  /** Published experiences authored — added when the blog became Experience. */
+  experienceCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +25,7 @@ const communityReputationSchema = new Schema<CommunityReputationDocument>(
     questionCount: { type: Number, default: 0 },
     answerCount: { type: Number, default: 0 },
     receivedUpvotes: { type: Number, default: 0 },
+    experienceCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

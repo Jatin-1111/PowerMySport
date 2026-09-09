@@ -99,7 +99,9 @@ export const SUBJECT_KIND_REF: Record<ExperienceSubjectKind, string> = {
   VENUE: "Venue",
   ACADEMY: "Academy",
   COACH: "Coach",
-  EXPERT: "ExpertProfile",
+  // The model file is ExpertProfile.ts, but the registered model name (and
+  // the ref every other schema in this codebase points at) is "Expert".
+  EXPERT: "Expert",
 };
 
 // ─── Signals ──────────────────────────────────────────────────────────────────

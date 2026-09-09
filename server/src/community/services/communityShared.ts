@@ -155,6 +155,9 @@ export const COMMUNITY_POINTS = {
   CREATE_ANSWER: 8,
   RECEIVE_UPVOTE: 2,
   ANSWER_ACCEPTED: 15,
+  // Below CREATE_POST on purpose: an experience can be two lines and a photo,
+  // and a question is real, structured effort by comparison.
+  CREATE_EXPERIENCE: 3,
 } as const;
 
 export const s3Service = new S3Service();
@@ -264,6 +267,29 @@ export const adjustAcceptedAnswerReputation = async (
     {
       $setOnInsert: { questionCount: 0, answerCount: 0, receivedUpvotes: 0 },
       $inc: { totalPoints: delta },
+    },
+    { upsert: true }
+  );
+};
+
+/**
+ * Award points for a newly published experience. Only called on a fresh
+ * PUBLISHED experience, never on an edit or a draft — the same "no points for
+ * autosave" rule listBlogs/updateBlog already relies on for status changes.
+ */
+export const awardExperienceReputation = async (userId: string): Promise<void> => {
+  await CommunityReputation.updateOne(
+    { userId },
+    {
+      $setOnInsert: {
+        questionCount: 0,
+        answerCount: 0,
+        receivedUpvotes: 0,
+      },
+      $inc: {
+        totalPoints: COMMUNITY_POINTS.CREATE_EXPERIENCE,
+        experienceCount: 1,
+      },
     },
     { upsert: true }
   );

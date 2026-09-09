@@ -43,6 +43,7 @@ export const communityContributionService = {
       questionCount: reputation?.questionCount || 0,
       answerCount: reputation?.answerCount || 0,
       receivedUpvotes: reputation?.receivedUpvotes || 0,
+      experienceCount: reputation?.experienceCount || 0,
     };
   },
 

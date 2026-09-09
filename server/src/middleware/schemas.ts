@@ -465,12 +465,19 @@ const blogContentSchema = z
   .max(100_000, "A blog cannot exceed 100,000 characters")
   .optional();
 
+// Title is optional — two lines and a photo is a complete experience, and
+// requiring a headline first was most of what made the old blog composer read
+// as "write an essay". When given, it still has to be a real title rather
+// than a single stray character.
+const blogTitleSchema = z
+  .string()
+  .trim()
+  .min(3, "Title must be at least 3 characters")
+  .max(200, "Title cannot exceed 200 characters")
+  .optional();
+
 export const blogCreateSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(5, "Title must be at least 5 characters")
-    .max(200, "Title cannot exceed 200 characters"),
+  title: blogTitleSchema,
   excerpt: z.string().trim().max(300).optional(),
   coverImageKey: z.string().trim().max(300).nullable().optional(),
   topic: z.string().trim().max(60).optional(),
@@ -483,7 +490,7 @@ export const blogCreateSchema = z.object({
 });
 
 export const blogUpdateSchema = z.object({
-  title: z.string().trim().min(5).max(200).optional(),
+  title: blogTitleSchema,
   excerpt: z.string().trim().max(300).optional(),
   coverImageKey: z.string().trim().max(300).nullable().optional(),
   topic: z.string().trim().max(60).optional(),
@@ -493,7 +500,9 @@ export const blogUpdateSchema = z.object({
 });
 
 export const blogLikeSchema = z.object({
-  targetType: z.enum(["BLOG", "COMMENT"]),
+  // "BLOG" stays accepted for callers that have not moved to "EXPERIENCE" yet
+  // — see normalizeLikeTargetType in BlogService.
+  targetType: z.enum(["BLOG", "EXPERIENCE", "COMMENT"]),
   targetId: z.string().min(1, "Target ID is required"),
 });
 
