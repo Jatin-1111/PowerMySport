@@ -235,44 +235,59 @@ export class FriendService {
     page: number;
     totalPages: number;
   }> {
-    const skip = (page - 1) * limit;
-
-    // Find all accepted connections involving this user
+    // `total` and the returned list are derived from ONE filtered set, on
+    // purpose. They used to be computed separately: `countDocuments` counted
+    // every accepted row, while the list dropped rows whose counterpart had
+    // been deleted. A connection to a deleted account therefore counted toward
+    // the total but produced nobody to show — which is how the dashboard came
+    // to say "2 connections" directly above "No connections yet".
+    //
+    // The old paging was wrong for the same reason: skip/limit ran *before*
+    // dead rows were dropped, so a page could come back short (or empty) while
+    // later pages still held real friends.
+    //
+    // Dangling rows should not exist — account deletion clears them — but a
+    // read that only works while the data is pristine is a read that breaks
+    // again the next time some other path removes a user, so this filters
+    // rather than trusting.
     const connections = await FriendConnection.find({
       $or: [{ requesterId: userId }, { recipientId: userId }],
       status: "ACCEPTED",
     })
-      .skip(skip)
-      .limit(limit)
-      .populate("requesterId", "name email photoUrl photoS3Key")
-      .populate("recipientId", "name email photoUrl photoS3Key")
-      .sort({ updatedAt: -1 });
+      .select("requesterId recipientId updatedAt")
+      .sort({ updatedAt: -1 })
+      .lean();
 
-    const total = await FriendConnection.countDocuments({
-      $or: [{ requesterId: userId }, { recipientId: userId }],
-      status: "ACCEPTED",
+    const counterpartId = (conn: (typeof connections)[number]): string =>
+      String(conn.requesterId) === userId ? String(conn.recipientId) : String(conn.requesterId);
+
+    const survivors = await User.find({
+      _id: { $in: connections.map(counterpartId) },
+    })
+      .select("_id name email photoUrl photoS3Key")
+      .lean();
+
+    const userById = new Map(survivors.map((user) => [String(user._id), user]));
+
+    // flatMap rather than map+filter so `friend` narrows to non-undefined
+    // without a hand-written type predicate.
+    const live = connections.flatMap((conn) => {
+      const friend = userById.get(counterpartId(conn));
+      return friend ? [{ conn, friend }] : [];
     });
 
-    // Filter out connections where either user was deleted
-    const validConnections = connections.filter(
-      (conn: any) => conn.requesterId && conn.recipientId
-    );
+    const total = live.length;
+    const skip = (page - 1) * limit;
 
-    // Extract the friend user object (the one that's not the current user)
     const friends = await Promise.all(
-      validConnections.map(async (conn: any) => {
-        const friend =
-          conn.requesterId._id.toString() === userId ? conn.recipientId : conn.requesterId;
-
-        return {
-          id: friend._id,
-          name: friend.name,
-          email: friend.email,
-          photoUrl: await this.resolvePhotoUrl(friend),
-          friendsSince: conn.updatedAt,
-          connectionId: conn._id,
-        };
-      })
+      live.slice(skip, skip + limit).map(async ({ conn, friend }) => ({
+        id: friend._id,
+        name: friend.name,
+        email: friend.email,
+        photoUrl: await this.resolvePhotoUrl(friend),
+        friendsSince: conn.updatedAt,
+        connectionId: conn._id,
+      }))
     );
 
     return {

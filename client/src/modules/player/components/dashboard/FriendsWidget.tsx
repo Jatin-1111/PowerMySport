@@ -42,14 +42,23 @@ export function FriendsWidget() {
   const total = data?.total ?? 0;
   const pending = counts.friendRequests;
 
+  // The headline and the body below key off the SAME signal. They used to be
+  // independent — the count came from `total`, the empty state from whether the
+  // list was populated — and a connection to a deleted account made the two
+  // disagree, so the card read "2 connections." directly above "No connections
+  // yet". The server no longer counts dead rows, but a card that can only tell
+  // a coherent story while its data is perfect will tell an incoherent one
+  // eventually, so it is derived rather than trusted.
+  const hasFriends = friends.length > 0;
+
   return (
     <DashboardSection
       icon={UserPlus}
       title="Friends"
       description={
-        total === 0
-          ? "Connect with other parents and players to book sessions together."
-          : `${total} ${total === 1 ? "connection" : "connections"}.`
+        hasFriends
+          ? `${total} ${total === 1 ? "connection" : "connections"}.`
+          : "Connect with other parents and players to book sessions together."
       }
       isLoading={isLoading && !data}
       isError={isError}
@@ -70,7 +79,7 @@ export function FriendsWidget() {
           </Badge>
         )}
 
-        {friends.length === 0 ? (
+        {!hasFriends ? (
           <p className="text-sm text-slate-500">
             No connections yet — find people you already train with.
           </p>

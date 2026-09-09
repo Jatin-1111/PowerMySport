@@ -6,6 +6,7 @@ import { CommunityAnswer } from "../community/models/CommunityAnswer";
 import { CommunityProfile } from "../community/models/CommunityProfile";
 import { CommunityReputation } from "../community/models/CommunityReputation";
 import { Experience } from "../community/models/Experience";
+import FriendConnection from "../client/models/FriendConnection";
 
 /**
  * Deletes the dummy Parent accounts (and everything they authored: Q&A posts,
@@ -54,6 +55,15 @@ async function deleteDummyParentData() {
 
     const reputations = await CommunityReputation.deleteMany({ userId: { $in: userIds } });
     console.log(`- Deleted ${reputations.deletedCount} reputation record(s)`);
+
+    // Friendships point at the user from the *other* side too, so deleting only
+    // the account leaves the other person holding a connection to somebody who
+    // no longer exists. That is not cosmetic: it is what made the dashboard
+    // report "2 connections" above "No connections yet".
+    const friendships = await FriendConnection.deleteMany({
+      $or: [{ requesterId: { $in: userIds } }, { recipientId: { $in: userIds } }],
+    });
+    console.log(`- Deleted ${friendships.deletedCount} friend connection(s)`);
 
     const deletedUsers = await User.deleteMany({ _id: { $in: userIds } });
     console.log(`- Deleted ${deletedUsers.deletedCount} user account(s)`);
