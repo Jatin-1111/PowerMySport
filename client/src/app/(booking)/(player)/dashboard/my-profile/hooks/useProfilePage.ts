@@ -3,7 +3,6 @@
 import { toast } from "@/lib/toast";
 import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
-import { normalizeStoredState } from "@/lib/indianStates";
 import { type DependentModalStepId } from "@/modules/player/components/DependentManagementModal";
 import { User } from "@/types";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -54,11 +53,6 @@ export function useProfilePage() {
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [playerProfileForm, setPlayerProfileForm] = useState({
     yearsPlaying: undefined as number | undefined,
-    personalityTags: [] as string[],
-    primaryObjective: "Recreational" as "Recreational" | "Fitness" | "Compete",
-    weeklyTimeCommitment: 3,
-    budgetTier: "Moderate" as "Budget" | "Moderate" | "Premium",
-    location: "",
     bio: "",
     involvementYears: undefined as number | undefined,
     sportInterests: [] as string[],
@@ -208,13 +202,6 @@ export function useProfilePage() {
     setSelectedSports(user.playerProfile?.sportsFocus || []);
     setPlayerProfileForm({
       yearsPlaying: user.playerProfile?.yearsPlaying,
-      personalityTags: user.playerProfile?.personalityTags || [],
-      primaryObjective: user.playerProfile?.primaryObjective || "Recreational",
-      weeklyTimeCommitment: user.playerProfile?.weeklyTimeCommitment || 3,
-      budgetTier: user.playerProfile?.budgetTier || "Moderate",
-      // Canonicalised on the way in: a profile saved with the old "Jammu &
-      // Kashmir" spelling would otherwise match no option and blank the field.
-      location: normalizeStoredState(user.playerProfile?.location),
       bio: user.parentProfile?.bio || "",
       involvementYears: user.parentProfile?.involvementYears,
       sportInterests: user.parentProfile?.sportInterests || [],
@@ -239,11 +226,6 @@ export function useProfilePage() {
         playerProfile: {
           sportsFocus: selectedSports,
           yearsPlaying: playerProfileForm.yearsPlaying,
-          personalityTags: playerProfileForm.personalityTags,
-          primaryObjective: playerProfileForm.primaryObjective,
-          weeklyTimeCommitment: playerProfileForm.weeklyTimeCommitment,
-          budgetTier: playerProfileForm.budgetTier,
-          location: playerProfileForm.location || undefined,
         },
       };
       if (user?.role === "Parent") {

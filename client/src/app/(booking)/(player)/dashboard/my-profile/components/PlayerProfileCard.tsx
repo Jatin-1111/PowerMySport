@@ -1,6 +1,5 @@
 "use client";
 
-import { normalizeStoredState } from "@/lib/indianStates";
 import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
@@ -47,11 +46,7 @@ export function PlayerProfileCard({
       <ProfileSectionHeader
         icon={Trophy}
         title={isParent ? "Parent Profile" : "Player Profile"}
-        description={
-          isParent
-            ? "Your background and preferences — used to personalise AI guidance."
-            : "Your sports and AI guidance preferences."
-        }
+        description={isParent ? "Your background as a sports parent." : "The sports you play."}
         isEditing={isEditingSports}
         onEdit={onEdit}
         onCancel={onCancel}
@@ -150,42 +145,6 @@ export function PlayerProfileCard({
                 </div>
               </div>
             )}
-
-            <div className="border-t border-slate-100 pt-6">
-              <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                AI Guidance Preferences
-              </h4>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <ProfileInfoField label="Primary Objective">
-                  {user.playerProfile?.primaryObjective || "Not specified"}
-                </ProfileInfoField>
-                <ProfileInfoField label="Budget">
-                  {user.playerProfile?.budgetTier || "Not specified"}
-                </ProfileInfoField>
-                <ProfileInfoField label="State">
-                  {normalizeStoredState(user.playerProfile?.location) || "Not specified"}
-                </ProfileInfoField>
-                <ProfileInfoField label="Weekly Time">
-                  {user.playerProfile?.weeklyTimeCommitment
-                    ? `${user.playerProfile.weeklyTimeCommitment} hours`
-                    : "Not specified"}
-                </ProfileInfoField>
-                <ProfileInfoField label="Personality">
-                  {user.playerProfile?.personalityTags &&
-                  user.playerProfile.personalityTags.length > 0 ? (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {user.playerProfile.personalityTags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    "Not specified"
-                  )}
-                </ProfileInfoField>
-              </div>
-            </div>
           </div>
         )}
       </CardContent>

@@ -1,40 +1,22 @@
 "use client";
 
-import { stateSelectOptions } from "@/lib/indianStates";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
-import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import { Badge } from "@/modules/shared/ui/Badge";
 import { Input } from "@/modules/shared/ui/Input";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { Trophy } from "lucide-react";
 
-const PERSONALITY_TAG_OPTIONS = [
-  "Shy",
-  "Energetic",
-  "Competitive",
-  "Social",
-  "Focused",
-  "Curious",
-  "Patient",
-  "Team-oriented",
-];
-
 export interface PlayerProfileForm {
   yearsPlaying: number | undefined;
-  personalityTags: string[];
-  primaryObjective: "Recreational" | "Fitness" | "Compete";
-  weeklyTimeCommitment: number;
-  budgetTier: "Budget" | "Moderate" | "Premium";
-  location: string;
   bio: string;
   involvementYears: number | undefined;
   sportInterests: string[];
 }
 
 /** The edit-mode half of PlayerProfileCard — the sports/parent-background
- *  form plus the shared AI guidance preferences panel. Split out purely to
- *  stay under the size ratchet; still only ever rendered from that card. */
+ *  form. Split out purely to stay under the size ratchet; still only ever
+ *  rendered from that card. */
 export function PlayerProfileEditForm({
   isParent,
   selectedSports,
@@ -165,112 +147,6 @@ export function PlayerProfileEditForm({
           )}
         </ProfileEditPanel>
       )}
-
-      <ProfileEditPanel
-        title="AI Guidance Preferences"
-        description="Used to pre-fill AI recommendations for you."
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ProfileEditField label="Primary Objective" htmlFor="primary-objective">
-              <ProfileFormSelect
-                id="primary-objective"
-                value={playerProfileForm.primaryObjective}
-                onChange={(value: any) =>
-                  setPlayerProfileForm((f) => ({
-                    ...f,
-                    primaryObjective: value,
-                  }))
-                }
-                options={[
-                  { value: "Recreational", label: "Recreational" },
-                  { value: "Fitness", label: "Fitness" },
-                  { value: "Compete", label: "Compete" },
-                ]}
-              />
-            </ProfileEditField>
-
-            <ProfileEditField label="Budget Tier" htmlFor="budget-tier">
-              <ProfileFormSelect
-                id="budget-tier"
-                value={playerProfileForm.budgetTier}
-                onChange={(value: any) =>
-                  setPlayerProfileForm((f) => ({
-                    ...f,
-                    budgetTier: value,
-                  }))
-                }
-                options={[
-                  { value: "Budget", label: "Budget" },
-                  { value: "Moderate", label: "Moderate" },
-                  { value: "Premium", label: "Premium" },
-                ]}
-              />
-            </ProfileEditField>
-          </div>
-
-          <ProfileEditField
-            label="State / Union Territory"
-            htmlFor="self-location"
-            hint="Used for local scheme & resource recommendations"
-          >
-            <ProfileFormSelect
-              id="self-location"
-              value={playerProfileForm.location}
-              onChange={(value: string) => setPlayerProfileForm((f) => ({ ...f, location: value }))}
-              options={[
-                { value: "", label: "— Select state —" },
-                ...stateSelectOptions(playerProfileForm.location),
-              ]}
-            />
-          </ProfileEditField>
-
-          <ProfileEditField label="Weekly Time Commitment (Hours)" htmlFor="weekly-time">
-            <Input
-              id="weekly-time"
-              type="number"
-              min="1"
-              max="40"
-              value={playerProfileForm.weeklyTimeCommitment}
-              onChange={(e) =>
-                setPlayerProfileForm((f) => ({
-                  ...f,
-                  weeklyTimeCommitment: parseInt(e.target.value) || 3,
-                }))
-              }
-            />
-          </ProfileEditField>
-
-          <ProfileEditField label="Personality Tags">
-            <div className="flex flex-wrap gap-2">
-              {PERSONALITY_TAG_OPTIONS.map((tag) => {
-                const isSelected = playerProfileForm.personalityTags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => {
-                      setPlayerProfileForm((f) => {
-                        const next = isSelected
-                          ? f.personalityTags.filter((t) => t !== tag)
-                          : [...f.personalityTags, tag];
-                        return { ...f, personalityTags: next };
-                      });
-                    }}
-                    className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                      isSelected
-                        ? "border-blue-600 bg-indigo-50 font-medium text-indigo-700"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-          </ProfileEditField>
-        </div>
-      </ProfileEditPanel>
     </div>
   );
 }
