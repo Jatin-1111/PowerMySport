@@ -18,6 +18,7 @@ import { User } from "../../client/models/User";
 import { S3Service } from "../../shared/services/S3Service";
 import { normalizeTags } from "./communityQnaUtils";
 import { awardExperienceReputation } from "./communityShared";
+import { ExperienceSubjectService } from "./ExperienceSubjectService";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("blog");
 
@@ -82,6 +83,14 @@ export interface BlogDetail extends BlogListItem {
    * experience — publishes as APPROVED immediately.
    */
   moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
+  /** The named coach/expert's one right of reply, if they have posted it. */
+  subjectReply: { content: string; authorName: string | null; createdAt: Date } | null;
+  /**
+   * True only for the specific coach/expert `subject` names, verified against
+   * their own Coach/Expert profile — never inferred from any other signal —
+   * and only while no reply exists yet.
+   */
+  canReply: boolean;
 }
 
 export interface BlogCommentItem {
@@ -724,6 +733,25 @@ export const BlogService = {
       resolveContentImageUrls(toContentHtml(post.content)),
     ]);
 
+    // Both only matter for a COACH/EXPERT subject — skip the extra queries
+    // for the common case of no subject or an event/venue/academy one.
+    let subjectReply: BlogDetail["subjectReply"] = null;
+    let canReply = false;
+    if (post.subject && requiresPreModeration(post.subject.kind)) {
+      if (post.subjectReply) {
+        const replyAuthor = await User.findById(post.subjectReply.authorId)
+          .select("name")
+          .lean<{ name?: string }>();
+        subjectReply = {
+          content: post.subjectReply.content,
+          authorName: replyAuthor?.name || null,
+          createdAt: post.subjectReply.createdAt,
+        };
+      } else if (userId) {
+        canReply = await ExperienceSubjectService.isSubjectOwner(userId, post.subject);
+      }
+    }
+
     return {
       id: String(post._id),
       title: deriveTitle(post),
@@ -748,6 +776,8 @@ export const BlogService = {
       attendedAt: post.attendedAt || null,
       signals: post.signals || null,
       moderationStatus,
+      subjectReply,
+      canReply,
     };
   },
 

@@ -41,6 +41,8 @@ import {
   updateAdminProfileHandler,
   updateAdminStatusHandler,
   listAuditLogsHandler,
+  getExperienceModerationQueue,
+  moderateExperience,
 } from "../controllers/adminController";
 import {
   getAllConciergeRequests,
@@ -358,6 +360,25 @@ router.patch(
   requirePermission("users:manage"),
   validateRequest(communityModerationActionSchema),
   reviewCommunityReport
+);
+
+// Experience moderation — reuses reviews:view/reviews:manage rather than a
+// new experiences:* permission pair, per the plan's "extend the existing
+// admin page rather than build a second queue". This is the only place a
+// PENDING (coach/expert-anchored) experience can ever become visible again.
+router.get(
+  "/experiences/moderation/queue",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("reviews:view"),
+  getExperienceModerationQueue
+);
+router.patch(
+  "/experiences/:experienceId/moderate",
+  authMiddleware,
+  adminMiddleware,
+  requirePermission("reviews:manage"),
+  moderateExperience
 );
 
 // Promo code management

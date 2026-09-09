@@ -57,6 +57,16 @@ export interface ExperienceDocument extends Document {
   signals?: Partial<Record<SignalKey, SignalValue>> | null;
   /** When it happened — distinct from when it was written. */
   attendedAt?: Date | null;
+  /**
+   * The named coach or expert's one right of reply. Only ever set when
+   * `subject.kind` is COACH or EXPERT — those are the two kinds that
+   * `requiresPreModeration` already treats as naming a real person, and the
+   * only two where "who is allowed to reply" maps cleanly onto one User via
+   * that person's Coach/Expert profile. A venue or academy can be run by
+   * several people with no single obvious owner, so a reply story for those
+   * is deliberately not built yet.
+   */
+  subjectReply?: { content: string; authorId: mongoose.Types.ObjectId; createdAt: Date } | null;
   moderationStatus: ExperienceModerationStatus;
   moderationNotes?: string | null;
   likeCount: number;
@@ -138,6 +148,17 @@ const experienceSchema = new Schema<ExperienceDocument>(
     subject: { type: subjectSchema, default: null },
     signals: { type: signalsSchema, default: null },
     attendedAt: { type: Date, default: null },
+    subjectReply: {
+      type: new Schema(
+        {
+          content: { type: String, required: true, trim: true, maxlength: 2000 },
+          authorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+          createdAt: { type: Date, default: Date.now },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
     moderationStatus: {
       type: String,
       enum: ["PENDING", "APPROVED", "FLAGGED", "REMOVED"],

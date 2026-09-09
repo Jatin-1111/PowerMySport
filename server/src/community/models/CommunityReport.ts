@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { emitCommunityUserEvent } from "../services/CommunityRealtimeService";
 
-export type CommunityReportTargetType = "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+export type CommunityReportTargetType = "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE";
 export type CommunityReportStatus = "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
 
 export interface CommunityReportDocument extends Document {
@@ -37,7 +37,7 @@ const communityReportSchema = new Schema<CommunityReportDocument>(
     },
     targetType: {
       type: String,
-      enum: ["MESSAGE", "GROUP", "POST", "ANSWER"],
+      enum: ["MESSAGE", "GROUP", "POST", "ANSWER", "EXPERIENCE"],
       required: true,
       index: true,
     },

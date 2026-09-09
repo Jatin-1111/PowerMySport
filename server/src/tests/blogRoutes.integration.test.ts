@@ -48,6 +48,7 @@ beforeEach(async () => {
     "experiencecomments",
     "experiencelikes",
     "communityprofiles",
+    "coaches",
   ]) {
     await mongoose.connection.db.collection(name).deleteMany({});
   }
@@ -558,5 +559,191 @@ describe("anchoring an experience to a subject", () => {
 
     assert.equal(response.status, 201);
     assert.equal(response.body.data.title, "Two lines and a photo is enough.");
+  });
+});
+
+describe("the right of reply", () => {
+  const coachSubject = (coachId: unknown) => ({
+    kind: "COACH",
+    refId: String(coachId),
+    nameSnapshot: "Coach Mehta",
+    slugSnapshot: null,
+  });
+
+  /** A COACH-anchored experience, already past moderation. */
+  const createApprovedCoachExperience = async (authorToken: string, coachId: unknown) => {
+    const createResponse = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${authorToken}`)
+      .send(validCreatePayload({ subject: coachSubject(coachId) }));
+    const experienceId = createResponse.body.data.id;
+
+    // Simulate the admin approval from Phase 6's moderation queue directly —
+    // that endpoint has its own coverage; this test is about the reply, not
+    // moderation.
+    await Experience.updateOne({ _id: experienceId }, { $set: { moderationStatus: "APPROVED" } });
+    return experienceId;
+  };
+
+  it("offers canReply only to the exact person the subject names", async () => {
+    const author = await signedInAs("Player");
+    const namedCoach = await signedInAs("Coach");
+    const someoneElse = await signedInAs("Coach");
+
+    const coachId = oid();
+    await mongoose.connection.db
+      .collection("coaches")
+      .insertOne({ _id: coachId, userId: namedCoach.userId, isVerified: true });
+
+    const experienceId = await createApprovedCoachExperience(author.token, coachId);
+
+    const asNamedCoach = await request(app)
+      .get(`/api/community/blog/posts/${experienceId}`)
+      .set("Authorization", `Bearer ${namedCoach.token}`);
+    assert.equal(asNamedCoach.body.data.canReply, true);
+
+    const asSomeoneElse = await request(app)
+      .get(`/api/community/blog/posts/${experienceId}`)
+      .set("Authorization", `Bearer ${someoneElse.token}`);
+    assert.equal(asSomeoneElse.body.data.canReply, false);
+
+    const asAuthor = await request(app)
+      .get(`/api/community/blog/posts/${experienceId}`)
+      .set("Authorization", `Bearer ${author.token}`);
+    assert.equal(asAuthor.body.data.canReply, false);
+
+    const anonymous = await request(app).get(`/api/community/blog/posts/${experienceId}`);
+    assert.equal(anonymous.body.data.canReply, false);
+  });
+
+  it("lets the named coach post one reply, and shows it to everyone", async () => {
+    const author = await signedInAs("Player");
+    const namedCoach = await signedInAs("Coach");
+
+    const coachId = oid();
+    await mongoose.connection.db
+      .collection("coaches")
+      .insertOne({ _id: coachId, userId: namedCoach.userId, isVerified: true });
+
+    const experienceId = await createApprovedCoachExperience(author.token, coachId);
+
+    const replyResponse = await request(app)
+      .post(`/api/community/experiences/posts/${experienceId}/reply`)
+      .set("Authorization", `Bearer ${namedCoach.token}`)
+      .send({ content: "Thanks for the feedback — we've since fixed our sign-up process." });
+
+    assert.equal(replyResponse.status, 200);
+    assert.equal(
+      replyResponse.body.data.subjectReply.content,
+      "Thanks for the feedback — we've since fixed our sign-up process."
+    );
+    assert.equal(replyResponse.body.data.subjectReply.authorName, "Test Coach");
+    assert.equal(replyResponse.body.data.canReply, false);
+
+    // Visible to an anonymous visitor too — this is a public response, not a
+    // private note.
+    const anonymousRead = await request(app).get(`/api/community/blog/posts/${experienceId}`);
+    assert.equal(
+      anonymousRead.body.data.subjectReply.content,
+      "Thanks for the feedback — we've since fixed our sign-up process."
+    );
+  });
+
+  it("refuses a second reply", async () => {
+    const author = await signedInAs("Player");
+    const namedCoach = await signedInAs("Coach");
+
+    const coachId = oid();
+    await mongoose.connection.db
+      .collection("coaches")
+      .insertOne({ _id: coachId, userId: namedCoach.userId, isVerified: true });
+
+    const experienceId = await createApprovedCoachExperience(author.token, coachId);
+
+    await request(app)
+      .post(`/api/community/experiences/posts/${experienceId}/reply`)
+      .set("Authorization", `Bearer ${namedCoach.token}`)
+      .send({ content: "First reply." });
+
+    const second = await request(app)
+      .post(`/api/community/experiences/posts/${experienceId}/reply`)
+      .set("Authorization", `Bearer ${namedCoach.token}`)
+      .send({ content: "Trying again." });
+
+    assert.equal(second.status, 409);
+  });
+
+  it("refuses a reply from anyone other than the named coach", async () => {
+    const author = await signedInAs("Player");
+    const namedCoach = await signedInAs("Coach");
+    const impostor = await signedInAs("Coach");
+
+    const coachId = oid();
+    await mongoose.connection.db
+      .collection("coaches")
+      .insertOne({ _id: coachId, userId: namedCoach.userId, isVerified: true });
+
+    const experienceId = await createApprovedCoachExperience(author.token, coachId);
+
+    const response = await request(app)
+      .post(`/api/community/experiences/posts/${experienceId}/reply`)
+      .set("Authorization", `Bearer ${impostor.token}`)
+      .send({ content: "That's not what happened." });
+
+    assert.equal(response.status, 403);
+  });
+
+  it("rejects an empty reply", async () => {
+    const author = await signedInAs("Player");
+    const namedCoach = await signedInAs("Coach");
+
+    const coachId = oid();
+    await mongoose.connection.db
+      .collection("coaches")
+      .insertOne({ _id: coachId, userId: namedCoach.userId, isVerified: true });
+
+    const experienceId = await createApprovedCoachExperience(author.token, coachId);
+
+    const response = await request(app)
+      .post(`/api/community/experiences/posts/${experienceId}/reply`)
+      .set("Authorization", `Bearer ${namedCoach.token}`)
+      .send({ content: "   " });
+
+    assert.equal(response.status, 400);
+  });
+});
+
+describe("reporting an experience", () => {
+  it("accepts a report against a real experience", async () => {
+    const author = await signedInAs("Player");
+    const reporter = await signedInAs("Parent");
+
+    const createResponse = await request(app)
+      .post("/api/community/blog/posts")
+      .set("Authorization", `Bearer ${author.token}`)
+      .send(validCreatePayload());
+    const experienceId = createResponse.body.data.id;
+
+    const response = await request(app)
+      .post("/api/community/reports")
+      .set("Authorization", `Bearer ${reporter.token}`)
+      .send({ targetType: "EXPERIENCE", targetId: experienceId, reason: "Inappropriate content" });
+
+    assert.equal(response.status, 201);
+    assert.equal(response.body.data.targetType, "EXPERIENCE");
+  });
+
+  it("refuses a report against a made-up experience id", async () => {
+    const { token } = await signedInAs("Parent");
+
+    const response = await request(app)
+      .post("/api/community/reports")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ targetType: "EXPERIENCE", targetId: String(oid()), reason: "Spam" });
+
+    // "experience not found" maps to 404 via the shared getStatusCode
+    // classifier (community/controllers/communityController/shared.ts) — the
+    // same rule every other "X not found" report-target error already uses.
+    assert.equal(response.status, 404);
   });
 });

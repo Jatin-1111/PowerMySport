@@ -10,6 +10,7 @@ import { CommunityMessage } from "../models/CommunityMessage";
 import { CommunityPost } from "../models/CommunityPost";
 import { CommunityProfile } from "../models/CommunityProfile";
 import { CommunityReport } from "../models/CommunityReport";
+import { Experience } from "../models/Experience";
 import {
   addMember,
   countMembers,
@@ -54,7 +55,7 @@ export const CommunityService = {
   async createReport(
     userId: string,
     payload: {
-      targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
+      targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE";
       targetId: string;
       reason: string;
       details?: string;
@@ -101,11 +102,27 @@ export const CommunityService = {
       if (!post) {
         throw new Error("post not found");
       }
-    } else {
+    } else if (payload.targetType === "ANSWER") {
       const answer = await CommunityAnswer.findById(payload.targetId).select("_id").lean();
       if (!answer) {
         throw new Error("answer not found");
       }
+    } else if (payload.targetType === "EXPERIENCE") {
+      const experience = await Experience.findOne({
+        _id: payload.targetId,
+        isDeleted: false,
+      })
+        .select("_id")
+        .lean();
+      if (!experience) {
+        throw new Error("experience not found");
+      }
+    } else {
+      // Exhaustive per CommunityReportTargetType — a genuinely new target type
+      // must be added above deliberately, not fall through into whichever
+      // branch happened to be last (that used to be ANSWER, silently
+      // validating against the wrong collection for anything unrecognised).
+      throw new Error("Unsupported report target type");
     }
 
     const report = await CommunityReport.create({

@@ -307,4 +307,70 @@ export const ExperienceSubjectService = {
       }),
     };
   },
+
+  /**
+   * Whether `userId` is the specific person a COACH/EXPERT subject names —
+   * the right of reply is only ever offered to that one person, verified
+   * server-side, never taken on the client's word. Any other subject kind (an
+   * event, a venue, an academy with no single owner) has no reply story yet.
+   */
+  async isSubjectOwner(
+    userId: string,
+    subject:
+      { kind: ExperienceSubjectKind; refId: mongoose.Types.ObjectId | string } | null | undefined
+  ): Promise<boolean> {
+    if (!subject) return false;
+    if (subject.kind === "COACH") {
+      const coach = await Coach.findOne({ _id: subject.refId, userId }).select("_id").lean();
+      return Boolean(coach);
+    }
+    if (subject.kind === "EXPERT") {
+      const expert = await Expert.findOne({ _id: subject.refId, userId }).select("_id").lean();
+      return Boolean(expert);
+    }
+    return false;
+  },
+
+  /**
+   * Post the one right-of-reply response. Rejects a second attempt outright —
+   * this is a single reply, not a thread, which is what keeps it from turning
+   * into the comment section the named person could otherwise be drawn into
+   * arguing in.
+   */
+  async postSubjectReply(
+    userId: string,
+    experienceId: string,
+    content: string
+  ): Promise<{ content: string; authorId: string; createdAt: Date }> {
+    const experience = await Experience.findOne({ _id: experienceId, isDeleted: false });
+    if (!experience) {
+      throw new Error("Experience not found");
+    }
+    if (experience.subjectReply) {
+      throw new Error("A reply has already been posted");
+    }
+
+    const isOwner = await this.isSubjectOwner(userId, experience.subject);
+    if (!isOwner) {
+      throw new Error("Access denied");
+    }
+
+    const trimmed = content.trim();
+    if (!trimmed) {
+      throw new Error("Reply cannot be empty");
+    }
+
+    experience.subjectReply = {
+      content: trimmed.slice(0, 2000),
+      authorId: new mongoose.Types.ObjectId(userId),
+      createdAt: new Date(),
+    };
+    await experience.save();
+
+    return {
+      content: experience.subjectReply.content,
+      authorId: String(experience.subjectReply.authorId),
+      createdAt: experience.subjectReply.createdAt,
+    };
+  },
 };

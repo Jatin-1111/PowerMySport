@@ -5,6 +5,7 @@ import { CommunityMessage } from "../../../community/models/CommunityMessage";
 import { CommunityGroup } from "../../../community/models/CommunityGroup";
 import { CommunityPost } from "../../../community/models/CommunityPost";
 import { CommunityAnswer } from "../../../community/models/CommunityAnswer";
+import { Experience } from "../../../community/models/Experience";
 import { recordAuditLog } from "../../services/AuditLogService";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { AppError } from "../../../utils/AppError";
@@ -19,11 +20,15 @@ const truncatePreview = (value: string): string =>
 const resolveCommunityReportTargets = async (
   reports: Array<{ targetType: string; targetId: mongoose.Types.ObjectId }>
 ): Promise<Map<string, { preview: string; deleted: boolean } | null>> => {
-  const idsByType: Record<"MESSAGE" | "GROUP" | "POST" | "ANSWER", mongoose.Types.ObjectId[]> = {
+  const idsByType: Record<
+    "MESSAGE" | "GROUP" | "POST" | "ANSWER" | "EXPERIENCE",
+    mongoose.Types.ObjectId[]
+  > = {
     MESSAGE: [],
     GROUP: [],
     POST: [],
     ANSWER: [],
+    EXPERIENCE: [],
   };
 
   for (const report of reports) {
@@ -34,7 +39,7 @@ const resolveCommunityReportTargets = async (
 
   const result = new Map<string, { preview: string; deleted: boolean } | null>();
 
-  const [messages, groups, posts, answers] = await Promise.all([
+  const [messages, groups, posts, answers, experiences] = await Promise.all([
     idsByType.MESSAGE.length
       ? CommunityMessage.find({ _id: { $in: idsByType.MESSAGE } })
           .select("content isDeleted")
@@ -53,6 +58,11 @@ const resolveCommunityReportTargets = async (
     idsByType.ANSWER.length
       ? CommunityAnswer.find({ _id: { $in: idsByType.ANSWER } })
           .select("content isDeleted")
+          .lean()
+      : Promise.resolve([]),
+    idsByType.EXPERIENCE.length
+      ? Experience.find({ _id: { $in: idsByType.EXPERIENCE } })
+          .select("title excerpt isDeleted")
           .lean()
       : Promise.resolve([]),
   ]);
@@ -79,6 +89,14 @@ const resolveCommunityReportTargets = async (
     result.set(String(answer._id), {
       preview: answer.isDeleted ? "[answer deleted]" : truncatePreview(answer.content),
       deleted: Boolean(answer.isDeleted),
+    });
+  }
+  for (const experience of experiences) {
+    result.set(String(experience._id), {
+      preview: experience.isDeleted
+        ? "[experience deleted]"
+        : truncatePreview(experience.title || experience.excerpt || "Untitled experience"),
+      deleted: Boolean(experience.isDeleted),
     });
   }
 

@@ -362,7 +362,7 @@ export const bookingWaitlistSchema = z
   });
 
 export const communityReportSchema = z.object({
-  targetType: z.enum(["MESSAGE", "GROUP", "POST", "ANSWER"]),
+  targetType: z.enum(["MESSAGE", "GROUP", "POST", "ANSWER", "EXPERIENCE"]),
   targetId: z.string().min(1, "Target ID is required"),
   reason: z.string().trim().min(3, "Reason is required").max(120),
   details: z.string().trim().max(1000).optional(),
@@ -546,6 +546,14 @@ export const blogCommentSchema = z.object({
     .min(1, "Comment cannot be empty")
     .max(2000, "Comment cannot exceed 2000 characters"),
   parentId: z.string().min(1).optional(),
+});
+
+export const experienceSubjectReplySchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, "Reply cannot be empty")
+    .max(2000, "Reply cannot exceed 2000 characters"),
 });
 
 const socialHandle = z.string().trim().max(200).optional();

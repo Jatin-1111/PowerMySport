@@ -15,7 +15,11 @@ import {
   updateBlog,
   updateBlogProfile,
 } from "../controllers/blogController";
-import { searchExperienceSubjects, getExperienceSubjectSummary } from "../controllers/experienceController"; // prettier-ignore
+import {
+  searchExperienceSubjects,
+  getExperienceSubjectSummary,
+  postExperienceSubjectReply,
+} from "../controllers/experienceController";
 import { authMiddleware, optionalAuthMiddleware } from "../../middleware/auth";
 import { cacheControl } from "../../middleware/cacheControl";
 import {
@@ -25,6 +29,7 @@ import {
   blogProfileUpdateSchema,
   blogUpdateSchema,
   blogUploadUrlSchema,
+  experienceSubjectReplySchema,
 } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
 
@@ -93,6 +98,17 @@ router.post(
   createBlogComment
 );
 router.delete("/comments/:commentId", authMiddleware, deleteBlogComment);
+
+// ─── Right of reply (new) ──────────────────────────────────────────────────────
+// The named coach/expert's one response — see postSubjectReply for the
+// ownership check. Not on the /blog alias: this is a genuinely new endpoint,
+// same as the two subjects routes above.
+router.post(
+  "/posts/:blogId/reply",
+  authMiddleware,
+  validateRequest(experienceSubjectReplySchema),
+  postExperienceSubjectReply
+);
 
 // ─── Experiences ────────────────────────────────────────────────────────────────
 router.get("/posts", optionalAuthMiddleware, cacheControl(20), listBlogs);
