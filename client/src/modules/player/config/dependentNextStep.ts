@@ -41,3 +41,31 @@ export function nextStepHref(dependentId: string, field: string): string {
   }
   return `/dashboard/my-profile?editDependent=${encodeURIComponent(dependentId)}&step=${step}`;
 }
+
+/**
+ * What to call this gap on a dashboard CTA button, as opposed to what
+ * `DEPENDENT_COMPLETION_FIELDS` calls it internally.
+ *
+ * The scorer's labels ("Physical profile", "Current standing", "Comfort
+ * preferences") name the *bucket*, which reads fine as a section heading on
+ * the detail page but turns into "Add physical profile" or "Add current
+ * standing" as a button — internal grouping vocabulary standing in for what a
+ * parent is actually being asked to do. This says the action instead.
+ */
+const ACTION_LABELS: Record<string, string> = {
+  sportsFocus: "their sport",
+  location: "their location",
+  physical: "height & weight",
+  personality: "play style",
+  comfort: "training preferences",
+  practical: "budget & schedule",
+  assessment: "the sport assessment",
+};
+
+/** The dashboard CTA text for closing `field` — "Add {...}", except assessment,
+ *  which is a thing to do, not add. */
+export function nextStepLabel(field: string): string {
+  const action = ACTION_LABELS[field];
+  if (!action) return "Finish their profile";
+  return field === "assessment" ? `Take ${action}` : `Add ${action}`;
+}

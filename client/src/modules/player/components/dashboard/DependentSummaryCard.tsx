@@ -1,6 +1,7 @@
 "use client";
 
 import type { DependentSummary } from "@/modules/player/hooks/useDependents";
+import { nextStepLabel } from "@/modules/player/config/dependentNextStep";
 import { ProfileCompletionRing } from "@/modules/player/components/ProfileCompletionRing";
 import { Avatar, AvatarFallback } from "@/modules/shared/ui/Avatar";
 import { Badge } from "@/modules/shared/ui/Badge";
@@ -71,7 +72,7 @@ export function DependentSummaryCard({ summary }: { summary: DependentSummary })
             className="w-full justify-between"
             icon={<ArrowRight size={14} />}
           >
-            Add {topGap.label.toLowerCase()}
+            {nextStepLabel(topGap.field)}
           </Button>
         </Link>
       )}

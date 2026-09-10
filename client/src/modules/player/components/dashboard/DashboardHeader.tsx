@@ -75,7 +75,7 @@ export function DashboardHeader() {
                 ? isParent
                   ? "Your profile is complete. Here's how your family is doing."
                   : "Your profile is complete."
-                : `Your profile is ${percent}% complete — finishing it sharpens your recommendations.`}
+                : `Your profile is ${percent}% complete — a few more details help us guide you better.`}
             </p>
           </div>
         </div>
