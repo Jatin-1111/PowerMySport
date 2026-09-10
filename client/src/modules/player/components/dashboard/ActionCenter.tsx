@@ -1,9 +1,8 @@
 "use client";
 
 import { useNotifications } from "@/hooks/useNotifications";
-import { useDependents } from "@/modules/player/hooks/useDependents";
 import { cn } from "@/utils/cn";
-import { Bell, Mail, UserPlus, UserCog, type LucideIcon } from "lucide-react";
+import { Bell, Mail, UserPlus, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 /**
@@ -50,7 +49,6 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export function ActionCenter() {
   const { counts } = useNotifications();
-  const { incompleteCount } = useDependents();
 
   const specs: ActionPillSpec[] = [
     {
@@ -68,14 +66,6 @@ export function ActionCenter() {
       icon: Mail,
       label: (n) => `${n} ${plural(n, "invitation", "invitations")}`,
       tone: "border-orange-200 text-orange-700",
-    },
-    {
-      key: "profiles",
-      count: incompleteCount,
-      href: "/dashboard/my-profile",
-      icon: UserCog,
-      label: (n) => `${n} ${plural(n, "profile", "profiles")} to finish`,
-      tone: "border-amber-200 text-amber-700",
     },
     {
       key: "unread",
