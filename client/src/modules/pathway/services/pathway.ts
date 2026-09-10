@@ -271,6 +271,8 @@ export interface TournamentEdition {
   level?: string;
   ageGroups?: string[];
   sourceUrl: string;
+  /** Slug of the surviving edition when this row duplicates another; the page redirects there. */
+  mergedInto?: string;
   status: "announced" | "ongoing" | "completed" | "cancelled";
   lastCheckedAt: string;
 

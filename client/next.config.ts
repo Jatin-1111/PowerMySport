@@ -1,9 +1,45 @@
 import type { NextConfig } from "next";
 import path from "path";
 
+/**
+ * Duplicate tournament editions, as permanent redirects.
+ *
+ * The same event was ingested twice under a long and a short name (see server
+ * migration 41), so it holds two indexed URLs that split its ranking signals.
+ * `mergedInto` names the survivor; these turn that into a real 308.
+ *
+ * Built here rather than with `permanentRedirect()` in the page on purpose: a
+ * redirect thrown from a Server Component arrives after the response is
+ * committed, so Next degrades it to `<meta http-equiv="refresh">` on a 200,
+ * which Google treats as a much weaker signal than an HTTP redirect. The page
+ * keeps its own redirect as a fallback for rows merged since the last build.
+ *
+ * Never throws: a redirect list that fails the build is worse than one missing
+ * its dynamic half, matching how app/sitemap.ts treats the same API.
+ */
+async function mergedEditionRedirects() {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  try {
+    const res = await fetch(`${apiBase}/tournament-editions?merged=true`);
+    if (!res.ok) return [];
+    const body = await res.json();
+    if (!body?.success || !Array.isArray(body.data)) return [];
+    return (body.data as { slug?: string; mergedInto?: string }[])
+      .filter((r) => r.slug && r.mergedInto && r.slug !== r.mergedInto)
+      .map((r) => ({
+        source: `/tournaments/${r.slug}`,
+        destination: `/tournaments/${r.mergedInto}`,
+        permanent: true,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   async redirects() {
     return [
+      ...(await mergedEditionRedirects()),
       {
         source: "/find-sport",
         destination: "/assessment",

@@ -2,7 +2,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import {
   ArrowRight,
   Building2,
@@ -117,6 +117,14 @@ export async function generateMetadata({
   if (!detail) return { title: "Tournament" };
 
   const { edition, nextInSeries } = detail;
+  // Redirected here rather than in the page body: metadata resolves before the
+  // response starts streaming, so this produces a real 308. Thrown from the
+  // component instead, Next has already committed a 200 and degrades to a
+  // `<meta http-equiv="refresh">`, which Google treats as a far weaker signal
+  // than an HTTP redirect — and passing that equity is the entire point.
+  if (edition.mergedInto && edition.mergedInto !== slug) {
+    permanentRedirect(`/tournaments/${edition.mergedInto}`);
+  }
 
   const title = edition.officialName || edition.name;
   const where = formatLocation(edition.venue, edition.city);
@@ -194,6 +202,16 @@ export default async function TournamentEditionPage({
   const { slug } = await params;
   const detail = await fetchEdition(slug);
   if (!detail) notFound();
+
+  // This row duplicates another listing of the same tournament (migration 41).
+  // A permanent redirect hands the URL's accumulated search equity to the
+  // surviving page instead of stranding it on a second copy.
+  // The `mergedInto` guard below cannot chain — migration 41 never lets a row
+  // that was merged away become a survivor — but a row pointing at itself would
+  // redirect forever, so it is cheap to refuse that here rather than trust it.
+  if (detail.edition.mergedInto && detail.edition.mergedInto !== slug) {
+    permanentRedirect(`/tournaments/${detail.edition.mergedInto}`);
+  }
 
   const { edition, federation, related, nextInSeries } = detail;
   const location = formatLocation(edition.venue, edition.city);
