@@ -28,6 +28,27 @@ async function resolveEditionFederation(
 }
 
 /**
+ * The recurring series an edition belongs to, as a comparable key.
+ *
+ * "22nd Delhi International Open Grandmasters Chess Tournament" and its 2027
+ * running differ only by the ordinal and the year, so both reduce to "delhi
+ * grandmasters". Used to point a finished event at its next running, which is
+ * the one thing someone searching for a tournament that already happened
+ * actually wants.
+ */
+function seriesKey(name: string): string {
+  return (name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(
+      /\b(\d+(st|nd|rd|th)?|20\d\d|fide|rated|rating|open|chess|tournament|tournaments|championship|championships|all|india|international|the|for|below|above|cat|category|edition)\b/g,
+      " "
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * GET /api/tournament-editions/:slug
  * One dated edition, for the public /tournaments/[slug] page.
  */
@@ -45,25 +66,37 @@ export const getTournamentEdition = asyncHandler(
 
     const federation = await resolveEditionFederation(edition.sportSlug, edition.name);
 
-    // A handful of other upcoming events in the same sport, so the page is a
-    // stop on the way to a decision rather than a dead end. Same city first —
-    // that is the choice a parent is actually making.
+    // Other upcoming events in the same sport, so the page is a stop on the way
+    // to a decision rather than a dead end.
+    //
+    // Pulled sport-wide and ranked here rather than filtered to the edition's
+    // city in the query: city used to be a hard filter, which meant a tournament
+    // in a city with nothing else coming up rendered no onward links at all.
+    // That hits finished events hardest — they are precisely the pages where the
+    // rest of the content is no longer useful. Same city still sorts first.
     const startOfToday = new Date();
     startOfToday.setUTCHours(0, 0, 0, 0);
-    const related = await TournamentEdition.find({
+    const upcoming = await TournamentEdition.find({
       sportSlug: edition.sportSlug,
       _id: { $ne: edition._id },
       slug: { $exists: true, $ne: null },
       startDate: { $gte: startOfToday },
       status: { $ne: "cancelled" },
-      ...(edition.city ? { city: edition.city } : {}),
     })
       .sort({ startDate: 1 })
-      .limit(6)
+      .limit(400)
       .select("slug name startDate city venue ageGroups level")
       .lean();
 
-    res.json({ success: true, data: { edition, federation, related } });
+    const key = seriesKey(edition.name);
+    const nextInSeries = key ? (upcoming.find((e) => seriesKey(e.name) === key) ?? null) : null;
+
+    const sameCity = edition.city ? upcoming.filter((e) => e.city === edition.city) : [];
+    const related = [...sameCity, ...upcoming.filter((e) => !sameCity.includes(e))]
+      .filter((e) => !nextInSeries || String(e._id) !== String(nextInSeries._id))
+      .slice(0, 6);
+
+    res.json({ success: true, data: { edition, federation, related, nextInSeries } });
   }
 );
 
