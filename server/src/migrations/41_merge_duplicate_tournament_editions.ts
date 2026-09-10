@@ -18,14 +18,16 @@ import { TournamentEdition } from "../shared/models/TournamentEdition";
  * weaker title win the impression — one pair drew 613 impressions/1 click on
  * one URL and 283/5 on the other.
  *
- * MATCHING IS DELIBERATELY CONSERVATIVE. Same sport, same start date, and one
- * name's word set must be a strict subset of the other's. Sibling events share
- * a date and most of a name but each carries a word the other lacks — "Cat A
- * (above 2100)" vs "Cat B (below 2100)", "Blitz" vs "Rapid" — so neither is a
- * subset of the other and they are left alone. The cost of that strictness is
- * missed duplicates, which is the right way to be wrong here: a missed pair
- * stays as it is today, whereas a wrong merge redirects a real tournament's
- * page to a different tournament.
+ * MATCHING IS DELIBERATELY CONSERVATIVE. Three things must hold: same sport,
+ * same start date, and identical qualifier sets — category letter, rating band,
+ * format, division, age group. Only then does a word-subset test decide whether
+ * one name is a fuller spelling of the other. Sibling events share a date and
+ * most of a name, so it is the qualifier check and not the subset test that
+ * keeps "Cat A (above 2100)" apart from "Cat B (below 2100)" and "Blitz" from
+ * "Rapid"; see the note on FORMATS/DIVISIONS below for what happens without it.
+ * The cost of that strictness is missed duplicates, which is the right way to
+ * be wrong here: a missed pair stays as it is today, whereas a wrong merge
+ * redirects a real tournament's page to a different tournament.
  *
  * Losers are NOT deleted. They keep their row and gain `mergedInto`, so
  * /tournaments/[slug] answers the old URL with a permanent redirect and hands
