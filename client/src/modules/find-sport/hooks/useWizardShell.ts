@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api/axios";
 import { useFlow } from "@/flow/useFlow";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -24,6 +25,14 @@ import { firstNoteFor, scheduleTrialCheckIn, trialSignals } from "../components/
 export function useWizardShell() {
   const { token } = useAuthStore();
   const refreshProfile = useRefreshProfile();
+  // A dashboard "Find their sport" card links here with ?dependentId=<id> so
+  // the wizard knows up front who this assessment is for. Without it, the
+  // dependent picker below defaults to nothing selected, and finishing the
+  // assessment creates a brand-new child profile instead of updating the one
+  // the parent came from — the completed assessment then lands nowhere near
+  // the card that started it.
+  const searchParams = useSearchParams();
+  const targetDependentId = searchParams.get("dependentId");
   const [answers, setAnswers] = useState<WizardAnswers>({ ...EMPTY_ANSWERS });
   // Scores are a pure function of the answers, so they are derived, not stored.
   // Previously they lived in state and were populated by the `processing` step's
@@ -147,8 +156,18 @@ export function useWizardShell() {
           // Existing parent — discard any pending import (they already have children)
           pendingImport.current = null;
           if (savedStatus === "saving") setSavedStatus("idle");
-          // Auto-select the only dependent for pre-fill
-          if (dependents.length === 1) {
+          // A dependent named in the URL wins over the single-child heuristic
+          // below — that heuristic exists for the case where the parent typed
+          // this URL by hand with no target in mind, not to override a card
+          // that already told us who this is for.
+          const targeted = targetDependentId
+            ? dependents.find((p) => p._id === targetDependentId)
+            : undefined;
+          if (targeted) {
+            setSelectedDependentId(targeted._id);
+            applyPlayer(targeted);
+          } else if (dependents.length === 1) {
+            // Auto-select the only dependent for pre-fill
             setSelectedDependentId(dependents[0]._id);
             applyPlayer(dependents[0]);
           }

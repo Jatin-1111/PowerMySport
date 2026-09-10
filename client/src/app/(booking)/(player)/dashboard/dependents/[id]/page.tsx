@@ -418,7 +418,9 @@ export default function DependentDetailPage() {
                 Take the assessment to find {dependent.name}&apos;s best-fit sport.
               </p>
             </div>
-            <Link href="/assessment/discover">
+            <Link
+              href={`/assessment/discover?dependentId=${encodeURIComponent(dependent._id ?? "")}`}
+            >
               <Button size="sm" icon={<Compass size={16} />}>
                 Find a Sport
               </Button>
@@ -442,7 +444,9 @@ export default function DependentDetailPage() {
                 : "Sport fit results from the assessment."
             }
             action={
-              <Link href="/assessment/discover">
+              <Link
+                href={`/assessment/discover?dependentId=${encodeURIComponent(dependent._id ?? "")}`}
+              >
                 <Button variant="outline" size="sm">
                   Retake Assessment
                 </Button>

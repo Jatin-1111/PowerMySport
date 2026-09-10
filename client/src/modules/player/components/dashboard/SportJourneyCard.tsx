@@ -77,7 +77,7 @@ export function SportJourneyCard() {
                   </Button>
                 </Link>
               ) : (
-                <Link href="/assessment/discover">
+                <Link href={`/assessment/discover?dependentId=${encodeURIComponent(child.id)}`}>
                   <Button variant="primary" size="sm" icon={<Compass size={14} />}>
                     Find their sport
                   </Button>
