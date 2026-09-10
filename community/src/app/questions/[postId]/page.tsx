@@ -4,8 +4,12 @@ import { breadcrumbSchema, JsonLd } from "@/modules/community/components/seo/Jso
 import { buildMetadata, clampText, communityUrl, fetchPublicData } from "@/lib/seo";
 import type { CommunityPostDetailResponse } from "@/modules/community/types";
 
+// Matches the client's own initial page size (`ANSWERS_PER_PAGE` in
+// QnAPostDetailClient) — otherwise SSR would seed more answers than the first
+// paint is meant to show, and the list would visibly shrink once the client
+// re-fetches with the smaller limit.
 const getPost = (postId: string) =>
-  fetchPublicData<CommunityPostDetailResponse>(`/community/posts/${postId}`);
+  fetchPublicData<CommunityPostDetailResponse>(`/community/posts/${postId}?limit=5`);
 
 export async function generateMetadata({
   params,

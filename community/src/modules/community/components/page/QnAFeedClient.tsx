@@ -1033,9 +1033,15 @@ export default function QnAFeedClient() {
             ) : (
               <section className="space-y-4">
                 {featuredPost ? (
-                  <article className="border-power-orange/30 from-power-orange/5 hover:border-power-orange/50 bg-linear-to-br group relative flex gap-0 overflow-hidden rounded-xl border-2 via-white to-white shadow-lg transition-all hover:shadow-xl">
+                  <article
+                    onClick={() => router.push(`/questions/${featuredPost.id}`)}
+                    className="border-power-orange/30 from-power-orange/5 hover:border-power-orange/50 bg-linear-to-br group relative flex cursor-pointer gap-0 overflow-hidden rounded-xl border-2 via-white to-white shadow-lg transition-all hover:shadow-xl"
+                  >
                     {/* Voting Sidebar */}
-                    <div className="border-power-orange/20 bg-power-orange/5 group-hover:bg-power-orange/10 flex w-16 shrink-0 flex-col items-center gap-0.5 border-r-2 px-2.5 py-4">
+                    <div
+                      onClick={(event) => event.stopPropagation()}
+                      className="border-power-orange/20 bg-power-orange/5 group-hover:bg-power-orange/10 flex w-16 shrink-0 flex-col items-center gap-0.5 border-r-2 px-2.5 py-4"
+                    >
                       <button
                         onClick={() => void vote(featuredPost, 1)}
                         disabled={voting.isLoading(featuredPost.id)}
@@ -1151,10 +1157,14 @@ export default function QnAFeedClient() {
                     return (
                       <article
                         key={post.id}
-                        className="group relative flex gap-0 overflow-hidden rounded-lg border border-slate-200 bg-white transition-all hover:border-slate-300 hover:shadow-md"
+                        onClick={() => router.push(`/questions/${post.id}`)}
+                        className="group relative flex cursor-pointer gap-0 overflow-hidden rounded-lg border border-slate-200 bg-white transition-all hover:border-slate-300 hover:shadow-md"
                       >
                         {/* Voting Sidebar - Reddit Style */}
-                        <div className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r border-slate-200 bg-slate-50 px-2.5 py-3 group-hover:bg-slate-100">
+                        <div
+                          onClick={(event) => event.stopPropagation()}
+                          className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r border-slate-200 bg-slate-50 px-2.5 py-3 group-hover:bg-slate-100"
+                        >
                           <button
                             onClick={() => void vote(post, 1)}
                             disabled={voting.isLoading(post.id)}
@@ -1277,7 +1287,10 @@ export default function QnAFeedClient() {
 
                           {/* Owner Actions */}
                           {post.author.id === currentUserId ? (
-                            <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                            <div
+                              onClick={(event) => event.stopPropagation()}
+                              className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3"
+                            >
                               <button
                                 onClick={() => void togglePostStatus(post)}
                                 disabled={postMutations.isLoading(post.id)}

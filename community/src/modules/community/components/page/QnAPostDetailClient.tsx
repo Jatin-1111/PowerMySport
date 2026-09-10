@@ -30,6 +30,10 @@ import { getCommunitySocket, qnaPostRoom, subscribeToCommunityRoom } from "@/lib
 import { toast } from "@/lib/toast";
 import AuthorAvatar from "@/modules/community/components/page/AuthorAvatar";
 
+/** Kept small on purpose — most threads never need a second page, and a long
+ *  one shouldn't ship every answer up front just to answer the question. */
+const ANSWERS_PER_PAGE = 5;
+
 const formatPostedDate = (value: string): string => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
@@ -207,7 +211,7 @@ export default function QnAPostDetailClient({
           setIsLoading(true);
         }
 
-        const data = await communityService.getPostDetails(postId, targetPage, 20);
+        const data = await communityService.getPostDetails(postId, targetPage, ANSWERS_PER_PAGE);
         setPost(data.post);
         hasContentRef.current = true;
         setPostTitleDraft(data.post.title);
@@ -778,65 +782,6 @@ export default function QnAPostDetailClient({
         </div>
       </article>
 
-      {/* Answer Form */}
-      <section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-slate-900">Share Your Answer</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Be specific and actionable. Share what worked, include context, and explain your
-          reasoning.
-        </p>
-        {post.status === "CLOSED" ? (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-            ⓘ This question is closed. You can still vote and read existing answers.
-          </div>
-        ) : null}
-        <textarea
-          value={answerDraft}
-          onChange={(event) => setAnswerDraft(event.target.value)}
-          rows={6}
-          placeholder={
-            post.status === "CLOSED"
-              ? "Question is closed for answers"
-              : "Write your answer here... Include specific steps, tips, or experiences that helped solve the problem."
-          }
-          disabled={post.status === "CLOSED"}
-          className="focus:border-power-orange focus:ring-power-orange mt-4 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-1 disabled:bg-slate-50"
-        />
-        <div className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4">
-          <button
-            onClick={() => void submitAnswer()}
-            disabled={isSubmitting || post.status === "CLOSED"}
-            className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
-          >
-            {post.status === "CLOSED"
-              ? "Question Closed"
-              : isSubmitting
-                ? "Posting..."
-                : "Post Answer"}
-          </button>
-          <label className="flex cursor-pointer items-center gap-2">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={answerIsAnonymous}
-                onChange={(e) => setAnswerIsAnonymous(e.target.checked)}
-                disabled={post.status === "CLOSED"}
-                className="sr-only"
-              />
-              <div
-                className={`h-4 w-8 rounded-full transition-colors ${answerIsAnonymous ? "bg-slate-700" : "bg-slate-300"}`}
-              />
-              <div
-                className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${answerIsAnonymous ? "translate-x-4" : "translate-x-0.5"}`}
-              />
-            </div>
-            <EyeOff size={13} className="text-slate-500" />
-            <span className="text-xs font-semibold text-slate-700">Post anonymously</span>
-          </label>
-          <span className="text-xs text-slate-500">{answerDraft.length} characters</span>
-        </div>
-      </section>
-
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
@@ -1101,6 +1046,65 @@ export default function QnAPostDetailClient({
             </button>
           </div>
         ) : null}
+      </section>
+
+      {/* Answer Form */}
+      <section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-slate-900">Share Your Answer</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Be specific and actionable. Share what worked, include context, and explain your
+          reasoning.
+        </p>
+        {post.status === "CLOSED" ? (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+            ⓘ This question is closed. You can still vote and read existing answers.
+          </div>
+        ) : null}
+        <textarea
+          value={answerDraft}
+          onChange={(event) => setAnswerDraft(event.target.value)}
+          rows={6}
+          placeholder={
+            post.status === "CLOSED"
+              ? "Question is closed for answers"
+              : "Write your answer here... Include specific steps, tips, or experiences that helped solve the problem."
+          }
+          disabled={post.status === "CLOSED"}
+          className="focus:border-power-orange focus:ring-power-orange mt-4 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-1 disabled:bg-slate-50"
+        />
+        <div className="mt-4 flex flex-wrap items-center gap-3 sm:gap-4">
+          <button
+            onClick={() => void submitAnswer()}
+            disabled={isSubmitting || post.status === "CLOSED"}
+            className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
+          >
+            {post.status === "CLOSED"
+              ? "Question Closed"
+              : isSubmitting
+                ? "Posting..."
+                : "Post Answer"}
+          </button>
+          <label className="flex cursor-pointer items-center gap-2">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={answerIsAnonymous}
+                onChange={(e) => setAnswerIsAnonymous(e.target.checked)}
+                disabled={post.status === "CLOSED"}
+                className="sr-only"
+              />
+              <div
+                className={`h-4 w-8 rounded-full transition-colors ${answerIsAnonymous ? "bg-slate-700" : "bg-slate-300"}`}
+              />
+              <div
+                className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${answerIsAnonymous ? "translate-x-4" : "translate-x-0.5"}`}
+              />
+            </div>
+            <EyeOff size={13} className="text-slate-500" />
+            <span className="text-xs font-semibold text-slate-700">Post anonymously</span>
+          </label>
+          <span className="text-xs text-slate-500">{answerDraft.length} characters</span>
+        </div>
       </section>
     </div>
   );
