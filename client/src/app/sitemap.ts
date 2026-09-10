@@ -45,6 +45,29 @@ async function fetchSlugs(path: string): Promise<SlugRecord[]> {
   }
 }
 
+/**
+ * Which sports actually hold tournaments.
+ *
+ * The hub pages exist for every sport in SPORT_LABEL, but only a few have any
+ * editions — the rest render an empty listing. Submitting those asks Google to
+ * crawl blank URLs, which earns "Soft 404" and spends crawl budget this site is
+ * already short of (35 URLs sit in "Discovered – currently not indexed").
+ * Degrades to an empty set, so an API blip drops the hubs rather than the whole
+ * sitemap.
+ */
+async function fetchSportFacets(): Promise<{ sportSlug: string; total: number }[]> {
+  try {
+    const res = await fetch(`${apiBase}/tournament-editions?facets=sports`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const body = await res.json();
+    return body.success && Array.isArray(body.data) ? body.data : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Minimal shapes for the two id-keyed lists below. */
 interface IdRecord {
   id?: string;
@@ -77,9 +100,10 @@ async function fetchIds(path: string, pick: (body: unknown) => IdRecord[]): Prom
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [federations, editions, products, experts] = await Promise.all([
+  const [federations, editions, sportFacets, products, experts] = await Promise.all([
     fetchSlugs("/federations"),
     fetchSlugs("/tournament-editions"),
+    fetchSportFacets(),
     SHOP_IS_LIVE
       ? fetchIds("/v1/products?page=1&limit=500", (body) => {
           const data = (body as { ok?: boolean; data?: { products?: IdRecord[] } })?.data;
@@ -361,15 +385,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
 
     // ── Tournament sport hubs (/tournaments/sport/[sport]) ──
-    // One per supported sport, listed from the static SPORT_LABEL map rather
-    // than the API — every sport in that map has a hub whether or not editions
-    // exist for it yet, same reasoning as PATHWAY_SPORTS above.
-    ...Object.keys(SPORT_LABEL).map((sportSlug) => ({
-      url: `${siteUrl}/tournaments/sport/${sportSlug}`,
-      lastModified: now,
-      changeFrequency: "daily" as const,
-      priority: 0.75,
-    })),
+    // Only the sports that actually hold tournaments. A hub exists for every
+    // sport in SPORT_LABEL, but seven of the ten have no editions at all and
+    // render an empty listing — see fetchSportFacets above for why those must
+    // not be submitted.
+    ...sportFacets
+      .filter((facet) => facet.total > 0 && SPORT_LABEL[facet.sportSlug])
+      .map((facet) => ({
+        url: `${siteUrl}/tournaments/sport/${facet.sportSlug}`,
+        lastModified: now,
+        changeFrequency: "daily" as const,
+        priority: 0.75,
+      })),
 
     // ── Dynamic pathway content ──
     ...federationEntries,

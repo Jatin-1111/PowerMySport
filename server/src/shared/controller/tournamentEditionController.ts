@@ -146,6 +146,43 @@ export const listTournamentEditionSlugs = asyncHandler(
       return;
     }
 
+    // How many editions each sport actually holds. The sport hubs are generated
+    // from a static list of supported sports, but only three of them have any
+    // tournaments — the rest render an empty page. Listing those in the sitemap
+    // asks Google to crawl seven blank URLs, which is how a site earns "Soft
+    // 404" and burns crawl budget it is already short of.
+    if (req.query.facets === "sports") {
+      const startOfToday = new Date();
+      startOfToday.setUTCHours(0, 0, 0, 0);
+
+      const rows = await TournamentEdition.aggregate<{
+        _id: string;
+        total: number;
+        upcoming: number;
+      }>([
+        {
+          $match: {
+            slug: { $exists: true, $ne: null },
+            status: { $ne: "cancelled" },
+            mergedInto: { $in: [null, undefined] },
+          },
+        },
+        {
+          $group: {
+            _id: "$sportSlug",
+            total: { $sum: 1 },
+            upcoming: { $sum: { $cond: [{ $gte: ["$startDate", startOfToday] }, 1, 0] } },
+          },
+        },
+      ]);
+
+      res.json({
+        success: true,
+        data: rows.map((r) => ({ sportSlug: r._id, total: r.total, upcoming: r.upcoming })),
+      });
+      return;
+    }
+
     if (sportSlug) {
       const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
       const limit = Math.min(60, Math.max(1, parseInt((req.query.limit as string) || "24", 10)));

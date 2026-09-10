@@ -1,5 +1,5 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, itemListJsonLd, NOINDEX_METADATA } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -50,6 +50,20 @@ async function fetchEditions(
   }
 }
 
+async function fetchSportFacets(): Promise<{ sportSlug: string; total: number }[]> {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  try {
+    const res = await fetch(`${apiBase}/tournament-editions?facets=sports`, {
+      next: { revalidate: LIST_REVALIDATE_SECONDS, tags: ["tournament-editions"] },
+    });
+    if (!res.ok) return [];
+    const body = await res.json();
+    return body.success && Array.isArray(body.data) ? body.data : [];
+  } catch {
+    return [];
+  }
+}
+
 function formatShortDate(value: string): string {
   return new Date(value).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -72,6 +86,15 @@ export async function generateMetadata({
 
   const title = `${sportLabel} Tournaments in India — Upcoming Dates & Fact Sheets`;
   const description = `Browse upcoming ${sportLabel} tournaments across India — dates, venues, age groups and entry fact sheets, updated as federations publish them.`;
+
+  // A hub exists for every supported sport, but most hold no tournaments yet
+  // and render an empty listing. The sitemap already skips those; this stops
+  // one reaching the index by another route and being read as a soft 404.
+  const facets = await fetchSportFacets();
+  const known = facets.find((f) => f.sportSlug === sport);
+  if (facets.length > 0 && !known?.total) {
+    return { title, description, ...NOINDEX_METADATA };
+  }
 
   return {
     title,
