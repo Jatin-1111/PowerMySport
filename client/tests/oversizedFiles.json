@@ -1,6 +1,6 @@
 {
   "app/(auth)/register/page.tsx": 556,
-  "app/(booking)/(player)/dashboard/dependents/[id]/page.tsx": 710,
+  "app/(booking)/(player)/dashboard/dependents/[id]/page.tsx": 713,
   "app/(booking)/(player)/dashboard/friends/page.tsx": 652,
   "app/(booking)/(player)/dashboard/my-bookings/page.tsx": 581,
   "app/(booking)/academies/[slug]/AcademyProfileClient.tsx": 594,

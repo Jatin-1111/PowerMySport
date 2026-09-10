@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { getMainAppUrl } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
 import { communityService } from "@/modules/community/services/community";
 import { getCommunitySocket } from "@/lib/realtime/socket";
@@ -140,7 +141,13 @@ export default function CommunityTopNav() {
           {/* Left section: Back button & Logo */}
           <div className="flex flex-shrink-0 items-center">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
-            <Link href="/" className="inline-flex h-full flex-col items-start justify-center">
+            {/* Goes to the main site's home, not this app's own "/" — that
+             * destination is a separate app/origin, so a plain anchor is used
+             * rather than next/link's same-app client-side Link. */}
+            <a
+              href={getMainAppUrl()}
+              className="inline-flex h-full flex-col items-start justify-center"
+            >
               <span className="font-title text-xl font-extrabold leading-none tracking-tight xl:text-2xl">
                 <span className="text-slate-900">Power</span>
                 <span className="text-power-orange">My</span>
@@ -149,7 +156,7 @@ export default function CommunityTopNav() {
               <span className="mt-1.5 text-[9px] font-medium uppercase leading-none tracking-wider text-slate-400">
                 Community
               </span>
-            </Link>
+            </a>
           </div>
 
           {/* ── Desktop Center Nav ────────────────────────────────────────── */}
@@ -324,10 +331,12 @@ export default function CommunityTopNav() {
                     </button>
                   </div>
 
-                  {/* Main App link */}
+                  {/* Main App link — a different origin, hence a plain anchor
+                   * rather than next/link's same-app Link (it was pointing at
+                   * this app's own "/" and never actually leaving). */}
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <Link
-                      href="/"
+                    <a
+                      href={getMainAppUrl()}
                       className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
                     >
                       <span className="bg-power-orange/10 text-power-orange flex h-10 w-10 items-center justify-center rounded-2xl">
@@ -337,7 +346,7 @@ export default function CommunityTopNav() {
                         <p className="text-sm font-semibold text-slate-900">Main App</p>
                         <p className="text-xs text-slate-500">Return to main site</p>
                       </div>
-                    </Link>
+                    </a>
                   </div>
 
                   {/* Primary nav items */}

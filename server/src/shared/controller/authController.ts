@@ -185,6 +185,8 @@ export const getProfile = asyncHandler(async (req: Request, res: Response): Prom
       // Results
       sportMatches: p.sportMatches || [],
       wizardCompletedAt: p.wizardCompletedAt,
+      chosenSport: p.chosenSport,
+      chosenSportAt: p.chosenSportAt,
     }));
 
   const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
