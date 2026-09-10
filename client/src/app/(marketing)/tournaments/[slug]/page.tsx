@@ -19,6 +19,7 @@ import type { EditionDocument, TournamentEditionDetail } from "@/modules/pathway
 import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
 import { CAL_TZ, formatLocation, levelColor } from "../../federations/[slug]/editionUtils";
 import { AddToCalendarButton } from "../../federations/[slug]/AddToCalendarButton";
+import { SPORT_LABEL } from "../../federations/[slug]/federationShared";
 import { groupDocumentsByKind } from "./documentGroups";
 
 /**
@@ -121,8 +122,26 @@ export async function generateMetadata({
     .join(" ")
     .slice(0, 155);
 
+  // Many edition names are internal federation shorthand ("CS7 Delhi") with no
+  // sport or "tournament" in sight — a page can rank well for that name and
+  // still get skipped in the SERP because nothing confirms what it's for.
+  // Names that already read as a tournament (most chess listings do) are left
+  // alone rather than padded with a redundant suffix.
+  const sportLabel = SPORT_LABEL[edition.sportSlug] ?? edition.sportSlug;
+  const nameLower = edition.name.toLowerCase();
+  const hasContext =
+    nameLower.includes("tournament") || nameLower.includes(sportLabel.toLowerCase());
+  const metaTitle = [
+    edition.name,
+    hasContext ? null : `${sportLabel} Tournament`,
+    formatShortDate(edition.startDate),
+    edition.city || null,
+  ]
+    .filter(Boolean)
+    .join(" — ");
+
   return {
-    title: `${edition.name} — ${formatShortDate(edition.startDate)}`,
+    title: metaTitle,
     description,
     alternates: { canonical: `/tournaments/${edition.slug}` },
     openGraph: {

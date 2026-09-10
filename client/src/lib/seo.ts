@@ -49,11 +49,19 @@ export function absoluteUrl(path = "/"): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/** Collapse whitespace and clamp to a length search engines will actually show. */
+/**
+ * Collapse whitespace and clamp to a length search engines will actually show.
+ *
+ * Cuts at the last word boundary before `max` rather than mid-word — a snippet
+ * ending "...administers the ATP T…" reads as broken in a SERP, "...founded in
+ * 1972…" reads as a deliberate summary.
+ */
 export function clampText(input: string, max = 160): string {
   const text = (input || "").replace(/\s+/g, " ").trim();
   if (text.length <= max) return text;
-  return `${text.slice(0, max - 1).trimEnd()}…`;
+  const truncated = text.slice(0, max - 1);
+  const lastSpace = truncated.lastIndexOf(" ");
+  return `${(lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated).trimEnd()}…`;
 }
 
 /** Strip tags/entities from rich text so it is safe to use in a meta description. */

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
 import { FederationDetailClient } from "./FederationDetailClient";
+import { SPORT_LABEL } from "./federationShared";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,13 +89,21 @@ export async function generateMetadata({
   const { slug } = await params;
   const fed = await fetchFederation(slug);
   if (!fed) return { title: "Federation", ...NOINDEX_METADATA };
+
+  // Queries for these pages skew informational ("what is atp in tennis",
+  // "atp full form") rather than branded, so the sport and the acronym's
+  // full form need to be visible in the snippet, not just the bare name.
+  const sportLabel = SPORT_LABEL[fed.sportSlug] ?? fed.sportSlug;
+  const title = `${fed.name} (${fed.acronym}) — ${sportLabel} Governing Body`;
+  const description = clampText(`${fed.acronym} stands for ${fed.name}. ${fed.about}`, 155);
+
   return {
-    title: `${fed.name} (${fed.acronym})`,
-    description: clampText(fed.about, 155),
+    title,
+    description,
     alternates: { canonical: `/federations/${fed.slug}` },
     openGraph: {
-      title: `${fed.acronym} — ${fed.name}`,
-      description: clampText(fed.about, 200),
+      title,
+      description: clampText(`${fed.acronym} stands for ${fed.name}. ${fed.about}`, 200),
       // Site-relative — `metadataBase` resolves it. See lib/seo.ts.
       url: `/federations/${fed.slug}`,
       type: "website",
