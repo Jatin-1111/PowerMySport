@@ -53,6 +53,14 @@ export interface TournamentEditionDocument extends Document {
 
   /** The registry URL this edition was extracted from — shown to parents as provenance */
   sourceUrl: string;
+  /**
+   * Slug of the surviving edition when this row was found to describe the same
+   * real event as another (see migration 41). The row is kept rather than
+   * deleted so /tournaments/[slug] can answer its old URL with a permanent
+   * redirect — those URLs are indexed and carry real search traffic, and a 404
+   * would throw that away instead of passing it to the survivor.
+   */
+  mergedInto?: string;
   status: "announced" | "ongoing" | "completed" | "cancelled";
   /** When the Lane-A pipeline last confirmed this edition against the source */
   lastCheckedAt: Date;
@@ -94,6 +102,7 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
       default: undefined,
     },
     sourceUrl: { type: String, required: true },
+    mergedInto: { type: String, lowercase: true, trim: true },
     status: {
       type: String,
       enum: ["announced", "ongoing", "completed", "cancelled"],

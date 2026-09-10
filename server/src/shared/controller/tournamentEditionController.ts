@@ -64,6 +64,16 @@ export const getTournamentEdition = asyncHandler(
       throw new AppError("Tournament not found.", 404);
     }
 
+    // A merged duplicate exists only to redirect, so skip the work that builds
+    // a page nobody will see.
+    if (edition.mergedInto) {
+      res.json({
+        success: true,
+        data: { edition, federation: null, related: [], nextInSeries: null },
+      });
+      return;
+    }
+
     const federation = await resolveEditionFederation(edition.sportSlug, edition.name);
 
     // Other upcoming events in the same sport, so the page is a stop on the way
@@ -82,6 +92,9 @@ export const getTournamentEdition = asyncHandler(
       slug: { $exists: true, $ne: null },
       startDate: { $gte: startOfToday },
       status: { $ne: "cancelled" },
+      // Merged duplicates only redirect; listing them would show the same
+      // tournament two or three times in a row (see migration 41).
+      mergedInto: { $in: [null, undefined] },
     })
       .sort({ startDate: 1 })
       .limit(400)
@@ -115,6 +128,24 @@ export const listTournamentEditionSlugs = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const sportSlug = typeof req.query.sport === "string" ? req.query.sport.toLowerCase() : "";
 
+    // The merge map, for next.config.ts to turn into real 308s at build time.
+    // Redirecting from the page component instead only ever produces a
+    // `<meta http-equiv="refresh">` on a 200, because by the time a Server
+    // Component throws, the response has already been committed — and a meta
+    // refresh does not consolidate ranking signals the way an HTTP redirect
+    // does, which is the whole reason these rows were merged.
+    if (req.query.merged === "true") {
+      const merged = await TournamentEdition.find({
+        slug: { $exists: true, $ne: null },
+        mergedInto: { $exists: true, $ne: null },
+      })
+        .select("slug mergedInto")
+        .lean();
+
+      res.json({ success: true, data: merged });
+      return;
+    }
+
     if (sportSlug) {
       const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
       const limit = Math.min(60, Math.max(1, parseInt((req.query.limit as string) || "24", 10)));
@@ -127,6 +158,7 @@ export const listTournamentEditionSlugs = asyncHandler(
         slug: { $exists: true, $ne: null },
         status: { $ne: "cancelled" },
         startDate: upcoming ? { $gte: startOfToday } : { $lt: startOfToday },
+        mergedInto: { $in: [null, undefined] },
       };
 
       const [editions, total] = await Promise.all([
@@ -154,6 +186,9 @@ export const listTournamentEditionSlugs = asyncHandler(
       slug: { $exists: true, $ne: null },
       startDate: { $gte: startOfToday },
       status: { $ne: "cancelled" },
+      // A merged duplicate redirects, so submitting it would ask Google to
+      // crawl a URL whose only job is to hand it back to the survivor.
+      mergedInto: { $in: [null, undefined] },
     })
       .sort({ startDate: 1 })
       .limit(limit)
