@@ -44,6 +44,24 @@ export function isMultiDayEdition(e: TournamentEdition): boolean {
   return !!e.endDate && dateKey(e.endDate) !== dateKey(e.startDate);
 }
 
+/**
+ * Whether the event is over, judged by its last day.
+ *
+ * Deliberately computed from the dates and not from `status`: 294 of the 659
+ * editions that have already happened are still stored as "announced", because
+ * nothing sweeps the collection after an event passes. Trusting that field
+ * would leave most finished events presenting themselves as upcoming.
+ */
+export function hasEditionFinished(
+  e: { startDate: string; endDate?: string },
+  now: Date = new Date()
+): boolean {
+  const last = new Date(e.endDate || e.startDate);
+  // Dates are stored as UTC midnight, so the event runs to the end of that day.
+  last.setUTCHours(23, 59, 59, 999);
+  return last.getTime() < now.getTime();
+}
+
 export function formatShortEndDate(endDate: string, startDate: string): string {
   const end = new Date(endDate);
   const label = end.toLocaleDateString("en-IN", {

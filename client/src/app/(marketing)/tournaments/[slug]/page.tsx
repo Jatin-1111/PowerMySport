@@ -17,9 +17,15 @@ import {
 } from "lucide-react";
 import type { EditionDocument, TournamentEditionDetail } from "@/modules/pathway/services/pathway";
 import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
-import { CAL_TZ, formatLocation, levelColor } from "../../federations/[slug]/editionUtils";
+import {
+  CAL_TZ,
+  formatLocation,
+  hasEditionFinished,
+  levelColor,
+} from "../../federations/[slug]/editionUtils";
 import { AddToCalendarButton } from "../../federations/[slug]/AddToCalendarButton";
 import { SPORT_LABEL } from "../../federations/[slug]/federationShared";
+
 import { groupDocumentsByKind } from "./documentGroups";
 
 /**
@@ -110,14 +116,31 @@ export async function generateMetadata({
   const detail = await fetchEdition(slug);
   if (!detail) return { title: "Tournament" };
 
-  const { edition } = detail;
+  const { edition, nextInSeries } = detail;
+
   const title = edition.officialName || edition.name;
   const where = formatLocation(edition.venue, edition.city);
-  const description = [
-    `${title} starts ${formatShortDate(edition.startDate)}`,
-    where ? `at ${where}` : null,
-    edition.ageGroups?.length ? `for ${edition.ageGroups.join(", ")}` : null,
-  ]
+  const finished = hasEditionFinished(edition);
+
+  // A finished event is still the thing people search for weeks afterwards, and
+  // at that point "starts 11 Aug" is the wrong promise — it reads as an event
+  // you can still enter. Say it is over and name what comes next, because the
+  // snippet is where most of these searchers decide, not the page.
+  const description = (
+    finished
+      ? [
+          `${title} took place on ${formatShortDate(edition.startDate)}`,
+          where ? `at ${where}` : null,
+          nextInSeries
+            ? `— the next edition is ${formatShortDate(nextInSeries.startDate)}.`
+            : `— see upcoming ${edition.sportSlug} tournaments${edition.city ? ` in ${edition.city}` : ""}.`,
+        ]
+      : [
+          `${title} starts ${formatShortDate(edition.startDate)}`,
+          where ? `at ${where}` : null,
+          edition.ageGroups?.length ? `for ${edition.ageGroups.join(", ")}` : null,
+        ]
+  )
     .filter(Boolean)
     .join(" ")
     .slice(0, 155);
@@ -135,7 +158,11 @@ export async function generateMetadata({
     edition.name,
     hasContext ? null : `${sportLabel} Tournament`,
     formatShortDate(edition.startDate),
-    edition.city || null,
+    // A known next running is the one genuinely clickable fact we have for a
+    // finished event, so it earns the slot the city would otherwise take.
+    finished && nextInSeries
+      ? `Next edition ${formatShortDate(nextInSeries.startDate)}`
+      : edition.city || null,
   ]
     .filter(Boolean)
     .join(" — ");
@@ -168,9 +195,10 @@ export default async function TournamentEditionPage({
   const detail = await fetchEdition(slug);
   if (!detail) notFound();
 
-  const { edition, federation, related } = detail;
+  const { edition, federation, related, nextInSeries } = detail;
   const location = formatLocation(edition.venue, edition.city);
   const lc = edition.level ? levelColor(edition.level) : null;
+  const finished = hasEditionFinished(edition);
   const multiDay =
     !!edition.endDate &&
     new Date(edition.endDate).toISOString().slice(0, 10) !==
@@ -261,6 +289,12 @@ export default async function TournamentEditionPage({
           )}
 
           <div className="mb-5 mt-6 flex flex-wrap items-center gap-2">
+            {finished && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-400/30 bg-slate-400/15 px-3 py-1 text-[11px] font-bold text-white/70">
+                <Clock className="h-3 w-3" />
+                Finished
+              </span>
+            )}
             {edition.level && lc && (
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${lc.pill}`}
@@ -304,18 +338,77 @@ export default async function TournamentEditionPage({
             )}
           </div>
 
-          <div className="pb-8 pt-5">
-            <AddToCalendarButton edition={edition} variant="hero" />
+          {/* Nothing to add to a calendar once the event is over. */}
+          <div className={finished ? "pb-8" : "pb-8 pt-5"}>
+            {!finished && <AddToCalendarButton edition={edition} variant="hero" />}
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+        {/* ── Finished: say so, then move them forward ──
+            These pages keep ranking for months after the event and are 62% of
+            all tournament impressions, at less than half the click-through of
+            an upcoming one. The entry paperwork below is no use to whoever is
+            reading now, so the next running goes above it. */}
+        {finished && (
+          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+            <div className="flex items-start gap-3">
+              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+              <div className="min-w-0 flex-1">
+                <h2 className="font-title text-deep-slate text-xl font-bold">
+                  This event has finished
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  It ran on {formatFullDate(edition.endDate || edition.startDate)}
+                  {location ? ` at ${location}` : ""}. We mirror federation calendars and entry
+                  paperwork, not results — the organiser publishes those.
+                </p>
+
+                {nextInSeries ? (
+                  <Link
+                    href={`/tournaments/${nextInSeries.slug}`}
+                    className="border-power-orange/30 group mt-5 flex items-center justify-between gap-3 rounded-xl border bg-orange-50/50 p-4 transition hover:bg-orange-50"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                        Next edition
+                      </p>
+                      <p className="group-hover:text-power-orange mt-0.5 truncate text-sm font-bold text-slate-800">
+                        {nextInSeries.name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {formatShortDate(nextInSeries.startDate)}
+                        {nextInSeries.city ? ` · ${nextInSeries.city}` : ""}
+                      </p>
+                    </div>
+                    <ArrowRight className="text-power-orange h-4 w-4 shrink-0" />
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/tournaments/sport/${edition.sportSlug}`}
+                    className="text-power-orange mt-4 inline-flex items-center gap-1.5 text-sm font-bold transition hover:text-orange-600"
+                  >
+                    See upcoming {SPORT_LABEL[edition.sportSlug] ?? edition.sportSlug} tournaments
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ── Fact sheet: the thing a parent actually came for ── */}
         {factSheet ? (
           <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-            <h2 className="font-title text-deep-slate text-xl font-bold">Entry details</h2>
-            <p className="mt-1.5 text-sm text-slate-500">{DOCUMENT_META.factSheet.hint}</p>
+            <h2 className="font-title text-deep-slate text-xl font-bold">
+              {finished ? "Entry details (archived)" : "Entry details"}
+            </h2>
+            <p className="mt-1.5 text-sm text-slate-500">
+              {finished
+                ? "The fact sheet as it was published for this event — entries have closed."
+                : DOCUMENT_META.factSheet.hint}
+            </p>
             <a
               href={factSheet.url}
               target="_blank"
@@ -343,7 +436,10 @@ export default async function TournamentEditionPage({
               </p>
             )}
           </section>
-        ) : (
+        ) : finished ? null : (
+          // Only meaningful while the event is still ahead — "entry details go
+          // up a few weeks before it starts" is nonsense on an event that ran
+          // last month, and the finished panel above already explains the page.
           <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
@@ -442,7 +538,11 @@ export default async function TournamentEditionPage({
         {related.length > 0 && (
           <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <h2 className="font-title text-deep-slate text-xl font-bold">
-              {edition.city ? `More tournaments in ${edition.city}` : "Other upcoming tournaments"}
+              {/* The list tops up sport-wide when the city runs dry, so only
+                  claim the city when every row actually is in it. */}
+              {edition.city && related.every((r) => r.city === edition.city)
+                ? `More tournaments in ${edition.city}`
+                : "Other upcoming tournaments"}
             </h2>
             <ul className="mt-4 divide-y divide-slate-100">
               {related.map((r) => (

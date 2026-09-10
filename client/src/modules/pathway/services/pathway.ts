@@ -300,6 +300,8 @@ export interface TournamentEditionDetail {
   edition: TournamentEdition;
   federation: { slug: string; name: string; acronym: string } | null;
   related: RelatedEdition[];
+  /** The next running of this same series, when one is already on the calendar. */
+  nextInSeries: RelatedEdition | null;
 }
 
 export interface FederationEditionsResponse {
