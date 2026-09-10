@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL as siteUrl } from "@/lib/seo";
 import { RANKING_SPORTS, comboHref, rankingSportHref } from "@/modules/rankings/config/rankings";
 import { PATHWAY_SPORTS } from "@/modules/pathway/data/sports";
+import { SPORT_LABEL } from "./(marketing)/federations/[slug]/federationShared";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
@@ -357,6 +358,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.8,
+    })),
+
+    // ── Tournament sport hubs (/tournaments/sport/[sport]) ──
+    // One per supported sport, listed from the static SPORT_LABEL map rather
+    // than the API — every sport in that map has a hub whether or not editions
+    // exist for it yet, same reasoning as PATHWAY_SPORTS above.
+    ...Object.keys(SPORT_LABEL).map((sportSlug) => ({
+      url: `${siteUrl}/tournaments/sport/${sportSlug}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.75,
     })),
 
     // ── Dynamic pathway content ──

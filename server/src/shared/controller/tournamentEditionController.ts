@@ -71,9 +71,48 @@ export const getTournamentEdition = asyncHandler(
  * GET /api/tournament-editions?limit=1000
  * Slug + timestamp only — this exists to feed the sitemap, so it deliberately
  * returns no content fields and skips editions that have already finished.
+ *
+ * GET /api/tournament-editions?sport=chess&page=1&limit=24&upcoming=false
+ * Card-shape, paginated editions for one sport — backs the /tournaments/sport/[sport]
+ * hub page. A separate branch on the same route rather than a new one: both are
+ * "list editions", and the sitemap's unfiltered call (no `sport`) keeps its exact
+ * existing shape so nothing else has to change.
  */
 export const listTournamentEditionSlugs = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
+    const sportSlug = typeof req.query.sport === "string" ? req.query.sport.toLowerCase() : "";
+
+    if (sportSlug) {
+      const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
+      const limit = Math.min(60, Math.max(1, parseInt((req.query.limit as string) || "24", 10)));
+      const upcoming = req.query.upcoming !== "false";
+      const startOfToday = new Date();
+      startOfToday.setUTCHours(0, 0, 0, 0);
+
+      const filter = {
+        sportSlug,
+        slug: { $exists: true, $ne: null },
+        status: { $ne: "cancelled" },
+        startDate: upcoming ? { $gte: startOfToday } : { $lt: startOfToday },
+      };
+
+      const [editions, total] = await Promise.all([
+        TournamentEdition.find(filter)
+          .sort({ startDate: upcoming ? 1 : -1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .select("slug name officialName startDate endDate city state venue level ageGroups")
+          .lean(),
+        TournamentEdition.countDocuments(filter),
+      ]);
+
+      res.json({
+        success: true,
+        data: { editions, page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+      });
+      return;
+    }
+
     const limit = Math.min(5000, Math.max(1, parseInt((req.query.limit as string) || "2000", 10)));
     const startOfToday = new Date();
     startOfToday.setUTCHours(0, 0, 0, 0);
