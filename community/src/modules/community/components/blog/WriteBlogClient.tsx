@@ -85,6 +85,10 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
   const [tagsInput, setTagsInput] = useState("");
   const [coverImageKey, setCoverImageKey] = useState<string | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  // Intrinsic size of the cover, measured in the browser at upload. Not part of
+  // the dirty snapshot: it only ever changes together with `coverImageKey`.
+  const [coverImageWidth, setCoverImageWidth] = useState<number | null>(null);
+  const [coverImageHeight, setCoverImageHeight] = useState<number | null>(null);
   const [content, setContent] = useState("");
   const [subject, setSubject] = useState<SelectedSubject | null>(null);
   const [signals, setSignals] = useState<Partial<Record<SignalKey, SignalValue>>>(emptySignals);
@@ -140,6 +144,8 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         setTagsInput((blog.tags || []).join(", "));
         setCoverImageKey(blog.coverImageKey);
         setCoverImageUrl(blog.coverImageUrl);
+        setCoverImageWidth(blog.coverImageWidth ?? null);
+        setCoverImageHeight(blog.coverImageHeight ?? null);
         setContent(blog.content || "");
         setPostStatus(blog.status);
         const loadedSubject: SelectedSubject | null = blog.subject
@@ -218,6 +224,8 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
       sport: sport || null,
       tags: parseTags(),
       coverImageKey,
+      coverImageWidth,
+      coverImageHeight,
       content,
       subject: subject
         ? {
@@ -479,14 +487,22 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         <div className="mt-4">
           <ImageBlockUploader
             imageUrl={coverImageUrl}
-            onUploaded={(key, url) => {
+            imageWidth={coverImageWidth}
+            imageHeight={coverImageHeight}
+            onUploaded={(key, url, size) => {
               setCoverImageKey(key);
               setCoverImageUrl(url);
+              setCoverImageWidth(size?.width ?? null);
+              setCoverImageHeight(size?.height ?? null);
             }}
             onRemove={() => {
               setCoverImageKey(null);
               setCoverImageUrl(null);
+              setCoverImageWidth(null);
+              setCoverImageHeight(null);
             }}
+            // The empty drop zone keeps a wide shape; once there is an image the
+            // uploader sizes to it rather than cropping to a banner.
             className="aspect-[16/6]"
             label="Add a photo"
             hint="A photo and a couple of lines is a complete experience on its own"
@@ -618,6 +634,8 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         title={title}
         topic={category}
         coverImageUrl={coverImageUrl}
+        coverImageWidth={coverImageWidth}
+        coverImageHeight={coverImageHeight}
         content={content}
         authorName={profile?.name || "You"}
         authorUsername={profile?.username || ""}

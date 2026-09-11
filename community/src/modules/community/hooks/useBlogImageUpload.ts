@@ -10,7 +10,42 @@ const MAX_CLIENT_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 export interface BlogImageUploadResult {
   s3Key: string;
   localPreviewUrl: string;
+  /** Intrinsic pixel size, when the browser could decode it. See `readImageSize`. */
+  width?: number;
+  height?: number;
 }
+
+/**
+ * The image's intrinsic pixel size, read from the file before it leaves the
+ * browser.
+ *
+ * There is no image processing anywhere in this upload path — the file goes
+ * straight to S3 by presigned PUT and only a key is stored — so the browser is
+ * the one place that ever sees the pixels. Without this, every surface has to
+ * guess a shape and crop whatever does not fit, which is what clipped the
+ * bottom off an uploaded certificate.
+ *
+ * Resolves undefined rather than throwing: a cover that renders at a default
+ * shape is a far better outcome than an upload that fails because a decode did.
+ */
+const readImageSize = (file: File): Promise<{ width: number; height: number } | undefined> =>
+  new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const size =
+        img.naturalWidth > 0 && img.naturalHeight > 0
+          ? { width: img.naturalWidth, height: img.naturalHeight }
+          : undefined;
+      URL.revokeObjectURL(objectUrl);
+      resolve(size);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(undefined);
+    };
+    img.src = objectUrl;
+  });
 
 const validateFile = (file: File) => {
   if (!ALLOWED_TYPES.includes(file.type as AllowedType)) {
@@ -48,9 +83,12 @@ const putToS3 = async (uploadUrl: string, file: File) => {
  */
 export async function uploadBlogImage(file: File): Promise<BlogImageUploadResult> {
   validateFile(file);
-  const { uploadUrl, key } = await blogService.getImageUploadUrl(file.type);
+  const [{ uploadUrl, key }, size] = await Promise.all([
+    blogService.getImageUploadUrl(file.type),
+    readImageSize(file),
+  ]);
   await putToS3(uploadUrl, file);
-  return { s3Key: key, localPreviewUrl: URL.createObjectURL(file) };
+  return { s3Key: key, localPreviewUrl: URL.createObjectURL(file), ...size };
 }
 
 export interface InlineBlogImageUploadResult {

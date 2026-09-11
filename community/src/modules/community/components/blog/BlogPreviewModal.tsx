@@ -16,6 +16,8 @@ interface BlogPreviewModalProps {
   title: string;
   topic: string;
   coverImageUrl?: string | null;
+  coverImageWidth?: number | null;
+  coverImageHeight?: number | null;
   content: string;
   authorName: string;
   authorUsername: string;
@@ -28,6 +30,8 @@ export default function BlogPreviewModal({
   title,
   topic,
   coverImageUrl,
+  coverImageWidth,
+  coverImageHeight,
   content,
   authorName,
   authorUsername,
@@ -82,9 +86,19 @@ export default function BlogPreviewModal({
                   {topicMeta.label}
                 </span>
 
-                <div className="mt-4 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                {/* Same natural-ratio treatment as the published page, so the
+                    preview cannot promise a crop the reader will not get. */}
+                <div
+                  className={`mt-4 w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 ${coverUrl ? "" : "aspect-[16/9]"}`}
+                >
                   {coverUrl ? (
-                    <img src={coverUrl} alt={title} className="h-full w-full object-cover" />
+                    <img
+                      src={coverUrl}
+                      alt={title}
+                      width={coverImageWidth ?? undefined}
+                      height={coverImageHeight ?? undefined}
+                      className="mx-auto block h-auto max-h-[70vh] w-auto max-w-full"
+                    />
                   ) : (
                     <BlogCoverFallback topic={topic} />
                   )}

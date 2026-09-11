@@ -43,6 +43,9 @@ export interface ExperienceDocument extends Document {
   title?: string;
   excerpt: string;
   coverImageKey?: string | null;
+  /** Intrinsic pixel size of the cover, measured in the browser at upload. */
+  coverImageWidth?: number | null;
+  coverImageHeight?: number | null;
   coverImageUrl?: string | null;
   /** What the experience is about. Replaces half of the old `topic` field. */
   category: ExperienceCategory;
@@ -118,6 +121,10 @@ const experienceSchema = new Schema<ExperienceDocument>(
       default: "",
     },
     coverImageKey: { type: String, default: null },
+    // Lets every surface render the cover at its own shape instead of cropping
+    // to a guessed one. Null on posts uploaded before this was captured.
+    coverImageWidth: { type: Number, default: null },
+    coverImageHeight: { type: Number, default: null },
     coverImageUrl: { type: String, default: null },
     category: {
       type: String,

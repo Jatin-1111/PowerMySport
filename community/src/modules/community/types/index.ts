@@ -323,6 +323,9 @@ export interface BlogListItem {
   excerpt: string;
   coverImageKey: string | null;
   coverImageUrl: string | null;
+  /** Intrinsic size of the cover, when it was captured at upload. */
+  coverImageWidth: number | null;
+  coverImageHeight: number | null;
   /** @deprecated Collapsed sport-or-category. Use `category`/`sport`. */
   topic: string;
   category: string;

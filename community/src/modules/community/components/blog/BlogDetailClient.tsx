@@ -215,15 +215,27 @@ export default function BlogDetailClient({
           </span>
         </div>
 
-        {/* Cover */}
+        {/* Cover — shown whole, not cropped to a banner.
+            A 16/9 box with object-cover cut the bottom off anything portrait,
+            which for the documents people actually post (certificates, result
+            sheets) removed the part they uploaded it for. The fallback keeps a
+            fixed ratio because it is generated art with nothing to lose. */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="mt-5 aspect-[16/9] w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100"
+          className={`mt-5 w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 ${
+            coverUrl ? "" : "aspect-[16/9]"
+          }`}
         >
           {coverUrl ? (
-            <img src={coverUrl} alt={blog.title} className="h-full w-full object-cover" />
+            <img
+              src={coverUrl}
+              alt={blog.title}
+              width={blog.coverImageWidth ?? undefined}
+              height={blog.coverImageHeight ?? undefined}
+              className="mx-auto block h-auto max-h-[80vh] w-auto max-w-full"
+            />
           ) : (
             <BlogCoverFallback topic={blog.topic} />
           )}

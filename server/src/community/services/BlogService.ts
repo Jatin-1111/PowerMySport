@@ -54,6 +54,8 @@ export interface BlogListItem {
   title: string;
   excerpt: string;
   coverImageKey: string | null;
+  coverImageWidth: number | null;
+  coverImageHeight: number | null;
   coverImageUrl: string | null;
   /** @deprecated Collapsed sport-or-category, kept for old clients. Use `category`/`sport`. */
   topic: string;
@@ -632,7 +634,7 @@ export const BlogService = {
     const [posts, total] = await Promise.all([
       Experience.find(query)
         .select(
-          "title excerpt coverImageKey category sport tags status likeCount commentCount viewCount createdAt authorId subject attendedAt moderationStatus"
+          "title excerpt coverImageKey coverImageWidth coverImageHeight category sport tags status likeCount commentCount viewCount createdAt authorId subject attendedAt moderationStatus"
         )
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -659,6 +661,8 @@ export const BlogService = {
       excerpt: post.excerpt || "",
       coverImageKey: post.coverImageKey || null,
       coverImageUrl: coverUrls[index] ?? null,
+      coverImageWidth: post.coverImageWidth ?? null,
+      coverImageHeight: post.coverImageHeight ?? null,
       topic: topicOf(post),
       category: post.category || "general",
       sport: post.sport || null,
@@ -758,6 +762,8 @@ export const BlogService = {
       excerpt: post.excerpt || "",
       coverImageKey: post.coverImageKey || null,
       coverImageUrl,
+      coverImageWidth: post.coverImageWidth ?? null,
+      coverImageHeight: post.coverImageHeight ?? null,
       topic: topicOf(post),
       category: post.category || "general",
       sport: post.sport || null,
@@ -790,6 +796,8 @@ export const BlogService = {
       title?: string;
       excerpt?: string;
       coverImageKey?: string | null;
+      coverImageWidth?: number | null;
+      coverImageHeight?: number | null;
       topic?: string;
       category?: string;
       sport?: string | null;
@@ -812,6 +820,8 @@ export const BlogService = {
       ...(trimmedTitle ? { title: trimmedTitle } : {}),
       excerpt: deriveExcerpt(payload.excerpt, content),
       coverImageKey: payload.coverImageKey || null,
+      coverImageWidth: payload.coverImageWidth ?? null,
+      coverImageHeight: payload.coverImageHeight ?? null,
       ...resolveCategoryAndSport(payload),
       tags: normalizeTags(payload.tags),
       content,
@@ -841,6 +851,8 @@ export const BlogService = {
       title?: string;
       excerpt?: string;
       coverImageKey?: string | null;
+      coverImageWidth?: number | null;
+      coverImageHeight?: number | null;
       topic?: string;
       category?: string;
       sport?: string | null;
@@ -878,6 +890,9 @@ export const BlogService = {
     }
     if (payload.coverImageKey !== undefined) {
       post.coverImageKey = payload.coverImageKey || null;
+      // Size travels with the key: a new cover must never keep the old shape.
+      post.coverImageWidth = payload.coverImageWidth ?? null;
+      post.coverImageHeight = payload.coverImageHeight ?? null;
     }
     if (typeof payload.content === "string") {
       const cleaned = stripContentImageSrc(payload.content);

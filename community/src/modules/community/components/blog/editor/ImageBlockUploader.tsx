@@ -8,10 +8,15 @@ import { toast } from "@/lib/toast";
 interface ImageBlockUploaderProps {
   /** Resolved display URL for an already-uploaded image (edit mode). */
   imageUrl?: string | null;
-  onUploaded: (key: string, previewUrl: string) => void;
+  onUploaded: (key: string, previewUrl: string, size?: { width: number; height: number }) => void;
   onRemove?: () => void;
-  /** Tailwind aspect / height classes for the drop area. */
+  /** Intrinsic size of an already-uploaded image, so edit mode reserves the right space. */
+  imageWidth?: number | null;
+  imageHeight?: number | null;
+  /** Tailwind classes for the empty drop area — the filled state sizes to the image. */
   className?: string;
+  /** Ceiling on the rendered height, so a tall image cannot push the form off screen. */
+  maxHeightClassName?: string;
   label?: string;
   hint?: string;
 }
@@ -20,7 +25,10 @@ export default function ImageBlockUploader({
   imageUrl,
   onUploaded,
   onRemove,
+  imageWidth,
+  imageHeight,
   className = "aspect-[16/9]",
+  maxHeightClassName = "max-h-[420px]",
   label = "Add an image",
   hint = "Drag & drop or click — JPEG, PNG, WebP up to 10 MB",
 }: ImageBlockUploaderProps) {
@@ -28,13 +36,17 @@ export default function ImageBlockUploader({
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [localSize, setLocalSize] = useState<{ width: number; height: number } | null>(null);
 
   const handleFile = async (file: File) => {
     setUploading(true);
     try {
       const result = await uploadBlogImage(file);
+      const size =
+        result.width && result.height ? { width: result.width, height: result.height } : undefined;
       setLocalPreview(result.localPreviewUrl);
-      onUploaded(result.s3Key, result.localPreviewUrl);
+      setLocalSize(size ?? null);
+      onUploaded(result.s3Key, result.localPreviewUrl, size);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Upload failed");
     } finally {
@@ -56,13 +68,24 @@ export default function ImageBlockUploader({
   };
 
   const resolvedUrl = localPreview || imageUrl || "";
+  const width = localSize?.width ?? imageWidth ?? undefined;
+  const height = localSize?.height ?? imageHeight ?? undefined;
 
   if (resolvedUrl) {
+    // Sized by the image, not by a fixed box. The old `aspect-[16/6]` container
+    // with `object-cover` cropped anything that was not a wide landscape photo —
+    // an uploaded certificate lost its last lines to it. `w-auto` keeps a tall
+    // image from being letterboxed once the height cap bites, and the intrinsic
+    // width/height reserve the space so the form does not jump when it loads.
     return (
-      <div
-        className={`group relative w-full overflow-hidden rounded-2xl border border-slate-200 ${className}`}
-      >
-        <img src={resolvedUrl} alt="Upload preview" className="h-full w-full object-cover" />
+      <div className="group relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+        <img
+          src={resolvedUrl}
+          alt="Upload preview"
+          width={width}
+          height={height}
+          className={`mx-auto block h-auto w-auto max-w-full ${maxHeightClassName}`}
+        />
         <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100">
           <button
             type="button"

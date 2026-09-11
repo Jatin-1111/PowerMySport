@@ -75,6 +75,8 @@ export const blogService = {
     title?: string;
     excerpt?: string;
     coverImageKey?: string | null;
+    coverImageWidth?: number | null;
+    coverImageHeight?: number | null;
     topic?: string;
     tags?: string[];
     content?: string;
@@ -96,6 +98,8 @@ export const blogService = {
       title?: string;
       excerpt?: string;
       coverImageKey?: string | null;
+      coverImageWidth?: number | null;
+      coverImageHeight?: number | null;
       topic?: string;
       tags?: string[];
       content?: string;
