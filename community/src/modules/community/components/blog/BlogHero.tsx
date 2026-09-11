@@ -39,7 +39,7 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           transition={{ duration: 0.35, delay: 0.12 }}
           className="mx-auto mt-4 max-w-2xl text-sm text-slate-600 sm:text-base"
         >
-          Help another parent make a better decision. Match days, academies, gear, travel, costs —
+          Help another parent make a better decision. Tournaments, academies, gear, travel, costs —
           two lines is enough.
         </motion.p>
 
