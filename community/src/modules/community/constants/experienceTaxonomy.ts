@@ -59,10 +59,7 @@ export interface ExperienceCategory extends TopicMeta {
 /** What the experience is about. Required on every experience. */
 export const EXPERIENCE_CATEGORIES: ExperienceCategory[] = [
   {
-    // Slug stays `match-day` while the label reads "Tournament": it is the
-    // stored value on every existing post and the server's allowlist key, so
-    // changing it is a data migration, not a rename.
-    slug: "match-day",
+    slug: "tournament",
     label: "Tournament",
     prompt: "What happened at the tournament?",
     accent: "bg-amber-50 text-amber-700 border-amber-200",

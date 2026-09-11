@@ -63,7 +63,8 @@
     "test:expert-lifecycle": "npm run build && node --test --test-force-exit dist/tests/expertSessionLifecycle.integration.test.js",
     "migrate:expert-sessions": "ts-node src/migrations/25_migrate_expert_sessions_to_bookings.ts",
     "test:expert-migration": "npm run build && node --test --test-force-exit dist/tests/expertSessionMigration.integration.test.js",
-    "migrate:merge-dupe-editions": "ts-node src/migrations/41_merge_duplicate_tournament_editions.ts"
+    "migrate:merge-dupe-editions": "ts-node src/migrations/41_merge_duplicate_tournament_editions.ts",
+    "migrate:tournament-category": "ts-node src/migrations/42_rename_match_day_category_to_tournament.ts"
   },
   "keywords": [],
   "author": "",

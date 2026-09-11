@@ -433,7 +433,7 @@ const buildAuthorMaps = async (authorIds: mongoose.Types.ObjectId[]) => {
 
 // ─── `topic` compatibility ────────────────────────────────────────────────────
 // The stored `topic` field split into `sport` (Cricket, Tennis, …) and
-// `category` (match-day, gear, …) — it had been carrying both, which is why the
+// `category` (tournament, gear, …) — it had been carrying both, which is why the
 // old topic strip mixed sports and themes in one row. The API still speaks
 // `topic` so the community app keeps working unchanged; these three helpers are
 // the whole of the translation and go away when the app moves to explicit

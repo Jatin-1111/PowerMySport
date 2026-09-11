@@ -14,7 +14,7 @@
 // cannot live here because they would have to cross a server→client boundary.
 
 export const EXPERIENCE_CATEGORIES = [
-  "match-day",
+  "tournament",
   "training",
   "injury-recovery",
   "choosing-sport",
@@ -34,11 +34,27 @@ export const DEFAULT_EXPERIENCE_CATEGORY: ExperienceCategory = "general";
 
 const CATEGORY_SET = new Set<string>(EXPERIENCE_CATEGORIES);
 
+/**
+ * Slugs this API still answers to, mapped to what they are called now.
+ *
+ * `match-day` was renamed to `tournament` (migration 42). The alias exists
+ * because an unknown category does not fail — `normalizeExperienceCategory`
+ * falls back to "general" — so a browser running a cached copy of the old
+ * composer would have its posts silently filed under the wrong category
+ * instead of erroring. Safe to delete once no client in the wild sends it.
+ */
+const CATEGORY_ALIASES: Record<string, ExperienceCategory> = {
+  "match-day": "tournament",
+};
+
 export const isExperienceCategory = (value: unknown): value is ExperienceCategory =>
   typeof value === "string" && CATEGORY_SET.has(value);
 
-export const normalizeExperienceCategory = (value?: unknown): ExperienceCategory =>
-  isExperienceCategory(value) ? value : DEFAULT_EXPERIENCE_CATEGORY;
+export const normalizeExperienceCategory = (value?: unknown): ExperienceCategory => {
+  if (isExperienceCategory(value)) return value;
+  if (typeof value === "string" && CATEGORY_ALIASES[value]) return CATEGORY_ALIASES[value];
+  return DEFAULT_EXPERIENCE_CATEGORY;
+};
 
 // ─── Sports ───────────────────────────────────────────────────────────────────
 // Optional. Deliberately stored in the same TitleCase form the old `topic`
