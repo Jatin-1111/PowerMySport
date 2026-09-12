@@ -38,7 +38,7 @@ export function SectionHeader({
     <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
       <div className="flex items-start gap-3">
         {step !== undefined && (
-          <span className="bg-power-orange mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white">
+          <span className="bg-power-orange-solid mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white">
             {step}
           </span>
         )}

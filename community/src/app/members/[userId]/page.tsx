@@ -292,7 +292,7 @@ export default function MemberProfilePage() {
                   <button
                     onClick={() => void handleStartConversation()}
                     disabled={isMessaging || profile.messagePrivacy === "NONE"}
-                    className="bg-power-orange inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="bg-power-orange-solid inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <MessageSquare size={16} />
                     {isMessaging ? "Opening..." : "Message member"}

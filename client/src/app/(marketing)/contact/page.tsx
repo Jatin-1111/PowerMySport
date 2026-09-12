@@ -882,7 +882,7 @@ export default function ContactPage() {
                       key={label}
                       href={href}
                       aria-label={label}
-                      className="hover:bg-power-orange flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:text-white"
+                      className="hover:bg-power-orange-solid flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:text-white"
                       whileHover={{ scale: 1.12, rotate: 7 }}
                       whileTap={{ scale: 0.93 }}
                       transition={{
@@ -959,7 +959,7 @@ export default function ContactPage() {
             >
               <motion.a
                 href="/register"
-                className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-xl hover:shadow-orange-500/30"
+                className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-xl hover:shadow-orange-500/30"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >

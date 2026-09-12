@@ -42,7 +42,7 @@ export function SpectrumSlider({
               onClick={() => onChange(tick)}
               className={`flex flex-col items-center gap-2 rounded-2xl border-2 py-5 transition-all duration-150 active:scale-[0.97] ${
                 selected
-                  ? "border-power-orange bg-power-orange text-white shadow-sm"
+                  ? "border-power-orange-solid bg-power-orange-solid text-white shadow-sm"
                   : "border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >

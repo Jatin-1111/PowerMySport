@@ -520,7 +520,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
             <button
               type="button"
               onClick={goNext}
-              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
+              className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98]"
             >
               Continue
               <ChevronRight className="h-4 w-4" />
@@ -597,7 +597,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
                   type="button"
                   onClick={goNext}
                   disabled={!canAdvance}
-                  className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                  className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
                 >
                   {qNum === totalQuestions ? "Build my profile" : "Continue"}
                   <ChevronRight className="h-4 w-4" />

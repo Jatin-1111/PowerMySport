@@ -886,7 +886,7 @@ export function PathwayReader({
                       {stage.primaryAction?.href && (
                         <Link
                           href={stage.primaryAction.href}
-                          className="bg-power-orange inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
+                          className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
                         >
                           {stage.primaryAction.label}
                           <ArrowRight className="h-4 w-4" />

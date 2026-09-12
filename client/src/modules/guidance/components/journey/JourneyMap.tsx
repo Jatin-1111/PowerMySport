@@ -49,7 +49,7 @@ export function JourneyMap({
               >
                 <span
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black transition-colors ${
-                    isOpen ? "bg-power-orange text-white" : "bg-slate-100 text-slate-500"
+                    isOpen ? "bg-power-orange-solid text-white" : "bg-slate-100 text-slate-500"
                   }`}
                 >
                   {pi + 1}

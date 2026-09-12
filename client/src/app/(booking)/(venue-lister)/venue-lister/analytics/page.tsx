@@ -106,7 +106,7 @@ export default function VenueListerAnalyticsPage() {
           <p className="text-sm text-slate-500">{error ?? "No data available."}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-power-orange mt-4 rounded-lg px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange-solid mt-4 rounded-lg px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
           >
             Retry
           </button>

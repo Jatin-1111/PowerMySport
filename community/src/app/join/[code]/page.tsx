@@ -122,7 +122,7 @@ export default function JoinCommunityPage() {
               </button>
               <button
                 onClick={() => window.location.reload()}
-                className="bg-power-orange flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                className="bg-power-orange-solid flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
               >
                 Try Again
               </button>

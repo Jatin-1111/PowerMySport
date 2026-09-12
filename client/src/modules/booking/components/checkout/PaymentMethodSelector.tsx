@@ -51,7 +51,7 @@ export function PaymentMethodSelector({
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-xl",
                   isSelected
-                    ? "bg-power-orange text-white shadow-sm"
+                    ? "bg-power-orange-solid text-white shadow-sm"
                     : "bg-slate-100 text-slate-500"
                 )}
               >

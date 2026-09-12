@@ -93,7 +93,7 @@ export function CookieConsentBanner() {
               <div className="flex gap-2">
                 <button
                   onClick={dismiss}
-                  className="bg-power-orange focus:ring-power-orange flex-1 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.55)] transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  className="bg-power-orange-solid focus:ring-power-orange flex-1 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.55)] transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
                 >
                   Got it
                 </button>

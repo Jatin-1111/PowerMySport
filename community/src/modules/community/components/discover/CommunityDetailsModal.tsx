@@ -186,7 +186,7 @@ export default function CommunityDetailsModal({
                       onChat(community.id);
                       onClose();
                     }}
-                    className="bg-power-orange/90 hover:bg-power-orange flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-md transition"
+                    className="bg-power-orange-solid/90 hover:bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-md transition"
                   >
                     <MessageSquare size={16} /> Open Chat
                   </button>
@@ -194,7 +194,7 @@ export default function CommunityDetailsModal({
                   <button
                     onClick={() => onJoin(community.id)}
                     disabled={isJoining}
-                    className="bg-power-orange/90 hover:bg-power-orange flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60"
+                    className="bg-power-orange-solid/90 hover:bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <LogIn size={16} /> {isJoining ? "Joining..." : "Join Community"}
                   </button>

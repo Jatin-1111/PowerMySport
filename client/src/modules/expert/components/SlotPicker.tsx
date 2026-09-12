@@ -142,7 +142,7 @@ export function SlotPicker({ expertId, value, onChange, className, timezone }: S
             className={cn(
               "rounded-lg border py-2 text-sm font-medium transition-colors",
               value === s.start
-                ? "border-power-orange bg-power-orange text-white"
+                ? "border-power-orange-solid bg-power-orange-solid text-white"
                 : "hover:border-power-orange border-slate-200 bg-white text-slate-700 hover:bg-orange-50"
             )}
           >

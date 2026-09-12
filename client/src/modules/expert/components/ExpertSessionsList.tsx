@@ -90,7 +90,7 @@ export function ExpertSessionsList({
         <p className="font-semibold text-red-600">{error}</p>
         <button
           onClick={onRetry}
-          className="bg-power-orange mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          className="bg-power-orange-solid mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
         >
           Retry
         </button>
@@ -333,7 +333,7 @@ export function SessionRow({
                 <button
                   onClick={saveReschedule}
                   disabled={busy || !newSlot}
-                  className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+                  className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
                 >
                   Confirm new time
                 </button>
@@ -395,7 +395,7 @@ export function SessionRow({
                 <button
                   onClick={saveLink}
                   disabled={busy}
-                  className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+                  className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
                 >
                   Save link
                 </button>

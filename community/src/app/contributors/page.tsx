@@ -261,7 +261,7 @@ function ContributorsPageContent() {
                               {item.name}
                             </span>
                             {isMe && (
-                              <span className="bg-power-orange shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white">
+                              <span className="bg-power-orange-solid shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white">
                                 You
                               </span>
                             )}

@@ -80,7 +80,7 @@ export default function FollowingPage() {
               </p>
               <button
                 onClick={() => redirectToMainLogin()}
-                className="bg-power-orange rounded-lg px-3 py-2 text-sm font-semibold text-white"
+                className="bg-power-orange-solid rounded-lg px-3 py-2 text-sm font-semibold text-white"
               >
                 Sign in
               </button>

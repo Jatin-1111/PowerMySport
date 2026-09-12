@@ -394,7 +394,7 @@ export default function AddExpertPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-power-orange flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-600 hover:shadow disabled:opacity-60 disabled:hover:shadow-sm"
+                className="bg-power-orange-solid flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-600 hover:shadow disabled:opacity-60 disabled:hover:shadow-sm"
               >
                 {isSubmitting ? (
                   <>

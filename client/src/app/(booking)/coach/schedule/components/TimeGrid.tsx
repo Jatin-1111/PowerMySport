@@ -58,7 +58,7 @@ export function TimeGrid({
               <p
                 className={cn(
                   "mx-auto mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold",
-                  isToday ? "bg-power-orange text-white" : "text-slate-700"
+                  isToday ? "bg-power-orange-solid text-white" : "text-slate-700"
                 )}
               >
                 {d.getDate()}

@@ -274,7 +274,7 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
             <button
               type="button"
               onClick={submitLink}
-              className="bg-power-orange shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white"
+              className="bg-power-orange-solid shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white"
             >
               Add
             </button>

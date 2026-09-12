@@ -161,7 +161,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
             {canUseNativeShare && (
               <button
                 onClick={() => void openShareDialog()}
-                className="bg-power-orange flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+                className="bg-power-orange-solid flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
               >
                 <Share2 size={14} className="mr-2 inline" />
                 Share

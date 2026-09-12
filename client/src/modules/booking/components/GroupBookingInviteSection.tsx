@@ -60,7 +60,7 @@ export function GroupBookingInviteSection({
           <div
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-lg",
-              isGroupBooking ? "bg-power-orange text-white" : "bg-slate-100 text-slate-600"
+              isGroupBooking ? "bg-power-orange-solid text-white" : "bg-slate-100 text-slate-600"
             )}
           >
             <Users size={20} />
@@ -78,7 +78,7 @@ export function GroupBookingInviteSection({
         </div>
         <div className="flex items-center gap-2">
           {isGroupBooking && (
-            <span className="bg-power-orange rounded-full px-3 py-1 text-xs font-semibold text-white">
+            <span className="bg-power-orange-solid rounded-full px-3 py-1 text-xs font-semibold text-white">
               ON
             </span>
           )}

@@ -461,7 +461,7 @@ export function ExpertsTab({
                             </span>
                             <span className="text-xs font-medium text-slate-500">/session</span>
                           </div>
-                          <div className="group-hover:bg-power-orange flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:text-white">
+                          <div className="group-hover:bg-power-orange-solid flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:text-white">
                             <ArrowRight size={16} strokeWidth={2.5} />
                           </div>
                         </div>

@@ -21,7 +21,7 @@ export default function NotFound() {
         <div className="relative mt-6 flex justify-center">
           <Link
             href="/admin"
-            className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <Home className="h-4 w-4" /> Go to dashboard
           </Link>

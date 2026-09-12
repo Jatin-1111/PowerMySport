@@ -620,7 +620,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
           <button
             onClick={() => void publish()}
             disabled={isPublishing || isSavingDraft}
-            className="bg-power-orange shadow-power-orange/20 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
+            className="bg-power-orange-solid shadow-power-orange/20 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
           >
             {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {postStatus === "PUBLISHED" ? "Update" : "Publish"}

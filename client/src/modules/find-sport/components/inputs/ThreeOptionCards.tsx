@@ -31,7 +31,7 @@ export function ThreeOptionCards({
           >
             <div
               className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all ${
-                selected ? "bg-power-orange text-white" : "bg-slate-100 text-slate-400"
+                selected ? "bg-power-orange-solid text-white" : "bg-slate-100 text-slate-400"
               }`}
             >
               {idx + 1}

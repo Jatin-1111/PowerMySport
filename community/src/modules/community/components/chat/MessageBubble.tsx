@@ -258,7 +258,7 @@ export const MessageBubble = memo(function MessageBubble({
             onClick={() => onToggleSelect?.(message.id)}
             className={`flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
               isSelected
-                ? "bg-power-orange border-power-orange text-white"
+                ? "bg-power-orange-solid border-power-orange-solid text-white"
                 : "border-slate-300 bg-white"
             }`}
           >

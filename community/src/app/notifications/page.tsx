@@ -353,7 +353,7 @@ export default function CommunityNotificationsPage() {
                                   {getEventLabel(item)}
                                 </span>
                                 {!item.isRead ? (
-                                  <span className="bg-power-orange rounded-full px-2 py-0.5 text-[10px] font-semibold text-white">
+                                  <span className="bg-power-orange-solid rounded-full px-2 py-0.5 text-[10px] font-semibold text-white">
                                     New
                                   </span>
                                 ) : null}

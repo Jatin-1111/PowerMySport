@@ -249,7 +249,7 @@ export default function AdminVenueApprovalPanel({
                   </div>
                   <button
                     onClick={() => handleViewDetails(venue.id)}
-                    className="bg-power-orange ml-4 rounded-lg px-6 py-2.5 font-semibold text-white transition-colors hover:bg-orange-600"
+                    className="bg-power-orange-solid ml-4 rounded-lg px-6 py-2.5 font-semibold text-white transition-colors hover:bg-orange-600"
                   >
                     Review
                   </button>
@@ -287,7 +287,7 @@ export default function AdminVenueApprovalPanel({
                         onClick={() => setCurrentPage(page)}
                         className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
                           currentPage === page
-                            ? "bg-power-orange text-white"
+                            ? "bg-power-orange-solid text-white"
                             : "border border-slate-300 text-slate-700 hover:bg-slate-50"
                         }`}
                       >
@@ -408,7 +408,7 @@ export default function AdminVenueApprovalPanel({
                       className="object-cover"
                     />
                     {photo === selectedVenue.coverPhotoUrl && (
-                      <div className="bg-power-orange absolute right-2 top-2 rounded px-2 py-1 text-xs font-semibold text-white">
+                      <div className="bg-power-orange-solid absolute right-2 top-2 rounded px-2 py-1 text-xs font-semibold text-white">
                         Cover Photo
                       </div>
                     )}

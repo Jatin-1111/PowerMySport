@@ -139,7 +139,7 @@ function SearchPageContent() {
             </p>
             <Link
               href="/questions"
-              className="bg-power-orange mt-3 inline-flex rounded-lg px-3 py-2 text-sm font-semibold text-white"
+              className="bg-power-orange-solid mt-3 inline-flex rounded-lg px-3 py-2 text-sm font-semibold text-white"
             >
               Ask a question
             </Link>

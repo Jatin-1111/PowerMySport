@@ -197,7 +197,7 @@ export default function EditProfileModal({
                 <button
                   onClick={() => void save()}
                   disabled={saving}
-                  className="bg-power-orange shadow-power-orange/20 inline-flex min-w-[120px] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
+                  className="bg-power-orange-solid shadow-power-orange/20 inline-flex min-w-[120px] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
                 >
                   {saving ? <Loader2 size={16} className="animate-spin" /> : "Save changes"}
                 </button>

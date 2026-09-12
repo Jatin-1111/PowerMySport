@@ -201,7 +201,7 @@ export function AddVenueStep1({
           <Button
             type="submit"
             disabled={loading}
-            className="bg-power-orange flex items-center gap-2 px-6 text-white hover:bg-orange-600"
+            className="bg-power-orange-solid flex items-center gap-2 px-6 text-white hover:bg-orange-600"
           >
             {loading ? (
               <>

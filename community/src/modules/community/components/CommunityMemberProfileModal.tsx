@@ -226,7 +226,7 @@ export function CommunityMemberProfileModal({
                     </div>
                     <button
                       onClick={onMessage}
-                      className="bg-power-orange inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto"
+                      className="bg-power-orange-solid inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto"
                     >
                       <MessageSquare size={16} />
                       Message

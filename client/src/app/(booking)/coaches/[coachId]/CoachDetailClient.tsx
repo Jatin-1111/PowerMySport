@@ -997,7 +997,7 @@ export function CoachDetailClient() {
                             <button
                               key={slot}
                               onClick={() => setSelectedSlot({ startTime, endTime })}
-                              className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all ${isSlotAvailable ? (isSelected ? "bg-turf-green border-turf-green text-white shadow-md" : "hover:border-turf-green border-slate-200 bg-white text-slate-700") : isSelected ? "bg-power-orange border-power-orange text-white shadow-md" : "border-dashed border-amber-200 bg-amber-50/50 text-amber-700 hover:border-amber-400 hover:bg-amber-50"}`}
+                              className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all ${isSlotAvailable ? (isSelected ? "bg-turf-green border-turf-green text-white shadow-md" : "hover:border-turf-green border-slate-200 bg-white text-slate-700") : isSelected ? "bg-power-orange-solid border-power-orange-solid text-white shadow-md" : "border-dashed border-amber-200 bg-amber-50/50 text-amber-700 hover:border-amber-400 hover:bg-amber-50"}`}
                             >
                               <div className="flex flex-col items-center justify-center">
                                 <span
@@ -1073,7 +1073,7 @@ export function CoachDetailClient() {
                       ) : (
                         <Button
                           variant="primary"
-                          className="bg-power-orange hover:bg-power-orange/90 border-power-orange h-12 w-full text-base font-semibold text-white shadow-lg"
+                          className="bg-power-orange-solid hover:bg-power-orange-solid/90 border-power-orange-solid h-12 w-full text-base font-semibold text-white shadow-lg"
                           onClick={handleJoinWaitlist}
                           disabled={bookingLoading || !selectedSlot}
                         >

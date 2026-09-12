@@ -136,7 +136,7 @@ export function ResultsView({
           </div>
           <Link
             href={`/register?redirect=${encodeURIComponent("/guidance")}`}
-            className="bg-power-orange shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold text-white transition hover:bg-orange-600"
+            className="bg-power-orange-solid shrink-0 rounded-lg px-3 py-2 text-[11px] font-bold text-white transition hover:bg-orange-600"
           >
             Save free
           </Link>

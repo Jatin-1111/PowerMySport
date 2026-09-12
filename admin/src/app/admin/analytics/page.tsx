@@ -473,7 +473,7 @@ export default function AdminAnalyticsPage() {
               onClick={() => setActiveTab(tab.id as AnalyticsTab)}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
                 activeTab === tab.id
-                  ? "bg-power-orange text-white"
+                  ? "bg-power-orange-solid text-white"
                   : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
               }`}
             >

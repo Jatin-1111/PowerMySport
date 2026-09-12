@@ -863,7 +863,7 @@ export default function QnAFeedClient() {
                   </motion.span>
                   <span className="hidden sm:inline">Filters</span>
                   {hasActiveFilters && (
-                    <span className="bg-power-orange flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white">
+                    <span className="bg-power-orange-solid flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white">
                       {selectedSports.length +
                         selectedCities.length +
                         (categoryFilter ? 1 : 0) +

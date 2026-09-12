@@ -51,7 +51,7 @@ export default function ExpertProfilePage() {
             <p className="font-semibold text-red-600">{error || "Expert profile not found."}</p>
             <button
               onClick={load}
-              className="bg-power-orange mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+              className="bg-power-orange-solid mt-4 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
             >
               Retry
             </button>

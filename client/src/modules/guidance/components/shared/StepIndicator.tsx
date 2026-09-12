@@ -27,7 +27,7 @@ export function StepIndicator({ current, steps }: { current: number; steps: type
                     done
                       ? "bg-turf-green border-emerald-500 text-white shadow-md shadow-emerald-200"
                       : active
-                        ? "border-power-orange bg-power-orange shadow-power-orange/30 text-white shadow-md"
+                        ? "border-power-orange-solid bg-power-orange-solid shadow-power-orange/30 text-white shadow-md"
                         : "border-slate-200 bg-white text-slate-400"
                   }`}
                 >

@@ -66,7 +66,7 @@ export function MultiCheckboxDropdown({
           {icon}
           {label}
           {count > 0 ? (
-            <span className="bg-power-orange inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
+            <span className="bg-power-orange-solid inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
               {count}
             </span>
           ) : null}
@@ -94,7 +94,7 @@ export function MultiCheckboxDropdown({
                   <span
                     className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
                       active
-                        ? "border-power-orange bg-power-orange text-white"
+                        ? "border-power-orange-solid bg-power-orange-solid text-white"
                         : "border-slate-300 bg-white"
                     }`}
                   >

@@ -631,7 +631,7 @@ export function VenueDetailClient() {
                     onClick={() => setSelectedSport(sport)}
                     className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                       selectedSport === sport
-                        ? "bg-power-orange border-power-orange text-white shadow-sm"
+                        ? "bg-power-orange-solid border-power-orange-solid text-white shadow-sm"
                         : "from-power-orange/10 to-power-orange/5 border-power-orange/20 text-power-orange hover:border-power-orange/40 bg-linear-to-br"
                     }`}
                   >
@@ -832,7 +832,7 @@ export function VenueDetailClient() {
                         onClick={() => setSelectedSport(sport)}
                         className={`rounded-lg border-2 px-4 py-3 text-sm font-semibold transition-all ${
                           selectedSport === sport
-                            ? "bg-power-orange border-power-orange text-white shadow-md"
+                            ? "bg-power-orange-solid border-power-orange-solid text-white shadow-md"
                             : "hover:border-power-orange hover:bg-power-orange/5 border-slate-200 bg-white text-slate-700"
                         }`}
                       >
@@ -893,7 +893,7 @@ export function VenueDetailClient() {
                                   ? "bg-turf-green border-turf-green text-white shadow-md"
                                   : "hover:border-turf-green border-slate-200 bg-white text-slate-700"
                                 : isSelected
-                                  ? "bg-power-orange border-power-orange text-white shadow-md"
+                                  ? "bg-power-orange-solid border-power-orange-solid text-white shadow-md"
                                   : "border-dashed border-amber-200 bg-amber-50/50 text-amber-700 hover:border-amber-400 hover:bg-amber-50"
                             }`}
                           >
@@ -991,7 +991,7 @@ export function VenueDetailClient() {
                     ) : (
                       <Button
                         variant="primary"
-                        className="bg-power-orange hover:bg-power-orange/90 border-power-orange h-12 w-full text-base font-semibold text-white shadow-lg"
+                        className="bg-power-orange-solid hover:bg-power-orange-solid/90 border-power-orange-solid h-12 w-full text-base font-semibold text-white shadow-lg"
                         onClick={handleJoinWaitlist}
                         disabled={bookingLoading || !selectedSlot || !selectedSport}
                       >

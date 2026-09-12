@@ -20,7 +20,7 @@ export function AgeGrid({
             onClick={() => onChange(age)}
             className={`h-14 rounded-2xl border-2 text-base font-bold transition-all duration-150 active:scale-95 ${
               selected
-                ? "border-power-orange bg-power-orange text-white shadow-sm"
+                ? "border-power-orange-solid bg-power-orange-solid text-white shadow-sm"
                 : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
             }`}
           >

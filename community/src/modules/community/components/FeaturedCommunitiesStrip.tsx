@@ -99,7 +99,7 @@ export function FeaturedCommunitiesStrip({
                   whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
                   className={`mt-3 w-full rounded-2xl px-3 py-2.5 text-xs font-semibold transition ${
                     !group.isMember
-                      ? "bg-power-orange text-white hover:opacity-90"
+                      ? "bg-power-orange-solid text-white hover:opacity-90"
                       : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
                   }`}
                 >

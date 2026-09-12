@@ -740,7 +740,7 @@ export function AddCoachForm() {
           <Button
             type="submit"
             disabled={loading}
-            className="bg-power-orange flex items-center justify-center gap-2 px-6 text-white hover:bg-orange-600 disabled:bg-slate-300 sm:w-auto"
+            className="bg-power-orange-solid flex items-center justify-center gap-2 px-6 text-white hover:bg-orange-600 disabled:bg-slate-300 sm:w-auto"
           >
             {loading ? (
               <>

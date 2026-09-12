@@ -29,13 +29,13 @@ export default function NotFound() {
       <div className="relative mt-8 flex flex-col gap-3 sm:flex-row">
         <Link
           href="/"
-          className="bg-power-orange inline-flex items-center justify-center gap-2 rounded-lg px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-orange-600"
+          className="bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-lg px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-orange-600"
         >
           <Home className="h-5 w-5" /> Back to home
         </Link>
         <Link
           href="/booking"
-          className="border-power-orange text-power-orange hover:bg-power-orange inline-flex items-center justify-center gap-2 rounded-lg border-2 px-8 py-3 text-base font-semibold transition-colors hover:text-white"
+          className="border-power-orange text-power-orange hover:bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-lg border-2 px-8 py-3 text-base font-semibold transition-colors hover:text-white"
         >
           <Compass className="h-5 w-5" /> Explore venues &amp; coaches
         </Link>

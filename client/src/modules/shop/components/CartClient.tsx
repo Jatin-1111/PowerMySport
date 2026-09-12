@@ -131,7 +131,7 @@ export function CartClient() {
         </div>
         <Link
           href="/shop/checkout"
-          className="bg-power-orange mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg text-sm font-bold text-white transition hover:bg-orange-600"
+          className="bg-power-orange-solid mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg text-sm font-bold text-white transition hover:bg-orange-600"
         >
           Continue to Checkout
         </Link>

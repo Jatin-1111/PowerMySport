@@ -16,7 +16,7 @@ export function SectionTransition({
       <button
         type="button"
         onClick={onContinue}
-        className="bg-power-orange hover:bg-power-orange/90 rounded-xl px-8 py-3 text-sm font-semibold text-white transition-colors"
+        className="bg-power-orange-solid hover:bg-power-orange-solid/90 rounded-xl px-8 py-3 text-sm font-semibold text-white transition-colors"
       >
         Continue
       </button>

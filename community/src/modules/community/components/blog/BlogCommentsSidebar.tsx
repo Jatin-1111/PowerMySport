@@ -203,7 +203,7 @@ export default function BlogCommentsSidebar({
                   <button
                     onClick={() => void submitComment()}
                     disabled={submitting || !draft.trim()}
-                    className="bg-power-orange inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d96610] disabled:opacity-50"
+                    className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d96610] disabled:opacity-50"
                   >
                     {submitting ? (
                       <Loader2 size={15} className="animate-spin" />

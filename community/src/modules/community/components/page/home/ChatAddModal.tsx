@@ -137,7 +137,7 @@ export function ChatAddModal({
                         }}
                         className={`shrink-0 rounded-lg px-4 py-1.5 text-xs font-semibold shadow-sm transition active:scale-95 ${
                           isGroup && !result.isMember
-                            ? "bg-power-orange text-white hover:bg-orange-600"
+                            ? "bg-power-orange-solid text-white hover:bg-orange-600"
                             : "bg-slate-900 text-white hover:bg-slate-800"
                         }`}
                       >

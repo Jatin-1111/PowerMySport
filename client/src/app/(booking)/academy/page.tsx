@@ -69,7 +69,7 @@ export default function AcademyDashboardPage() {
               className="group rounded-2xl border border-white/70 bg-white p-5 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="flex items-center gap-3">
-                <div className="group-hover:bg-power-orange rounded-xl bg-slate-100 p-3 text-slate-900 transition-colors group-hover:text-white">
+                <div className="group-hover:bg-power-orange-solid rounded-xl bg-slate-100 p-3 text-slate-900 transition-colors group-hover:text-white">
                   <Icon size={18} />
                 </div>
                 <h2 className="text-base font-semibold text-slate-900">{item.label}</h2>

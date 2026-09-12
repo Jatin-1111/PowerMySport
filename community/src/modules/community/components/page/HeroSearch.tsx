@@ -43,7 +43,7 @@ export function HeroSearch() {
       />
       <button
         type="submit"
-        className="bg-power-orange hover:bg-power-orange/90 inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+        className="bg-power-orange-solid hover:bg-power-orange-solid/90 inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
       >
         Search
       </button>

@@ -513,7 +513,7 @@ export function ResultsView({
               <button
                 type="button"
                 onClick={scrollToNextStep}
-                className="bg-power-orange mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-orange-600"
+                className="bg-power-orange-solid mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-orange-600"
               >
                 Book a trial class
                 <ArrowDown className="h-3.5 w-3.5" />

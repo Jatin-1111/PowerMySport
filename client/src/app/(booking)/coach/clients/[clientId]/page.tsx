@@ -470,7 +470,7 @@ export default function ClientProfilePage() {
           <div className="p-6">
             <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
               {/* Avatar */}
-              <div className="bg-power-orange flex h-16 w-16 shrink-0 select-none items-center justify-center rounded-full text-xl font-bold text-white shadow-md">
+              <div className="bg-power-orange-solid flex h-16 w-16 shrink-0 select-none items-center justify-center rounded-full text-xl font-bold text-white shadow-md">
                 {client.photoUrl ? (
                   <img
                     src={client.photoUrl}

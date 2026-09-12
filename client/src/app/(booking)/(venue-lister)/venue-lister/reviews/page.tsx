@@ -247,7 +247,7 @@ export default function VenueListerReviewsPage() {
                           onClick={() => setActiveFilter(tab.value)}
                           className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                             isActive
-                              ? "bg-power-orange border-power-orange text-white shadow-sm"
+                              ? "bg-power-orange-solid border-power-orange-solid text-white shadow-sm"
                               : "border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600"
                           }`}
                         >

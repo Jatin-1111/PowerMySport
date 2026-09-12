@@ -267,7 +267,7 @@ export default function ExpertSessionPlayerDetailPage() {
         <p className="font-semibold text-red-600">{error || "Child profile not available."}</p>
         <Link
           href="/expert/dashboard"
-          className="bg-power-orange mt-4 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          className="bg-power-orange-solid mt-4 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
         >
           <ArrowLeft className="h-4 w-4" /> Back to dashboard
         </Link>

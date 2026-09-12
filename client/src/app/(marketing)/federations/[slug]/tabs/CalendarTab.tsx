@@ -218,7 +218,7 @@ export function CalendarTab({
                             onClick={() => setEditionAgeGroup(ag)}
                             className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
                               editionAgeGroup === ag
-                                ? "bg-power-orange text-white"
+                                ? "bg-power-orange-solid text-white"
                                 : "hover:text-power-orange bg-white text-slate-600"
                             }`}
                           >

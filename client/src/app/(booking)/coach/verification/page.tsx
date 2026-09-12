@@ -56,7 +56,7 @@ export default function CoachVerificationPage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="bg-power-orange rounded-md px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600"
+                className="bg-power-orange-solid rounded-md px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600"
                 onClick={() => flow.navigateToStep(flow.resumeStepHint as VerificationStep, false)}
               >
                 Resume Step {flow.resumeStepHint}

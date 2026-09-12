@@ -236,7 +236,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                                 className={cn(
                                   "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                                   pathname === item.href
-                                    ? "bg-power-orange text-white"
+                                    ? "bg-power-orange-solid text-white"
                                     : "group-hover:bg-power-orange/10 group-hover:text-power-orange bg-slate-100 text-slate-500"
                                 )}
                               >
@@ -343,7 +343,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                                 className={cn(
                                   "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                                   isBookingActive
-                                    ? "bg-power-orange text-white"
+                                    ? "bg-power-orange-solid text-white"
                                     : "group-hover:bg-power-orange/10 group-hover:text-power-orange bg-slate-100 text-slate-500"
                                 )}
                               >
@@ -394,7 +394,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                                 className={cn(
                                   "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                                   pathname === item.href
-                                    ? "bg-power-orange text-white"
+                                    ? "bg-power-orange-solid text-white"
                                     : "group-hover:bg-power-orange/10 group-hover:text-power-orange bg-slate-100 text-slate-500"
                                 )}
                               >
@@ -448,7 +448,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="bg-power-orange focus:ring-power-orange flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                    className="bg-power-orange-solid focus:ring-power-orange flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
                     aria-label="User menu"
                   >
                     <User className="h-5 w-5" />

@@ -328,7 +328,7 @@ export default function VenueImageUpload({
         type="button"
         onClick={handleConfirmImages}
         disabled={disabled || Object.keys(uploadedImages).length === 0}
-        className="bg-power-orange w-full rounded-lg py-3 font-medium text-white transition-colors hover:bg-orange-600 disabled:bg-slate-300"
+        className="bg-power-orange-solid w-full rounded-lg py-3 font-medium text-white transition-colors hover:bg-orange-600 disabled:bg-slate-300"
       >
         Confirm All Images
       </button>

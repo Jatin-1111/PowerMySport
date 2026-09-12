@@ -348,7 +348,7 @@ export function ExpertAdminPanel({
           <button
             onClick={saveEdit}
             disabled={busy}
-            className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+            className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
           >
             {busy ? "Saving..." : "Save"}
           </button>

@@ -345,7 +345,7 @@ export function WizardShell() {
                               onClick={() => selectDependent(p)}
                               className={`rounded-full border-2 px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                                 selectedDependentId === p._id
-                                  ? "border-power-orange bg-power-orange text-white shadow-sm"
+                                  ? "border-power-orange-solid bg-power-orange-solid text-white shadow-sm"
                                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                               }`}
                             >
@@ -379,7 +379,7 @@ export function WizardShell() {
                       <button
                         type="button"
                         onClick={goNext}
-                        className="bg-power-orange group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl px-8 py-4 text-[15px] font-bold text-white shadow-[0_4px_24px_-4px_rgba(234,88,12,0.5)] transition-all duration-200 hover:bg-orange-600 hover:shadow-[0_8px_32px_-4px_rgba(234,88,12,0.6)] active:scale-[0.99]"
+                        className="bg-power-orange-solid group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl px-8 py-4 text-[15px] font-bold text-white shadow-[0_4px_24px_-4px_rgba(234,88,12,0.5)] transition-all duration-200 hover:bg-orange-600 hover:shadow-[0_8px_32px_-4px_rgba(234,88,12,0.6)] active:scale-[0.99]"
                       >
                         <span>
                           {selectedDependentId
@@ -436,7 +436,7 @@ export function WizardShell() {
                     goNext();
                   }}
                   disabled={!nameInput.trim()}
-                  className="bg-power-orange hover:bg-power-orange/90 w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                  className="bg-power-orange-solid hover:bg-power-orange-solid/90 w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {nameInput.trim()
                     ? `Continue with ${nameInput.trim()}`

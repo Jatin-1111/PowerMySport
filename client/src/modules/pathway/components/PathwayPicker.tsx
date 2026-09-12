@@ -455,7 +455,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Link
               href="/assessment"
-              className="bg-power-orange inline-flex items-center rounded-xl px-3.5 py-2 text-[13px] font-bold text-white transition hover:bg-orange-600"
+              className="bg-power-orange-solid inline-flex items-center rounded-xl px-3.5 py-2 text-[13px] font-bold text-white transition hover:bg-orange-600"
             >
               Get a plan for their sport
             </Link>

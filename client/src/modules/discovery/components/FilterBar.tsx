@@ -139,7 +139,7 @@ export function FilterBar({
             <button
               type="button"
               onClick={() => onModalOpenChange(false)}
-              className="bg-power-orange flex-1 rounded-xl px-4 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600"
+              className="bg-power-orange-solid flex-1 rounded-xl px-4 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-orange-600"
             >
               Show Results
             </button>

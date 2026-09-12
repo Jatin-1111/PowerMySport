@@ -643,7 +643,7 @@ function NotificationsPageContent() {
                     className={cn(
                       "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3 py-2 text-sm font-medium transition-all duration-150",
                       isActive
-                        ? "bg-power-orange border-orange-300 text-white shadow-sm shadow-orange-200"
+                        ? "bg-power-orange-solid border-orange-300 text-white shadow-sm shadow-orange-200"
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                     )}
                   >
@@ -727,7 +727,7 @@ function NotificationsPageContent() {
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-medium transition-all",
                       page === pageNum
-                        ? "bg-power-orange border-orange-300 text-white shadow-sm shadow-orange-200"
+                        ? "bg-power-orange-solid border-orange-300 text-white shadow-sm shadow-orange-200"
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     )}
                   >

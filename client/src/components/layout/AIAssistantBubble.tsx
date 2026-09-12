@@ -63,7 +63,7 @@ export function AIAssistantBubble() {
               transition={{ type: "spring", stiffness: 260, damping: 20, delay: 2 }}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.91 }}
-              className="bg-power-orange relative flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg shadow-orange-500/30"
+              className="bg-power-orange-solid relative flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg shadow-orange-500/30"
             >
               {/* Attention pulse ring */}
               <span

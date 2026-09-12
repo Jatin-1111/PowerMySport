@@ -87,7 +87,7 @@ function StatCard({ icon, label, value, sub, accent }: StatCardProps) {
       transition={{ duration: 0.45, ease: "easeOut" }}
       className={`flex items-center gap-4 rounded-2xl border p-5 ${
         accent
-          ? "bg-power-orange border-power-orange text-white"
+          ? "bg-power-orange-solid border-power-orange-solid text-white"
           : "border-slate-200 bg-white text-slate-800"
       }`}
     >
@@ -120,7 +120,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-200 hover:border-orange-200 hover:shadow-md">
       {/* header row */}
       <div className="flex items-start gap-4">
-        <div className="bg-power-orange flex h-12 w-12 shrink-0 select-none items-center justify-center rounded-full text-base font-bold text-white">
+        <div className="bg-power-orange-solid flex h-12 w-12 shrink-0 select-none items-center justify-center rounded-full text-base font-bold text-white">
           {getInitials(client.name)}
         </div>
         <div className="min-w-0 flex-1">
@@ -321,7 +321,7 @@ export default function CoachClientsPage() {
                 onClick={() => setActiveTab(tab)}
                 className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-150 ${
                   activeTab === tab
-                    ? "bg-power-orange text-white shadow-sm"
+                    ? "bg-power-orange-solid text-white shadow-sm"
                     : "text-slate-600 hover:bg-slate-100"
                 }`}
               >

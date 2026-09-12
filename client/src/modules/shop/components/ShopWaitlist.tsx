@@ -77,7 +77,7 @@ export default function ShopWaitlist() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-power-orange absolute bottom-2 right-2 top-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+              className="bg-power-orange-solid absolute bottom-2 right-2 top-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? "Joining..." : submitted ? "Subscribed!" : "Notify Me"}
             </button>

@@ -156,7 +156,7 @@ export function ProfileInfoCard({
           <button
             type="button"
             onClick={onEditClick}
-            className="bg-power-orange rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange-solid rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
           >
             Edit
           </button>
@@ -206,7 +206,7 @@ export function ProfileInfoCard({
               type="button"
               onClick={onSave}
               disabled={isSaving}
-              className="bg-power-orange flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+              className="bg-power-orange-solid flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
             >
               {isSaving ? "Saving..." : "Save"}
             </button>

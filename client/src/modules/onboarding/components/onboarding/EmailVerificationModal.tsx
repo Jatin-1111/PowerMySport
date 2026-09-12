@@ -255,7 +255,7 @@ export default function EmailVerificationModal({
         <button
           onClick={() => handleVerify()}
           disabled={loading || code.join("").length !== 6}
-          className="bg-power-orange mb-4 w-full rounded-lg py-3 font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="bg-power-orange-solid mb-4 w-full rounded-lg py-3 font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Verifying..." : "Verify Email"}
         </button>

@@ -120,7 +120,7 @@ export function LoginRequiredModal({
                 <a
                   href={loginHref}
                   id="login-modal-login-btn"
-                  className="bg-power-orange flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition-all hover:bg-orange-600 active:scale-[0.98]"
+                  className="bg-power-orange-solid flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition-all hover:bg-orange-600 active:scale-[0.98]"
                 >
                   <LogIn className="h-4 w-4" />
                   Log In

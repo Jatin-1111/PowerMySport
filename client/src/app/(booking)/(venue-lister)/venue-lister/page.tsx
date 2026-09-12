@@ -212,7 +212,7 @@ export default function VenueListerDashboard() {
           </Link>
           <Link
             href="/venue-lister/vendor-bookings"
-            className="bg-power-orange group flex items-center justify-between rounded-lg p-6 text-white transition-all hover:bg-orange-600 hover:shadow-lg"
+            className="bg-power-orange-solid group flex items-center justify-between rounded-lg p-6 text-white transition-all hover:bg-orange-600 hover:shadow-lg"
           >
             <div>
               <h3 className="mb-1 text-lg font-bold">View Bookings</h3>

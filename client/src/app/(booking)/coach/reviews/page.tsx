@@ -296,7 +296,7 @@ export default function CoachReviewsPage() {
               onClick={() => setActiveFilter(tab.value)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 activeFilter === tab.value
-                  ? "bg-power-orange text-white shadow-sm"
+                  ? "bg-power-orange-solid text-white shadow-sm"
                   : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-orange-50 hover:text-orange-600"
               }`}
             >

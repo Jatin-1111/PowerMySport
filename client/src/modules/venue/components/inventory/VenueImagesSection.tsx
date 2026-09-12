@@ -93,7 +93,7 @@ export function VenueImagesSection({
                         <X className="h-3.5 w-3.5" />
                       </button>
                       {existingCoverPhotoUrl === url && (
-                        <span className="bg-power-orange absolute right-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
+                        <span className="bg-power-orange-solid absolute right-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
                           Cover
                         </span>
                       )}
@@ -129,7 +129,7 @@ export function VenueImagesSection({
                           <X className="h-3.5 w-3.5" />
                         </button>
                         {existingCoverPhotoUrl === url && (
-                          <span className="bg-power-orange absolute right-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
+                          <span className="bg-power-orange-solid absolute right-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
                             Cover
                           </span>
                         )}
@@ -196,7 +196,7 @@ export function VenueImagesSection({
                     <X className="h-3.5 w-3.5" />
                   </button>
                   {coverPhotoIndex === index && (
-                    <span className="bg-power-orange absolute left-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
+                    <span className="bg-power-orange-solid absolute left-2 top-2 rounded-full px-2 py-1 text-xs font-medium text-white">
                       Cover
                     </span>
                   )}

@@ -186,7 +186,7 @@ export default function PrivacyPage() {
                 <button
                   onClick={() => void saveAlias()}
                   disabled={isSavingAlias || !aliasDraft.trim()}
-                  className="bg-power-orange inline-flex min-h-11 items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 sm:min-w-28"
+                  className="bg-power-orange-solid inline-flex min-h-11 items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 sm:min-w-28"
                 >
                   {isSavingAlias ? "Saving" : "Save"}
                 </button>

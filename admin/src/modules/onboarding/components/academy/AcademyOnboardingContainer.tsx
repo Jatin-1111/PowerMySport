@@ -369,7 +369,7 @@ export default function AcademyOnboardingContainer() {
               <div
                 className={`flex h-10 w-10 items-center justify-center rounded-full font-semibold transition-all ${
                   step === currentStep
-                    ? "bg-power-orange scale-110 text-white shadow-lg"
+                    ? "bg-power-orange-solid scale-110 text-white shadow-lg"
                     : step <= maxUnlockedStep
                       ? "bg-green-500 text-white"
                       : "bg-slate-200 text-slate-400"

@@ -1017,7 +1017,7 @@ export default function CommunityChatPanel({ page }: Props) {
                 setIsMessageSelectionMode(false);
                 setSelectedMessageIds([]);
               }}
-              className="bg-power-orange flex-1 rounded-lg py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
+              className="bg-power-orange-solid flex-1 rounded-lg py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
             >
               Forward
             </button>

@@ -124,7 +124,7 @@ export function AdminDataTable<T>({
           className={cn(
             "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
             current === p
-              ? "bg-power-orange text-white"
+              ? "bg-power-orange-solid text-white"
               : "border border-slate-300 text-slate-700 hover:bg-slate-50"
           )}
         >

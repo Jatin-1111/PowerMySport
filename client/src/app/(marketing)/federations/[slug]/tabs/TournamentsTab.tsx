@@ -70,7 +70,7 @@ export function TournamentsTab({
                 onClick={() => setLevelFilter(l)}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
                   activeLevelFilter === l
-                    ? "bg-power-orange border-power-orange text-white"
+                    ? "bg-power-orange-solid border-power-orange-solid text-white"
                     : "hover:text-power-orange border-slate-200 bg-white text-slate-600 hover:border-orange-200"
                 }`}
               >

@@ -102,7 +102,7 @@ export function RankingFilters({
               go-key is not obvious, and this is the page's primary action. */}
           <button
             type="submit"
-            className="bg-power-orange focus-visible:ring-power-orange inline-flex h-11 shrink-0 items-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            className="bg-power-orange-solid focus-visible:ring-power-orange inline-flex h-11 shrink-0 items-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           >
             Search
           </button>

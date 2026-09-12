@@ -422,7 +422,7 @@ export default function HomeClient() {
                 {/* Glass caption — single, integrated overlay */}
                 <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="bg-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg shadow-orange-950/40">
+                    <div className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg shadow-orange-950/40">
                       <Map size={17} />
                     </div>
                     <div className="min-w-0">

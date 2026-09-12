@@ -216,7 +216,7 @@ export function OverviewTab({
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-power-orange flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white transition hover:bg-orange-500"
+              className="bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white transition hover:bg-orange-500"
             >
               <WhatsAppIcon className="h-4 w-4 text-white" />
               Get Help via WhatsApp

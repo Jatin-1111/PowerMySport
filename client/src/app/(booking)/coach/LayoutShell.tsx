@@ -247,7 +247,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Link
               href="/coach/verification"
-              className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+              className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
             >
               Go to Verification
             </Link>

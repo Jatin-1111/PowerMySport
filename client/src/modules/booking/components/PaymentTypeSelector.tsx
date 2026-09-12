@@ -40,7 +40,9 @@ export function PaymentTypeSelector({
           <span
             className={cn(
               "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-              value === "SINGLE" ? "bg-power-orange text-white" : "bg-slate-100 text-slate-600"
+              value === "SINGLE"
+                ? "bg-power-orange-solid text-white"
+                : "bg-slate-100 text-slate-600"
             )}
           >
             <CreditCard size={18} />
@@ -83,7 +85,7 @@ export function PaymentTypeSelector({
           <span
             className={cn(
               "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-              value === "SPLIT" ? "bg-power-orange text-white" : "bg-slate-100 text-slate-600"
+              value === "SPLIT" ? "bg-power-orange-solid text-white" : "bg-slate-100 text-slate-600"
             )}
           >
             <Users2 size={18} />

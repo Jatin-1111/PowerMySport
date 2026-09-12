@@ -177,7 +177,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                         onClick={() => page.toggleChatSelection(conversation.id)}
                         className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
                           page.selectedChatIds.includes(conversation.id)
-                            ? "bg-power-orange border-power-orange text-white"
+                            ? "bg-power-orange-solid border-power-orange-solid text-white"
                             : "border-slate-300 bg-white"
                         }`}
                       >
@@ -230,7 +230,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
       {!page.selectChatsMode && (
         <button
           onClick={() => page.setShowAddChatModal(true)}
-          className="bg-power-orange absolute bottom-4 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg shadow-orange-500/30 transition hover:scale-105 hover:bg-orange-600 active:scale-95"
+          className="bg-power-orange-solid absolute bottom-4 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg shadow-orange-500/30 transition hover:scale-105 hover:bg-orange-600 active:scale-95"
         >
           <Plus size={22} strokeWidth={2.5} />
         </button>
@@ -272,7 +272,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                 }
               }}
               disabled={page.selectedChatIds.length === 0}
-              className="bg-power-orange flex-1 rounded-lg py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
+              className="bg-power-orange-solid flex-1 rounded-lg py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
             >
               Forward
             </button>

@@ -482,7 +482,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 onClick={() => setIsMobileNavOpen(false)}
                                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
                                   isActive
-                                    ? "bg-power-orange text-white shadow-sm"
+                                    ? "bg-power-orange-solid text-white shadow-sm"
                                     : "text-slate-700 hover:bg-slate-100"
                                 }`}
                               >
@@ -633,7 +633,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3"
                               } ${
                                 isActive
-                                  ? "bg-power-orange text-white shadow-sm"
+                                  ? "bg-power-orange-solid text-white shadow-sm"
                                   : "text-slate-700 hover:bg-slate-100"
                               }`}
                             >
@@ -653,7 +653,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 <>
                                   <span className="text-sm font-semibold">{item.label}</span>
                                   {badgeCount > 0 && (
-                                    <span className="bg-power-orange ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold text-white">
+                                    <span className="bg-power-orange-solid ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold text-white">
                                       {badgeCount}
                                     </span>
                                   )}

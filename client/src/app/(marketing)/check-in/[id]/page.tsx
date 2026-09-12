@@ -84,7 +84,7 @@ export default function CheckInPage() {
           <p className="mb-6 text-sm text-slate-500">This check-in is tied to your account.</p>
           <Link
             href={`/login?redirect=${encodeURIComponent(`/check-in/${id}`)}`}
-            className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+            className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
           >
             Log in <ArrowRight className="h-4 w-4" />
           </Link>
@@ -128,7 +128,7 @@ export default function CheckInPage() {
           {followUp?.kind === "try_next_sport" && (
             <Link
               href="/assessment/discover"
-              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+              className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
             >
               Explore other sports <ArrowRight className="h-4 w-4" />
             </Link>
@@ -136,7 +136,7 @@ export default function CheckInPage() {
           {followUp?.kind === "re_diagnose" && (
             <Link
               href={checkIn ? `/guidance?sport=${encodeURIComponent(checkIn.sport)}` : "/guidance"}
-              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+              className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
             >
               Take another look <ArrowRight className="h-4 w-4" />
             </Link>
@@ -211,7 +211,7 @@ export default function CheckInPage() {
           type="button"
           onClick={submit}
           disabled={!selected || submitting}
-          className="bg-power-orange inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+          className="bg-power-orange-solid inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {submitting ? (
             <Loader2 className="h-4 w-4 animate-spin" />

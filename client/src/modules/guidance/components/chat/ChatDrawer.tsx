@@ -145,7 +145,7 @@ function MessageBubble({
       <div
         className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm ${
           isUser
-            ? "bg-power-orange rounded-tr-sm text-white"
+            ? "bg-power-orange-solid rounded-tr-sm text-white"
             : "rounded-tl-sm border border-slate-200/80 bg-white text-slate-800 shadow-sm"
         }`}
       >
@@ -638,7 +638,7 @@ export function ChatDrawer({
                     id="chat-send-btn"
                     disabled={!inputValue.trim() || isStreaming}
                     aria-label="Send message"
-                    className="bg-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:shadow-none"
+                    className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:shadow-none"
                   >
                     {isStreaming ? (
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

@@ -180,7 +180,7 @@ export default async function SportTournamentsHubPage({
                 href={`/tournaments/sport/${sport}${tab === "past" ? "?when=past" : ""}`}
                 className={`rounded-full border px-4 py-1.5 text-xs font-semibold capitalize transition ${
                   (tab === "upcoming") === upcoming
-                    ? "bg-power-orange border-power-orange text-white"
+                    ? "bg-power-orange-solid border-power-orange-solid text-white"
                     : "hover:text-power-orange border-slate-200 bg-white text-slate-600 hover:border-orange-200"
                 }`}
               >
@@ -249,7 +249,7 @@ export default async function SportTournamentsHubPage({
                   href={`/tournaments/sport/${sport}?page=${p}${upcoming ? "" : "&when=past"}`}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                     p === page
-                      ? "bg-power-orange border-power-orange text-white"
+                      ? "bg-power-orange-solid border-power-orange-solid text-white"
                       : "hover:text-power-orange border-slate-200 bg-white text-slate-600 hover:border-orange-200"
                   }`}
                 >

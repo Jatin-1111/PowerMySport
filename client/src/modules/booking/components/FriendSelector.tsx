@@ -110,7 +110,7 @@ export function FriendSelector({
           <Users size={18} className="text-slate-500" />
           <span className="font-semibold text-slate-700">Select Friends</span>
           {selectedFriendIds.length > 0 && (
-            <span className="bg-power-orange rounded-full px-2 py-0.5 text-xs font-semibold text-white">
+            <span className="bg-power-orange-solid rounded-full px-2 py-0.5 text-xs font-semibold text-white">
               {selectedFriendIds.length}
             </span>
           )}

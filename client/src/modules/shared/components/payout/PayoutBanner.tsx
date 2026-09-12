@@ -46,7 +46,7 @@ export function PayoutBanner({
           <div className="mt-3">
             <Link
               href={payoutHref}
-              className="bg-power-orange inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600"
+              className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-600"
             >
               {ctaLabel}
             </Link>

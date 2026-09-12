@@ -82,7 +82,7 @@ export function MonthView({
               <span
                 className={cn(
                   "relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
-                  isToday && "bg-power-orange text-white",
+                  isToday && "bg-power-orange-solid text-white",
                   !isToday && isCurrentMonth && "text-slate-800",
                   !isToday && !isCurrentMonth && "text-slate-400"
                 )}

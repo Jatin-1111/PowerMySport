@@ -447,7 +447,7 @@ export default function AdminBookingsPage() {
               <button
                 onClick={() => beginAction("REFUND")}
                 disabled={!REFUND_ACTIONS_ENABLED}
-                className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Refund
               </button>

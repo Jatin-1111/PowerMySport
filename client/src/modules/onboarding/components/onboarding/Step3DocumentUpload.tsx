@@ -330,7 +330,7 @@ export default function Step3DocumentUpload({
             disabled={loading || uploadedDocs.length < presignedUrls.length}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-3 font-medium transition-all ${
               uploadedDocs.length >= presignedUrls.length && !loading
-                ? "bg-power-orange text-white shadow-sm hover:bg-orange-600"
+                ? "bg-power-orange-solid text-white shadow-sm hover:bg-orange-600"
                 : "cursor-not-allowed bg-slate-300 text-slate-500"
             }`}
           >

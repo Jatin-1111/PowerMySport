@@ -76,7 +76,7 @@ export function BookingsViewSwitch({
             className={cn(
               "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
               isSelected
-                ? "bg-power-orange text-white"
+                ? "bg-power-orange-solid text-white"
                 : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             )}
           >

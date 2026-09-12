@@ -312,7 +312,7 @@ export function CheckoutClient() {
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900">{address.fullName}</span>
                         {address.isDefault && (
-                          <span className="bg-power-orange rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                          <span className="bg-power-orange-solid rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                             Default
                           </span>
                         )}
@@ -511,7 +511,7 @@ export function CheckoutClient() {
           type="submit"
           form="shop-checkout-form"
           disabled={!canPlace || status === "placing"}
-          className="bg-power-orange mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="bg-power-orange-solid mt-6 inline-flex h-11 w-full items-center justify-center rounded-lg text-sm font-bold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {status === "placing" ? "Placing Order..." : "Place Order"}
         </button>

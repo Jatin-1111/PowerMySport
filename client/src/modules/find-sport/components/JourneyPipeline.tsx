@@ -70,7 +70,7 @@ export function JourneyPipeline({
           stretched the full card width and read as a footer rather than a step. */}
       <div className="grid items-center gap-5 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_auto] lg:gap-10">
         <div className="flex min-w-0 items-start gap-3.5">
-          <div className="bg-power-orange shadow-power-orange/25 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
+          <div className="bg-power-orange-solid shadow-power-orange/25 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md">
             <CalendarCheck className="h-[18px] w-[18px]" />
           </div>
           <div className="min-w-0">

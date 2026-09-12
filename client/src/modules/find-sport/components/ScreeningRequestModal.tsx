@@ -161,7 +161,7 @@ export function ScreeningRequestModal({
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-power-orange flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                className="bg-power-orange-solid flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
               >
                 {loading ? "Sending…" : "Submit Request"}
               </button>

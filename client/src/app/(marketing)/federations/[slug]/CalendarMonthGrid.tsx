@@ -99,7 +99,7 @@ export function CalendarMonthGrid({
               aria-pressed={isSelected}
               className={`flex h-11 flex-col items-center justify-center rounded-lg border transition ${
                 isSelected
-                  ? "border-power-orange bg-power-orange text-white"
+                  ? "border-power-orange-solid bg-power-orange-solid text-white"
                   : "text-power-orange hover:border-power-orange border-orange-200 bg-orange-50"
               } ${isToday && !isSelected ? "ring-power-orange/40 ring-1 ring-inset" : ""}`}
             >

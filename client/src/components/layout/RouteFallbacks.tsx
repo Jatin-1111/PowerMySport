@@ -53,7 +53,7 @@ export function RouteError({
           <button
             type="button"
             onClick={reset}
-            className="bg-power-orange inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+            className="bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
           >
             <RotateCcw className="h-4 w-4" />
             Try again

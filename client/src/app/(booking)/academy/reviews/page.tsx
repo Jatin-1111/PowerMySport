@@ -147,7 +147,7 @@ export default function AcademyReviewsPage() {
             </div>
             <Link
               href="/academy/venues"
-              className="bg-power-orange inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+              className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
             >
               <Building2 size={16} />
               Manage venues
@@ -266,7 +266,7 @@ export default function AcademyReviewsPage() {
                 onClick={() => setActiveFilter(tab.value)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                   activeFilter === tab.value
-                    ? "bg-power-orange text-white shadow-sm"
+                    ? "bg-power-orange-solid text-white shadow-sm"
                     : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-orange-50 hover:text-orange-600"
                 }`}
               >

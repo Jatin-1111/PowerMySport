@@ -128,7 +128,7 @@ export function BookingTabBar({
               <span
                 className={cn(
                   "flex h-7 w-7 items-center justify-center rounded-lg",
-                  isSelected ? "bg-power-orange text-white" : "bg-slate-100 text-slate-500"
+                  isSelected ? "bg-power-orange-solid text-white" : "bg-slate-100 text-slate-500"
                 )}
               >
                 <Icon className="h-4 w-4" />

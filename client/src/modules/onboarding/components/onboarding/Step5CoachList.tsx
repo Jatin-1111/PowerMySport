@@ -270,7 +270,7 @@ export default function Step5CoachList({ onFinalize, loading, venueId }: Step5Co
           <Button
             type="button"
             onClick={() => setShowForm(true)}
-            className="bg-power-orange w-full py-2.5 text-white hover:bg-orange-600"
+            className="bg-power-orange-solid w-full py-2.5 text-white hover:bg-orange-600"
           >
             + Add Coach
           </Button>
@@ -418,7 +418,7 @@ export default function Step5CoachList({ onFinalize, loading, venueId }: Step5Co
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-power-orange flex-1 py-2 text-white hover:bg-orange-600"
+                className="bg-power-orange-solid flex-1 py-2 text-white hover:bg-orange-600"
               >
                 {loading ? "Adding..." : "Add Coach"}
               </Button>
@@ -458,7 +458,7 @@ export default function Step5CoachList({ onFinalize, loading, venueId }: Step5Co
             type="button"
             onClick={handleComplete}
             disabled={loading}
-            className="bg-power-orange flex-1 py-2.5 text-white hover:bg-orange-600"
+            className="bg-power-orange-solid flex-1 py-2.5 text-white hover:bg-orange-600"
           >
             {loading ? "Completing..." : "Complete Onboarding"}
           </Button>

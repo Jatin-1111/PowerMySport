@@ -315,7 +315,7 @@ export default function AdminVenuesPage() {
             <div className="flex justify-end">
               <Link
                 href={`/admin/venues/${getVenueId(selectedVenue) || "#"}`}
-                className="bg-power-orange rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
               >
                 Open full page
               </Link>

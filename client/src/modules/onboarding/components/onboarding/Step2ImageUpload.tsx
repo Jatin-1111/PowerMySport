@@ -395,7 +395,7 @@ export default function Step2ImageUpload({
           disabled={!isComplete || loading}
           className={`flex-1 rounded-lg py-3 font-medium transition ${
             isComplete && !loading
-              ? "bg-power-orange text-white hover:bg-orange-600"
+              ? "bg-power-orange-solid text-white hover:bg-orange-600"
               : "cursor-not-allowed bg-slate-300 text-slate-500"
           }`}
         >

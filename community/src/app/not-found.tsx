@@ -30,7 +30,7 @@ export default function NotFound() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/"
-            className="bg-power-orange inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <Home className="h-4 w-4" /> Community home
           </Link>

@@ -480,7 +480,7 @@ function PaymentPageContent() {
                     </p>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2 text-sm">
-                        <div className="bg-power-orange flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white">
+                        <div className="bg-power-orange-solid flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white">
                           O
                         </div>
                         <span className="font-medium text-slate-900">You (Organizer)</span>

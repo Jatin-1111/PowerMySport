@@ -66,7 +66,7 @@ export function AddVenueStep3({
               formData.generalImages.length === 0 ||
               Object.keys(formData.sportImages).length === 0
             }
-            className="bg-power-orange flex items-center gap-2 px-6 text-white hover:bg-orange-600"
+            className="bg-power-orange-solid flex items-center gap-2 px-6 text-white hover:bg-orange-600"
           >
             Continue to Documents
           </Button>

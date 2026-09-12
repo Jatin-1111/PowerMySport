@@ -162,7 +162,7 @@ export default function Step1ContactInfo({
 
         <Button
           type="submit"
-          className="bg-power-orange w-full py-2.5 text-base text-white hover:bg-orange-600"
+          className="bg-power-orange-solid w-full py-2.5 text-base text-white hover:bg-orange-600"
           disabled={loading || isSubmitting}
         >
           {isSubmitting ? "Sending verification code..." : "Continue to Verification"}

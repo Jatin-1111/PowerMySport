@@ -39,7 +39,7 @@ export function ProfileSectionHeader({
     <div
       className={cn(
         "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-        isEditing ? "bg-power-orange text-white" : "bg-power-orange/10 text-power-orange"
+        isEditing ? "bg-power-orange-solid text-white" : "bg-power-orange/10 text-power-orange"
       )}
     >
       <Icon className="h-5 w-5" />

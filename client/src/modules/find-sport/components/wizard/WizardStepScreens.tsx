@@ -733,7 +733,7 @@ export function QuestionScreen({
           type="button"
           onClick={onNext}
           disabled={!canAdvance()}
-          className="bg-power-orange hover:bg-power-orange/90 w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+          className="bg-power-orange-solid hover:bg-power-orange-solid/90 w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           Continue
         </button>

@@ -473,7 +473,7 @@ function ExpertOnboardingContent() {
                 step > s.id
                   ? "cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600"
                   : step === s.id
-                    ? "bg-power-orange shadow-power-orange/30 text-white shadow-lg"
+                    ? "bg-power-orange-solid shadow-power-orange/30 text-white shadow-lg"
                     : "bg-white text-slate-400 shadow-[0_2px_8px_rgb(0,0,0,0.05)] dark:bg-slate-800"
               }`}
             >

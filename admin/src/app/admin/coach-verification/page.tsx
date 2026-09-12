@@ -435,7 +435,7 @@ export default function AdminCoachVerificationPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
                         currentPage === page
-                          ? "bg-power-orange text-white"
+                          ? "bg-power-orange-solid text-white"
                           : "border border-slate-300 text-slate-700 hover:bg-slate-50"
                       }`}
                     >

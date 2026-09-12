@@ -252,7 +252,7 @@ export default function AdminAcademiesPage() {
         />
         <Link
           href="/admin/academies/add"
-          className="bg-power-orange inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          className="bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
         >
           <Plus size={16} />
           Create Academy

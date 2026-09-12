@@ -105,7 +105,7 @@ export default function AdminDataSourcesPage() {
         action={
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className="bg-power-orange inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
           >
             <Plus size={16} /> Add Source
           </button>
@@ -507,7 +507,7 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
             onClick={() => setSourceKind("LINK")}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
               sourceKind === "LINK"
-                ? "bg-power-orange text-white"
+                ? "bg-power-orange-solid text-white"
                 : "border border-slate-300 text-slate-700"
             }`}
           >
@@ -518,7 +518,7 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
             onClick={() => setSourceKind("PDF")}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
               sourceKind === "PDF"
-                ? "bg-power-orange text-white"
+                ? "bg-power-orange-solid text-white"
                 : "border border-slate-300 text-slate-700"
             }`}
           >

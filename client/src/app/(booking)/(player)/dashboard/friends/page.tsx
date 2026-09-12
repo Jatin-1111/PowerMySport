@@ -302,7 +302,7 @@ export default function FriendsPage() {
           <TabsList className="shop-surface premium-shadow grid h-auto w-full grid-cols-3 border border-slate-200/60 p-1">
             <TabsTrigger
               value="friends"
-              className="data-[state=active]:bg-power-orange flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
+              className="data-[state=active]:bg-power-orange-solid flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
             >
               <Users className="h-4 w-4" />
               Friends
@@ -317,7 +317,7 @@ export default function FriendsPage() {
             </TabsTrigger>
             <TabsTrigger
               value="requests"
-              className="data-[state=active]:bg-power-orange flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
+              className="data-[state=active]:bg-power-orange-solid flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
             >
               <Clock className="h-4 w-4" />
               Requests
@@ -329,7 +329,7 @@ export default function FriendsPage() {
             </TabsTrigger>
             <TabsTrigger
               value="search"
-              className="data-[state=active]:bg-power-orange flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
+              className="data-[state=active]:bg-power-orange-solid flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
             >
               <Search className="h-4 w-4" />
               Search

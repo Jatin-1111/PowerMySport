@@ -187,7 +187,7 @@ export default function PlayerDetailsModal({
                       onChat(profile.id);
                       onClose();
                     }}
-                    className="bg-power-orange/90 hover:bg-power-orange flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm transition"
+                    className="bg-power-orange-solid/90 hover:bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm transition"
                   >
                     <MessageSquare size={16} /> Send Message
                   </button>

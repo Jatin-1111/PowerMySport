@@ -488,7 +488,7 @@ function RegisterContent() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="bg-power-orange focus:ring-power-orange/20 group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-600 hover:shadow-orange-500/30 focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60"
+            className="bg-power-orange-solid focus:ring-power-orange/20 group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white shadow-lg shadow-orange-500/25 transition-all duration-200 hover:bg-orange-600 hover:shadow-orange-500/30 focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? (
               <>

@@ -207,7 +207,7 @@ export default function SubscriptionsPage() {
                 onClick={() => setFilter(item.value as SubscriptionFilter)}
                 className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
                   filter === item.value
-                    ? "border-power-orange bg-power-orange text-white shadow-sm"
+                    ? "border-power-orange-solid bg-power-orange-solid text-white shadow-sm"
                     : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
                 }`}
               >

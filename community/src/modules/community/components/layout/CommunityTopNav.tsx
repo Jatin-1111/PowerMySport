@@ -178,7 +178,7 @@ export default function CommunityTopNav() {
               <MessagesSquare size={16} />
               Chats
               {unreadChatsCount > 0 && (
-                <span className="bg-power-orange absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="bg-power-orange-solid absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                   {unreadChatsCount > 99 ? "99+" : unreadChatsCount}
                 </span>
               )}
@@ -208,7 +208,7 @@ export default function CommunityTopNav() {
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="bg-power-orange absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="bg-power-orange-solid absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -274,7 +274,7 @@ export default function CommunityTopNav() {
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="bg-power-orange absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-white">
+                <span className="bg-power-orange-solid absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-white">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -381,7 +381,7 @@ export default function CommunityTopNav() {
                         <Icon size={15} />
                         {label}
                         {!!badge && badge > 0 && (
-                          <span className="bg-power-orange absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                          <span className="bg-power-orange-solid absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white ring-2 ring-white">
                             {badge > 99 ? "99+" : badge}
                           </span>
                         )}
@@ -397,7 +397,7 @@ export default function CommunityTopNav() {
                       <Bell size={15} />
                       Notifications
                       {unreadCount > 0 && (
-                        <span className="bg-power-orange inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        <span className="bg-power-orange-solid inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white">
                           {unreadCount > 99 ? "99+" : unreadCount}
                         </span>
                       )}

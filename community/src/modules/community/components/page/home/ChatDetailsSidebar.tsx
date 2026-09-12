@@ -165,7 +165,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                     </p>
                     <button
                       onClick={handleMessageSelectedMember}
-                      className="bg-power-orange mt-3 flex w-full max-w-[200px] items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 active:scale-95"
+                      className="bg-power-orange-solid mt-3 flex w-full max-w-[200px] items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 active:scale-95"
                     >
                       <MessageSquare size={16} />
                       Message

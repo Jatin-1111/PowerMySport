@@ -336,7 +336,7 @@ export default function CreateCommunityModal({
                   type="submit"
                   form="create-community-form"
                   disabled={isSubmitting}
-                  className="bg-power-orange shadow-power-orange/20 focus:ring-power-orange/20 inline-flex min-w-[140px] items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="bg-power-orange-solid shadow-power-orange/20 focus:ring-power-orange/20 inline-flex min-w-[140px] items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <>

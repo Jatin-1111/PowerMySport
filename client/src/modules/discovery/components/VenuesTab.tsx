@@ -483,7 +483,7 @@ export default function VenuesTab() {
                             e.stopPropagation();
                             router.push(`/checkout?type=venue&venueId=${venueId}`);
                           }}
-                          className="bg-power-orange flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
+                          className="bg-power-orange-solid flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
                         >
                           Book <ArrowRight size={14} />
                         </button>
@@ -522,7 +522,7 @@ export default function VenuesTab() {
                         className={cn(
                           "h-9 min-w-9 rounded-lg px-3 text-sm font-medium transition-all",
                           currentPage === pageNum
-                            ? "bg-power-orange text-white shadow"
+                            ? "bg-power-orange-solid text-white shadow"
                             : "hover:border-power-orange hover:text-power-orange border border-slate-200 bg-white text-slate-700"
                         )}
                       >

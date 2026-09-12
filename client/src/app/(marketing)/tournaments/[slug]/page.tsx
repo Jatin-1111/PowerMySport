@@ -373,7 +373,7 @@ export default async function TournamentEditionPage({
               href={factSheet.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-power-orange mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition hover:opacity-90"
+              className="bg-power-orange-solid mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition hover:opacity-90"
             >
               <FileText className="h-4 w-4" />
               Open the fact sheet

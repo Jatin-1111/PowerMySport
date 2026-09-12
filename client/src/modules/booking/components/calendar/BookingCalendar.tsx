@@ -178,7 +178,7 @@ function CalendarCell({
         isCurrentMonth ? "text-slate-800" : "text-slate-300",
         isToday && !isSelected && "font-bold",
         isSelected
-          ? "bg-power-orange ring-power-orange/40 text-white shadow-md ring-2"
+          ? "bg-power-orange-solid ring-power-orange/40 text-white shadow-md ring-2"
           : isToday
             ? "ring-power-orange/40 bg-orange-50 ring-1"
             : "hover:bg-slate-100"
@@ -811,7 +811,7 @@ export function BookingCalendar() {
                         className={cn(
                           "rounded-lg px-3 py-1 text-xs font-semibold transition-all",
                           bookingTab === tab
-                            ? "bg-power-orange text-white shadow-sm"
+                            ? "bg-power-orange-solid text-white shadow-sm"
                             : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                         )}
                       >
