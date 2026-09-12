@@ -21,6 +21,6 @@
   "app/(marketing)/how-it-works/page.tsx": 730,
   "app/(marketing)/parental-consent/page.tsx": 478,
   "app/(marketing)/rankings/[sport]/players/[regNo]/page.tsx": 463,
-  "app/(marketing)/tournaments/[slug]/page.tsx": 476,
+  "app/(marketing)/tournaments/[slug]/page.tsx": 551,
   "app/notifications/page.tsx": 753
 }

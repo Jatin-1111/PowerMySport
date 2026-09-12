@@ -1,21 +1,15 @@
 import { CalendarDays, FileText, Globe, Trophy, Users } from "lucide-react";
 import type { Tournament } from "@/modules/pathway/services/pathway";
 import { getSportArchetypeInfo } from "@/modules/sports/config/sportArchetypes";
+import { SPORT_LABEL } from "@/modules/pathway/config/tournamentDisplay";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const SPORT_LABEL: Record<string, string> = {
-  cricket: "Cricket",
-  tennis: "Tennis",
-  chess: "Chess",
-  football: "Football",
-  basketball: "Basketball",
-  hockey: "Hockey",
-  "table-tennis": "Table Tennis",
-  swimming: "Swimming",
-  badminton: "Badminton",
-  volleyball: "Volleyball",
-};
+// SPORT_LABEL now lives in modules/pathway/config (src/modules code that also
+// needs it can't import an src/app file across the module boundary) and is
+// re-exported here under its original name so every existing importer of
+// this file keeps working unchanged.
+export { SPORT_LABEL };
 
 export const TYPE_META = {
   govt: {

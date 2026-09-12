@@ -1,14 +1,14 @@
 import type { TournamentEdition } from "@/modules/pathway/services/pathway";
+import { CAL_TZ } from "@/modules/pathway/config/tournamentDisplay";
 
 // Shared by the calendar's browse-all view and the player-event finder, so a
 // tournament row looks and reads the same in both.
 //
-// Editions are calendar dates stored as UTC midnight, so every read below uses
-// UTC getters / `timeZone: "UTC"` — otherwise a viewer west of UTC sees every
-// tournament shifted a day earlier. Separately: ICU returns a broken string
-// (e.g. "2026 (day: 31)") when "day"+"year" are requested without "month", so
-// every option bag that asks for a day must also ask for a month.
-export const CAL_TZ = "UTC";
+// CAL_TZ now lives in modules/pathway/config (src/modules code that also
+// needs it can't import an src/app file across the module boundary) and is
+// re-exported here under its original name so every existing importer of
+// this file keeps working unchanged.
+export { CAL_TZ };
 
 export const LEVEL_COLORS: Record<string, { pill: string; dot: string }> = {
   international: { pill: "bg-rose-50 text-rose-700 border-rose-200", dot: "bg-rose-500" },
