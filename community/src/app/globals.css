@@ -1,11 +1,9 @@
 @import "tailwindcss";
+@import "@powermysport/shared-tokens/tokens.css";
 
 :root {
-  --power-orange: #e97316;
-  --deep-slate: #0f172a;
-  --ghost-white: #f8fafc;
-  --turf-green: #22c55e;
-  --error-red: #ef4444;
+  /* PowerMySport Brand Colors — see packages/shared-tokens/tokens.css,
+     imported above, for --power-orange/--power-orange-solid/etc. */
   --background: #f4f7ff;
   --foreground: #111827;
   --surface: #ffffff;
@@ -23,6 +21,7 @@
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --color-power-orange: var(--power-orange);
+  --color-power-orange-solid: var(--power-orange-solid);
   --color-deep-slate: var(--deep-slate);
   --color-ghost-white: var(--ghost-white);
   --color-turf-green: var(--turf-green);
