@@ -517,6 +517,102 @@ const SEED_DATA = [
     dataVerifiedAt: new Date("2026-07-28"),
     isActive: true,
   },
+
+  // ── Chess ──
+  //
+  // Added Sept 2026 alongside the contributed Chess pathway, whose closing
+  // section is about these two bodies — `/roadmap/chess` renders them in the
+  // federation band directly under the stages.
+  //
+  // NOTE: neither record carries `dataVerifiedAt`. That field means "a human
+  // cross-checked this against the official source", and scrapers are required
+  // to defer to anything that has it. These were written from a contributed
+  // guide, not from aicf.in and fide.com, so stamping it would lock unverified
+  // copy in place and tell every scraper to leave it alone. Stamp it once the
+  // pathway's own fact-check pass has been through the AICF handbook.
+  {
+    slug: "aicf",
+    name: "All India Chess Federation",
+    acronym: "AICF",
+    sportSlug: "chess",
+    type: "national" as const,
+    about:
+      "The All India Chess Federation (AICF) is the national governing body for chess in India, affiliated to FIDE, the world chess federation. AICF organises the National Chess Championship, the National Junior Championship (Under-19) and the age-category national events, assigns national ratings, manages player registration, and selects India's teams for international events including the Chess Olympiad and the Asian Games. A player registers with their state chess association first; that registration flows up to AICF.",
+    website: "https://aicf.in",
+    affiliations: ["FIDE", "Asian Chess Federation"],
+    keyFacts: [
+      "AICF national ratings are separate from FIDE international ratings — most juniors earn an AICF rating first.",
+      "Registration is through your state chess association, not directly with AICF.",
+      "AICF registration is required to enter any rated tournament in India.",
+      "AICF awards the National Master (NM) title at 2000 national rating.",
+    ],
+    eligibilityCriteria: {
+      ageCutoffRule:
+        "Age categories are determined by the player's age on 1 January of the competition year.",
+      categories: [
+        { name: "Under-7", maxAge: 7, genders: ["Open", "Girls"] },
+        { name: "Under-9", maxAge: 9, genders: ["Open", "Girls"] },
+        { name: "Under-11", maxAge: 11, genders: ["Open", "Girls"] },
+        { name: "Under-13", maxAge: 13, genders: ["Open", "Girls"] },
+        { name: "Under-15", maxAge: 15, genders: ["Open", "Girls"] },
+        { name: "Under-17", maxAge: 17, genders: ["Open", "Girls"] },
+        { name: "Under-19", maxAge: 19, genders: ["Open", "Girls"] },
+      ],
+      registrationRequired: true,
+      stateAssociationFirst: true,
+      notes:
+        "Build district results first, then state, then national. Entering national events before a consistent state record is expensive and discouraging.",
+    },
+    registrationSteps: [
+      "Register with your state chess association — this is the entry point, not AICF directly.",
+      "Obtain your AICF registration / player ID through that association.",
+      "Enter a school or district-level AICF-rated event to earn a first national rating.",
+      "A FIDE ID is issued automatically the first time you play a FIDE-rated event; the organiser usually handles this for first-timers.",
+    ],
+    requiredDocuments: [
+      "Birth certificate or Aadhaar card — for age-category verification",
+      "Recent passport-size photographs",
+      "State chess association registration confirmation",
+      "Parent / guardian consent — for players under 18",
+      "Entry fee payment proof as specified in the tournament circular",
+    ],
+    sourceUrls: ["https://aicf.in"],
+    isActive: true,
+  },
+  {
+    slug: "fide",
+    name: "Fédération Internationale des Échecs",
+    acronym: "FIDE",
+    sportSlug: "chess",
+    type: "national" as const,
+    about:
+      "FIDE is the world governing body for chess, founded in 1924 and recognised by the International Olympic Committee. It maintains the international Elo rating system, the title system from Candidate Master to Grandmaster, the World Championship cycle, the FIDE World Cup, the Chess Olympiad and the international age-category championships. Every rated player worldwide holds a FIDE ID, issued automatically on entering a first FIDE-rated event.",
+    founded: 1924,
+    website: "https://www.fide.com",
+    keyFacts: [
+      "FIDE Elo ratings are international and separate from AICF national ratings.",
+      "Titles in ascending order: Candidate Master, FIDE Master, International Master, Grandmaster, with women's titles at each level.",
+      "IM and GM titles require rating norms — performance results in eligible FIDE-rated events — as well as a rating.",
+      "Titles are permanent once earned and are recognised worldwide.",
+    ],
+    eligibilityCriteria: {
+      categories: [
+        { name: "Under-8", maxAge: 8, genders: ["Open", "Girls"] },
+        { name: "Under-10", maxAge: 10, genders: ["Open", "Girls"] },
+        { name: "Under-12", maxAge: 12, genders: ["Open", "Girls"] },
+        { name: "Under-14", maxAge: 14, genders: ["Open", "Girls"] },
+        { name: "Under-16", maxAge: 16, genders: ["Open", "Girls"] },
+        { name: "Under-18", maxAge: 18, genders: ["Open", "Girls"] },
+        { name: "Under-20", maxAge: 20, genders: ["Open", "Girls"] },
+      ],
+      registrationRequired: true,
+      stateAssociationFirst: true,
+      notes:
+        "Indian players reach FIDE events through AICF. Selection for the World Youth and Asian Youth championships is made by AICF on FIDE rating and national championship results.",
+    },
+    sourceUrls: ["https://www.fide.com", "https://handbook.fide.com"],
+    isActive: true,
+  },
 ];
 
 async function main() {
