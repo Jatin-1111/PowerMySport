@@ -9,9 +9,9 @@ npm install
 npm run dev         # nodemon + ts-node, src/server.ts
 ```
 
-Copy `.env.example` to `.env`. See categories below; **note the real config var is `MONGO_URI`, not `MONGODB_URI`** as `.env.example` currently documents — a mismatch worth fixing but currently load-bearing, so don't "correct" it in one file without checking `src/config/database.ts` and the other file agree.
+Copy `.env.example` to `.env`. It documents the real var name (`MONGO_URI`, fixed as of 2026-09-14 — it used to say `MONGODB_URI`, which didn't match `src/config/database.ts`).
 
-⚠️ **Local dev connects to the same MongoDB cluster as production** by default (the URI has no db-name path segment, so both resolve to the same `test` database). Every "local" write against a default connection string is a production write — see the project's `project_dev_db_is_real_data` note before running scripts/migrations without deliberately overriding the connection string.
+**Database split (as of 2026-09-14):** the shared Atlas cluster hosts two separate databases — `dev` (local work, safe to break) and `test` (production — the name is historical and intentionally not renamed; renaming would have required a full data copy against a nearly-full free-tier storage quota). Local `.env` must point `MONGO_URI` at `/dev` explicitly; the deployed production environment's `MONGO_URI` must point at `/test` explicitly. `src/config/database.ts` logs a loud warning on boot if a non-production run ever resolves to `test`, so a misconfigured URI doesn't fail silently again.
 
 ## Scripts
 

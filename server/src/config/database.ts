@@ -19,6 +19,18 @@ export const connectDB = async (): Promise<void> => {
 
     const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
 
+    // `test` is the production database (see server/README.md). A MONGO_URI
+    // with no explicit db-name path segment silently resolves there via
+    // Mongoose's own fallback — this caught out local dev before the dev/test
+    // split existed. Loud warning, not a hard failure, since some ops scripts
+    // may have a legitimate one-off reason to target it directly.
+    const resolvedDbName = new URL(mongoUri.replace(/^mongodb\+srv:/, "https:")).pathname.slice(1);
+    if (process.env.NODE_ENV !== "production" && resolvedDbName === "test") {
+      log.error(
+        "MONGO_URI resolves to the `test` (production) database outside NODE_ENV=production — this is almost certainly a mistake. Add an explicit /dev path to MONGO_URI."
+      );
+    }
+
     // Mongoose connection options for pooling and reliability.
     // A pool of 10 becomes a real bottleneck under concurrent load well
     // before any individual query's latency does — requests queue for a
