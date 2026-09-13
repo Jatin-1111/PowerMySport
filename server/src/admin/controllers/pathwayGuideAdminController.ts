@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 
-import { PathwayGuide, type PathwayStageDocument } from "../../shared/models/PathwayGuide";
+import {
+  PathwayGuide,
+  type PathwayContributorDocument,
+  type PathwayStageDocument,
+} from "../../shared/models/PathwayGuide";
 import {
   PATHWAY_FORMAT_VERSION,
   formatPathwayIssues,
@@ -8,6 +12,9 @@ import {
   parsePathwayStage,
   PathwayGuideSchema,
 } from "../../shared/validation/pathwayGuideFormat";
+import { Coach } from "../../client/models/Coach";
+import { Expert } from "../../client/models/ExpertProfile";
+import { User } from "../../client/models/User";
 import { recordAuditLog } from "../services/AuditLogService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -65,6 +72,10 @@ const compact = <T extends Record<string, unknown>>(value: T): Partial<T> =>
 const plainStages = (doc: { stages?: PathwayStageDocument[] }): PathwayStageDocument[] =>
   (doc.stages ?? []).map((stage) => JSON.parse(JSON.stringify(stage))) as PathwayStageDocument[];
 
+/** Same round trip as `plainStages`, and for the same reason. */
+const plainContributor = (contributor: PathwayContributorDocument): unknown =>
+  JSON.parse(JSON.stringify(contributor));
+
 const badRequest = (res: Response, message: string, errors?: string[]): void => {
   res.status(400).json({ success: false, message, ...(errors ? { errors } : {}) });
 };
@@ -100,6 +111,72 @@ export const getPathwayGuide = asyncHandler(async (req: Request, res: Response):
   if (!doc) throw new AppError("No pathway guide with that id.", 404);
   res.json({ success: true, data: doc });
 });
+
+// ─── GET /api/admin/pathway-guides/contributors?type=coach&q=lalit ───────────
+//
+// The byline picker. Contributors are people who already have a profile on the
+// platform, and the CMS has to let an author attach one WITHOUT typing a Mongo
+// id — pasting raw ids into a form is both unusable and the exact pattern the
+// admin audit cleaned out of these pages.
+//
+// Its own endpoint rather than the existing coach/expert admin listings: those
+// page through everything filtered by verification status, and what this needs
+// is "find me the three people called Lalit". It also returns both kinds in the
+// one shape the form binds to, so the picker has no per-type branch.
+//
+// Only currently-bookable people are searchable. Attaching someone unverified
+// would store a pointer the public reader then refuses to render — better that
+// the CMS cannot offer the choice than that it silently does nothing.
+const CONTRIBUTOR_SEARCH_LIMIT = 10;
+
+export const searchPathwayContributors = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const type = req.query.type === "expert" ? "expert" : "coach";
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    if (q.length < 2) {
+      return void res.json({ success: true, data: [] });
+    }
+
+    // Escaped: an admin typing "C++ coach" should search for that, not blow up
+    // the regex compiler.
+    const nameMatch = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+    const users = await User.find({ name: nameMatch }).select("_id name").limit(50).lean();
+    const userIds = users.map((user) => user._id);
+    if (userIds.length === 0) {
+      return void res.json({ success: true, data: [] });
+    }
+    const nameByUser = new Map(users.map((user) => [String(user._id), user.name]));
+
+    const rows =
+      type === "coach"
+        ? await Coach.find({
+            userId: { $in: userIds },
+            isVerified: true,
+            verificationStatus: "VERIFIED",
+          })
+            .select("_id userId sports")
+            .limit(CONTRIBUTOR_SEARCH_LIMIT)
+            .lean()
+        : await Expert.find({
+            userId: { $in: userIds },
+            isActive: true,
+            verificationStatus: "APPROVED",
+          })
+            .select("_id userId sports")
+            .limit(CONTRIBUTOR_SEARCH_LIMIT)
+            .lean();
+
+    res.json({
+      success: true,
+      data: (rows as Array<{ _id: unknown; userId: unknown; sports?: string[] }>).map((row) => ({
+        type,
+        id: String(row._id),
+        name: nameByUser.get(String(row.userId)) ?? "",
+        sports: row.sports ?? [],
+      })),
+    });
+  }
+);
 
 // ─── POST /api/admin/pathway-guides ──────────────────────────────────────────
 // Create the shell for a sport. Stages are added afterwards, one at a time —
@@ -161,11 +238,18 @@ export const updatePathwayGuide = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const body = req.body ?? {};
     const meta = PathwayGuideSchema.pick({ intro: true, sportIntro: true })
-      .extend({ reviewedOn: PathwayGuideSchema.shape.reviewedOn })
+      .extend({
+        reviewedOn: PathwayGuideSchema.shape.reviewedOn,
+        contributor: PathwayGuideSchema.shape.contributor,
+      })
       .safeParse({
         intro: body.intro ?? {},
         sportIntro: body.sportIntro ?? [],
         reviewedOn: body.reviewedOn,
+        // An empty contributor form posts `{}`, which is not a contributor —
+        // `name` is required, so passing it through would reject the whole save
+        // over a section the author never filled in. Treat nameless as absent.
+        contributor: body.contributor?.name ? body.contributor : undefined,
       });
 
     if (!meta.success) {
@@ -179,6 +263,9 @@ export const updatePathwayGuide = asyncHandler(
           intro: compact(meta.data.intro),
           sportIntro: meta.data.sportIntro,
           reviewedOn: meta.data.reviewedOn ?? null,
+          // `null`, not `undefined` — `$set: { contributor: undefined }` is a
+          // no-op in Mongo, so clearing the byline in the form would never stick.
+          contributor: meta.data.contributor ?? null,
           ...(req.user?.id ? { updatedBy: req.user.id } : {}),
         },
       },
@@ -226,6 +313,10 @@ export const setPathwayGuideStatus = asyncHandler(
         sportIntro: doc.sportIntro ?? [],
         stages: plainStages(doc),
         ...(doc.reviewedOn ? { reviewedOn: doc.reviewedOn } : {}),
+        // Round-tripped like `plainStages` above: this is a Mongoose subdocument,
+        // and the round trip both flattens it and turns `profile.id` from an
+        // ObjectId into the hex string the schema validates.
+        ...(doc.contributor?.name ? { contributor: plainContributor(doc.contributor) } : {}),
       });
       if (!check.ok) {
         return badRequest(res, "This guide isn't ready to publish yet.", check.errors);

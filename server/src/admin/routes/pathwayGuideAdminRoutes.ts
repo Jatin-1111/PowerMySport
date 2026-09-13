@@ -8,6 +8,7 @@ import {
   getPathwayGuide,
   listPathwayGuides,
   reorderPathwayStages,
+  searchPathwayContributors,
   setPathwayGuideStatus,
   updatePathwayGuide,
   updatePathwayStage,
@@ -25,6 +26,8 @@ const canManage = requirePermission("pathways:manage");
 
 // ── Guides ──
 router.get("/", canView, listPathwayGuides);
+// Before "/:id", or "contributors" is read as a guide id.
+router.get("/contributors", canView, searchPathwayContributors);
 router.post("/", canManage, createPathwayGuide);
 router.get("/:id", canView, getPathwayGuide);
 router.put("/:id", canManage, updatePathwayGuide);

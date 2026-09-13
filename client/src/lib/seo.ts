@@ -330,6 +330,15 @@ export function articleJsonLd(input: {
   dateModified?: string;
   section?: string;
   keywords?: string[];
+  /**
+   * A named human author, for a guide written by a contributor rather than by us.
+   *
+   * Defaults to the Organization below when absent, which is right for in-house
+   * copy — but a pathway written by a named coach should say so, and `author` is
+   * the field search engines read for that. `worksFor` is what carries their
+   * academy; `url` is their own site, not their profile on ours.
+   */
+  author?: { name: string; url?: string; organisation?: string };
 }): JsonLdObject {
   const url = absoluteUrl(input.path);
   return {
@@ -345,7 +354,16 @@ export function articleJsonLd(input: {
     ...(input.section ? { articleSection: input.section } : {}),
     ...(input.keywords?.length ? { keywords: input.keywords.join(", ") } : {}),
     inLanguage: "en-IN",
-    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    author: input.author
+      ? {
+          "@type": "Person",
+          name: input.author.name,
+          ...(input.author.url ? { url: input.author.url } : {}),
+          ...(input.author.organisation
+            ? { worksFor: { "@type": "Organization", name: input.author.organisation } }
+            : {}),
+        }
+      : { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
     publisher: {
       "@type": "Organization",
       name: SITE_NAME,

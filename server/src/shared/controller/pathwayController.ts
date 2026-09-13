@@ -4,6 +4,7 @@ import { AthleteStory } from "../models/AthleteStory";
 import { PathwayGuide } from "../models/PathwayGuide";
 import { Tournament } from "../models/Tournament";
 import { realDataScraperService } from "../services/RealDataScraperService";
+import { resolvePathwayContributor } from "../services/pathwayContributorService";
 import { log as __rootLog } from "../../utils/logger";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -44,6 +45,12 @@ export const getPathwayGuide = asyncHandler(async (req: Request, res: Response):
     throw new AppError(`No published pathway for "${sport}" yet.`, 404);
   }
 
+  // Resolved here rather than left to the browser. The pathway's whole job is to
+  // be readable and indexable without JavaScript, and the byline is the page's
+  // `author` in its structured data — a credit fetched client-side is a credit
+  // Google never sees. One extra lookup, only for a guide that has a contributor.
+  const contributor = await resolvePathwayContributor(guide.contributor);
+
   res.json({
     success: true,
     data: {
@@ -53,6 +60,7 @@ export const getPathwayGuide = asyncHandler(async (req: Request, res: Response):
       intro: guide.intro ?? {},
       sportIntro: guide.sportIntro ?? [],
       reviewedOn: guide.reviewedOn ?? null,
+      contributor,
       updatedAt: guide.updatedAt,
       stages: [...(guide.stages ?? [])].sort((a, b) => a.order - b.order),
     },

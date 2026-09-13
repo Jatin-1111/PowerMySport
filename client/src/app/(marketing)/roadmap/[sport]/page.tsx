@@ -9,6 +9,7 @@ import { articleJsonLd } from "@/lib/seo";
 import { FederationBand } from "@/modules/federations/components/FederationBand";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
+import { PathwayContributorCard } from "@/modules/pathway/components/PathwayContributorCard";
 import { PathwayReader } from "@/modules/pathway/components/PathwayReader";
 import {
   PathwayHelpSection,
@@ -95,6 +96,20 @@ export default async function SportPathwayPage({
               `${guide.sportName} for kids India`,
               `how to start ${guide.sportName} in India`,
             ],
+            // A contributed pathway is authored by a named person, not by us.
+            // This is the field that carries that into search results, so it has
+            // to come from the same credit the page renders.
+            ...(guide.contributor
+              ? {
+                  author: {
+                    name: guide.contributor.name,
+                    ...(guide.contributor.url ? { url: guide.contributor.url } : {}),
+                    ...(guide.contributor.organisation
+                      ? { organisation: guide.contributor.organisation }
+                      : {}),
+                  },
+                }
+              : {}),
           }),
         ]}
       />
@@ -148,6 +163,11 @@ export default async function SportPathwayPage({
       <section className="py-8 sm:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <PathwayReader guide={guide} initialStageKey={stageParam?.trim().toLowerCase()} />
+          {guide.contributor && (
+            <div className="mt-6">
+              <PathwayContributorCard contributor={guide.contributor} sportName={guide.sportName} />
+            </div>
+          )}
           {guide.reviewedOn && <p className="mt-4 text-xs text-slate-400">{guide.reviewedOn}</p>}
         </div>
       </section>

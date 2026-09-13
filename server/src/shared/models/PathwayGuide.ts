@@ -2,12 +2,17 @@ import mongoose, { Document, Schema } from "mongoose";
 
 import type {
   PathwayAction,
+  PathwayContributor,
+  PathwayContributorProfileType,
   PathwayNextStep,
   PathwayPoint,
   PathwayQuestion,
   PathwayStage,
 } from "../validation/pathwayGuideFormat";
-import { PATHWAY_FORMAT_VERSION } from "../validation/pathwayGuideFormat";
+import {
+  PATHWAY_CONTRIBUTOR_PROFILE_TYPES,
+  PATHWAY_FORMAT_VERSION,
+} from "../validation/pathwayGuideFormat";
 
 // ─── Pathway guide ───────────────────────────────────────────────────────────
 //
@@ -44,11 +49,43 @@ export interface PathwayGuideDocument extends Document {
   sportIntro: string[];
   stages: PathwayStageDocument[];
   reviewedOn?: string;
+  contributor?: PathwayContributorDocument;
   updatedBy?: mongoose.Types.ObjectId;
   publishedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
+
+/**
+ * The byline, plus an optional pointer at the contributor's platform profile.
+ *
+ * `profile.id` is an ObjectId rather than a string because the reader looks the
+ * document up by it; which COLLECTION it lives in is decided by `profile.type`,
+ * so there is no `ref` here and no populate — a `refPath` would need the model
+ * name stored alongside, which is the same enum spelled a second way.
+ */
+export interface PathwayContributorDocument extends Omit<PathwayContributor, "profile"> {
+  profile?: { type: PathwayContributorProfileType; id: mongoose.Types.ObjectId };
+}
+
+const contributorProfileSchema = new Schema<PathwayContributorDocument["profile"]>(
+  {
+    type: { type: String, required: true, enum: PATHWAY_CONTRIBUTOR_PROFILE_TYPES },
+    id: { type: Schema.Types.ObjectId, required: true },
+  },
+  { _id: false }
+);
+
+const contributorSchema = new Schema<PathwayContributorDocument>(
+  {
+    name: { type: String, required: true, trim: true },
+    organisation: { type: String, trim: true },
+    url: { type: String, trim: true },
+    blurb: { type: String, trim: true },
+    profile: { type: contributorProfileSchema, default: undefined },
+  },
+  { _id: false }
+);
 
 const actionSchema = new Schema<PathwayAction>(
   {
@@ -123,6 +160,7 @@ const pathwayGuideSchema = new Schema<PathwayGuideDocument>(
     sportIntro: { type: [String], default: [] },
     stages: { type: [stageSchema], default: [] },
     reviewedOn: { type: String, trim: true },
+    contributor: { type: contributorSchema, default: undefined },
     updatedBy: { type: Schema.Types.ObjectId, ref: "Admin", default: null },
     publishedAt: { type: Date, default: null },
   },

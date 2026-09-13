@@ -1145,12 +1145,31 @@ export const adminApi = {
     return response.data;
   },
 
+  /**
+   * Who can be attached as a pathway's contributor.
+   *
+   * Only people who are currently bookable come back — the public reader drops
+   * the link for anyone who isn't, so offering them here would store a pointer
+   * that silently renders as nothing.
+   */
+  searchPathwayContributors: async (
+    type: PathwayContributorType,
+    q: string
+  ): Promise<ApiResponse<AdminContributorMatch[]>> => {
+    const query = new URLSearchParams({ type, q });
+    const response = await axiosInstance.get(
+      `/admin/pathway-guides/contributors?${query.toString()}`
+    );
+    return response.data;
+  },
+
   updatePathwayGuide: async (
     id: string,
     payload: {
       intro?: AdminPathwayIntro;
       sportIntro?: string[];
       reviewedOn?: string;
+      contributor?: AdminPathwayContributor;
     }
   ): Promise<ApiResponse<AdminPathwayGuide>> => {
     const response = await axiosInstance.put(`/admin/pathway-guides/${id}`, payload);
@@ -1268,6 +1287,29 @@ export interface AdminPathwayStageStored extends AdminPathwayStage {
   order: number;
 }
 
+export type PathwayContributorType = "coach" | "expert";
+
+/** A search hit in the byline picker. */
+export interface AdminContributorMatch {
+  type: PathwayContributorType;
+  id: string;
+  name: string;
+  sports: string[];
+}
+
+/**
+ * The byline. `name` and `organisation` are stored on the guide so the credit
+ * survives the linked account changing; `profile` is the optional pointer that
+ * supplies the photo and the booking button while that person is bookable.
+ */
+export interface AdminPathwayContributor {
+  name: string;
+  organisation?: string;
+  url?: string;
+  blurb?: string;
+  profile?: { type: PathwayContributorType; id: string };
+}
+
 export interface AdminPathwayGuide {
   _id: string;
   sportSlug: string;
@@ -1278,6 +1320,7 @@ export interface AdminPathwayGuide {
   sportIntro: string[];
   stages: AdminPathwayStageStored[];
   reviewedOn?: string;
+  contributor?: AdminPathwayContributor | null;
   publishedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;

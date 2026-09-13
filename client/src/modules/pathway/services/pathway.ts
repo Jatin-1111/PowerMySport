@@ -107,6 +107,31 @@ export interface PathwayStage {
   helpLinks: PathwayAction[];
 }
 
+/**
+ * The byline, as the API returns it.
+ *
+ * `name`/`organisation` are stored with the guide, so they are here whatever
+ * happened to the contributor's account. `profile` is resolved server-side and
+ * is present ONLY while that person is publicly bookable — the API drops it for
+ * an unverified, deactivated or deleted profile, so "no link" and "link we would
+ * not honour" reach the page as the same thing and the reader needs one branch.
+ */
+export interface PathwayContributorProfile {
+  type: "coach" | "expert";
+  id: string;
+  href: string;
+  ctaLabel: string;
+  photoUrl?: string;
+}
+
+export interface PathwayContributor {
+  name: string;
+  organisation?: string;
+  url?: string;
+  blurb?: string;
+  profile?: PathwayContributorProfile;
+}
+
 export interface PathwayGuide {
   sportSlug: string;
   sportName: string;
@@ -114,6 +139,8 @@ export interface PathwayGuide {
   intro: { eyebrow?: string; headline?: string; description?: string };
   sportIntro: string[];
   reviewedOn: string | null;
+  /** Null for a pathway written in-house, which is most of them. */
+  contributor: PathwayContributor | null;
   updatedAt?: string;
   stages: PathwayStage[];
 }

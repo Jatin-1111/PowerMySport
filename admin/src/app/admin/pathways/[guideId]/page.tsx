@@ -12,6 +12,7 @@
 
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { ContributorPicker } from "@/modules/admin/components/pathway/ContributorPicker";
 import { emptyStage, StageEditor } from "@/modules/admin/components/pathway/StageEditor";
 import {
   ErrorList,
@@ -22,6 +23,7 @@ import {
 } from "@/modules/admin/components/pathway/fields";
 import {
   adminApi,
+  type AdminPathwayContributor,
   type AdminPathwayGuide,
   type AdminPathwayStage,
 } from "@/modules/admin/services/admin";
@@ -42,6 +44,26 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { readApiErrors } from "../page";
+
+/**
+ * Drop the blank fields before saving.
+ *
+ * The form holds every optional field as "" so the inputs stay controlled, and
+ * the schema rejects an empty string where it would accept an absent key — so
+ * posting the draft as-is fails validation on fields the author left alone.
+ */
+function trimContributor(draft: AdminPathwayContributor): AdminPathwayContributor {
+  const organisation = draft.organisation?.trim();
+  const url = draft.url?.trim();
+  const blurb = draft.blurb?.trim();
+  return {
+    name: draft.name.trim(),
+    ...(organisation ? { organisation } : {}),
+    ...(url ? { url } : {}),
+    ...(blurb ? { blurb } : {}),
+    ...(draft.profile ? { profile: draft.profile } : {}),
+  };
+}
 
 /** `null` = the "add a stage" form; a string = the key of the stage being edited. */
 type Selection = string | null;
@@ -64,6 +86,8 @@ export default function AdminPathwayEditPage() {
   const [description, setDescription] = useState("");
   const [sportIntro, setSportIntro] = useState<string[]>([]);
   const [reviewedOn, setReviewedOn] = useState("");
+  // An empty name is how "no contributor" is spelled — see `saveMeta`.
+  const [contributor, setContributor] = useState<AdminPathwayContributor>({ name: "" });
   const [metaSaving, setMetaSaving] = useState(false);
   const [metaErrors, setMetaErrors] = useState<string[]>([]);
   const [statusSaving, setStatusSaving] = useState(false);
@@ -76,6 +100,7 @@ export default function AdminPathwayEditPage() {
     setDescription(next.intro?.description ?? "");
     setSportIntro(next.sportIntro ?? []);
     setReviewedOn(next.reviewedOn ?? "");
+    setContributor(next.contributor ?? { name: "" });
   }, []);
 
   const load = useCallback(async () => {
@@ -110,6 +135,11 @@ export default function AdminPathwayEditPage() {
         },
         sportIntro: sportIntro.filter((p) => p.trim()),
         ...(reviewedOn.trim() ? { reviewedOn: reviewedOn.trim() } : {}),
+        // The name carries the whole section: without one there is no byline to
+        // render, so an organisation or a link on its own is not a contributor.
+        // Omitting the key clears any byline already stored, which is what an
+        // author who blanked the name meant.
+        ...(contributor.name.trim() ? { contributor: trimContributor(contributor) } : {}),
       });
       if (res.data) adopt(res.data);
       toast.success("Saved.");
@@ -285,6 +315,15 @@ export default function AdminPathwayEditPage() {
         <Field label="Reviewed on" hint="Free text, e.g. “Reviewed with AITA coaches, Aug 2026”.">
           <TextInput value={reviewedOn} onChange={setReviewedOn} />
         </Field>
+
+        <div className="border-t border-slate-100 pt-5">
+          <p className="text-sm font-bold text-slate-800">Contributed by</p>
+          <p className="mb-3 mt-0.5 text-xs text-slate-400">
+            For a pathway written by someone outside the team. Credited on the page and in its
+            structured data.
+          </p>
+          <ContributorPicker value={contributor} onChange={setContributor} />
+        </div>
 
         <ErrorList errors={metaErrors} />
 

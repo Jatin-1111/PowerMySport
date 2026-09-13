@@ -78,6 +78,54 @@ export const PathwayActionSchema = z.object({
     .optional(),
 });
 
+// ─── The contributor ─────────────────────────────────────────────────────────
+//
+// A pathway can be written by someone on the platform — the Chess guide was
+// contributed by a coach we have onboarded — and the credit has to survive that
+// person's account changing underneath it.
+//
+// So the byline is DENORMALISED (`name`, `organisation`, `url`) and the platform
+// profile is a separate, optional pointer. A published pathway that silently
+// loses its author because a coach failed re-verification is worse than a byline
+// whose job title is a month stale; the live lookup is only for the things that
+// SHOULD disappear when someone is no longer bookable — their photo, their
+// verified badge, and the booking button.
+//
+// `profile` is one discriminated `{ type, id }` rather than a nullable
+// `coachId` plus a nullable `expertId`. Two fields is four states, two of them
+// nonsense, and no form can stop an author setting both; one enum plus one id is
+// a single branch for every reader, and "academy" or "venue" later is one more
+// entry in the enum rather than a third nullable column.
+
+export const PATHWAY_CONTRIBUTOR_PROFILE_TYPES = ["coach", "expert"] as const;
+
+export type PathwayContributorProfileType = (typeof PATHWAY_CONTRIBUTOR_PROFILE_TYPES)[number];
+
+export const PathwayContributorProfileSchema = z.object({
+  type: z.enum(PATHWAY_CONTRIBUTOR_PROFILE_TYPES),
+  /** Mongo id of the Coach or ExpertProfile document, as a hex string. */
+  id: z
+    .string()
+    .trim()
+    .regex(/^[0-9a-f]{24}$/i, "must be a 24-character hex id"),
+});
+
+export const PathwayContributorSchema = z.object({
+  /** Shown as the byline. Stored here, not read from the linked profile. */
+  name: trimmed(120),
+  organisation: z.string().trim().max(160).optional(),
+  /** The contributor's own site — absolute http(s), not a site-relative path. */
+  url: z
+    .string()
+    .trim()
+    .max(300)
+    .refine((v) => /^https?:\/\//.test(v), "must start with http(s)://")
+    .optional(),
+  /** One line of credentials, e.g. "Coach, ChessMates Academy". */
+  blurb: z.string().trim().max(400).optional(),
+  profile: PathwayContributorProfileSchema.optional(),
+});
+
 // ─── A stage ─────────────────────────────────────────────────────────────────
 
 export const PathwayStageSchema = z.object({
@@ -123,8 +171,12 @@ export const PathwayGuideSchema = z.object({
   stages: z.array(PathwayStageSchema).min(1).max(12),
   /** Free text, e.g. "Reviewed with AITA coaches, Aug 2026". */
   reviewedOn: z.string().trim().max(120).optional(),
+  /** Who wrote it, when a pathway is contributed rather than written in-house. */
+  contributor: PathwayContributorSchema.optional(),
 });
 
+export type PathwayContributorProfile = z.infer<typeof PathwayContributorProfileSchema>;
+export type PathwayContributor = z.infer<typeof PathwayContributorSchema>;
 export type PathwayQuestion = z.infer<typeof PathwayQuestionSchema>;
 export type PathwayPoint = z.infer<typeof PathwayPointSchema>;
 export type PathwayNextStep = z.infer<typeof PathwayNextStepSchema>;
