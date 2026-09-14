@@ -25,19 +25,6 @@ import { log as __rootLog } from "./utils/logger";
 const log = __rootLog.child("server");
 const PORT = process.env.PORT || 5000;
 
-/**
- * Whether this process should run the background writers (crons, outbox worker).
- *
- * Production runs them; nothing else does unless it says so. `RUN_SCHEDULERS`
- * is read as an explicit opt-in/opt-out and wins over the default either way.
- */
-const runSchedulers = (): boolean => {
-  const flag = process.env.RUN_SCHEDULERS?.trim().toLowerCase();
-  if (flag === "true" || flag === "1") return true;
-  if (flag === "false" || flag === "0") return false;
-  return process.env.NODE_ENV === "production";
-};
-
 let stopOutboxWorker: (() => void) | null = null;
 
 const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, "").toLowerCase();
@@ -166,55 +153,29 @@ const startServer = async () => {
           // Periodic terminal digest (dev by default, opt-in via LOG_DIGEST_MS).
           startLogDigest();
 
-          // ── Background writers ──
-          //
-          // Everything below WRITES: real emails to real users, expired
-          // bookings, drained outbox messages, scraped tournament rows,
-          // ingested ranking snapshots. None of it is tied to a request, so it
-          // runs against whatever database the process happens to point at.
-          //
-          // That is why it is gated. Local development frequently has to point
-          // at the production database — the dev database has no real data and
-          // the cluster's free tier rules out keeping a full copy in both — and
-          // a laptop that boots the schedulers while pointed there emails
-          // customers and ingests data on prod's behalf. That is not
-          // hypothetical: a dev-server cron auto-ingested into production on
-          // 2026-08-29.
-          //
-          // Default is production-only, so the deployed server needs no new
-          // env var and a local boot is safe by default. `RUN_SCHEDULERS`
-          // overrides in both directions for the rare case that wants the
-          // opposite (a staging box that should run them, or a production
-          // shell that should not).
-          if (runSchedulers()) {
-            initializeScheduledJobs();
+          initializeScheduledJobs();
 
-            // Start booking expiration job
-            startExpirationJob();
+          // Start booking expiration job
+          startExpirationJob();
 
-            // Start reminder scheduler
-            initializeReminderScheduler();
+          // Start reminder scheduler
+          initializeReminderScheduler();
 
-            // Daily sweep: "share your experience?" nudges for recently-
-            // completed venue/academy/coach bookings and expert sessions.
-            initializeExperienceNudgeScheduler();
+          // Daily sweep: "share your experience?" nudges for recently-
+          // completed venue/academy/coach bookings and expert sessions.
+          initializeExperienceNudgeScheduler();
 
-            // Start outbox worker to handle message notification delivery and retries
-            stopOutboxWorker = startOutboxWorker();
-            bootFact("jobs", "outbox");
+          // Start outbox worker to handle message notification delivery and retries
+          stopOutboxWorker = startOutboxWorker();
+          bootFact("jobs", "outbox");
 
-            // Weekly Lane-B scrapers + every-2-days Lane-A tournament calendar
-            // extraction. (Was imported but never invoked before — the weekly
-            // scraper cron had silently never been running.)
-            initializeScraperScheduler();
+          // Weekly Lane-B scrapers + every-2-days Lane-A tournament calendar
+          // extraction. (Was imported but never invoked before — the weekly
+          // scraper cron had silently never been running.)
+          initializeScraperScheduler();
 
-            // Hourly tripwire + Thursday sweep for the AITA ranking mirror.
-            initializeAitaRankingScheduler();
-          } else {
-            // Stated on every boot rather than logged quietly: "why did the
-            // reminder email never go out" is the question this answers.
-            bootFact("jobs", "schedulers OFF (set RUN_SCHEDULERS=true to enable)");
-          }
+          // Hourly tripwire + Thursday sweep for the AITA ranking mirror.
+          initializeAitaRankingScheduler();
 
           // Everything above has registered its boot facts; print the block.
           bootReady();
