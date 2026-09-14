@@ -125,43 +125,50 @@ export default async function SportPathwayPage({
             All sports
           </Link>
 
-          {/* Top-aligned, not bottom-aligned. These two columns have
-              independent heights — the "About" card grows with however many
-              intro paragraphs a sport has — and bottom-aligning them pushed the
-              shorter column down by the difference. Tennis has three short
-              paragraphs and looked fine; Chess has four longer ones, which left
-              a screen-height void above the headline. */}
-          <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="mb-3">
-                <SectionLabel
-                  label={guide.intro.eyebrow ?? `${guide.sportName} pathway · for parents`}
-                  color="orange"
-                />
-              </div>
-              <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl">
-                {guide.intro.headline ?? "Understand. Question. Observe. Decide. Act."}
-              </h1>
-              {guide.intro.description && (
-                <p className="mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
-                  {guide.intro.description}
-                </p>
-              )}
+          {/* The hero is the headline block alone.
+              "About <sport>" used to sit beside it as a sidebar card, which
+              only worked while the two columns happened to be the same height.
+              They are not related: the card grows with however many intro
+              paragraphs a sport has, so whichever column was shorter left dead
+              space — bottom-aligned it was a void above the headline, top-
+              aligned it was a void below. Tennis has three short paragraphs and
+              got away with it; Chess has four longer ones and did not.
+              It reads as prose, so it is laid out as prose, below. */}
+          <div className="mt-4 max-w-3xl">
+            <div className="mb-3">
+              <SectionLabel
+                label={guide.intro.eyebrow ?? `${guide.sportName} pathway · for parents`}
+                color="orange"
+              />
             </div>
-
-            {guide.sportIntro.length > 0 && (
-              <aside className="premium-shadow w-full rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm lg:max-w-sm">
-                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
-                  About {guide.sportName}
-                </p>
-                <div className="mt-2 space-y-2 text-sm leading-relaxed text-slate-600">
-                  {guide.sportIntro.map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
-                  ))}
-                </div>
-              </aside>
+            <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl">
+              {guide.intro.headline ?? "Understand. Question. Observe. Decide. Act."}
+            </h1>
+            {guide.intro.description && (
+              <p className="mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
+                {guide.intro.description}
+              </p>
             )}
           </div>
+
+          {/* Two balanced columns on desktop, one on mobile. `columns` rather
+              than a grid so the paragraphs flow and the two sides end level
+              whatever the sport's intro length is — a grid would put a fixed
+              number of paragraphs in each and go lopsided at odd counts. */}
+          {guide.sportIntro.length > 0 && (
+            <section className="mt-8 border-t border-slate-200/70 pt-6">
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                About {guide.sportName}
+              </p>
+              <div className="mt-3 gap-x-10 text-base leading-relaxed text-slate-600 lg:columns-2">
+                {guide.sportIntro.map((paragraph) => (
+                  <p key={paragraph} className="mb-3 break-inside-avoid">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </section>
 
