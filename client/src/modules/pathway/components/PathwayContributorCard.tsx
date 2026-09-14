@@ -1,5 +1,4 @@
 import { BadgeCheck, ExternalLink } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import type { PathwayContributor } from "../services/pathway";
@@ -42,15 +41,16 @@ export function PathwayContributorCard({
 
       <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          {profile?.photoUrl && (
-            <Image
-              src={profile.photoUrl}
-              alt=""
-              width={56}
-              height={56}
-              className="h-14 w-14 shrink-0 rounded-full object-cover"
-            />
-          )}
+          {/* No avatar, deliberately. `User.photoUrl` stores a PRESIGNED S3 URL
+              captured at upload time with a fixed TTL, so it starts returning
+              403 "Request has expired" once that lapses — a week, for the photo
+              this card was built against. Rendering it puts a broken image on a
+              public marketing page beside a partner's name.
+
+              The API still resolves `profile.photoUrl`, so restoring the avatar
+              is deleting this comment and putting the <Image> back — but only
+              once photos are signed on read (or served from a public path)
+              rather than stored pre-signed. */}
 
           <div className="min-w-0">
             <p className="font-title flex items-center gap-1.5 text-lg font-bold text-slate-900">
