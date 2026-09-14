@@ -125,7 +125,13 @@ export default async function SportPathwayPage({
             All sports
           </Link>
 
-          <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          {/* Top-aligned, not bottom-aligned. These two columns have
+              independent heights — the "About" card grows with however many
+              intro paragraphs a sport has — and bottom-aligning them pushed the
+              shorter column down by the difference. Tennis has three short
+              paragraphs and looked fine; Chess has four longer ones, which left
+              a screen-height void above the headline. */}
+          <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <div className="mb-3">
                 <SectionLabel
