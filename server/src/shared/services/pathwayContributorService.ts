@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import { Coach } from "../../client/models/Coach";
 import { Expert } from "../../client/models/ExpertProfile";
+import { S3Service } from "./S3Service";
 import type { PathwayContributorDocument } from "../models/PathwayGuide";
 import type { PathwayContributorProfileType } from "../validation/pathwayGuideFormat";
 
@@ -61,7 +62,30 @@ const COACH_IS_LIVE = { isVerified: true, verificationStatus: "VERIFIED" } as co
 const EXPERT_IS_LIVE = { isActive: true, verificationStatus: "APPROVED" } as const;
 
 /** A person's display photo, preferring a profile-specific one over the account's. */
-type UserLike = { name?: string; photoUrl?: string } | null | undefined;
+type UserLike = { name?: string; photoUrl?: string; photoS3Key?: string } | null | undefined;
+
+/**
+ * Re-sign a stored photo URL.
+ *
+ * Photo URLs are stored PRESIGNED with a 7-day expiry rather than as plain
+ * links, so a stored `photoUrl` starts returning 403 "Request has expired" a
+ * week after upload. The key is the durable thing; the URL is a snapshot. Every
+ * other read path re-signs from the key, and this one has to as well.
+ *
+ * Falls back to the stored URL when there is no key — which may be expired, but
+ * a possibly-stale URL is no worse than the nothing we would otherwise have.
+ */
+async function signedPhotoUrl(
+  key: string | undefined,
+  storedUrl: string | undefined
+): Promise<string | undefined> {
+  if (!key) return storedUrl;
+  try {
+    return await new S3Service().generateCachedDownloadUrl(key, "images", 604800);
+  } catch {
+    return storedUrl;
+  }
+}
 
 async function resolveProfile(
   type: PathwayContributorProfileType,
@@ -70,17 +94,18 @@ async function resolveProfile(
   if (type === "coach") {
     const coach = await Coach.findOne({ _id: id, ...COACH_IS_LIVE })
       .select("_id userId")
-      .populate<{ userId: UserLike }>("userId", "name photoUrl")
+      .populate<{ userId: UserLike }>("userId", "name photoUrl photoS3Key")
       .lean();
     if (!coach) return null;
 
     const user = coach.userId as UserLike;
+    const photoUrl = await signedPhotoUrl(user?.photoS3Key, user?.photoUrl);
     return {
       type,
       id: String(coach._id),
       href: `/coaches/${String(coach._id)}`,
       ctaLabel: "Book a session",
-      ...(user?.photoUrl ? { photoUrl: user.photoUrl } : {}),
+      ...(photoUrl ? { photoUrl } : {}),
     };
   }
 
@@ -90,13 +115,24 @@ async function resolveProfile(
   // as `mongoose.models.Expert || mongoose.model(...)`, whose union type erases
   // the document shape and leaves every field access unresolvable.
   const expert = (await Expert.findOne({ _id: id, ...EXPERT_IS_LIVE })
-    .select("_id userId photoUrl")
-    .populate("userId", "name photoUrl")
-    .lean()) as { _id: mongoose.Types.ObjectId; userId?: UserLike; photoUrl?: string } | null;
+    .select("_id userId photoUrl photoKey")
+    .populate("userId", "name photoUrl photoS3Key")
+    .lean()) as {
+    _id: mongoose.Types.ObjectId;
+    userId?: UserLike;
+    photoUrl?: string;
+    photoKey?: string;
+  } | null;
   if (!expert) return null;
 
   const user = expert.userId;
-  const photoUrl = expert.photoUrl || user?.photoUrl;
+  // The expert's own photo wins over the account's, key and URL together, so a
+  // missing expert photo falls back to the account's KEY rather than to the
+  // account's stale URL.
+  const photoUrl =
+    expert.photoKey || expert.photoUrl
+      ? await signedPhotoUrl(expert.photoKey, expert.photoUrl)
+      : await signedPhotoUrl(user?.photoS3Key, user?.photoUrl);
   return {
     type,
     id: String(expert._id),

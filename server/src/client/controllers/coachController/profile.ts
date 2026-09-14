@@ -96,8 +96,13 @@ export const getCoach = asyncHandler(async (req: Request, res: Response): Promis
   // Public, unauthenticated endpoint — only the fields an actual coach
   // card renders. This used to populate the entire User document
   // (including email/phone) into every response here.
+  // `photoS3Key` is not rendered — it is what `refreshCoachMediaUrls` needs to
+  // re-sign `photoUrl`. Stored photo URLs are presigned with a 7-day expiry, so
+  // without the key here the refresh silently no-ops and this endpoint serves a
+  // URL that 403s ("Request has expired") for any photo uploaded over a week
+  // ago. The coach LISTING already selects it; this one did not.
   const coach = await getCoachById(coachId, {
-    populateUserFields: "name photoUrl",
+    populateUserFields: "name photoUrl photoS3Key",
   });
 
   if (!coach) {
