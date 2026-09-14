@@ -90,7 +90,13 @@ const GUIDE: PathwayGuideInput = {
     // NOTE: this id exists in the PRODUCTION database. Against dev it resolves
     // to nothing and the card falls back to the plain byline, which is the
     // intended degradation rather than a broken seed.
-    profile: { type: "coach", id: "6a93c246021963df9a516dc4" },
+    //
+    // This is the COACH document's `_id`, not the user's. The two are easy to
+    // confuse — his user id is 6a93c246021963df9a516dc4, one character apart and
+    // the id that appears in profile-photo paths — and getting it wrong fails
+    // silently: the resolver finds no live coach and quietly drops the link,
+    // which looks identical to "no profile was ever attached".
+    profile: { type: "coach", id: "6a93c247021963df9a516dc8" },
   },
   stages: [
     // ── 1 ──────────────────────────────────────────────────────────────────
