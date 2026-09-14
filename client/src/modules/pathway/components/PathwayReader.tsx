@@ -22,6 +22,7 @@
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import {
   ArrowRight,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -30,6 +31,7 @@ import {
   MapPin,
   MessageCircleQuestion,
   Users,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -363,6 +365,21 @@ export function PathwayReader({
   });
   const [activeSection, setActiveSection] = useState<SectionId>("overview");
 
+  // ── Why the mobile stage picker is a sheet, not a disclosure ──
+  //
+  // It was a <details> sitting above the stage, collapsed, reading "Stage 1 of 6
+  // · Discover Chess" with a chevron. A parent read the whole of stage one and
+  // never changed stage — not because they did not want to, but because that row
+  // does not look like a control. It looks like a caption for the panel under it,
+  // it uses the same chevron the breadcrumb does, and by the time a parent has
+  // any reason to move on it has scrolled a thousand pixels off the top.
+  //
+  // So on mobile the list of stages became a bottom sheet with two triggers: a
+  // labelled button where the disclosure used to be, and a compact one pinned
+  // inside the sticky section bar, which is the only part of this page that is
+  // still on screen once a parent is actually reading.
+  const [sheetOpen, setSheetOpen] = useState(false);
+
   // Remembered across visits, and across sports — a family has one child, and
   // asking their age again on every pathway is the kind of small tax that makes
   // a tool feel like paperwork. The `/roadmap` picker writes the same value, so
@@ -372,7 +389,11 @@ export function PathwayReader({
   const panelRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<Partial<Record<SectionId, HTMLElement | null>>>({});
   const stageHeaderRef = useRef<HTMLElement | null>(null);
-  const mobileRailRef = useRef<HTMLDetailsElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  // Whatever opened the sheet, so dismissing it puts focus back rather than at
+  // the top of the document. Not restored when a stage was actually chosen —
+  // `go` sends focus to the new stage instead.
+  const sheetOpenerRef = useRef<HTMLElement | null>(null);
   // Set by `go`, consumed by the effect below. A ref rather than state because
   // it must not cause a render of its own, and it must be false on first paint:
   // stealing focus on page load would drop a screen reader past the page's own
@@ -402,9 +423,9 @@ export function PathwayReader({
       setIndex(next);
       setActiveSection("overview");
       shouldFocusStage.current = true;
-      // The mobile rail is a disclosure over the content it navigates. Leaving
-      // it open after a choice buries the stage the reader just asked for.
-      if (mobileRailRef.current) mobileRailRef.current.open = false;
+      // The sheet covers the content it navigates. Leaving it up after a choice
+      // buries the stage the reader just asked for.
+      setSheetOpen(false);
 
       // `history.replaceState`, not the Next router: this page is a server
       // component that reads searchParams, so router.replace would refetch the
@@ -446,6 +467,41 @@ export function PathwayReader({
     shouldFocusStage.current = false;
     stageHeaderRef.current?.focus({ preventScroll: true });
   }, [safeIndex]);
+
+  const openSheet = () => {
+    sheetOpenerRef.current = document.activeElement as HTMLElement | null;
+    setSheetOpen(true);
+  };
+
+  const dismissSheet = () => {
+    setSheetOpen(false);
+    sheetOpenerRef.current?.focus();
+  };
+
+  // ── The sheet's modal behaviour ──
+  //
+  // Escape closes it, the page behind it does not scroll, and focus moves into
+  // it on open — a panel that covers the screen but leaves the keyboard behind
+  // on the page underneath is a trap for exactly the readers least able to get
+  // out of it.
+  useEffect(() => {
+    if (!sheetOpen) return;
+    // The <html> element, not <body>: this layout scrolls the document element,
+    // and `body { overflow: hidden }` alone locks nothing — the page kept
+    // scrolling behind the open sheet.
+    const root = document.documentElement;
+    const previousOverflow = root.style.overflow;
+    root.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") dismissSheet();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    sheetRef.current?.focus();
+    return () => {
+      root.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [sheetOpen]);
 
   // ── Scroll-spy for the jump bar ──
   // rootMargin pulls the detection line to just under the sticky header, so the
@@ -552,28 +608,40 @@ export function PathwayReader({
     <MotionConfig reducedMotion="user">
       <div className="grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)] lg:gap-5">
         {/* ── The rail ──
-             A dropdown below lg, where 290px of stage titles would eat the
-             screen the stage itself needs. */}
+             A sheet below lg, where 290px of stage titles would eat the screen
+             the stage itself needs. */}
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <details
-            ref={mobileRailRef}
-            className="group rounded-2xl border border-slate-200 bg-white p-2 lg:hidden"
+          {/* The trigger says what it does. The old version showed the current
+              stage and a chevron and nothing else, which reads as a caption for
+              the panel beneath it — the second line is there because "Stage 1 of
+              6 · Discover Chess" alone never told a parent there were five other
+              stages one tap away. */}
+          <button
+            type="button"
+            onClick={openSheet}
+            aria-haspopup="dialog"
+            aria-expanded={sheetOpen}
+            className="focus-visible:outline-power-orange flex w-full items-center gap-2.5 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-slate-300 focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden"
           >
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-2 py-1.5 text-[13px] font-bold text-slate-700 [&::-webkit-details-marker]:hidden">
-              <span
-                className="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-black text-white"
-                style={{ background: colorFor(safeIndex) }}
-              >
-                {safeIndex + 1}
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-black text-white"
+              style={{ background: colorFor(safeIndex) }}
+            >
+              {safeIndex + 1}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[14px] font-bold leading-tight text-slate-900">
+                {stage.name}
               </span>
-              Stage {safeIndex + 1} of {total} · {stage.name}
-              <ChevronRight className="ml-auto h-4 w-4 text-slate-400 transition-transform group-open:rotate-90" />
-            </summary>
-            <div className="mt-2 border-t border-slate-100 pt-2">
-              {ageField}
-              {renderStageList("mobile")}
-            </div>
-          </details>
+              <span className="block text-[11.5px] font-semibold text-slate-400">
+                Stage {safeIndex + 1} of {total}
+              </span>
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[12px] font-bold text-white">
+              Change
+              <ChevronDown aria-hidden className="h-3.5 w-3.5" />
+            </span>
+          </button>
 
           <div className="hidden rounded-2xl border border-slate-200 bg-white p-2 lg:block">
             <p className="px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
@@ -590,7 +658,20 @@ export function PathwayReader({
              pixels under the content. */}
         <div
           ref={panelRef}
-          className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:self-start"
+          // `overflow-clip`, NOT `overflow-hidden`. Both round off the header and
+          // footer at the corners; `hidden` also makes this box a scroll
+          // container, and a `position: sticky` child of a scroll container
+          // sticks to THAT box rather than to the viewport. The jump bar below
+          // has been declared sticky since it was written and has never once
+          // stuck — it scrolled off the top with the rest of the panel, which is
+          // half of why a parent deep in a stage had nothing on screen to
+          // navigate with. `clip` clips without creating the scrollport.
+          //
+          // `min-w-0` comes with it. A scroll container contributes zero to its
+          // parent's min-content width, so `hidden` was silently keeping this
+          // grid item inside its track; `clip` is not a scroll container, and
+          // without the override the panel grew past the phone's screen.
+          className="min-w-0 scroll-mt-24 overflow-clip rounded-2xl border border-slate-200 bg-white shadow-sm lg:self-start"
         >
           <header
             ref={stageHeaderRef}
@@ -697,66 +778,97 @@ export function PathwayReader({
           {/* ── Jump bar ──
                Sticky, so the shape of a stage stays visible while reading it and
                skipping to "what do I do now" is always one click away. */}
-          <nav
-            aria-label={`Sections of ${stage.name}`}
-            className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 px-2 py-2 backdrop-blur sm:px-4"
-          >
-            <ul className="flex gap-1 overflow-x-auto">
-              {sections.map(({ id, n, label, icon: Icon }) => (
-                <li key={id} className="shrink-0">
-                  {/* An anchor, not a button. This is navigation to a place on the
+          {/* ── Jump bar row ──
+               The section chips are navigation within the stage; the button
+               beside them leaves it. They share a bar because this strip is the
+               only part of the reader still on screen once a parent is reading,
+               and "how do I get to the next stage" is a question that arrives
+               mid-read, not at the top of the page. */}
+          {/* Offset by the site header, which is fixed: at `top-0` the bar parks
+              itself underneath it and the reader sees a sliver. */}
+          <div className="sticky top-16 z-10 flex items-center gap-1.5 border-b border-slate-100 bg-white/95 px-2 py-2 backdrop-blur sm:px-4 lg:top-20">
+            {/* Mobile only: on a desktop the rail is permanently beside the
+                panel, so a second way in would be clutter. */}
+            <button
+              type="button"
+              onClick={openSheet}
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+              className="focus-visible:outline-power-orange inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[12.5px] font-bold text-slate-700 transition hover:border-slate-300 focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden"
+            >
+              <span
+                aria-hidden
+                className="h-4.5 w-4.5 flex items-center justify-center rounded-full text-[10px] font-black text-white"
+                style={{ background: colorFor(safeIndex) }}
+              >
+                {safeIndex + 1}
+              </span>
+              <span aria-hidden>/{total}</span>
+              <span className="sr-only">
+                Stage {safeIndex + 1} of {total}. Change stage
+              </span>
+              <ChevronDown aria-hidden className="h-3.5 w-3.5 text-slate-400" />
+            </button>
+            <span aria-hidden className="h-6 w-px shrink-0 bg-slate-200 lg:hidden" />
+
+            <nav aria-label={`Sections of ${stage.name}`} className="min-w-0 flex-1">
+              <ul className="flex gap-1 overflow-x-auto">
+                {sections.map(({ id, n, label, icon: Icon }) => (
+                  <li key={id} className="shrink-0">
+                    {/* An anchor, not a button. This is navigation to a place on the
                     page: it belongs in the links list a screen reader can pull
                     up, it works before hydration, and it can be opened in a new
                     tab or copied like any other link. `onClick` only adds the
                     focus handling and reduced-motion scroll on top of the
                     native jump — `preventDefault` is deliberately not called
                     when the target is missing, so the browser still handles it. */}
-                  <a
-                    href={`#${sectionDomId(id)}`}
-                    onClick={(event) => {
-                      if (!sectionRefs.current[id]) return;
-                      event.preventDefault();
-                      jumpTo(id);
-                    }}
-                    // "location" is the value for the current place within a page;
-                    // "true" is the generic fallback and says less.
-                    aria-current={activeSection === id ? "location" : undefined}
-                    className={`focus-visible:outline-power-orange relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
-                      activeSection === id
-                        ? "text-white"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    }`}
-                  >
-                    {/* One pill that travels along the bar as you scroll, rather
+                    <a
+                      href={`#${sectionDomId(id)}`}
+                      onClick={(event) => {
+                        if (!sectionRefs.current[id]) return;
+                        event.preventDefault();
+                        jumpTo(id);
+                      }}
+                      // "location" is the value for the current place within a page;
+                      // "true" is the generic fallback and says less.
+                      aria-current={activeSection === id ? "location" : undefined}
+                      className={`focus-visible:outline-power-orange relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                        activeSection === id
+                          ? "text-white"
+                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                      }`}
+                    >
+                      {/* One pill that travels along the bar as you scroll, rather
                       than a dark background jumping between chips. It is the
                       only thing on the page that shows reading progress through
                       a stage, so the movement is the information. */}
-                    {activeSection === id && (
-                      <motion.span
-                        aria-hidden
-                        layoutId="pathway-jump-active"
-                        transition={{
-                          type: "spring",
-                          stiffness: 450,
-                          damping: 38,
-                        }}
-                        className="absolute inset-0 rounded-lg bg-slate-900"
-                      />
-                    )}
-                    <Icon aria-hidden className="relative h-3.5 w-3.5" />
-                    {/* Narrow screens show "01", which is meaningless read aloud.
+                      {activeSection === id && (
+                        <motion.span
+                          aria-hidden
+                          layoutId="pathway-jump-active"
+                          transition={{
+                            type: "spring",
+                            stiffness: 450,
+                            damping: 38,
+                          }}
+                          className="absolute inset-0 rounded-lg bg-slate-900"
+                        />
+                      )}
+                      <Icon aria-hidden className="relative h-3.5 w-3.5" />
+                      {/* Narrow screens show "01", which is meaningless read aloud.
                       The full label is always in the accessible name; only its
                       visual presentation changes. */}
-                    <span className="relative hidden sm:inline">{label}</span>
-                    <span aria-hidden className="relative sm:hidden">
-                      {n}
-                    </span>
-                    <span className="sr-only sm:hidden">{label}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+                      <span className="relative hidden sm:inline">{label}</span>
+                      <span aria-hidden className="relative sm:hidden">
+                        {n}
+                      </span>
+                      <span className="sr-only sm:hidden">{label}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
 
           {/* Keyed on the stage, so a new stage's five buckets deal themselves in
             one after another instead of the panel's whole contents swapping in
@@ -783,7 +895,7 @@ export function PathwayReader({
                 // focus ring — the section is not an interactive control, it is
                 // just where the reader has been moved to.
                 tabIndex={-1}
-                className="scroll-mt-16 px-4 py-6 focus:outline-none sm:px-6"
+                className="scroll-mt-28 px-4 py-6 focus:outline-none sm:px-6 lg:scroll-mt-32"
               >
                 <SectionHeading
                   id={section.id}
@@ -920,12 +1032,11 @@ export function PathwayReader({
               className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-35 disabled:hover:bg-transparent"
             >
               <ChevronLeft className="h-4 w-4 shrink-0" />
-              <span className="hidden truncate sm:inline">
-                {stages[safeIndex - 1]?.name ?? "Previous"}
-              </span>
-              <span className="sm:hidden">Previous</span>
+              <span className="truncate">{stages[safeIndex - 1]?.name ?? "Previous"}</span>
             </motion.button>
-            <span className="shrink-0 text-[12px] font-semibold text-slate-400">
+            {/* Hidden on a phone: the sticky bar carries the same "3/6" a thumb's
+                width away, and the two Previous/Next labels need the room more. */}
+            <span className="hidden shrink-0 text-[12px] font-semibold text-slate-400 sm:inline">
               {safeIndex + 1} / {total}
             </span>
             <motion.button
@@ -935,17 +1046,91 @@ export function PathwayReader({
               whileHover={safeIndex === total - 1 ? undefined : { x: 2 }}
               whileTap={safeIndex === total - 1 ? undefined : { scale: 0.97 }}
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
-              className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-35 disabled:hover:bg-transparent"
+              // Solid, unlike Previous. Reading a stage to the end and finding
+              // two identical grey words is what sends a parent back up the page
+              // looking for the control they already scrolled past; the forward
+              // move is the one this footer exists to offer.
+              className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-[13px] font-bold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-slate-200 disabled:text-slate-400 disabled:opacity-100"
             >
-              <span className="hidden truncate sm:inline">
-                {stages[safeIndex + 1]?.name ?? "Next"}
+              <span className="truncate">
+                {stages[safeIndex + 1] ? `Next: ${stages[safeIndex + 1]?.name}` : "Next"}
               </span>
-              <span className="sm:hidden">Next</span>
               <ChevronRight className="h-4 w-4 shrink-0" />
             </motion.button>
           </footer>
         </div>
       </div>
+
+      {/* ── The mobile stage sheet ──
+           Bottom-anchored rather than centred: the list is a thumb reach from
+           both triggers, and a sheet that rises from the edge of the screen is
+           read as "there is more here" in a way a floating card is not.
+           `lg:hidden` on the wrapper, so nothing about the desktop rail
+           changes. */}
+      <AnimatePresence>
+        {sheetOpen && (
+          <div className="fixed inset-0 z-[60] flex items-end lg:hidden">
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={dismissSheet}
+              aria-label="Close stage list"
+              className="absolute inset-0 h-full w-full cursor-default bg-slate-900/40 backdrop-blur-[2px]"
+            />
+            <motion.div
+              ref={sheetRef}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="pathway-sheet-title"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 420, damping: 40 }}
+              className="relative flex max-h-[85vh] w-full flex-col rounded-t-3xl bg-white shadow-2xl focus:outline-none"
+            >
+              <div className="flex items-start gap-3 border-b border-slate-100 px-4 pb-3 pt-3">
+                <div className="min-w-0 flex-1">
+                  {/* A grab handle, purely so the panel reads as a sheet. It is
+                      decoration — the close button below is the real control. */}
+                  <span
+                    aria-hidden
+                    className="mx-auto mb-3 block h-1 w-10 rounded-full bg-slate-200"
+                  />
+                  <h2
+                    id="pathway-sheet-title"
+                    className="text-[16px] font-extrabold tracking-tight text-slate-900"
+                  >
+                    Choose a stage
+                  </h2>
+                  <p className="mt-0.5 text-[12.5px] text-slate-500">
+                    {total} stages in {guide.sportName}. Tap the one that matches your child.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={dismissSheet}
+                  className="focus-visible:outline-power-orange mt-2 shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <X aria-hidden className="h-5 w-5" />
+                  <span className="sr-only">Close</span>
+                </button>
+              </div>
+
+              {/* The list scrolls, the header and the age field above it do not —
+                  a nine-stage sport must not push "how old is your child?" off
+                  the top of the panel that asks it. */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2">
+                {ageField}
+                {renderStageList("mobile")}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </MotionConfig>
   );
 }
