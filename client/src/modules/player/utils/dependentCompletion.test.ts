@@ -17,6 +17,37 @@ describe("calculateDependentCompletion", () => {
     expect(missing.map((m) => m.field)).toEqual(["physical", "personality", "comfort"]);
   });
 
+  it("credits the sport bucket from chosenSport alone — the assessment records a commitment, not an interest", () => {
+    // The exact state the dashboard got wrong: assessment finished, badminton
+    // picked on the results page, `sportsFocus` never written. The card showed
+    // the sport, a "Sport chosen" tick and a badminton roadmap link, then asked
+    // the parent to "Add their sport".
+    const { percent, missing } = calculateDependentCompletion({
+      chosenSport: "Badminton",
+      location: "Chandigarh",
+      heightCm: 140,
+      weightKg: 35,
+      energyType: "explosive",
+      teamIndividual: 2,
+      focusStyle: "bursts",
+      decisionStyle: "react",
+      contactComfort: "neutral",
+      environment: "indoor",
+      waterComfort: "neutral",
+      budgetRange: "3k-7k",
+      ambition: "competitive",
+      weeklyHoursCategory: "4-7",
+      wizardCompletedAt: new Date().toISOString(),
+    });
+    expect(missing.map((m) => m.field)).not.toContain("sportsFocus");
+    expect(percent).toBe(100);
+  });
+
+  it("still reports the sport bucket missing when neither field is set", () => {
+    const { missing } = calculateDependentCompletion({ location: "Chandigarh" });
+    expect(missing.map((m) => m.field)).toContain("sportsFocus");
+  });
+
   it("credits the assessment bucket via wizardCompletedAt without standing tiers (Discover-wizard path)", () => {
     const { missing } = calculateDependentCompletion({
       wizardCompletedAt: new Date().toISOString(),

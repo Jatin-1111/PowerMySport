@@ -79,15 +79,37 @@ export interface CommunityGroupSummary {
   isOwner?: boolean;
 }
 
+/**
+ * One of a member's children, as another parent sees them.
+ *
+ * Deliberately coarse and deliberately nameless: a sport, a competition category
+ * (an age BAND and "Boy"/"Girl" — never an age or a date of birth), and a city.
+ * Enough for a parent to recognise a peer — "Tennis, Boys U-14, Chandigarh" —
+ * and not enough to identify a specific child. Every field is independently
+ * optional, because a parent who filled in only the sport should still show the
+ * sport.
+ */
+export interface CommunityDependentSummary {
+  sport: string | null;
+  ageBand: string | null;
+  /** Null both for a child recorded as OTHER and for one with none on file. */
+  gender: "Boy" | "Girl" | null;
+  city: string | null;
+}
+
 export interface CommunityUserSearchResult {
   id: string;
   displayName: string;
   isIdentityPublic: boolean;
   role?: CommunityUserRole;
   photoUrl?: string | null;
+  /** The first child's city. Use `cities` wherever more than one can be shown. */
   city?: string | null;
+  /** Every distinct city across this member's children. */
+  cities?: string[];
   age?: number | null;
   sports: string[];
+  dependents?: CommunityDependentSummary[];
 }
 
 export interface CommunityMemberProfile {
@@ -98,6 +120,8 @@ export interface CommunityMemberProfile {
   isIdentityPublic: boolean;
   photoUrl?: string | null;
   sports: string[];
+  /** Absent on a cached response written before children were published. */
+  dependents?: CommunityDependentSummary[];
   city?: string | null;
   age?: number | null;
   dob?: string | null;

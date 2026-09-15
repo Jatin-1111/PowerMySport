@@ -4,7 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
-import { CommunityGroupSummary, CommunityUserSearchResult } from "@/modules/community/types";
+import {
+  CommunityDependentSummary,
+  CommunityGroupSummary,
+  CommunityUserSearchResult,
+} from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
@@ -26,6 +30,20 @@ import {
   LogIn,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+/**
+ * The one-line summary of a member's first child, for a card in the grid.
+ *
+ * Mirrors `DependentSummaryList`'s category label — "Boys U-14", not "Boy" and
+ * "U-14" apart — so the card and the modal a tap later read the same way.
+ */
+const firstChildLine = (dependent: CommunityDependentSummary | undefined): string | null => {
+  if (!dependent) return null;
+  const { gender, ageBand, city } = dependent;
+  const category = gender && ageBand ? `${gender}s ${ageBand}` : ageBand || gender || null;
+  const parts = [category, city].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
+};
 
 export default function DiscoverPageClient() {
   const router = useRouter();
@@ -85,7 +103,9 @@ export default function DiscoverPageClient() {
     new Set(
       activeTab === "COMMUNITIES"
         ? (communities.map((c) => c.city).filter(Boolean) as string[])
-        : (players.map((p) => p.city).filter(Boolean) as string[])
+        : // Every child's city, not just the first: a parent with one child in
+          // Chandigarh and one in Mohali belongs under both.
+          (players.flatMap((p) => p.cities ?? (p.city ? [p.city] : [])) as string[])
     )
   ).sort();
 
@@ -234,7 +254,10 @@ export default function DiscoverPageClient() {
     if (p.role !== "Parent") return false;
 
     if (selectedSport !== "All" && !(p.sports || []).includes(selectedSport)) return false;
-    if (selectedCity !== "All" && p.city !== selectedCity) return false;
+    if (selectedCity !== "All") {
+      const cities = p.cities ?? (p.city ? [p.city] : []);
+      if (!cities.includes(selectedCity)) return false;
+    }
     return true;
   });
 
@@ -697,6 +720,19 @@ export default function DiscoverPageClient() {
                             <h3 className="font-title line-clamp-1 text-base font-bold text-slate-900">
                               {player.displayName}
                             </h3>
+
+                            {/* One line, not the full list: the card is the
+                                shortlist and the Details modal is where a parent
+                                reads every child. "Boys U-14 · Chandigarh" beside
+                                the sport chips below is what makes a grid of
+                                strangers scannable. */}
+                            {firstChildLine(player.dependents?.[0]) && (
+                              <p className="mt-1 line-clamp-1 text-[11px] font-medium text-slate-500">
+                                {firstChildLine(player.dependents?.[0])}
+                                {(player.dependents?.length ?? 0) > 1 &&
+                                  ` +${(player.dependents?.length ?? 1) - 1}`}
+                              </p>
+                            )}
 
                             <div className="mt-3 flex min-h-[24px] flex-wrap items-center justify-center gap-1.5">
                               {player.sports?.slice(0, 2).map((s) => (

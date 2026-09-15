@@ -3,6 +3,7 @@
 import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
 import { CommunityMemberProfile } from "@/modules/community/types";
+import DependentSummaryList from "@/modules/community/components/DependentSummaryList";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -124,6 +125,7 @@ export default function MemberProfilePage() {
   }, [userId]);
 
   const sports = useMemo(() => profile?.sports || [], [profile?.sports]);
+  const dependents = useMemo(() => profile?.dependents || [], [profile?.dependents]);
   const age = profile?.age ?? calculateAgeFromDate(profile?.dob);
 
   const handleStartConversation = async () => {
@@ -341,28 +343,34 @@ export default function MemberProfilePage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-power-orange text-xs font-semibold uppercase tracking-[0.2em]">
-                    Public sports
+                    {dependents.length ? "Who they play for" : "Public sports"}
                   </p>
                   <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">
-                    Sports the member shares
+                    {dependents.length
+                      ? "The children this member is here for"
+                      : "Sports the member shares"}
                   </h3>
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {sports.length ? (
-                  sports.map((sport) => (
-                    <span
-                      key={sport}
-                      className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700"
-                    >
-                      {sport}
-                    </span>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500">No public sports listed.</p>
-                )}
-              </div>
+              {dependents.length ? (
+                <DependentSummaryList dependents={dependents} className="mt-4" />
+              ) : (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {sports.length ? (
+                    sports.map((sport) => (
+                      <span
+                        key={sport}
+                        className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700"
+                      >
+                        {sport}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-500">No public sports listed.</p>
+                  )}
+                </div>
+              )}
             </section>
 
             <section className="border-border rounded-4xl border bg-[linear-gradient(180deg,rgba(233,115,22,0.06),rgba(255,255,255,0.98))] p-6 shadow-sm">

@@ -1,6 +1,7 @@
 "use client";
 
 import { CommunityMemberProfile } from "../types";
+import DependentSummaryList from "./DependentSummaryList";
 import {
   BadgeCheck,
   CalendarDays,
@@ -265,23 +266,33 @@ export function CommunityMemberProfileModal({
                   </div>
 
                   <div className="border-border shadow-xs rounded-2xl border bg-white p-4 sm:p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Public sports
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {profile.sports.length ? (
-                        profile.sports.map((sport) => (
-                          <span
-                            key={sport}
-                            className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
-                          >
-                            {sport}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-slate-500">No public sports listed.</span>
-                      )}
-                    </div>
+                    {/* Children when we have them, a flat sport list when we do
+                        not. Same data, but "Tennis · U-14 · Chandigarh" is the
+                        form another parent can act on — a bare "Tennis" chip on
+                        a parent's profile never said whose sport it was. */}
+                    {profile.dependents?.length ? (
+                      <DependentSummaryList dependents={profile.dependents} />
+                    ) : (
+                      <>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          Public sports
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {profile.sports.length ? (
+                            profile.sports.map((sport) => (
+                              <span
+                                key={sport}
+                                className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+                              >
+                                {sport}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-slate-500">No public sports listed.</span>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {profile.lastSeenVisible && profile.lastSeenAt && (

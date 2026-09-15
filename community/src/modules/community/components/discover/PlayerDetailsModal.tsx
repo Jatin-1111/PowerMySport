@@ -6,6 +6,7 @@ import { CommunityMemberProfile } from "@/modules/community/types";
 import { communityService } from "@/modules/community/services/community";
 import { X, User, MapPin, Calendar, MessageSquare, Loader2, ShieldCheck } from "lucide-react";
 import { getAvatarCharacter } from "@/modules/community/utils/chatUtils";
+import DependentSummaryList from "@/modules/community/components/DependentSummaryList";
 
 interface PlayerDetailsModalProps {
   userId: string | null;
@@ -44,6 +45,10 @@ export default function PlayerDetailsModal({
       setProfile(null);
     }
   }, [isOpen, userId]);
+
+  // Absent on a response cached before children were published, so treat the
+  // missing case exactly like the empty one.
+  const hasDependents = Boolean(profile?.dependents?.length);
 
   if (!isOpen || !userId) return null;
 
@@ -127,53 +132,75 @@ export default function PlayerDetailsModal({
                       </div>
                     </div>
 
-                    {/* About & Stats */}
-                    <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-6">
-                      <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
-                          <MapPin size={14} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
-                            Location
-                          </p>
-                          <p className="truncate text-sm font-semibold text-slate-900">
-                            {profile.city || "N/A"}
-                          </p>
-                        </div>
-                      </div>
+                    {/* ── Who this parent is, in the only terms that help ──
+                        A stranger's name and role answers nothing a parent is
+                        weighing when they decide whether to message. "Tennis ·
+                        U-14 · Chandigarh" answers all of it. */}
+                    {hasDependents ? (
+                      <DependentSummaryList
+                        dependents={profile.dependents}
+                        className="mt-6 border-t border-slate-100 pt-6"
+                      />
+                    ) : (
+                      <>
+                        {/* The fallback for a member with no children on file —
+                            a coach, or a parent who has not added one yet. Tiles
+                            render only when they have a value: two side-by-side
+                            "N/A" boxes are a worse answer than no boxes. */}
+                        {(profile.city || profile.age != null) && (
+                          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-6">
+                            {profile.city && (
+                              <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
+                                  <MapPin size={14} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                                    Location
+                                  </p>
+                                  <p className="truncate text-sm font-semibold text-slate-900">
+                                    {profile.city}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
 
-                      <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-500">
-                          <Calendar size={14} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
-                            Age
-                          </p>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {profile.age ?? "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                            {profile.age != null && (
+                              <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-500">
+                                  <Calendar size={14} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                                    Age
+                                  </p>
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    {profile.age}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
-                    {profile.sports && profile.sports.length > 0 && (
-                      <div className="mt-4 border-t border-slate-100 pt-4">
-                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Sports
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {profile.sports.map((sport) => (
-                            <span
-                              key={sport}
-                              className="inline-flex rounded-lg border border-slate-200/60 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
-                            >
-                              {sport}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                        {profile.sports && profile.sports.length > 0 && (
+                          <div className="mt-4 border-t border-slate-100 pt-4">
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              Sports
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {profile.sports.map((sport) => (
+                                <span
+                                  key={sport}
+                                  className="inline-flex rounded-lg border border-slate-200/60 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
+                                >
+                                  {sport}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 ) : null}

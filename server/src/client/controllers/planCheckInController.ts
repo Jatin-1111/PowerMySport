@@ -83,7 +83,26 @@ export const recordFindSportChoice = asyncHandler(
     if (dependentId && mongoose.isValidObjectId(dependentId)) {
       const updated = await Player.findOneAndUpdate(
         { _id: dependentId, userId: req.user.id, type: "DEPENDENT" },
-        { $set: { chosenSport: sportName, chosenSportAt: new Date() } }
+        {
+          $set: { chosenSport: sportName, chosenSportAt: new Date() },
+          // ── Why the choice also lands in `sportsFocus` ──
+          //
+          // `sportsFocus` is the field the rest of the product reads as "what
+          // does this child play": the profile modal's Sports selector binds to
+          // it, and the completion scorer counts it. The wizard only ever filled
+          // it from `answers.priorSports` — the sports the child ALREADY played —
+          // which is empty for exactly the beginners this flow is built for.
+          //
+          // The result was a dashboard that named the sport, ticked "Sport
+          // chosen" and linked a badminton roadmap while sitting at 90% under an
+          // "Add their sport" button, and a profile modal whose Sports field was
+          // blank. A decision is the strongest possible statement of interest, so
+          // it belongs in both.
+          //
+          // `$addToSet`, so retaking the assessment and picking a second sport
+          // adds to the list rather than replacing what the parent told us.
+          $addToSet: { sportsFocus: sportName },
+        }
       ).lean();
       if (updated) validDependentId = dependentId;
     }

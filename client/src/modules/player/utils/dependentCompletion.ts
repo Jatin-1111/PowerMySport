@@ -9,6 +9,7 @@
 
 export interface DependentCompletionProfile {
   sportsFocus?: string[];
+  chosenSport?: string;
   location?: string;
   heightCm?: number;
   weightKg?: number;
@@ -37,7 +38,19 @@ export const DEPENDENT_COMPLETION_FIELDS: Array<{
     field: "sportsFocus",
     label: "Sports interest",
     weight: 10,
-    isFilled: (p) => (p.sportsFocus?.length ?? 0) > 0,
+    // ── Why `chosenSport` counts here ──
+    //
+    // It is the STRONGER of the two signals, not a lesser one: `sportsFocus` is
+    // what a parent listed as interesting, `chosenSport` is what they committed
+    // to on the assessment results page. Checking only the weaker field left a
+    // parent who finished the assessment and picked badminton staring at a card
+    // that said "10 yrs · Badminton", a "Sport chosen" tick and a "Badminton
+    // roadmap" button — above a 90% ring and an "Add their sport" button.
+    //
+    // The display layer had already settled this (`useDependents` reads
+    // `chosenSport || sportsFocus[0]`); the scorer was the one place still
+    // asking the narrower question.
+    isFilled: (p) => !!p.chosenSport || (p.sportsFocus?.length ?? 0) > 0,
   },
   {
     field: "location",
