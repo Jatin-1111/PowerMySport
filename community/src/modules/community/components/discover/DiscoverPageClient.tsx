@@ -4,13 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
-import {
-  CommunityDependentSummary,
-  CommunityGroupSummary,
-  CommunityUserSearchResult,
-} from "@/modules/community/types";
+import { CommunityGroupSummary, CommunityUserSearchResult } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
+import { familyLine } from "@/modules/community/components/DependentSummaryList";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
 import CreateCommunityModal from "@/modules/community/components/discover/CreateCommunityModal";
 import EditCommunityModal from "@/modules/community/components/discover/EditCommunityModal";
@@ -30,20 +27,6 @@ import {
   LogIn,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-
-/**
- * The one-line summary of a member's first child, for a card in the grid.
- *
- * Mirrors `DependentSummaryList`'s category label — "Boys U-14", not "Boy" and
- * "U-14" apart — so the card and the modal a tap later read the same way.
- */
-const firstChildLine = (dependent: CommunityDependentSummary | undefined): string | null => {
-  if (!dependent) return null;
-  const { gender, ageBand, city } = dependent;
-  const category = gender && ageBand ? `${gender}s ${ageBand}` : ageBand || gender || null;
-  const parts = [category, city].filter(Boolean);
-  return parts.length ? parts.join(" · ") : null;
-};
 
 export default function DiscoverPageClient() {
   const router = useRouter();
@@ -726,13 +709,14 @@ export default function DiscoverPageClient() {
                                 reads every child. "Boys U-14 · Chandigarh" beside
                                 the sport chips below is what makes a grid of
                                 strangers scannable. */}
-                            {firstChildLine(player.dependents?.[0]) && (
-                              <p className="mt-1 line-clamp-1 text-[11px] font-medium text-slate-500">
-                                {firstChildLine(player.dependents?.[0])}
-                                {(player.dependents?.length ?? 0) > 1 &&
-                                  ` +${(player.dependents?.length ?? 1) - 1}`}
-                              </p>
-                            )}
+                            {(() => {
+                              const line = familyLine(player.dependents);
+                              return line ? (
+                                <p className="mt-1 line-clamp-1 text-[11px] font-medium text-slate-500">
+                                  {line}
+                                </p>
+                              ) : null;
+                            })()}
 
                             <div className="mt-3 flex min-h-[24px] flex-wrap items-center justify-center gap-1.5">
                               {player.sports?.slice(0, 2).map((s) => (
