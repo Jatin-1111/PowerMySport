@@ -36,10 +36,17 @@ export type NotificationType =
   | "DISPUTE_RESOLVED"
   | "MESSAGE_RECEIVED"
   | "PLAN_CHECKIN"
-  | "EXPERIENCE_NUDGE";
+  | "EXPERIENCE_NUDGE"
+  | "RANKING_DIGEST";
 
+/**
+ * "RANKING" is its own category rather than being folded into an existing one.
+ * The categories drive how the notification centre groups things, and a ranking
+ * update is not social, not a booking and not administrative — filing it under
+ * any of those would put a child's standing in a list a parent scrolls past.
+ */
 export type NotificationCategory =
-  "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
+  "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "RANKING";
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
@@ -105,12 +112,13 @@ const notificationSchema = new Schema<INotification, {}, {}, NotificationQueryHe
         "MESSAGE_RECEIVED",
         "PLAN_CHECKIN",
         "EXPERIENCE_NUDGE",
+        "RANKING_DIGEST",
       ],
       required: true,
     },
     category: {
       type: String,
-      enum: ["SOCIAL", "BOOKING", "Admin", "REVIEW", "PAYMENT", "COMMUNITY"],
+      enum: ["SOCIAL", "BOOKING", "Admin", "REVIEW", "PAYMENT", "COMMUNITY", "RANKING"],
       required: true,
       index: true,
     },

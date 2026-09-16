@@ -335,3 +335,93 @@ export const sendReviewReceivedEmail = async (options: ReviewReceivedOptions): P
     html,
   });
 };
+
+interface RankingDigestStanding {
+  listLabel: string;
+  rank: number;
+  previousRank: number | null;
+  totalPoints: number;
+  /** A CEILING on what ageing results can cost, never a forecast. */
+  atRiskNextTwelveWeeks: number | null;
+  weeksSinceLastRise: number | null;
+}
+
+interface RankingDigestEmailOptions {
+  email: string;
+  name: string;
+  asOnDate: string;
+  players: Array<{
+    name: string;
+    regNo: string;
+    sportSlug: string;
+    standings: RankingDigestStanding[];
+  }>;
+}
+
+/** "up 18 places to 312", or "still 312" — direction in words, not just a sign. */
+const movementPhrase = (standing: RankingDigestStanding): string => {
+  if (standing.previousRank === null) return `new to this list at ${standing.rank}`;
+  const moved = standing.previousRank - standing.rank;
+  if (moved === 0) return `still ${standing.rank}`;
+  const places = Math.abs(moved) === 1 ? "place" : "places";
+  return `${moved > 0 ? "up" : "down"} ${Math.abs(moved)} ${places} to ${standing.rank}`;
+};
+
+/**
+ * The weekly ranking digest.
+ *
+ * Two rules this template exists to hold, both of which a well-meaning edit
+ * would break:
+ *
+ *   1. **"Up to" is not padding.** Points at risk is the most that ageing
+ *      results can cost, because each one that drops off is replaced by the
+ *      next best result we cannot see. Tightening it to "will lose" turns a
+ *      bound into a prediction, in an email to a parent about their child.
+ *   2. **No child is addressed.** These go to the account holder. The player is
+ *      usually a minor who never gave us an email address, and the copy is
+ *      written about them rather than to them throughout.
+ */
+export const sendRankingDigestEmail = async (options: RankingDigestEmailOptions): Promise<void> => {
+  const rows = options.players.flatMap((player) =>
+    player.standings.map((standing): [string, string] => {
+      const risk =
+        standing.atRiskNextTwelveWeeks && standing.atRiskNextTwelveWeeks > 0
+          ? ` &middot; up to ${standing.atRiskNextTwelveWeeks} points could drop off within three months`
+          : "";
+      return [
+        `${player.name} &middot; ${standing.listLabel}`,
+        `${movementPhrase(standing)} &middot; ${standing.totalPoints} points${risk}`,
+      ];
+    })
+  );
+
+  const idle = options.players.some((player) =>
+    player.standings.some(
+      (standing) =>
+        (standing.weeksSinceLastRise ?? 0) >= 12 && (standing.atRiskNextTwelveWeeks ?? 0) > 0
+    )
+  );
+
+  const firstPlayer = options.players[0];
+  const ctaUrl = firstPlayer
+    ? `${emailFrontendUrl()}/rankings/${firstPlayer.sportSlug}/players/${firstPlayer.regNo}`
+    : `${emailFrontendUrl()}/rankings`;
+
+  const html = renderEmailShell({
+    heading: "This week's ranking",
+    intro: `Hi ${options.name}, the list published on ${options.asOnDate} is out.`,
+    bodyHtml:
+      detailTable(rows) +
+      (idle
+        ? `<p style="color:#555;">Results stop counting a year after they were earned. Where a figure above says points could drop off, that is the most it can cost if nothing newer replaces them, not a forecast.</p>`
+        : ""),
+    ctaLabel: "See the full history",
+    ctaUrl,
+  });
+
+  await sendEmail({
+    to: options.email,
+    subject: `Ranking update &middot; ${options.asOnDate}`.replace("&middot;", "-"),
+    html,
+  });
+};

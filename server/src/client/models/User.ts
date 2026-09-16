@@ -151,6 +151,11 @@ const userSchema = new Schema<UserDocument>(
         bookingCancellations: { type: Boolean, default: true },
         reviews: { type: Boolean, default: true },
         payments: { type: Boolean, default: true },
+        // On by default: this only ever reaches someone who went and linked
+        // their own child's ranking, which is as explicit a request to hear
+        // about it as this platform has. Marketing is off by default because
+        // nobody asked for it; this is the opposite case.
+        rankingUpdates: { type: Boolean, default: true },
         admin: { type: Boolean, default: true },
         marketing: { type: Boolean, default: false },
       },
@@ -162,6 +167,11 @@ const userSchema = new Schema<UserDocument>(
         bookingCancellations: { type: Boolean, default: true },
         reviews: { type: Boolean, default: true },
         payments: { type: Boolean, default: true },
+        // On by default: this only ever reaches someone who went and linked
+        // their own child's ranking, which is as explicit a request to hear
+        // about it as this platform has. Marketing is off by default because
+        // nobody asked for it; this is the opposite case.
+        rankingUpdates: { type: Boolean, default: true },
         admin: { type: Boolean, default: true },
         marketing: { type: Boolean, default: false },
       },
@@ -173,6 +183,7 @@ const userSchema = new Schema<UserDocument>(
         bookingCancellations: { type: Boolean, default: true },
         reviews: { type: Boolean, default: true },
         payments: { type: Boolean, default: true },
+        rankingUpdates: { type: Boolean, default: true },
         admin: { type: Boolean, default: true },
         marketing: { type: Boolean, default: true },
       },

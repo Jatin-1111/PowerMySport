@@ -6,9 +6,21 @@ import {
 import { NotificationService } from "./NotificationService";
 import { NotificationCategory } from "../models/Notification";
 import pushNotificationService from "./pushNotificationService";
-import { sendBookingReminderEmail, sendPlanCheckInEmail } from "../../utils/email";
+import {
+  sendBookingReminderEmail,
+  sendPlanCheckInEmail,
+  sendRankingDigestEmail,
+} from "../../utils/email";
 import mongoose from "mongoose";
 import { log as __rootLog } from "../../utils/logger";
+/** "7 Sep 2026". The list's own date, in the form the ranking pages use. */
+const formatAsOnDate = (value: unknown): string => {
+  const date = new Date(String(value ?? ""));
+  return Number.isNaN(date.getTime())
+    ? "the latest list"
+    : date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
+
 const log = __rootLog.child("scheduledNotification");
 
 interface BookingReminderData {
@@ -227,12 +239,27 @@ export class ScheduledNotificationService {
           // booking reminder) needs its own, or every nudge would show up
           // mislabeled in anything that groups by notification type.
           if (reminder.channels.inApp) {
-            const isExperienceNudge = reminder.type === "EXPERIENCE_NUDGE";
+            // Each reminder type carries its own in-app type/category, because
+            // anything that groups notifications reads these rather than the
+            // title. A ranking digest filed under BOOKING is a child's standing
+            // in the list a parent scrolls past.
+            const inAppType =
+              reminder.type === "EXPERIENCE_NUDGE"
+                ? ("EXPERIENCE_NUDGE" as const)
+                : reminder.type === "RANKING_DIGEST"
+                  ? ("RANKING_DIGEST" as const)
+                  : ("BOOKING_REMINDER" as const);
+            const inAppCategory =
+              inAppType === "EXPERIENCE_NUDGE"
+                ? ("COMMUNITY" as const)
+                : inAppType === "RANKING_DIGEST"
+                  ? ("RANKING" as const)
+                  : ("BOOKING" as const);
             sendPromises.push(
               NotificationService.create({
                 userId: reminder.userId._id.toString(),
-                type: isExperienceNudge ? "EXPERIENCE_NUDGE" : "BOOKING_REMINDER",
-                category: isExperienceNudge ? "COMMUNITY" : "BOOKING",
+                type: inAppType,
+                category: inAppCategory,
                 title: reminder.title,
                 message: reminder.body,
                 data: reminder.data || {},
@@ -274,6 +301,19 @@ export class ScheduledNotificationService {
                 }).catch((err) => {
                   log.error("Failed to send reminder email:", err);
                   // Return rejected promise to count as failure
+                  return Promise.reject(err);
+                })
+              );
+            } else if (reminder.type === "RANKING_DIGEST") {
+              const data = (reminder.data || {}) as Record<string, any>;
+              sendPromises.push(
+                sendRankingDigestEmail({
+                  email: user.email,
+                  name: user.name,
+                  asOnDate: formatAsOnDate(data.asOnDate),
+                  players: Array.isArray(data.players) ? data.players : [],
+                }).catch((err) => {
+                  log.error("Failed to send ranking digest email:", err);
                   return Promise.reject(err);
                 })
               );

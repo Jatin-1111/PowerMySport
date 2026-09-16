@@ -74,6 +74,15 @@ const notificationTypes: NotificationType[] = [
     category: "Payments",
   },
 
+  // Rankings
+  {
+    key: "rankingUpdates",
+    label: "Ranking Updates",
+    description:
+      "Get the weekly update when a new list is published for a player whose ranking you have linked",
+    category: "Rankings",
+  },
+
   // Admin
   {
     key: "admin",

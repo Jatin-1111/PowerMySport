@@ -9,7 +9,12 @@ export type ReminderType =
   // ScheduledNotificationService.processPendingReminders sweep; it needs no
   // type-specific handling there because it sends in-app only (no booking
   // lookup, no email template).
-  | "EXPERIENCE_NUDGE";
+  | "EXPERIENCE_NUDGE"
+  // A new ranking list has been published and a claimed player's standing moved.
+  // Like EXPERIENCE_NUDGE it is post-event rather than pre-event, so `interval`
+  // is always CUSTOM: there is nothing to count down to. Unlike it, it does send
+  // an email, so the sweep has a branch for it.
+  | "RANKING_DIGEST";
 // "CUSTOM" is for reminders whose timing isn't "X before an event" (e.g. a
 // plan check-in due N weeks out) — scheduledFor is the only date that matters.
 export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS" | "CUSTOM";
@@ -57,7 +62,13 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
     },
     type: {
       type: String,
-      enum: ["BOOKING_REMINDER", "PATHWAY_DOCUMENT_REMINDER", "PLAN_CHECKIN", "EXPERIENCE_NUDGE"],
+      enum: [
+        "BOOKING_REMINDER",
+        "PATHWAY_DOCUMENT_REMINDER",
+        "PLAN_CHECKIN",
+        "EXPERIENCE_NUDGE",
+        "RANKING_DIGEST",
+      ],
       required: true,
       default: "BOOKING_REMINDER",
     },

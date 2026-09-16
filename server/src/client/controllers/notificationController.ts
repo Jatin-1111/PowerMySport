@@ -153,6 +153,7 @@ const notificationPreferencesSchema = z.object({
       bookingCancellations: z.boolean().optional(),
       reviews: z.boolean().optional(),
       payments: z.boolean().optional(),
+      rankingUpdates: z.boolean().optional(),
       admin: z.boolean().optional(),
       marketing: z.boolean().optional(),
     })
@@ -166,6 +167,7 @@ const notificationPreferencesSchema = z.object({
       bookingCancellations: z.boolean().optional(),
       reviews: z.boolean().optional(),
       payments: z.boolean().optional(),
+      rankingUpdates: z.boolean().optional(),
       admin: z.boolean().optional(),
       marketing: z.boolean().optional(),
     })
@@ -179,6 +181,7 @@ const notificationPreferencesSchema = z.object({
       bookingCancellations: z.boolean().optional(),
       reviews: z.boolean().optional(),
       payments: z.boolean().optional(),
+      rankingUpdates: z.boolean().optional(),
       admin: z.boolean().optional(),
       marketing: z.boolean().optional(),
     })

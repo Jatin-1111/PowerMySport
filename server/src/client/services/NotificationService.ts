@@ -67,6 +67,7 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   MESSAGE_RECEIVED: "COMMUNITY",
   PLAN_CHECKIN: "COMMUNITY",
   EXPERIENCE_NUDGE: "COMMUNITY",
+  RANKING_DIGEST: "RANKING",
 };
 
 // Notification type to preference key mapping
@@ -79,6 +80,7 @@ const TYPE_TO_PREFERENCE_KEY: Record<
   | "bookingCancellations"
   | "reviews"
   | "payments"
+  | "rankingUpdates"
   | "admin"
   | "marketing"
 > = {
@@ -117,7 +119,8 @@ const TYPE_TO_PREFERENCE_KEY: Record<
   DISPUTE_RESOLVED: "admin",
   MESSAGE_RECEIVED: "friendRequests", // Reuse for community
   PLAN_CHECKIN: "friendRequests", // Reuse for community
-  EXPERIENCE_NUDGE: "bookingReminders", // Closest existing key — no dedicated preference yet
+  EXPERIENCE_NUDGE: "bookingReminders",
+  RANKING_DIGEST: "rankingUpdates", // Closest existing key — no dedicated preference yet
 };
 
 let socketInstance: Server | null = null;

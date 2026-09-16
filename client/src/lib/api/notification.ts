@@ -43,6 +43,8 @@ export interface NotificationChannelPreferences {
   bookingCancellations?: boolean;
   reviews?: boolean;
   payments?: boolean;
+  /** Weekly digest for a child whose federation ranking has been linked. */
+  rankingUpdates?: boolean;
   admin?: boolean;
   marketing?: boolean;
 }
