@@ -1,12 +1,17 @@
 "use client";
 
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { formatMonthYear } from "@/utils/date";
 import { Edit2, UserSquare } from "lucide-react";
 import Link from "next/link";
 
 export function ContactView() {
   const { user } = useAuthStore();
   if (!user) return null;
+
+  // Was hardcoded to "Member since 2024" for every account. When the API has
+  // not sent a join date the line is dropped rather than guessed at.
+  const memberSince = formatMonthYear(user.createdAt);
 
   return (
     <div className="space-y-6">
@@ -31,7 +36,7 @@ export function ContactView() {
           </div>
           <div>
             <h3 className="text-xl font-bold text-slate-900">{user.name}</h3>
-            <p className="text-sm text-slate-500">Member since 2024</p>
+            {memberSince && <p className="text-sm text-slate-500">Member since {memberSince}</p>}
           </div>
         </div>
 

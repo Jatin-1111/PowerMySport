@@ -95,7 +95,7 @@ const NEXT_STEPS = [
   {
     icon: CalendarCheck,
     title: "Know the sport, need a plan?",
-    body: "Get a plan built around your child's age, level and what you're aiming at — training, competitions and the decisions in between.",
+    body: "Get a plan built around your child's age, level and what you're aiming at: training, competitions and the decisions in between.",
     href: "/guidance",
     cta: "Get guidance",
     tone: "text-emerald-600 bg-emerald-100",
@@ -103,10 +103,10 @@ const NEXT_STEPS = [
   {
     icon: MessagesSquare,
     title: "Want to ask a person?",
-    body: "Book time with a verified expert who has been through this — a coach, an ex-player, someone who has taken a child down this road.",
+    body: "Book time with a verified expert who has been through this: a coach, an ex-player, someone who has taken a child down this road.",
     href: "/booking?tab=experts",
     cta: "Speak with an expert",
-    tone: "text-indigo-600 bg-indigo-100",
+    tone: "text-teal-700 bg-teal-100",
   },
 ];
 
@@ -177,7 +177,7 @@ export default async function PathwaysIndexPage() {
               <span className="mt-1 block text-slate-400">Navigating the journey is not.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Coaches, academies, competitions, costs, education — the answers are scattered
+              Coaches, academies, competitions, costs, education. The answers are scattered
               everywhere. We put them in one place, stage by stage.
             </p>
           </div>
@@ -189,7 +189,7 @@ export default async function PathwaysIndexPage() {
               the page, saying "6 stages / 5 questions / Built with coaches / ₹0".
               Two of those are facts the page itself demonstrates, and none of
               them were worth a band. As a single meta line under the picker they
-              answer the two questions a first-time visitor actually has — who
+              answer the two questions a first-time visitor actually has, who
               wrote this, and what will it cost me — in the place they ask them. */}
           <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12.5px] font-semibold text-slate-500">
             <li className="inline-flex items-center gap-1.5">
@@ -272,7 +272,7 @@ export default async function PathwaysIndexPage() {
             eyebrow="The same shape, every time"
             title="Every stage answers the same five questions"
           >
-            Learn the shape once and it never moves again — whatever the sport, whatever your
+            Learn the shape once and it never moves again, whatever the sport, whatever your
             child&apos;s age.
           </SectionHead>
 
@@ -305,7 +305,7 @@ export default async function PathwaysIndexPage() {
               them: they sat below a five-step diagram that had already made the
               point, and a wall of body copy in a card reads as terms and
               conditions. Both are now the one sentence each was actually for,
-              and they have lost the card chrome with it — a rule and a heading
+              and they have lost the card chrome with it, a rule and a heading
               is enough to mark a statement, and it stops this reading as a third
               row of clickable things in a section where nothing is clickable. */}
           <div className="mx-auto mt-12 grid max-w-4xl gap-8 sm:grid-cols-2 sm:gap-10">
@@ -316,7 +316,7 @@ export default async function PathwaysIndexPage() {
               </h3>
               <p className="mt-2 text-[14.5px] leading-relaxed text-slate-600">
                 There is no single right way to start. Some children find their sport by playing,
-                others need guiding to it — what matters is choosing with your eyes open.
+                others need guiding to it. What matters is choosing with your eyes open.
               </p>
             </div>
             <div>
@@ -337,7 +337,7 @@ export default async function PathwaysIndexPage() {
       {/* ── Next steps ──
           For the parent whose sport is not published yet, or who does not want
           to read six stages tonight. One band, three concrete routes, each
-          naming what it actually does — this replaces the generic stats banner
+          naming what it actually does. This replaces the generic stats banner
           and the "PowerMySport helps you grow faster" pair, which between them
           asked for a long scroll and offered no specific action. */}
       <section className="reveal-on-scroll relative overflow-hidden border-y border-white/60 bg-white/50 py-16 sm:py-20">
@@ -389,7 +389,7 @@ export default async function PathwaysIndexPage() {
       <CTA
         variant="gradient"
         title="You are not the first parent doing this"
-        description="Thousands of Indian sports parents comparing academies, coaches, costs and competitions — ask the question you have not found an answer to yet."
+        description="Thousands of Indian sports parents comparing academies, coaches, costs and competitions. Ask the question you have not found an answer to yet."
         primaryCTA={{ label: "Join Parent Community", href: communityUrl }}
         secondaryCTA={{ label: "Get Guidance", href: "/guidance" }}
       />

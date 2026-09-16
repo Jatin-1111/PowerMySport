@@ -22,7 +22,7 @@ const GENDER_LABEL: Record<string, string> = {
 
 const LABELS: Record<string, Record<string, string>> = {
   primaryObjective: {
-    Recreational: "Recreational — just for fun & fitness",
+    Recreational: "Recreational, just for fun & fitness",
     Fitness: "Fitness-focused",
     Compete: "Wants to compete",
   },
@@ -341,13 +341,13 @@ export default function ExpertSessionPlayerDetailPage() {
 
           {/* Quick facts strip */}
           <div className="grid grid-cols-2 gap-5 border-b border-slate-100 px-6 py-5 sm:grid-cols-4 sm:px-8">
-            <StatTile label="Skill level" value={player.skillLevel || "—"} />
+            <StatTile label="Skill level" value={player.skillLevel || "N/A"} />
             <StatTile
               label="Goal"
               value={
                 labelFor("ambition", player.ambition) ||
                 labelFor("primaryObjective", player.primaryObjective) ||
-                "—"
+                "N/A"
               }
             />
             <StatTile
@@ -355,14 +355,14 @@ export default function ExpertSessionPlayerDetailPage() {
               value={
                 labelFor("budgetRange", player.budgetRange) ||
                 labelFor("budgetTier", player.budgetTier) ||
-                "—"
+                "N/A"
               }
             />
             <StatTile
               label="Commitment"
               value={
                 labelFor("weeklyHoursCategory", player.weeklyHoursCategory) ||
-                (player.weeklyTimeCommitment ? `${player.weeklyTimeCommitment} hrs/wk` : "—")
+                (player.weeklyTimeCommitment ? `${player.weeklyTimeCommitment} hrs/wk` : "N/A")
               }
             />
           </div>

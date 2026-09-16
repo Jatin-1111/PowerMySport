@@ -94,7 +94,7 @@ export default function FeatureWaitlist({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Get notified when we launch"
               required
-              className="w-full rounded-full border border-slate-200 bg-white/80 py-4 pl-12 pr-36 text-sm text-slate-900 shadow-sm outline-none backdrop-blur-xl transition-all focus:ring-4"
+              className="w-full rounded-lg border border-slate-200 bg-white/80 py-4 pl-12 pr-36 text-sm text-slate-900 shadow-sm outline-none backdrop-blur-xl transition-all focus:ring-4"
               style={{
                 outlineColor: gradientFrom,
               }}
@@ -102,7 +102,7 @@ export default function FeatureWaitlist({
             <button
               type="submit"
               disabled={loading}
-              className={`absolute bottom-2 right-2 top-2 flex items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-md transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 ${buttonColorClass}`}
+              className={`absolute bottom-2 right-2 top-2 flex items-center justify-center rounded-md px-6 text-sm font-semibold text-white shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${buttonColorClass}`}
             >
               {loading ? "Joining..." : submitted ? "Subscribed!" : "Notify Me"}
             </button>

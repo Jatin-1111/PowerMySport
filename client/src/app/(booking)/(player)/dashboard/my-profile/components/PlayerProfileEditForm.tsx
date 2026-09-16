@@ -35,12 +35,12 @@ export function PlayerProfileEditForm({
       {isParent ? (
         <ProfileEditPanel
           title="About You"
-          description="Your sports background as a parent — helps the AI understand your perspective."
+          description="Your sports background as a parent, helps the AI understand your perspective."
         >
           <ProfileEditField
             label="About You"
             htmlFor="parent-bio"
-            hint={`${playerProfileForm.bio.length}/300 — your background as a sports parent`}
+            hint={`${playerProfileForm.bio.length}/300, your background as a sports parent`}
           >
             <textarea
               id="parent-bio"

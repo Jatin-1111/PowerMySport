@@ -101,19 +101,19 @@ export const STEPS = [
   {
     id: "physical",
     title: "Physical traits",
-    sub: "Body type, energy, and motor skills — optional",
+    sub: "Body type, energy, and motor skills, optional",
     required: false,
   },
   {
     id: "personality",
     title: "Mind & play style",
-    sub: "How they think and compete — optional",
+    sub: "How they think and compete, optional",
     required: false,
   },
   {
     id: "environment",
     title: "Environment & senses",
-    sub: "Preferences and sensory profile — optional",
+    sub: "Preferences and sensory profile, optional",
     required: false,
   },
 ] as const;
@@ -298,7 +298,7 @@ export default function DependentManagementModal({
               Step {stepIndex + 1} of {STEPS.length}
             </span>
             {!currentStep.required && (
-              <span className="text-[11px] text-slate-400">Optional — skip if you like</span>
+              <span className="text-[11px] text-slate-400">Optional, skip if you like</span>
             )}
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -412,7 +412,7 @@ export default function DependentManagementModal({
                     value={formData.location || ""}
                     onChange={(v) => handleChange("location", v)}
                     options={[
-                      { value: "", label: "— Select state —" },
+                      { value: "", label: "Select a state" },
                       ...stateSelectOptions(formData.location),
                     ]}
                   />
@@ -423,13 +423,13 @@ export default function DependentManagementModal({
                     options={[
                       {
                         value: "beginner",
-                        label: "Beginner — city / neighbourhood, just getting started",
+                        label: "Beginner, city / neighbourhood, just getting started",
                       },
                       {
                         value: "intermediate",
-                        label: "Intermediate — school, club or district level",
+                        label: "Intermediate, school, club or district level",
                       },
-                      { value: "competitive", label: "Competitive — state or national level" },
+                      { value: "competitive", label: "Competitive, state or national level" },
                     ]}
                     value={formData.experienceLevel ?? null}
                     onChange={(v) => handleChange("experienceLevel", v)}
@@ -467,12 +467,12 @@ export default function DependentManagementModal({
 
                 <ProfileEditField
                   label="Medical conditions / limitations"
-                  hint="Optional — helps avoid unsuitable sports"
+                  hint="Optional, helps avoid unsuitable sports"
                 >
                   <div className="space-y-2">
                     <Input
                       type="text"
-                      placeholder="e.g., Asthma — press Enter to add"
+                      placeholder="e.g., Asthma, press Enter to add"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();

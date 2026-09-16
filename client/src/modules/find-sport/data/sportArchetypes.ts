@@ -36,7 +36,7 @@ const CURRENT_STANDING_LADDERS: Record<Archetype, LadderTier[]> = {
       value: 1,
       label: "No trials yet",
       context:
-        "Hasn't reached district trials yet — no matter how long or how seriously they've trained",
+        "Hasn't reached district trials yet, no matter how long or how seriously they've trained",
     },
     { value: 2, label: "District level", context: "Competes at district level" },
     { value: 3, label: "State level", context: "Competes at state level" },
@@ -48,7 +48,7 @@ const CURRENT_STANDING_LADDERS: Record<Archetype, LadderTier[]> = {
       value: 1,
       label: "No ranking yet",
       context:
-        "Hasn't entered ranking tournaments yet — no matter how long or how seriously they've trained",
+        "Hasn't entered ranking tournaments yet, no matter how long or how seriously they've trained",
     },
     { value: 2, label: "State ranking", context: "Plays state-level ranking tournaments" },
     { value: 3, label: "All-India ranking", context: "Has an All-India (national) ranking" },
@@ -63,7 +63,7 @@ const CURRENT_STANDING_LADDERS: Record<Archetype, LadderTier[]> = {
     {
       value: 1,
       label: "Unrated",
-      context: "Not yet officially rated — no matter how long or how seriously they've trained",
+      context: "Not yet officially rated, no matter how long or how seriously they've trained",
     },
     { value: 2, label: "State-rated", context: "Has a state rating" },
     { value: 3, label: "Nationally rated", context: "Has a national (AICF) rating" },
@@ -78,7 +78,7 @@ const CURRENT_STANDING_LADDERS: Record<Archetype, LadderTier[]> = {
     {
       value: 1,
       label: "No {unit} yet",
-      context: "No {unit} recorded yet — no matter how long or how seriously they've trained",
+      context: "No {unit} recorded yet, no matter how long or how seriously they've trained",
     },
     { value: 2, label: "District/club level", context: "Has a district/club-level {unit}" },
     { value: 3, label: "State standard", context: "Meets the state qualifying standard" },
@@ -107,7 +107,7 @@ const BEST_RESULT_LADDERS: Record<Archetype, LadderTier[]> = {
     { value: 5, label: "Competed on the international junior circuit" },
   ],
   rating: [
-    { value: 1, label: "None yet — unrated" },
+    { value: 1, label: "None yet, unrated" },
     { value: 2, label: "Achieved a state rating" },
     { value: 3, label: "Achieved a national (AICF) rating" },
     { value: 4, label: "Achieved an international (FIDE) rating" },

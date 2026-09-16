@@ -175,7 +175,7 @@ export default function InvitationsPage() {
                           <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
                           <span className="font-medium">{invitation.venueId.name}</span>
                           {invitation.venueId.address && (
-                            <span className="text-slate-400">— {invitation.venueId.address}</span>
+                            <span className="text-slate-400">, {invitation.venueId.address}</span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-slate-600">

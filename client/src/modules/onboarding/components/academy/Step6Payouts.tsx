@@ -350,7 +350,7 @@ export default function Step6Payouts({
               >
                 Partner Terms (Experts &amp; Academies)
               </Link>
-              , including the 15% platform commission, and the{" "}
+              including the 15% platform commission, and the{" "}
               <Link
                 href="/terms"
                 target="_blank"

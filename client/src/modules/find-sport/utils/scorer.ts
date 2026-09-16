@@ -367,7 +367,7 @@ function buildReasons(
         text:
           ti !== null && ti <= 2
             ? `${name} wants the result to be ${possPronoun} alone. In ${sport.name} it is.`
-            : `${sport.name} is decided by one player — no teammates to carry a bad day.`,
+            : `${sport.name} is decided by one player, no teammates to carry a bad day.`,
       });
     } else if (sport.individual <= 2) {
       reasons.push({
@@ -389,7 +389,7 @@ function buildReasons(
     if (answers.energyType === "explosive" && sport.explosive >= 4) {
       reasons.push({
         type: "energy",
-        text: `Speed and power decide ${sport.name} — exactly ${poss} energy pattern.`,
+        text: `Speed and power decide ${sport.name}, exactly ${poss} energy pattern.`,
       });
     } else if (answers.energyType === "endurance" && sport.endurance >= 4) {
       reasons.push({
@@ -412,12 +412,12 @@ function buildReasons(
   if (trackingFits && sharpEyes && child.visualTracking >= 4 && child.eyesightValue >= 4) {
     reasons.push({
       type: "synergy-vision",
-      text: `Sharp eyes and strong tracking together — ${sport.name} rewards the pair more than either alone.`,
+      text: `Sharp eyes and strong tracking together, ${sport.name} rewards the pair more than either alone.`,
     });
   } else if (trackingFits) {
     reasons.push({
       type: "visual-tracking",
-      text: `${name} picks up a fast-moving object early — the core skill in ${sport.name}.`,
+      text: `${name} picks up a fast-moving object early, the core skill in ${sport.name}.`,
     });
   } else if (sharpEyes) {
     reasons.push({
@@ -442,7 +442,7 @@ function buildReasons(
   ) {
     reasons.push({
       type: "decision-style",
-      text: `${sport.name} rewards planning over reflex — how ${name} already thinks.`,
+      text: `${sport.name} rewards planning over reflex, how ${name} already thinks.`,
     });
   }
 
@@ -471,7 +471,7 @@ function buildReasons(
     if (sport.heightAdvantage === "tall" && isTall) {
       reasons.push({
         type: "physical",
-        text: `Taller than most kids ${poss} age — a structural advantage in ${sport.name}.`,
+        text: `Taller than most kids ${poss} age, a structural advantage in ${sport.name}.`,
       });
     } else if (sport.heightAdvantage === "short" && isShort) {
       reasons.push({
@@ -507,7 +507,7 @@ function buildReasons(
   } else if (answers.agility === "low" && sport.agilityNeed <= 2) {
     reasons.push({
       type: "agility",
-      text: `${sport.name} doesn't ask for agility — strength, strategy and consistency carry it.`,
+      text: `${sport.name} doesn't ask for agility, strength, strategy and consistency carry it.`,
     });
   }
 
@@ -533,12 +533,12 @@ function buildReasons(
   if (answers.state && answers.budget) {
     reasons.push({
       type: "budget",
-      text: `${sport.name} runs ${sport.costRange} in ${answers.state} — inside your budget.`,
+      text: `${sport.name} runs ${sport.costRange} in ${answers.state}, inside your budget.`,
     });
   } else if (answers.budget) {
     reasons.push({
       type: "budget",
-      text: `A good ${sport.name} academy runs ${sport.costRange} — inside your budget.`,
+      text: `A good ${sport.name} academy runs ${sport.costRange}, inside your budget.`,
     });
   }
 
@@ -557,7 +557,7 @@ function buildReasons(
   if (RACKET_SPORT_NAMES.has(sport.name) && child.explosive >= 4 && child.agilityValue >= 4) {
     reasons.push({
       type: "synergy-racket",
-      text: `Explosive energy plus high agility — ${sport.name} demands exactly that pairing.`,
+      text: `Explosive energy plus high agility, ${sport.name} demands exactly that pairing.`,
     });
   }
   if (
@@ -578,7 +578,7 @@ function buildReasons(
   if (matchingPrior) {
     reasons.push({
       type: "prior-sport",
-      text: `${matchingPrior} transfers directly to ${sport.name} — the movement patterns overlap.`,
+      text: `${matchingPrior} transfers directly to ${sport.name}, the movement patterns overlap.`,
     });
   }
 
@@ -657,7 +657,7 @@ function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[]
 
   if (sport.requiresWater && answers.waterComfort === "uncomfortable") {
     out.push(
-      `${name} isn't comfortable in water yet. Learn-to-swim comes first — ${sport.name} training makes no sense before that.`
+      `${name} isn't comfortable in water yet. Learn-to-swim comes first, ${sport.name} training makes no sense before that.`
     );
   }
 
@@ -669,13 +669,13 @@ function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[]
 
   if (answers.budget && !budgetCoversMinimum(answers.budget, sport.minBudgetTier)) {
     out.push(
-      `${sport.name} coaching runs ${sport.costRange} — above the ${BUDGET_GAP_LABEL[answers.budget]} you set. School and district programmes are the cheaper way in.`
+      `${sport.name} coaching runs ${sport.costRange}, above the ${BUDGET_GAP_LABEL[answers.budget]} you set. School and district programmes are the cheaper way in.`
     );
   }
 
   if (answers.age && answers.age > sport.ageWindowCutoff && isEliteAmbition(answers.ambition)) {
     out.push(
-      `For the goal you picked, ${answers.age} is past the starting window in ${sport.name} — that pathway begins by ${sport.ageWindowCutoff}. To play and enjoy, still wide open.`
+      `For the goal you picked, ${answers.age} is past the starting window in ${sport.name}. That pathway begins by ${sport.ageWindowCutoff}. To play and enjoy, still wide open.`
     );
   }
 
@@ -697,7 +697,7 @@ function findHardBlockers(answers: WizardAnswers, sport: SportProfile): string[]
           : 172;
     if (answers.height < minH) {
       out.push(
-        `National selection in ${sport.name} is height-driven, and at ${answers.age} ${name} ${plural ? "are" : "is"} under the ${minH}cm mark selectors work from. Not out of the sport — out of that pathway, so ${poss} goal may need rethinking.`
+        `National selection in ${sport.name} is height-driven, and at ${answers.age} ${name} ${plural ? "are" : "is"} under the ${minH}cm mark selectors work from. Not out of the sport, out of that pathway, so ${poss} goal may need rethinking.`
       );
     }
   }
@@ -735,7 +735,7 @@ function buildGaps(
     // Deliberately says "stamina", not "conditioning" — this branch also fires
     // for Chess, where the long sessions are mental rather than physical.
     gaps.push(
-      `${sport.name} rewards long, sustained effort; ${name} works in short bursts. Stamina trains up — expect that to be the early grind.`
+      `${sport.name} rewards long, sustained effort; ${name} works in short bursts. Stamina trains up. Expect that to be the early grind.`
     );
   } else if (answers.energyType === "endurance" && sport.explosive >= 4 && sport.endurance <= 3) {
     gaps.push(
@@ -753,7 +753,7 @@ function buildGaps(
   // Decision style
   if (answers.decisionStyle === "strategic" && sport.reactFast >= 4) {
     gaps.push(
-      `${sport.name} rarely allows time to plan — decisions are made at speed. ${name} likes to watch first.`
+      `${sport.name} rarely allows time to plan, decisions are made at speed. ${name} likes to watch first.`
     );
   } else if (answers.decisionStyle === "react" && sport.reactFast <= 2) {
     // Sport-neutral on purpose: this branch fires for Chess and Swimming alike,
@@ -807,7 +807,7 @@ function buildGaps(
   if (answers.height) {
     if (sport.heightAdvantage === "tall" && child.heightValue <= 2) {
       gaps.push(
-        `Height is a structural advantage in ${sport.name}, and ${name} ${isAre} shorter than average today. Revisit as ${subj} ${plural ? "grow" : "grows"} — it's a moving target at this age.`
+        `Height is a structural advantage in ${sport.name}, and ${name} ${isAre} shorter than average today. Revisit as ${subj} ${plural ? "grow" : "grows"}. It's a moving target at this age.`
       );
     } else if (sport.heightAdvantage === "short" && child.heightValue >= 4) {
       gaps.push(
@@ -1061,7 +1061,7 @@ function fallbackStrength(answers: WizardAnswers, sport: SportProfile): string {
     }
   }
   if (sport.minBudgetTier === "under-3k") {
-    return `${sport.name} is among the cheapest sports to try — ${sport.costRange}, cheaper still through school and district programmes.`;
+    return `${sport.name} is among the cheapest sports to try, ${sport.costRange}, cheaper still through school and district programmes.`;
   }
   return `${sport.name} runs ${sport.costRange} and about ${sport.minWeeklyHours} hours a week. A trial class tells you more than any score.`;
 }

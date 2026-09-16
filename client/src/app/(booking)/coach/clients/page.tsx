@@ -31,9 +31,9 @@ function getInitials(name: string): string {
 }
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
+  if (!dateStr) return "N/A";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "—";
+  if (isNaN(d.getTime())) return "N/A";
   return d.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",

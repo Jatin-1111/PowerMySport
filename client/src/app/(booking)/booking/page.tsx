@@ -139,7 +139,7 @@ function BookingPageContent() {
                 Book 1:1 sessions with <span className="text-power-orange">verified experts.</span>
               </h1>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-slate-500">
-                Get personalised guidance from verified sports experts — bookable in minutes across
+                Get personalised guidance from verified sports experts, bookable in minutes across
                 India.
               </p>
             </div>

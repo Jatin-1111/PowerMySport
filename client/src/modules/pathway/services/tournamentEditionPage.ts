@@ -57,7 +57,7 @@ export function formatShortDate(value: string): string {
 export const DOCUMENT_META: Record<EditionDocument["kind"], { label: string; hint: string }> = {
   factSheet: {
     label: "Fact sheet",
-    hint: "Entry fee, entry deadline, format and venue rules — read this before entering.",
+    hint: "Entry fee, entry deadline, format and venue rules. Read this before entering.",
   },
   acceptanceList: {
     label: "Acceptance list",

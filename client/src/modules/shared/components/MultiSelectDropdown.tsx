@@ -184,7 +184,7 @@ export default function MultiSelectDropdown({
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          aria-label={`${label} — ${value.length} selected`}
+          aria-label={`${label}, ${value.length} selected`}
           className={cn(
             "focus-visible:border-power-orange focus-visible:ring-power-orange/40 flex w-full items-center justify-between rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:outline-none focus-visible:ring-2 dark:bg-slate-800/50",
             isOpen

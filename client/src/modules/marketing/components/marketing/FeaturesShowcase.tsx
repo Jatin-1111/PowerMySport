@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { AnimatePresence, motion, Variants } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { CalendarCheck, ChevronRight } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { SectionLabel } from "./SectionLabel";
@@ -65,15 +65,15 @@ const PALETTE_MAP: Record<string, PaletteEntry> = {
     progressBar: "bg-blue-500",
     cardAccentFrom: "from-blue-50/60",
   },
-  violet: {
-    dot: "bg-violet-500",
-    chip: "bg-violet-100 text-violet-700 ring-violet-200",
-    iconBg: "bg-violet-50 text-violet-600 ring-1 ring-violet-200",
-    numColor: "text-violet-600",
-    stepHex: "#DDD6FE",
-    glowColor: "rgba(124,58,237,0.12)",
-    progressBar: "bg-violet-500",
-    cardAccentFrom: "from-violet-50/60",
+  teal: {
+    dot: "bg-teal-500",
+    chip: "bg-teal-100 text-teal-700 ring-teal-200",
+    iconBg: "bg-teal-50 text-teal-600 ring-1 ring-teal-200",
+    numColor: "text-teal-600",
+    stepHex: "#99F6E4",
+    glowColor: "rgba(13,148,136,0.12)",
+    progressBar: "bg-teal-500",
+    cardAccentFrom: "from-teal-50/60",
   },
   emerald: {
     dot: "bg-emerald-500",
@@ -115,19 +115,6 @@ function getPalette(feature: ShowcaseFeature, index: number): PaletteEntry {
 }
 
 const STEPS = ["01", "02", "03", "04", "05", "06", "07", "08"];
-
-const sectionVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
-};
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 280, damping: 22 },
-  },
-};
 
 // ─── Mini abstract visuals per feature ────────────────────────────────────────
 // Pure CSS / JSX visuals — no images needed.
@@ -195,7 +182,7 @@ function MiniSteps({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
 function MiniChat({ chipCls = "bg-orange-100 text-orange-700" }: { chipCls?: string }) {
   const bubbles = [
     { q: "Is tennis right for my 8-year-old?", isUser: true },
-    { q: "Yes — here's a personalised 3-month plan", isUser: false },
+    { q: "Yes. Here's a personalised 3-month plan", isUser: false },
   ];
   return (
     <div className="flex flex-col gap-2">
@@ -391,35 +378,23 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section header ── */}
         {(title || subtitle || description) && (
-          <motion.div
-            variants={sectionVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-12 sm:mb-16"
-          >
+          <div className="reveal-on-scroll mb-12 sm:mb-16">
             {subtitle && (
-              <motion.div variants={itemVariants} className="mb-4">
+              <div className="mb-4">
                 <SectionLabel label={subtitle} color="orange" />
-              </motion.div>
+              </div>
             )}
             {title && (
-              <motion.h2
-                variants={itemVariants}
-                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-              >
+              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
                 {title}
-              </motion.h2>
+              </h2>
             )}
             {description && (
-              <motion.p
-                variants={itemVariants}
-                className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg"
-              >
+              <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
                 {description}
-              </motion.p>
+              </p>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* ── Track toggle (multi-track mode only) ── */}
@@ -447,14 +422,10 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
         )}
 
         {/* ── Two-panel layout ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ type: "spring", stiffness: 220, damping: 26, delay: 0.15 }}
+        <div
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
-          className="grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr] lg:gap-6 xl:grid-cols-[400px_1fr]"
+          className="reveal-on-scroll grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr] lg:gap-6 xl:grid-cols-[400px_1fr]"
         >
           {/* ── Left: Parent worry list ── */}
           <div className="flex flex-col gap-2">
@@ -681,7 +652,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
               </div>
             </motion.div>
           </AnimatePresence>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

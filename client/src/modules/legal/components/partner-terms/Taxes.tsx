@@ -12,8 +12,8 @@ export function Taxes() {
           provide a PAN attracts TDS at the higher rate prescribed by law
         </li>
         <li>
-          PowerMySport deducts tax at source where required — including under Section 194-O of the
-          Income-tax Act, 1961 for e-commerce participants — and issues the corresponding statutory
+          PowerMySport deducts tax at source where required, including under Section 194-O of the
+          Income-tax Act, 1961 for e-commerce participants, and issues the corresponding statutory
           certificate. TCS/TDS under GST law is applied where applicable
         </li>
         <li>

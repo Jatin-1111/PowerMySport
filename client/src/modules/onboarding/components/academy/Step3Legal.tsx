@@ -50,7 +50,7 @@ export default function Step3Legal({
       errors.panNumber = "Invalid PAN format (e.g., ABCDE1234F)";
     }
     if (!panUploaded && !formData.panDocumentUrl) {
-      errors.panDocument = "PAN document is required — please upload it";
+      errors.panDocument = "PAN document is required, please upload it";
     }
     if (
       formData.gstNumber.trim() &&

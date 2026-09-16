@@ -148,7 +148,7 @@ export function SchedulingSidebar({
         <div className="border-b border-slate-100 px-4 py-3.5">
           <h3 className="text-sm font-semibold text-slate-800">Block Time Off</h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Mark dates unavailable — holidays, personal time, etc.
+            Mark dates unavailable, holidays, personal time, etc.
           </p>
         </div>
 

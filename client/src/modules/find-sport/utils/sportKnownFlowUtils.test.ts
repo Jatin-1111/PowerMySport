@@ -489,14 +489,14 @@ describe("getCurrentStandingLadder / getBestResultLadder — archetype resolutio
 
   it("Athletics/Swimming (time-based standard) swap in 'time'", () => {
     expect(getCurrentStandingLadder("Athletics")[0].context).toBe(
-      "No time recorded yet — no matter how long or how seriously they've trained"
+      "No time recorded yet, no matter how long or how seriously they've trained"
     );
     expect(getCurrentStandingLadder("Swimming")[1].context).toBe("Has a district/club-level time");
   });
 
   it("Shooting (score-based standard) swaps in 'score'", () => {
     expect(getCurrentStandingLadder("Shooting")[0].context).toBe(
-      "No score recorded yet — no matter how long or how seriously they've trained"
+      "No score recorded yet, no matter how long or how seriously they've trained"
     );
   });
 

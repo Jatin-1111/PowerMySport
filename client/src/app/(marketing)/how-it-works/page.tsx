@@ -1,11 +1,8 @@
-"use client";
-
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Timeline, type TimelineEntry } from "@/modules/marketing/components/marketing/Timeline";
 import { cn } from "@/utils/cn";
-import { motion, Variants } from "framer-motion";
 import {
   BrainCircuit,
   CalendarRange,
@@ -19,41 +16,15 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useRef } from "react";
 
-// ─── Design Tokens ────────────────────────────────────────────────────────────
-
-const SPRING_STIFF = { type: "spring", stiffness: 260, damping: 22 } as const;
-const SPRING_SOFT = { type: "spring", stiffness: 200, damping: 28 } as const;
-
-// ─── Motion Variants ──────────────────────────────────────────────────────────
-
-const orchestratorVariants: Variants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.11, delayChildren: 0.06 },
-  },
-};
-
-const fadeSlideUp: Variants = {
-  hidden: { opacity: 0, y: 28 },
-  show: { opacity: 1, y: 0, transition: SPRING_STIFF },
-};
-
-const fadeSlideLeft: Variants = {
-  hidden: { opacity: 0, x: -36, scale: 0.96 },
-  show: { opacity: 1, x: 0, scale: 1, transition: SPRING_SOFT },
-};
-
-const fadeSlideRight: Variants = {
-  hidden: { opacity: 0, x: 36, scale: 0.96 },
-  show: { opacity: 1, x: 0, scale: 1, transition: SPRING_SOFT },
-};
-
-const cardReveal: Variants = {
-  hidden: { opacity: 0, y: 32, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: SPRING_STIFF },
-};
+// ─── Scroll reveal ────────────────────────────────────────────────────────────
+//
+// Sections reveal with the `.reveal-on-scroll` utility in globals.css rather
+// than framer-motion `whileInView`. The variants this page used before left
+// 43 `opacity: 0` wrappers in the server HTML, so the whole page — including
+// the h1 — was painted invisible until hydration ran a frame. The CSS version
+// defaults to visible and animates only where scroll-driven animations are
+// supported and the reader has not asked for reduced motion.
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -70,10 +41,10 @@ function AmbientBlob({ className }: { className: string }) {
 /** Checklist item */
 function CheckItem({ text, iconColor }: { text: string; iconColor: string }) {
   return (
-    <motion.li variants={fadeSlideUp} className="flex items-start gap-3 text-slate-700">
+    <li className="flex items-start gap-3 text-slate-700">
       <CheckCircle size={20} className={`mt-0.5 shrink-0 ${iconColor}`} />
       <span className="text-base leading-relaxed">{text}</span>
-    </motion.li>
+    </li>
   );
 }
 
@@ -189,46 +160,27 @@ function StepRow({
   image,
   imageRight = false,
 }: StepRowProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
   return (
-    <div ref={containerRef} className="group grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
+    <div className="group grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
       {/* Copy block */}
-      <motion.div
-        variants={orchestratorVariants}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-100px" }}
-        className={imageRight ? "order-2 lg:order-1" : "order-2"}
-      >
-        <motion.h3
-          variants={fadeSlideUp}
-          className="mb-4 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl lg:text-4xl"
-        >
+      <div className={`reveal-on-scroll ${imageRight ? "order-2 lg:order-1" : "order-2"}`}>
+        <h3 className="mb-4 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl lg:text-4xl">
           {title}
-        </motion.h3>
-        <motion.p variants={fadeSlideUp} className="mb-8 text-lg leading-relaxed text-slate-600">
-          {description}
-        </motion.p>
-        <motion.ul variants={orchestratorVariants} className="space-y-3">
+        </h3>
+        <p className="mb-8 text-lg leading-relaxed text-slate-600">{description}</p>
+        <ul className="space-y-3">
           {checkItems.map((item, i) => (
             <CheckItem key={i} text={item.text} iconColor={item.iconColor} />
           ))}
-        </motion.ul>
-      </motion.div>
+        </ul>
+      </div>
 
       {/* Image frame */}
-      <motion.div
-        variants={imageRight ? fadeSlideRight : fadeSlideLeft}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-100px" }}
-        whileHover={{ scale: 1.015, y: -4 }}
-        transition={SPRING_SOFT}
-        className={imageRight ? "order-1 lg:order-2" : "order-1"}
+      <div
+        className={`reveal-on-scroll transition-transform duration-300 hover:-translate-y-1 hover:scale-[1.015] ${imageRight ? "order-1 lg:order-2" : "order-1"}`}
       >
         <AssetFrame {...image} step={step} />
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -249,12 +201,7 @@ function DeliverableCard({
   glow: string;
 }) {
   return (
-    <motion.div
-      variants={cardReveal}
-      whileHover={{ y: -6 }}
-      transition={SPRING_STIFF}
-      className="group relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] will-change-transform hover:shadow-xl hover:shadow-slate-200/70 sm:p-8"
-    >
+    <div className="group relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-transform duration-300 will-change-transform hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/70 sm:p-8">
       {/* Soft corner glow */}
       <div
         aria-hidden
@@ -268,7 +215,7 @@ function DeliverableCard({
       </div>
       <h3 className="relative mb-2.5 text-lg font-bold text-slate-900">{title}</h3>
       <p className="relative text-sm leading-relaxed text-slate-500 sm:text-base">{desc}</p>
-    </motion.div>
+    </div>
   );
 }
 
@@ -276,12 +223,7 @@ function DeliverableCard({
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   return (
-    <motion.div
-      variants={cardReveal}
-      whileHover={{ y: -3 }}
-      transition={SPRING_SOFT}
-      className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] will-change-transform hover:shadow-lg hover:shadow-slate-200/70"
-    >
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70">
       {/* Accent left border stripe */}
       <div
         aria-hidden
@@ -289,7 +231,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
       />
       <h3 className="mb-3 text-lg font-bold text-slate-900">{q}</h3>
       <p className="text-base leading-relaxed text-slate-500">{a}</p>
-    </motion.div>
+    </div>
   );
 }
 
@@ -303,7 +245,7 @@ export default function HowItWorksPage() {
       badgeBg: "bg-gradient-to-r from-orange-500 to-orange-400",
       title: "Tell Us About Your Child",
       description:
-        "Share your child's age, sports interests, and how much time they can give each week. It takes about two minutes—no jargon, no pressure.",
+        "Share your child's age, sports interests, and how much time they can give each week. It takes about two minutes, no jargon, no pressure.",
       checkItems: [
         {
           text: "Simple questions, plain language",
@@ -314,7 +256,7 @@ export default function HowItWorksPage() {
           iconColor: "text-orange-400",
         },
         {
-          text: "Free to start—no card required",
+          text: "Free to start, no card required",
           iconColor: "text-orange-400",
         },
       ],
@@ -323,7 +265,7 @@ export default function HowItWorksPage() {
         alt: "Young player mid-swing on a tennis court",
         overlayIcon: <UserPlus size={20} />,
         overlayLabel: "Your Child's Profile",
-        overlayCaption: "Age, interests, time — that's all we need",
+        overlayCaption: "Age, interests, time. That's all we need",
         accentColor: "from-orange-500/25",
         backdropTint: "from-orange-100/70 via-orange-50/40 to-transparent",
       },
@@ -331,23 +273,23 @@ export default function HowItWorksPage() {
     },
     {
       step: 2,
-      stepColor: "text-indigo-500",
+      stepColor: "text-teal-600",
       badgeBg: "bg-gradient-to-r from-blue-600 to-blue-500",
       title: "Get an AI Sports Roadmap",
       description:
-        "We build a personalised roadmap for your child—which sport suits them, what to focus on first, and the milestones to aim for along the way.",
+        "We build a personalised roadmap for your child, which sport suits them, what to focus on first, and the milestones to aim for along the way.",
       checkItems: [
         {
           text: "Know which sport fits your child best",
-          iconColor: "text-indigo-400",
+          iconColor: "text-teal-400",
         },
         {
           text: "See the time and cost it really takes",
-          iconColor: "text-indigo-400",
+          iconColor: "text-teal-400",
         },
         {
           text: "Clear next steps, not vague advice",
-          iconColor: "text-indigo-400",
+          iconColor: "text-teal-400",
         },
       ],
       image: {
@@ -357,7 +299,7 @@ export default function HowItWorksPage() {
         overlayLabel: "AI Roadmap",
         overlayCaption: "The starting line, mapped to the finish",
         accentColor: "from-blue-500/25",
-        backdropTint: "from-blue-100/60 via-indigo-50/40 to-transparent",
+        backdropTint: "from-blue-100/60 via-cyan-50/40 to-transparent",
       },
       imageRight: false,
     },
@@ -367,7 +309,7 @@ export default function HowItWorksPage() {
       badgeBg: "bg-gradient-to-r from-emerald-600 to-emerald-400",
       title: "Get Guidance on Every Step",
       description:
-        "Not sure what to do next? Lean on sports experts and our AI guide for answers built around your child's goals—so every decision feels clear.",
+        "Not sure what to do next? Lean on sports experts and our AI guide for answers built around your child's goals, so every decision feels clear.",
       checkItems: [
         {
           text: "Ask questions, get clear answers",
@@ -399,37 +341,37 @@ export default function HowItWorksPage() {
     {
       icon: Target,
       title: "The right sport, not a guess",
-      desc: "A match from 50+ sports based on your child's age, personality, and physical traits—with the reasons behind every pick.",
+      desc: "A match from 50+ sports based on your child's age, personality, and physical traits, with the reasons behind every pick.",
       accent: "bg-orange-50 text-power-orange ring-orange-200/60",
       glow: "from-orange-400/25",
     },
     {
       icon: CalendarRange,
       title: "Milestones that fit their age",
-      desc: "What to focus on now and when to level up—because a 7-year-old and a 14-year-old need very different plans.",
+      desc: "What to focus on now and when to level up, because a 7-year-old and a 14-year-old need very different plans.",
       accent: "bg-blue-50 text-blue-600 ring-blue-200/60",
       glow: "from-blue-400/20",
     },
     {
       icon: Wallet,
       title: "Real costs, in rupees",
-      desc: "Know what training actually costs each month before you commit—from the first trial session to serious competition.",
+      desc: "Know what training actually costs each month before you commit, from the first trial session to serious competition.",
       accent: "bg-emerald-50 text-emerald-600 ring-emerald-200/60",
       glow: "from-emerald-400/20",
     },
     {
       icon: Trophy,
       title: "The competition ladder, mapped",
-      desc: "District to state to nationals—see the real tournaments and federations on your child's path, and what it takes to get there.",
-      accent: "bg-violet-50 text-violet-600 ring-violet-200/60",
-      glow: "from-violet-400/20",
+      desc: "District to state to nationals. See the real tournaments and federations on your child's path, and what it takes to get there.",
+      accent: "bg-teal-50 text-teal-600 ring-teal-200/60",
+      glow: "from-teal-400/20",
     },
   ];
 
   const faqs = [
     {
       q: "What can I use right now?",
-      a: "Today you can build a personalised sports roadmap for your child and get guidance from sports experts and our AI guide. Both are free to use—no card required.",
+      a: "Today you can build a personalised sports roadmap for your child and get guidance from sports experts and our AI guide. Both are free to use, no card required.",
     },
     {
       q: "Is it really free?",
@@ -441,7 +383,7 @@ export default function HowItWorksPage() {
     },
     {
       q: "Do I need to know which sport my child should play?",
-      a: "Not at all. That's exactly what the roadmap helps with. Tell us about your child's age, interests, and time, and we'll suggest sports that genuinely fit—then map out the path.",
+      a: "Not at all. That's exactly what the roadmap helps with. Tell us about your child's age, interests, and time, and we'll suggest sports that genuinely fit, then map out the path.",
     },
   ];
 
@@ -452,7 +394,7 @@ export default function HowItWorksPage() {
         variant="page"
         title="How It Works"
         subtitle="Getting Started"
-        description="See how PowerMySport turns the confusion of youth sports into one clear, personalised plan for your child—starting today, for free."
+        description="See how PowerMySport turns the confusion of youth sports into one clear, personalised plan for your child, starting today, for free."
         imageSrc="https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?auto=format&fit=crop&w=2000&q=80"
         imageAlt="A floodlit cricket stadium in India packed with spectators"
       />
@@ -461,25 +403,16 @@ export default function HowItWorksPage() {
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
         {/* Ambient blobs */}
         <AmbientBlob className="-left-48 top-24 h-96 w-96 bg-orange-100/40" />
-        <AmbientBlob className="-right-40 top-1/3 h-80 w-80 bg-indigo-100/30" />
-        <AmbientBlob className="-left-32 bottom-1/4 h-72 w-72 bg-indigo-100/30" />
+        <AmbientBlob className="-right-40 top-1/3 h-80 w-80 bg-slate-200/40" />
+        <AmbientBlob className="-left-32 bottom-1/4 h-72 w-72 bg-slate-200/40" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Section header */}
-          <motion.div
-            variants={orchestratorVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-12 text-center lg:mb-28"
-          >
-            <motion.div variants={fadeSlideUp} className="mb-5 flex justify-center">
+          <div className="reveal-on-scroll mb-12 text-center lg:mb-28">
+            <div className="mb-5 flex justify-center">
               <SectionLabel label="For Parents & Guardians" color="orange" />
-            </motion.div>
-            <motion.h2
-              variants={fadeSlideUp}
-              className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
+            </div>
+            <h2 className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
               Plan Their Journey in{" "}
               <span className="relative inline-block">
                 3 Simple Steps
@@ -488,8 +421,8 @@ export default function HowItWorksPage() {
                   className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-orange-400 to-orange-200"
                 />
               </span>
-            </motion.h2>
-          </motion.div>
+            </h2>
+          </div>
 
           {/* Step timeline: sticky step numbers + scroll-tracking beam */}
           <Timeline
@@ -516,88 +449,49 @@ export default function HowItWorksPage() {
         <AmbientBlob className="-left-24 bottom-16 h-72 w-72 bg-sky-100/40" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestratorVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-14 text-center"
-          >
-            <motion.div variants={fadeSlideUp} className="mb-5 flex justify-center">
+          <div className="reveal-on-scroll mb-14 text-center">
+            <div className="mb-5 flex justify-center">
               <SectionLabel label="What You Walk Away With" color="orange" />
-            </motion.div>
-            <motion.h2
-              variants={fadeSlideUp}
-              className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
+            </div>
+            <h2 className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
               Not Vague Advice. A Real Plan.
-            </motion.h2>
-            <motion.p
-              variants={fadeSlideUp}
-              className="mx-auto mt-4 max-w-xl text-lg text-slate-500"
-            >
-              Every plan is built for your child specifically—here&apos;s what you&apos;ll actually
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
+              Every plan is built for your child specifically, here&apos;s what you&apos;ll actually
               have in hand after those three steps.
-            </motion.p>
-          </motion.div>
+            </p>
+          </div>
 
-          <motion.div
-            variants={orchestratorVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2"
-          >
+          <div className="reveal-on-scroll mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2">
             {deliverables.map((d) => (
               <DeliverableCard key={d.title} {...d} />
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* ── The old way vs the clear way ── */}
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
         <AmbientBlob className="-right-40 top-24 h-96 w-96 bg-orange-100/40" />
-        <AmbientBlob className="-left-32 bottom-16 h-72 w-72 bg-indigo-100/30" />
+        <AmbientBlob className="-left-32 bottom-16 h-72 w-72 bg-slate-200/40" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestratorVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-14 text-center"
-          >
-            <motion.div variants={fadeSlideUp} className="mb-5 flex justify-center">
+          <div className="reveal-on-scroll mb-14 text-center">
+            <div className="mb-5 flex justify-center">
               <SectionLabel label="The Difference" color="orange" />
-            </motion.div>
-            <motion.h2
-              variants={fadeSlideUp}
-              className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
+            </div>
+            <h2 className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
               Guesswork Out. Clarity In.
-            </motion.h2>
-            <motion.p
-              variants={fadeSlideUp}
-              className="mx-auto mt-4 max-w-xl text-lg text-slate-500"
-            >
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
               Most parents piece it together from contradicting advice. Here&apos;s what changes
               when there&apos;s an actual plan.
-            </motion.p>
-          </motion.div>
+            </p>
+          </div>
 
-          <motion.div
-            variants={orchestratorVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2"
-          >
+          <div className="reveal-on-scroll mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Old way */}
-            <motion.div
-              variants={cardReveal}
-              className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-slate-50/80 p-7 sm:p-8"
-            >
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-slate-50/80 p-7 sm:p-8">
               <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
                 Without a plan
               </p>
@@ -605,7 +499,7 @@ export default function HowItWorksPage() {
               <ul className="space-y-4">
                 {[
                   "Advice from WhatsApp groups that contradicts itself",
-                  "Trial-and-error academies—fees lost with every switch",
+                  "Trial-and-error academies, fees lost with every switch",
                   "No idea what it should cost, until the bill arrives",
                   "One-size-fits-all training that ignores your child's age",
                 ].map((item) => (
@@ -617,13 +511,10 @@ export default function HowItWorksPage() {
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
 
             {/* With PowerMySport */}
-            <motion.div
-              variants={cardReveal}
-              className="relative overflow-hidden rounded-3xl border border-orange-200/70 bg-white p-7 shadow-xl shadow-orange-100/60 sm:p-8"
-            >
+            <div className="relative overflow-hidden rounded-3xl border border-orange-200/70 bg-white p-7 shadow-xl shadow-orange-100/60 sm:p-8">
               {/* Corner glow */}
               <div
                 aria-hidden
@@ -639,7 +530,7 @@ export default function HowItWorksPage() {
                 {[
                   "One assessment, a data-backed sport match",
                   "A roadmap built for your child's age and goals",
-                  "Costs in rupees upfront—before you commit to anything",
+                  "Costs in rupees upfront, before you commit to anything",
                   "Experts and real parents to lean on at every step",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
@@ -654,13 +545,13 @@ export default function HowItWorksPage() {
                 href="/assessment"
                 className="text-power-orange group mt-7 inline-flex items-center gap-1.5 text-sm font-bold transition-colors hover:text-orange-600"
               >
-                Start free — it takes 10 minutes
+                Start free. It takes 10 minutes
                 <span className="transition-transform duration-200 group-hover:translate-x-0.5">
                   →
                 </span>
               </a>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -675,38 +566,23 @@ export default function HowItWorksPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        <AmbientBlob className="-right-24 top-16 h-80 w-80 bg-indigo-100/40" />
+        <AmbientBlob className="-right-24 top-16 h-80 w-80 bg-slate-200/50" />
 
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestratorVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-12 text-center"
-          >
-            <motion.div variants={fadeSlideUp} className="mb-5 flex justify-center">
+          <div className="reveal-on-scroll mb-12 text-center">
+            <div className="mb-5 flex justify-center">
               <SectionLabel label="Common Questions" color="slate" />
-            </motion.div>
-            <motion.h2
-              variants={fadeSlideUp}
-              className="font-title text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
+            </div>
+            <h2 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
               Frequently Asked Questions
-            </motion.h2>
-          </motion.div>
+            </h2>
+          </div>
 
-          <motion.div
-            variants={orchestratorVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="space-y-4"
-          >
+          <div className="reveal-on-scroll space-y-4">
             {faqs.map((faq, i) => (
               <FAQItem key={i} q={faq.q} a={faq.a} />
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 

@@ -133,7 +133,7 @@ export function ResultsScreen({
             </button>
           </div>
           <p className="text-sm text-slate-500">
-            Here&apos;s your personalised plan — based on everything you told us.
+            Here&apos;s your personalised plan, based on everything you told us.
           </p>
         </div>
 

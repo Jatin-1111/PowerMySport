@@ -80,10 +80,10 @@ export async function generateMetadata({
     finished
       ? [
           `${title} took place on ${formatShortDate(edition.startDate)}`,
-          where ? `at ${where}` : null,
+          where ? `at ${where}.` : null,
           nextInSeries
-            ? `— the next edition is ${formatShortDate(nextInSeries.startDate)}.`
-            : `— see upcoming ${edition.sportSlug} tournaments${edition.city ? ` in ${edition.city}` : ""}.`,
+            ? `The next edition is ${formatShortDate(nextInSeries.startDate)}.`
+            : `See upcoming ${edition.sportSlug} tournaments${edition.city ? ` in ${edition.city}` : ""}.`,
         ]
       : [
           `${title} starts ${formatShortDate(edition.startDate)}`,
@@ -115,7 +115,7 @@ export async function generateMetadata({
       : edition.city || null,
   ]
     .filter(Boolean)
-    .join(" — ");
+    .join(" | ");
 
   return {
     title: metaTitle,
@@ -277,7 +277,7 @@ export default async function TournamentEditionPage({
             {edition.officialName || edition.name}
           </h1>
           {/* The short calendar name is what the federation's own calendar prints,
-              so keep it visible when the official title differs — parents match
+              so keep it visible when the official title differs, parents match
               on it when cross-checking the source. */}
           {edition.officialName && edition.officialName !== edition.name && (
             <p className="mt-2 text-sm font-semibold text-white/40">
@@ -322,7 +322,7 @@ export default async function TournamentEditionPage({
                 <p className="mt-1 text-sm text-slate-500">
                   It ran on {formatFullDate(edition.endDate || edition.startDate)}
                   {location ? ` at ${location}` : ""}. We mirror federation calendars and entry
-                  paperwork, not results — the organiser publishes those.
+                  paperwork, not results, the organiser publishes those.
                 </p>
 
                 {nextInSeries ? (
@@ -366,7 +366,7 @@ export default async function TournamentEditionPage({
             </h2>
             <p className="mt-1.5 text-sm text-slate-500">
               {finished
-                ? "The fact sheet as it was published for this event — entries have closed."
+                ? "The fact sheet as it was published for this event. Entries have closed."
                 : DOCUMENT_META.factSheet.hint}
             </p>
             <a

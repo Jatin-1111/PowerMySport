@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Get Started",
   description:
-    "Tell us whether you already know your child's sport or need help finding the right fit — we'll build the right plan either way.",
+    "Tell us whether you already know your child's sport or need help finding the right fit. We'll build the right plan either way.",
   alternates: { canonical: "/assessment" },
 };
 

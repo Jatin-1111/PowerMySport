@@ -228,7 +228,7 @@ function SportTile({
                     {stage.name}
                     <span className="font-semibold text-slate-400">{stage.ageRange}</span>
                     {i === matchIndex && (
-                      <span className="sr-only">— where a {age}-year-old starts</span>
+                      <span className="sr-only">, where a {age}-year-old starts</span>
                     )}
                   </Link>
                 </li>
@@ -288,7 +288,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
     return (
       <p className="mx-auto mt-4 max-w-xl text-center text-sm text-slate-600 sm:text-base">
         No pathways are published yet. We&apos;re building them with coaches and experienced
-        parents, one sport at a time — check back shortly.
+        parents, one sport at a time. Check back shortly.
       </p>
     );
   }
@@ -317,7 +317,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
         }`}
       >
         {/* Search leads, and it is the only control here by default. "Which
-            sport?" is answered by typing, not by looking — a parent arrives at
+            sport?" is answered by typing, not by looking, a parent arrives at
             this page already knowing the word. */}
         <form
           role="search"
@@ -407,7 +407,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
       </p>
 
       {/* Only when there is something to say. The age is no longer asked for
-          here — it is asked once inside a pathway and remembered — so this line
+          here, it is asked once inside a pathway and remembered, so this line
           appears for a parent who has already answered it somewhere else, and
           nothing is shown to one who has not. */}
       {age !== null && (
@@ -481,7 +481,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
         <p className="mt-3 text-center text-[12.5px] text-slate-500">
           {narrowed ? (
             <>
-              {beyondCap} more match{beyondCap === 1 ? "" : "es"} — keep typing to narrow it down.
+              {beyondCap} more match{beyondCap === 1 ? "" : "es"}. Keep typing to narrow it down.
             </>
           ) : (
             <>

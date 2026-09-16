@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Get Expert Sports Guidance — Problem Solver for Your Child",
+  title: "Get Expert Sports Guidance | Problem Solver for Your Child",
   description:
-    "Tell us your child's challenge — a weakness to fix, a tournament to prepare for, or a level to break through — and get a personalised action plan. AI-powered, free to use.",
+    "Tell us your child's challenge, a weakness to fix, a tournament to prepare for, or a level to break through, and get a personalised action plan. AI-powered, free to use.",
   alternates: {
     canonical: "/guidance",
   },
   openGraph: {
-    title: "Get Expert Sports Guidance — Problem Solver for Your Child",
+    title: "Get Expert Sports Guidance | Problem Solver for Your Child",
     description:
       "Describe your child's sports challenge and get a targeted plan in under 2 minutes. AI-powered, state-specific, completely free.",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],

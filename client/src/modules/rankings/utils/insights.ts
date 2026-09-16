@@ -49,9 +49,9 @@ export function seriesClass(index: number): string {
  * formatter. `api.ts` re-exports it, so existing callers are unaffected.
  */
 export function formatAsOn(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "N/A";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "N/A";
   return date.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",

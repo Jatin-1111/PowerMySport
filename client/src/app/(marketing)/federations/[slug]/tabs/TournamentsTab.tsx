@@ -82,7 +82,7 @@ export function TournamentsTab({
       </div>
 
       {/* Count + cross-link into the dated calendar. These tabs answer
-          different questions — this tab is the evergreen "what is this and
+          different questions. This tab is the evergreen "what is this and
           how do I enter", the Calendar is "when and where" — so each needs
           a route to the other. The count only shows once the Calendar tab
           has been opened; it stays lazy rather than fetching eagerly. */}

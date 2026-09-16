@@ -1,7 +1,7 @@
 export function Commission() {
   return (
     <section id="commission" className="mb-8">
-      <h2 className="mb-4 text-2xl font-bold text-slate-900">Commission — 15% of Partner Fee</h2>
+      <h2 className="mb-4 text-2xl font-bold text-slate-900">Commission: 15% of Partner Fee</h2>
       <div className="border-power-orange not-prose mb-5 rounded-r-lg border-l-4 bg-orange-50 p-4">
         <p className="text-sm font-semibold text-slate-800">
           PowerMySport charges a platform commission of 15% (fifteen percent) of the Partner Fee on
@@ -63,7 +63,7 @@ export function Commission() {
       <p className="mb-4 leading-relaxed text-slate-600">
         We may revise the commission rate. Any increase takes effect no earlier than thirty (30)
         days after we notify you by email and in-platform notice, and applies only to Transactions
-        booked on or after the effective date — bookings already confirmed at the old rate are
+        booked on or after the effective date, bookings already confirmed at the old rate are
         settled at the old rate. If you do not accept a revised rate, you may terminate under the
         Exit section, subject to honouring your confirmed bookings.
       </p>

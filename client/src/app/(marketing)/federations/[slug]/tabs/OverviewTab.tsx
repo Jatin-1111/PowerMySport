@@ -207,12 +207,12 @@ export function OverviewTab({
               We handle registration for you
             </p>
             <p className="mb-4 text-xs leading-relaxed text-white/45">
-              Federation IDs, documents, form submissions — our team takes care of everything at no
+              Federation IDs, documents, form submissions. Our team takes care of everything at no
               cost.
             </p>
             <a
               href={buildWhatsAppUrl(
-                `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel} — found via PowerMySport.`
+                `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel}, found via PowerMySport.`
               )}
               target="_blank"
               rel="noopener noreferrer"

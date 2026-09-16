@@ -4,8 +4,8 @@ export function Definitions() {
       <h2 className="mb-4 text-2xl font-bold text-slate-900">Who These Terms Cover</h2>
       <ul className="list-disc space-y-2 pl-6 text-slate-600">
         <li>
-          <strong>Experts:</strong> Individual professionals — including ex-professional players,
-          certified coaches, analysts, and mentors — who offer paid one-on-one guidance, mentorship,
+          <strong>Experts:</strong> Individual professionals, including ex-professional players,
+          certified coaches, analysts, and mentors, who offer paid one-on-one guidance, mentorship,
           career advice, or advisory sessions through the Platform, in online or in-person format.
         </li>
         <li>

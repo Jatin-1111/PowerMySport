@@ -24,8 +24,8 @@ export function Services() {
           subscription plans, and packages to players
         </li>
         <li>
-          <strong>Experts:</strong> Elite or experienced sports professionals — including
-          ex-professional players, certified analysts, and senior-level coaches — who offer paid,
+          <strong>Experts:</strong> Elite or experienced sports professionals, including
+          ex-professional players, certified analysts, and senior-level coaches, who offer paid,
           one-on-one guidance, mentorship, career advice, and advisory sessions to clients through
           the Platform, in online or in-person format. Expert profiles are subject to verification
           and approval by PowerMySport before going live

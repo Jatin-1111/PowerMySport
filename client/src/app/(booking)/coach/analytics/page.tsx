@@ -116,7 +116,7 @@ export default function CoachAnalyticsPage() {
     },
     {
       label: "Avg Rating",
-      value: overview.avgRating > 0 ? `${overview.avgRating.toFixed(1)} ★` : "—",
+      value: overview.avgRating > 0 ? `${overview.avgRating.toFixed(1)} out of 5` : "N/A",
       icon: <Star size={20} />,
       valueClass: "text-power-orange",
     },
@@ -261,7 +261,7 @@ export default function CoachAnalyticsPage() {
                 <div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
                   <p className="mb-1 text-xs uppercase tracking-wide text-slate-500">Avg Rating</p>
                   <p className="text-power-orange text-2xl font-bold">
-                    {overview.avgRating > 0 ? overview.avgRating.toFixed(1) : "—"}
+                    {overview.avgRating > 0 ? overview.avgRating.toFixed(1) : "N/A"}
                   </p>
                 </div>
               </div>

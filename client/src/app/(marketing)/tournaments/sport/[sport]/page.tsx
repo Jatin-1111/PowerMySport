@@ -84,8 +84,8 @@ export async function generateMetadata({
   const sportLabel = SPORT_LABEL[sport];
   if (!sportLabel) return { title: "Tournaments" };
 
-  const title = `${sportLabel} Tournaments in India — Upcoming Dates & Fact Sheets`;
-  const description = `Browse upcoming ${sportLabel} tournaments across India — dates, venues, age groups and entry fact sheets, updated as federations publish them.`;
+  const title = `${sportLabel} Tournaments in India: Upcoming Dates & Fact Sheets`;
+  const description = `Browse upcoming ${sportLabel} tournaments across India, dates, venues, age groups and entry fact sheets, updated as federations publish them.`;
 
   // A hub exists for every supported sport, but most hold no tournaments yet
   // and render an empty listing. The sitemap already skips those; this stops
@@ -165,7 +165,7 @@ export default async function SportTournamentsHubPage({
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-orange-50">
               {total > 0
-                ? `${total} ${upcoming ? "upcoming" : "past"} ${sportLabel.toLowerCase()} tournament${total === 1 ? "" : "s"} — dates, venues and entry fact sheets as federations publish them.`
+                ? `${total} ${upcoming ? "upcoming" : "past"} ${sportLabel.toLowerCase()} tournament${total === 1 ? "" : "s"}: dates, venues and entry fact sheets as federations publish them.`
                 : `${upcoming ? "Upcoming" : "Past"} ${sportLabel.toLowerCase()} tournaments across India.`}
             </p>
           </div>

@@ -164,7 +164,7 @@ export function TaxPayoutInfoStep({
               onChange={(e) => onChange({ gstNumber: e.target.value.toUpperCase() })}
             />
             <p className="mt-1 text-xs text-slate-500">
-              Only if you&apos;re GST-registered — most individual experts can leave this blank.
+              Only if you&apos;re GST-registered, most individual experts can leave this blank.
             </p>
           </div>
         </div>

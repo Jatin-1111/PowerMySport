@@ -55,19 +55,11 @@ const imageVariants: Variants = {
 
 // ─── HOME VARIANT ─────────────────────────────────────────────────────────────
 
-const headlineVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07, delayChildren: 0.2 } },
-};
+const headlineVariants: Variants = itemVariants;
 
 const wordVariants: Variants = {
-  hidden: { opacity: 0, y: 24, filter: "blur(10px)" },
-  show: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { type: "spring", stiffness: 220, damping: 26 },
-  },
+  hidden: {},
+  show: {},
 };
 
 const NOISE_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")`;
@@ -87,8 +79,7 @@ function HomeHero({
     target: containerRef,
     offset: ["start start", "end start"],
   });
-  const imageY = useTransform(scrollYProgress, [0, 1], ["0%", "16%"]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+  const imageY = useTransform(scrollYProgress, [0, 1], ["0%", "8%"]);
 
   // Split the title into words, tagging the highlighted phrase
   const words: Array<{ text: string; hl: boolean }> = [];
@@ -125,11 +116,8 @@ function HomeHero({
     >
       {/* ── Full-bleed background image ── */}
       <motion.div
-        className="absolute inset-0 will-change-transform"
+        className="absolute inset-0 scale-105 will-change-transform"
         style={{ y: imageY }}
-        initial={{ scale: 1.14 }}
-        animate={{ scale: 1.06 }}
-        transition={{ duration: 7, ease: [0.22, 1, 0.36, 1] }}
       >
         <Image
           src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?fm=jpg&q=75&w=2400&auto=format&fit=crop"
@@ -155,23 +143,16 @@ function HomeHero({
       />
 
       {/* ── Aurora glows (toned down on mobile) ── */}
-      <motion.div
+      <div
         aria-hidden
         className="bg-power-orange/30 pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full blur-[100px] sm:-bottom-24 sm:-left-24 sm:h-[28rem] sm:w-[28rem] sm:blur-[130px]"
-        animate={{ x: [0, 50, 0], y: [0, -30, 0], opacity: [0.45, 0.75, 0.45] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
+      <div
         aria-hidden
         className="pointer-events-none absolute -top-16 right-[-4rem] h-48 w-48 rounded-full bg-sky-400/15 blur-[100px] sm:-top-32 sm:right-[-8rem] sm:h-[26rem] sm:w-[26rem] sm:blur-[130px]"
-        animate={{ x: [0, -40, 0], y: [0, 30, 0], opacity: [0.35, 0.6, 0.35] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      <motion.div
-        style={{ opacity: contentOpacity }}
-        className="relative mx-auto w-full max-w-7xl px-5 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-32"
-      >
+      <div className="relative mx-auto w-full max-w-7xl px-5 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -230,7 +211,7 @@ function HomeHero({
                       strokeLinecap="round"
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ delay: 1, duration: 0.8, ease: "easeOut" }}
+                      transition={{ delay: 0.35, duration: 0.6, ease: "easeOut" }}
                     />
                     <defs>
                       <linearGradient id="hero-underline" x1="0" y1="0" x2="1" y2="0">
@@ -337,12 +318,22 @@ function HomeHero({
             </motion.div>
           )}
         </motion.div>
-      </motion.div>
+      </div>
     </section>
   );
 }
 
 // ─── PAGE VARIANT ─────────────────────────────────────────────────────────────
+//
+// The text here renders plainly, with no entrance animation. It used to be a
+// `whileInView` stagger, which is the wrong tool for a hero: the element is
+// already in view on load, so all the observer could do was hold the h1 — the
+// LCP element on /about, /contact and /how-it-works — at `opacity: 0` until
+// JavaScript had hydrated and a frame had run.
+//
+// The decorative motion below (the image's slow scale, the aurora pulse) stays.
+// It animates things that are not the content, so nothing is hidden waiting on
+// it.
 
 function PageHero({
   title,
@@ -410,32 +401,23 @@ function PageHero({
       )}
 
       <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-80px" }}
-          className="text-center"
-        >
+        <div className="text-center">
           {subtitle &&
             (hasImage ? (
-              <motion.div variants={itemVariants} className="mb-6 flex justify-center">
+              <div className="mb-6 flex justify-center">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur-md">
                   <Sparkles className="h-3.5 w-3.5" />
                   {subtitle}
                 </span>
-              </motion.div>
+              </div>
             ) : (
-              <motion.div variants={itemVariants} className="mb-5 flex justify-center">
+              <div className="mb-5 flex justify-center">
                 <SectionLabel label={subtitle} color="slate" />
-              </motion.div>
+              </div>
             ))}
-          <motion.h1 variants={itemVariants} className={cnTitle(hasImage)}>
-            {title}
-          </motion.h1>
+          <h1 className={cnTitle(hasImage)}>{title}</h1>
           {description && (
-            <motion.p
-              variants={itemVariants}
+            <p
               className={
                 hasImage
                   ? "mx-auto max-w-2xl text-lg leading-relaxed text-slate-200/95 sm:text-xl"
@@ -443,13 +425,10 @@ function PageHero({
               }
             >
               {description}
-            </motion.p>
+            </p>
           )}
           {(primaryCTA || secondaryCTA) && (
-            <motion.div
-              variants={itemVariants}
-              className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
-            >
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
               {primaryCTA && (
                 <Link href={primaryCTA.href}>
                   <Button variant="primary" size="lg" className="rounded-xl">
@@ -472,9 +451,9 @@ function PageHero({
                   </Button>
                 </Link>
               )}
-            </motion.div>
+            </div>
           )}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

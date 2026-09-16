@@ -218,7 +218,7 @@ export function WizardShell() {
                         for your child.
                       </h1>
                       <p className="max-w-sm text-sm leading-relaxed text-slate-400">
-                        We analyse {TOTAL_QUESTIONS} data points — the same things a top sports
+                        We analyse {TOTAL_QUESTIONS} data points, the same things a top sports
                         consultant would want to know.
                       </p>
                     </div>
@@ -310,7 +310,7 @@ export function WizardShell() {
                         Ready to find the perfect match?
                       </h2>
                       <p className="text-sm leading-relaxed text-slate-500">
-                        Answer honestly — there are no right or wrong answers. The more accurate you
+                        Answer honestly. There are no right or wrong answers. The more accurate you
                         are, the better the match.
                       </p>
                     </div>
@@ -367,8 +367,8 @@ export function WizardShell() {
                         </div>
                         {selectedDependentId && selectedPlayer?.wizardCompletedAt && (
                           <p className="mt-2 text-xs text-slate-400">
-                            Answers pre-filled from previous assessment — update anything
-                            that&apos;s changed.
+                            Answers pre-filled from previous assessment. Update anything that&apos;s
+                            changed.
                           </p>
                         )}
                       </div>

@@ -430,8 +430,8 @@ export default function ExpertSessionPage() {
                       ) : (
                         session.status === "SCHEDULED" && (
                           <p className="mt-2 text-xs text-slate-500">
-                            Your expert hasn&apos;t shared a location yet — check back closer to
-                            your session.
+                            Your expert hasn&apos;t shared a location yet. Check back closer to your
+                            session.
                           </p>
                         )
                       )
@@ -455,7 +455,7 @@ export default function ExpertSessionPage() {
                         <Target className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                         {session.player.name}&apos;s sport profile
                         {session.player.topSportMatch
-                          ? ` — best fit: ${session.player.topSportMatch.sport}`
+                          ? `, best fit: ${session.player.topSportMatch.sport}`
                           : ""}
                       </p>
                     )}
@@ -606,7 +606,7 @@ export default function ExpertSessionPage() {
                     <CheckCircle2 className="h-4.5 w-4.5" />
                   </div>
                   <p className="text-sm font-semibold text-emerald-700">
-                    Thanks — your review has been recorded.
+                    Thanks, your review has been recorded.
                   </p>
                 </div>
               )}

@@ -81,7 +81,7 @@ export function FriendsWidget() {
 
         {!hasFriends ? (
           <p className="text-sm text-slate-500">
-            No connections yet — find people you already train with.
+            No connections yet. Find people you already train with.
           </p>
         ) : (
           <div className="flex -space-x-2">

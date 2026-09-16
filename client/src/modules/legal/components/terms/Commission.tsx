@@ -14,7 +14,7 @@ export function Commission() {
           <a href="/partner-terms" className="text-orange-600 hover:underline">
             Partner Terms (Experts &amp; Academies)
           </a>
-          , which control over this section for those partners
+          which control over this section for those partners
         </li>
         <li>
           Where a commission is charged, the applicable rate will be disclosed to the affected venue

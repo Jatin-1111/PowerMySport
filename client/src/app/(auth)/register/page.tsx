@@ -423,9 +423,9 @@ function RegisterContent() {
                 onChange={handleChange}
                 className="focus:border-power-orange focus:ring-power-orange/10 h-12 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm text-slate-900 transition-all duration-200 focus:bg-white focus:outline-none focus:ring-4 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
               >
-                <option value="OWN_VENUE">Own Venue — coach at your location</option>
-                <option value="FREELANCE">Freelance — travel to players</option>
-                <option value="HYBRID">Hybrid — own venue or travel</option>
+                <option value="OWN_VENUE">Own Venue, coach at your location</option>
+                <option value="FREELANCE">Freelance, travel to players</option>
+                <option value="HYBRID">Hybrid, own venue or travel</option>
               </select>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {formData.serviceMode === "OWN_VENUE" &&

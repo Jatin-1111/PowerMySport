@@ -86,7 +86,7 @@ export function EligibilityTab({
                       </div>
                     </td>
                     <td className="max-w-[280px] py-3.5 text-xs leading-relaxed text-slate-500">
-                      {cat.notes ?? "—"}
+                      {cat.notes ?? "N/A"}
                     </td>
                   </tr>
                 ))}

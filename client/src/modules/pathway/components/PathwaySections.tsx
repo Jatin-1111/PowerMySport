@@ -139,7 +139,7 @@ export function PathwayHelpSection() {
               icon: <Award className="h-7 w-7" />,
               title: "Smart AI Planning",
               description:
-                "Our AI creates a custom plan based on your child's age, sport, and current skill level — showing you exactly what to do next.",
+                "Our AI creates a custom plan based on your child's age, sport, and current skill level, showing you exactly what to do next.",
               color: "bg-emerald-100 text-emerald-600",
             },
           ].map((item) => (

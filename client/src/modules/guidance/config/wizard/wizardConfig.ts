@@ -20,7 +20,7 @@ export const PROBLEM_TYPES = [
     tagline: "Something holding them back?",
     label: "Fix a weakness",
     description:
-      "Your child struggles with a specific aspect — agility, technique, focus, or mindset. Get a targeted plan to address it.",
+      "Your child struggles with a specific aspect, agility, technique, focus, or mindset. Get a targeted plan to address it.",
   },
   {
     id: "tournament" as const,
@@ -42,7 +42,7 @@ export const PROBLEM_TYPES = [
     tagline: "Stuck at one level?",
     label: "Level up",
     description:
-      "Can't break through to the next milestone? Get a clear path — what the breakthrough looks like and exactly how to get there.",
+      "Can't break through to the next milestone? Get a clear path. What the breakthrough looks like and exactly how to get there.",
   },
   {
     id: "custom" as const,
@@ -53,7 +53,7 @@ export const PROBLEM_TYPES = [
     tagline: "Something else entirely?",
     label: "Ask anything",
     description:
-      "Describe any sports challenge — routine, coach selection, burnout, diet, mental blocks — and get targeted expert-backed advice.",
+      "Describe any sports challenge, routine, coach selection, burnout, diet, mental blocks, and get targeted expert-backed advice.",
   },
 ] as const;
 
@@ -91,7 +91,7 @@ const sharedSteps = {
     id: "age",
     required: false,
     heading: (f) => `How old is ${f.sport ? `your ${f.sport} player` : "your child"}?`,
-    sub: "Optional — helps calibrate the intensity and timeline of the plan.",
+    sub: "Optional, helps calibrate the intensity and timeline of the plan.",
   }),
   gender: (): QuestionStep => ({
     kind: "question",
@@ -119,14 +119,14 @@ const sharedSteps = {
     id: "executor",
     required: true,
     heading: () => "Who will actually run these sessions?",
-    sub: "The plan changes completely depending on who's guiding the drills — we'll only suggest what they can realistically deliver.",
+    sub: "The plan changes completely depending on who's guiding the drills. We'll only suggest what they can realistically deliver.",
   }),
   budgetRange: (): QuestionStep => ({
     kind: "question",
     id: "budgetRange",
     required: false,
     heading: () => "What's your monthly budget for this?",
-    sub: "Optional — helps us recommend resources within your range.",
+    sub: "Optional, helps us recommend resources within your range.",
   }),
 };
 
@@ -142,7 +142,7 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       id: "experienceLevel",
       required: true,
       heading: (f) => `What's their current level in ${f.sport || "the sport"}?`,
-      sub: "Sets the baseline — the fix plan will match exactly where they are right now.",
+      sub: "Sets the baseline, the fix plan will match exactly where they are right now.",
     },
     {
       kind: "question",
@@ -157,7 +157,7 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       id: "weaknessDetail",
       required: true,
       heading: () => "What exactly does this look like?",
-      sub: "Tap anything that matches, or describe it yourself — the more specific, the better the plan.",
+      sub: "Tap anything that matches, or describe it yourself, the more specific, the better the plan.",
     },
     {
       kind: "question",
@@ -171,18 +171,18 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       id: "weaknessAttempts",
       required: false,
       heading: () => "What have you already tried to fix it?",
-      sub: "Optional — so we don't repeat what hasn't worked.",
+      sub: "Optional, so we don't repeat what hasn't worked.",
     },
     {
       kind: "question",
       id: "weaknessDuration",
       required: true,
       heading: () => "How long has this been a problem?",
-      sub: "Tells us how deep-rooted it is — a recent flaw needs a different approach than a long-standing habit.",
+      sub: "Tells us how deep-rooted it is, a recent flaw needs a different approach than a long-standing habit.",
     },
     {
       kind: "transition",
-      text: "Good — we know exactly what to target.",
+      text: "Good. We know exactly what to target.",
       sub: "A few quick logistics questions and your plan is ready.",
     },
     sharedSteps.executor(),
@@ -235,7 +235,7 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
     sharedSteps.gender(),
     {
       kind: "transition",
-      text: "Clear picture — now let's plan the prep.",
+      text: "Clear picture, now let's plan the prep.",
       sub: "A few final questions to size the training commitment.",
     },
     sharedSteps.executor(),
@@ -252,14 +252,14 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       id: "currentLevel",
       required: true,
       heading: (f) => `Where is your child now in ${f.sport || "the sport"}?`,
-      sub: "This is the starting point — the roadmap builds from here.",
+      sub: "This is the starting point, the roadmap builds from here.",
     },
     {
       kind: "question",
       id: "targetLevel",
       required: true,
       heading: () => "What level are they aiming for?",
-      sub: "Sets the destination — we'll map every step between here and there.",
+      sub: "Sets the destination. We'll map every step between here and there.",
     },
     {
       kind: "question",
@@ -273,7 +273,7 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       id: "trainingType",
       required: true,
       heading: () => "How do they currently train?",
-      sub: "Shapes the kind of advice — what to add, upgrade, or change in their setup.",
+      sub: "Shapes the kind of advice. What to add, upgrade, or change in their setup.",
     },
     {
       kind: "question",
@@ -288,13 +288,13 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       required: false,
       heading: (f) =>
         `What does ${f.sport ? `your ${f.sport} player` : "your child"} actually do well?`,
-      sub: "Optional — helps us build the breakthrough plan around their strengths, not just their gaps.",
+      sub: "Optional, helps us build the breakthrough plan around their strengths, not just their gaps.",
     },
     sharedSteps.age(),
     sharedSteps.gender(),
     {
       kind: "transition",
-      text: "Got it — full picture of where they are.",
+      text: "Got it, full picture of where they are.",
       sub: "A few final questions to calibrate the timeline.",
     },
     sharedSteps.executor(),
@@ -304,7 +304,7 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
 
   // ── Ask anything ──────────────────────────────────────────────────────────
   custom: [
-    sharedSteps.sport("Optional — skip if this isn't sport-specific."),
+    sharedSteps.sport("Optional. Skip if this isn't sport-specific."),
     sharedSteps.age(),
     sharedSteps.gender(),
     sharedSteps.state(),
@@ -334,7 +334,7 @@ export const WIZARD_STEPS: Record<ProblemId, WizardStep[]> = {
       id: "experienceLevel",
       required: false,
       heading: () => "What's their current level overall?",
-      sub: "Optional — gives the AI useful context to calibrate the advice.",
+      sub: "Optional, gives the AI useful context to calibrate the advice.",
     },
   ],
 };

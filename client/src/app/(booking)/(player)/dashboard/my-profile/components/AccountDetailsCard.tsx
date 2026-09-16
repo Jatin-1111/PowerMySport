@@ -148,7 +148,7 @@ export function AccountDetailsCard({
                     icon={Calendar}
                     hint={
                       profileForm.dob
-                        ? `Age: ${getDependentAge(profileForm.dob) ?? "—"} years`
+                        ? `Age: ${getDependentAge(profileForm.dob) ?? "not set"}`
                         : "Optional. Helps with age-appropriate bookings."
                     }
                   >

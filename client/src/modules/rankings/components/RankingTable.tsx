@@ -111,13 +111,13 @@ export function RankingTable({
                 {/* Below `md` there is no State column, so the same fact rides
                     along here instead of being dropped. */}
                 <span className="text-muted-foreground mt-0.5 block text-xs md:hidden">
-                  {entry.state ?? entry.stateCode ?? "—"}
+                  {entry.state ?? entry.stateCode ?? ""}
                   {entry.stateRank ? ` · #${entry.stateRank} in state` : ""}
                 </span>
               </td>
 
               <td className="text-muted-foreground hidden px-3 py-3 sm:px-4 md:table-cell">
-                <span className="block leading-snug">{entry.state ?? entry.stateCode ?? "—"}</span>
+                <span className="block leading-snug">{entry.state ?? entry.stateCode ?? ""}</span>
                 {entry.stateRank && (
                   <span className="mt-0.5 block text-xs tabular-nums">
                     #{entry.stateRank}

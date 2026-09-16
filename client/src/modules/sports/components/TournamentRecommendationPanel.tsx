@@ -291,7 +291,7 @@ export function TournamentRecommendationPanel({
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                     Recommended Tournaments
                     {goalLevel && currentLevel > 0
-                      ? ` — Your child is at Level ${currentLevel}, aiming for ${activeGoal?.label}`
+                      ? `Your child is at Level ${currentLevel}, aiming for ${activeGoal?.label}`
                       : ""}
                   </p>
 

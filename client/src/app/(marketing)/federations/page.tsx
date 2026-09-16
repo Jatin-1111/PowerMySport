@@ -27,7 +27,7 @@ import { PATHWAY_SPORTS } from "@/modules/pathway/data/sports";
 
 const TITLE = "Sports federations in India";
 const DESCRIPTION =
-  "The governing bodies behind Indian youth sport — who they are, who can enter their tournaments, how to register, and what's on their official calendars.";
+  "The governing bodies behind Indian youth sport: who they are, who can enter their tournaments, how to register, and what's on their official calendars.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -100,7 +100,7 @@ export default async function FederationsIndexPage() {
             path: "/federations",
             description: DESCRIPTION,
             items: federations.map((federation) => ({
-              name: `${federation.acronym} — ${federation.name}`,
+              name: `${federation.acronym}, ${federation.name}`,
               path: `/federations/${federation.slug}`,
             })),
           }),
@@ -118,7 +118,7 @@ export default async function FederationsIndexPage() {
               Who decides what your child can enter
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
-              Every competitive sport in India runs on someone&apos;s rulebook — age cut-offs,
+              Every competitive sport in India runs on someone&apos;s rulebook: age cut-offs,
               registration order, ranking points, an official calendar. We keep the details for each
               body in one place, checked against its own published sources rather than summarised
               from memory.
@@ -132,7 +132,7 @@ export default async function FederationsIndexPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {groups.length === 0 ? (
             <p className="mx-auto max-w-xl text-center text-sm text-slate-600 sm:text-base">
-              We&apos;re curating federation records one sport at a time — check back shortly.
+              We&apos;re curating federation records one sport at a time. Check back shortly.
             </p>
           ) : (
             <div className="flex flex-col gap-12">

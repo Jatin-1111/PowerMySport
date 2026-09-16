@@ -325,7 +325,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
                           ? "Checking your sign-in method..."
                           : canSetPassword
                             ? "Change the password used to sign in."
-                            : "You sign in with Google — no password to manage."}
+                            : "You sign in with Google, no password to manage."}
                       </p>
                     </div>
                   </div>
@@ -594,8 +594,8 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
           </div>
           <p className="text-sm leading-relaxed text-slate-700">
             Your account will be deactivated immediately. It will be{" "}
-            <span className="font-semibold text-rose-600">permanently deleted in 30 days</span> —
-            your name, email, and phone number will be removed, along with personal content like
+            <span className="font-semibold text-rose-600">permanently deleted in 30 days</span>.
+            Your name, email, and phone number will be removed, along with personal content like
             calendar events and AI guidance history. Bookings and payment records are kept for legal
             and accounting purposes.{" "}
             <span className="font-semibold text-rose-600">

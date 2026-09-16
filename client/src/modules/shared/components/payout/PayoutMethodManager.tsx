@@ -294,7 +294,7 @@ export function PayoutMethodManager({
                 <div className="space-y-3 border-t border-slate-200 pt-4">
                   <FieldRow label="Account Holder" value={current.accountHolderName!} />
                   <FieldRow label="Account Number" value={current.accountNumber!} masked />
-                  <FieldRow label="Bank" value={`${current.bankName} — ${current.ifscCode}`} />
+                  <FieldRow label="Bank" value={`${current.bankName}, ${current.ifscCode}`} />
                 </div>
               </>
             ) : (

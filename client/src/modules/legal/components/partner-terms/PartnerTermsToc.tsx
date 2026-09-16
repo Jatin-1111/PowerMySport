@@ -47,7 +47,7 @@ const ITEMS: LegalTocItem[] = [
   { id: "listing", label: "Listing & Profile Standards", icon: FileSignature },
   { id: "delivery", label: "Service Delivery Obligations", icon: Handshake },
   { id: "child-safety", label: "Child Safety & Minors", icon: Baby },
-  { id: "commission", label: "Commission — 15% of Partner Fee", icon: Percent },
+  { id: "commission", label: "Commission, 15% of Partner Fee", icon: Percent },
   { id: "payouts", label: "Payouts & Settlement", icon: Wallet },
   { id: "taxes", label: "Taxes, Invoicing & TDS", icon: ReceiptIndianRupee },
   {

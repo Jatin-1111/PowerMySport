@@ -122,13 +122,13 @@ export function Responsibilities() {
           treated as breaches and may result in payout forfeiture and/or account action
         </li>
         <li>
-          <strong>Online sessions — meeting link:</strong> For online sessions you must provide a
+          <strong>Online session meeting links:</strong> For online sessions you must provide a
           valid, working meeting link in the Platform at least 2 hours before the scheduled start
           time. Failure to do so may entitle the client to a full refund and will be treated as a
           cancellation by you
         </li>
         <li>
-          <strong>In-person sessions — location accuracy:</strong> The in-person address you provide
+          <strong>In-person session location accuracy:</strong> The in-person address you provide
           must be accurate, accessible, safe, and compliant with all applicable local laws. You are
           solely responsible for the suitability and safety of any in-person session venue. The
           address is shared only with clients who have a confirmed booking; you must not alter it

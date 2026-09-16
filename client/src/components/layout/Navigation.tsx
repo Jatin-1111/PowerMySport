@@ -56,7 +56,7 @@ const exploreItems = [
   {
     href: "/assessment",
     label: "Get Started",
-    description: "Know the sport, or need help deciding — start here",
+    description: "Know the sport, or need help deciding. Start here",
     icon: Star,
   },
   {

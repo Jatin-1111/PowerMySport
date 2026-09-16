@@ -605,7 +605,7 @@ export function ChatDrawer({
                 <p className="text-center text-xs leading-snug text-amber-700">
                   {meta.lifetimeRemaining === 0
                     ? "You've explored this thoroughly! Come back with a fresh question soon."
-                    : "Daily message limit reached — come back tomorrow to continue the conversation."}
+                    : "Daily message limit reached, come back tomorrow to continue the conversation."}
                 </p>
               </div>
             )}

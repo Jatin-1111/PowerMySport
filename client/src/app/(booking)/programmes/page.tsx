@@ -56,7 +56,7 @@ function ProgrammesBrowser() {
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Coaching programmes</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Regular classes with the same coach every week — one-to-one or in a small batch, in person
+          Regular classes with the same coach every week, one-to-one or in a small batch, in person
           or online.
         </p>
       </header>

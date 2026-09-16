@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
 import { cn } from "@/utils/cn";
 import { motion } from "framer-motion";
-import { Bell, CheckCircle } from "lucide-react";
+import { AlarmClock, Bell, CalendarDays, CheckCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface ReminderPreferences {
@@ -120,20 +120,20 @@ export default function ReminderPreferencesPage() {
     {
       key: "twentyFourHours" as const,
       label: "24 hours before",
-      description: "A day in advance — great for planning ahead",
-      icon: "🗓️",
+      description: "A day in advance, good for planning ahead",
+      icon: CalendarDays,
     },
     {
       key: "oneHour" as const,
       label: "1 hour before",
-      description: "An hour in advance — time to get ready",
-      icon: "⏰",
+      description: "An hour in advance, time to get ready",
+      icon: AlarmClock,
     },
     {
       key: "fifteenMinutes" as const,
       label: "15 minutes before",
-      description: "Last-minute heads up — just before the session",
-      icon: "🔔",
+      description: "A last-minute heads up, just before the session",
+      icon: Bell,
     },
   ];
 
@@ -185,7 +185,7 @@ export default function ReminderPreferencesPage() {
             <>
               <p className="text-sm font-semibold text-slate-700">Remind me before a booking:</p>
               <div className="space-y-3">
-                {intervalItems.map(({ key, label, description, icon }) => {
+                {intervalItems.map(({ key, label, description, icon: Icon }) => {
                   const isChecked = bookingReminders.intervals[key];
                   return (
                     <motion.label
@@ -202,11 +202,13 @@ export default function ReminderPreferencesPage() {
                       <div className="flex items-center gap-3">
                         <div
                           className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg",
-                            isChecked ? "bg-power-orange/10" : "bg-slate-100"
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                            isChecked
+                              ? "bg-power-orange/10 text-power-orange"
+                              : "bg-slate-100 text-slate-500"
                           )}
                         >
-                          {icon}
+                          <Icon className="h-5 w-5" aria-hidden />
                         </div>
                         <div>
                           <p

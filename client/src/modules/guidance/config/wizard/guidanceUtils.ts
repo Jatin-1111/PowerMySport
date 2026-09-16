@@ -154,23 +154,23 @@ export const WEAKNESS_AREA_LABELS: Record<string, string> = {
 };
 
 export const WEAKNESS_CONTEXT_LABELS: Record<string, string> = {
-  training: "in training — it's visible during practice but they're aware of it",
-  matches: "specifically in matches — technique or composure breaks down under game pressure",
-  pressure: "when being watched or evaluated — performance drops under scrutiny",
-  always: "consistently, in all situations — it's a deep-rooted habit",
+  training: "in training. It's visible during practice but they're aware of it",
+  matches: "specifically in matches, technique or composure breaks down under game pressure",
+  pressure: "when being watched or evaluated, performance drops under scrutiny",
+  always: "consistently, in all situations. It's a deep-rooted habit",
 };
 
 export const WEAKNESS_ATTEMPTS_LABELS: Record<string, string> = {
-  nothing: "nothing yet — we've just identified the problem",
+  nothing: "nothing yet. We've just identified the problem",
   practice: "extra self-practice on their own",
-  video: "video analysis — watching footage to self-correct",
+  video: "video analysis, watching footage to self-correct",
   coaching: "tried addressing it with a coach, but it hasn't stuck",
 };
 
 export const WEAKNESS_DURATION_LABELS: Record<string, string> = {
-  weeks: "a few weeks — it's relatively recent",
-  months: "several months — it's been a consistent issue",
-  "year-plus": "over a year — it's a deeply ingrained habit",
+  weeks: "a few weeks. It's relatively recent",
+  months: "several months. It's been a consistent issue",
+  "year-plus": "over a year. It's a deeply ingrained habit",
 };
 
 export const TOURNAMENT_LEVEL_LABELS: Record<string, string> = {
@@ -181,36 +181,36 @@ export const TOURNAMENT_LEVEL_LABELS: Record<string, string> = {
 };
 
 export const PHYSICAL_READINESS_LABELS: Record<string, string> = {
-  low: "not match-ready — gets tired quickly, fitness is a concern",
-  moderate: "reasonably fit — can compete but fades in the late stages",
-  high: "match-fit — conditioning is not an issue, ready to go",
+  low: "not match-ready, gets tired quickly, fitness is a concern",
+  moderate: "reasonably fit. Can compete but fades in the late stages",
+  high: "match-fit, conditioning is not an issue, ready to go",
 };
 
 export const TOURNAMENT_GAP_LABELS: Record<string, string> = {
-  technique: "technical consistency — technique breaks down under match pressure",
-  stamina: "physical stamina — doesn't have the fitness for a full-day competition",
-  nerves: "mental composure — nerves and pressure significantly affect performance",
-  matchplay: "match experience — hasn't played enough competitive matches to read opponents",
+  technique: "technical consistency, technique breaks down under match pressure",
+  stamina: "physical stamina, doesn't have the fitness for a full-day competition",
+  nerves: "mental composure, nerves and pressure significantly affect performance",
+  matchplay: "match experience, hasn't played enough competitive matches to read opponents",
 };
 
 export const CURRENT_LEVEL_LABELS: Record<string, string> = {
-  school: "school level — playing casually or representing school",
-  club: "club / academy level — enrolled at a local academy or club programme",
-  district: "district level — competing at district tournaments",
-  state: "state level — competing at state championships",
+  school: "school level, playing casually or representing school",
+  club: "club / academy level, enrolled at a local academy or club programme",
+  district: "district level, competing at district tournaments",
+  state: "state level, competing at state championships",
 };
 
 export const TARGET_LEVEL_LABELS: Record<string, string> = {
-  club: "club / academy — getting into a proper structured programme",
-  district: "district level — competing at district tournaments",
-  state: "state level — representing at state championships",
-  national: "national level — aiming for national championships or selection",
+  club: "club / academy, getting into a proper structured programme",
+  district: "district level, competing at district tournaments",
+  state: "state level, representing at state championships",
+  national: "national level, aiming for national championships or selection",
 };
 
 export const TIME_AT_LEVEL_LABELS: Record<string, string> = {
-  new: "under 6 months — still relatively new at this level",
-  "6-12m": "6–12 months — settled in but not progressing",
-  "1y-plus": "over a year — definitely plateaued, something specific is holding them back",
+  new: "under 6 months, still relatively new at this level",
+  "6-12m": "6–12 months, settled in but not progressing",
+  "1y-plus": "over a year, definitely plateaued, something specific is holding them back",
 };
 
 export const TRAINING_TYPE_LABELS: Record<string, string> = {
@@ -221,27 +221,26 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
 };
 
 export const BLOCKER_LABELS: Record<string, string> = {
-  technique: "technical gaps — fundamentals aren't at the standard required for the next level",
-  fitness: "physical conditioning — not strong or fit enough to compete at the next level",
-  mental: "mental game — confidence, composure, or belief is holding them back",
-  competition:
-    "lack of competitive exposure — not getting enough match practice at the right level",
+  technique: "technical gaps, fundamentals aren't at the standard required for the next level",
+  fitness: "physical conditioning, not strong or fit enough to compete at the next level",
+  mental: "mental game, confidence, composure, or belief is holding them back",
+  competition: "lack of competitive exposure, not getting enough match practice at the right level",
 };
 
 export const TOP_STRENGTH_LABELS: Record<string, string> = {
   technique: "technical skills and execution",
-  tactical: "game intelligence — reading play and making smart decisions",
-  physical: "physical athleticism — speed, strength, or stamina",
-  mental: "mental strength — composure, focus, and resilience",
+  tactical: "game intelligence, reading play and making smart decisions",
+  physical: "physical athleticism, speed, strength, or stamina",
+  mental: "mental strength, composure, focus, and resilience",
 };
 
 export const EXECUTOR_LABELS: Record<string, string> = {
   child:
-    "the child on their own — no adult running the sessions, so every drill must be self-explanatory, safe to do solo, and need no partner or feeder",
+    "the child on their own, no adult running the sessions, so every drill must be self-explanatory, safe to do solo, and need no partner or feeder",
   parent:
-    "a parent with no coaching background — drills must be simple to supervise, with plain-words instructions on what 'done right' looks like",
+    "a parent with no coaching background, drills must be simple to supervise, with plain-words instructions on what 'done right' looks like",
   coach:
-    "a coach or trainer — drills can assume proper feeding, correction, and progression from a knowledgeable adult",
+    "a coach or trainer, drills can assume proper feeding, correction, and progression from a knowledgeable adult",
 };
 
 export const CHALLENGE_CATEGORY_LABELS: Record<string, string> = {
@@ -298,11 +297,11 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         executor
           ? `The sessions will be run by ${executor}. Scope every drill to what this person can realistically deliver.`
           : "",
-        `Please create a highly targeted, practical plan to fix this specific weakness${detail ? " exactly as described above — do not default back to generic advice for the broader category" : ""}. Include:`,
-        `1) Root cause analysis — why this weakness typically develops at the ${levelLabel} level in ${sport}.`,
+        `Please create a highly targeted, practical plan to fix this specific weakness${detail ? " exactly as described above, and do not default back to generic advice for the broader category" : ""}. Include:`,
+        `1) Root cause analysis, why this weakness typically develops at the ${levelLabel} level in ${sport}.`,
         `2) A structured drill programme (daily/weekly schedule) with specific exercises addressing the root cause.`,
-        `3) Progression checkpoints — how to know they are improving and when to move to the next phase.`,
-        `4) Match application — how to translate the drill improvements into actual game performance.`,
+        `3) Progression checkpoints, how to know they are improving and when to move to the next phase.`,
+        `4) Match application, how to translate the drill improvements into actual game performance.`,
         `5) Common mistakes to avoid when addressing this type of weakness.`,
       ]
         .filter(Boolean)
@@ -339,11 +338,11 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
           ? `The prep sessions will be run by ${executor}. Scope every drill to what this person can realistically deliver.`
           : "",
         `Please build a detailed, phase-by-phase tournament preparation plan. Include:`,
-        `1) Phase breakdown — specific weekly focus areas across the ${timeframe} lead-up (technical, physical, tactical, match simulation).`,
+        `1) Phase breakdown, specific weekly focus areas across the ${timeframe} lead-up (technical, physical, tactical, match simulation).`,
         `2) Priority drills and sessions addressing the key gap: ${gap}.`,
-        `3) Physical preparation — conditioning and match-fitness programme appropriate for this timeline.`,
-        `4) Mental and match readiness — pre-match routine, pressure simulation, composure strategies.`,
-        `5) Peak week strategy — how to taper and prepare in the final 7 days before the tournament.`,
+        `3) Physical preparation, conditioning and match-fitness programme appropriate for this timeline.`,
+        `4) Mental and match readiness, pre-match routine, pressure simulation, composure strategies.`,
+        `5) Peak week strategy, how to taper and prepare in the final 7 days before the tournament.`,
         `6) What to do on competition day itself.`,
       ]
         .filter(Boolean)
@@ -365,7 +364,7 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         `My ${agePrefix}${genderLabel} plays ${sport} and is currently at ${from}.`,
         `They want to reach ${to}.`,
         form.roadmapLevelLabel
-          ? `This is specifically about reaching the "${form.roadmapLevelLabel}" level shown on the platform's ${sport} roadmap — anchor the plan to that exact level and its known requirements.`
+          ? `This is specifically about reaching the "${form.roadmapLevelLabel}" level shown on the platform's ${sport} roadmap, anchor the plan to that exact level and its known requirements.`
           : "",
         timeAtLevel ? `They have been at their current level for ${timeAtLevel}.` : "",
         training ? `Current training setup: ${training}.` : "",
@@ -376,12 +375,12 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
           ? `The training will be run by ${executor}. Scope every recommendation to what this person can realistically deliver.`
           : "",
         `Please map out a comprehensive level-up roadmap. Include:`,
-        `1) Honest gap analysis — exactly what the move from ${from} to ${to} requires in ${sport} (technical, physical, mental, competitive).`,
-        `2) Addressing the primary blocker (${blocker}) first — specific actions, drills, or structural changes needed.`,
-        `3) Training upgrades — what needs to change in their current setup (${training}) to reach the next level.`,
-        `4) Milestone roadmap — what intermediate checkpoints look like and a realistic timeline.`,
-        `5) Competitive exposure strategy — what tournaments, trials, or events to target at each stage.`,
-        `6) What success looks like at the ${to} level — specific benchmarks to aim for.`,
+        `1) Honest gap analysis, exactly what the move from ${from} to ${to} requires in ${sport} (technical, physical, mental, competitive).`,
+        `2) Addressing the primary blocker (${blocker}) first, specific actions, drills, or structural changes needed.`,
+        `3) Training upgrades. What needs to change in their current setup (${training}) to reach the next level.`,
+        `4) Milestone roadmap. What intermediate checkpoints look like and a realistic timeline.`,
+        `5) Competitive exposure strategy. What tournaments, trials, or events to target at each stage.`,
+        `6) What success looks like at the ${to} level, specific benchmarks to aim for.`,
       ]
         .filter(Boolean)
         .join(" ");
@@ -401,7 +400,7 @@ export function buildQuestion(form: ConsultForm, problemId: ProblemId): string {
         `Here is the specific situation: ${challenge}`,
         `What I am looking for: ${outcome}.`,
         `Please provide practical, expert-backed advice and guidance tailored to this exact situation.`,
-        `Be specific and actionable — avoid generic advice. If relevant, include concrete next steps, professional resources to seek, and what to watch out for.`,
+        `Be specific and actionable, avoid generic advice. If relevant, include concrete next steps, professional resources to seek, and what to watch out for.`,
       ]
         .filter(Boolean)
         .join(" ");

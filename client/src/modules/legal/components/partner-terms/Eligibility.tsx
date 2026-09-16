@@ -59,7 +59,7 @@ export function Eligibility() {
         complete. Submitting forged, altered, or misleading documents is a material breach entitling
         us to reject the application, terminate the account, withhold pending payouts pending
         investigation, and report the matter to the appropriate authorities. You must update the
-        Platform promptly whenever submitted information changes — for example if a certification
+        Platform promptly whenever submitted information changes, for example if a certification
         lapses, a facility closes, or a payout account is replaced.
       </p>
     </section>

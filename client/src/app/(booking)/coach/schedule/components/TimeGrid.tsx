@@ -165,7 +165,7 @@ export function TimeGrid({
                       BOOKING_BLOCK[b.status] ?? "border-slate-200 bg-slate-100 text-slate-600"
                     )}
                     style={{ top, height }}
-                    title={`${playerName || b.sport} — ${formatTime(b.startTime)} to ${formatTime(b.endTime)}`}
+                    title={`${playerName || b.sport}, ${formatTime(b.startTime)} to ${formatTime(b.endTime)}`}
                   >
                     {/* Sport tag */}
                     <p className="truncate text-[10px] font-bold uppercase leading-none tracking-wide opacity-60">

@@ -128,7 +128,7 @@ export default function ExpertDashboardPage() {
         <StatCard
           icon={<Star className="h-4.5 w-4.5" />}
           label="Avg rating"
-          value={stats.reviewCount ? `${stats.avg.toFixed(1)} (${stats.reviewCount})` : "—"}
+          value={stats.reviewCount ? `${stats.avg.toFixed(1)} (${stats.reviewCount})` : "N/A"}
           tint="bg-amber-50 text-amber-600"
         />
       </div>

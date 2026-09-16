@@ -209,7 +209,7 @@ export const SPORT_PROFILES: SportProfile[] = [
     ageWindowCutoff: 15,
     specializationIntensity: "high",
     costRange: "₹1,500 – 5,000/month",
-    tagline: "Fast, sharp, affordable — widely available across India",
+    tagline: "Fast, sharp, affordable, widely available across India",
   },
   {
     id: "basketball",

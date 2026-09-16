@@ -113,7 +113,7 @@ export const STATUS_LABEL: Record<string, string> = {
   COMPLETED: "Completed",
   NO_SHOW: "No Show",
   CANCELLED: "Cancelled",
-  EXPIRED: "Expired — Refunded",
+  EXPIRED: "Expired (refunded)",
 };
 
 export const STATUS_BADGE: Record<string, string> = {

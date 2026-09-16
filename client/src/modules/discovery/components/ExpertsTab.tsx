@@ -372,7 +372,7 @@ export function ExpertsTab({
               description={
                 hasFilters
                   ? "Try broadening your search or clearing filters."
-                  : "Check back soon — we're onboarding experts."
+                  : "Check back soon. We're onboarding experts."
               }
               actionLabel={hasFilters ? "Clear filters" : undefined}
               onAction={hasFilters ? handleClear : undefined}

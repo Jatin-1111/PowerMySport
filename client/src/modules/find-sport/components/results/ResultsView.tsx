@@ -40,7 +40,7 @@ const PORTFOLIO_META: Record<
   bestFit: {
     icon: Target,
     label: "Best fit",
-    watchFor: (name) => `Try it first — watch for ${name} asking to go back without being asked.`,
+    watchFor: (name) => `Try it first. Watch for ${name} asking to go back without being asked.`,
     accentBorder: "border-t-power-orange",
     badgeBg: "bg-power-orange/10 text-power-orange",
     iconBg: "bg-power-orange/10 text-power-orange",
@@ -50,7 +50,7 @@ const PORTFOLIO_META: Record<
     icon: TrendingUp,
     label: "Stretch pick",
     watchFor: (name) =>
-      `Asks more of ${name} — a good sign is wanting more even after the hard parts.`,
+      `Asks more of ${name}. A good sign is wanting more even after the hard parts.`,
     accentBorder: "border-t-indigo-400",
     badgeBg: "bg-indigo-50 text-indigo-600",
     iconBg: "bg-indigo-50 text-indigo-500",
@@ -151,10 +151,10 @@ function buildKeyFindings(answers: WizardAnswers): string[] {
 
   if (answers.energyType === "explosive") {
     findings.push(
-      `${name} has explosive, fast-twitch energy — built for short bursts of power, not long grinding effort.`
+      `${name} has explosive, fast-twitch energy, built for short bursts of power, not long grinding effort.`
     );
   } else if (answers.energyType === "endurance") {
-    findings.push(`${name} has real endurance — built to keep going, not for short bursts.`);
+    findings.push(`${name} has real endurance, built to keep going, not for short bursts.`);
   }
 
   // The slider runs 1 = "Just me" → 5 = "Team, always" (see SpectrumSlider),
@@ -162,42 +162,42 @@ function buildKeyFindings(answers: WizardAnswers): string[] {
   if (answers.teamIndividual !== null) {
     if (answers.teamIndividual >= 4) {
       findings.push(
-        `Prefers team environments — plays better with shared effort and shared momentum.`
+        `Prefers team environments. Plays better with shared effort and shared momentum.`
       );
     } else if (answers.teamIndividual <= 2) {
       findings.push(
-        `Prefers individual competition — wants the result to rest on ${poss} own performance alone.`
+        `Prefers individual competition, wants the result to rest on ${poss} own performance alone.`
       );
     }
   }
 
   if (answers.pressureResponse === "thrives") {
     findings.push(
-      `${name} gets better under pressure — big moments bring out ${poss} best, not ${poss} worst.`
+      `${name} gets better under pressure. Big moments bring out ${poss} best, not ${poss} worst.`
     );
   } else if (answers.pressureResponse === "avoids") {
     findings.push(
-      `${name} plays better without pressure — high-stakes moments work against ${obj}, not for ${obj}.`
+      `${name} plays better without pressure. High-stakes moments work against ${obj}, not for ${obj}.`
     );
   }
 
   if (answers.agility === "high") {
     findings.push(
-      `High agility and flexibility — a real edge in any sport built on quick footwork.`
+      `High agility and flexibility, a real edge in any sport built on quick footwork.`
     );
   } else if (answers.agility === "low") {
     findings.push(
-      `Agility isn't the strength here — strategy and consistency matter more than raw speed.`
+      `Agility isn't the strength here. Strategy and consistency matter more than raw speed.`
     );
   }
 
   if (answers.decisionStyle === "react") {
     findings.push(
-      `${name} reacts fast and trusts instinct — built for sports with no time to think.`
+      `${name} reacts fast and trusts instinct, built for sports with no time to think.`
     );
   } else if (answers.decisionStyle === "strategic") {
     findings.push(
-      `${name} thinks ahead instead of reacting — built for sports that reward planning.`
+      `${name} thinks ahead instead of reacting, built for sports that reward planning.`
     );
   }
 
@@ -351,15 +351,15 @@ function shortlistSummary(fits: SportFitResult[], name: string): string {
 
   if (fits.length === 1) {
     return best.hasBlocker
-      ? `${best.sport.name} scores ${best.score}/100 for ${name}, but there's something to sort out first — it's in the right-hand column below.`
+      ? `${best.sport.name} scores ${best.score}/100 for ${name}, but there's something to sort out first. It's in the right-hand column below.`
       : `${best.sport.name} scores ${best.score}/100 for ${name}. Here's exactly what's behind that number.`;
   }
 
   const lead = `Of the ${fits.length} you picked, ${best.sport.name} lines up best for ${name} at ${best.score}/100.`;
   if (blocked.length === 0)
-    return `${lead} Every one of them has something that fits and something that doesn't — both are below.`;
+    return `${lead} Every one of them has something that fits and something that doesn't. Both are below.`;
   if (blocked.length === fits.length)
-    return `${lead} All of them have something to sort out first — see the right-hand column on each.`;
+    return `${lead} All of them have something to sort out first. See the right-hand column on each.`;
   return `${lead} ${blocked.length === 1 ? `${blocked[0].sport.name} has` : `${blocked.length} of them have`} something to sort out first.`;
 }
 
@@ -456,7 +456,7 @@ export function ResultsView({
               )}
               {savedStatus === "error" && (
                 <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700">
-                  Couldn&apos;t save automatically — results are still shown below
+                  Couldn&apos;t save automatically. Results are still shown below
                 </span>
               )}
             </div>
@@ -469,7 +469,7 @@ export function ResultsView({
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
               {hasShortlist
                 ? shortlistSummary(chosenFits, name)
-                : "Three different picks, not a ranking — a safe best-fit, a stretch worth trying, and an economical way to start."}
+                : "Three different picks, not a ranking: a safe best-fit, a stretch worth trying, and an economical way to start."}
             </p>
           </div>
 
@@ -543,7 +543,7 @@ export function ResultsView({
         <div className="mb-8 flex items-start gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-3.5">
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" />
           <p className="text-sm leading-relaxed text-indigo-900">
-            At {answers.age}, we wouldn&apos;t pick just one yet — playing 2-3 of these together
+            At {answers.age}, we wouldn&apos;t pick just one yet. Playing 2-3 of these together
             builds broader athleticism than specialising early. Treat the ones below as sports to
             rotate between, not a single choice to commit to.
           </p>
@@ -585,7 +585,7 @@ export function ResultsView({
             icon={<ClipboardList className="text-power-orange h-4 w-4" />}
             iconClass="bg-power-orange/10"
             title="Sports you're considering"
-            sub="Scored on the same engine we use for our own recommendations — best fit first"
+            sub="Scored on the same engine we use for our own recommendations, best fit first"
           />
 
           <div className="space-y-5">

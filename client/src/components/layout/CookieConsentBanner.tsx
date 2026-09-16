@@ -79,7 +79,7 @@ export function CookieConsentBanner() {
 
               <p className="mb-4 text-sm leading-relaxed text-slate-600">
                 We use essential cookies to keep you signed in and secure, plus anonymous analytics
-                to see which pages help parents most—no ads, and no personal data. By continuing,
+                to see which pages help parents most, no ads, and no personal data. By continuing,
                 you agree to our{" "}
                 <Link
                   href="/cookies"

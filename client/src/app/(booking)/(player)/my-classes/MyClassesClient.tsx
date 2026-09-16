@@ -136,7 +136,7 @@ const EnrollmentCard = ({
     // the ledger, so it is a promise the system can actually keep.
     const confirmed = window.confirm(
       unusedClasses > 0
-        ? `Leave this programme? ${unusedClasses} unused class${unusedClasses === 1 ? "" : "es"} — ${formatPaise(refundablePaise)} — will be refunded.`
+        ? `Leave this programme? ${unusedClasses} unused class${unusedClasses === 1 ? "" : "es"}, ${formatPaise(refundablePaise)}, will be refunded.`
         : "Leave this programme? You have no unused classes, so there is nothing to refund."
     );
     if (!confirmed) return;
@@ -151,7 +151,7 @@ const EnrollmentCard = ({
       } else if (refund?.status === "FAILED") {
         // Honest: the claim is safe, it just has not settled yet.
         toast.success(
-          "You have left. Your refund could not be sent just now — we will keep trying."
+          "You have left. Your refund could not be sent just now. We will keep trying."
         );
       } else {
         toast.success("You have left this programme.");
@@ -205,7 +205,7 @@ const EnrollmentCard = ({
         </p>
         {needsRenewal ? (
           <p className="text-power-orange mt-1 text-sm font-medium">
-            Out of classes — renew to keep {enrollment.studentName}&apos;s place
+            Out of classes. Renew to keep {enrollment.studentName}&apos;s place
           </p>
         ) : null}
       </div>

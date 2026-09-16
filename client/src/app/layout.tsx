@@ -92,7 +92,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "PowerMySport — Guiding Every Sporting Journey",
+    title: "PowerMySport | Guiding Every Sporting Journey",
     description: siteDescription,
     images: [TWITTER_IMAGE],
   },

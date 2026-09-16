@@ -4,7 +4,6 @@ import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { FeaturesShowcase } from "@/modules/marketing/components/marketing/FeaturesShowcase";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { TrustMarquee } from "@/modules/marketing/components/marketing/TrustMarquee";
 import { roadmapHref } from "@/modules/pathway/data/sports";
 import {
   Activity,
@@ -22,35 +21,13 @@ import {
   Users2,
 } from "lucide-react";
 
-import { motion, Variants } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
-// ─── Motion variants ──────────────────────────────────────────────────────────
-
-const sectionVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1, delayChildren: 0.08 } },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 270, damping: 22 },
-  },
-};
-
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 28, scale: 0.97 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: "spring", stiffness: 260, damping: 22 },
-  },
-};
+// Section reveals use the `.reveal-on-scroll` utility in globals.css. The
+// framer-motion stagger this replaced left the homepage's copy at `opacity: 0`
+// in the server HTML until hydration ran. The hero keeps its own scroll-linked
+// motion — that one is a deliberate effect, not a reveal.
 
 export default function HomeClient() {
   const { user } = useAuthStore();
@@ -84,9 +61,9 @@ export default function HomeClient() {
     firstName ? `${firstName}, ${sentence}` : sentence.charAt(0).toUpperCase() + sentence.slice(1);
 
   let heroCtaPrompt: string | undefined = greet("does your child already play a sport?");
-  let heroPrimaryCTA = { label: "Yes — Help me Navigate", href: "/sport-profile" };
+  let heroPrimaryCTA = { label: "Yes, help me navigate", href: "/sport-profile" };
   let heroSecondaryCTA: { label: string; href: string } | undefined = {
-    label: "No — Help me find a sport",
+    label: "No, help me find a sport",
     href: "/assessment/discover",
   };
   let heroStats: Array<{ label: string; value: string; helper?: string }> | undefined;
@@ -156,17 +133,17 @@ export default function HomeClient() {
     label: "Still have questions?",
     title: "Consult an Expert",
     description:
-      "Talk to a real sports expert, or reach out to our team directly for hands-on assistance—free, no hard sell.",
+      "Talk to a real sports expert, or reach out to our team directly for hands-on assistance. Free, and no hard sell.",
     icon: <MessageCircle className="h-6 w-6" />,
     stat: "Free, no commitment",
     visual: "chat",
-    theme: "violet",
+    theme: "teal",
   };
   const screeningStep = {
     label: "Ready for the next step?",
     title: "Book a Physical Screening",
     description:
-      "Bring your child in for a hands-on session with a certified coach—we validate the online result against real movement, strength, and coordination.",
+      "Bring your child in for a hands-on session with a certified coach. We validate the online result against real movement, strength, and coordination.",
     icon: <Activity className="h-6 w-6" />,
     stat: "Book anytime after your results",
     visual: "steps",
@@ -205,7 +182,7 @@ export default function HomeClient() {
       label: "Already know it?",
       title: "Build the Sport Profile",
       description:
-        "Tell us your child's sport, age, and experience level—we personalise everything downstream around exactly where they are today.",
+        "Tell us your child's sport, age, and experience level. We personalise everything downstream around exactly where they are today.",
       icon: <CheckCircle2 className="h-6 w-6" />,
       stat: "Takes about 5 minutes",
       visual: "roadmap",
@@ -232,40 +209,24 @@ export default function HomeClient() {
       {/* ── The Problem ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={sectionVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mx-auto max-w-2xl text-center"
-          >
-            <motion.div variants={itemVariants} className="mb-4 flex justify-center">
+          <div className="reveal-on-scroll mx-auto max-w-2xl text-center">
+            <div className="mb-4 flex justify-center">
               <SectionLabel label="Sound Familiar?" color="slate" />
-            </motion.div>
-            <motion.h2
-              variants={itemVariants}
-              className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
+            </div>
+            <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
               Youth sports is challenging. You&apos;re not alone.
-            </motion.h2>
-            <motion.p variants={itemVariants} className="text-lg text-slate-600">
+            </h2>
+            <p className="text-lg text-slate-600">
               Every parent wants the best for their child. But between scattered advice, endless
               options, and no clear path, it&apos;s hard to know if you&apos;re making the right
               call.
-            </motion.p>
-          </motion.div>
+            </p>
+          </div>
 
-          <motion.div
-            variants={sectionVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          >
+          <div className="reveal-on-scroll mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {problems.map((p) => (
-              <motion.div
+              <div
                 key={p.text}
-                variants={cardVariants}
                 className="group flex items-start gap-3 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
               >
                 <span className="group-hover:bg-power-orange/10 group-hover:text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors duration-300">
@@ -274,20 +235,14 @@ export default function HomeClient() {
                 <p className="text-sm font-medium leading-snug text-slate-700">
                   &ldquo;{p.text}&rdquo;
                 </p>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ type: "spring", stiffness: 260, damping: 22 }}
-            className="mx-auto mt-12 max-w-2xl text-center text-lg font-medium text-slate-800"
-          >
+          <p className="reveal-on-scroll mx-auto mt-12 max-w-2xl text-center text-lg font-medium text-slate-800">
             PowerMySport turns that confusion into one{" "}
             <span className="text-power-orange">clear, personalised plan</span> for your child.
-          </motion.p>
+          </p>
         </div>
       </section>
 
@@ -305,53 +260,42 @@ export default function HomeClient() {
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
         <div className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-orange-100/30 blur-3xl" />
-        <div className="pointer-events-none absolute -right-32 bottom-1/4 h-80 w-80 rounded-full bg-indigo-100/25 blur-3xl" />
+        <div className="pointer-events-none absolute -right-32 bottom-1/4 h-80 w-80 rounded-full bg-slate-200/35 blur-3xl" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
             {/* Left: copy + capability cards */}
-            <motion.div
-              variants={sectionVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-100px" }}
-            >
-              <motion.div variants={itemVariants} className="mb-3">
+            <div className="reveal-on-scroll">
+              <div className="mb-3">
                 <SectionLabel label="Knowledge Centre" color="green" />
-              </motion.div>
-              <motion.h2
-                variants={itemVariants}
-                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-              >
+              </div>
+              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
                 Know more before you decide
-              </motion.h2>
-              <motion.p variants={itemVariants} className="mb-8 text-lg text-slate-600">
-                Free resources to explore right now—no commitment, no account needed.
-              </motion.p>
+              </h2>
+              <p className="mb-8 text-lg text-slate-600">
+                Free resources to explore right now, no commitment, no account needed.
+              </p>
 
-              <motion.div variants={sectionVariants} className="space-y-4">
+              <div className="space-y-4">
                 {[
                   {
                     icon: <Map size={22} />,
                     title: "Understand Sports Pathways",
-                    desc: "See the step-by-step roadmap for any sport—milestones, timelines, and what it takes to go further.",
+                    desc: "See the step-by-step roadmap for any sport: milestones, timelines, and what it takes to go further.",
                     color: "bg-orange-50 text-power-orange ring-1 ring-orange-200/60",
                     cta: { label: "Explore", href: "/roadmap" },
                   },
                   {
                     icon: <Users2 size={22} />,
                     title: "Learn from Other Parents",
-                    desc: "Real questions, real experiences—see how other families navigated the same decisions.",
-                    color: "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200/60",
+                    desc: "Real questions, real experiences. See how other families navigated the same decisions.",
+                    color: "bg-teal-50 text-teal-600 ring-1 ring-teal-200/60",
                     cta: { label: "Community", href: "/community" },
                   },
                 ].map((item) => (
-                  <motion.div
+                  <div
                     key={item.title}
-                    variants={cardVariants}
-                    whileHover={{ y: -4 }}
-                    transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                    className="flex flex-col gap-4 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow duration-300 will-change-transform hover:shadow-xl hover:shadow-slate-200/60 sm:flex-row sm:items-center"
+                    className="flex flex-col gap-4 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 will-change-transform hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/60 sm:flex-row sm:items-center"
                   >
                     <div
                       className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${item.color}`}
@@ -369,28 +313,17 @@ export default function HomeClient() {
                       {item.cta.label}
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
-                  </motion.div>
+                  </div>
                 ))}
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
 
             {/* Right: layered image composition */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{
-                type: "spring",
-                stiffness: 200,
-                damping: 26,
-                delay: 0.15,
-              }}
-              className="relative mx-auto hidden w-full max-w-[612px] lg:block"
-            >
+            <div className="reveal-on-scroll relative mx-auto hidden w-full max-w-[612px] lg:block">
               {/* Offset backdrop panel */}
               <div
                 aria-hidden
-                className="absolute -inset-x-6 -bottom-6 top-10 rounded-[2.5rem] bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-indigo-50/40"
+                className="absolute -inset-x-6 -bottom-6 top-10 rounded-[2.5rem] bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-slate-100/40"
               />
               {/* Dotted accent */}
               <div
@@ -436,18 +369,15 @@ export default function HomeClient() {
                   </span>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
-      <TrustMarquee />
-
       {/* ── Final CTA ── */}
       <CTA
         title="All Set to Play?"
-        description="From booking a trial class to finding the right academy—our team can help with any sports service your child needs, every step of the way."
+        description="From booking a trial class to finding the right academy, our team can help with any sports service your child needs, every step of the way."
         primaryCTA={{
           label: user ? "Go to Roadmap" : "Explore Your Roadmap",
           href: "/roadmap",

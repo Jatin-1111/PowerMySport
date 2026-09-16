@@ -197,7 +197,7 @@ export function BusyHoursHeatmap({ data }: { data: Array<{ hour: number; count: 
           <div
             key={hour}
             className="flex flex-col items-center gap-0.5"
-            title={`${hour}:00 — ${count} bookings`}
+            title={`${hour}:00, ${count} bookings`}
           >
             <div
               className="flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-medium"

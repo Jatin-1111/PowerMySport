@@ -22,7 +22,7 @@ const VERDICT_CONFIG: Record<
     bg: "bg-emerald-50",
     border: "border-emerald-200",
     badge: "bg-emerald-100 text-emerald-700",
-    headline: "Great timing — start now",
+    headline: "Great timing. Start now",
   },
   Achievable: {
     icon: CheckCircle2,
@@ -38,7 +38,7 @@ const VERDICT_CONFIG: Record<
     bg: "bg-amber-50",
     border: "border-amber-200",
     badge: "bg-amber-100 text-amber-700",
-    headline: "Possible — needs commitment",
+    headline: "Possible, needs commitment",
   },
   "Long-Term": {
     icon: Clock,
@@ -46,7 +46,7 @@ const VERDICT_CONFIG: Record<
     bg: "bg-indigo-50",
     border: "border-indigo-200",
     badge: "bg-indigo-100 text-indigo-700",
-    headline: "Long road — plan carefully",
+    headline: "Long road, plan carefully",
   },
 };
 
@@ -99,7 +99,7 @@ export function VerdictHero({
           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
             {levelContext
               ? alreadyAtLevel
-                ? `Progressing from ${levelContext.levelLabel} — what's the path forward?`
+                ? `Progressing from ${levelContext.levelLabel}. What's the path forward?`
                 : `Should your child aim for ${levelContext.sport} at ${levelContext.levelLabel} level?`
               : "Your goal check"}
           </p>

@@ -67,12 +67,12 @@ const TENNIS: SportLadder = {
       value: 1,
       label: "No AITA ranking yet",
       context:
-        "Hasn't played an AITA ranking tournament yet — no matter how long or how seriously they've trained",
+        "Hasn't played an AITA ranking tournament yet, no matter how long or how seriously they've trained",
     },
     {
       value: 2,
       label: "Talent / Championship Series",
-      context: "Playing TS or CS events — the entry rungs of the AITA junior circuit",
+      context: "Playing TS or CS events, the entry rungs of the AITA junior circuit",
     },
     {
       value: 3,
@@ -82,7 +82,7 @@ const TENNIS: SportLadder = {
     {
       value: 4,
       label: "Junior Nationals",
-      context: "Plays the AITA junior Nationals — Hard Court and Clay",
+      context: "Plays the AITA junior Nationals, Hard Court and Clay",
     },
     {
       value: 5,
@@ -121,7 +121,7 @@ const BADMINTON: SportLadder = {
       value: 1,
       label: "No BAI ranking yet",
       context:
-        "Hasn't played an All India Ranking tournament yet — no matter how long or how seriously they've trained",
+        "Hasn't played an All India Ranking tournament yet, no matter how long or how seriously they've trained",
     },
     {
       value: 2,
@@ -131,7 +131,7 @@ const BADMINTON: SportLadder = {
     },
     {
       value: 3,
-      label: "All India Ranking — qualifying",
+      label: "All India Ranking, qualifying",
       context:
         "Has a BAI ID and plays All India Sub-Junior / Junior Ranking events through the qualifying draw",
     },
@@ -145,7 +145,7 @@ const BADMINTON: SportLadder = {
       value: 5,
       label: "BWF junior circuit",
       context:
-        "Competing internationally — Badminton Asia Junior or the BWF World Junior Championships",
+        "Competing internationally, Badminton Asia Junior or the BWF World Junior Championships",
     },
   ],
   bestResult: [
@@ -177,12 +177,12 @@ const TABLE_TENNIS: SportLadder = {
       value: 1,
       label: "No state ranking yet",
       context:
-        "Hasn't played a state ranking tournament yet — no matter how long or how seriously they've trained",
+        "Hasn't played a state ranking tournament yet, no matter how long or how seriously they've trained",
     },
     {
       value: 2,
       label: "State ranked",
-      context: "Has a state ranking — best 4 state ranking tournaments plus the State Championship",
+      context: "Has a state ranking, best 4 state ranking tournaments plus the State Championship",
     },
     {
       value: 3,
@@ -198,7 +198,7 @@ const TABLE_TENNIS: SportLadder = {
     {
       value: 5,
       label: "ITTF youth circuit",
-      context: "Competing internationally — WTT Youth Contender or the World Junior Championships",
+      context: "Competing internationally, WTT Youth Contender or the World Junior Championships",
     },
   ],
   bestResult: [
@@ -239,7 +239,7 @@ const CHESS: SportLadder = {
       value: 1,
       label: "Unrated",
       context:
-        "Hasn't played a rated tournament yet — no matter how long or how seriously they've trained",
+        "Hasn't played a rated tournament yet, no matter how long or how seriously they've trained",
     },
     {
       value: 2,
@@ -254,7 +254,7 @@ const CHESS: SportLadder = {
     {
       value: 4,
       label: "FIDE rated",
-      context: "Has an international FIDE rating — 2200+ means direct entry to the Nationals",
+      context: "Has an international FIDE rating, 2200+ means direct entry to the Nationals",
     },
     {
       value: 5,
@@ -264,7 +264,7 @@ const CHESS: SportLadder = {
     },
   ],
   bestResult: [
-    { value: 1, label: "None yet — unrated" },
+    { value: 1, label: "None yet, unrated" },
     { value: 2, label: "Played the state age-group championship" },
     { value: 3, label: "Qualified onward from the state championship, or earned an AICF rating" },
     {
@@ -302,7 +302,7 @@ const SQUASH: SportLadder = {
       value: 1,
       label: "No SRFI ranking yet",
       context:
-        "Hasn't played a ranking event on the National Junior Circuit yet — no matter how long or how seriously they've trained",
+        "Hasn't played a ranking event on the National Junior Circuit yet, no matter how long or how seriously they've trained",
     },
     {
       value: 2,
@@ -311,7 +311,7 @@ const SQUASH: SportLadder = {
     },
     {
       value: 3,
-      label: "SRFI ranked — Slams & Khelo India",
+      label: "SRFI ranked, Slams & Khelo India",
       context:
         "Ranked on the National Junior Circuit, playing the 5-star SRFI Slams or Khelo India Youth Games",
     },
@@ -323,7 +323,7 @@ const SQUASH: SportLadder = {
     {
       value: 5,
       label: "Asian / World Junior",
-      context: "Competing at 7-star level — Asian Junior or World Junior Individuals",
+      context: "Competing at 7-star level, Asian Junior or World Junior Individuals",
     },
   ],
   bestResult: [

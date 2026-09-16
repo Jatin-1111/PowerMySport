@@ -140,7 +140,7 @@ export default async function PlayerRankingPage({
             title={standings.length > 1 ? "Both lists" : "Current standing"}
             subtitle={
               standings.length > 1 && home
-                ? `${comboLabel({ category: standings[0]!.category, subcategory: home })} is the main list — the age group this player belongs to. Entering an older group as well is normal, and results there earn points on both lists.`
+                ? `${comboLabel({ category: standings[0]!.category, subcategory: home })} is the main list, the age group this player belongs to. Entering an older group as well is normal, and results there earn points on both lists.`
                 : undefined
             }
           />
@@ -231,7 +231,7 @@ export default async function PlayerRankingPage({
               <PointsComposition
                 bands={[band, ...(primaryEntry.insight.bands ?? [])]}
                 subcategory={primaryEntry.subcategory}
-                title={`What makes up these points — ${comboLabel(combo)}`}
+                title={`What makes up these points: ${comboLabel(combo)}`}
                 caption={
                   `The top bar is ${name}, broken into where each point came from. ` +
                   "The bars under it are the averages for each part of the list. " +

@@ -143,7 +143,7 @@ export function WhatsNextPanel({
           </h3>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-slate-400 lg:text-right">
-          None of these are required before a trial class — add them whenever they&apos;d be useful.
+          None of these are required before a trial class. Add them whenever they&apos;d be useful.
         </p>
       </div>
 
@@ -159,13 +159,13 @@ export function WhatsNextPanel({
           </div>
           <p className="mb-1.5 text-[15px] font-semibold text-white">Physical screening</p>
           <p className="mb-6 flex-1 text-sm leading-relaxed text-slate-400">
-            A six-test fitness battery at a partner venue — speed, power, endurance, agility — with
-            a printed report. Turns the trait answers you gave us into measured numbers.
+            A six-test fitness battery at a partner venue (speed, power, endurance, agility) with a
+            printed report. Turns the trait answers you gave us into measured numbers.
           </p>
 
           {booked.screeningDone ? (
             <p className="text-[13px] text-emerald-400/90">
-              Your screening request is in — our team will call you to confirm the slot.
+              Your screening request is in. Our team will call you to confirm the slot.
             </p>
           ) : (
             <button
@@ -189,8 +189,8 @@ export function WhatsNextPanel({
           </div>
           <p className="mb-1.5 text-[15px] font-semibold text-white">Expert session</p>
           <p className="mb-6 flex-1 text-sm leading-relaxed text-slate-400">
-            A paid one-on-one with a coach or sports professional who knows the pathway — useful
-            when the scores above are close, or when a gap needs a second opinion.
+            A paid one-on-one with a coach or sports professional who knows the pathway, useful when
+            the scores above are close, or when a gap needs a second opinion.
           </p>
 
           <a

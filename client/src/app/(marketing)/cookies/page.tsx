@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Cookie Policy",
   description:
-    "How PowerMySport uses essential cookies to keep you signed in and secure, plus anonymous analytics — no ads, no personal data sold.",
+    "How PowerMySport uses essential cookies to keep you signed in and secure, plus anonymous analytics, no ads, no personal data sold.",
   alternates: {
     canonical: "/cookies",
   },
@@ -64,8 +64,8 @@ export default function CookiePolicy() {
             <h3 className="mb-3 mt-6 text-xl font-semibold">3.3 Anonymous Analytics</h3>
             <p>
               To understand which pages and features are useful, we collect anonymous, aggregated
-              usage data—for example, how many visitors open a page, which links they click, and how
-              far they scroll. To count visitors without identifying them, we store a randomly
+              usage data, for example, how many visitors open a page, which links they click, and
+              how far they scroll. To count visitors without identifying them, we store a randomly
               generated id in your browser's local storage (key <code>pms-guest-id</code>). This id
               is not linked to your name, email, or any personal detail, and we do not build
               advertising profiles or sell this data. You can clear it any time by clearing your

@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import ShopWaitlist from "@/modules/shop/components/ShopWaitlist";
 
 export const metadata: Metadata = {
-  title: "Shop — Sports Gear & Equipment",
+  title: "Shop | Sports Gear & Equipment",
   description:
     "Shop premium sports gear, customized equipment, and exclusive PowerMySport bundles.",
   alternates: {

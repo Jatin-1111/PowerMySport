@@ -37,7 +37,7 @@ export function VenueStatsBar({
     },
     {
       label: "Avg Rating",
-      value: avgRating !== null ? avgRating.toFixed(1) : "—",
+      value: avgRating !== null ? avgRating.toFixed(1) : "N/A",
       icon: <Star className="h-4 w-4" />,
       color: "text-amber-500",
       bg: "bg-amber-50",

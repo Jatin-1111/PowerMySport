@@ -52,7 +52,7 @@ function expertDescription(expert: PublicExpert): string {
   const sports = expert.sports?.length ? expert.sports.join(", ") : "sport";
   return clampText(
     expert.bio ||
-      `Book a 1:1 sports guidance session with ${expert.name ?? "this expert"} on PowerMySport — ${sports} guidance for parents and young athletes in India.`
+      `Book a 1:1 sports guidance session with ${expert.name ?? "this expert"} on PowerMySport, ${sports} guidance for parents and young athletes in India.`
   );
 }
 
@@ -72,7 +72,7 @@ export async function generateMetadata({
 
   const name = expert.name ?? "PowerMySport Expert";
   const description = expertDescription(expert);
-  const title = expert.sports?.length ? `${name} — ${expert.sports.join(", ")} expert` : name;
+  const title = expert.sports?.length ? `${name}, ${expert.sports.join(", ")} expert` : name;
 
   return {
     title,

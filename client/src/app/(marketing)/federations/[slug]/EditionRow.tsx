@@ -138,7 +138,7 @@ export function EditionRow({
         )}
       </div>
       {/* Replaces the old "view official source" icon. That link still exists,
-          on the tournament page this row now opens — but from a calendar the
+          on the tournament page this row now opens, but from a calendar the
           useful action is keeping the date, not leaving for the federation. */}
       <AddToCalendarButton
         edition={e}

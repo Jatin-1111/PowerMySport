@@ -89,12 +89,12 @@ export const ARCHETYPE_CALENDAR_NOTE: Record<
 > = {
   ranking: {
     calendar:
-      "These are ranking-circuit events — entering them is how a player earns the points that build a national ranking. The tier of each event decides how many points are on offer.",
+      "These are ranking-circuit events. Entering them is how a player earns the points that build a national ranking. The tier of each event decides how many points are on offer.",
     competitions: "See how the ranking tiers fit together",
   },
   rating: {
     calendar:
-      "These are rated events — results from them move a player's official rating, which is what determines entry to higher tiers.",
+      "These are rated events. Results from them move a player's official rating, which is what determines entry to higher tiers.",
     competitions: "See how the rating milestones work",
   },
   federation: {
@@ -104,7 +104,7 @@ export const ARCHETYPE_CALENDAR_NOTE: Record<
   },
   standard: {
     calendar:
-      "These are the dated meets on this federation's calendar — each is a chance to post a time or score against the published qualifying standards.",
+      "These are the dated meets on this federation's calendar. Each is a chance to post a time or score against the published qualifying standards.",
     competitions: "See the qualifying standards",
   },
 };

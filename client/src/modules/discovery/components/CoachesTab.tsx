@@ -614,12 +614,12 @@ function CoachesTabContent() {
       </FilterBar>
 
       {sortBy === "nearest" && hasLocationDenied && (
-        <p className="mt-2 text-xs text-slate-500">Location access is off — showing all coaches.</p>
+        <p className="mt-2 text-xs text-slate-500">Location access is off. Showing all coaches.</p>
       )}
       {/* ── Content ─────────────────────────────────────────────── */}
       <div className="max-w-8xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/*
-          Coaches are found here by DISTANCE — the discovery query is a geospatial
+          Coaches are found here by DISTANCE, the discovery query is a geospatial
           search over coaches with a base location. A coach who only teaches
           online has neither, so they can never appear in this list no matter
           which filters are set. This points at the lane where they do.

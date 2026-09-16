@@ -105,7 +105,7 @@ export default function CheckInPage() {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 text-center">
         <p className="text-sm text-slate-500">
-          Couldn&apos;t load this check-in — it may not belong to your account.
+          Couldn&apos;t load this check-in. It may not belong to your account.
         </p>
       </div>
     );

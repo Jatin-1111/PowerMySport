@@ -1,8 +1,5 @@
-"use client";
-
 import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import { Button } from "@/modules/shared/ui/Button";
-import { motion, Variants } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -18,21 +15,12 @@ export interface CTAProps {
   label?: string;
 }
 
-// ─── Motion variants ──────────────────────────────────────────────────────────
-
-const containerVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.12, delayChildren: 0.08 } },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 270, damping: 22 },
-  },
-};
+// ─── Scroll reveal ────────────────────────────────────────────────────────────
+//
+// `.reveal-on-scroll` (globals.css) rather than a framer-motion `whileInView`
+// stagger. This component closes six marketing pages, so its variants were
+// leaving hidden `opacity: 0` copy at the bottom of all of them until the
+// scroll observer fired. The CSS utility defaults to visible.
 
 // ─── Decorative skew polygon ──────────────────────────────────────────────────
 
@@ -72,12 +60,7 @@ function AnimatedCTAButton({
       className="w-full sm:w-auto"
       {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >
-      <motion.div
-        whileHover={{ y: -3, scale: 1.03 }}
-        whileTap={{ scale: 0.97 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className="will-change-transform"
-      >
+      <div className="transition-transform duration-200 will-change-transform hover:-translate-y-0.5 hover:scale-[1.03] active:scale-[0.97]">
         <Button
           variant={isWhatsApp ? "primary" : variant}
           size="lg"
@@ -90,7 +73,7 @@ function AnimatedCTAButton({
           {isWhatsApp && <WhatsAppIcon className="h-5 w-5 shrink-0" />}
           {children}
         </Button>
-      </motion.div>
+      </div>
     </Link>
   );
 }
@@ -105,34 +88,19 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
           <SkewPolygon className="absolute inset-0 h-full w-full" />
           <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange-200/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-sky-200/20 blur-3xl" />
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-            className="relative"
-          >
+          <div className="reveal-on-scroll relative">
             {label && (
-              <motion.div variants={itemVariants} className="mb-5 flex justify-center">
+              <div className="mb-5 flex justify-center">
                 <SectionLabel label={label} color="orange" />
-              </motion.div>
+              </div>
             )}
-            <motion.h2
-              variants={itemVariants}
-              className="font-title mb-5 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
+            <h2 className="font-title mb-5 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
               {title}
-            </motion.h2>
-            <motion.p
-              variants={itemVariants}
-              className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-700 sm:text-lg"
-            >
+            </h2>
+            <p className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-700 sm:text-lg">
               {description}
-            </motion.p>
-            <motion.div
-              variants={itemVariants}
-              className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4"
-            >
+            </p>
+            <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4">
               <AnimatedCTAButton href={primaryCTA.href} variant="primary">
                 {primaryCTA.label}
               </AnimatedCTAButton>
@@ -141,8 +109,8 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
                   {secondaryCTA.label}
                 </AnimatedCTAButton>
               )}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -178,34 +146,19 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/35 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-sky-200/30 blur-3xl" />
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-            className="relative px-8 py-16 text-center sm:px-12 sm:py-20"
-          >
+          <div className="reveal-on-scroll relative px-8 py-16 text-center sm:px-12 sm:py-20">
             {label && (
-              <motion.div variants={itemVariants} className="mb-5 flex justify-center">
+              <div className="mb-5 flex justify-center">
                 <SectionLabel label={label} color="orange" />
-              </motion.div>
+              </div>
             )}
-            <motion.h2
-              variants={itemVariants}
-              className="font-title mb-5 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-            >
+            <h2 className="font-title mb-5 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
               {title}
-            </motion.h2>
-            <motion.p
-              variants={itemVariants}
-              className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-700 sm:text-lg"
-            >
+            </h2>
+            <p className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-700 sm:text-lg">
               {description}
-            </motion.p>
-            <motion.div
-              variants={itemVariants}
-              className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4"
-            >
+            </p>
+            <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4">
               <AnimatedCTAButton
                 href={primaryCTA.href}
                 variant="primary"
@@ -222,8 +175,8 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
                   {secondaryCTA.label}
                 </AnimatedCTAButton>
               )}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -252,30 +205,17 @@ function ImageCTA({
       <SkewPolygon className="absolute inset-0 h-full w-full opacity-30" />
 
       <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-        >
+        <div className="reveal-on-scroll">
           {label && (
-            <motion.div variants={itemVariants} className="mb-5 flex justify-center">
+            <div className="mb-5 flex justify-center">
               <SectionLabel label={label} color="orange" />
-            </motion.div>
+            </div>
           )}
-          <motion.h2
-            variants={itemVariants}
-            className="font-title mb-5 text-4xl font-bold text-white sm:text-5xl lg:text-6xl"
-          >
+          <h2 className="font-title mb-5 text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
             {title}
-          </motion.h2>
-          <motion.p variants={itemVariants} className="mb-10 text-lg text-white/90 sm:text-xl">
-            {description}
-          </motion.p>
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
-          >
+          </h2>
+          <p className="mb-10 text-lg text-white/90 sm:text-xl">{description}</p>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
             <AnimatedCTAButton href={primaryCTA.href} variant="primary">
               {primaryCTA.label}
             </AnimatedCTAButton>
@@ -288,8 +228,8 @@ function ImageCTA({
                 {secondaryCTA.label}
               </AnimatedCTAButton>
             )}
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </section>
   );

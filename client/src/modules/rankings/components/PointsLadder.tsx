@@ -45,7 +45,7 @@ export function PointsLadder({
       <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
         Each row is a level of the {listLabel} list, and the number beside it is the points a player
         needed this week to be inside it. Find {parentAudience ? "your child’s" : "a player’s"}{" "}
-        points total — the next row up is the next target.
+        points total, the next row up is the next target.
       </p>
 
       <ol className="mt-5 space-y-2.5">

@@ -234,7 +234,7 @@ function StageListItem({
       }`}
     >
       {/* The highlight is one element that slides between rows rather than a
-          class that blinks off one and on another — it carries the eye from the
+          class that blinks off one and on another. It carries the eye from the
           stage you left to the stage you picked. */}
       {active && (
         <motion.span
@@ -613,7 +613,7 @@ export function PathwayReader({
         <aside className="lg:sticky lg:top-20 lg:self-start">
           {/* The trigger says what it does. The old version showed the current
               stage and a chevron and nothing else, which reads as a caption for
-              the panel beneath it — the second line is there because "Stage 1 of
+              the panel beneath it, the second line is there because "Stage 1 of
               6 · Discover Chess" alone never told a parent there were five other
               stages one tap away. */}
           <button
@@ -721,7 +721,7 @@ export function PathwayReader({
                 </div>
                 {/* h2, not h3. The page's h1 is the pathway headline, so the
                   stage is the next level down and the bucket headings inside it
-                  are h3 — the old h1 → h3 → h4 order skipped a level, which is
+                  are h3, the old h1 → h3 → h4 order skipped a level, which is
                   what breaks heading-based navigation. */}
                 <h2
                   id="pathway-stage-name"
@@ -751,7 +751,7 @@ export function PathwayReader({
             </motion.div>
 
             {/* Progress through the whole pathway, in the header where it is
-              always visible — it used to sit inside the Overview tab, which is
+              always visible. It used to sit inside the Overview tab, which is
               the one place a reader already knows where they are. */}
             {/* Each segment fills in its own colour a beat after the one before
               it, so jumping from stage two to stage five reads as ground

@@ -127,7 +127,7 @@ export function entryStatus(rank: number, subcategory: string): EntryStatus | nu
       summary: "No ranking-based entry bars in this age group",
       detail:
         "Under 18 has no Talent Series events, and Championship Series has no " +
-        "ranking bar — so every level of the circuit is open to enter at any rank.",
+        "ranking bar, so every level of the circuit is open to enter at any rank.",
       nextGate: null,
     };
   }
@@ -138,7 +138,7 @@ export function entryStatus(rank: number, subcategory: string): EntryStatus | nu
       summary: "Talent Series is closed in this age group",
       detail:
         `AITA bars the top ${TALENT_SERIES_BAR_RANK} of an age group from Talent ` +
-        "Series. Every other level stays open to enter — Championship Series has " +
+        "Series. Every other level stays open to enter, Championship Series has " +
         "no ranking bar at all.",
       nextGate: null,
     };
@@ -163,7 +163,7 @@ export function entryStatus(rank: number, subcategory: string): EntryStatus | nu
  * zone other than in which he is registered in."
  */
 export const TALENT_SERIES_ZONE_RULE =
-  "Talent Series events are open only to players registered in that zone — a " +
+  "Talent Series events are open only to players registered in that zone, a " +
   "player cannot enter one outside their own zone.";
 
 /**
@@ -183,7 +183,7 @@ export const TALENT_SERIES_ZONE_RULE =
  * rule into information.
  */
 export const JUNIOR_LADDER = [
-  { name: "Talent Series", plain: "the entry level — where most players start" },
+  { name: "Talent Series", plain: "the entry level, where most players start" },
   { name: "Championship Series", plain: "the next step up, run state by state" },
   { name: "Super Series", plain: "national-level events, harder to get into" },
   { name: "National Series", plain: "the level below the national championships" },
@@ -194,11 +194,11 @@ export const JUNIOR_LADDER = [
 export const ENTRY_BANDS = [
   {
     range: "Rank 1 – 75",
-    effect: "Talent Series closed — every other level open to enter",
+    effect: "Talent Series closed, every other level open to enter",
   },
   {
     range: "Rank 76 and below",
-    effect: "No ranking-based bars — every level open to enter",
+    effect: "No ranking-based bars, every level open to enter",
   },
 ] as const;
 
@@ -211,6 +211,6 @@ export const ENTRY_BANDS = [
  * the ninth. Two plain sentences say the same thing and can be read once.
  */
 export const POINTS_FORMULA =
-  "Only a player's 8 best tournament results from the last 12 months are counted — " +
+  "Only a player's 8 best tournament results from the last 12 months are counted," +
   "a bad result never costs points, and results older than a year drop off. " +
   "Doubles counts too, but only a quarter of it.";

@@ -190,7 +190,7 @@ export const getStatusGuidance = (status: string, isDataComplete: boolean) => {
   // missing (historic data loss). They keep their verified badge — they just
   // need the required details back before the dashboard unlocks.
   if (status === "VERIFIED" && !isDataComplete) {
-    return "Your account is verified, but required profile details are missing. Complete Steps 1 and 2 to restore your listing — no re-review needed.";
+    return "Your account is verified, but required profile details are missing. Complete Steps 1 and 2 to restore your listing, no re-review needed.";
   }
 
   switch (status) {

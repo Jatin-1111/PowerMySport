@@ -721,7 +721,7 @@ function OnboardingFlow() {
           <h1 className="mb-2 text-4xl font-bold text-slate-900">List Your Venue</h1>
           <p className="text-slate-600">Complete these 5 steps to get your venue on PowerMySport</p>
           <p className="mx-auto mt-3 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
-            Early access — bookings aren&apos;t open yet. Submit your details now and our team will
+            Early access, bookings aren&apos;t open yet. Submit your details now and our team will
             review and activate your listing once venue bookings launch.
           </p>
           {activeStepMeta && (

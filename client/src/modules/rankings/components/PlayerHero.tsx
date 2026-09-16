@@ -210,7 +210,7 @@ export function PlayerHero({
             {federationAcronym} {primary.listLabel}
             {standing && (
               <>
-                {" — "}
+                {""}
                 <span className="text-foreground font-semibold">{standing}</span>
               </>
             )}
@@ -225,7 +225,7 @@ export function PlayerHero({
               Up {summary.bestClimb.places.toLocaleString("en-IN")} places
             </span>
             <span className="text-muted-foreground">
-              in {summary.bestClimb.label} since we started tracking — from #
+              in {summary.bestClimb.label} since we started tracking, from #
               {summary.bestClimb.from.toLocaleString("en-IN")} to #
               {summary.bestClimb.to.toLocaleString("en-IN")}
             </span>

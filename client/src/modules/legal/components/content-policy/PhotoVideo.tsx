@@ -36,15 +36,15 @@ export function PhotoVideo() {
       <h3 className="mb-3 mt-6 text-xl font-semibold">6.4 AI-Generated & Synthetic Content</h3>
       <p>
         If a photo, video, or audio clip you upload is fully or partially AI-generated,
-        synthetically altered, or a deepfake — for example, an AI-generated profile photo or an
-        artificially altered achievement video — you must clearly disclose this at the time of
+        synthetically altered, or a deepfake, for example, an AI-generated profile photo or an
+        artificially altered achievement video. You must clearly disclose this at the time of
         upload. Undisclosed synthetic content presented as a genuine photo, video, achievement, or
         credential is treated as misleading content under Section 4.3 and is grounds for removal and
         account action. We may apply a visible label to content we have verified as synthetic, and
-        where synthetic content is unlawful — for example, it depicts a real person in a way likely
-        to deceive, or involves a minor — we may disclose the uploader&apos;s identity to an
-        affected party or law enforcement as required by applicable law, including the Digital
-        Personal Data Protection Act, 2023 and the Bharatiya Nyaya Sanhita, 2023.
+        where synthetic content is unlawful, for example, it depicts a real person in a way likely
+        to deceive, or involves a minor. We may disclose the uploader&apos;s identity to an affected
+        party or law enforcement as required by applicable law, including the Digital Personal Data
+        Protection Act, 2023 and the Bharatiya Nyaya Sanhita, 2023.
       </p>
     </section>
   );

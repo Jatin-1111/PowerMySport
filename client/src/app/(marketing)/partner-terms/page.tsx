@@ -33,7 +33,7 @@ import {
 } from "@/modules/legal/components/partner-terms";
 
 export const metadata: Metadata = {
-  title: "Partner Terms — Experts & Academies",
+  title: "Partner Terms for Experts & Academies",
   description:
     "Onboarding terms and conditions for Experts and Academies on PowerMySport, including the 15% platform commission, payout timelines, verification, and termination.",
   alternates: {
@@ -46,7 +46,7 @@ export default function PartnerTermsPage() {
     <div className="min-h-screen bg-slate-50">
       <LegalPageHeader
         icon={HandCoins}
-        title="Partner Terms — Experts & Academies"
+        title="Partner Terms for Experts & Academies"
         lastUpdated="August 11, 2026"
         effective="August 11, 2026"
       />

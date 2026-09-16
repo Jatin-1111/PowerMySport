@@ -115,7 +115,7 @@ export default function QuickAddDependentModal({
     >
       <form id="quick-add-dependent-form" onSubmit={handleSubmit} className="space-y-5">
         <p className="text-sm text-slate-500">
-          Just the basics for now — you can add their sport, physical, and personality details
+          Just the basics for now. You can add their sport, physical, and personality details
           anytime from their profile.
         </p>
 

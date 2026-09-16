@@ -24,16 +24,15 @@ export function ExperiencesNamedIndividuals() {
       <h3 className="mb-3 mt-6 text-xl font-semibold">6.1 What We Ask of an Experience</h3>
       <p>
         An Experience should describe what happened, not render a verdict about the person or
-        business involved. We ask authors to write from what they observed — dates, what was said,
-        what was delivered — rather than characterizations of someone&apos;s competence or
-        character.
+        business involved. We ask authors to write from what they observed, dates, what was said,
+        what was delivered, rather than characterizations of someone&apos;s competence or character.
       </p>
 
       <h3 className="mb-3 mt-6 text-xl font-semibold">6.2 Review Before Publication</h3>
       <p>
         An Experience that names a specific coach or expert is held for review before it becomes
-        visible to other parents. Every other Experience — including one naming a tournament, venue,
-        or academy — is published immediately and is subject to the same reporting and moderation
+        visible to other parents. Every other Experience, including one naming a tournament, venue,
+        or academy. Is published immediately and is subject to the same reporting and moderation
         process as any other content (Section 9).
       </p>
 

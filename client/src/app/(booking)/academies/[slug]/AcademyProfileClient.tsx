@@ -204,7 +204,7 @@ export function AcademyProfileClient() {
                       {typeof sessionRate === "number" ? `${sessionRate}/hr` : "Price on request"}
                     </p>
                     <p className="text-sm font-semibold text-slate-700">
-                      ⭐ {typeof academy.rating === "number" ? academy.rating.toFixed(1) : "New"}
+                      {typeof academy.rating === "number" ? academy.rating.toFixed(1) : "New"}
                       <span className="ml-1 font-normal text-slate-500">
                         ({academy.reviewCount || 0} reviews)
                       </span>

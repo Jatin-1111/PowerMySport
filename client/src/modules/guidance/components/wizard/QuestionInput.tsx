@@ -72,15 +72,15 @@ export function QuestionInput({
           options={[
             {
               value: "beginner",
-              label: "Beginner — city / neighbourhood level, just getting started",
+              label: "Beginner, city / neighbourhood level, just getting started",
             },
             {
               value: "intermediate",
-              label: "Intermediate — school, club or district level, training regularly",
+              label: "Intermediate, school, club or district level, training regularly",
             },
             {
               value: "competitive",
-              label: "Competitive — state or national level, serious competition",
+              label: "Competitive, state or national level, serious competition",
             },
           ]}
           value={form.experienceLevel}
@@ -92,9 +92,9 @@ export function QuestionInput({
       return (
         <FourContextCards
           options={[
-            { value: "1-3", label: "1–3 hrs/week", context: "Casual — once or twice a week" },
-            { value: "4-7", label: "4–7 hrs/week", context: "Regular — most days, short sessions" },
-            { value: "8-12", label: "8–12 hrs/week", context: "Dedicated — structured schedule" },
+            { value: "1-3", label: "1–3 hrs/week", context: "Casual, once or twice a week" },
+            { value: "4-7", label: "4–7 hrs/week", context: "Regular, most days, short sessions" },
+            { value: "8-12", label: "8–12 hrs/week", context: "Dedicated, structured schedule" },
             { value: "13-plus", label: "13+ hrs/week", context: "Full-time athlete commitment" },
           ]}
           value={form.weeklyHours}
@@ -130,10 +130,10 @@ export function QuestionInput({
           options={[
             {
               value: "child",
-              label: "The child on their own — self-practice, no adult guiding sessions",
+              label: "The child on their own, self-practice, no adult guiding sessions",
             },
-            { value: "parent", label: "Me (the parent) — I'll supervise, but I'm not a coach" },
-            { value: "coach", label: "A coach or trainer — professional guidance is available" },
+            { value: "parent", label: "Me (the parent). I'll supervise, but I'm not a coach" },
+            { value: "coach", label: "A coach or trainer, professional guidance is available" },
           ]}
           value={form.executor}
           onChange={(v) => set("executor", v)}
@@ -183,9 +183,9 @@ export function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "weeks", label: "Just a few weeks — it's recent" },
-            { value: "months", label: "A few months — it's been consistent" },
-            { value: "year-plus", label: "Over a year — it's a recurring problem" },
+            { value: "weeks", label: "Just a few weeks. It's recent" },
+            { value: "months", label: "A few months. It's been consistent" },
+            { value: "year-plus", label: "Over a year. It's a recurring problem" },
           ]}
           value={form.weaknessDuration}
           onChange={(v) => set("weaknessDuration", v)}
@@ -196,9 +196,9 @@ export function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "weeks", label: "2–4 weeks — very soon" },
-            { value: "months-1-3", label: "1–3 months — enough time to build" },
-            { value: "months-3-6", label: "3–6 months — good runway to peak" },
+            { value: "weeks", label: "2–4 weeks, very soon" },
+            { value: "months-1-3", label: "1–3 months, enough time to build" },
+            { value: "months-3-6", label: "3–6 months, good runway to peak" },
           ]}
           value={form.timeline}
           onChange={(v) => set("timeline", v)}
@@ -227,7 +227,7 @@ export function QuestionInput({
             {
               value: "matchplay",
               label: "Match experience",
-              context: "Not enough competitive matches — struggles to read opponents and adapt",
+              context: "Not enough competitive matches, struggles to read opponents and adapt",
             },
           ]}
           value={form.tournamentGap}
@@ -239,11 +239,11 @@ export function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "school", label: "School level — playing casually or for school" },
-            { value: "club", label: "Club level — enrolled at an academy or local club" },
+            { value: "school", label: "School level, playing casually or for school" },
+            { value: "club", label: "Club level, enrolled at an academy or local club" },
             {
               value: "district",
-              label: "District / State — competing at district or state events",
+              label: "District / State, competing at district or state events",
             },
           ]}
           value={form.currentLevel}
@@ -255,12 +255,12 @@ export function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "club", label: "Club / academy — get into a proper structured programme" },
+            { value: "club", label: "Club / academy. Get into a proper structured programme" },
             {
               value: "district",
-              label: "District / State — compete at district or state tournaments",
+              label: "District / State, compete at district or state tournaments",
             },
-            { value: "national", label: "National — aim for national championships or selection" },
+            { value: "national", label: "National, aim for national championships or selection" },
           ]}
           value={form.targetLevel}
           onChange={(v) => set("targetLevel", v)}
@@ -304,7 +304,7 @@ export function QuestionInput({
             {
               value: "training",
               label: "In training",
-              context: "They know it's there — visible during practice",
+              context: "They know it's there, visible during practice",
             },
             {
               value: "matches",
@@ -319,7 +319,7 @@ export function QuestionInput({
             {
               value: "always",
               label: "Everywhere",
-              context: "Consistent in all situations — deeply ingrained",
+              context: "Consistent in all situations, deeply ingrained",
             },
           ]}
           value={form.weaknessContext}
@@ -387,12 +387,12 @@ export function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "low", label: "Not match-ready — fitness is a concern, gets tired quickly" },
+            { value: "low", label: "Not match-ready, fitness is a concern, gets tired quickly" },
             {
               value: "moderate",
-              label: "Reasonably fit — can compete but fades in the second half",
+              label: "Reasonably fit. Can compete but fades in the second half",
             },
-            { value: "high", label: "Match-fit — conditioning is not an issue, ready to perform" },
+            { value: "high", label: "Match-fit, conditioning is not an issue, ready to perform" },
           ]}
           value={form.physicalReadiness}
           onChange={(v) => set("physicalReadiness", v)}
@@ -403,9 +403,9 @@ export function QuestionInput({
       return (
         <ThreeOptionCards
           options={[
-            { value: "new", label: "Under 6 months — still settling in at this level" },
-            { value: "6-12m", label: "6–12 months — settled in but not progressing" },
-            { value: "1y-plus", label: "Over a year — definitely plateaued, feels stuck" },
+            { value: "new", label: "Under 6 months, still settling in at this level" },
+            { value: "6-12m", label: "6–12 months, settled in but not progressing" },
+            { value: "1y-plus", label: "Over a year, definitely plateaued, feels stuck" },
           ]}
           value={form.timeAtCurrentLevel}
           onChange={(v) => set("timeAtCurrentLevel", v)}
@@ -419,7 +419,7 @@ export function QuestionInput({
             {
               value: "self",
               label: "Self-practice",
-              context: "On their own at home or with friends — no coaching",
+              context: "On their own at home or with friends, no coaching",
             },
             {
               value: "club",

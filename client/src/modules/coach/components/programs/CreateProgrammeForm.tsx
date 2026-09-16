@@ -43,7 +43,7 @@ const DELIVERY_OPTIONS: Array<{
   {
     value: "ONLINE",
     label: "Online",
-    hint: "Over video — students join from anywhere",
+    hint: "Over video, students join from anywhere",
   },
   {
     value: "PROVIDER_VENUE",
@@ -53,7 +53,7 @@ const DELIVERY_OPTIONS: Array<{
   {
     value: "STUDENT_LOCATION",
     label: "I travel to them",
-    hint: "One-to-one only — a batch can't share one home",
+    hint: "One-to-one only. A batch can't share one home",
   },
 ];
 
@@ -99,7 +99,7 @@ export const CreateProgrammeForm = ({
     }
     if (deliveryKind === "STUDENT_LOCATION" && capacity > 1) {
       return toast.error(
-        "A batch can't be taught at a student's home — use online or your own venue"
+        "A batch can't be taught at a student's home. Use online or your own venue"
       );
     }
     if (selected?.maxStudents != null && capacity > selected.maxStudents) {
@@ -132,7 +132,7 @@ export const CreateProgrammeForm = ({
         startDate: new Date(`${startDate}T00:00:00`).toISOString(),
       });
 
-      toast.success("Programme created — publish it when you're ready");
+      toast.success("Programme created. Publish it when you're ready");
       await onCreated();
     } catch (error) {
       const message =
@@ -332,7 +332,7 @@ export const CreateProgrammeForm = ({
           <span className="text-muted-foreground text-sm">Loading…</span>
         ) : activePackages.length === 0 ? (
           <span className="block rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-            You have no active pricing packages. Create one first — it sets the price, the billing
+            You have no active pricing packages. Create one first. It sets the price, the billing
             period and how many classes it includes.
           </span>
         ) : (

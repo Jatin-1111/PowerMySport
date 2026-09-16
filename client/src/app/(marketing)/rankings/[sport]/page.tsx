@@ -31,11 +31,11 @@ export async function generateMetadata({
   if (!sport) return {};
   const { acronym, name } = sport.federation;
   return {
-    title: `${acronym} ${sport.name} Rankings — Search by State, Age Group & Player | PowerMySport`,
+    title: `${acronym} ${sport.name} Rankings: Search by State, Age Group & Player | PowerMySport`,
     description: `Official ${name} rankings, made searchable. Filter every list by state, look up a player by name or registration number, and follow a rank week by week.`,
     alternates: { canonical: `/rankings/${sport.slug}` },
     openGraph: {
-      title: `${acronym} ${sport.name} Rankings — searchable, by state and age group`,
+      title: `${acronym} ${sport.name} Rankings: searchable, by state and age group`,
       description: `Every ${acronym} ranking list, filterable by state and searchable by name, with each player's week-by-week history.`,
       url: `/rankings/${sport.slug}`,
       type: "website",
@@ -82,7 +82,7 @@ export default async function SportRankingsPage({
         </h1>
         <p className="text-muted-foreground mt-3 text-base sm:text-lg">
           The official {sport.federation.name} lists, made searchable. Filter by state, look up a
-          player by name or registration number, and see how a ranking has moved week by week —
+          player by name or registration number, and see how a ranking has moved week by week,
           something the source PDFs cannot show you.
         </p>
       </header>

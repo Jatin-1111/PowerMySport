@@ -423,8 +423,8 @@ function ExpertOnboardingContent() {
                 profile is PENDING (server-side 403 on every action, and
                 ExpertLayout redirects any non-APPROVED expert straight back
                 here) — don't promise access this screen can't deliver. */}
-            Your profile is locked for editing until this review finishes — there&apos;s nothing
-            else to do right now except wait for our email.
+            Your profile is locked for editing until this review finishes. There&apos;s nothing else
+            to do right now except wait for our email.
           </div>
           <Button variant="secondary" fullWidth className="mt-6" onClick={() => router.push("/")}>
             Back to Home
@@ -449,7 +449,7 @@ function ExpertOnboardingContent() {
           tabIndex={-1}
           className="mt-2 text-sm text-slate-500 outline-none dark:text-slate-400"
         >
-          Step {step} of {STEPS.length} — complete your profile to submit for review
+          Step {step} of {STEPS.length}: complete your profile to submit for review
         </p>
       </div>
 
@@ -464,7 +464,7 @@ function ExpertOnboardingContent() {
               aria-current={step === s.id ? "step" : undefined}
               aria-label={`Step ${s.id}: ${s.title}${
                 step > s.id
-                  ? " (completed — go back to this step)"
+                  ? " (completed, go back to this step)"
                   : step === s.id
                     ? " (current)"
                     : ""
@@ -574,7 +574,7 @@ function ExpertOnboardingContent() {
                     onChange={(e) => setAchievements(e.target.value)}
                   />
                   <p className="mt-1 text-xs text-slate-500">
-                    This is your primary trust signal with clients — be specific.
+                    This is your primary trust signal with clients. Be specific.
                   </p>
                 </div>
 
@@ -754,7 +754,7 @@ function ExpertOnboardingContent() {
                   />
                   <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
                     <MapPin className="h-3 w-3" />
-                    Only shared with clients who have an active booking — never shown on the public
+                    Only shared with clients who have an active booking, never shown on the public
                     listing.
                   </p>
                 </div>
@@ -771,7 +771,7 @@ function ExpertOnboardingContent() {
                 icon={Clock}
                 tint="bg-power-orange/10 text-power-orange"
                 title="Weekly Availability"
-                subtitle="Clients can only book slots inside these windows — you can skip this and set it later"
+                subtitle="Clients can only book slots inside these windows. You can skip this and set it later"
               />
 
               {DAYS.map((day, dayIdx) => {
@@ -847,7 +847,7 @@ function ExpertOnboardingContent() {
                 icon={CalendarOff}
                 tint="bg-slate-100 text-slate-600"
                 title="Blackout Dates"
-                subtitle="Optional — days you're unavailable even within your weekly hours"
+                subtitle="Optional, days you're unavailable even within your weekly hours"
               />
               <div className="flex gap-2">
                 <input
@@ -930,7 +930,7 @@ function ExpertOnboardingContent() {
                   >
                     Partner Terms (Experts &amp; Academies)
                   </a>
-                  , including the 15% platform commission, and confirm that the credentials and
+                  including the 15% platform commission, and confirm that the credentials and
                   information I have provided are accurate.
                   <span className="ml-1 text-red-500">*</span>
                 </span>
@@ -941,7 +941,7 @@ function ExpertOnboardingContent() {
                 <AlertCircle className="h-4 w-4" />
               </div>
               <p className="pt-1">
-                <strong>Submitting for review</strong> — our team will verify your profile before it
+                <strong>Submitting for review</strong>. Our team will verify your profile before it
                 goes live. You&apos;ll receive an email notification once approved (typically 1–2
                 business days).
               </p>

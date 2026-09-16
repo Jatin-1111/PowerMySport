@@ -186,7 +186,7 @@ export function VenueFormFields({
               className={getInputClassName(false)}
             />
             <p className="mt-1 text-xs text-slate-600">
-              Only if you&apos;re GST-registered — shown on booking invoices for this venue.
+              Only if you&apos;re GST-registered, shown on booking invoices for this venue.
             </p>
           </div>
 

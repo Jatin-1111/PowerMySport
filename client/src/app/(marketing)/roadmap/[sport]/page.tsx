@@ -36,7 +36,7 @@ export async function generateMetadata({
 
   // No " | PowerMySport" suffix — the root layout's `%s | PowerMySport`
   // template appends it, and spelling it out here produced it twice.
-  const title = `${name} pathway in India — a parent's guide`;
+  const title = `${name} pathway in India: a parent's guide`;
   const description =
     guide?.intro.description ??
     `Every stage of ${name} for Indian parents: where your child is now, what to watch for, the decisions ahead, and what to do next.`;
@@ -85,7 +85,7 @@ export default async function SportPathwayPage({
       <JsonLd
         data={[
           articleJsonLd({
-            headline: `${guide.sportName} pathway in India — a parent's guide`,
+            headline: `${guide.sportName} pathway in India: a parent's guide`,
             path: `/roadmap/${guide.sportSlug}`,
             description:
               guide.intro.description ?? `Every stage of ${guide.sportName} for Indian parents.`,
@@ -130,7 +130,7 @@ export default async function SportPathwayPage({
               only worked while the two columns happened to be the same height.
               They are not related: the card grows with however many intro
               paragraphs a sport has, so whichever column was shorter left dead
-              space — bottom-aligned it was a void above the headline, top-
+              space, bottom-aligned it was a void above the headline, top-
               aligned it was a void below. Tennis has three short paragraphs and
               got away with it; Chess has four longer ones and did not.
               It reads as prose, so it is laid out as prose, below. */}
@@ -153,7 +153,7 @@ export default async function SportPathwayPage({
 
           {/* Two balanced columns on desktop, one on mobile. `columns` rather
               than a grid so the paragraphs flow and the two sides end level
-              whatever the sport's intro length is — a grid would put a fixed
+              whatever the sport's intro length is, a grid would put a fixed
               number of paragraphs in each and go lopsided at odd counts. */}
           {guide.sportIntro.length > 0 && (
             <section className="mt-8 border-t border-slate-200/70 pt-6">

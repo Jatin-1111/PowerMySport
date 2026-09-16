@@ -550,7 +550,7 @@ export function ExpertDetailClient() {
                     size="lg"
                   >
                     {slot
-                      ? `Book — Pay ${formatInr(expert.sessionFee)}`
+                      ? `Book for ${formatInr(expert.sessionFee)}`
                       : "Select a time to continue"}
                   </Button>
                   <p className="flex items-center justify-center gap-1.5 text-xs text-slate-400">

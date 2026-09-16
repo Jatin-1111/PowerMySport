@@ -94,7 +94,7 @@ export async function generateMetadata({
   // "atp full form") rather than branded, so the sport and the acronym's
   // full form need to be visible in the snippet, not just the bare name.
   const sportLabel = SPORT_LABEL[fed.sportSlug] ?? fed.sportSlug;
-  const title = `${fed.name} (${fed.acronym}) — ${sportLabel} Governing Body`;
+  const title = `${fed.name} (${fed.acronym}), ${sportLabel} Governing Body`;
   const description = clampText(`${fed.acronym} stands for ${fed.name}. ${fed.about}`, 155);
 
   return {

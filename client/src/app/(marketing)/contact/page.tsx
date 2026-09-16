@@ -45,43 +45,6 @@ const SPORT_IMG_3 =
 
 // ─── Motion Variants ──────────────────────────────────────────────────────────
 
-const staggerContainer: Variants = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.11,
-      delayChildren: 0.08,
-    },
-  },
-};
-
-const fadeSlideUp: Variants = {
-  hidden: { opacity: 0, y: 32 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 260, damping: 24 },
-  },
-};
-
-const fadeSlideLeft: Variants = {
-  hidden: { opacity: 0, x: 40 },
-  show: {
-    opacity: 1,
-    x: 0,
-    transition: { type: "spring", stiffness: 240, damping: 26 },
-  },
-};
-
-const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.88 },
-  show: {
-    opacity: 1,
-    scale: 1,
-    transition: { type: "spring", stiffness: 220, damping: 22 },
-  },
-};
-
 const iconPop = {
   initial: { opacity: 0, scale: 0.7, rotate: -12 },
   whileInView: {
@@ -194,11 +157,8 @@ interface InfoCardProps {
 
 function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
   return (
-    <motion.div
-      variants={fadeSlideUp}
-      whileHover={{ y: -5, scale: 1.015 }}
-      transition={{ type: "spring", stiffness: 280, damping: 20 }}
-      className="group flex items-start gap-5 rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md will-change-transform"
+    <div
+      className="group flex items-start gap-5 rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:scale-[1.015]"
       style={{
         boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
       }}
@@ -217,7 +177,7 @@ function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
         <h3 className="mb-1 text-base font-bold text-slate-900">{title}</h3>
         {children}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -585,15 +545,9 @@ export default function ContactPage() {
         />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px] lg:gap-16 xl:grid-cols-[1fr_460px]"
-          >
+          <div className="reveal-on-scroll grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px] lg:gap-16 xl:grid-cols-[1fr_460px]">
             {/* ── LEFT COLUMN: Form ─────────────────────────────────────────── */}
-            <motion.div variants={fadeSlideUp} className="relative z-10">
+            <div className="relative z-10">
               {/* Floating geometric backdrop behind card */}
               <div
                 aria-hidden="true"
@@ -612,14 +566,11 @@ export default function ContactPage() {
                 <FloatingDots />
 
                 {/* Pill label */}
-                <motion.div variants={scaleIn} className="mb-4 inline-block">
+                <div className="mb-4 inline-block">
                   <SectionLabel label="Send a message" color="orange" />
-                </motion.div>
+                </div>
 
-                <motion.h2
-                  variants={fadeSlideUp}
-                  className="mb-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl"
-                >
+                <h2 className="mb-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
                   How can we{" "}
                   <span className="relative inline-block">
                     help?
@@ -639,14 +590,11 @@ export default function ContactPage() {
                       />
                     </svg>
                   </span>
-                </motion.h2>
+                </h2>
 
-                <motion.p
-                  variants={fadeSlideUp}
-                  className="mb-8 text-base leading-relaxed text-slate-500"
-                >
+                <p className="mb-8 text-base leading-relaxed text-slate-500">
                   Fill out the form below and we&apos;ll get back to you within 24 hours.
-                </motion.p>
+                </p>
 
                 {/* Status banners */}
                 <AnimatePresence>
@@ -659,7 +607,7 @@ export default function ContactPage() {
                       className="mb-6 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3"
                     >
                       <p className="text-sm font-semibold text-emerald-800">
-                        ✓ Message sent — we&apos;ll be in touch within 24 hours.
+                        ✓ Message sent. We&apos;ll be in touch within 24 hours.
                       </p>
                     </motion.div>
                   )}
@@ -681,10 +629,7 @@ export default function ContactPage() {
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-5">
                   {/* Row: Name + Email */}
-                  <motion.div
-                    variants={fadeSlideUp}
-                    className="grid grid-cols-1 gap-5 sm:grid-cols-2"
-                  >
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <Field
                       label="Full Name"
                       id="name"
@@ -705,13 +650,10 @@ export default function ContactPage() {
                       required
                       placeholder="your@gmail.com"
                     />
-                  </motion.div>
+                  </div>
 
                   {/* Row: Phone + User Type */}
-                  <motion.div
-                    variants={fadeSlideUp}
-                    className="grid grid-cols-1 gap-5 sm:grid-cols-2"
-                  >
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <Field
                       label="Phone Number"
                       id="phone"
@@ -731,10 +673,10 @@ export default function ContactPage() {
                       options={USER_TYPE_OPTIONS}
                       onChange={(value) => setFormData((prev) => ({ ...prev, userType: value }))}
                     />
-                  </motion.div>
+                  </div>
 
                   {/* Subject */}
-                  <motion.div variants={fadeSlideUp}>
+                  <div>
                     <CustomSelect
                       id="subject"
                       label="Subject"
@@ -747,10 +689,10 @@ export default function ContactPage() {
                       }))}
                       onChange={(value) => setFormData((prev) => ({ ...prev, subject: value }))}
                     />
-                  </motion.div>
+                  </div>
 
                   {/* Message */}
-                  <motion.div variants={fadeSlideUp}>
+                  <div>
                     <label
                       htmlFor="message"
                       className="mb-2 block text-sm font-semibold text-slate-800"
@@ -767,10 +709,10 @@ export default function ContactPage() {
                       className="w-full resize-none rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
                       placeholder="Tell us about your inquiry..."
                     />
-                  </motion.div>
+                  </div>
 
                   {/* Submit */}
-                  <motion.div variants={fadeSlideUp}>
+                  <div>
                     <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.975 }}>
                       <Button
                         type="submit"
@@ -782,26 +724,23 @@ export default function ContactPage() {
                         {isSubmitting ? "Sending…" : "Send Message →"}
                       </Button>
                     </motion.div>
-                  </motion.div>
+                  </div>
                 </form>
               </div>
-            </motion.div>
+            </div>
 
             {/* ── RIGHT COLUMN: Info + Image ───────────────────────────────── */}
-            <motion.div variants={staggerContainer} className="flex flex-col gap-5 lg:pt-2">
+            <div className="flex flex-col gap-5 lg:pt-2">
               {/* Section header */}
-              <motion.div variants={fadeSlideLeft}>
+              <div>
                 <SectionLabel label="Reach us directly" color="slate" />
                 <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
                   Other ways to reach us
                 </h2>
-              </motion.div>
+              </div>
 
               {/* Clipped sport image with overlapping badge */}
-              <motion.div
-                variants={scaleIn}
-                className="relative h-36 w-full overflow-hidden rounded-2xl sm:h-44"
-              >
+              <div className="relative h-36 w-full overflow-hidden rounded-2xl sm:h-44">
                 <ClippedFrame
                   src={SPORT_IMG_3}
                   alt="Outdoor sports court"
@@ -820,7 +759,7 @@ export default function ContactPage() {
                   aria-hidden="true"
                   className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-orange-400/30 blur-2xl"
                 />
-              </motion.div>
+              </div>
 
               {/* Email */}
               <InfoCard icon={Mail} title="Email">
@@ -866,11 +805,8 @@ export default function ContactPage() {
               </InfoCard>
 
               {/* Social */}
-              <motion.div
-                variants={fadeSlideUp}
-                whileHover={{ y: -4 }}
-                transition={{ type: "spring", stiffness: 280, damping: 20 }}
-                className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md"
+              <div
+                className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 hover:-translate-y-1"
                 style={{
                   boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
                 }}
@@ -895,9 +831,9 @@ export default function ContactPage() {
                     </motion.a>
                   ))}
                 </div>
-              </motion.div>
-            </motion.div>
-          </motion.div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -925,38 +861,24 @@ export default function ContactPage() {
         />
 
         <div className="relative mx-auto max-w-4xl px-6 text-center">
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-          >
-            <motion.div variants={scaleIn} className="mb-4 inline-flex">
+          <div className="reveal-on-scroll">
+            <div className="mb-4 inline-flex">
               <span className="border-power-orange/40 bg-power-orange/10 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
                 Ready to play?
               </span>
-            </motion.div>
+            </div>
 
-            <motion.h2
-              variants={fadeSlideUp}
-              className="font-title mb-5 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl"
-            >
+            <h2 className="font-title mb-5 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
               We&apos;re here to help
-            </motion.h2>
+            </h2>
 
-            <motion.p
-              variants={fadeSlideUp}
-              className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg"
-            >
+            <p className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg">
               Whether you&apos;re a parent planning your child&apos;s sports journey, a venue owner
-              listing your facility, or a coach expanding your practice — we&apos;re just a message
+              listing your facility, or a coach expanding your practice, we&apos;re just a message
               away. Our team typically responds within 24 hours.
-            </motion.p>
+            </p>
 
-            <motion.div
-              variants={fadeSlideUp}
-              className="flex flex-col items-center justify-center gap-4 sm:flex-row"
-            >
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <motion.a
                 href="/register"
                 className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-xl hover:shadow-orange-500/30"
@@ -985,8 +907,8 @@ export default function ContactPage() {
               >
                 Browse FAQs
               </motion.a>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

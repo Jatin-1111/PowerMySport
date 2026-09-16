@@ -74,7 +74,7 @@ const ISSUE_OPTIONS = [
   { value: "seriousness", label: "Deciding how seriously to pursue the sport", context: "" },
   { value: "wellbeing", label: "Managing training, fitness & wellbeing", context: "" },
   { value: "opportunities", label: "Exploring international / college opportunities", context: "" },
-  { value: "other", label: "Something else — ask a question", context: "" },
+  { value: "other", label: "Something else, ask a question", context: "" },
 ];
 
 const STEPS: WizardStep[] = [
@@ -89,7 +89,7 @@ const STEPS: WizardStep[] = [
   {
     kind: "transition",
     text: "Good. Now let's build a quick profile.",
-    sub: "A handful of questions — that's all it takes.",
+    sub: "A handful of questions. That's all it takes.",
   },
   // ─── Identity ───────────────────────────────────────────────────────────
   {
@@ -104,21 +104,21 @@ const STEPS: WizardStep[] = [
     id: "childName",
     required: false,
     heading: () => "What's your child's name?",
-    sub: "Optional — makes the profile feel personal.",
+    sub: "Optional, makes the profile feel personal.",
   },
   {
     kind: "question",
     id: "dateOfBirth",
     required: false,
     heading: (f) => `When was ${f.childName || "your child"} born?`,
-    sub: "Optional — helps us send age-appropriate milestones and track their development over time.",
+    sub: "Optional, helps us send age-appropriate milestones and track their development over time.",
   },
   {
     kind: "question",
     id: "gender",
     required: false,
     heading: (f) => `Tell us about ${f.childName || "your child"}`,
-    sub: "Optional — some pathways and competitions are gender-specific.",
+    sub: "Optional, some pathways and competitions are gender-specific.",
   },
   {
     kind: "question",
@@ -137,8 +137,8 @@ const STEPS: WizardStep[] = [
     sub: (f) => {
       const body = getGoverningBodyName(f.sport);
       return body
-        ? `These are the real rungs of the ${body} junior pathway — pick the closest match.`
-        : "This sets the starting point for the roadmap — pick the closest match.";
+        ? `These are the real rungs of the ${body} junior pathway. Pick the closest match.`
+        : "This sets the starting point for the roadmap. Pick the closest match.";
     },
   },
   {
@@ -147,7 +147,7 @@ const STEPS: WizardStep[] = [
     required: false,
     heading: (f) =>
       `How many years has ${f.childName || "your child"} been playing ${f.sport || "this sport"}?`,
-    sub: "Optional — helps us gauge their trajectory so far.",
+    sub: "Optional, helps us gauge their trajectory so far.",
   },
   // ─── Goals ──────────────────────────────────────────────────────────────
   {
@@ -670,7 +670,7 @@ function NavigateResultsScreen({
     {
       icon: Map,
       title: "Explore Pathways",
-      description: `See the full ${form.sport || "sport"} journey — stages, milestones, and what comes next.`,
+      description: `See the full ${form.sport || "sport"} journey: stages, milestones, and what comes next.`,
       onClick: () => router.push(roadmapHref(form.sport)),
     },
     {
@@ -683,7 +683,7 @@ function NavigateResultsScreen({
       icon: MessageCircle,
       title: "Connect with an Expert",
       description: issueLabel
-        ? `Talk it through 1:1 — starting from "${issueLabel}".`
+        ? `Talk it through 1:1, starting from "${issueLabel}".`
         : "Talk it through 1:1 with a real sports expert.",
       onClick: goToExpert,
     },

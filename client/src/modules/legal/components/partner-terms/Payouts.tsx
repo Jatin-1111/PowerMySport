@@ -25,8 +25,8 @@ export function Payouts() {
           caused by incorrect or outdated details you provided
         </li>
         <li>
-          <strong>Statements:</strong> A per-Transaction breakdown — gross amount, 15% commission,
-          GST, any gateway charge, TDS, and net payout — is available in your dashboard
+          <strong>Statements:</strong> A per-Transaction breakdown: gross amount, 15% commission,
+          GST, any gateway charge, TDS, and net payout. Is available in your dashboard
         </li>
         <li>
           <strong>Withholding and offset:</strong> We may withhold or set off any payout where (a)

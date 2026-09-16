@@ -22,12 +22,12 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   // The root layout appends " | PowerMySport"; repeating it here doubled it.
-  title: "Sports Rankings in India — Official Federation Lists",
+  title: "Sports Rankings in India | Official Federation Lists",
   description:
     "Official Indian federation ranking lists, made searchable. Filter by state, look up a player by name or registration number, and follow a rank week by week. Tennis (AITA) is live.",
   alternates: { canonical: "/rankings" },
   openGraph: {
-    title: "Sports rankings in India — official federation lists, searchable",
+    title: "Sports rankings in India: official federation lists, searchable",
     description:
       "Federation ranking lists mirrored for search and history. Tennis is live, more to follow.",
     url: "/rankings",
@@ -74,7 +74,7 @@ export default async function RankingsIndexPage() {
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Sports rankings in India</h1>
         <p className="text-muted-foreground mt-3 text-base sm:text-lg">
           Official federation lists, made searchable. Filter by state, look up a player by name or
-          registration number, and see how a ranking has moved week by week — something the source
+          registration number, and see how a ranking has moved week by week, something the source
           PDFs cannot show you.
         </p>
       </header>
@@ -94,7 +94,7 @@ export default async function RankingsIndexPage() {
                 </span>
                 <span className="text-muted-foreground mt-3 block text-sm">
                   {sport.federation.acronym} lists
-                  {asOn !== "—" && (
+                  {asOn !== "N/A" && (
                     <>
                       <span className="mx-1.5" aria-hidden>
                         ·

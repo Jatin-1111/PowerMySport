@@ -54,7 +54,7 @@ export function TaxDetailsCard({
               className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
             />
             <p className="mt-1 text-xs text-slate-500">
-              Only if you&apos;re GST-registered — shown on your booking invoices.
+              Only if you&apos;re GST-registered, shown on your booking invoices.
             </p>
           </div>
           <div className="grid gap-2 sm:flex">

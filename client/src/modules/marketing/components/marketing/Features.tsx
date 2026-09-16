@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { motion, Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   BarChart3,
   Calendar,
@@ -34,36 +34,13 @@ export interface FeaturesProps {
   variant?: "default" | "centered" | "bento";
 }
 
-// ─── Motion variants ───────────────────────────────────────────────────────────
-
-const sectionVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
-};
-
-const headerItemVariants: Variants = {
-  hidden: { opacity: 0, y: 22 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 280, damping: 22 },
-  },
-};
-
-const gridVariants: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1, delayChildren: 0.18 } },
-};
-
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 32, scale: 0.97 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: "spring", stiffness: 260, damping: 22 },
-  },
-};
+// ─── Scroll reveal ─────────────────────────────────────────────────────────────
+//
+// Section header and card grid reveal via `.reveal-on-scroll` (globals.css)
+// instead of a framer-motion `whileInView` stagger, so the copy is visible in
+// the server HTML rather than held at `opacity: 0` until hydration. The card
+// and icon hover effects below are still framer: they animate on interaction
+// and never hide anything.
 
 // ─── Icon badge colors cycling ─────────────────────────────────────────────────
 
@@ -71,7 +48,7 @@ const iconBgColors = [
   "bg-orange-100 text-power-orange",
   "bg-blue-100 text-blue-600",
   "bg-emerald-100 text-emerald-600",
-  "bg-purple-100 text-purple-600",
+  "bg-teal-100 text-teal-600",
   "bg-amber-100 text-amber-600",
   "bg-cyan-100 text-cyan-600",
   "bg-rose-100 text-rose-600",
@@ -83,12 +60,7 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
   const colorClass = iconBgColors[index % iconBgColors.length];
 
   return (
-    <motion.div
-      variants={cardVariants}
-      whileHover={{ y: -8, scale: 1.015 }}
-      transition={{ type: "spring", stiffness: 280, damping: 20 }}
-      className="premium-shadow group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md will-change-transform hover:border-white/90 hover:bg-white/90"
-    >
+    <div className="premium-shadow group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 will-change-transform hover:-translate-y-2 hover:scale-[1.015] hover:border-white/90 hover:bg-white/90">
       {/* Subtle corner accent */}
       <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-[3rem] bg-gradient-to-bl from-slate-100/80 to-transparent opacity-40" />
 
@@ -123,7 +95,7 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
         whileHover={{ scaleX: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       />
-    </motion.div>
+    </div>
   );
 }
 
@@ -149,9 +121,9 @@ const bentoAccents = [
     glow: "96,165,250",
   },
   {
-    chip: "bg-violet-500/25 ring-violet-400/40",
-    edgeCls: "bg-gradient-to-r from-violet-500 to-purple-400",
-    glow: "167,139,250",
+    chip: "bg-teal-500/25 ring-teal-400/40",
+    edgeCls: "bg-gradient-to-r from-teal-500 to-cyan-400",
+    glow: "45,212,191",
   },
   {
     chip: "bg-emerald-500/25 ring-emerald-400/40",
@@ -176,12 +148,9 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
   const accent = bentoAccents[index % bentoAccents.length];
 
   return (
-    <motion.div
-      variants={cardVariants}
-      whileHover={{ y: -6 }}
-      transition={{ type: "spring", stiffness: 260, damping: 22 }}
+    <div
       className={cn(
-        "group relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-3xl border border-white/10 will-change-transform md:min-h-0",
+        "group relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-3xl border border-white/10 transition-transform duration-300 will-change-transform hover:-translate-y-1.5 md:min-h-0",
         "shadow-[0_8px_40px_-8px_rgba(0,0,0,0.45)]",
         "hover:shadow-[0_20px_60px_-8px_rgba(0,0,0,0.65)]",
         "transition-shadow duration-500",
@@ -225,8 +194,7 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
 
       {/* Floating stat pill — top right */}
       {feature.stat && (
-        <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/35 px-3 py-1.5 backdrop-blur-md">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+        <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-md border border-white/15 bg-black/35 px-3 py-1.5 backdrop-blur-md">
           <span className="text-[11px] font-semibold tracking-wide text-white/85">
             {feature.stat}
           </span>
@@ -241,8 +209,8 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
               accent.chip,
               isHero ? "h-14 w-14" : "h-11 w-11"
             )}
-            whileHover={{ rotate: 8, scale: 1.12 }}
-            transition={{ type: "spring", stiffness: 300, damping: 16 }}
+            whileHover={{ scale: 1.04 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
             {feature.icon}
           </motion.div>
@@ -272,7 +240,7 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
           {feature.description}
         </p>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -301,51 +269,32 @@ export const Features: React.FC<FeaturesProps> = ({
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}
         {(title || subtitle || description) && (
-          <motion.div
-            variants={sectionVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
+          <div
             className={cn(
-              "mb-12 sm:mb-16",
+              "reveal-on-scroll mb-12 sm:mb-16",
               variant === "centered" ? "mx-auto max-w-3xl text-center" : ""
             )}
           >
             {subtitle && (
-              <motion.div
-                variants={headerItemVariants}
-                className={cn("mb-4", variant === "centered" ? "flex justify-center" : "")}
-              >
+              <div className={cn("mb-4", variant === "centered" ? "flex justify-center" : "")}>
                 <SectionLabel label={subtitle} color="orange" />
-              </motion.div>
+              </div>
             )}
             {title && (
-              <motion.h2
-                variants={headerItemVariants}
-                className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl"
-              >
+              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
                 {title}
-              </motion.h2>
+              </h2>
             )}
             {description && (
-              <motion.p
-                variants={headerItemVariants}
-                className="text-base leading-relaxed text-slate-600 sm:text-lg"
-              >
-                {description}
-              </motion.p>
+              <p className="text-base leading-relaxed text-slate-600 sm:text-lg">{description}</p>
             )}
-          </motion.div>
+          </div>
         )}
 
         {/* ── Features Grid ── */}
-        <motion.div
-          variants={gridVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
+        <div
           className={cn(
-            "grid grid-cols-1",
+            "reveal-on-scroll grid grid-cols-1",
             variant === "bento"
               ? "gap-4 sm:gap-5 md:auto-rows-[18rem] md:grid-cols-3"
               : cn("gap-6 sm:gap-7", gridCols[columns])
@@ -358,7 +307,7 @@ export const Features: React.FC<FeaturesProps> = ({
               <FeatureCard key={index} feature={feature} index={index} />
             )
           )}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

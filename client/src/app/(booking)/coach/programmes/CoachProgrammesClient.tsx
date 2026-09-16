@@ -75,7 +75,7 @@ export const CoachProgrammesClient = () => {
   const cancelSession = (session: CoachSessionOccurrence) =>
     run(session.id, async () => {
       await coachProgramsApi.cancelSession(session.id);
-      return "Cancelled — your students keep their class and are owed a makeup";
+      return "Cancelled. Your students keep their class and are owed a makeup";
     });
 
   const setLink = (session: CoachSessionOccurrence) => {
@@ -117,7 +117,7 @@ export const CoachProgrammesClient = () => {
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">My programmes</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Regular classes you run every week — one-to-one or as a batch, in person or online.
+          Regular classes you run every week, one-to-one or as a batch, in person or online.
         </p>
       </header>
 
@@ -296,7 +296,7 @@ export const CoachProgrammesClient = () => {
                         onClick={() =>
                           run(offering.id, async () => {
                             const response = await coachProgramsApi.activate(offering.id);
-                            return `Published — ${response.data?.sessionsCreated ?? 0} classes scheduled`;
+                            return `Published, ${response.data?.sessionsCreated ?? 0} classes scheduled`;
                           })
                         }
                       >

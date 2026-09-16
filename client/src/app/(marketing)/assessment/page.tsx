@@ -14,7 +14,7 @@ export default function AssessmentPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-orange-50/60 via-white to-slate-50" />
         <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
         <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-indigo-200/15 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-slate-300/15 blur-3xl" />
       </div>
 
       <div className="w-full max-w-3xl">
@@ -62,7 +62,7 @@ export default function AssessmentPage() {
               </h2>
               <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-500">
                 Answer a few quick questions about your child&apos;s personality, physical traits,
-                and goals — we&apos;ll recommend the best sport match.
+                and goals. We&apos;ll recommend the best sport match.
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-slate-400">~5 minutes</span>
@@ -94,7 +94,7 @@ export default function AssessmentPage() {
                 Build the profile
               </h2>
               <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-500">
-                Tell us your child&apos;s sport and we&apos;ll build their profile — so we can
+                Tell us your child&apos;s sport and we&apos;ll build their profile, so we can
                 personalise the roadmap and guidance for exactly where they are.
               </p>
               <div className="flex items-center justify-between">

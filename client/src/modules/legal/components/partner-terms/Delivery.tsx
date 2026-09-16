@@ -32,7 +32,7 @@ export function Delivery() {
         </li>
         <li>
           <strong>Qualified delivery:</strong> Services must be delivered by the Expert whose
-          profile was booked, or — for Academies — by coaching staff of at least the qualification
+          profile was booked, or, for Academies, by coaching staff of at least the qualification
           level represented in your listing. Undisclosed substitution is a breach.
         </li>
         <li>

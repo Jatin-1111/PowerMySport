@@ -67,7 +67,7 @@ export const ProgrammeDetailClient = () => {
     setJoining(true);
     try {
       await coachProgramsApi.joinWaitlist(offering.id, studentName.trim());
-      toast.success("You're on the waiting list — we'll email you.");
+      toast.success("You're on the waiting list. We'll email you.");
       router.push("/my-classes");
     } catch (error) {
       const message =

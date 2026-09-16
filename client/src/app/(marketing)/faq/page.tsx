@@ -23,7 +23,7 @@ const faqs = [
       {
         question: "Is PowerMySport free to use?",
         answer:
-          "Yes — creating an account, using the free Sport Assessment to find the right sport, using AI Guidance to build a personalized plan, and exploring sport pathways/roadmaps are all free. You only pay when you book a paid service, like an expert consultation.",
+          "Yes, creating an account, using the free Sport Assessment to find the right sport, using AI Guidance to build a personalized plan, and exploring sport pathways/roadmaps are all free. You only pay when you book a paid service, like an expert consultation.",
       },
     ],
   },
@@ -48,7 +48,7 @@ const faqs = [
       {
         question: "Can I cancel or reschedule an expert session?",
         answer:
-          "Yes — go to your dashboard, find the session, and choose to cancel or reschedule. Refunds follow our standard cancellation policy (see Payment & Refunds below).",
+          "Yes. Go to your dashboard, find the session, and choose to cancel or reschedule. Refunds follow our standard cancellation policy (see Payment & Refunds below).",
       },
     ],
   },
@@ -58,12 +58,12 @@ const faqs = [
       {
         question: "How do I find the right sport for my child?",
         answer:
-          "Use Get Started (our free Sport Assessment) — answer a few quick questions about your child's age, personality, and physical traits, and it recommends sports that genuinely fit. Already know the sport? Build a Sport Profile instead to skip straight to personalization.",
+          "Use Get Started (our free Sport Assessment). Answer a few quick questions about your child's age, personality, and physical traits, and it recommends sports that genuinely fit. Already know the sport? Build a Sport Profile instead to skip straight to personalization.",
       },
       {
         question: "Can I get a personalized development plan for my child?",
         answer:
-          "Yes — Problem Solver (AI Guidance) builds a full plan once you know your child's sport: training phases, a weekly schedule, a cost breakdown, and the ideal coaching style for their personality.",
+          "Yes, Problem Solver (AI Guidance) builds a full plan once you know your child's sport: training phases, a weekly schedule, a cost breakdown, and the ideal coaching style for their personality.",
       },
       {
         question: "Can I add multiple children or book for more than one?",

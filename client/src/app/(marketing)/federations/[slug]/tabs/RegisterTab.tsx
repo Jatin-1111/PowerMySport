@@ -13,7 +13,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
           <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>Step-by-Step Registration</SectionHeading>
             <p className="mb-8 text-sm text-slate-400">
-              Follow these steps in order. Starting early gives your child a significant advantage —
+              Follow these steps in order. Starting early gives your child a significant advantage,
               many spots fill fast.
             </p>
             <ol className="space-y-6">
@@ -38,7 +38,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
           <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>Required Documents</SectionHeading>
             <p className="mb-6 text-sm text-slate-400">
-              Prepare these before the tournament entry deadline — missing documents result in
+              Prepare these before the tournament entry deadline. Missing documents result in
               rejection.
             </p>
             <ul className="space-y-3">
@@ -74,7 +74,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
               We handle registration for you
             </h3>
             <p className="mb-5 text-[13px] leading-relaxed text-white/50">
-              Federation IDs, documents, form submissions — our team takes care of all of it. At no
+              Federation IDs, documents, form submissions. Our team takes care of all of it. At no
               cost.
             </p>
             <ul className="mb-5 space-y-2">
@@ -91,7 +91,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
             </ul>
             <a
               href={buildWhatsAppUrl(
-                `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel} — found via PowerMySport.`
+                `Hi! I'd like help with ${fed.acronym} registration for ${sportLabel}, found via PowerMySport.`
               )}
               target="_blank"
               rel="noopener noreferrer"

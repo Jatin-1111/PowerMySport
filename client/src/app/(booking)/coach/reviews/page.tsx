@@ -239,7 +239,7 @@ export default function CoachReviewsPage() {
             {/* Left — big number */}
             <div className="flex flex-col items-center justify-center gap-2 sm:min-w-[160px]">
               <span className="text-6xl font-extrabold tracking-tight text-slate-900">
-                {avgRating > 0 ? avgRating.toFixed(1) : "—"}
+                {avgRating > 0 ? avgRating.toFixed(1) : "N/A"}
               </span>
               <StarRow rating={avgRating} size={22} />
               <span className="text-sm text-slate-400">

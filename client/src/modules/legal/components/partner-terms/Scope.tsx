@@ -32,16 +32,16 @@ export function Scope() {
         <Link href="/refund-policy" className="text-orange-600 hover:underline">
           Cancellation, Refund &amp; Dispute Policy
         </Link>
-        , and{" "}
+        and{" "}
         <Link href="/content-policy" className="text-orange-600 hover:underline">
           Content Policy
         </Link>
-        , each of which is incorporated here by reference.
+        each of which is incorporated here by reference.
       </p>
       <p className="leading-relaxed text-slate-600">
         Where these Partner Terms conflict with the general Terms of Service on a matter specific to
-        Partners — commission, payouts, verification, listing standards, or exit — these Partner
-        Terms control. On all other matters, the Terms of Service control.
+        Partners, commission, payouts, verification, listing standards, or exit, these Partner Terms
+        control. On all other matters, the Terms of Service control.
       </p>
     </section>
   );

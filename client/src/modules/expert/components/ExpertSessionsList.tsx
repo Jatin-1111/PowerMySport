@@ -269,7 +269,7 @@ export function SessionRow({
           {session.reviewed && session.rating && (
             <p className="mt-1 flex items-center gap-1 text-sm text-amber-600">
               <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-              {session.rating}/5{session.review ? ` — "${session.review}"` : ""}
+              {session.rating}/5{session.review ? `: "${session.review}"` : ""}
             </p>
           )}
           {session.status === "COMPLETED" && (
@@ -471,7 +471,7 @@ export function SessionRow({
       >
         <p className="text-sm text-slate-600">
           {momMode === "complete"
-            ? "Summarize what you covered and any next steps — the parent will see this once the session is complete."
+            ? "Summarize what you covered and any next steps. The parent will see this once the session is complete."
             : "Update your minutes of meeting for this session."}
         </p>
         <textarea

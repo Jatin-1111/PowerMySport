@@ -196,8 +196,8 @@ export function useGuidanceForm({
   };
 
   const nextStep = () => {
-    const messages = ["Great start! ✨", "Keep Going! ⚡", "Almost There! 🔥", "Final Step! 🏆"];
-    setAchievement(messages[step - 1] || "Progress!");
+    const messages = ["Step 1 saved", "Step 2 saved", "Step 3 saved", "Last step"];
+    setAchievement(messages[step - 1] || "Saved");
     setTimeout(() => setAchievement(null), 2000);
     setStep((s) => Math.min(s + 1, 4));
   };
@@ -230,7 +230,7 @@ export function useGuidanceForm({
 
       setSubmission(response.data.data);
       setShowResults(true);
-      setAchievement("🏆 Roadmap unlocked!");
+      setAchievement("Your roadmap is ready");
       setTimeout(() => {
         setAchievement(null);
         resultsRef.current?.scrollIntoView({

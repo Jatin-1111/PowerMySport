@@ -12,6 +12,7 @@ import type {
   AcademyStepPayload,
   OnboardingAcademy,
 } from "@/modules/onboarding/types/academy";
+import { CheckCircle2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Step1BasicInfo from "./Step1BasicInfo";
@@ -352,7 +353,7 @@ export default function AcademyOnboardingContainer() {
     <div className="bg-linear-to-br min-h-screen from-slate-50 to-slate-100 px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <p className="mx-auto mb-6 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs text-amber-700">
-          Early access — bookings aren&apos;t open yet. Submit your details now and our team will
+          Early access, bookings aren&apos;t open yet. Submit your details now and our team will
           review and activate your academy once bookings launch.
         </p>
         {/* Progress Bar */}
@@ -422,7 +423,7 @@ export default function AcademyOnboardingContainer() {
         {/* Resume banner */}
         {resumeId && currentStep > 1 && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
-            <span>✅</span>
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
             <span>Resuming your onboarding from Step {currentStep}. Previous steps are saved.</span>
           </div>
         )}

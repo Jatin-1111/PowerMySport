@@ -99,7 +99,7 @@ export function ShortTermPlanCard({ plan }: { plan: ShortTermPlan }) {
             Your {plan.durationWeeks}-Week Plan
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            One focus per week — tap a drill to see how to run it
+            One focus per week, tap a drill to see how to run it
           </p>
         </div>
       </div>

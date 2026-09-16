@@ -13,7 +13,7 @@ export function FraudPrevention() {
       </p>
       <p className="leading-relaxed text-slate-600">
         If you receive a call, message, or email claiming to be from PowerMySport that asks for any
-        of this information, do not share it — report it immediately to teams@powermysport.com. We
+        of this information, do not share it, report it immediately to teams@powermysport.com. We
         are not liable for any loss you incur by sharing your password, OTP, CVV, or other account
         credentials with any third party, including someone impersonating PowerMySport.
       </p>

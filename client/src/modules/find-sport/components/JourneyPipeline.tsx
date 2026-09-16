@@ -66,7 +66,7 @@ export function JourneyPipeline({
       </div>
 
       {/* ── Step 2: the actual next step ──
-          Copy and action sit side by side on desktop — stacked, the CTA button
+          Copy and action sit side by side on desktop, stacked, the CTA button
           stretched the full card width and read as a footer rather than a step. */}
       <div className="grid items-center gap-5 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_auto] lg:gap-10">
         <div className="flex min-w-0 items-start gap-3.5">
@@ -82,7 +82,7 @@ export function JourneyPipeline({
             </p>
             <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-400">
               One session on an actual court tells you more than any score can. We&apos;ll find a
-              coach near you and set it up — no commitment beyond the one class.
+              coach near you and set it up, no commitment beyond the one class.
             </p>
           </div>
         </div>
@@ -98,7 +98,7 @@ export function JourneyPipeline({
             Book a Trial Class on WhatsApp
           </a>
           <p className="mt-2.5 text-center text-[11px] leading-relaxed text-white/40">
-            Usually answered the same day. Screening and expert sessions are optional add-ons — see
+            Usually answered the same day. Screening and expert sessions are optional add-ons. See
             below.
           </p>
         </div>

@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const path = comboHref(sport.slug, combo);
   const acronym = sport.federation.acronym;
   return {
-    title: `${acronym} ${label} Ranking — Live List by State | PowerMySport`,
+    title: `${acronym} ${label} Ranking: Live List by State | PowerMySport`,
     description:
       `The current ${sport.federation.name} ${label} ranking, searchable by ` +
       `player name and filterable by state, with each player's week-by-week history.`,
@@ -284,14 +284,14 @@ export default async function RankingListPage({
         Read sideways.
 
         Everything below answers "is my child doing well" rather than "what number
-        are they" — which is the question the source PDF cannot answer at all. It
+        are they", which is the question the source PDF cannot answer at all. It
         sits after the table because the table is what someone came for, and it is
         ordered by how much a parent can act on it: what the next level costs, what
         this rank opens and closes, what kind of matches the points come from, and
         only then the state breakdown, which is folded away.
 
         The computed panels cover the whole list, not the page above, and do not
-        change with the filters. The entry rules are not computed at all — they are
+        change with the filters. The entry rules are not computed at all. They are
         AITA's, and say so on screen.
       */}
       {(hasInsights || isJunior) && (

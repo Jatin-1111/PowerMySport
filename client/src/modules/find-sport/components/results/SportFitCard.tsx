@@ -94,7 +94,7 @@ export function SportFitCard({
     >
       {/* ── Header: score rail + identity ──
           The score sits directly beside the sport name rather than floating at
-          the far edge of a wide row — at desktop widths those two were reading
+          the far edge of a wide row, at desktop widths those two were reading
           as unrelated blocks. */}
       <div className="flex flex-col sm:flex-row">
         {/* Score rail */}
@@ -211,7 +211,7 @@ export function SportFitCard({
                 <Check className="h-2.5 w-2.5 text-emerald-600" />
               </div>
               <p className="text-[13px] leading-relaxed text-slate-600">
-                Nothing in {name}&apos;s profile works against {fit.sport.name} — no mismatch big
+                Nothing in {name}&apos;s profile works against {fit.sport.name}, no mismatch big
                 enough to flag. A trial class is the only thing left to check.
               </p>
             </div>

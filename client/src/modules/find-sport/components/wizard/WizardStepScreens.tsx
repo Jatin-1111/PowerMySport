@@ -220,12 +220,12 @@ export function QuestionScreen({
               {
                 value: "explosive",
                 title: "Sprints hard, then needs a breather",
-                sub: `${cap} goes flat out for a bit, gives everything — then sits out to recover`,
+                sub: `${cap} goes flat out for a bit, gives everything, then sits out to recover`,
               },
               {
                 value: "endurance",
                 title: "Keeps going the whole time",
-                sub: "Doesn't tire quickly — still going strong after everyone else has stopped",
+                sub: "Doesn't tire quickly, still going strong after everyone else has stopped",
               },
             ]}
             value={answers.energyType}
@@ -240,12 +240,12 @@ export function QuestionScreen({
               {
                 value: "gross",
                 title: "Loves running, jumping, throwing things",
-                sub: "Whole-body movement — power and coordination, not precision",
+                sub: "Whole-body movement, power and coordination, not precision",
               },
               {
                 value: "fine",
                 title: "Better at careful, steady-handed tasks",
-                sub: "Stacking blocks, threading things, careful aim — precision over power",
+                sub: "Stacking blocks, threading things, careful aim, precision over power",
               },
             ]}
             value={answers.motorType}
@@ -260,7 +260,7 @@ export function QuestionScreen({
               { value: "strong", label: `${cap1(v("track"))} and ${v("react")} naturally` },
               {
                 value: "moderate",
-                label: `Sometimes ${v("catch", "catches")} it, sometimes ${v("miss", "misses")} — depends on the day`,
+                label: `Sometimes ${v("catch", "catches")} it, sometimes ${v("miss", "misses")}, depends on the day`,
               },
               {
                 value: "weak",
@@ -339,7 +339,7 @@ export function QuestionScreen({
               {
                 value: "react",
                 title: "Jumps in and figures it out by doing",
-                sub: `${cap} acts on instinct first — thinking about it comes after`,
+                sub: `${cap} acts on instinct first, thinking about it comes after`,
               },
               {
                 value: "strategic",
@@ -358,12 +358,12 @@ export function QuestionScreen({
             options={[
               {
                 value: "thrives",
-                label: `${cap} performs even better when all eyes are on ${pnObj} — thrives under the spotlight`,
+                label: `${cap} performs even better when all eyes are on ${pnObj}, thrives under the spotlight`,
               },
               {
                 value: "manages",
                 label:
-                  "Gets nervous but manages through it — performs reasonably well under pressure",
+                  "Gets nervous but manages through it, performs reasonably well under pressure",
               },
               {
                 value: "avoids",
@@ -385,7 +385,7 @@ export function QuestionScreen({
               {
                 value: "high",
                 title: "Happy to repeat the same drill for months",
-                sub: `${cap} doesn't get bored — repetition is how ${pn} ${v("get")} better`,
+                sub: `${cap} doesn't get bored, repetition is how ${pn} ${v("get")} better`,
               },
               {
                 value: "low",
@@ -406,7 +406,7 @@ export function QuestionScreen({
             options={[
               {
                 value: "sharp",
-                label: `${cap} has clear, sharp vision — no glasses or contacts needed`,
+                label: `${cap} has clear, sharp vision, no glasses or contacts needed`,
               },
               { value: "corrected", label: `${cap} wears glasses or contact lenses` },
               { value: "limited", label: `${cap} has difficulty seeing clearly even with glasses` },
@@ -425,15 +425,15 @@ export function QuestionScreen({
             options={[
               {
                 value: "high",
-                label: `Very agile — ${name} moves quickly, changes direction easily, and is naturally flexible`,
+                label: `Very agile, ${name} moves quickly, changes direction easily, and is naturally flexible`,
               },
               {
                 value: "moderate",
-                label: "Average agility — moves well enough but not exceptional",
+                label: "Average agility, moves well enough but not exceptional",
               },
               {
                 value: "low",
-                label: `${cap} is less agile — prefers steadier, less dynamic physical movement`,
+                label: `${cap} is less agile, prefers steadier, less dynamic physical movement`,
               },
             ]}
             value={answers.agility}
@@ -450,9 +450,9 @@ export function QuestionScreen({
             options={[
               {
                 value: "loves",
-                label: `${cap} loves physical contact — wrestling, jostling, bumping into others`,
+                label: `${cap} loves physical contact, wrestling, jostling, bumping into others`,
               },
-              { value: "neutral", label: "Neutral — doesn't mind physical contact either way" },
+              { value: "neutral", label: "Neutral, doesn't mind physical contact either way" },
               { value: "avoids", label: `${cap} prefers to avoid physical contact` },
             ]}
             value={answers.contactComfort}
@@ -467,8 +467,8 @@ export function QuestionScreen({
         return (
           <ThreeOptionCards
             options={[
-              { value: "outdoor", label: "Outdoors — parks, fields, open sky" },
-              { value: "indoor", label: "Indoors — gyms, courts, air-conditioned spaces" },
+              { value: "outdoor", label: "Outdoors, parks, fields, open sky" },
+              { value: "indoor", label: "Indoors, gyms, courts, air-conditioned spaces" },
               { value: "no-preference", label: "No strong preference either way" },
             ]}
             value={answers.environment}
@@ -485,9 +485,9 @@ export function QuestionScreen({
             options={[
               {
                 value: "comfortable",
-                label: `${cap} is very comfortable in water — loves swimming or being in a pool`,
+                label: `${cap} is very comfortable in water, loves swimming or being in a pool`,
               },
-              { value: "neutral", label: "Okay with water — no strong feeling" },
+              { value: "neutral", label: "Okay with water, no strong feeling" },
               { value: "uncomfortable", label: `${cap} is uncomfortable or afraid of water` },
             ]}
             value={answers.waterComfort}
@@ -503,7 +503,7 @@ export function QuestionScreen({
           <div className="space-y-3">
             <input
               type="text"
-              placeholder="e.g., Asthma — press Enter to add"
+              placeholder="e.g., Asthma, press Enter to add"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -560,12 +560,12 @@ export function QuestionScreen({
               {
                 value: "7k-15k",
                 label: "₹7,000 – ₹15,000/month",
-                context: "Covers: tennis — every sport in our list",
+                context: "Covers: tennis, every sport in our list",
               },
               {
                 value: "15k-plus",
                 label: "₹15,000+/month",
-                context: "Every sport covered — room for premium academies and coaching",
+                context: "Every sport covered, room for premium academies and coaching",
               },
             ]}
             value={answers.budget}
@@ -583,7 +583,7 @@ export function QuestionScreen({
               {
                 value: "fun",
                 label: "Health, confidence, and fun",
-                context: "No pressure on results — sport as a positive life habit",
+                context: "No pressure on results, sport as a positive life habit",
               },
               {
                 value: "competitive",
@@ -616,22 +616,22 @@ export function QuestionScreen({
               {
                 value: "1-3",
                 label: "1–3 hours/week",
-                context: "A couple of casual sessions — sport fits around everything else",
+                context: "A couple of casual sessions, sport fits around everything else",
               },
               {
                 value: "4-7",
                 label: "4–7 hours/week",
-                context: "Regular training — about 1 hour on most days",
+                context: "Regular training, about 1 hour on most days",
               },
               {
                 value: "8-12",
                 label: "8–12 hours/week",
-                context: "Serious commitment — two sessions on many days",
+                context: "Serious commitment, two sessions on many days",
               },
               {
                 value: "13-plus",
                 label: "13+ hours/week",
-                context: "Full dedication — sport is the main priority",
+                context: "Full dedication, sport is the main priority",
               },
             ]}
             value={answers.weeklyHours}
@@ -648,7 +648,7 @@ export function QuestionScreen({
             options={PRIOR_SPORTS_OPTIONS}
             selected={answers.consideringSports}
             onChange={(v) => onAnswer("consideringSports", v)}
-            noneLabel="No — help me decide"
+            noneLabel="No, help me decide"
             max={MAX_CONSIDERED_SPORTS}
           />
         );
@@ -667,13 +667,13 @@ export function QuestionScreen({
     height: `How tall is ${name}?`,
     weight: `How much does ${name} weigh?`,
     energyType: `In a game of tag or running around with friends, what does ${name} usually do?`,
-    motorType: `Think of ${name} building something or playing catch — ${pnContraction} better at:`,
-    visualTracking: `When something moves fast toward ${name} — a ball, a shuttle — ${pn}:`,
+    motorType: `Think of ${name} building something or playing catch, ${pnContraction} better at:`,
+    visualTracking: `When something moves fast toward ${name} (a ball, a shuttle), ${pn}:`,
     teamIndividual: `At a birthday party with a group game, does ${name} want a partner or team, or go it alone?`,
     competitiveResponse: `When ${name} loses a game or competition, ${pn}:`,
-    focusStyle: `Think of ${name} doing homework or a puzzle — ${pn} ${v("tend")} to:`,
+    focusStyle: `Think of ${name} doing homework or a puzzle, ${pn} ${v("tend")} to:`,
     decisionStyle: `When ${name} plays a new game for the first time, ${pn} usually:`,
-    pressureResponse: `When all attention is on ${name} — school event, family gathering:`,
+    pressureResponse: `When all attention is on ${name} (a school event, a family gathering):`,
     repetitionTolerance: `To get really good at something, is ${name} willing to:`,
     eyesight: `How is ${name}'s eyesight?`,
     agility: `How agile and flexible is ${name}?`,
@@ -687,7 +687,7 @@ export function QuestionScreen({
   };
 
   const questionSubs: Partial<Record<string, string>> = {
-    consideringSports: `Pick up to ${MAX_CONSIDERED_SPORTS}, or skip and let us suggest. We'll score each one honestly against everything you tell us next — where ${name} fits, and where ${pn} ${isPlural ? "don't" : "doesn't"}.`,
+    consideringSports: `Pick up to ${MAX_CONSIDERED_SPORTS}, or skip and let us suggest. We'll score each one honestly against everything you tell us next, where ${name} fits, and where ${pn} ${isPlural ? "don't" : "doesn't"}.`,
   };
 
   const needsNextButton =

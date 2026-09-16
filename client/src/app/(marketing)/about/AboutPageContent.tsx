@@ -1,320 +1,58 @@
-"use client";
-
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import { FeatureIcons, Features } from "@/modules/marketing/components/marketing/Features";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
-import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { TestimonialSpotlight } from "@/modules/marketing/components/marketing/TestimonialSpotlight";
-import { parentTestimonials } from "@/modules/marketing/data/testimonials";
-import { motion, Variants } from "framer-motion";
+import {
+  ChildSafety,
+  CompanyFacts,
+  LiveToday,
+  Principles,
+  WhatsNext,
+  WhoWeAre,
+  WhyItsFree,
+  WhyWeExist,
+} from "@/modules/marketing/components/about/AboutSections";
+import { fetchFederations } from "@/modules/federations/services/fetchFederations";
+import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
 
-const SPRING_STIFF = { type: "spring", stiffness: 260, damping: 22 } as const;
+// ─── /about, the body ────────────────────────────────────────────────────────
+//
+// An async server component: the "what you can use today" section quotes how
+// many pathway guides and federations we actually publish, read from the same
+// endpoints /roadmap and /federations render from. Both fetchers fail soft to
+// an empty array, and the section hides a count rather than printing a zero, so
+// an API outage costs us the number and not the page.
+//
+// The page reads problem -> what's live -> what we believe -> how we're funded
+// -> your child's data -> who we are -> what's next. The order is deliberate:
+// a parent's questions arrive roughly in that sequence.
 
-const orchestrator: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1, delayChildren: 0.06 } },
-};
-
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 28 },
-  show: { opacity: 1, y: 0, transition: SPRING_STIFF },
-};
-
-const cardReveal: Variants = {
-  hidden: { opacity: 0, y: 32, scale: 0.96 },
-  show: { opacity: 1, y: 0, scale: 1, transition: SPRING_STIFF },
-};
-
-export function AboutPageContent() {
-  // Core values updated for Parent-Centric approach
-  const values = [
-    {
-      title: "Clear Answers for Parents",
-      description:
-        "We put parents first by replacing confusion with clear, easy-to-follow steps for your child's sports journey.",
-      icon: FeatureIcons.Users,
-    },
-    {
-      title: "One Plan, Not Ten Tabs",
-      description:
-        "Your child's roadmap, guidance, and next steps live in one simple place—so you stop juggling notes, groups, and phone calls.",
-      icon: FeatureIcons.Lightning,
-    },
-    {
-      title: "Honest and Realistic",
-      description:
-        "We tell you what a sport really takes—time, cost, and effort—so you can decide with confidence, not on a hunch.",
-      icon: FeatureIcons.Shield,
-    },
-    {
-      title: "Built for Everyday Parents",
-      description:
-        "No jargon, no pressure. Just simple guidance any parent can act on, whether or not they grew up playing sport.",
-      icon: FeatureIcons.Star,
-    },
-  ];
+export async function AboutPageContent() {
+  const [pathways, federations] = await Promise.all([fetchPublishedPathways(), fetchFederations()]);
 
   return (
     <main className="overflow-x-hidden">
-      {/* Hero Section */}
       <Hero
         variant="page"
-        title="About PowerMySport"
-        subtitle="Our Story"
-        description="We want to make sports simple for parents. We remove the confusion of finding coaches, booking venues, and planning your child's sports journey."
+        title="The map we wish every parent had"
+        subtitle="Our story"
+        description="Indian youth sport comes with no instruction manual. We are a small team trying to write one, clear, honest, and built around the parent doing the work."
       />
 
-      {/* Mission Section */}
-      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-28">
-        {/* Ambient background blobs for premium feel */}
-        <div className="pointer-events-none absolute left-0 top-0 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-100/40 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 right-0 h-96 w-96 translate-x-1/3 translate-y-1/3 rounded-full bg-emerald-100/30 blur-3xl" />
-
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16"
-          >
-            <div>
-              <motion.h2
-                variants={fadeUp}
-                className="font-title mb-8 text-3xl font-bold text-slate-900 sm:text-4xl"
-              >
-                Our Mission
-              </motion.h2>
-
-              <motion.div variants={fadeUp} className="space-y-6 text-lg text-slate-600">
-                <p>
-                  PowerMySport started because we saw how challenging youth sports is for parents.{" "}
-                  <span className="text-power-orange font-semibold">
-                    You&apos;re doing all the hard work
-                  </span>
-                  —trying to pick the right sport, find the next step, and just guessing whether
-                  you&apos;re making the right call.
-                </p>
-                <p>
-                  So we started with the hardest part: the plan. Tell us about your child and you
-                  get a{" "}
-                  <span className="font-semibold text-emerald-600">
-                    clear, personalised roadmap
-                  </span>{" "}
-                  plus expert and AI guidance—free, and live today. No guesswork, no jargon.
-                </p>
-                <p>
-                  And we&apos;re just getting started. We&apos;re building PowerMySport in
-                  phases—community, booking, and a gear shop are all on the way—so every part is
-                  genuinely useful the day it lands.
-                </p>
-              </motion.div>
-            </div>
-
-            <motion.div
-              variants={fadeUp}
-              className="premium-shadow relative h-[400px] overflow-hidden rounded-3xl shadow-2xl lg:h-[500px]"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=1200&q=80"
-                alt="Kids playing sports"
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-105"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Core Values */}
-      <Features
-        title="Our Core Values"
-        subtitle="What Drives Us"
-        description="These principles guide everything we do at PowerMySport to support parents."
-        features={values}
-        columns={2}
-        variant="centered"
+      <WhyWeExist />
+      <LiveToday
+        sportNames={pathways.map((guide) => guide.sportName)}
+        federationCount={federations.length}
       />
+      <Principles />
+      <WhyItsFree />
+      <ChildSafety />
+      <WhoWeAre />
+      <WhatsNext />
+      <CompanyFacts />
 
-      {/* Testimonial Spotlight */}
-      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[120%] -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="mb-10 flex justify-center"
-          >
-            <SectionLabel label="Hear From Parents" color="orange" />
-          </motion.div>
-          <TestimonialSpotlight testimonials={parentTestimonials} />
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="relative overflow-hidden bg-slate-50 py-16 sm:py-20 lg:py-28">
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-            className="mb-16 text-center"
-          >
-            <motion.p
-              variants={fadeUp}
-              className="text-power-orange mb-3 text-sm font-bold uppercase tracking-widest"
-            >
-              The Team
-            </motion.p>
-            <motion.h2
-              variants={fadeUp}
-              className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl"
-            >
-              Built by Sports Enthusiasts
-            </motion.h2>
-            <motion.p variants={fadeUp} className="mx-auto max-w-2xl text-lg text-slate-600">
-              Our team combines deep sports industry knowledge with technical expertise to create
-              the ultimate sports ecosystem for parents and athletes.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-            className="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-3"
-          >
-            {[
-              {
-                name: "Jatin",
-                role: "Full Stack Web Dev & DevOps",
-                desc: "Driving core development, AWS infrastructure, and CI/CD.",
-              },
-              {
-                name: "Rakshak Phogat",
-                role: "Full Stack Web Dev",
-                desc: "Building robust web features and seamless user interfaces.",
-              },
-              {
-                name: "Vanshika Narang",
-                role: "Full Stack Web Dev & DevOps",
-                desc: "Powering full stack architecture and reliable deployments.",
-              },
-            ].map((member, i) => (
-              <motion.div
-                key={i}
-                variants={cardReveal}
-                whileHover={{ y: -8, scale: 1.02 }}
-                transition={SPRING_STIFF}
-                className="premium-shadow group relative rounded-3xl border border-white/70 bg-white/80 p-8 text-center backdrop-blur-md transition-all hover:border-white/90"
-              >
-                <div className="mx-auto mb-6 flex h-28 w-28 transform items-center justify-center overflow-hidden rounded-full bg-slate-100 shadow-lg ring-4 ring-white transition-transform duration-300 group-hover:scale-110">
-                  <span className="text-power-orange text-5xl font-bold">
-                    {member.name.charAt(0)}
-                  </span>
-                </div>
-                <h3 className="mb-1 text-xl font-bold text-slate-900">{member.name}</h3>
-                <p className="text-power-orange mb-3 text-sm font-semibold">{member.role}</p>
-                <p className="text-sm leading-relaxed text-slate-600">{member.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Vision Section */}
-      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-28">
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-b from-indigo-50/50 to-transparent blur-3xl" />
-
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={orchestrator}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-60px" }}
-            className="grid grid-cols-1 items-center gap-16 lg:grid-cols-2"
-          >
-            <div>
-              <motion.h2
-                variants={fadeUp}
-                className="font-title mb-6 text-3xl font-bold text-slate-900 sm:text-4xl"
-              >
-                Our Vision for the Future
-              </motion.h2>
-              <motion.div variants={fadeUp} className="space-y-6 text-lg text-slate-600">
-                <p>
-                  We envision a future where navigating a child&apos;s sports journey is as clear
-                  and organized as their academic journey. A world where every neighborhood has
-                  accessible, affordable sports facilities, and every athlete has access to quality
-                  coaching.
-                </p>
-                <p>
-                  We&apos;re expanding the platform to cover more sports, more service types, and
-                  better AI tools to surface community knowledge so parents can find the right fit
-                  faster.
-                </p>
-                <p>
-                  Join us on this journey to make it easier for every sports family to share what
-                  works, what doesn&apos;t, and where the best experiences are happening.
-                </p>
-              </motion.div>
-
-              <motion.div
-                variants={fadeUp}
-                className="premium-shadow relative mt-8 h-48 overflow-hidden rounded-2xl shadow-xl"
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1511886929837-354d827aae26?auto=format&fit=crop&w=1200&q=80"
-                  alt="Sports field"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-                <div className="bg-power-orange/10 absolute inset-0 mix-blend-multiply" />
-              </motion.div>
-            </div>
-
-            <div className="space-y-6">
-              {[
-                {
-                  title: "More sports, same community",
-                  desc: "Extending the platform across additional sports while keeping the same shared discussion and recommendation layer.",
-                  color: "border-orange-200 bg-orange-50/30",
-                },
-                {
-                  title: "AI-Powered Guidance",
-                  desc: "Using community feedback and performance data to generate personalized athletic roadmaps for every child.",
-                  color: "border-emerald-200 bg-emerald-50/30",
-                },
-                {
-                  title: "A unified sports network",
-                  desc: "Building a reliable network where conversations, reviews, and bookings reinforce each other instead of living in fragmented silos.",
-                  color: "border-indigo-200 bg-indigo-50/30",
-                },
-              ].map((card, i) => (
-                <motion.div
-                  key={i}
-                  variants={cardReveal}
-                  whileHover={{ x: 8 }}
-                  transition={SPRING_STIFF}
-                  className={`border-l-4 ${card.color.split(" ")[0]} rounded-r-2xl border-y border-r border-slate-100 bg-white/80 p-6 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md`}
-                >
-                  <h3 className="mb-2 text-xl font-bold text-slate-900">{card.title}</h3>
-                  <p className="leading-relaxed text-slate-600">{card.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA */}
       <CTA
         variant="gradient"
-        title="Start your child's plan today"
-        description="See what PowerMySport can do right now. Build a personalised roadmap and get expert guidance for your child—free, in just a few minutes."
+        title="Start with the plan"
+        description="Tell us about your child and see the roadmap. It takes a few minutes and costs nothing."
         primaryCTA={{
           label: "Build a Sports Plan",
           href: "/roadmap",

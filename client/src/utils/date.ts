@@ -66,3 +66,34 @@ export function formatDate(date: Date | string): string {
 
   return `${month} ${day}, ${year} at ${displayHours}:${displayMinutes} ${ampm}`;
 }
+
+/**
+ * Month and year, for "member since" style lines (e.g. "March 2026").
+ *
+ * Returns null for a missing or unparseable date so a caller can drop the line
+ * rather than print a fallback. The page this was written for hardcoded
+ * "Member since 2024" for every user, which was a fabricated fact shown next to
+ * a real name — an absent date should show nothing, not a plausible guess.
+ */
+export function formatMonthYear(date: Date | string | undefined | null): string | null {
+  if (!date) return null;
+  const target = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(target.getTime())) return null;
+
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  return `${months[target.getMonth()]} ${target.getFullYear()}`;
+}

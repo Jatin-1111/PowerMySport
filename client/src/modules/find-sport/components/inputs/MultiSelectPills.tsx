@@ -73,7 +73,7 @@ export function MultiSelectPills({
       {max !== undefined && (
         <p className="text-xs text-slate-400">
           {selected.length} of {max} selected
-          {atLimit && " — deselect one to swap"}
+          {atLimit && ", deselect one to swap"}
         </p>
       )}
     </div>

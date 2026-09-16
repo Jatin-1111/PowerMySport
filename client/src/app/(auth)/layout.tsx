@@ -76,8 +76,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 <span className="text-power-orange">every sports parent.</span>
               </h2>
               <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-slate-200/85">
-                Personalised pathways, expert guidance, and a trusted community — everything you
-                need to navigate your child&apos;s sporting journey with confidence.
+                Personalised pathways, expert guidance, and a trusted community: everything you need
+                to navigate your child&apos;s sporting journey with confidence.
               </p>
 
               <ul className="mt-8 space-y-3">

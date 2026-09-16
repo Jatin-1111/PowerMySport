@@ -32,7 +32,7 @@ export function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void 
             What do you need help with?
           </h1>
           <p className="mx-auto max-w-md text-base leading-relaxed text-slate-500">
-            Pick the challenge you&apos;re facing — we&apos;ll ask a few targeted questions and
+            Pick the challenge you&apos;re facing, we&apos;ll ask a few targeted questions and
             return an actionable plan.
           </p>
         </motion.div>

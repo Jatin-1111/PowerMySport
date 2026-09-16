@@ -187,7 +187,7 @@ export default function BookingsPage() {
       );
       if (refundAmount > 0) {
         toast.success(
-          `Booking cancelled — ₹${refundAmount.toLocaleString("en-IN")} refund initiated`,
+          `Booking cancelled, ₹${refundAmount.toLocaleString("en-IN")} refund initiated`,
           { duration: 6000 }
         );
       } else {

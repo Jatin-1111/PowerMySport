@@ -20,7 +20,7 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://powermyspo
 export const SITE_NAME = "PowerMySport";
 
 export const SITE_DESCRIPTION =
-  "PowerMySport helps parents plan their child's sports journey. Stage-by-stage sport pathways, searchable federation rankings, personalised guidance and 1:1 sessions with verified experts — free to explore, built for India.";
+  "PowerMySport helps parents plan their child's sports journey. Stage-by-stage sport pathways, searchable federation rankings, personalised guidance and 1:1 sessions with verified experts, free to explore, built for India.";
 
 /** Shared social/preview assets. Site-relative; `metadataBase` makes them absolute. */
 export const OG_IMAGE = "/og-image.png";
@@ -38,7 +38,7 @@ export const ORGANIZATION = {
   addressLocality: "Mullanpur",
   addressRegion: "Punjab",
   addressCountry: "IN",
-  foundingDate: "2024",
+  foundingDate: "2026",
   /** Only profiles that actually exist. An invented `sameAs` is worse than none. */
   socialProfiles: ["https://www.instagram.com/powermysport"],
 } as const;
@@ -133,10 +133,15 @@ export function breadcrumbJsonLd(trail: { name: string; path: string }[]): JsonL
   };
 }
 
+/** Stable node id for the company, so another page can reference it by @id
+ *  instead of restating the whole block and risking two versions of us. */
+export const ORGANIZATION_ID = `${SITE_URL}/#organization`;
+
 /** The company. Emitted once, on the homepage. */
 export const organizationJsonLd: JsonLdObject = {
   "@context": "https://schema.org",
   "@type": "Organization",
+  "@id": ORGANIZATION_ID,
   name: SITE_NAME,
   legalName: ORGANIZATION.legalName,
   url: SITE_URL,
@@ -166,6 +171,31 @@ export const organizationJsonLd: JsonLdObject = {
   },
   sameAs: [...ORGANIZATION.socialProfiles],
 };
+
+/**
+ * The /about page, as the page that describes the company.
+ *
+ * The Organization block itself stays on the homepage — restating it here would
+ * put two copies of our identity on the site and invite them to drift. This
+ * references that node by @id instead, which is what tells a crawler the page
+ * and the company are the same subject.
+ */
+export function aboutPageJsonLd(input: {
+  name: string;
+  description: string;
+  path: string;
+}): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: input.name,
+    description: input.description,
+    url: absoluteUrl(input.path),
+    mainEntity: { "@id": ORGANIZATION_ID },
+    publisher: { "@id": ORGANIZATION_ID },
+    inLanguage: "en-IN",
+  };
+}
 
 /**
  * The site, with the sitelinks search box pointed at the pathway explorer —

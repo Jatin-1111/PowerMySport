@@ -82,7 +82,7 @@ export function CompleteProfileNudge({
         </div>
         <p className="text-sm text-slate-600">
           {dependentName}&apos;s profile is missing a few personality and play-style details. Adding
-          them helps us personalise guidance and gives the expert better context — takes about a
+          them helps us personalise guidance and gives the expert better context, takes about a
           minute, in a new tab.
         </p>
       </div>

@@ -63,7 +63,7 @@ export function TagAssistedTextarea({
         onChange={(e) => onChange(e.target.value)}
         placeholder={
           placeholder ??
-          "Tap a common issue above, or describe it in your own words — one point per line."
+          "Tap a common issue above, or describe it in your own words, one point per line."
         }
         rows={5}
         className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2"

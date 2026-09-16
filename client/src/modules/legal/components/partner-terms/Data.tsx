@@ -6,9 +6,9 @@ export function Data() {
       </h2>
       <ul className="list-disc space-y-2 pl-6 text-slate-600">
         <li>
-          Client personal data disclosed to you through the Platform — names, contact details,
-          addresses, age, assessment results, medical disclosures, session content — may be used
-          only to deliver the booked service, and for no other purpose
+          Client personal data disclosed to you through the Platform, names, contact details,
+          addresses, age, assessment results, medical disclosures, session content. May be used only
+          to deliver the booked service, and for no other purpose
         </li>
         <li>
           You must not sell, rent, publish, or transfer client data to any third party, or add

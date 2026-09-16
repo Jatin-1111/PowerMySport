@@ -107,7 +107,7 @@ export function EntryRules({ subcategory, listLabel }: { subcategory: string; li
             <span className="text-muted-foreground w-4 shrink-0 tabular-nums">{index + 1}.</span>
             <span>
               <span className="font-medium">{rung.name}</span>{" "}
-              <span className="text-muted-foreground">— {rung.plain}</span>
+              <span className="text-muted-foreground">, {rung.plain}</span>
             </span>
           </li>
         ))}
@@ -118,14 +118,14 @@ export function EntryRules({ subcategory, listLabel }: { subcategory: string; li
           describe the loss of something that was never available. */}
       {isUnder18 ? (
         <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
-          Under 18 runs no Talent Series events, and Championship Series has no ranking bar — so
+          Under 18 runs no Talent Series events, and Championship Series has no ranking bar, so
           every level here is open to enter at any rank.
         </p>
       ) : (
         <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
           Here is the part that surprises most parents: a better rank <em>closes</em> the entry
           level. Once a player is inside the top 75 of their age group, AITA no longer lets them
-          enter Talent Series — those draws are kept for players still working their way up. Every
+          enter Talent Series. Those draws are kept for players still working their way up. Every
           other level stays open.
         </p>
       )}
@@ -154,7 +154,7 @@ export function EntryRules({ subcategory, listLabel }: { subcategory: string; li
           <span className="text-muted-foreground">
             a {listLabel} player may enter{" "}
             <span className="text-foreground font-medium tabular-nums">{cap}</span> tournaments in a
-            year. Entering an older age group uses up the same allowance — it is one budget for the
+            year. Entering an older age group uses up the same allowance. It is one budget for the
             year, not one per list.
           </span>
         </p>

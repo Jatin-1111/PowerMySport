@@ -5,9 +5,9 @@ export function Amendments() {
       <ul className="list-disc space-y-2 pl-6 text-slate-600">
         <li>
           <strong>Amendments:</strong> We may amend these Partner Terms. Changes that materially
-          affect your commercial position — including commission, payout timing, or exit terms —
-          take effect no earlier than thirty (30) days after notice to you. Other changes take
-          effect on posting. Continued use after the effective date is acceptance
+          affect your commercial position, including commission, payout timing, or exit terms, take
+          effect no earlier than thirty (30) days after notice to you. Other changes take effect on
+          posting. Continued use after the effective date is acceptance
         </li>
         <li>
           <strong>Severability:</strong> If any provision is held invalid, the remainder continues
