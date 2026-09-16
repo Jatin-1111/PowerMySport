@@ -19,7 +19,7 @@
   "app/(marketing)/faq/page.tsx": 481,
   "app/(marketing)/how-it-works/page.tsx": 606,
   "app/(marketing)/parental-consent/page.tsx": 478,
-  "app/(marketing)/rankings/[sport]/players/[regNo]/page.tsx": 463,
+  "app/(marketing)/rankings/[sport]/players/[regNo]/page.tsx": 483,
   "app/(marketing)/tournaments/[slug]/page.tsx": 555,
   "app/notifications/page.tsx": 753
 }

@@ -9,6 +9,7 @@ import {
 import { entryStatus, isJuniorBracket } from "@/modules/rankings/utils/aitaRules";
 import { EntryRules } from "@/modules/rankings/components/HowToRead";
 import { RankTrajectory } from "@/modules/rankings/components/RankTrajectory";
+import { SeasonOutlook } from "@/modules/rankings/components/SeasonOutlook";
 import { comboHref, comboLabel, getRankingSport } from "@/modules/rankings/config/rankings";
 import {
   formatPoints,
@@ -193,6 +194,25 @@ export default async function PlayerRankingPage({
               </div>
             );
           })}
+        </section>
+      )}
+
+      {/* Where the trend is heading, and what ageing results will cost if nothing
+          replaces them. Sits after the chart because it answers the question the
+          chart raises, and before the rules because the rules are what a parent
+          reaches for once they have decided something needs doing. Home bracket
+          only: the 52-week cycle is per list, and two of these would be two
+          different answers to one question. */}
+      {primaryEntry?.projection && (
+        <section className="mt-10">
+          <SeasonOutlook
+            projection={primaryEntry.projection}
+            listLabel={comboLabel({
+              category: primaryEntry.category,
+              subcategory: primaryEntry.subcategory,
+            })}
+            parentAudience={isJuniorBracket(primaryEntry.subcategory)}
+          />
         </section>
       )}
 

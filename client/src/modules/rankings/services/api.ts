@@ -159,8 +159,72 @@ export interface PlayerInsight {
   bands?: RankingBandProfile[];
 }
 
+/** One horizon of the trajectory. `rank` is sign-flipped: positive is better. */
+export interface ProjectionMovement {
+  points: number;
+  rank: number;
+  from: string;
+}
+
+/**
+ * Where a standing is heading, computed from the weekly lists we hold.
+ *
+ * Read the field comments before rendering any of it. Two of these numbers are
+ * bounded rather than exact, and copy that states them flatly would be a
+ * confident lie: `atRisk` is a ceiling on what ageing results can cost, and
+ * `estimatedWeeks` extends a rate the player has already achieved rather than
+ * predicting one they will.
+ */
+export interface RankingProjection {
+  window: {
+    from: string;
+    to: string;
+    /** Published lists we hold for this player on this list. */
+    listsHeld: number;
+    weeksCovered: number;
+    /** False when the history is shorter than the 52-week scoring cycle. */
+    coversFullCycle: boolean;
+  };
+  movement: {
+    fourWeeks: ProjectionMovement | null;
+    twelveWeeks: ProjectionMovement | null;
+    fiftyTwoWeeks: ProjectionMovement | null;
+  };
+  activity: {
+    improvingWeeks: number;
+    decliningWeeks: number;
+    pointsGained: number;
+    /** Positive. Points lost as results aged out of the 52-week window. */
+    pointsLost: number;
+    averageRise: number;
+    lastRiseAt: string | null;
+    weeksSinceLastRise: number | null;
+  };
+  /** The MOST that can fall away if nothing new is added. Never a prediction. */
+  atRisk: {
+    nextFourWeeks: number;
+    nextTwelveWeeks: number;
+    isComplete: boolean;
+  } | null;
+  toNextTier: {
+    rank: number;
+    points: number;
+    gap: number;
+    /** Null when there is no rate to extend, or the answer is over two years. */
+    estimatedWeeks: number | null;
+    weeklyRate: number;
+  } | null;
+}
+
 export interface PlayerCurrentEntry extends RankingEntry {
   insight: PlayerInsight;
+  /**
+   * Optional for the same reason `insight.bands` is: these responses are cached
+   * for half an hour, so for thirty minutes after a deploy the page is served
+   * payloads written by the previous version. Null is also a real value here —
+   * a player with one published list has a standing but no trajectory.
+   */
+  projection?: RankingProjection | null;
 }
 
 export interface PlayerResult {

@@ -3,6 +3,7 @@ import { RankingEntry } from "../models/RankingEntry";
 import { RankingSnapshot } from "../models/RankingSnapshot";
 import { AitaRankingIngestService } from "../services/aita/AitaRankingIngestService";
 import { nextTierFor, TOP_BAND, type Benchmark } from "../services/aita/rankingInsights";
+import { projectRanking } from "../services/ranking/rankingProjection";
 import { LIVE_COMBOS } from "../services/aita/types";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -280,8 +281,14 @@ export const getPlayerRankingHistory = asyncHandler(
     const history = await RankingEntry.find({ sportSlug, regNo })
       .sort({ asOnDate: -1 })
       .limit(600)
-      .select("category subcategory asOnDate rank totalPoints")
+      .select("category subcategory asOnDate rank totalPoints snapshot")
       .lean();
+
+    // Which of two rows for the same as-on date is the live one. Corrections are
+    // rare, so the lookup is too: it runs only when a duplicate date is actually
+    // present, rather than costing every player page a second query for a case
+    // most of them do not have.
+    const snapshotVersions = await resolveSnapshotVersions(history);
 
     // The lists the player currently sits in, for the context each standing
     // needs: how long the list is, what the rungs above them cost, how many of
@@ -318,12 +325,101 @@ export const getPlayerRankingHistory = asyncHandler(
         current: current.map((entry) => ({
           ...withMovement(entry),
           insight: buildPlayerInsight(entry, snapshots, history),
+          projection: buildProjection(entry, snapshots, history, snapshotVersions),
         })),
         history,
       },
     });
   }
 );
+
+/**
+ * Snapshot versions, but only for dates that actually have more than one row.
+ *
+ * The federation re-uploads a corrected list under the same as-on date often
+ * enough that the pipeline treats a new content hash as a new snapshot rather
+ * than an overwrite (see `RankingSnapshot.contentHash`). Both sets of rows
+ * survive, so a player's history can hold two entries for one week — and a
+ * trajectory computed over both would read the correction as a week's gain.
+ *
+ * The check is per combo, because the same date legitimately appears once in
+ * each list a player sits in.
+ */
+async function resolveSnapshotVersions(
+  history: Array<{ category: string; subcategory: string; asOnDate: Date; snapshot?: unknown }>
+): Promise<Map<string, number>> {
+  const seen = new Set<string>();
+  const duplicated = new Set<string>();
+  for (const point of history) {
+    const key = `${point.category}|${point.subcategory}|${new Date(point.asOnDate).getTime()}`;
+    if (seen.has(key)) duplicated.add(key);
+    else seen.add(key);
+  }
+  if (duplicated.size === 0) return new Map();
+
+  const ids = history
+    .filter((point) =>
+      duplicated.has(`${point.category}|${point.subcategory}|${new Date(point.asOnDate).getTime()}`)
+    )
+    .map((point) => point.snapshot)
+    .filter(Boolean);
+
+  const snapshots = await RankingSnapshot.find({ _id: { $in: ids } })
+    .select("version status")
+    .lean();
+
+  return new Map(
+    snapshots.map((snapshot) => [
+      String(snapshot._id),
+      // A snapshot that never published is not a version of the truth at all,
+      // so it sorts below every published one rather than winning on number.
+      snapshot.status === "published" ? (snapshot.version ?? 1) : -1,
+    ])
+  );
+}
+
+/**
+ * Where this player is heading, from the series of lists we hold for them.
+ *
+ * Computed per request rather than stored at publish time, which is the
+ * opposite of the rule the snapshot analytics follow — and deliberately so.
+ * Those are per list and every reader of that list wants them. This is per
+ * player, the rows it needs are already in hand from the history query above,
+ * and precomputing it for every player on every list would mean 12,000 writes a
+ * week on a shared-tier cluster to serve a page most of them never have opened.
+ */
+function buildProjection(
+  entry: { category: string; subcategory: string },
+  snapshots: Array<{ category: string; subcategory: string; benchmarks?: Benchmark[] }>,
+  history: Array<{
+    category: string;
+    subcategory: string;
+    asOnDate: Date;
+    rank: number;
+    totalPoints: number;
+    snapshot?: unknown;
+  }>,
+  snapshotVersions: Map<string, number>
+) {
+  const own = history.filter(
+    (point) => point.category === entry.category && point.subcategory === entry.subcategory
+  );
+  const snapshot = snapshots.find(
+    (s) => s.category === entry.category && s.subcategory === entry.subcategory
+  );
+
+  return projectRanking({
+    history: own.map((point) => ({
+      asOnDate: point.asOnDate,
+      rank: point.rank,
+      totalPoints: point.totalPoints,
+      ...(snapshotVersions.size > 0
+        ? { version: snapshotVersions.get(String(point.snapshot)) ?? 1 }
+        : {}),
+    })),
+    benchmarks: snapshot?.benchmarks,
+  });
+}
 
 /**
  * The context one standing needs to mean something.
