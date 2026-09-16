@@ -8,7 +8,15 @@ import { parseRankingList } from "./rankingListParser";
 import { recomputeSnapshotInsights } from "./recomputeSnapshotInsights";
 import { sampleBandComposition } from "./sampleBandComposition";
 import { resolveStateCode, resolveZoneId } from "./stateCodes";
-import { AitaCategory, AITA_LISTS, AitaList, listForCombo, ParseResult } from "./types";
+import { rankingDataHash, type HashableRankingRow } from "./rankingDataHash";
+import {
+  AitaCategory,
+  AITA_LISTS,
+  AitaList,
+  DiscoveredSnapshot,
+  listForCombo,
+  ParseResult,
+} from "./types";
 import { log as __rootLog } from "../../../utils/logger";
 const logger = __rootLog.child("aitaRankingIngest");
 
@@ -266,22 +274,76 @@ export class AitaRankingIngestService {
 
     // There is no cheap "did it move?" probe any more. The old flow could HEAD a
     // static PDF and compare ETag / Last-Modified; these pages are generated per
-    // request, so their validators change every time and mean nothing. Identity
-    // is therefore the hash of the *parsed content*, computed after the fetch —
-    // which costs one request more per already-published week and is the honest
-    // price of the source no longer serving files.
+    // request, so their validators change every time and mean nothing.
     const fetched = await this.source.fetchList(list, wid);
     const contentHash = createHash("sha256").update(fetched.html).digest("hex");
+
+    // ── Parse BEFORE deciding whether this is new ─────────────────────────────
+    // The bytes cannot answer "is this a correction?" any more, because the page
+    // is generated per request and hashes differently every time. Only the
+    // parsed rows can, so parsing moved ahead of the snapshot write. Between
+    // 2026-09-01 and 2026-09-17 the old order cost a full duplicate set of rows
+    // on every sweep — about 11,000 rows a run — which is what eventually filled
+    // the cluster and blocked writes platform-wide.
+    //
+    // A parse failure still has to preserve the bytes it failed on, which is
+    // what the old "archive first" order bought. It is bought here instead by
+    // recording the failed snapshot and archiving inside the catch.
+    let parsed: ParseResult;
+    try {
+      parsed = parseRankingList(fetched.html, {
+        requestedPageSize: this.source.listPageSize,
+      });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      const failedSnapshot = await this.upsertSnapshot({
+        category,
+        subcategory,
+        asOnDate,
+        contentHash,
+        discovered,
+        byteSize: fetched.byteSize,
+      });
+      await this.archive(
+        failedSnapshot,
+        category,
+        subcategory,
+        asOnDate,
+        contentHash,
+        fetched.html
+      );
+      await this.markFailed(failedSnapshot, reason);
+      return { ...base, status: "failed", reason, snapshotId: String(failedSnapshot._id) };
+    }
+
+    const dataHash = rankingDataHash(parsed.rows);
+
+    // Is this exact list already published for this date? Checked against every
+    // version we hold, because the live one is not necessarily the newest by
+    // version number once corrections are in play.
+    const published = await RankingSnapshot.find({
+      category,
+      subcategory,
+      asOnDate: new Date(asOnDate),
+      status: "published",
+    })
+      .sort({ version: -1 })
+      .select("version dataHash")
+      .lean();
+
+    for (const candidate of published) {
+      const candidateHash = candidate.dataHash ?? (await this.backfillDataHash(candidate._id));
+      if (candidateHash && candidateHash === dataHash) {
+        return { ...base, status: "unchanged", snapshotId: String(candidate._id) };
+      }
+    }
 
     const existing = await RankingSnapshot.findOne({
       category,
       subcategory,
       asOnDate: new Date(asOnDate),
-      contentHash,
+      dataHash,
     }).lean();
-    if (existing && existing.status === "published") {
-      return { ...base, status: "unchanged", snapshotId: String(existing._id) };
-    }
 
     const priorVersions = await RankingSnapshot.countDocuments({
       category,
@@ -290,7 +352,7 @@ export class AitaRankingIngestService {
     });
 
     const snapshot: RankingSnapshotDocument = await RankingSnapshot.findOneAndUpdate(
-      { category, subcategory, asOnDate: new Date(asOnDate), contentHash },
+      { category, subcategory, asOnDate: new Date(asOnDate), dataHash },
       {
         $set: {
           sportSlug: "tennis",
@@ -300,6 +362,9 @@ export class AitaRankingIngestService {
           // provenance link for the public "source" attribution.
           pdfUrl: discovered.sourceUrl,
           sourceUrl: discovered.sourceUrl,
+          // No longer part of the filter, so it has to be written here. It is
+          // the provenance of the bytes we fetched this time, not an identity.
+          contentHash,
           byteSize: fetched.byteSize,
           status: "archived",
           fetchedAt: new Date(),
@@ -318,31 +383,7 @@ export class AitaRankingIngestService {
     // own PDF export: that is regenerated per request and carries *fewer* fields
     // than the page (truncated names, country instead of state, no breakdown),
     // so archiving it would preserve less than we parsed.
-    const s3Key = buildS3Key(category, subcategory, asOnDate, contentHash);
-    try {
-      await s3Service.putDocumentBuffer(
-        s3Key,
-        gzipSync(Buffer.from(fetched.html, "utf8")),
-        "application/gzip"
-      );
-      await applyToSnapshot(snapshot, { s3Key });
-    } catch (error) {
-      log.warn(
-        `[aita-rankings] archive failed for ${s3Key} — continuing without it:`,
-        error instanceof Error ? error.message : error
-      );
-    }
-
-    let parsed: ParseResult;
-    try {
-      parsed = parseRankingList(fetched.html, {
-        requestedPageSize: this.source.listPageSize,
-      });
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      await this.markFailed(snapshot, reason);
-      return { ...base, status: "failed", reason, snapshotId: String(snapshot._id) };
-    }
+    await this.archive(snapshot, category, subcategory, asOnDate, contentHash, fetched.html);
 
     await applyToSnapshot(snapshot, {
       rowCount: parsed.rows.length,
@@ -860,6 +901,117 @@ export class AitaRankingIngestService {
       isLatestForCombo: becomesLatest,
       publishedAt: new Date(),
     });
+  }
+
+  /**
+   * The snapshot row for a fetch, keyed on the bytes.
+   *
+   * Only used on the parse-failure path. A list we could not parse has no
+   * `dataHash` to be identified by, so the bytes are the only identity
+   * available — which is exactly the situation the old code was in for every
+   * ingest, and the reason it duplicated.
+   */
+  private async upsertSnapshot(args: {
+    category: AitaCategory;
+    subcategory: string;
+    asOnDate: string;
+    contentHash: string;
+    discovered: DiscoveredSnapshot;
+    byteSize: number;
+  }): Promise<RankingSnapshotDocument> {
+    const priorVersions = await RankingSnapshot.countDocuments({
+      category: args.category,
+      subcategory: args.subcategory,
+      asOnDate: new Date(args.asOnDate),
+    });
+
+    return RankingSnapshot.findOneAndUpdate(
+      {
+        category: args.category,
+        subcategory: args.subcategory,
+        asOnDate: new Date(args.asOnDate),
+        contentHash: args.contentHash,
+      },
+      {
+        $set: {
+          sportSlug: "tennis",
+          federationCode: "AITA",
+          pdfUrl: args.discovered.sourceUrl,
+          sourceUrl: args.discovered.sourceUrl,
+          byteSize: args.byteSize,
+          status: "archived",
+          fetchedAt: new Date(),
+        },
+        $setOnInsert: { version: priorVersions + 1 },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+  }
+
+  /**
+   * Keep the source bytes, gzipped.
+   *
+   * Best-effort on purpose: local dev has no AWS credentials and should still be
+   * able to run an ingest end to end.
+   *
+   * Deliberately not the platform's own PDF export: that is regenerated per
+   * request and carries *fewer* fields than the page (truncated names, country
+   * instead of state, no breakdown), so archiving it would preserve less than
+   * we parsed.
+   */
+  private async archive(
+    snapshot: RankingSnapshotDocument,
+    category: AitaCategory,
+    subcategory: string,
+    asOnDate: string,
+    contentHash: string,
+    html: string
+  ): Promise<void> {
+    const s3Key = buildS3Key(category, subcategory, asOnDate, contentHash);
+    try {
+      await s3Service.putDocumentBuffer(
+        s3Key,
+        gzipSync(Buffer.from(html, "utf8")),
+        "application/gzip"
+      );
+      await applyToSnapshot(snapshot, { s3Key });
+    } catch (error) {
+      log.warn(
+        `[aita-rankings] archive failed for ${s3Key} — continuing without it:`,
+        error instanceof Error ? error.message : error
+      );
+    }
+  }
+
+  /**
+   * Give a pre-2026-09-17 snapshot the `dataHash` it never had, by re-hashing
+   * the rows we kept for it.
+   *
+   * This is what stops the fix from costing one last duplicate of every list:
+   * without it, the first sweep after deploy would find no hash to compare
+   * against on any existing snapshot and treat all twelve lists as corrections.
+   *
+   * The write is best-effort. When it fails the comparison still returns the
+   * right answer — it just pays to recompute next time — and the case where it
+   * fails is precisely the one where it matters most: a cluster over quota and
+   * refusing writes, which is where this whole problem was discovered.
+   */
+  private async backfillDataHash(snapshotId: unknown): Promise<string | null> {
+    const rows = await RankingEntry.find({ snapshot: snapshotId })
+      .select("regNo rank totalPoints fullName stateCode")
+      .lean();
+    if (rows.length === 0) return null;
+
+    const hash = rankingDataHash(rows as HashableRankingRow[]);
+    try {
+      await RankingSnapshot.updateOne({ _id: snapshotId }, { $set: { dataHash: hash } });
+    } catch (error) {
+      log.warn(
+        "[aita-rankings] could not persist a backfilled dataHash — continuing:",
+        error instanceof Error ? error.message : error
+      );
+    }
+    return hash;
   }
 
   private async markFailed(snapshot: RankingSnapshotDocument, reason: string): Promise<void> {

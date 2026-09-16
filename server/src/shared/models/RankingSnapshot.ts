@@ -29,8 +29,26 @@ export interface RankingSnapshotDocument extends Document {
   pdfUrl: string;
   /** The result page the PDF link was read from, shown publicly as provenance. */
   sourceUrl: string;
-  /** sha256 of the PDF bytes. Identity for corrections. */
+  /**
+   * sha256 of the fetched bytes. Provenance only.
+   *
+   * It stopped being an identity at the August 2026 platform cutover: the source
+   * now generates its pages per request, so these bytes differ on every fetch of
+   * an unchanged list. It is still stored, because it is the honest record of
+   * exactly what we downloaded and it names the archived artefact in S3.
+   */
   contentHash: string;
+  /**
+   * sha256 of the parsed rows — what the list actually says. THIS is the
+   * identity that decides whether a re-fetch is a correction or the same list
+   * again. See `rankingDataHash.ts` for why, and for the duplication incident
+   * that made it necessary.
+   *
+   * Absent on snapshots ingested before 2026-09-17. `ingestOne` fills it in for
+   * those by re-hashing their stored rows the first time it needs to compare
+   * against them, so the changeover costs no duplicate.
+   */
+  dataHash?: string;
   /** Key in the documents bucket. Internal — the PDF is never served publicly. */
   s3Key?: string;
   byteSize?: number;
@@ -172,6 +190,7 @@ const rankingSnapshotSchema = new Schema<RankingSnapshotDocument>(
     pdfUrl: { type: String, required: true },
     sourceUrl: { type: String, required: true },
     contentHash: { type: String, required: true },
+    dataHash: { type: String },
     s3Key: { type: String },
     byteSize: { type: Number },
     sourceEtag: { type: String },
