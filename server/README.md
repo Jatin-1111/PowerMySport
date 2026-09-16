@@ -11,7 +11,9 @@ npm run dev         # nodemon + ts-node, src/server.ts
 
 Copy `.env.example` to `.env`. It documents the real var name (`MONGO_URI`, fixed as of 2026-09-14 — it used to say `MONGODB_URI`, which didn't match `src/config/database.ts`).
 
-**Database split (as of 2026-09-14):** the shared Atlas cluster hosts two separate databases — `dev` (local work, safe to break) and `test` (production — the name is historical and intentionally not renamed; renaming would have required a full data copy against a nearly-full free-tier storage quota). Local `.env` must point `MONGO_URI` at `/dev` explicitly; the deployed production environment's `MONGO_URI` must point at `/test` explicitly. Nothing enforces this at runtime — a misconfigured URI connects to production silently, so check the path segment yourself.
+**One database, and it is production (as of 2026-09-17).** The Atlas cluster hosts a single database, `test` — the name is historical and intentionally not renamed, because renaming would require a full data copy against a nearly-full free-tier storage quota. A split into a separate `dev` database was introduced on 2026-09-14 and undone shortly after, so there is **no separate development database and no safe target to point at**. `MONGO_URI` must carry an explicit db-name path segment and it is `/test` in every environment: local, deployed, one-off scripts and migrations alike.
+
+The consequence is the thing to internalise rather than the configuration: **running the server or any script locally acts on live data.** Nothing warns and nothing blocks — the boot-time check was removed on 2026-09-14 — so `npm run dev` starts the reminder and nudge email senders, booking expiry, the outbox drain, the scrapers and AITA ranking ingestion against production. That is how the 2026-08-29 incident happened, when a dev-server cron auto-ingested to prod. Before running anything that writes, prefer a read-only check first (for the ranking pipeline, `ingestAitaRankings.ts --health --check-source`).
 
 ## Scripts
 
