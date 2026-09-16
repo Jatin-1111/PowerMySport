@@ -383,6 +383,17 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
   }
 
   await Player.deleteOne({ _id: dependentId });
+
+  // A ranking link outlives nothing: it names a child who no longer has a
+  // profile here, and it would keep that registration number locked against a
+  // later, legitimate claim. Not fatal if it fails — the profile is already
+  // gone, and leaving the caller with an error would suggest otherwise.
+  try {
+    const { RankingClaimService } = await import("../../../client/services/RankingClaimService");
+    await RankingClaimService.removeForDependent(dependentId);
+  } catch (error) {
+    log.error("Failed to remove ranking links for deleted dependent:", error);
+  }
 };
 
 export const getPlayersByUserId = async (userId: string): Promise<any[]> => {

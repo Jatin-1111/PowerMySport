@@ -65,6 +65,16 @@ export const queryKeys = {
     myPackages: ["coach-programmes", "packages", "mine"] as const,
   },
 
+  /**
+   * Federation ranking links. One query for the whole account rather than one
+   * per child: the endpoint returns every link the account holds, and a child's
+   * profile page picks its own out of that list, so opening three children in
+   * turn costs one request instead of three.
+   */
+  rankingClaims: {
+    all: ["ranking-claims"] as const,
+  },
+
   bookings: {
     all: ["bookings"] as const,
     quote: (subtotal: number, discount: number) =>

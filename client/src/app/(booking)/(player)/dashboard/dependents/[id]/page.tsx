@@ -9,6 +9,7 @@ import { ProfileCompletionRing } from "@/modules/player/components/ProfileComple
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
+import { RankingLinkCard } from "@/modules/player/components/RankingLinkCard";
 import { formatDependentRelation } from "@/modules/player/data/dependentRelations";
 import {
   AGILITY_LABELS,
@@ -526,6 +527,16 @@ export default function DependentDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Federation ranking ── Renders nothing unless this child plays a sport
+          whose ranking list we mirror, or already has a link. */}
+      {dependent._id && (
+        <RankingLinkCard
+          dependentId={dependent._id}
+          dependentName={dependent.name}
+          sports={[dependent.sport?.chosenSport, ...(dependent.sport?.sportsFocus ?? [])]}
+        />
+      )}
 
       {/* ── Account actions ── */}
       {isParent && (
