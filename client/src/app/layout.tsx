@@ -59,9 +59,14 @@ export const metadata: Metadata = {
   ],
   category: "sports",
   icons: {
+    // Sizes declared smallest-first so a browser picking by size gets the one
+    // drawn for that size rather than downscaling a larger one itself.
+    // `favicon.png` used to be a 1280x1280 copy of the full logo — 249KB
+    // fetched by every visitor to paint a 16px square.
     icon: [
-      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.png", sizes: "48x48", type: "image/png" },
     ],
     shortcut: "/favicon.png",
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
