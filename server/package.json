@@ -70,6 +70,7 @@
     "test:ranking-claim": "npm run build && node --test --test-force-exit dist/tests/rankingClaim.integration.test.js",
     "test:ranking-digest": "npm run build && node --test --test-force-exit dist/tests/rankingDigest.integration.test.js",
     "test:ranking-dedupe": "npm run build && node --test --test-force-exit dist/tests/aitaIngestDedupe.integration.test.js",
+    "migrate:edition-series": "ts-node src/migrations/45_classify_tennis_edition_series.ts",
     "prune:rankings": "ts-node src/scripts/pruneRankingHistory.ts"
   },
   "keywords": [],

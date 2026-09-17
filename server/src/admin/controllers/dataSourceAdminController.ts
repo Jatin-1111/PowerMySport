@@ -25,6 +25,7 @@ import {
   isSupportedSport,
   toSupportedSlug,
 } from "../../shared/constants/supportedSports";
+import { seriesFromEditionName } from "../../shared/services/aita/editionSeries";
 import { log as __rootLog } from "../../utils/logger";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -632,12 +633,20 @@ export const approveDataSource = asyncHandler(
       const sourceUrl = citedSourceUrls[0] || "admin-submitted";
       const editionEntries = (valid as ValidEdition[]).map((edition) => {
         const startDate = new Date(`${edition.startDate}T00:00:00.000Z`);
+        // Classified at approval so the calendar is queryable the moment it
+        // lands, rather than waiting for a backfill to catch up. Tennis only:
+        // the vocabulary being read is AITA's, and running it over a chess
+        // calendar would invite a false match from a stray letter pair.
+        const series =
+          submission.sportSlug === "tennis"
+            ? seriesFromEditionName(edition.name, edition.officialName)
+            : null;
         const key: EditionKey = {
           sportSlug: submission.sportSlug,
           name: edition.name,
           startDate,
         };
-        return { edition, startDate, key };
+        return { edition, startDate, key, series };
       });
 
       // Resolves every edition's slug in a handful of round trips instead of
@@ -649,7 +658,7 @@ export const approveDataSource = asyncHandler(
         `${key.sportSlug}|${key.name}|${key.startDate.toISOString()}`;
 
       await TournamentEdition.bulkWrite(
-        editionEntries.map(({ edition, startDate, key }) => ({
+        editionEntries.map(({ edition, startDate, key, series }) => ({
           updateOne: {
             filter: key,
             update: {
@@ -674,6 +683,13 @@ export const approveDataSource = asyncHandler(
                 state: edition.state ?? null,
                 category: edition.category ?? null,
                 documents: edition.documents ?? null,
+                // Same ?? null discipline as the detail fields above: a name
+                // corrected from "AITA CS7" to "AITA Rs 1 Lakh" must clear the
+                // ladder it used to claim, not keep it.
+                ladder: series?.ladder ?? null,
+                grade: series?.grade ?? null,
+                circuit: series?.circuit ?? null,
+                kind: series?.kind ?? null,
                 slug: slugsById.get(editionKeyId(key)),
               },
             },

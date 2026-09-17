@@ -51,6 +51,28 @@ export interface TournamentEditionDocument extends Document {
   /** Fact sheets, acceptance lists and similar. URLs may be signed and expiring — see detailUrl */
   documents?: EditionDocumentEntry[];
 
+  // ── Derived from the name by `services/aita/editionSeries.ts` ─────────────
+  // Tennis only, because the vocabulary being parsed is AITA's. Stored rather
+  // than computed per read so a planner can filter on it, and because the same
+  // answer should not be re-derived in the client, the server and a migration.
+  //
+  // `level` is NOT this. It holds "State"/"National"/"International" on the
+  // minority of rows that have it at all, and cannot be joined to the ladder
+  // the entry rules are written against.
+  /** The AITA junior ladder rung, when the event is on it. */
+  ladder?: string;
+  /** The number printed in "CS7"/"TS7". What it signifies is unverified. */
+  grade?: number;
+  /** AITA | ITF | ATF | WTA. */
+  circuit?: string;
+  /**
+   * Which sort of event this is. The load-bearing value is anything that is not
+   * `junior-ladder`: 14% of the tennis calendar is the senior prize-money
+   * circuit carrying age groups of Men and Women, and it must never be offered
+   * to a junior as a step on their pathway.
+   */
+  kind?: string;
+
   /** The registry URL this edition was extracted from — shown to parents as provenance */
   sourceUrl: string;
   /**
@@ -101,6 +123,11 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
       ],
       default: undefined,
     },
+    ladder: { type: String, trim: true },
+    grade: { type: Number },
+    circuit: { type: String, trim: true },
+    kind: { type: String, trim: true },
+
     sourceUrl: { type: String, required: true },
     mergedInto: { type: String, lowercase: true, trim: true },
     status: {
@@ -121,6 +148,11 @@ tournamentEditionSchema.index({ sportSlug: 1, startDate: 1 });
 // approved before that page existed carry no slug, and a plain unique index
 // would treat every one of those nulls as a duplicate of the last.
 tournamentEditionSchema.index({ slug: 1 }, { unique: true, sparse: true });
+// Deliberately NO index on `ladder`/`kind`. The planner's working set is the
+// upcoming editions for one sport — 46 rows for tennis — which the existing
+// `{sportSlug, startDate}` index already delivers, and filtering 46 documents
+// in memory costs nothing. An index here would buy no query and spend quota on
+// a cluster that has already hit its ceiling once.
 // Backs admin getCalendarFreshness — per-sport findOne sorted {lastCheckedAt:-1}.
 tournamentEditionSchema.index({ sportSlug: 1, lastCheckedAt: -1 });
 
