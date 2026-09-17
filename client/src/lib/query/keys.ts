@@ -84,6 +84,12 @@ export const queryKeys = {
     upcoming: (sportSlug: string) => ["tournament-editions", "upcoming", sportSlug] as const,
   },
 
+  /** One child's tournament plan. Keyed per child, because that is how it is
+   * read and written — there is no view of every plan at once. */
+  seasonPlan: {
+    forDependent: (dependentId: string) => ["season-plan", dependentId] as const,
+  },
+
   bookings: {
     all: ["bookings"] as const,
     quote: (subtotal: number, discount: number) =>

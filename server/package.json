@@ -71,6 +71,8 @@
     "test:ranking-digest": "npm run build && node --test --test-force-exit dist/tests/rankingDigest.integration.test.js",
     "test:ranking-dedupe": "npm run build && node --test --test-force-exit dist/tests/aitaIngestDedupe.integration.test.js",
     "migrate:edition-series": "ts-node src/migrations/45_classify_tennis_edition_series.ts",
+    "migrate:season-plan-index": "ts-node src/migrations/46_add_season_plan_index.ts",
+    "test:season-plan": "npm run build && node --test --test-force-exit dist/tests/seasonPlan.integration.test.js",
     "prune:rankings": "ts-node src/scripts/pruneRankingHistory.ts"
   },
   "keywords": [],

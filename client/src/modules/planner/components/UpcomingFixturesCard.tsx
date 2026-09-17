@@ -4,13 +4,15 @@ import { queryKeys } from "@/lib/query/keys";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { rankingClaimApi, type RankingClaim } from "@/modules/player/services/rankingClaim";
+import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import { fetchUpcomingEditions } from "@/modules/planner/services/editions";
 import { buildShortlist, type PlannerEntry } from "@/modules/planner/utils/eligibility";
 import { Badge } from "@/modules/shared/ui/Badge";
+import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarDays, Info, MapPin } from "lucide-react";
+import { CalendarDays, Info, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -53,7 +55,16 @@ const homeStanding = (claim: RankingClaim) =>
         Number(/\d+/.exec(a.subcategory)?.[0] ?? 99) - Number(/\d+/.exec(b.subcategory)?.[0] ?? 99)
     )[0] ?? null;
 
-function FixtureRow({ entry, tone }: { entry: PlannerEntry; tone: "open" | "muted" }) {
+function FixtureRow({
+  entry,
+  tone,
+  plan,
+}: {
+  entry: PlannerEntry;
+  tone: "open" | "muted";
+  /** Absent on rows that cannot be planned, so no control is drawn. */
+  plan?: { isPlanned: boolean; onAdd: () => void; isAdding: boolean };
+}) {
   return (
     <li className="border-b border-slate-100 py-3 last:border-0 last:pb-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -70,9 +81,30 @@ function FixtureRow({ entry, tone }: { entry: PlannerEntry; tone: "open" | "mute
             entry.edition.name
           )}
         </p>
-        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-          <CalendarDays className="h-3.5 w-3.5" aria-hidden />
-          {formatWindow(entry)}
+        <span className="inline-flex items-center gap-2 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+            {formatWindow(entry)}
+          </span>
+          {plan &&
+            (plan.isPlanned ? (
+              // Said rather than hidden: a parent scanning the list needs to
+              // see what they have already chosen without opening the plan.
+              <Badge className="border-emerald-200 bg-emerald-50 text-[11px] text-emerald-700">
+                On the plan
+              </Badge>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={plan.isAdding}
+                onClick={plan.onAdd}
+                aria-label={`Add ${entry.edition.name} to the plan`}
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden />
+                Plan
+              </Button>
+            ))}
         </span>
       </div>
 
@@ -105,6 +137,17 @@ function FixtureRow({ entry, tone }: { entry: PlannerEntry; tone: "open" | "mute
 export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
   const [showClosed, setShowClosed] = useState(false);
   const [showPlayingUp, setShowPlayingUp] = useState(false);
+  const { plannedSlugs, add } = useSeasonPlan(dependentId);
+
+  /** Only an enterable event with a slug can be planned. */
+  const planControl = (entry: PlannerEntry) =>
+    entry.edition.slug
+      ? {
+          isPlanned: plannedSlugs.has(entry.edition.slug),
+          onAdd: () => add.mutate(entry.edition.slug!),
+          isAdding: add.isPending,
+        }
+      : undefined;
   const hydrated = useAuthStore((state) => state.hydrated);
   const token = useAuthStore((state) => state.token);
 
@@ -162,6 +205,7 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
                     key={entry.edition.slug ?? entry.edition.name}
                     entry={entry}
                     tone="open"
+                    plan={planControl(entry)}
                   />
                 ))}
               </ul>
@@ -193,6 +237,7 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
                         key={entry.edition.slug ?? entry.edition.name}
                         entry={entry}
                         tone="open"
+                        plan={planControl(entry)}
                       />
                     ))}
                   </ul>

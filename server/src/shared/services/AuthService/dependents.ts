@@ -394,6 +394,15 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
   } catch (error) {
     log.error("Failed to remove ranking links for deleted dependent:", error);
   }
+
+  // Likewise the plan: it names a child who no longer has a profile here, and
+  // its unique key would block a plan for a profile created later.
+  try {
+    const { SeasonPlanService } = await import("../../../client/services/SeasonPlanService");
+    await SeasonPlanService.removeForDependent(dependentId);
+  } catch (error) {
+    log.error("Failed to remove season plan for deleted dependent:", error);
+  }
 };
 
 export const getPlayersByUserId = async (userId: string): Promise<any[]> => {
