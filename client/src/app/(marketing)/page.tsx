@@ -1,5 +1,5 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import { OG_IMAGE, organizationJsonLd, SITE_DESCRIPTION, websiteJsonLd } from "@/lib/seo";
+import { organizationJsonLd, SITE_DESCRIPTION, websiteJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 
 import HomeClient from "./HomeClient";
@@ -29,14 +29,10 @@ export const metadata: Metadata = {
     title: "PowerMySport | Guiding Every Sporting Journey",
     description:
       "Plan your child's sports journey with AI-powered pathways, federation rankings, personalised guidance and verified experts across India. Free to explore.",
-    images: [
-      {
-        url: OG_IMAGE,
-        width: 1200,
-        height: 630,
-        alt: "PowerMySport | Guiding Every Sporting Journey",
-      },
-    ],
+    // No `images` here on purpose. `app/opengraph-image.tsx` generates the
+    // preview now, and metadata resolves deepest-segment-wins: an explicit
+    // `images` on this page would beat the root file and quietly pin the
+    // homepage — the most-shared URL on the site — to the old static PNG.
   },
 };
 

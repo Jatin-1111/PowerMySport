@@ -4,12 +4,7 @@ import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { NumericInputGuard } from "@/components/layout/NumericInputGuard";
 import { FriendSocketProvider } from "@/hooks/useFriendSocket";
 import { QueryProvider } from "@/lib/query/QueryProvider";
-import {
-  OG_IMAGE,
-  SITE_DESCRIPTION as siteDescription,
-  SITE_URL as siteUrl,
-  TWITTER_IMAGE,
-} from "@/lib/seo";
+import { SITE_DESCRIPTION as siteDescription, SITE_URL as siteUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 import { Geist_Mono, Space_Grotesk } from "next/font/google";
 import { Toaster } from "sonner";
@@ -86,20 +81,15 @@ export const metadata: Metadata = {
     siteName: "PowerMySport",
     title: "PowerMySport | Guiding Every Sporting Journey",
     description: siteDescription,
-    images: [
-      {
-        url: OG_IMAGE,
-        width: 1200,
-        height: 630,
-        alt: "PowerMySport | Guiding Every Sporting Journey",
-      },
-    ],
+    // `images` intentionally absent: `app/opengraph-image.tsx` and
+    // `app/twitter-image.tsx` generate both, and a file convention in the same
+    // segment overrides whatever is declared here. Listing them twice would
+    // only create something to forget to update.
   },
   twitter: {
     card: "summary_large_image",
     title: "PowerMySport | Guiding Every Sporting Journey",
     description: siteDescription,
-    images: [TWITTER_IMAGE],
   },
   robots: {
     index: true,
