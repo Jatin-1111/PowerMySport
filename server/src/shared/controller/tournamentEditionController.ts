@@ -203,7 +203,14 @@ export const listTournamentEditionSlugs = asyncHandler(
           .sort({ startDate: upcoming ? 1 : -1 })
           .skip((page - 1) * limit)
           .limit(limit)
-          .select("slug name officialName startDate endDate city state venue level ageGroups")
+          // `ladder`/`grade`/`kind` come from the name parser (editionSeries.ts).
+          // They are what lets a caller tell a junior ladder event from the
+          // senior prize-money circuit, which `level` cannot: it is set on a
+          // quarter of tennis rows and says only State/National/International.
+          .select(
+            "slug name officialName startDate endDate city state venue level ageGroups " +
+              "ladder grade circuit kind"
+          )
           .lean(),
         TournamentEdition.countDocuments(filter),
       ]);

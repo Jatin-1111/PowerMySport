@@ -10,6 +10,7 @@ import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { RankingLinkCard } from "@/modules/player/components/RankingLinkCard";
+import { UpcomingFixturesCard } from "@/modules/planner/components/UpcomingFixturesCard";
 import { formatDependentRelation } from "@/modules/player/data/dependentRelations";
 import {
   AGILITY_LABELS,
@@ -537,6 +538,9 @@ export default function DependentDetailPage() {
           sports={[dependent.sport?.chosenSport, ...(dependent.sport?.sportsFocus ?? [])]}
         />
       )}
+
+      {/* Renders itself only once a ranking is linked — see the component. */}
+      {dependent._id && <UpcomingFixturesCard dependentId={dependent._id} />}
 
       {/* ── Account actions ── */}
       {isParent && (

@@ -75,6 +75,15 @@ export const queryKeys = {
     all: ["ranking-claims"] as const,
   },
 
+  /**
+   * The upcoming tournament calendar, per sport. Public data and small — the
+   * whole tennis calendar is under fifty rows — so it is fetched once and
+   * filtered in memory by whoever needs it.
+   */
+  tournamentEditions: {
+    upcoming: (sportSlug: string) => ["tournament-editions", "upcoming", sportSlug] as const,
+  },
+
   bookings: {
     all: ["bookings"] as const,
     quote: (subtotal: number, discount: number) =>
