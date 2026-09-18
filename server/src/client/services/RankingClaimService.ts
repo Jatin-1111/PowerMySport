@@ -265,8 +265,19 @@ export class RankingClaimService {
 
     // `+dob` is the opt-in the model is built around. Nothing downstream of this
     // line may put the value into a response, a document or a log line.
-    const entry = await RankingEntry.findOne({ sportSlug, regNo })
-      .select("+dob fullName")
+    //
+    // `dob: { $exists: true }` is load-bearing, not defensive. The August 2026
+    // platform cutover stopped publishing dates of birth — rows from 2026-08-03
+    // onward carry `birthYear` only — so taking the newest row for a player
+    // finds no date and every claim fails with the "does not match" message,
+    // which is indistinguishable from a wrong answer. A date of birth does not
+    // change, so the newest row that HAS one is as good as today's.
+    const entry = await RankingEntry.findOne({
+      sportSlug,
+      regNo,
+      dob: { $exists: true, $ne: null },
+    })
+      .select("+dob fullName federationCode")
       .sort({ asOnDate: -1 })
       .lean();
 

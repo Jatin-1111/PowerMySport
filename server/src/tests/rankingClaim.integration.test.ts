@@ -135,6 +135,64 @@ describe("claiming a ranked player", () => {
     assert.ok(stored.verifiedAt instanceof Date);
   });
 
+  it("finds the date of birth on an older row when the current one has none", async () => {
+    // The August 2026 cutover stopped publishing dates of birth: every row from
+    // 2026-08-03 onward carries a birth year only. Taking the newest row for a
+    // player therefore finds nothing, and every claim fails with the message
+    // that is supposed to mean "wrong answer". This pins the fix.
+    const parent = await seedParent("Rahul Cutover");
+    const child = await seedChild(parent._id);
+
+    // Today's row: no dob, as the source now publishes it.
+    await RankingEntry.create({
+      snapshot: new mongoose.Types.ObjectId(),
+      sportSlug: "tennis",
+      federationCode: "AITA",
+      category: "Boys",
+      subcategory: "U-14",
+      asOnDate: new Date(Date.UTC(2026, 8, 7)),
+      isLatest: true,
+      rank: 300,
+      regNo: "440091",
+      givenName: "Aarav",
+      familyName: "Khandelwal",
+      fullName: "Aarav Khandelwal",
+      nameSearch: "aarav khandelwal",
+      birthYear: DOB.getUTCFullYear(),
+      totalPoints: 150,
+    });
+    // An archived row from before the cutover, which still carries it.
+    await RankingEntry.create({
+      snapshot: new mongoose.Types.ObjectId(),
+      sportSlug: "tennis",
+      federationCode: "AITA",
+      category: "Boys",
+      subcategory: "U-14",
+      asOnDate: new Date(Date.UTC(2026, 6, 27)),
+      isLatest: false,
+      rank: 320,
+      regNo: "440091",
+      givenName: "Aarav",
+      familyName: "Khandelwal",
+      fullName: "Aarav Khandelwal",
+      nameSearch: "aarav khandelwal",
+      dob: DOB,
+      birthYear: DOB.getUTCFullYear(),
+      totalPoints: 140,
+    });
+
+    const claim = await RankingClaimService.claim({
+      userId: String(parent._id),
+      dependentId: String(child._id),
+      regNo: "440091",
+      dob: DOB_INPUT,
+    });
+
+    assert.equal(claim.regNo, "440091");
+    // And it still reports the CURRENT standing, not the archived one.
+    assert.equal(claim.standings[0].rank, 300);
+  });
+
   it("returns an identical message for a wrong date and an unknown number", async () => {
     const parent = await seedParent("Rahul Two");
     const child = await seedChild(parent._id, { dob: null });
