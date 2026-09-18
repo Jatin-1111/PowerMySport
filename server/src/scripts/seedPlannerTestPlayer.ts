@@ -12,12 +12,29 @@ import mongoose from "mongoose";
  * is not a reason to go looking one up. This seeds a player who does not exist:
  * registration number 99999999, born 2012-05-17, ranked in Boys U-14.
  *
- * ── What it writes ─────────────────────────────────────────────────────────
+ * ── What it writes, and why the category is fake ───────────────────────────
  * Two documents — one snapshot, one entry — into the production database,
- * because that is the only database there is. Both are removed by `--clean`,
- * and nothing else is touched. It deliberately does NOT set `isLatestForCombo`
- * on the snapshot: the real Boys U-14 list holds that flag, and stealing it
- * would make the public rankings page render this fake row as the live list.
+ * because that is the only database there is. Both are removed by `--clean`.
+ *
+ * The row sits under category "Test", not "Boys". That is the whole safety
+ * mechanism, and the first version of this script got it wrong. The claim needs
+ * `isLatest: true` to report a standing, and the public list endpoint filters on
+ * exactly `{sportSlug, category, subcategory, isLatest}` — no registration
+ * number, no snapshot. So a seeded row under "Boys" shows up as a real player in
+ * the public Boys U-14 rankings for as long as it exists. The comment that used
+ * to sit here claimed the flag was "scoped to this registration number, so it
+ * cannot affect the real list". That was simply false.
+ *
+ * Under a category no real list uses, nothing links to it and nothing queries
+ * it: the public pages are built from the twelve live combos. Everything the
+ * claim and the planner need still works, because both key off the SUBCATEGORY
+ * — "U-14" drives the age bracket and the entry gates — and the rank, never the
+ * category. The seed asserts this before it reports success.
+ *
+ * It also survives an ingest. `publish()` clears `isLatest` across the combo it
+ * just published, scoped to that category and subcategory, which is how the
+ * first seeded row silently vanished mid-test when the scheduler picked up a
+ * new Boys U-14 list.
  *
  * Raw collection access on purpose. Importing the mongoose models would let
  * autoIndex create indexes in production as a side effect of running a script.
@@ -28,6 +45,11 @@ import mongoose from "mongoose";
  */
 
 const REG_NO = "99999999";
+/** Not a real AITA category. See the note above — this IS the safety mechanism. */
+const CATEGORY = "Test";
+const SUBCATEGORY = "U-14";
+/** The categories a public ranking page can actually reach. */
+const LIVE_CATEGORIES = ["Boys", "Girls", "Men", "Women"];
 const DOB = new Date(Date.UTC(2012, 4, 17)); // 2012-05-17
 const AS_ON = new Date(Date.UTC(2026, 8, 7)); // matches the current list date
 
@@ -76,8 +98,8 @@ const main = async () => {
       $set: {
         sportSlug: "tennis",
         federationCode: "AITA",
-        category: "Boys",
-        subcategory: "U-14",
+        category: CATEGORY,
+        subcategory: SUBCATEGORY,
         asOnDate: AS_ON,
         pdfUrl: "seed://planner-test",
         sourceUrl: "seed://planner-test",
@@ -105,12 +127,11 @@ const main = async () => {
         snapshot: snapshotId,
         sportSlug: "tennis",
         federationCode: "AITA",
-        category: "Boys",
-        subcategory: "U-14",
+        category: CATEGORY,
+        subcategory: SUBCATEGORY,
         asOnDate: AS_ON,
-        // `isLatest` IS set: the claim reads the player's current standing from
-        // it, and it is scoped to this registration number, so it cannot affect
-        // the real list.
+        // `isLatest` has to be true — the claim reads the current standing from
+        // it. It is safe only because the category is one no real list uses.
         isLatest: true,
         rank: 312,
         prevRank: 330,
@@ -142,10 +163,27 @@ const main = async () => {
     { upsert: true }
   );
 
+  // Prove the safety property rather than asserting it in a comment. This is
+  // the filter the public list endpoint uses; a seeded row must never match it
+  // for a category a real page can reach.
+  const leaked = await entries.countDocuments({
+    regNo: REG_NO,
+    isLatest: true,
+    category: { $in: LIVE_CATEGORIES },
+  });
+  if (leaked > 0) {
+    console.error(
+      `REFUSING TO FINISH: ${leaked} seeded row(s) sit in a real category and would appear on the public rankings. Run --clean.`
+    );
+    await mongoose.disconnect();
+    process.exit(1);
+  }
+
   console.log("Seeded a test player:");
   console.log(`  registration number : ${REG_NO}`);
   console.log(`  date of birth       : 2012-05-17`);
-  console.log(`  list                : Boys U-14, rank 312`);
+  console.log(`  list                : ${CATEGORY} ${SUBCATEGORY}, rank 312`);
+  console.log("  (a category no real list uses, so it cannot reach a public page)");
   console.log("\nClaim it from a child's profile, then run --clean when you are done.");
   await mongoose.disconnect();
 };
