@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Coach } from "../../../client/models/Coach";
+import { Player } from "../../../client/models/Player";
 import { User } from "../../../client/models/User";
 import { Venue } from "../../../client/models/Venue";
 import { getStartOfCurrentMonth, getTwentyFourHoursAgo } from "./shared";
@@ -10,26 +11,48 @@ export const getPlayersAnalytics = asyncHandler(
     const monthStart = getStartOfCurrentMonth();
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
-    const [totalPlayers, newThisMonth, withSportsProfile, withDependents, newAccountsLast24Hours] =
-      await Promise.all([
-        User.countDocuments({ role: "Player" }),
-        User.countDocuments({
-          role: "Player",
-          createdAt: { $gte: monthStart },
-        }),
-        User.countDocuments({
-          role: "Player",
-          "playerProfile.sports.0": { $exists: true },
-        }),
-        User.countDocuments({
-          role: "Player",
-          "dependents.0": { $exists: true },
-        }),
-        User.countDocuments({
-          role: "Player",
-          createdAt: { $gte: twentyFourHoursAgo },
-        }),
+    // `withSportsProfile`/`withDependents` count through the Player collection,
+    // not through the user document. Migration 14 moved both off User — the
+    // fields these once matched (`playerProfile.sports`, `dependents`) no
+    // longer exist on the schema, so counting them there reported a flat zero.
+    const countPlayerOwners = (match: Record<string, unknown>) =>
+      Player.aggregate<{ owners: number }>([
+        { $match: match },
+        { $group: { _id: "$userId" } },
+        {
+          $lookup: {
+            from: User.collection.name,
+            localField: "_id",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        { $match: { "user.role": "Player" } },
+        { $count: "owners" },
       ]);
+
+    const [
+      totalPlayers,
+      newThisMonth,
+      sportsProfileOwners,
+      dependentOwners,
+      newAccountsLast24Hours,
+    ] = await Promise.all([
+      User.countDocuments({ role: "Player" }),
+      User.countDocuments({
+        role: "Player",
+        createdAt: { $gte: monthStart },
+      }),
+      countPlayerOwners({ type: "SELF", "sportsFocus.0": { $exists: true } }),
+      countPlayerOwners({ type: "DEPENDENT" }),
+      User.countDocuments({
+        role: "Player",
+        createdAt: { $gte: twentyFourHoursAgo },
+      }),
+    ]);
+
+    const withSportsProfile = sportsProfileOwners[0]?.owners ?? 0;
+    const withDependents = dependentOwners[0]?.owners ?? 0;
 
     res.status(200).json({
       success: true,
