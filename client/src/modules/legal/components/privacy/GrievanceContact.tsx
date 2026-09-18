@@ -14,7 +14,10 @@ export function GrievanceContact() {
       <div className="rounded-lg bg-slate-50 p-4">
         <p className="mb-2 text-slate-700">
           <strong>Legal Entity:</strong> Powermysport Private Limited
-          {""}
+          {/* Same em-dash-sweep casualty as PlayerHero: the separator became an
+              empty expression, so the company name ran straight into "CIN:" on
+              the privacy policy. */}
+          {" · "}
           <strong>CIN:</strong> U93120PB2026PTC067587
         </p>
         <p className="mb-2 flex items-center gap-2 text-slate-700">

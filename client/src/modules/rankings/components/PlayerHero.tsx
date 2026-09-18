@@ -210,7 +210,10 @@ export function PlayerHero({
             {federationAcronym} {primary.listLabel}
             {standing && (
               <>
-                {""}
+                {/* A real separator. The em-dash sweep replaced the one that
+                    was here with an empty expression, so every ranked player's
+                    page read "...Boys Under-14in the top 19% in India." */}
+                {", "}
                 <span className="text-foreground font-semibold">{standing}</span>
               </>
             )}
