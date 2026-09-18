@@ -45,7 +45,7 @@ export function DashboardHeader() {
 
   const name = user?.name || "there";
   const isParent = user?.role === "Parent";
-  const { percent } = calculateProfileCompletion(user?.playerProfile);
+  const { percent } = calculateProfileCompletion(user);
 
   return (
     <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm sm:p-8">

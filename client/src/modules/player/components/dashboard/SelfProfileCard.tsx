@@ -16,7 +16,7 @@ import Link from "next/link";
  */
 export function SelfProfileCard() {
   const { data: user, isLoading, isError, refetch } = useProfile();
-  const { percent, missing } = calculateProfileCompletion(user?.playerProfile);
+  const { percent, missing } = calculateProfileCompletion(user);
 
   // Highest-weight gaps first — the ones that most improve recommendations.
   const topGaps = [...missing].sort((a, b) => b.weight - a.weight).slice(0, 3);

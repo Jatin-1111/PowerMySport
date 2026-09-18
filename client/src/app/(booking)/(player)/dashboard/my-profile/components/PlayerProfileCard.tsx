@@ -53,7 +53,7 @@ export function PlayerProfileCard({
         onSave={onSave}
         saving={isSavingSports}
         saveLabel="Save Profile"
-        completionPercent={calculateProfileCompletion(user.playerProfile).percent}
+        completionPercent={calculateProfileCompletion(user).percent}
       />
 
       <CardContent className="px-6 py-6">
