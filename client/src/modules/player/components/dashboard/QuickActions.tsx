@@ -2,17 +2,16 @@
 
 import { DashboardSection } from "@/modules/player/components/dashboard/DashboardSection";
 import { useDashboardAudience } from "@/modules/player/hooks/useDashboardAudience";
-import { Calendar, Compass, MapPin, Users, Wallet, Zap, type LucideIcon } from "lucide-react";
+import { Compass, UserRoundSearch, Users, Zap, type LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
 /**
  * The shortcuts worth keeping.
  *
- * Booking survives here — parents do book — but as two of six rather than three
- * of five, and behind the things this dashboard is actually about. The old grid
- * led with "Booking" and "Find Coach", which is how the page ended up reading as
- * a booking console.
+ * Booking is deliberately absent. Venue/booking/wallet shortcuts made the page
+ * read as a booking console; what this dashboard is actually about is the family
+ * and the guidance around it, so only those three survive.
  */
 
 interface QuickAction {
@@ -30,28 +29,10 @@ const SHARED: QuickAction[] = [
     color: "bg-amber-100 text-amber-700",
   },
   {
-    href: "/booking?tab=coaches",
-    icon: Users,
-    label: "Find a coach",
+    href: "/booking?tab=experts",
+    icon: UserRoundSearch,
+    label: "Find an expert",
     color: "bg-purple-100 text-purple-600",
-  },
-  {
-    href: "/booking",
-    icon: MapPin,
-    label: "Book a venue",
-    color: "bg-indigo-100 text-indigo-600",
-  },
-  {
-    href: "/dashboard/my-bookings",
-    icon: Calendar,
-    label: "My bookings",
-    color: "bg-emerald-100 text-emerald-600",
-  },
-  {
-    href: "/dashboard/wallet",
-    icon: Wallet,
-    label: "My wallet",
-    color: "bg-sky-100 text-sky-600",
   },
 ];
 
