@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import React, { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -85,7 +86,31 @@ export const Modal: React.FC<ModalProps> = ({
     }
   };
 
-  return (
+  /**
+   * Rendered into `document.body`, never where it was written.
+   *
+   * `position: fixed` is not as absolute as it looks: an ancestor with a
+   * `transform`, a `filter` or a `backdrop-filter` becomes the containing block
+   * for fixed descendants, and the overlay then anchors to that element instead
+   * of the viewport. This codebase hits that constantly, because `.shop-surface`
+   * — the class on most cards — is `backdrop-blur-md`, and those cards are
+   * usually `overflow-hidden` too. A modal written inside one rendered as a
+   * clipped sliver floating inside the card.
+   *
+   * Portalling makes the question moot: whatever the tree above looks like, the
+   * overlay is a child of `body` and covers the viewport. It also fixes the
+   * z-index arithmetic, since nothing above it can create a stacking context
+   * that traps it.
+   *
+   * The `document` check is for the server pass. A modal is never open on first
+   * paint — it opens from a click — so rendering nothing there matches what the
+   * client produces, and no hydration mismatch is possible. Deliberately not a
+   * `mounted` flag set in an effect: that is a setState in an effect body, which
+   * this repo's lint rules reject, and it would cost every page an extra render.
+   */
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -150,6 +175,7 @@ export const Modal: React.FC<ModalProps> = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

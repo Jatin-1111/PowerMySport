@@ -91,80 +91,86 @@ export function RankingLinkCard({
   if (!sportSlug && (isLoading || !claim)) return null;
 
   return (
-    <Card className="shop-surface premium-shadow overflow-hidden p-0">
-      <ProfileSectionHeader
-        icon={Trophy}
-        title="Federation ranking"
-        description="Their official standing, updated when a new list is published."
-      />
-      <CardContent className="p-6">
-        {isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-64" />
-          </div>
-        ) : !claim ? (
-          <div className="space-y-4">
-            <p className="text-sm leading-relaxed text-slate-600">
-              If {dependentName} is on a federation ranking list, link it here to see their rank,
-              weekly movement and points without going looking for the list each time.
-            </p>
-            <Button onClick={() => setIsModalOpen(true)}>Link a ranking</Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {claim.standings.length === 0 ? (
-              <p className="text-sm leading-relaxed text-slate-600">
-                Linked to registration number {claim.regNo}, but they are not on the current list.
-                Juniors often drop off between age categories; their standing reappears here as soon
-                as they are published again.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {claim.standings.map((standing) => (
-                  <li
-                    key={`${standing.category}-${standing.subcategory}`}
-                    className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-slate-100 pb-3 last:border-0 last:pb-0"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        #{standing.rank}
-                        <span className="ml-2 font-normal text-slate-600">
-                          {standingListLabel(standing)}
-                        </span>
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {standing.totalPoints} points, as on {formatAsOn(standing.asOnDate)}
-                      </p>
-                    </div>
-                    <RankDelta delta={standing.rankDelta} hasBaseline />
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href={standingHref(claim)}
-                className="text-power-orange inline-flex items-center gap-1 text-sm font-semibold hover:underline"
-              >
-                See full ranking history
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => unlink.mutate(claim.id)}
-                disabled={unlink.isPending}
-                className="text-slate-500"
-              >
-                <Link2Off className="mr-1.5 h-4 w-4" aria-hidden />
-                {unlink.isPending ? "Unlinking..." : "Unlink"}
-              </Button>
+    // The modal sits beside the card rather than inside it. `Modal` portals to
+    // `document.body` now, so this is no longer load-bearing — but a card with
+    // `backdrop-blur-md` and `overflow-hidden` is a bad place to write an
+    // overlay, and keeping them siblings says so.
+    <>
+      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+        <ProfileSectionHeader
+          icon={Trophy}
+          title="Federation ranking"
+          description="Their official standing, updated when a new list is published."
+        />
+        <CardContent className="p-6">
+          {isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-64" />
             </div>
-          </div>
-        )}
-      </CardContent>
+          ) : !claim ? (
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-slate-600">
+                If {dependentName} is on a federation ranking list, link it here to see their rank,
+                weekly movement and points without going looking for the list each time.
+              </p>
+              <Button onClick={() => setIsModalOpen(true)}>Link a ranking</Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {claim.standings.length === 0 ? (
+                <p className="text-sm leading-relaxed text-slate-600">
+                  Linked to registration number {claim.regNo}, but they are not on the current list.
+                  Juniors often drop off between age categories; their standing reappears here as
+                  soon as they are published again.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {claim.standings.map((standing) => (
+                    <li
+                      key={`${standing.category}-${standing.subcategory}`}
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-slate-100 pb-3 last:border-0 last:pb-0"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          #{standing.rank}
+                          <span className="ml-2 font-normal text-slate-600">
+                            {standingListLabel(standing)}
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {standing.totalPoints} points, as on {formatAsOn(standing.asOnDate)}
+                        </p>
+                      </div>
+                      <RankDelta delta={standing.rankDelta} hasBaseline />
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href={standingHref(claim)}
+                  className="text-power-orange inline-flex items-center gap-1 text-sm font-semibold hover:underline"
+                >
+                  See full ranking history
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => unlink.mutate(claim.id)}
+                  disabled={unlink.isPending}
+                  className="text-slate-500"
+                >
+                  <Link2Off className="mr-1.5 h-4 w-4" aria-hidden />
+                  {unlink.isPending ? "Unlinking..." : "Unlink"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <LinkRankingModal
         isOpen={isModalOpen}
@@ -177,6 +183,6 @@ export function RankingLinkCard({
           toast.success("Ranking linked.");
         }}
       />
-    </Card>
+    </>
   );
 }
