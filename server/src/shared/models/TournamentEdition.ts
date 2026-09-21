@@ -20,6 +20,21 @@ export interface EditionDocumentEntry {
 
 export interface TournamentEditionDocument extends Document {
   sportSlug: string;
+  /**
+   * The federation whose calendar this edition was read from — i.e. who
+   * sanctions entry to it, not merely who else might list it.
+   *
+   * Load-bearing, because a sport has several federations and only some of
+   * them have had a calendar sourced. Without it every federation page showed
+   * the same sport-wide list, so UTR's page — which says in its own key facts
+   * that UTR results do not count toward an AITA ranking — listed AITA ranking
+   * events as though they were UTR's.
+   *
+   * An ITF- or ATF-sanctioned event that AITA prints on its own calendar is
+   * attributed to AITA: that is the source we actually read, and claiming it
+   * for ITF would assert a calendar we have never sourced.
+   */
+  federationSlug?: string;
   /** Canonical tournament/event name as published on the official calendar */
   name: string;
   /** URL-safe id for the public detail page — `${kebab(name)}-${startDate}`, deduped with a numeric suffix */
@@ -93,6 +108,7 @@ export interface TournamentEditionDocument extends Document {
 const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
   {
     sportSlug: { type: String, required: true, lowercase: true, index: true },
+    federationSlug: { type: String, lowercase: true, trim: true },
     name: { type: String, required: true, trim: true },
     slug: { type: String, lowercase: true, trim: true },
     editionYear: { type: Number, required: true },
@@ -142,7 +158,10 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
 
 // One row per dated edition; re-extraction of the same edition updates in place.
 tournamentEditionSchema.index({ sportSlug: 1, name: 1, startDate: 1 }, { unique: true });
-// The "what's coming up for this sport?" query.
+// The "what's coming up for this sport?" query. It also backs the federation
+// page, which adds an equality on `federationSlug`: that narrows a few hundred
+// already-fetched rows in memory and buys nothing worth an index, for the same
+// reason spelled out for `ladder`/`kind` below.
 tournamentEditionSchema.index({ sportSlug: 1, startDate: 1 });
 // Backs the public /tournaments/[slug] page. Sparse on purpose: editions
 // approved before that page existed carry no slug, and a plain unique index

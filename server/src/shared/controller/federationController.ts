@@ -101,11 +101,20 @@ export const getFederationTournaments = asyncHandler(
 
 /**
  * GET /api/federations/:slug/editions?limit=50
- * Upcoming dated tournament editions for this federation's sport, populated
- * via the admin data-source review flow (TOURNAMENT_CALENDAR submissions in
- * DataSourceExtractionService.ts / dataSourceAdminController.ts). Editions
- * are keyed by sportSlug only (not a specific federation), so this is the
- * sport-wide calendar, not filtered to this federation's own events.
+ * Upcoming dated tournament editions this federation itself sanctions,
+ * populated via the admin data-source review flow (TOURNAMENT_CALENDAR
+ * submissions in DataSourceExtractionService.ts / dataSourceAdminController.ts)
+ * and attributed to the federation whose calendar they were read from.
+ *
+ * Scoped to that federation on purpose. This used to return the whole sport's
+ * calendar, which meant all four tennis federation pages served an identical
+ * list — and since AITA's is the only tennis calendar sourced so far, UTR's
+ * page presented AITA ranking events as UTR's own, directly contradicting the
+ * key fact printed above them that UTR results earn no AITA ranking.
+ *
+ * A federation whose calendar nobody has sourced yet returns nothing, and the
+ * client says so and links to the official calendar. That is the honest
+ * answer; borrowing another body's events is not.
  */
 export const getFederationEditions = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -127,6 +136,7 @@ export const getFederationEditions = asyncHandler(
 
     const editions = await TournamentEdition.find({
       sportSlug: fed.sportSlug,
+      federationSlug: slug.toLowerCase(),
       startDate: { $gte: startOfToday },
       status: { $ne: "cancelled" },
     })

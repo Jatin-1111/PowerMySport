@@ -319,20 +319,22 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
   const [submitting, setSubmitting] = useState(false);
 
   const sportSlug = toSportSlug(sportName);
-  const needsTarget = targetType !== "TOURNAMENT_CALENDAR";
+  // Every source type now picks a target. A calendar has no document to
+  // overwrite, but it still has an owner — the federation that published it —
+  // and that attribution is what scopes the public federation calendar pages,
+  // so it is picked here rather than inferred. Only existing federations are
+  // offered: a calendar with no federation page behind it has nowhere to be
+  // read.
+  const allowsNewTarget = targetType !== "TOURNAMENT_CALENDAR";
 
   useEffect(() => {
-    if (!needsTarget) {
-      setTargets([]);
-      return;
-    }
     adminApi
       .listDataSourceTargets(targetType, sportSlug)
       .then((res) => {
         if (res.success && res.data) setTargets(res.data);
       })
       .catch(() => setTargets([]));
-  }, [targetType, sportSlug, needsTarget]);
+  }, [targetType, sportSlug]);
 
   const uploadPdfIfNeeded = async (): Promise<{ s3Key?: string; fileName?: string }> => {
     if (sourceKind !== "PDF" || !file) return {};
@@ -360,6 +362,10 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
         return;
       }
     }
+    if (targetType === "TOURNAMENT_CALENDAR" && selectedTargetSlug === "__new__") {
+      toast.error("Pick the federation whose calendar this is.");
+      return;
+    }
     if (sourceKind === "LINK" && !sourceUrl.trim()) {
       toast.error("Enter a source URL.");
       return;
@@ -382,7 +388,9 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
             ? selectedTargetSlug === "__new__"
               ? undefined // curated tournament's federationSlug comes from an existing Federation, not created here
               : selectedTargetSlug
-            : undefined;
+            : // TOURNAMENT_CALENDAR — the picker above only offers existing
+              // federations, and the "__new__" case is rejected before here.
+              selectedTargetSlug;
 
       const tournamentSlug =
         targetType === "CURATED_TOURNAMENT"
@@ -461,41 +469,47 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
         </div>
       </div>
 
-      {needsTarget && (
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {targetType === "FEDERATION" ? "Federation" : "Tournament"}
-          </label>
-          <select
-            value={selectedTargetSlug}
-            onChange={(e) => setSelectedTargetSlug(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-          >
+      <div>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {targetType === "CURATED_TOURNAMENT"
+            ? "Tournament"
+            : targetType === "TOURNAMENT_CALENDAR"
+              ? "Whose calendar is this?"
+              : "Federation"}
+        </label>
+        <select
+          value={selectedTargetSlug}
+          onChange={(e) => setSelectedTargetSlug(e.target.value)}
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+        >
+          {allowsNewTarget ? (
             <option value="__new__">+ Create new</option>
-            {targets.map((t) => (
-              <option key={t.slug} value={t.slug}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          {selectedTargetSlug === "__new__" && targetType === "FEDERATION" && (
-            <input
-              value={newFederationSlug}
-              onChange={(e) => setNewFederationSlug(e.target.value)}
-              placeholder="New federation slug (e.g. bai)"
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            />
+          ) : (
+            <option value="__new__">Select a federation…</option>
           )}
-          {selectedTargetSlug === "__new__" && targetType === "CURATED_TOURNAMENT" && (
-            <input
-              value={newTournamentSlug}
-              onChange={(e) => setNewTournamentSlug(e.target.value)}
-              placeholder="New tournament slug (e.g. india-open-bwf-super-500)"
-              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            />
-          )}
-        </div>
-      )}
+          {targets.map((t) => (
+            <option key={t.slug} value={t.slug}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        {selectedTargetSlug === "__new__" && targetType === "FEDERATION" && (
+          <input
+            value={newFederationSlug}
+            onChange={(e) => setNewFederationSlug(e.target.value)}
+            placeholder="New federation slug (e.g. bai)"
+            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          />
+        )}
+        {selectedTargetSlug === "__new__" && targetType === "CURATED_TOURNAMENT" && (
+          <input
+            value={newTournamentSlug}
+            onChange={(e) => setNewTournamentSlug(e.target.value)}
+            placeholder="New tournament slug (e.g. india-open-bwf-super-500)"
+            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          />
+        )}
+      </div>
 
       <div>
         <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">

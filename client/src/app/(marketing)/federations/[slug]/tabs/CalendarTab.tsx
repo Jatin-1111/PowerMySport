@@ -364,10 +364,11 @@ export function CalendarTab({
       {!editionsLoading && editionsLoaded && editions.length === 0 && (
         <div className="rounded-2xl border border-dashed border-slate-300 py-16 text-center">
           <CalendarDays className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-          <p className="text-sm font-semibold text-slate-600">No confirmed dates published yet</p>
+          <p className="text-sm font-semibold text-slate-600">No {fedAcronym} dates curated yet</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-slate-400">
-            We haven&apos;t curated official {fedAcronym} tournament dates for this sport yet.
-            {officialCalendarUrl && " Check the official calendar in the meantime."}
+            We only list events a body runs itself, so nothing here is borrowed from another
+            federation&apos;s calendar. We haven&apos;t curated {fedAcronym}&apos;s own dates yet.
+            {officialCalendarUrl && " Their official calendar has them in the meantime."}
           </p>
           {officialCalendarUrl && (
             <a

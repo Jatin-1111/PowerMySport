@@ -137,8 +137,14 @@ export const listDataSourceTargets = asyncHandler(
       return;
     }
 
-    // TOURNAMENT_CALENDAR has no "target document" to pick — it's always keyed by sportSlug.
-    res.status(200).json({ success: true, data: [] });
+    // TOURNAMENT_CALENDAR has no "target document" to overwrite, but it is still
+    // owned by a federation — the reviewer picks whose calendar they are
+    // submitting, and every edition it yields is attributed to that federation.
+    const feds = await Federation.find({ sportSlug }).select("slug name acronym").lean();
+    res.status(200).json({
+      success: true,
+      data: feds.map((d) => ({ slug: d.slug, name: `${d.name} (${d.acronym})` })),
+    });
   }
 );
 
@@ -219,6 +225,16 @@ export const createDataSource = asyncHandler(async (req: Request, res: Response)
   }
   if (body.targetType === "FEDERATION" && !body.federationSlug) {
     throw new AppError("federationSlug is required for a FEDERATION source", 400);
+  }
+  // A calendar has no single target document, but it does have an owner: the
+  // federation that published it. Without that recorded at submission time the
+  // editions land keyed by sport alone, and every federation page in the sport
+  // shows the same list regardless of who actually sanctions the events.
+  if (body.targetType === "TOURNAMENT_CALENDAR" && !body.federationSlug) {
+    throw new AppError(
+      "federationSlug is required for a TOURNAMENT_CALENDAR source — whose calendar is this?",
+      400
+    );
   }
   if (body.targetType === "CURATED_TOURNAMENT" && (!body.federationSlug || !body.tournamentSlug)) {
     throw new AppError(
@@ -663,6 +679,9 @@ export const approveDataSource = asyncHandler(
             filter: key,
             update: {
               $set: {
+                // Who sanctions this event, taken from the calendar it was read
+                // from. This is what scopes the federation calendar pages.
+                federationSlug: submission.federationSlug ?? null,
                 editionYear: startDate.getUTCFullYear(),
                 endDate: edition.endDate ? new Date(`${edition.endDate}T00:00:00.000Z`) : null,
                 registrationDeadlineDate: edition.registrationDeadlineDate
