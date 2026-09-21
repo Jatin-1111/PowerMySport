@@ -14,11 +14,6 @@ export interface LiveCapability {
 
 export const LIVE_CAPABILITIES: LiveCapability[] = [
   {
-    title: "A personalised roadmap",
-    description:
-      "Tell us about your child and get an age-appropriate plan for their sport, what to focus on now, what comes next, and what it realistically costs.",
-  },
-  {
     title: "Pathway guides",
     description:
       "How a player actually progresses in India: the levels, the gates between them, and who controls each one.",
@@ -32,6 +27,11 @@ export const LIVE_CAPABILITIES: LiveCapability[] = [
     title: "Rankings, in plain language",
     description:
       "Points tables and ladders rewritten so a parent can read them without needing someone to translate.",
+  },
+  {
+    title: "A community of parents",
+    description:
+      "Ask a question and get answers from families who are a step ahead, and read what they actually spent, travelled and learned at tournaments and academies.",
   },
 ];
 
