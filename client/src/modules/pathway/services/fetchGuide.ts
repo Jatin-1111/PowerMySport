@@ -10,15 +10,32 @@ import { pathwaySportRank } from "../data/sports";
 // Nothing behind these endpoints generates anything — they read published
 // documents — so a plain ISR cache is the right shape and a cold page is fast.
 
-const REVALIDATE_SECONDS = 3600;
+/**
+ * A minute, not the hour this used to be, and no longer the only thing keeping
+ * the page current.
+ *
+ * A guide changes when an admin saves a stage, not on a clock, and an hour of
+ * showing the old one is an hour of a parent reading help links we have already
+ * removed. Worse, the hour was not even being honoured: a tennis guide edited in
+ * the CMS was still being served from a data-cache entry a day and a half later,
+ * and the only way to see the new one was a URL whose cache key differed. The
+ * CMS now purges these tags on write (see `/api/revalidate`), so this number is
+ * the backstop for a purge that never arrived rather than the mechanism.
+ */
+const REVALIDATE_SECONDS = 60;
 
 const apiBase = (): string => process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+/** Matches the server's own slugify, so a `/roadmap/Tennis` visit purges with
+ *  the same tag a `/roadmap/tennis` visit cached under. */
+const guideTag = (sport: string): string =>
+  `pathway-guide:${sport.trim().toLowerCase().replace(/\s+/g, "-")}`;
 
 export async function fetchPathwayGuide(sport: string): Promise<PathwayGuide | null> {
   const params = new URLSearchParams({ sport });
   try {
     const res = await fetch(`${apiBase()}/pathways/guide?${params.toString()}`, {
-      next: { revalidate: REVALIDATE_SECONDS },
+      next: { revalidate: REVALIDATE_SECONDS, tags: ["pathway-guide", guideTag(sport)] },
     });
     // 404 is the normal answer for a sport whose pathway isn't published yet.
     if (!res.ok) return null;
@@ -42,7 +59,7 @@ const INDEX_REVALIDATE_SECONDS = 60;
 export async function fetchPublishedPathways(): Promise<PathwayGuideSummary[]> {
   try {
     const res = await fetch(`${apiBase()}/pathways/guides`, {
-      next: { revalidate: INDEX_REVALIDATE_SECONDS },
+      next: { revalidate: INDEX_REVALIDATE_SECONDS, tags: ["pathway-guides"] },
     });
     if (!res.ok) return [];
     const body = await res.json();
@@ -115,7 +132,7 @@ export interface QuestionsBySport {
 async function fetchAnsweredQuestions(): Promise<QuestionsBySport[]> {
   try {
     const res = await fetch(`${apiBase()}/pathways/questions`, {
-      next: { revalidate: INDEX_REVALIDATE_SECONDS },
+      next: { revalidate: INDEX_REVALIDATE_SECONDS, tags: ["pathway-guides"] },
     });
     if (!res.ok) return [];
     const body = await res.json();

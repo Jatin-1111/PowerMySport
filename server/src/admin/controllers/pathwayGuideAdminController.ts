@@ -16,6 +16,7 @@ import { Coach } from "../../client/models/Coach";
 import { Expert } from "../../client/models/ExpertProfile";
 import { User } from "../../client/models/User";
 import { recordAuditLog } from "../services/AuditLogService";
+import { revalidatePathway } from "../services/PathwayRevalidationService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
 
@@ -277,6 +278,7 @@ export const updatePathwayGuide = asyncHandler(
     audit(req, "pathwayGuide.update", String(updated._id), {
       sportSlug: updated.sportSlug,
     });
+    revalidatePathway(updated.sportSlug);
     res.json({ success: true, message: "Saved.", data: updated });
   }
 );
@@ -291,6 +293,7 @@ export const deletePathwayGuide = asyncHandler(
       sportSlug: deleted.sportSlug,
       stageCount: deleted.stages?.length ?? 0,
     });
+    revalidatePathway(deleted.sportSlug);
     res.json({ success: true, message: `Deleted the ${deleted.sportName} pathway.` });
   }
 );
@@ -331,6 +334,7 @@ export const setPathwayGuideStatus = asyncHandler(
     audit(req, publish ? "pathwayGuide.publish" : "pathwayGuide.unpublish", String(doc._id), {
       sportSlug: doc.sportSlug,
     });
+    revalidatePathway(doc.sportSlug);
 
     res.json({
       success: true,
@@ -369,6 +373,7 @@ export const addPathwayStage = asyncHandler(async (req: Request, res: Response):
     sportSlug: doc.sportSlug,
     stageKey: parsed.stage.key,
   });
+  revalidatePathway(doc.sportSlug);
   res.status(201).json({
     success: true,
     message: `Added "${parsed.stage.name}".`,
@@ -406,6 +411,7 @@ export const updatePathwayStage = asyncHandler(
       sportSlug: doc.sportSlug,
       stageKey,
     });
+    revalidatePathway(doc.sportSlug);
     res.json({ success: true, message: "Stage saved.", data: doc.toObject() });
   }
 );
@@ -430,6 +436,7 @@ export const deletePathwayStage = asyncHandler(
       sportSlug: doc.sportSlug,
       stageKey,
     });
+    revalidatePathway(doc.sportSlug);
     res.json({ success: true, message: "Stage deleted.", data: doc.toObject() });
   }
 );
@@ -467,6 +474,7 @@ export const reorderPathwayStages = asyncHandler(
       sportSlug: doc.sportSlug,
       order: wanted,
     });
+    revalidatePathway(doc.sportSlug);
     res.json({ success: true, message: "Order saved.", data: doc.toObject() });
   }
 );
