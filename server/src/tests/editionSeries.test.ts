@@ -75,6 +75,30 @@ describe("events a junior plan must not include", () => {
     assert.equal(seriesFromEditionName("WTA 250 (Chennai)").kind, "pro-tour");
   });
 
+  it("keeps the two professional tours apart", () => {
+    // One rule matching (WTA|ATP) and returning "WTA" filed every ATP event
+    // under the women's tour, which is both wrong and unnoticeable — each tour
+    // has its own federation page to be sorted onto.
+    const atp = seriesFromEditionName("ATP Challenger (Bengaluru)");
+    assert.equal(atp.circuit, "ATP");
+    assert.equal(atp.kind, "pro-tour");
+
+    const wta = seriesFromEditionName("WTA 250 (Chennai)");
+    assert.equal(wta.circuit, "WTA");
+    assert.equal(wta.kind, "pro-tour");
+  });
+
+  it("recognises a UTR event without putting it on the ladder", () => {
+    // No UTR calendar is sourced yet, so this pins the rule ahead of the data:
+    // the first one ingested must not read as unknown, and must never come back
+    // as a rung a junior is told to climb.
+    const utr = seriesFromEditionName("UTR Pro Tennis Series (Pune)");
+    assert.equal(utr.circuit, "UTR");
+    assert.equal(utr.kind, "rating-circuit");
+    assert.equal(utr.ladder, null);
+    assert.equal(utr.grade, null);
+  });
+
   it("does not let a prize-money name fall through to a ladder rule", () => {
     // "Rs 2.5 Lakh" contains no series token, but a sloppier rule order could
     // still reach one through a city or a stray letter pair.
@@ -128,6 +152,9 @@ describe("the label", () => {
       "AITA prize-money event"
     );
     assert.equal(seriesLabel(seriesFromEditionName("ITF Juniors (X)")), "ITF junior event");
+    assert.equal(seriesLabel(seriesFromEditionName("ATP Challenger (X)")), "ATP tour event");
+    assert.equal(seriesLabel(seriesFromEditionName("WTA 250 (X)")), "WTA tour event");
+    assert.equal(seriesLabel(seriesFromEditionName("UTR Pro Series (X)")), "UTR rated event");
     assert.equal(seriesLabel(seriesFromEditionName("AITA")), null);
   });
 });

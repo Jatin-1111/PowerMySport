@@ -39,8 +39,15 @@
 export type AitaLadderRung =
   "Talent Series" | "Championship Series" | "Super Series" | "National Series" | "Nationals";
 
-/** Who runs the event. ATF is the Asian Tennis Federation. */
-export type EditionCircuit = "AITA" | "ITF" | "ATF" | "WTA";
+/**
+ * Who runs the event. ATF is the Asian Tennis Federation; UTR is Universal
+ * Tennis, which runs its own events off a rating rather than a ranking.
+ *
+ * Each of these is a federation this repo holds a page for, so the value has to
+ * be able to name exactly one of them: ATP and WTA shared a member here, and an
+ * ATP event was consequently stored as WTA.
+ */
+export type EditionCircuit = "AITA" | "ITF" | "ATF" | "WTA" | "ATP" | "UTR";
 
 /**
  * What sort of event this is, for deciding whether it belongs in a junior plan.
@@ -52,6 +59,13 @@ export type EditionKind =
   | "senior-prize-money"
   | "masters"
   | "pro-tour"
+  /**
+   * An event run off a rating rather than a ranking ladder — today that means
+   * Universal Tennis. The only claim being made is that it is not a rung on the
+   * AITA junior ladder, which the name is sufficient to establish. Nothing here
+   * says who may enter it.
+   */
+  | "rating-circuit"
   | "unknown";
 
 export interface EditionSeries {
@@ -94,8 +108,23 @@ const RULES: Array<{
     result: () => ({ ladder: null, grade: null, circuit: "ITF", kind: "masters" }),
   },
   {
-    test: /\b(WTA|ATP)\b/i,
+    // One rule per tour, not `(WTA|ATP)` mapped to "WTA": these are two
+    // different circuits with a federation page each, and collapsing them filed
+    // every ATP event under the women's tour.
+    test: /\bWTA\b/i,
     result: () => ({ ladder: null, grade: null, circuit: "WTA", kind: "pro-tour" }),
+  },
+  {
+    test: /\bATP\b/i,
+    result: () => ({ ladder: null, grade: null, circuit: "ATP", kind: "pro-tour" }),
+  },
+  {
+    // Universal Tennis. Matched up here with the other non-ladder events so
+    // nothing below can read a rung out of a UTR name. No UTR calendar has been
+    // sourced yet, so this rule is forward-looking: it exists so the first one
+    // ingested is not silently filed as "unknown".
+    test: /\bUTR\b/i,
+    result: () => ({ ladder: null, grade: null, circuit: "UTR", kind: "rating-circuit" }),
   },
 
   // ── International junior ──────────────────────────────────────────────────
@@ -220,7 +249,11 @@ export function seriesLabel(series: EditionSeries): string | null {
     case "masters":
       return "ITF Masters event";
     case "pro-tour":
-      return "Professional tour event";
+      // Named, because "professional tour event" is not what a parent is
+      // looking at — the ATP and WTA tours are different events entirely.
+      return series.circuit ? `${series.circuit} tour event` : "Professional tour event";
+    case "rating-circuit":
+      return series.circuit === "UTR" ? "UTR rated event" : "Rated event";
     default:
       return null;
   }
