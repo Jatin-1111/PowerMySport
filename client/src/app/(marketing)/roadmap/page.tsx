@@ -299,38 +299,6 @@ export default async function PathwaysIndexPage() {
               ))}
             </ol>
           </div>
-
-          {/* ── The argument, in two lines each ──
-              This was two cards of six and three sentences. Nobody was reading
-              them: they sat below a five-step diagram that had already made the
-              point, and a wall of body copy in a card reads as terms and
-              conditions. Both are now the one sentence each was actually for,
-              and they have lost the card chrome with it, a rule and a heading
-              is enough to mark a statement, and it stops this reading as a third
-              row of clickable things in a section where nothing is clickable. */}
-          <div className="mx-auto mt-12 grid max-w-4xl gap-8 sm:grid-cols-2 sm:gap-10">
-            <div>
-              <span aria-hidden className="bg-power-orange block h-0.5 w-8 rounded-full" />
-              <h3 className="font-title mt-4 text-[17px] font-bold text-slate-900">
-                Why sport matters
-              </h3>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-slate-600">
-                There is no single right way to start. Some children find their sport by playing,
-                others need guiding to it. What matters is choosing with your eyes open.
-              </p>
-            </div>
-            <div>
-              <span aria-hidden className="block h-0.5 w-8 rounded-full bg-emerald-500" />
-              <h3 className="font-title mt-4 text-[17px] font-bold text-slate-900">
-                Why the journey matters
-              </h3>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-slate-600">
-                The hard part is not information, it is finding the right information at the right
-                time. Every pathway is written with coaches, experts and parents who have already
-                walked it.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
