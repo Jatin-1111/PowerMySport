@@ -649,7 +649,7 @@ export default function QnAPostDetailClient({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-5 sm:p-6">
+        <div className="min-w-0 flex-1 p-5 sm:p-6">
           {isEditingPost ? (
             <div className="space-y-3">
               <input
@@ -690,7 +690,7 @@ export default function QnAPostDetailClient({
               <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
                 {post.title}
               </h1>
-              <p className="mt-3 whitespace-pre-wrap text-base leading-relaxed text-slate-700">
+              <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed text-slate-700">
                 {post.body}
               </p>
             </>
@@ -840,7 +840,7 @@ export default function QnAPostDetailClient({
               </div>
 
               {/* Main Content Area */}
-              <div className="flex-1 p-4 sm:p-5">
+              <div className="min-w-0 flex-1 p-4 sm:p-5">
                 {/* Header - Author & Time */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2.5">
@@ -914,7 +914,7 @@ export default function QnAPostDetailClient({
                   </div>
                 ) : (
                   <div className="mt-3">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">
                       {answer.content}
                     </p>
                   </div>
@@ -986,7 +986,7 @@ export default function QnAPostDetailClient({
                         key={comment.id}
                         className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
                       >
-                        <p className="min-w-0 text-xs leading-relaxed text-slate-700">
+                        <p className="min-w-0 break-words text-xs leading-relaxed text-slate-700">
                           <span className="font-semibold text-slate-900">
                             {comment.author.displayName}
                           </span>{" "}
