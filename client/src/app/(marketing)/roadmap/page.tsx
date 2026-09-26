@@ -105,7 +105,7 @@ const NEXT_STEPS = [
     title: "Want to ask a person?",
     body: "Book time with a verified expert who has been through this: a coach, an ex-player, someone who has taken a child down this road.",
     href: "/booking?tab=experts",
-    cta: "Speak with an expert",
+    cta: "Connect with an expert",
     tone: "text-teal-700 bg-teal-100",
   },
 ];
