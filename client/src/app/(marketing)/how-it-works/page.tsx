@@ -4,14 +4,13 @@ import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLa
 import { Timeline, type TimelineEntry } from "@/modules/marketing/components/marketing/Timeline";
 import { cn } from "@/utils/cn";
 import {
-  BrainCircuit,
   CalendarRange,
   CheckCircle,
   type LucideIcon,
   Map,
   Target,
   Trophy,
-  UserPlus,
+  Users,
   Wallet,
   X,
 } from "lucide-react";
@@ -243,29 +242,29 @@ export default function HowItWorksPage() {
       step: 1,
       stepColor: "text-power-orange",
       badgeBg: "bg-gradient-to-r from-orange-500 to-orange-400",
-      title: "Tell Us About Your Child",
+      title: "Roadmap: See the Whole Road",
       description:
-        "Share your child's age, sports interests, and how much time they can give each week. It takes about two minutes, no jargon, no pressure.",
+        "Every sport we cover has a pathway guide, stage by stage and by age: what matters now, what parents usually ask, the decisions coming up, and what to actually do next.",
       checkItems: [
         {
-          text: "Simple questions, plain language",
+          text: "Pathway guides for each sport, stage by stage",
           iconColor: "text-orange-400",
         },
         {
-          text: "Add more than one child if you need to",
+          text: "A short list of sports worth trying, if you are still choosing",
           iconColor: "text-orange-400",
         },
         {
-          text: "Free to start, no card required",
+          text: "Free to read, no card required",
           iconColor: "text-orange-400",
         },
       ],
       image: {
-        src: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1000&q=80",
-        alt: "Young player mid-swing on a tennis court",
-        overlayIcon: <UserPlus size={20} />,
-        overlayLabel: "Your Child's Profile",
-        overlayCaption: "Age, interests, time. That's all we need",
+        src: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1000&q=80",
+        alt: "Athlete set at the starting blocks on a running track",
+        overlayIcon: <Map size={20} />,
+        overlayLabel: "Roadmap",
+        overlayCaption: "The starting line, mapped to the finish",
         accentColor: "from-orange-500/25",
         backdropTint: "from-orange-100/70 via-orange-50/40 to-transparent",
       },
@@ -275,29 +274,29 @@ export default function HowItWorksPage() {
       step: 2,
       stepColor: "text-teal-600",
       badgeBg: "bg-gradient-to-r from-blue-600 to-blue-500",
-      title: "Get an AI Sports Roadmap",
+      title: "Community: Ask Parents Who Have Done It",
       description:
-        "We build a personalised roadmap for your child, which sport suits them, what to focus on first, and the milestones to aim for along the way.",
+        "Some questions only another parent can answer. Ask yours in the community, read the experiences families have written, and message parents directly.",
       checkItems: [
         {
-          text: "Know which sport fits your child best",
+          text: "Ask a question, get answers from other parents",
           iconColor: "text-teal-400",
         },
         {
-          text: "See the time and cost it really takes",
+          text: "Read real experiences from families a few years ahead",
           iconColor: "text-teal-400",
         },
         {
-          text: "Clear next steps, not vague advice",
+          text: "Post anonymously when a question feels personal",
           iconColor: "text-teal-400",
         },
       ],
       image: {
-        src: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1000&q=80",
-        alt: "Athlete set at the starting blocks on a running track",
-        overlayIcon: <Map size={20} />,
-        overlayLabel: "AI Roadmap",
-        overlayCaption: "The starting line, mapped to the finish",
+        src: "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1000&q=80",
+        alt: "Coach guiding a team of young football players",
+        overlayIcon: <Users size={20} />,
+        overlayLabel: "Community",
+        overlayCaption: "Parents answering parents",
         accentColor: "from-blue-500/25",
         backdropTint: "from-blue-100/60 via-cyan-50/40 to-transparent",
       },
@@ -307,29 +306,29 @@ export default function HowItWorksPage() {
       step: 3,
       stepColor: "text-emerald-600",
       badgeBg: "bg-gradient-to-r from-emerald-600 to-emerald-400",
-      title: "Get Guidance on Every Step",
+      title: "Execution Support: Help Doing It",
       description:
-        "Not sure what to do next? Lean on sports experts and our AI guide for answers built around your child's goals, so every decision feels clear.",
+        "A plan only helps once it is carried out. Connect with an expert who has taken a child down this road, find the tournaments on your child's calendar, and understand where they stand.",
       checkItems: [
         {
-          text: "Ask questions, get clear answers",
+          text: "Connect with a verified expert",
           iconColor: "text-emerald-400",
         },
         {
-          text: "Guidance built around your child's goals",
+          text: "Federation calendars and the tournaments in them",
           iconColor: "text-emerald-400",
         },
         {
-          text: "Move forward with confidence, not guesswork",
+          text: "Rankings explained in plain language",
           iconColor: "text-emerald-400",
         },
       ],
       image: {
-        src: "https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=1000&q=80",
-        alt: "Coach guiding a team of young football players",
-        overlayIcon: <BrainCircuit size={20} />,
-        overlayLabel: "Expert Guidance",
-        overlayCaption: "Real coaches. Real answers.",
+        src: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1000&q=80",
+        alt: "Young player mid-swing on a tennis court",
+        overlayIcon: <Trophy size={20} />,
+        overlayLabel: "Execution Support",
+        overlayCaption: "Experts, calendars and rankings",
         accentColor: "from-emerald-500/25",
         backdropTint: "from-emerald-100/60 via-teal-50/40 to-transparent",
       },
@@ -371,19 +370,19 @@ export default function HowItWorksPage() {
   const faqs = [
     {
       q: "What can I use right now?",
-      a: "Today you can build a personalised sports roadmap for your child and get guidance from sports experts and our AI guide. Both are free to use, no card required.",
+      a: "Three things. The roadmap: a pathway guide for each sport we cover, stage by stage. The community: ask other parents and read their experiences. And execution support: connect with an expert, follow federation calendars and read the rankings.",
     },
     {
       q: "Is it really free?",
-      a: "Yes. Creating your child's profile, building a roadmap, and getting guidance are free. There's nothing to pay to get a clear plan for your child.",
+      a: "The roadmap, the community, federation calendars and rankings are free, with no card required. A session with an expert is booked separately, and you see what it costs before you book.",
     },
     {
-      q: "When will booking and community launch?",
-      a: "We're rolling out in phases. Community comes next, followed by booking coaches and venues, and then our gear shop. Build your plan now and we'll let you know the moment each one goes live.",
+      q: "What's coming next?",
+      a: "Booking coaches and venues, then our gear shop. Each one ships when it is genuinely useful, and we will let you know the moment it goes live.",
     },
     {
       q: "Do I need to know which sport my child should play?",
-      a: "Not at all. That's exactly what the roadmap helps with. Tell us about your child's age, interests, and time, and we'll suggest sports that genuinely fit, then map out the path.",
+      a: "Not at all. Tell us your child's age, interests and time, and we'll suggest a few sports worth trying. Then the pathway guide for that sport shows the road ahead.",
     },
   ];
 
@@ -394,7 +393,7 @@ export default function HowItWorksPage() {
         variant="page"
         title="How It Works"
         subtitle="Getting Started"
-        description="See how PowerMySport turns the confusion of youth sports into one clear, personalised plan for your child, starting today, for free."
+        description="What PowerMySport does for you today: a roadmap for your child's sport, a community of parents who have been there, and support in carrying the plan out."
         imageSrc="https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?auto=format&fit=crop&w=2000&q=80"
         imageAlt="A floodlit cricket stadium in India packed with spectators"
       />
@@ -410,12 +409,12 @@ export default function HowItWorksPage() {
           {/* Section header */}
           <div className="reveal-on-scroll mb-12 text-center lg:mb-28">
             <div className="mb-5 flex justify-center">
-              <SectionLabel label="For Parents & Guardians" color="orange" />
+              <SectionLabel label="What We Do Today" color="orange" />
             </div>
             <h2 className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
-              Plan Their Journey in{" "}
+              Roadmap, Community and{" "}
               <span className="relative inline-block">
-                3 Simple Steps
+                Execution Support
                 <span
                   aria-hidden
                   className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-orange-400 to-orange-200"
@@ -457,8 +456,8 @@ export default function HowItWorksPage() {
               Not Vague Advice. A Real Plan.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
-              Every plan is built for your child specifically, here&apos;s what you&apos;ll actually
-              have in hand after those three steps.
+              Here&apos;s what you&apos;ll actually have in hand, for your child&apos;s age and
+              sport.
             </p>
           </div>
 

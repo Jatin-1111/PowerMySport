@@ -218,9 +218,9 @@ export function WhyItsFree() {
             before you can tell.
           </p>
           <p>
-            Later, we intend to earn money from the parts where we genuinely save you effort,
-            bookings, gear, and helping academies and coaches reach the families looking for them.
-            When that arrives, it will be obvious which part you are paying for.
+            Later, we intend to charge for the parts where we genuinely save you effort, bookings,
+            gear, and helping academies and coaches reach the families looking for them. When that
+            arrives, it will be obvious which part you are paying for.
           </p>
         </div>
       </div>
