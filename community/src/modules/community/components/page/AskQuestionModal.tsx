@@ -19,13 +19,24 @@ interface AskQuestionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /** Pre-fills the form, e.g. with a question typed on a pathway page. */
+  initialTitle?: string;
+  initialSport?: string;
 }
 
-export default function AskQuestionModal({ isOpen, onClose, onSuccess }: AskQuestionModalProps) {
-  const [title, setTitle] = useState("");
+export default function AskQuestionModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialTitle,
+  initialSport,
+}: AskQuestionModalProps) {
+  // Seeded once, at mount: the feed renders this modal with the URL already
+  // read, so a later reopen keeps whatever draft the parent has typed.
+  const [title, setTitle] = useState(initialTitle ?? "");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
-  const [sport, setSport] = useState("");
+  const [sport, setSport] = useState(initialSport ?? "");
   const [city, setCity] = useState("");
   const [category, setCategory] = useState("General");
   const [isAnonymous, setIsAnonymous] = useState(false);

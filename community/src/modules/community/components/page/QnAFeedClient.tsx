@@ -261,6 +261,13 @@ export default function QnAFeedClient() {
     setDirection(nextDirection);
     setViewMode(mineParam ? "MINE" : "ALL");
     if (askParam) {
+      // Arriving signed out would open a form that can only fail on submit,
+      // after the parent has typed the whole question. The login round trip
+      // keeps the full URL, so they land back here with the form open.
+      if (!hasAuthToken()) {
+        redirectToMainLogin();
+        return;
+      }
       setShowAskForm(true);
     }
     setIsUrlHydrated(true);
@@ -784,6 +791,8 @@ export default function QnAFeedClient() {
               isOpen={showAskForm}
               onClose={() => setShowAskForm(false)}
               onSuccess={() => void handleQuestionSuccess()}
+              initialTitle={(urlSearchParams.get("title") || "").trim() || undefined}
+              initialSport={(urlSearchParams.get("sport") || "").trim() || undefined}
             />
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">

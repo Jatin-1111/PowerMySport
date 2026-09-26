@@ -38,6 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { PathwayAction, PathwayGuide, PathwayStage } from "@/modules/pathway/services/pathway";
 import { findStageForAge } from "../utils/ageRange";
+import { PathwayAskCommunity } from "./PathwayAskCommunity";
 import { parseTypedAge, rememberChildAge, useChildAge } from "../utils/childAge";
 import { headingDomId, sectionDomId } from "../utils/sectionIds";
 import type { SectionId } from "../utils/sectionIds";
@@ -1016,6 +1017,8 @@ export function PathwayReader({
               </motion.section>
             ))}
           </motion.div>
+
+          <PathwayAskCommunity sportName={guide.sportName} stageName={stage.name} />
 
           {/* ── Previous / Next ── */}
           <footer className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-3 sm:px-6">
