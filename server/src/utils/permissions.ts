@@ -48,6 +48,7 @@ const PERMISSION_HIERARCHY: Record<string, string[]> = {
 
   // Sport Pathways Module
   "pathways:manage": ["pathways:view"],
+  "opportunities:manage": ["opportunities:view"],
 };
 
 /**

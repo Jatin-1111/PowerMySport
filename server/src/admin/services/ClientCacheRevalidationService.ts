@@ -84,3 +84,8 @@ export const revalidatePathway = (sportSlug?: string): void => {
 export const revalidateTournamentEditions = (): void => {
   purgeClientCache(["tournament-editions"], "tournament");
 };
+
+/** Drop the cached admissions and scholarships lists and detail pages. */
+export const revalidateOpportunities = (): void => {
+  purgeClientCache(["opportunities"], "opportunities");
+};

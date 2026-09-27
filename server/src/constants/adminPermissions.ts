@@ -72,6 +72,12 @@ export const PATHWAYS_PERMISSIONS = {
   MANAGE: "pathways:manage",
 } as const;
 
+// Admissions & Scholarships Module
+export const OPPORTUNITIES_PERMISSIONS = {
+  VIEW: "opportunities:view",
+  MANAGE: "opportunities:manage",
+} as const;
+
 // Ecommerce Module
 export const PRODUCTS_PERMISSIONS = {
   VIEW: "products:view",
@@ -107,6 +113,7 @@ export const ALL_PERMISSIONS = [
   ...Object.values(PRODUCTS_PERMISSIONS),
   ...Object.values(ORDERS_PERMISSIONS),
   ...Object.values(PATHWAYS_PERMISSIONS),
+  ...Object.values(OPPORTUNITIES_PERMISSIONS),
   ...Object.values(DATA_SOURCES_PERMISSIONS),
 ] as const;
 
@@ -148,6 +155,8 @@ export const OPERATIONS_ADMIN_PERMISSIONS = [
   PRODUCTS_PERMISSIONS.MANAGE,
   PATHWAYS_PERMISSIONS.VIEW,
   PATHWAYS_PERMISSIONS.MANAGE,
+  OPPORTUNITIES_PERMISSIONS.VIEW,
+  OPPORTUNITIES_PERMISSIONS.MANAGE,
   DATA_SOURCES_PERMISSIONS.VIEW,
   DATA_SOURCES_PERMISSIONS.REVIEW,
   DATA_SOURCES_PERMISSIONS.MANAGE,
@@ -291,6 +300,10 @@ export const PERMISSION_MODULES = {
     name: "Sport Pathway Management",
     permissions: Object.values(PATHWAYS_PERMISSIONS),
   },
+  opportunities: {
+    name: "Admissions & Scholarships",
+    permissions: Object.values(OPPORTUNITIES_PERMISSIONS),
+  },
   dataSources: {
     name: "Federation & Tournament Data Sources",
     permissions: Object.values(DATA_SOURCES_PERMISSIONS),
@@ -356,6 +369,10 @@ export const PERMISSION_LABELS: Record<string, string> = {
   // Sport Pathways
   "pathways:view": "View Sport Pathways",
   "pathways:manage": "Edit & Verify Sport Pathways",
+
+  // Admissions & Scholarships
+  "opportunities:view": "View Admissions & Scholarships",
+  "opportunities:manage": "Edit, Verify & Publish Admissions & Scholarships",
 
   // Data Sources
   "data-sources:view": "View Federation/Tournament Data Sources",
