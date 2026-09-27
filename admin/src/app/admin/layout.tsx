@@ -4,6 +4,7 @@ import { adminApi } from "@/modules/admin/services/admin";
 import { PendingCounts, statsApi } from "@/modules/analytics/services/stats";
 import { CommandPalette } from "@/modules/shared/ui/CommandPalette";
 import {
+  GraduationCap,
   BarChart2,
   Bell,
   BookOpen,
@@ -207,6 +208,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             href: "/admin/pathways",
             label: "Pathways",
             icon: Map,
+          },
+          {
+            href: "/admin/opportunities",
+            label: "Admissions & Scholarships",
+            icon: GraduationCap,
           },
           {
             href: "/admin/screenings",
