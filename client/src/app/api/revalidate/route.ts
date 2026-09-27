@@ -23,7 +23,12 @@ export const dynamic = "force-dynamic";
  * a way to make this app refetch everything it has on someone else's schedule.
  * The caller is authenticated, so this is depth rather than the only defence.
  */
-const ALLOWED_TAG_PREFIXES = ["pathway-guide", "pathway-guides", "tournament-editions"];
+const ALLOWED_TAG_PREFIXES = [
+  "pathway-guide",
+  "pathway-guides",
+  "tournament-editions",
+  "opportunities",
+];
 
 const isAllowed = (tag: string): boolean =>
   ALLOWED_TAG_PREFIXES.some((prefix) => tag === prefix || tag.startsWith(`${prefix}:`));

@@ -18,6 +18,8 @@ import {
   ShoppingBag,
   Star,
   Trophy,
+  GraduationCap,
+  HandCoins,
   User,
   X,
 } from "lucide-react";
@@ -71,6 +73,18 @@ const exploreItems = [
     label: "Tournaments",
     description: "Upcoming dates by sport, narrowed to your child's age group",
     icon: Trophy,
+  },
+  {
+    href: "/admissions",
+    label: "Admissions",
+    description: "Sports quotas at schools and universities, and college sport abroad",
+    icon: GraduationCap,
+  },
+  {
+    href: "/scholarships",
+    label: "Scholarships",
+    description: "Funding for young athletes, and whether you apply or get picked",
+    icon: HandCoins,
   },
   // Powermysport AI hidden for now.
   {

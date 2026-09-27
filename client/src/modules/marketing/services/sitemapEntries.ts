@@ -102,31 +102,71 @@ async function fetchIds(path: string, pick: (body: unknown) => IdRecord[]): Prom
   }
 }
 
+/** Published admissions or scholarships; an empty track is left out entirely. */
+const fetchOpportunitySlugs = (track: "admission" | "scholarship") =>
+  fetchIds(`/opportunities?track=${track}`, (body) => {
+    const envelope = body as { success?: boolean; data?: { items?: Array<{ slug?: string }> } };
+    if (!envelope?.success || !Array.isArray(envelope.data?.items)) return [];
+    return envelope.data.items.map((item) => ({ id: item.slug }));
+  });
+
 export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [federations, editions, sportFacets, products, experts] = await Promise.all([
-    fetchSlugs("/federations"),
-    fetchSlugs("/tournament-editions"),
-    fetchSportFacets(),
-    SHOP_IS_LIVE
-      ? fetchIds("/v1/products?page=1&limit=500", (body) => {
-          const data = (body as { ok?: boolean; data?: { products?: IdRecord[] } })?.data;
-          return Array.isArray(data?.products) ? data.products : [];
-        })
-      : Promise.resolve([]),
-    EXPERTS_IS_LIVE
-      ? fetchIds("/experts?limit=200", (body) => {
-          const envelope = body as {
-            success?: boolean;
-            data?: IdRecord[] | { experts?: IdRecord[] };
-          };
-          if (!envelope?.success) return [];
-          if (Array.isArray(envelope.data)) return envelope.data;
-          return Array.isArray(envelope.data?.experts) ? envelope.data.experts : [];
-        })
-      : Promise.resolve([]),
-  ]);
+  const [federations, editions, sportFacets, products, experts, admissions, scholarships] =
+    await Promise.all([
+      fetchSlugs("/federations"),
+      fetchSlugs("/tournament-editions"),
+      fetchSportFacets(),
+      SHOP_IS_LIVE
+        ? fetchIds("/v1/products?page=1&limit=500", (body) => {
+            const data = (body as { ok?: boolean; data?: { products?: IdRecord[] } })?.data;
+            return Array.isArray(data?.products) ? data.products : [];
+          })
+        : Promise.resolve([]),
+      EXPERTS_IS_LIVE
+        ? fetchIds("/experts?limit=200", (body) => {
+            const envelope = body as {
+              success?: boolean;
+              data?: IdRecord[] | { experts?: IdRecord[] };
+            };
+            if (!envelope?.success) return [];
+            if (Array.isArray(envelope.data)) return envelope.data;
+            return Array.isArray(envelope.data?.experts) ? envelope.data.experts : [];
+          })
+        : Promise.resolve([]),
+      fetchOpportunitySlugs("admission"),
+      fetchOpportunitySlugs("scholarship"),
+    ]);
+
+  // Index and detail pages together, and only for a track with something
+  // published: the index is noindexed while empty, so listing it would ask
+  // Google to crawl a page that tells it not to index it.
+  const opportunityEntries = (
+    [
+      ["/admissions", admissions],
+      ["/scholarships", scholarships],
+    ] as const
+  ).flatMap(([path, rows]) =>
+    rows.length === 0
+      ? []
+      : [
+          {
+            url: `${siteUrl}${path}`,
+            lastModified: now,
+            changeFrequency: "weekly" as const,
+            priority: 0.75,
+          },
+          ...rows
+            .filter((row) => row.id)
+            .map((row) => ({
+              url: `${siteUrl}${path}/${row.id}`,
+              lastModified: now,
+              changeFrequency: "monthly" as const,
+              priority: 0.6,
+            })),
+        ]
+  );
 
   const lastMod = (record: SlugRecord) => (record.updatedAt ? new Date(record.updatedAt) : now);
 
@@ -389,6 +429,7 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     })),
 
+    ...opportunityEntries,
     {
       url: `${siteUrl}/tournaments`,
       lastModified: now,
