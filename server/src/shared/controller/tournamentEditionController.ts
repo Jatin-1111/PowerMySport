@@ -7,23 +7,26 @@ import { AppError } from "../../utils/AppError";
 /**
  * The federation to attribute an edition to.
  *
- * Editions are keyed by sport, not by federation, so there is no stored link.
- * Most sports have exactly one federation and this is trivial; where there are
- * several, the event name almost always leads with the organiser's acronym
- * ("AITA CS7 (Delhi)"), which is a far better signal than picking the first row.
+ * The stored `federationSlug` is the answer: it records whose calendar the
+ * edition was read from (migration 47), and it is what scopes the federation
+ * pages. Guessing from the name is only for a row that predates it. Guessing
+ * first was wrong in a way the name invites: AITA prints ITF junior events on
+ * its own calendar as "ITF J30 (Delhi)", and those were being credited to ITF.
  */
 async function resolveEditionFederation(
   sportSlug: string,
-  editionName: string
+  editionName: string,
+  federationSlug?: string | null
 ): Promise<{ slug: string; name: string; acronym: string } | null> {
   const federations = await Federation.find({ sportSlug, isActive: true })
     .select("slug name acronym")
     .lean();
   if (federations.length === 0) return null;
 
+  const stored = federationSlug ? federations.find((f) => f.slug === federationSlug) : undefined;
   const leadingToken = (editionName.trim().split(/\s+/)[0] ?? "").toUpperCase();
   const byAcronym = federations.find((f) => f.acronym?.toUpperCase() === leadingToken);
-  const chosen = byAcronym ?? federations[0]!;
+  const chosen = stored ?? byAcronym ?? federations[0]!;
   return { slug: chosen.slug, name: chosen.name, acronym: chosen.acronym };
 }
 
@@ -74,7 +77,11 @@ export const getTournamentEdition = asyncHandler(
       return;
     }
 
-    const federation = await resolveEditionFederation(edition.sportSlug, edition.name);
+    const federation = await resolveEditionFederation(
+      edition.sportSlug,
+      edition.name,
+      edition.federationSlug
+    );
 
     // Other upcoming events in the same sport, so the page is a stop on the way
     // to a decision rather than a dead end.

@@ -1,11 +1,9 @@
 import { TournamentEdition } from "../models/TournamentEdition";
 
 /**
- * Read-only queries over TournamentEdition. Relocated from the retired
- * Lane-A cron scraper (tournamentCalendarService.ts) — TournamentEdition is
- * now populated by the admin-managed data-source review flow
- * (DataSourceExtractionService.ts / dataSourceAdminController.ts) instead of
- * a scraper, but this read path is unchanged.
+ * Read-only queries over TournamentEdition, which is populated by the
+ * admin-managed data-source review flow (DataSourceExtractionService.ts /
+ * dataSourceAdminController.ts).
  */
 
 /** The chat-facing query: next upcoming editions for a sport, soonest first. */
@@ -32,6 +30,9 @@ export async function getUpcomingEditions(
     sportSlug,
     startDate: { $gte: startOfToday },
     status: { $ne: "cancelled" },
+    // Merged duplicates only redirect; without this the chat can name the same
+    // tournament twice in a three-item answer.
+    mergedInto: { $in: [null, undefined] },
   })
     .sort({ startDate: 1 })
     .limit(limit)

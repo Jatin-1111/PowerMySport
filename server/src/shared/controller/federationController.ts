@@ -139,6 +139,9 @@ export const getFederationEditions = asyncHandler(
       federationSlug: slug.toLowerCase(),
       startDate: { $gte: startOfToday },
       status: { $ne: "cancelled" },
+      // A merged duplicate only exists to redirect its old URL (migration 41);
+      // listing it puts the same tournament on the calendar twice.
+      mergedInto: { $in: [null, undefined] },
     })
       .sort({ startDate: 1 })
       .limit(limitNum)

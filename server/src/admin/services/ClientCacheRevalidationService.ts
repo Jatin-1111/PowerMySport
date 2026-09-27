@@ -1,8 +1,8 @@
 import { log as __rootLog } from "../../utils/logger";
 
-const log = __rootLog.child("pathway-revalidate");
+const log = __rootLog.child("client-revalidate");
 
-// ─── Telling the client app its pathway cache is stale ───────────────────────
+// ─── Telling the client app its cached copy is stale ─────────────────────────
 //
 // The client renders a guide on the server and caches the fetch, so a CMS edit
 // is invisible to readers until that cache lets go. Waiting was not good enough:
@@ -27,24 +27,21 @@ export const pathwayGuideTag = (sportSlug: string): string =>
   `pathway-guide:${sportSlug.trim().toLowerCase().replace(/\s+/g, "-")}`;
 
 /**
- * Drop the client's cached copy of a sport's guide, and of the lists it appears
- * on. `sportSlug` omitted purges every guide, which is what a delete or a
- * reorder of the sport list needs.
+ * Ask the client to drop every cached fetch carrying one of `tags`. Each tag
+ * must be on the client's allow-list (client/src/app/api/revalidate/route.ts).
  */
-export const revalidatePathway = (sportSlug?: string): void => {
+const purgeClientCache = (tags: string[], what: string): void => {
   const base = clientBase();
   const secret = process.env.REVALIDATE_SECRET?.trim();
 
   // Both are deployment configuration, not per-request state, so a missing one
   // is worth one warning rather than silence on every save.
   if (!base || !secret) {
-    log.warn("Skipped a pathway cache purge", {
+    log.warn(`Skipped a ${what} cache purge`, {
       reason: !base ? "FRONTEND_URL is not set" : "REVALIDATE_SECRET is not set",
     });
     return;
   }
-
-  const tags = ["pathway-guides", sportSlug ? pathwayGuideTag(sportSlug) : "pathway-guide"];
 
   void fetch(`${base}/api/revalidate`, {
     method: "POST",
@@ -54,15 +51,36 @@ export const revalidatePathway = (sportSlug?: string): void => {
   })
     .then((res) => {
       if (res.ok) {
-        log.debug("Purged the client pathway cache", { tags });
+        log.debug(`Purged the client ${what} cache`, { tags });
         return;
       }
-      log.warn("The client refused a pathway cache purge", { status: res.status, tags });
+      log.warn(`The client refused a ${what} cache purge`, { status: res.status, tags });
     })
     .catch((error: unknown) => {
-      log.warn("Could not reach the client to purge its pathway cache", {
+      log.warn(`Could not reach the client to purge its ${what} cache`, {
         tags,
         error: error instanceof Error ? error.message : String(error),
       });
     });
+};
+
+/**
+ * Drop the client's cached copy of a sport's guide, and of the lists it appears
+ * on. `sportSlug` omitted purges every guide, which is what a delete or a
+ * reorder of the sport list needs.
+ */
+export const revalidatePathway = (sportSlug?: string): void => {
+  purgeClientCache(
+    ["pathway-guides", sportSlug ? pathwayGuideTag(sportSlug) : "pathway-guide"],
+    "pathway"
+  );
+};
+
+/**
+ * Drop every cached tournament list and detail page. Called after a calendar
+ * is approved, so the new dates are on the site now rather than when each
+ * page's five-minute window happens to run out.
+ */
+export const revalidateTournamentEditions = (): void => {
+  purgeClientCache(["tournament-editions"], "tournament");
 };

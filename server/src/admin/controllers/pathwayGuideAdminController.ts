@@ -16,7 +16,7 @@ import { Coach } from "../../client/models/Coach";
 import { Expert } from "../../client/models/ExpertProfile";
 import { User } from "../../client/models/User";
 import { recordAuditLog } from "../services/AuditLogService";
-import { revalidatePathway } from "../services/PathwayRevalidationService";
+import { revalidatePathway } from "../services/ClientCacheRevalidationService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
 

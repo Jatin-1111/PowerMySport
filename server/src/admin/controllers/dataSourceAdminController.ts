@@ -29,6 +29,7 @@ import { seriesFromEditionName } from "../../shared/services/aita/editionSeries"
 import { log as __rootLog } from "../../utils/logger";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
+import { revalidateTournamentEditions } from "../services/ClientCacheRevalidationService";
 const log = __rootLog.child("dataSourceAdmin");
 
 const ALLOWED_PDF_TYPES = ["application/pdf"];
@@ -716,6 +717,7 @@ export const approveDataSource = asyncHandler(
           },
         }))
       );
+      revalidateTournamentEditions();
     }
 
     submission.status = "APPROVED";
