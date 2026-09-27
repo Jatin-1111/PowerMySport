@@ -17,6 +17,7 @@ import {
   Settings,
   ShoppingBag,
   Star,
+  Trophy,
   User,
   X,
 } from "lucide-react";
@@ -64,6 +65,12 @@ const exploreItems = [
     label: "Sports Pathways",
     description: "Explore the journey ahead for your child's sport",
     icon: Map,
+  },
+  {
+    href: "/tournaments",
+    label: "Tournaments",
+    description: "Upcoming dates by sport, narrowed to your child's age group",
+    icon: Trophy,
   },
   // Powermysport AI hidden for now.
   {
@@ -122,7 +129,11 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
     { href: "/contact", label: "Contact" },
   ];
 
-  const isExploreActive = exploreItems.some((item) => pathname === item.href);
+  // Prefix match, so a sport's tournament list or a single tournament still
+  // lights up Explore rather than leaving the reader with no active section.
+  const isExploreActive = exploreItems.some(
+    (item) => pathname === item.href || pathname?.startsWith(`${item.href}/`)
+  );
 
   const isActive = (path: string) => pathname === path;
   const isBookingActive = pathname === "/booking";

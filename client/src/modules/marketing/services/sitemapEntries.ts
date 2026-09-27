@@ -389,6 +389,13 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     })),
 
+    {
+      url: `${siteUrl}/tournaments`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.8,
+    },
+
     // ── Tournament sport hubs (/tournaments/sport/[sport]) ──
     // Only the sports that actually hold tournaments. A hub exists for every
     // sport in SPORT_LABEL, but seven of the ten have no editions at all and

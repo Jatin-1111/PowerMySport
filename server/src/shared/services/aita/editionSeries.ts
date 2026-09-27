@@ -39,6 +39,15 @@
 export type AitaLadderRung =
   "Talent Series" | "Championship Series" | "Super Series" | "National Series" | "Nationals";
 
+/** The rungs bottom to top, so a list of them can be shown as the ladder it is. */
+export const AITA_LADDER_ORDER: readonly AitaLadderRung[] = [
+  "Talent Series",
+  "Championship Series",
+  "Super Series",
+  "National Series",
+  "Nationals",
+];
+
 /**
  * Who runs the event. ATF is the Asian Tennis Federation; UTR is Universal
  * Tennis, which runs its own events off a rating rather than a ranking.

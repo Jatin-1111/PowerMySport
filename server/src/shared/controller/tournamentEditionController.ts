@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Federation } from "../models/Federation";
 import { TournamentEdition } from "../models/TournamentEdition";
+import { listSportEditions } from "../services/tournamentEditionListing";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
 
@@ -126,8 +127,10 @@ export const getTournamentEdition = asyncHandler(
  * returns no content fields and skips editions that have already finished.
  *
  * GET /api/tournament-editions?sport=chess&page=1&limit=24&upcoming=false
- * Card-shape, paginated editions for one sport — backs the /tournaments/sport/[sport]
- * hub page. A separate branch on the same route rather than a new one: both are
+ *   &category=championship-series&age=Under-14&month=2026-10
+ * Card-shape, paginated editions for one sport, plus the options each filter
+ * offers — backs the /tournaments/sport/[sport] hub page (see
+ * tournamentEditionListing.ts). A separate branch on the same route rather than a new one: both are
  * "list editions", and the sitemap's unfiltered call (no `sport`) keeps its exact
  * existing shape so nothing else has to change.
  */
@@ -191,41 +194,22 @@ export const listTournamentEditionSlugs = asyncHandler(
     }
 
     if (sportSlug) {
-      const page = Math.max(1, parseInt((req.query.page as string) || "1", 10));
-      const limit = Math.min(60, Math.max(1, parseInt((req.query.limit as string) || "24", 10)));
-      const upcoming = req.query.upcoming !== "false";
-      const startOfToday = new Date();
-      startOfToday.setUTCHours(0, 0, 0, 0);
+      const page = Math.max(1, parseInt((req.query.page as string) || "1", 10) || 1);
+      const limit = Math.min(
+        60,
+        Math.max(1, parseInt((req.query.limit as string) || "24", 10) || 24)
+      );
+      const text = (key: string) =>
+        typeof req.query[key] === "string" ? (req.query[key] as string) : undefined;
 
-      const filter = {
-        sportSlug,
-        slug: { $exists: true, $ne: null },
-        status: { $ne: "cancelled" },
-        startDate: upcoming ? { $gte: startOfToday } : { $lt: startOfToday },
-        mergedInto: { $in: [null, undefined] },
-      };
-
-      const [editions, total] = await Promise.all([
-        TournamentEdition.find(filter)
-          .sort({ startDate: upcoming ? 1 : -1 })
-          .skip((page - 1) * limit)
-          .limit(limit)
-          // `ladder`/`grade`/`kind` come from the name parser (editionSeries.ts).
-          // They are what lets a caller tell a junior ladder event from the
-          // senior prize-money circuit, which `level` cannot: it is set on a
-          // quarter of tennis rows and says only State/National/International.
-          .select(
-            "slug name officialName startDate endDate city state venue level ageGroups " +
-              "ladder grade circuit kind"
-          )
-          .lean(),
-        TournamentEdition.countDocuments(filter),
-      ]);
-
-      res.json({
-        success: true,
-        data: { editions, page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+      const data = await listSportEditions(sportSlug, {
+        page,
+        limit,
+        upcoming: req.query.upcoming !== "false",
+        filters: { category: text("category"), age: text("age"), month: text("month") },
       });
+
+      res.json({ success: true, data });
       return;
     }
 

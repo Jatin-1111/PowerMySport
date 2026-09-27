@@ -74,21 +74,8 @@ export function formatShortEndDate(endDate: string, startDate: string): string {
     : `${label} ${end.getUTCFullYear()}`;
 }
 
-/**
- * Extracted venue/city are frequently identical, or one contains the other, or
- * venue is a placeholder — collapse those so we never render "Raipur, Raipur".
- */
-export function formatLocation(venue?: string, city?: string): string | null {
-  const v = venue?.trim();
-  const c = city?.trim();
-  if (!v) return c || null;
-  if (!c) return v;
-  if (/^(tbc|tba|to be (confirmed|announced))$/i.test(v)) return c;
-  const vl = v.toLowerCase();
-  const cl = c.toLowerCase();
-  if (vl === cl || vl.includes(cl) || cl.includes(vl)) return v.length >= c.length ? v : c;
-  return `${v}, ${c}`;
-}
+// Moved to the tournaments module so module code can share it.
+export { formatLocation } from "@/modules/tournaments/utils/editionFormat";
 
 /** "Under-14" -> 14, so age-group chips sort numerically rather than alphabetically. */
 export function ageGroupRank(label: string): number {

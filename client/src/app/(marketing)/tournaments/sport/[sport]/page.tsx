@@ -3,9 +3,14 @@ import { breadcrumbJsonLd, itemListJsonLd, NOINDEX_METADATA } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, MapPin, Trophy } from "lucide-react";
-import type { TournamentEdition } from "@/modules/pathway/services/pathway";
-import { CAL_TZ, formatLocation, levelColor } from "../../../federations/[slug]/editionUtils";
+import { ChevronRight, Trophy } from "lucide-react";
+import { EditionCard } from "@/modules/tournaments/components/EditionCard";
+import { EditionFilters } from "@/modules/tournaments/components/EditionFilters";
+import {
+  fetchSportEditions,
+  fetchSportFacets,
+} from "@/modules/tournaments/services/editionListing";
+import { tournamentListHref, type TournamentListState } from "@/modules/tournaments/utils/listHref";
 import { SPORT_LABEL } from "../../../federations/[slug]/federationShared";
 
 /**
@@ -14,64 +19,15 @@ import { SPORT_LABEL } from "../../../federations/[slug]/federationShared";
  * for the broader "chess tournaments in India" query these editions are all
  * an answer to — this page is that answer, and it fans out into the dated
  * pages via the card grid below.
+ *
+ * Filtered views (?category=, ?age=, ?month=) keep the unfiltered page as
+ * their canonical: they are the same list narrowed, not separate pages.
  */
 
 const EDITIONS_PER_PAGE = 24;
-const LIST_REVALIDATE_SECONDS = 300;
 
-interface EditionsListResponse {
-  editions: TournamentEdition[];
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-async function fetchEditions(
-  sportSlug: string,
-  { page, upcoming }: { page: number; upcoming: boolean }
-): Promise<EditionsListResponse | null> {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-  const qs = new URLSearchParams({
-    sport: sportSlug,
-    page: String(page),
-    limit: String(EDITIONS_PER_PAGE),
-    upcoming: String(upcoming),
-  });
-  try {
-    const res = await fetch(`${apiBase}/tournament-editions?${qs.toString()}`, {
-      next: { revalidate: LIST_REVALIDATE_SECONDS, tags: ["tournament-editions"] },
-    });
-    if (!res.ok) return null;
-    const body = await res.json();
-    return body.success ? (body.data as EditionsListResponse) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchSportFacets(): Promise<{ sportSlug: string; total: number }[]> {
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-  try {
-    const res = await fetch(`${apiBase}/tournament-editions?facets=sports`, {
-      next: { revalidate: LIST_REVALIDATE_SECONDS, tags: ["tournament-editions"] },
-    });
-    if (!res.ok) return [];
-    const body = await res.json();
-    return body.success && Array.isArray(body.data) ? body.data : [];
-  } catch {
-    return [];
-  }
-}
-
-function formatShortDate(value: string): string {
-  return new Date(value).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: CAL_TZ,
-  });
-}
+const text = (value: string | string[] | undefined) =>
+  typeof value === "string" && value.trim() ? value.trim() : undefined;
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -85,7 +41,7 @@ export async function generateMetadata({
   if (!sportLabel) return { title: "Tournaments" };
 
   const title = `${sportLabel} Tournaments in India: Upcoming Dates & Fact Sheets`;
-  const description = `Browse upcoming ${sportLabel} tournaments across India, dates, venues, age groups and entry fact sheets, updated as federations publish them.`;
+  const description = `Browse upcoming ${sportLabel} tournaments across India by type, age group and month: dates, venues and entry fact sheets, updated as federations publish them.`;
 
   // A hub exists for every supported sport, but most hold no tournaments yet
   // and render an empty listing. The sitemap already skips those; this stops
@@ -117,29 +73,40 @@ export default async function SportTournamentsHubPage({
   searchParams,
 }: {
   params: Promise<{ sport: string }>;
-  searchParams: Promise<{ page?: string; when?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { sport } = await params;
   const sportLabel = SPORT_LABEL[sport];
   if (!sportLabel) notFound();
 
-  const { page: pageParam, when } = await searchParams;
-  const upcoming = when !== "past";
-  const page = Math.max(1, parseInt(pageParam || "1", 10) || 1);
+  const query = await searchParams;
+  const upcoming = text(query.when) !== "past";
+  const page = Math.max(1, parseInt(text(query.page) || "1", 10) || 1);
 
-  const result = await fetchEditions(sport, { page, upcoming });
+  const result = await fetchSportEditions(sport, {
+    page,
+    limit: EDITIONS_PER_PAGE,
+    upcoming,
+    filters: { category: text(query.category), age: text(query.age), month: text(query.month) },
+  });
   const editions = result?.editions ?? [];
   const totalPages = result?.totalPages ?? 1;
   const total = result?.total ?? 0;
+
+  // The server drops a filter value that matches nothing, and the chips follow
+  // what it applied, so a stale link never shows a selected chip over a list
+  // that ignored it.
+  const state: TournamentListState = { upcoming, page, ...(result?.applied ?? {}) };
+  const filtered = Boolean(state.category || state.age || state.month);
+  const sportLower = sportLabel.toLowerCase();
 
   return (
     <>
       <JsonLd
         data={[
-          // No /tournaments index page exists yet, so the trail starts at
-          // Home rather than linking a breadcrumb entry to a 404.
           breadcrumbJsonLd([
             { name: "Home", path: "/" },
+            { name: "Tournaments", path: "/tournaments" },
             { name: `${sportLabel} Tournaments`, path: `/tournaments/sport/${sport}` },
           ]),
           ...(editions.length
@@ -160,103 +127,94 @@ export default async function SportTournamentsHubPage({
       <div className="min-h-screen bg-slate-50">
         <div className="from-power-orange bg-gradient-to-br to-orange-600 px-4 pb-10 pt-14 sm:px-6">
           <div className="mx-auto max-w-6xl">
+            <nav aria-label="Breadcrumb" className="mb-3 text-[13px] font-semibold text-orange-50">
+              <Link href="/tournaments" className="hover:text-white hover:underline">
+                Tournaments
+              </Link>
+              <ChevronRight aria-hidden className="mx-1 inline h-3.5 w-3.5" />
+              <span className="text-white">{sportLabel}</span>
+            </nav>
             <h1 className="font-title text-2xl font-extrabold text-white sm:text-3xl">
               {sportLabel} Tournaments in India
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-orange-50">
               {total > 0
-                ? `${total} ${upcoming ? "upcoming" : "past"} ${sportLabel.toLowerCase()} tournament${total === 1 ? "" : "s"}: dates, venues and entry fact sheets as federations publish them.`
-                : `${upcoming ? "Upcoming" : "Past"} ${sportLabel.toLowerCase()} tournaments across India.`}
+                ? `${total} ${upcoming ? "upcoming" : "past"} ${sportLower} tournament${total === 1 ? "" : "s"}${filtered ? " match these filters" : ""}: dates, venues and entry fact sheets as federations publish them.`
+                : `${upcoming ? "Upcoming" : "Past"} ${sportLower} tournaments across India.`}
             </p>
           </div>
         </div>
 
         <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
           {/* Upcoming / past toggle */}
-          <div className="mb-6 flex gap-2">
-            {(["upcoming", "past"] as const).map((tab) => (
+          <div className="mb-4 flex gap-2">
+            {([true, false] as const).map((isUpcoming) => (
               <Link
-                key={tab}
-                href={`/tournaments/sport/${sport}${tab === "past" ? "?when=past" : ""}`}
-                className={`rounded-full border px-4 py-1.5 text-xs font-semibold capitalize transition ${
-                  (tab === "upcoming") === upcoming
+                key={String(isUpcoming)}
+                href={tournamentListHref(sport, state, { upcoming: isUpcoming })}
+                aria-current={isUpcoming === upcoming ? "true" : undefined}
+                className={`rounded-lg border px-4 py-1.5 text-xs font-semibold transition ${
+                  isUpcoming === upcoming
                     ? "bg-power-orange-solid border-power-orange-solid text-white"
-                    : "hover:text-power-orange border-slate-200 bg-white text-slate-600 hover:border-orange-200"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-orange-700"
                 }`}
               >
-                {tab}
+                {isUpcoming ? "Upcoming" : "Past"}
               </Link>
             ))}
           </div>
 
+          {result?.facets && (
+            <EditionFilters sportSlug={sport} state={state} facets={result.facets} />
+          )}
+
           {editions.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {editions.map((e) => {
-                const lc = e.level ? levelColor(e.level) : null;
-                const where = formatLocation(e.venue, e.city);
-                return (
-                  <Link
-                    key={e.slug}
-                    href={`/tournaments/${e.slug}`}
-                    className="hover:border-power-orange/40 group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md"
-                  >
-                    <div className="from-power-orange h-[3px] w-full bg-gradient-to-r to-amber-400" />
-                    <div className="flex flex-col p-4" style={{ minHeight: "150px" }}>
-                      {lc && e.level && (
-                        <span
-                          className={`mb-2 inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest ${lc.pill}`}
-                        >
-                          <span className={`h-1.5 w-1.5 rounded-full ${lc.dot}`} />
-                          {e.level}
-                        </span>
-                      )}
-                      <p className="font-title group-hover:text-power-orange line-clamp-2 flex-1 text-sm font-bold leading-snug text-slate-900">
-                        {e.officialName || e.name}
-                      </p>
-                      <div className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-500">
-                        <div className="flex items-center gap-1.5">
-                          <CalendarDays className="h-3 w-3 shrink-0" />
-                          <span>{formatShortDate(e.startDate)}</span>
-                        </div>
-                        {where && (
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{where}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              {editions.map((e) => (
+                <EditionCard key={e.slug} edition={e} />
+              ))}
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 py-16 text-center">
               <Trophy className="mx-auto mb-3 h-8 w-8 text-slate-300" />
               <p className="text-sm font-semibold text-slate-600">
-                No {upcoming ? "upcoming" : "past"} {sportLabel.toLowerCase()} tournaments listed
-                yet
+                {filtered
+                  ? `No ${upcoming ? "upcoming" : "past"} ${sportLower} tournaments match these filters`
+                  : `No ${upcoming ? "upcoming" : "past"} ${sportLower} tournaments listed yet`}
               </p>
+              {filtered && (
+                <Link
+                  href={tournamentListHref(sport, state, {
+                    category: undefined,
+                    age: undefined,
+                    month: undefined,
+                  })}
+                  className="mt-3 inline-block text-sm font-bold text-orange-700 hover:text-orange-800"
+                >
+                  Clear all filters
+                </Link>
+              )}
             </div>
           )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-8 flex items-center justify-center gap-2">
+            <nav aria-label="Pages" className="mt-8 flex items-center justify-center gap-2">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <Link
                   key={p}
-                  href={`/tournaments/sport/${sport}?page=${p}${upcoming ? "" : "&when=past"}`}
+                  href={tournamentListHref(sport, state, { page: p })}
+                  aria-current={p === page ? "page" : undefined}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                     p === page
                       ? "bg-power-orange-solid border-power-orange-solid text-white"
-                      : "hover:text-power-orange border-slate-200 bg-white text-slate-600 hover:border-orange-200"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-orange-700"
                   }`}
                 >
                   {p}
                 </Link>
               ))}
-            </div>
+            </nav>
           )}
         </div>
       </div>
