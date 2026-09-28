@@ -98,3 +98,101 @@ export const opportunityAdminApi = {
   remove: async (id: string): Promise<ApiResponse<null>> =>
     (await axiosInstance.delete(`/admin/opportunities/${id}`)).data,
 };
+
+// ─── Reading an entry from a link or PDF ─────────────────────────────────────
+// Mirrors server/src/admin/routes/opportunitySourceAdminRoutes.ts.
+
+export type OpportunitySourceStatus =
+  "PENDING_EXTRACTION" | "EXTRACTION_FAILED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+
+export interface OpportunitySourceRow {
+  _id: string;
+  status: OpportunitySourceStatus;
+  opportunitySlug?: string;
+  opportunityTrack?: OpportunityTrack;
+  sourceLabel?: string;
+  sourceKind: "LINK" | "PDF";
+  sourceUrl?: string;
+  originUrl?: string;
+  extractionError?: string;
+  createdAt: string;
+  reviewedAt?: string;
+}
+
+export interface OpportunitySource extends OpportunitySourceRow {
+  extractedData?: Record<string, unknown>;
+  citations?: Record<string, string>;
+  extractionWarnings?: string[];
+  extractionModel?: string;
+  reviewNotes?: string;
+  fileName?: string;
+}
+
+export interface ProposedChange {
+  path: string;
+  current: unknown;
+  proposed: unknown;
+  citation?: string;
+}
+
+export interface OpportunitySourceDetail {
+  submission: OpportunitySource;
+  entry: AdminOpportunity | null;
+  entryMissing: boolean;
+  changes: ProposedChange[];
+}
+
+export interface CreateOpportunitySourcePayload {
+  opportunitySlug?: string;
+  track?: OpportunityTrack;
+  sportSlug?: string;
+  sourceLabel: string;
+  sourceKind: "LINK" | "PDF";
+  sourceUrl?: string;
+  s3Key?: string;
+  fileName?: string;
+  originUrl?: string;
+}
+
+export const opportunitySourceApi = {
+  uploadUrl: async (
+    fileName: string
+  ): Promise<ApiResponse<{ uploadUrl: string; key: string; fileName: string }>> =>
+    (
+      await axiosInstance.post("/admin/opportunity-sources/upload-url", {
+        fileName,
+        contentType: "application/pdf",
+      })
+    ).data,
+
+  create: async (
+    payload: CreateOpportunitySourcePayload
+  ): Promise<ApiResponse<OpportunitySource>> =>
+    (await axiosInstance.post("/admin/opportunity-sources", payload)).data,
+
+  list: async (
+    params: {
+      status?: OpportunitySourceStatus;
+      opportunitySlug?: string;
+    } = {}
+  ): Promise<ApiResponse<OpportunitySourceRow[]>> =>
+    (await axiosInstance.get("/admin/opportunity-sources", { params })).data,
+
+  get: async (id: string): Promise<ApiResponse<OpportunitySourceDetail>> =>
+    (await axiosInstance.get(`/admin/opportunity-sources/${id}`)).data,
+
+  edit: async (
+    id: string,
+    fields: Record<string, unknown>
+  ): Promise<ApiResponse<OpportunitySource>> =>
+    (await axiosInstance.patch(`/admin/opportunity-sources/${id}`, { fields })).data,
+
+  reExtract: async (id: string): Promise<ApiResponse<OpportunitySource>> =>
+    (await axiosInstance.post(`/admin/opportunity-sources/${id}/re-extract`)).data,
+
+  reject: async (id: string, reason: string): Promise<ApiResponse<OpportunitySource>> =>
+    (await axiosInstance.post(`/admin/opportunity-sources/${id}/reject`, { reason })).data,
+
+  approve: async (id: string, keep: string[]): Promise<ApiResponse<{ opportunityId: string }>> =>
+    (await axiosInstance.post(`/admin/opportunity-sources/${id}/approve`, { keep })).data,
+};

@@ -9,11 +9,14 @@
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { readApiErrors } from "@/modules/admin/components/opportunity/apiErrors";
+import { SourceSubmitForm } from "@/modules/admin/components/opportunity/SourceSubmitForm";
 import { CATEGORY_OPTIONS } from "@/modules/admin/components/opportunity/opportunityForm";
 import { ErrorList, Field, TextInput } from "@/modules/admin/components/pathway/fields";
 import {
   opportunityAdminApi,
+  opportunitySourceApi,
   type AdminOpportunityRow,
+  type OpportunitySourceRow,
   type OpportunityTrack,
 } from "@/modules/admin/services/opportunities";
 import { Card } from "@/modules/shared/ui/Card";
@@ -54,6 +57,7 @@ export default function AdminOpportunitiesPage() {
   const [title, setTitle] = useState("");
   const [creating, setCreating] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [sources, setSources] = useState<OpportunitySourceRow[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +70,22 @@ export default function AdminOpportunitiesPage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Sources still needing a person: waiting for review, or failed to read.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      opportunitySourceApi.list({ status: "PENDING_REVIEW" }),
+      opportunitySourceApi.list({ status: "EXTRACTION_FAILED" }),
+    ])
+      .then(([pending, failed]) => {
+        if (!cancelled) setSources([...(pending.data ?? []), ...(failed.data ?? [])]);
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
@@ -102,8 +122,54 @@ export default function AdminOpportunitiesPage() {
         subtitle="Nothing reaches parents until someone has checked its sources, marked it verified and published it."
       />
 
+      {sources.length > 0 && (
+        <Card variant="elevated">
+          <h2 className="text-sm font-bold text-slate-900">
+            Sources waiting for you <span className="text-slate-400">({sources.length})</span>
+          </h2>
+          <ul className="mt-3 divide-y divide-slate-100">
+            {sources.map((source) => (
+              <li key={source._id}>
+                <Link
+                  href={`/admin/opportunities/sources/${source._id}`}
+                  className="flex flex-wrap items-center justify-between gap-2 py-3 hover:bg-slate-50"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-slate-900">
+                      {source.sourceLabel || source.sourceUrl || "Source"}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {source.opportunitySlug ? `Checking ${source.opportunitySlug}` : "New entry"}
+                    </span>
+                  </span>
+                  <span
+                    className={`rounded-md px-2 py-0.5 text-xs font-bold ${
+                      source.status === "PENDING_REVIEW"
+                        ? "bg-amber-50 text-amber-800"
+                        : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {source.status === "PENDING_REVIEW" ? "Review" : "Could not read"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       <Card variant="elevated">
-        <h2 className="text-sm font-bold text-slate-900">New entry</h2>
+        <h2 className="text-sm font-bold text-slate-900">New entry from a link or PDF</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          The document is read for you; you then keep or drop each field, checked against its quote.
+        </p>
+        <div className="mt-3">
+          <SourceSubmitForm />
+        </div>
+      </Card>
+
+      <Card variant="elevated">
+        <h2 className="text-sm font-bold text-slate-900">New entry, typed in</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)_auto] sm:items-end">
           <Field label="Page">
             <select

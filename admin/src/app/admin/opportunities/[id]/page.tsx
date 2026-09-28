@@ -13,6 +13,7 @@ import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { readApiErrors } from "@/modules/admin/components/opportunity/apiErrors";
 import { OpportunityEditor } from "@/modules/admin/components/opportunity/OpportunityEditor";
+import { SourceSubmitForm } from "@/modules/admin/components/opportunity/SourceSubmitForm";
 import {
   formFromDoc,
   payloadFromForm,
@@ -21,7 +22,16 @@ import {
 import { ErrorList } from "@/modules/admin/components/pathway/fields";
 import { opportunityAdminApi, type AdminOpportunity } from "@/modules/admin/services/opportunities";
 import { Card } from "@/modules/shared/ui/Card";
-import { ArrowLeft, BadgeCheck, Eye, EyeOff, Loader2, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Eye,
+  EyeOff,
+  FileSearch,
+  Loader2,
+  Save,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -39,6 +49,7 @@ export default function AdminOpportunityEditPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"save" | "verify" | "status" | "delete" | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [checking, setChecking] = useState(false);
 
   const adopt = useCallback((next: AdminOpportunity) => {
     setDoc(next);
@@ -203,6 +214,15 @@ export default function AdminOpportunityEditPage() {
         </button>
         <button
           type="button"
+          onClick={() => setChecking((v) => !v)}
+          disabled={busy !== null}
+          className={`${buttonClass} border border-slate-300 text-slate-700 hover:bg-slate-50`}
+        >
+          <FileSearch className="h-4 w-4" />
+          Check against a source
+        </button>
+        <button
+          type="button"
           onClick={() => void toggleStatus()}
           disabled={busy !== null}
           className={`${buttonClass} ${
@@ -224,6 +244,19 @@ export default function AdminOpportunityEditPage() {
           Delete
         </button>
       </div>
+
+      {checking && (
+        <Card variant="elevated">
+          <h2 className="text-sm font-bold text-slate-900">Check against a source</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Give this year&apos;s document. You will see what it says differently from this entry,
+            field by field, and approving marks the entry verified.
+          </p>
+          <div className="mt-3">
+            <SourceSubmitForm opportunitySlug={doc.slug} onCancel={() => setChecking(false)} />
+          </div>
+        </Card>
+      )}
 
       <ErrorList errors={errors} />
       <OpportunityEditor form={form} onChange={setForm} />
