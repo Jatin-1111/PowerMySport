@@ -10,6 +10,7 @@ import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { readApiErrors } from "@/modules/admin/components/opportunity/apiErrors";
 import { SourceSubmitForm } from "@/modules/admin/components/opportunity/SourceSubmitForm";
+import { SourceWatchPanel } from "@/modules/admin/components/opportunity/SourceWatchPanel";
 import { CATEGORY_OPTIONS } from "@/modules/admin/components/opportunity/opportunityForm";
 import { ErrorList, Field, TextInput } from "@/modules/admin/components/pathway/fields";
 import {
@@ -121,6 +122,8 @@ export default function AdminOpportunitiesPage() {
         title="Admissions & Scholarships"
         subtitle="Nothing reaches parents until someone has checked its sources, marked it verified and published it."
       />
+
+      <SourceWatchPanel />
 
       {sources.length > 0 && (
         <Card variant="elevated">

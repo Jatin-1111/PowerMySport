@@ -33,7 +33,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 const buttonClass =
@@ -43,13 +43,15 @@ export default function AdminOpportunityEditPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
+  // Arriving from a flagged source opens the check with its link filled in.
+  const checkUrl = useSearchParams()?.get("check") ?? "";
 
   const [doc, setDoc] = useState<AdminOpportunity | null>(null);
   const [form, setForm] = useState<OpportunityForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"save" | "verify" | "status" | "delete" | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
-  const [checking, setChecking] = useState(false);
+  const [checking, setChecking] = useState(Boolean(checkUrl));
 
   const adopt = useCallback((next: AdminOpportunity) => {
     setDoc(next);
@@ -253,7 +255,11 @@ export default function AdminOpportunityEditPage() {
             field by field, and approving marks the entry verified.
           </p>
           <div className="mt-3">
-            <SourceSubmitForm opportunitySlug={doc.slug} onCancel={() => setChecking(false)} />
+            <SourceSubmitForm
+              opportunitySlug={doc.slug}
+              defaultUrl={checkUrl}
+              onCancel={() => setChecking(false)}
+            />
           </div>
         </Card>
       )}

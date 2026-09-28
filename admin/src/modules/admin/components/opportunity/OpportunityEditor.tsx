@@ -355,6 +355,17 @@ export function OpportunityEditor({
             </div>
           )}
         />
+        <RepeatableList
+          label="Pages to watch"
+          hint="Where next year's document will appear, e.g. the admissions page. Checked every week with the sources above; never shown to parents."
+          items={form.watchUrls}
+          onChange={(next) => set("watchUrls", next)}
+          makeEmpty={() => ""}
+          addLabel="Add a page"
+          renderRow={(item, update) => (
+            <TextInput value={item} onChange={update} placeholder="https://" />
+          )}
+        />
         <Field
           label="What could not be confirmed"
           hint="Shown to parents. Leave blank once everything is checked."

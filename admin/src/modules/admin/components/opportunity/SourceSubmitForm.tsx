@@ -25,18 +25,21 @@ const selectClass = "w-full rounded-lg border border-slate-200 bg-white px-3 py-
 export function SourceSubmitForm({
   opportunitySlug,
   defaultTrack = "scholarship",
+  defaultUrl = "",
   onCancel,
 }: {
   /** The entry being checked. Omit to propose a new entry. */
   opportunitySlug?: string;
   defaultTrack?: OpportunityTrack;
+  /** A link to start from, e.g. a source the weekly check flagged. */
+  defaultUrl?: string;
   onCancel?: () => void;
 }) {
   const router = useRouter();
   const [track, setTrack] = useState<OpportunityTrack>(defaultTrack);
   const [sportSlug, setSportSlug] = useState("tennis");
   const [kind, setKind] = useState<"LINK" | "PDF">("LINK");
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(defaultUrl);
   const [file, setFile] = useState<File | null>(null);
   const [originUrl, setOriginUrl] = useState("");
   const [label, setLabel] = useState("");

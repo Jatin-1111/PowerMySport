@@ -98,6 +98,7 @@ export interface OpportunityForm {
   applyUrl: string;
   sources: Array<{ label: string; url: string; publishedOn: string }>;
   verificationNote: string;
+  watchUrls: string[];
 }
 
 export function formFromDoc(doc: AdminOpportunity): OpportunityForm {
@@ -136,6 +137,7 @@ export function formFromDoc(doc: AdminOpportunity): OpportunityForm {
     applyUrl: doc.applyUrl ?? "",
     sources: (doc.sources ?? []).map((s) => ({ ...s, publishedOn: s.publishedOn ?? "" })),
     verificationNote: doc.verificationNote ?? "",
+    watchUrls: doc.watchUrls ?? [],
   };
 }
 
@@ -213,5 +215,6 @@ export function payloadFromForm(form: OpportunityForm): OpportunityPayload {
         compact({ label: s.label.trim(), url: s.url.trim(), publishedOn: text(s.publishedOn) })
       ),
     verificationNote: text(form.verificationNote),
+    watchUrls: form.watchUrls.map((u) => u.trim()).filter(Boolean),
   }) as OpportunityPayload;
 }

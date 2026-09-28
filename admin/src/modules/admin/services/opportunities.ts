@@ -47,6 +47,7 @@ export interface AdminOpportunity {
   sources?: Array<{ label: string; url: string; publishedOn?: string }>;
   lastVerifiedOn?: string;
   verificationNote?: string;
+  watchUrls?: string[];
   status: "draft" | "published";
   publishedAt?: string | null;
   updatedAt?: string;
@@ -195,4 +196,36 @@ export const opportunitySourceApi = {
 
   approve: async (id: string, keep: string[]): Promise<ApiResponse<{ opportunityId: string }>> =>
     (await axiosInstance.post(`/admin/opportunity-sources/${id}/approve`, { keep })).data,
+};
+
+// ─── The weekly source watch ─────────────────────────────────────────────────
+// Mirrors server/src/admin/routes/opportunityWatchAdminRoutes.ts.
+
+export type SourceWatchStatus = "ok" | "blocked" | "moved" | "gone" | "disallowed" | "error";
+
+export interface SourceWatchRow {
+  _id: string;
+  url: string;
+  status: SourceWatchStatus;
+  httpStatus?: number;
+  finalUrl?: string;
+  note?: string;
+  changeKind?: "documents" | "text" | "file";
+  documentLinkCount?: number;
+  lastCheckedAt: string;
+  lastChangedAt?: string;
+  statusSince: string;
+  needsAttention: boolean;
+  entries: Array<{ id: string; slug: string; title: string; status: string }>;
+}
+
+export const opportunityWatchApi = {
+  list: async (): Promise<ApiResponse<{ watches: SourceWatchRow[]; running: boolean }>> =>
+    (await axiosInstance.get("/admin/opportunity-watch")).data,
+
+  run: async (): Promise<ApiResponse<null>> =>
+    (await axiosInstance.post("/admin/opportunity-watch/run")).data,
+
+  dismiss: async (id: string): Promise<ApiResponse<null>> =>
+    (await axiosInstance.post(`/admin/opportunity-watch/${id}/dismiss`)).data,
 };
