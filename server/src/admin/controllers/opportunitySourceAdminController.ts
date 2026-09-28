@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 
 import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { Opportunity } from "../../shared/models/Opportunity";
+import { OpportunityLead } from "../../shared/models/OpportunityLead";
 import { isSupportedSport, toSupportedSlug } from "../../shared/constants/supportedSports";
 import {
   OPPORTUNITY_TRACKS,
@@ -153,6 +154,8 @@ export const createOpportunitySource = asyncHandler(
       fileName?: string;
       originUrl?: string;
       sourceLabel?: string;
+      /** A lead from the monthly search being read; marked read once submitted. */
+      leadId?: string;
     };
 
     const entry = body.opportunitySlug
@@ -209,6 +212,13 @@ export const createOpportunitySource = asyncHandler(
       status: "PENDING_EXTRACTION",
       submittedBy: req.user.id,
     });
+
+    if (body.leadId && mongoose.isValidObjectId(body.leadId)) {
+      await OpportunityLead.updateOne(
+        { _id: body.leadId },
+        { $set: { status: "read", submissionId: submission._id } }
+      );
+    }
 
     await runExtraction(submission);
     res.status(201).json({ success: true, message: "Source read.", data: submission.toObject() });

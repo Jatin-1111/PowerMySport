@@ -20,6 +20,7 @@ import { initializeScraperScheduler } from "./utils/scraperScheduler";
 import { initializeAitaRankingScheduler } from "./utils/aitaRankingScheduler";
 import { initializeRankingDigestScheduler } from "./utils/rankingDigestScheduler";
 import { initializeOpportunityWatchScheduler } from "./utils/opportunityWatchScheduler";
+import { initializeOpportunityDiscoveryScheduler } from "./utils/opportunityDiscoveryScheduler";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
 import { startLogDigest, stopLogDigest } from "./utils/logDigest";
 import { bootFact, bootReady, bootWarn } from "./utils/boot";
@@ -186,6 +187,9 @@ const startServer = async () => {
           // Weekly check of every source an admission or scholarship entry
           // depends on; flags changes and unreadable sources for editors.
           initializeOpportunityWatchScheduler();
+
+          // Monthly AI web search for schemes we do not cover yet; leads only.
+          initializeOpportunityDiscoveryScheduler();
 
           // Everything above has registered its boot facts; print the block.
           bootReady();
