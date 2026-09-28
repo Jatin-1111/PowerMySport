@@ -305,30 +305,45 @@ function dedupeTournamentItems(items: any[]): any[] {
 
 // ─── Upsert helpers (dedupe by sportSlug + name, so re-scraping updates facts in place) ──
 
-async function upsertTournaments(sportSlug: string, items: any[], sourceUrls: string[]) {
+/**
+ * Curated tournaments (isCurated=true, hand-seeded by seedCuratedTournaments)
+ * are never touched. The filter skips them, and because { sportSlug, name } is
+ * unique the upsert then collides with the curated doc (E11000) instead of
+ * inserting a duplicate; that collision is the expected "leave it alone" path.
+ */
+export async function upsertTournaments(sportSlug: string, items: any[], sourceUrls: string[]) {
   for (const item of dedupeTournamentItems(items)) {
     if (!item?.name) continue;
-    await Tournament.findOneAndUpdate(
-      { sportSlug, name: item.name },
-      {
-        $set: {
-          level: item.level || "National",
-          description: item.description || "",
-          ageGroup: item.ageGroup || "Open",
-          city: item.city,
-          typicalDates: item.typicalDates || undefined,
-          registrationDeadline: item.registrationDeadline || undefined,
-          prerequisiteId: item.prerequisiteId,
-          prerequisiteName: item.prerequisiteName,
-          prerequisiteGuide: item.prerequisiteGuide || [],
-          documentChecklist: item.documentChecklist || [],
-          sourceUrls,
-          lastScrapedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true }
-    );
+    try {
+      await upsertScrapedTournament(sportSlug, item, sourceUrls);
+    } catch (error) {
+      if ((error as { code?: number })?.code === 11000) continue;
+      throw error;
+    }
   }
+}
+
+async function upsertScrapedTournament(sportSlug: string, item: any, sourceUrls: string[]) {
+  await Tournament.findOneAndUpdate(
+    { sportSlug, name: item.name, isCurated: { $ne: true } },
+    {
+      $set: {
+        level: item.level || "National",
+        description: item.description || "",
+        ageGroup: item.ageGroup || "Open",
+        city: item.city,
+        typicalDates: item.typicalDates || undefined,
+        registrationDeadline: item.registrationDeadline || undefined,
+        prerequisiteId: item.prerequisiteId,
+        prerequisiteName: item.prerequisiteName,
+        prerequisiteGuide: item.prerequisiteGuide || [],
+        documentChecklist: item.documentChecklist || [],
+        sourceUrls,
+        lastScrapedAt: new Date(),
+      },
+    },
+    { upsert: true, new: true }
+  );
 }
 
 async function upsertScholarships(sportSlug: string, items: any[], sourceUrls: string[]) {
