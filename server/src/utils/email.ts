@@ -10,4 +10,5 @@ export * from "./email/booking";
 export * from "./email/social";
 export * from "./email/provider";
 export * from "./email/dataSource";
+export * from "./email/opportunityWatch";
 export * from "./email/shop";

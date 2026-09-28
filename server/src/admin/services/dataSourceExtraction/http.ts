@@ -22,7 +22,7 @@ const BLOCKED_IP_PATTERNS = [
   /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // CGNAT
 ];
 
-async function resolveSafeHttpUrl(raw: string): Promise<string | null> {
+export async function resolveSafeHttpUrl(raw: string): Promise<string | null> {
   let url: URL;
   try {
     url = new URL(raw);

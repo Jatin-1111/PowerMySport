@@ -157,6 +157,12 @@ const baseShape = {
   keyFacts: z.array(trimmed(400)).max(12).default([]),
   applyUrl: httpUrl.optional(),
   sources: z.array(OpportunitySourceSchema).min(1).max(8),
+  /**
+   * Pages where the next cycle's document will appear, e.g. DU's admissions
+   * page. Checked weekly with the sources (opportunityWatch.ts); never shown
+   * to parents.
+   */
+  watchUrls: z.array(httpUrl).max(6).default([]),
   lastVerifiedOn: isoDate,
   /** What could not be confirmed, said plainly on the page. */
   verificationNote: optionalText(500),

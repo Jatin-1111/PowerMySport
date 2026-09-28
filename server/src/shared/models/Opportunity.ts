@@ -54,6 +54,7 @@ export interface OpportunityDocument extends Document {
   keyFacts: string[];
   applyUrl?: string;
   sources: Array<{ label: string; url: string; publishedOn?: string }>;
+  watchUrls: string[];
   lastVerifiedOn?: string;
   verificationNote?: string;
   status: "draft" | "published";
@@ -121,6 +122,7 @@ const opportunitySchema = new Schema<OpportunityDocument>(
       type: [{ _id: false, label: { type: String }, url: { type: String }, publishedOn: String }],
       default: [],
     },
+    watchUrls: { type: [String], default: [] },
     lastVerifiedOn: { type: String },
     verificationNote: { type: String },
     status: { type: String, enum: ["draft", "published"], default: "draft" },

@@ -22,6 +22,7 @@ const NOT_FROM_SOURCE = new Set([
   "status",
   "publishedAt",
   "sources",
+  "watchUrls",
   "lastVerifiedOn",
   "verificationNote",
   "sourcePublishedOn",

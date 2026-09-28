@@ -20,6 +20,7 @@ import { applyChanges, proposedChanges, withSource } from "../services/opportuni
 import { recordAuditLog } from "../services/AuditLogService";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "../services/AdminService";
 import { revalidateOpportunities } from "../services/ClientCacheRevalidationService";
+import { acknowledgeWatchUrls } from "../services/opportunityWatch";
 import { sendDataSourceReadyForReviewEmail } from "../../utils/email";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -430,6 +431,14 @@ export const approveOpportunitySource = asyncHandler(
       } as Record<string, unknown>);
       savedId = String(created._id);
     }
+
+    // Reviewing this entry against a source answers whatever the weekly watch
+    // flagged on its links, so those flags are cleared with the approval.
+    const saved = await Opportunity.findById(savedId).select("sources.url watchUrls").lean();
+    await acknowledgeWatchUrls([
+      ...(saved?.sources ?? []).map((s) => s.url),
+      ...(saved?.watchUrls ?? []),
+    ]);
 
     submission.status = "APPROVED";
     submission.reviewedBy = req.user.id as unknown as mongoose.Types.ObjectId;

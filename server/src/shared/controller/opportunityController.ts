@@ -79,7 +79,7 @@ export const listOpportunities = asyncHandler(
 export const getOpportunity = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const slug = typeof req.params.slug === "string" ? req.params.slug.toLowerCase() : "";
   const doc = await Opportunity.findOne({ slug, status: "published" })
-    .select("-updatedBy -__v")
+    .select("-updatedBy -watchUrls -__v")
     .lean();
   if (!doc) throw new AppError("Not found.", 404);
 
