@@ -63,6 +63,9 @@ const PERMISSION_LABELS: Record<string, string> = {
   "orders:view": "View Orders",
   "orders:manage": "Manage Orders",
   "orders:refund": "Refund Orders",
+  // Notifications
+  "notifications:view": "View Reminder Monitoring & Failures",
+  "notifications:manage": "Retry Reminders & Send Summaries",
 };
 
 const formatPermissionLabel = (permission: string): string => {

@@ -8,6 +8,7 @@ import {
   Briefcase,
   Calendar,
   Gauge,
+  Bell,
   Info,
   Package,
   ShoppingBag,
@@ -32,6 +33,7 @@ const PERMISSION_MODULES = {
   reviews: { name: "Review Management", Icon: Star },
   products: { name: "Product Management", Icon: Package },
   orders: { name: "Order Management", Icon: ShoppingBag },
+  notifications: { name: "Notification Monitoring", Icon: Bell },
 };
 
 // Permission labels for display
@@ -66,6 +68,8 @@ const PERMISSION_LABELS: Record<string, string> = {
   "orders:view": "View Orders",
   "orders:manage": "Manage Orders",
   "orders:refund": "Refund Orders",
+  "notifications:view": "View Reminder Monitoring & Failures",
+  "notifications:manage": "Retry Reminders & Send Summaries",
 };
 
 interface PermissionSelectorProps {

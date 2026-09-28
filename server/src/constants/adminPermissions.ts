@@ -98,6 +98,12 @@ export const DATA_SOURCES_PERMISSIONS = {
   MANAGE: "data-sources:manage",
 } as const;
 
+// Notifications Module (reminder scheduler monitoring and retries)
+export const NOTIFICATIONS_PERMISSIONS = {
+  VIEW: "notifications:view",
+  MANAGE: "notifications:manage",
+} as const;
+
 // Flatten all permissions into a single array for validation
 export const ALL_PERMISSIONS = [
   ...Object.values(USERS_PERMISSIONS),
@@ -115,6 +121,7 @@ export const ALL_PERMISSIONS = [
   ...Object.values(PATHWAYS_PERMISSIONS),
   ...Object.values(OPPORTUNITIES_PERMISSIONS),
   ...Object.values(DATA_SOURCES_PERMISSIONS),
+  ...Object.values(NOTIFICATIONS_PERMISSIONS),
 ] as const;
 
 // ============================================
@@ -130,6 +137,7 @@ export const SUPPORT_ADMIN_PERMISSIONS = [
   BOOKINGS_PERMISSIONS.VIEW,
   REVIEWS_PERMISSIONS.VIEW,
   REVIEWS_PERMISSIONS.MANAGE,
+  NOTIFICATIONS_PERMISSIONS.VIEW,
 ] as const;
 
 // Operations Admin - Manages venues, academies, bookings, and coaches
@@ -160,6 +168,8 @@ export const OPERATIONS_ADMIN_PERMISSIONS = [
   DATA_SOURCES_PERMISSIONS.VIEW,
   DATA_SOURCES_PERMISSIONS.REVIEW,
   DATA_SOURCES_PERMISSIONS.MANAGE,
+  NOTIFICATIONS_PERMISSIONS.VIEW,
+  NOTIFICATIONS_PERMISSIONS.MANAGE,
 ] as const;
 
 // Finance Admin - Handles refunds, disputes, and financial matters
@@ -308,6 +318,10 @@ export const PERMISSION_MODULES = {
     name: "Federation & Tournament Data Sources",
     permissions: Object.values(DATA_SOURCES_PERMISSIONS),
   },
+  notifications: {
+    name: "Notification Monitoring",
+    permissions: Object.values(NOTIFICATIONS_PERMISSIONS),
+  },
 } as const;
 
 // Permission labels for display
@@ -378,6 +392,10 @@ export const PERMISSION_LABELS: Record<string, string> = {
   "data-sources:view": "View Federation/Tournament Data Sources",
   "data-sources:review": "Review & Approve Extracted Data",
   "data-sources:manage": "Submit New Data Sources",
+
+  // Notifications
+  "notifications:view": "View Reminder Monitoring & Failures",
+  "notifications:manage": "Retry Reminders & Send Summaries",
 };
 
 // Legacy support (for backward compatibility during migration)

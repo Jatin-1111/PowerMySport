@@ -133,27 +133,50 @@ describe("the old user-facing paths are gone", () => {
 });
 
 describe("admin tiers", () => {
-  it("an admin without analytics:view gets 403 on every read", async () => {
-    const token = await signedInAdmin("SUPPORT_ADMIN", ["inquiries:view", "users:view"]);
-    for (const [method, path] of READ_ROUTES) {
+  it("an admin without notifications:view gets 403 on every route", async () => {
+    // analytics:view used to be the read gate; it must no longer be enough.
+    const token = await signedInAdmin("ANALYTICS_ADMIN", ["analytics:view", "analytics:export"]);
+    for (const [method, path] of ALL_ROUTES) {
       const response = await call(method, path, token);
       assert.equal(response.status, 403, path);
     }
   });
 
-  it("an admin with analytics:view can read failed reminders", async () => {
-    const token = await signedInAdmin("ANALYTICS_ADMIN", ["analytics:view"]);
+  it("notifications:view can read failed reminders", async () => {
+    const token = await signedInAdmin("SUPPORT_ADMIN", ["notifications:view"]);
     const response = await call("get", "/api/admin/reminders/monitoring/failed", token);
     assert.equal(response.status, 200);
     assert.deepEqual(response.body.data, []);
   });
 
-  it("a non-System admin gets 403 on every write, even with analytics:view", async () => {
-    const token = await signedInAdmin("ANALYTICS_ADMIN", ["analytics:view", "analytics:export"]);
+  it("notifications:view alone gets 403 on every write", async () => {
+    const token = await signedInAdmin("SUPPORT_ADMIN", ["notifications:view"]);
     for (const [method, path] of WRITE_ROUTES) {
       const response = await call(method, path, token);
       assert.equal(response.status, 403, path);
     }
+  });
+
+  it("notifications:manage implies view", async () => {
+    const token = await signedInAdmin("OPERATIONS_ADMIN", ["notifications:manage"]);
+    const response = await call("get", "/api/admin/reminders/monitoring/failed", token);
+    assert.equal(response.status, 200);
+  });
+
+  it("notifications:manage gets past the permission gate on a write", async () => {
+    // retry-batch with an unknown id reaches the handler, which reports a
+    // per-id failure: nothing exists to re-queue, so nothing is sent.
+    const token = await signedInAdmin("OPERATIONS_ADMIN", ["notifications:manage"]);
+    const response = await call("post", "/api/admin/reminders/monitoring/retry-batch", token);
+    assert.notEqual(response.status, 403);
+    assert.notEqual(response.status, 401);
+  });
+
+  it("an inactive admin with notifications:manage is refused", async () => {
+    const token = await signedInAdmin("OPERATIONS_ADMIN", ["notifications:manage"]);
+    await Admin.collection.updateMany({}, { $set: { isActive: false } });
+    const response = await call("get", "/api/admin/reminders/monitoring/failed", token);
+    assert.equal(response.status, 403);
   });
 });
 
