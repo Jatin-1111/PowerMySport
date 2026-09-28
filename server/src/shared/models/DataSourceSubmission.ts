@@ -7,7 +7,16 @@ import mongoose, { Document, Schema } from "mongoose";
  * Lane-A cron scraper — nothing here auto-publishes; `status` only reaches
  * APPROVED via an explicit admin action in dataSourceAdminController.
  */
-export type DataSourceTargetType = "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR";
+export type DataSourceTargetType =
+  | "FEDERATION"
+  | "CURATED_TOURNAMENT"
+  | "TOURNAMENT_CALENDAR"
+  /**
+   * An admission route or scholarship (see models/Opportunity.ts). Reviewed
+   * and approved through its own routes (opportunitySourceAdminController.ts),
+   * never through the generic data-source approve path.
+   */
+  | "OPPORTUNITY";
 
 export type DataSourceKind = "PDF" | "LINK";
 
@@ -21,6 +30,12 @@ export interface DataSourceSubmissionDocument extends Document {
   federationSlug?: string;
   /** Which curated Tournament doc this feeds — required for CURATED_TOURNAMENT */
   tournamentSlug?: string;
+  /** OPPORTUNITY only: the entry being updated. Absent = the source proposes a new one. */
+  opportunitySlug?: string;
+  /** OPPORTUNITY only: which page a new entry belongs on. */
+  opportunityTrack?: "admission" | "scholarship";
+  /** OPPORTUNITY only: what the document is, e.g. "DU admissions bulletin 2026-27" — the public citation's label. */
+  sourceLabel?: string;
 
   sourceKind: DataSourceKind;
   /** LINK sources */
@@ -59,12 +74,15 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
   {
     targetType: {
       type: String,
-      enum: ["FEDERATION", "CURATED_TOURNAMENT", "TOURNAMENT_CALENDAR"],
+      enum: ["FEDERATION", "CURATED_TOURNAMENT", "TOURNAMENT_CALENDAR", "OPPORTUNITY"],
       required: true,
     },
     sportSlug: { type: String, required: true, lowercase: true, index: true },
     federationSlug: { type: String, lowercase: true, trim: true },
     tournamentSlug: { type: String, lowercase: true, trim: true },
+    opportunitySlug: { type: String, lowercase: true, trim: true },
+    opportunityTrack: { type: String, enum: ["admission", "scholarship"] },
+    sourceLabel: { type: String, trim: true, maxlength: 160 },
 
     sourceKind: { type: String, enum: ["PDF", "LINK"], required: true },
     sourceUrl: { type: String },

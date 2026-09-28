@@ -238,6 +238,54 @@ export async function fetchPageHtml(
   }
 }
 
+/**
+ * Gemini accepts inline documents up to roughly 20MB per request, and the
+ * request also carries the prompt, so the file itself is capped a little
+ * below that.
+ */
+export const MAX_INLINE_PDF_BYTES = 18 * 1024 * 1024;
+
+/**
+ * A link that IS a PDF, downloaded so it can be sent to Gemini as a document.
+ *
+ * Admissions and scholarship rules are published as PDF circulars far more
+ * often than as pages, and `fetchPageHtml` deliberately refuses non-HTML. Same
+ * SSRF guard as the page fetch. Returns null for anything that is not a PDF,
+ * so the caller can fall back to reading the link as a page.
+ */
+export async function fetchPdfFromUrl(
+  url: string
+): Promise<{ buffer: Buffer; finalUrl: string } | { error: string } | null> {
+  const safeUrl = await resolveSafeHttpUrl(url);
+  if (!safeUrl) return null;
+  try {
+    const res = await fetch(safeUrl, {
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+        Accept: "application/pdf,*/*",
+      },
+      signal: AbortSignal.timeout(40_000),
+    });
+    if (!res.ok) return null;
+    if (!/application\/pdf/i.test(res.headers.get("content-type") ?? "")) return null;
+
+    const declared = Number(res.headers.get("content-length") ?? "0");
+    if (declared > MAX_INLINE_PDF_BYTES) {
+      return { error: "That PDF is too large to read in one go (over 18MB)." };
+    }
+    const buffer = Buffer.from(await res.arrayBuffer());
+    if (buffer.length > MAX_INLINE_PDF_BYTES) {
+      return { error: "That PDF is too large to read in one go (over 18MB)." };
+    }
+    return { buffer, finalUrl: res.url || safeUrl };
+  } catch (err) {
+    log.warn(`[DataSourceExtraction] PDF fetch failed: ${(err as Error).message.slice(0, 120)}`);
+    return null;
+  }
+}
+
 export async function fetchPageText(
   url: string,
   { stripChrome = false }: { stripChrome?: boolean } = {}

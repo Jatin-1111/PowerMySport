@@ -10,6 +10,7 @@ import {
 import { fetchPageText } from "./http";
 import { asString, sportNameFromSlug } from "./valueParsing";
 import { validateEditions } from "./editions";
+import { extractOpportunityForSubmission } from "./opportunity";
 
 const MONTH_ABBREVS = [
   "jan",
@@ -398,6 +399,11 @@ export async function extractForSubmission(
       status: "EXTRACTION_FAILED",
       extractionError: "No GEMINI_API_KEY/GOOGLE_API_KEY configured.",
     };
+  }
+
+  // Admissions and scholarships have their own prompt, cleaning and review.
+  if (submission.targetType === "OPPORTUNITY") {
+    return extractOpportunityForSubmission(submission);
   }
 
   const sportName = sportNameFromSlug(submission.sportSlug);

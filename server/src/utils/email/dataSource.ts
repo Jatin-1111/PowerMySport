@@ -4,7 +4,7 @@ interface DataSourceReadyForReviewEmailOptions {
   to: string;
   name: string;
   sportSlug: string;
-  targetType: "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR";
+  targetType: "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR" | "OPPORTUNITY";
   reviewUrl: string;
 }
 
@@ -12,6 +12,7 @@ const DATA_SOURCE_TARGET_LABELS: Record<string, string> = {
   FEDERATION: "Federation",
   CURATED_TOURNAMENT: "Curated Tournament",
   TOURNAMENT_CALENDAR: "Tournament Calendar",
+  OPPORTUNITY: "Admission / Scholarship",
 };
 
 export const sendDataSourceReadyForReviewEmail = async (

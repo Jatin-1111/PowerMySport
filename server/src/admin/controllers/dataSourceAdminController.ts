@@ -53,6 +53,21 @@ function pruneEmpty(obj: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
+/**
+ * Admissions & scholarships submissions share this collection but are
+ * reviewed and approved through opportunitySourceAdminController.ts. The
+ * generic approve path would treat one as a tournament calendar, so every
+ * generic write refuses them.
+ */
+function refuseOpportunity(submission: { targetType: DataSourceTargetType }): void {
+  if (submission.targetType === "OPPORTUNITY") {
+    throw new AppError(
+      "Admission and scholarship sources are reviewed under Admissions & Scholarships.",
+      400
+    );
+  }
+}
+
 /** Fire-and-forget notification to reviewers once a submission lands in PENDING_REVIEW. */
 async function notifyReviewers(submission: {
   _id: mongoose.Types.ObjectId;
@@ -221,6 +236,7 @@ export const createDataSource = asyncHandler(async (req: Request, res: Response)
   if (!body.targetType || !body.sportSlug || !body.sourceKind) {
     throw new AppError("targetType, sportSlug, and sourceKind are required", 400);
   }
+  refuseOpportunity({ targetType: body.targetType });
   if (!isSupportedSport(body.sportSlug)) {
     throw new AppError("Unsupported sportSlug", 400);
   }
@@ -288,7 +304,8 @@ export const listDataSources = asyncHandler(async (req: Request, res: Response):
   const limit = Math.min(100, Math.max(1, parseInt((req.query.limit as string) || "20", 10)));
   const filter: Record<string, unknown> = {};
   if (req.query.status) filter.status = req.query.status;
-  if (req.query.targetType) filter.targetType = req.query.targetType;
+  // Admission and scholarship sources have their own review screen.
+  filter.targetType = req.query.targetType ? req.query.targetType : { $ne: "OPPORTUNITY" };
   if (req.query.sportSlug) filter.sportSlug = (req.query.sportSlug as string).toLowerCase();
 
   const [docs, total] = await Promise.all([
@@ -344,6 +361,8 @@ export const updateDataSource = asyncHandler(async (req: Request, res: Response)
   if (req.body.extractedData === undefined) {
     throw new AppError("extractedData is required", 400);
   }
+  const existing = await DataSourceSubmission.findById(id).select("targetType").lean();
+  if (existing) refuseOpportunity(existing);
 
   const submission = await DataSourceSubmission.findByIdAndUpdate(
     id,
@@ -377,6 +396,7 @@ export const reExtractDataSource = asyncHandler(
     if (!submission) {
       throw new AppError("Data source not found", 404);
     }
+    refuseOpportunity(submission);
 
     submission.status = "PENDING_EXTRACTION";
     await submission.save();
@@ -473,6 +493,8 @@ export const rejectDataSource = asyncHandler(async (req: Request, res: Response)
   if (!reason) {
     throw new AppError("A rejection reason is required", 400);
   }
+  const target = await DataSourceSubmission.findById(id).select("targetType").lean();
+  if (target) refuseOpportunity(target);
 
   const submission = await DataSourceSubmission.findByIdAndUpdate(
     id,
@@ -520,6 +542,7 @@ export const approveDataSource = asyncHandler(
     if (!submission) {
       throw new AppError("Data source not found", 404);
     }
+    refuseOpportunity(submission);
     if (submission.status !== "PENDING_REVIEW") {
       throw new AppError(
         `Cannot approve a submission in status ${submission.status} — it must be PENDING_REVIEW`,
