@@ -153,6 +153,8 @@ export interface CreateOpportunitySourcePayload {
   s3Key?: string;
   fileName?: string;
   originUrl?: string;
+  /** A lead being read; the server marks it read. */
+  leadId?: string;
 }
 
 export const opportunitySourceApi = {
@@ -228,4 +230,37 @@ export const opportunityWatchApi = {
 
   dismiss: async (id: string): Promise<ApiResponse<null>> =>
     (await axiosInstance.post(`/admin/opportunity-watch/${id}/dismiss`)).data,
+};
+
+// ─── Leads from the monthly web search ───────────────────────────────────────
+// Mirrors server/src/admin/routes/opportunityLeadAdminRoutes.ts.
+
+export interface OpportunityLeadRow {
+  _id: string;
+  name: string;
+  owner?: string;
+  track: OpportunityTrack;
+  why?: string;
+  url: string;
+  domain: string;
+  isAggregator: boolean;
+  query: string;
+  sportSlug?: string;
+  status: "new" | "read" | "dismissed";
+  firstFoundAt: string;
+  lastFoundAt: string;
+  timesFound: number;
+}
+
+export const opportunityLeadApi = {
+  list: async (
+    status: "new" | "read" | "dismissed" = "new"
+  ): Promise<ApiResponse<{ leads: OpportunityLeadRow[]; running: boolean }>> =>
+    (await axiosInstance.get("/admin/opportunity-leads", { params: { status } })).data,
+
+  run: async (): Promise<ApiResponse<null>> =>
+    (await axiosInstance.post("/admin/opportunity-leads/run")).data,
+
+  dismiss: async (id: string, reason?: string): Promise<ApiResponse<null>> =>
+    (await axiosInstance.post(`/admin/opportunity-leads/${id}/dismiss`, { reason })).data,
 };

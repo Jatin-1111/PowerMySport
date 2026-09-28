@@ -26,6 +26,8 @@ export function SourceSubmitForm({
   opportunitySlug,
   defaultTrack = "scholarship",
   defaultUrl = "",
+  defaultLabel = "",
+  leadId,
   onCancel,
 }: {
   /** The entry being checked. Omit to propose a new entry. */
@@ -33,6 +35,9 @@ export function SourceSubmitForm({
   defaultTrack?: OpportunityTrack;
   /** A link to start from, e.g. a source the weekly check flagged. */
   defaultUrl?: string;
+  defaultLabel?: string;
+  /** A lead from the monthly search: submitting marks it read. */
+  leadId?: string;
   onCancel?: () => void;
 }) {
   const router = useRouter();
@@ -42,7 +47,7 @@ export function SourceSubmitForm({
   const [url, setUrl] = useState(defaultUrl);
   const [file, setFile] = useState<File | null>(null);
   const [originUrl, setOriginUrl] = useState("");
-  const [label, setLabel] = useState("");
+  const [label, setLabel] = useState(defaultLabel);
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
@@ -61,6 +66,7 @@ export function SourceSubmitForm({
       const res = await opportunitySourceApi.create({
         ...(opportunitySlug ? { opportunitySlug } : { track }),
         sportSlug,
+        ...(leadId ? { leadId } : {}),
         sourceLabel: label.trim(),
         sourceKind: kind,
         ...(kind === "LINK"

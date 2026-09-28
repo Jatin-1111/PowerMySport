@@ -11,6 +11,7 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { readApiErrors } from "@/modules/admin/components/opportunity/apiErrors";
 import { SourceSubmitForm } from "@/modules/admin/components/opportunity/SourceSubmitForm";
 import { SourceWatchPanel } from "@/modules/admin/components/opportunity/SourceWatchPanel";
+import { LeadsPanel } from "@/modules/admin/components/opportunity/LeadsPanel";
 import { CATEGORY_OPTIONS } from "@/modules/admin/components/opportunity/opportunityForm";
 import { ErrorList, Field, TextInput } from "@/modules/admin/components/pathway/fields";
 import {
@@ -124,6 +125,8 @@ export default function AdminOpportunitiesPage() {
       />
 
       <SourceWatchPanel />
+
+      <LeadsPanel />
 
       {sources.length > 0 && (
         <Card variant="elevated">
