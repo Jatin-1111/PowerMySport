@@ -64,7 +64,7 @@ export const notificationApi = {
    * Get notification statistics for the last 24 hours
    */
   getStats: async (): Promise<ApiResponse<MonitoringStats>> => {
-    const response = await axiosInstance.get("/reminders/monitoring/stats");
+    const response = await axiosInstance.get("/admin/reminders/monitoring/stats");
     return response.data;
   },
 
@@ -72,7 +72,7 @@ export const notificationApi = {
    * Get scheduler health status
    */
   getHealth: async (): Promise<ApiResponse<SchedulerHealth>> => {
-    const response = await axiosInstance.get("/reminders/monitoring/health");
+    const response = await axiosInstance.get("/admin/reminders/monitoring/health");
     return response.data;
   },
 
@@ -81,7 +81,7 @@ export const notificationApi = {
    * @param limit - Maximum number of failed reminders to retrieve (default: 50, max: 100)
    */
   getFailedReminders: async (limit: number = 50): Promise<ApiResponse<FailedReminder[]>> => {
-    const response = await axiosInstance.get(`/reminders/monitoring/failed?limit=${limit}`);
+    const response = await axiosInstance.get(`/admin/reminders/monitoring/failed?limit=${limit}`);
     return response.data;
   },
 
@@ -89,7 +89,7 @@ export const notificationApi = {
    * Manually trigger a health check (admin only)
    */
   triggerHealthCheck: async (): Promise<ApiResponse<HealthCheckResult>> => {
-    const response = await axiosInstance.post("/reminders/monitoring/health-check");
+    const response = await axiosInstance.post("/admin/reminders/monitoring/health-check");
     return response.data;
   },
 
@@ -97,7 +97,7 @@ export const notificationApi = {
    * Manually trigger sending the daily summary email (admin only)
    */
   sendDailySummary: async (): Promise<ApiResponse<{ message: string; emailsSent: number }>> => {
-    const response = await axiosInstance.post("/reminders/monitoring/send-summary");
+    const response = await axiosInstance.post("/admin/reminders/monitoring/send-summary");
     return response.data;
   },
 
@@ -105,7 +105,7 @@ export const notificationApi = {
    * Retry a single failed reminder
    */
   retryReminder: async (reminderId: string): Promise<ApiResponse<{ message: string }>> => {
-    const response = await axiosInstance.post(`/reminders/monitoring/retry/${reminderId}`);
+    const response = await axiosInstance.post(`/admin/reminders/monitoring/retry/${reminderId}`);
     return response.data;
   },
 
@@ -120,7 +120,9 @@ export const notificationApi = {
       results: { reminderId: string; success: boolean; message: string }[];
     }>
   > => {
-    const response = await axiosInstance.post("/reminders/monitoring/retry-batch", { reminderIds });
+    const response = await axiosInstance.post("/admin/reminders/monitoring/retry-batch", {
+      reminderIds,
+    });
     return response.data;
   },
 };

@@ -138,17 +138,11 @@ export const getReminderStats = asyncHandler(async (req: Request, res: Response)
 });
 
 /**
- * Manually trigger reminder processing (admin/dev only)
- * POST /api/reminders/process
+ * Manually trigger reminder processing (System Admin)
+ * POST /api/admin/reminders/process
  */
 export const processRemindersManually = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    // Optional: Add admin check
-    // if (req.user!.role !== "Admin") {
-    //   res.status(403).json({ success: false, message: "Forbidden" });
-    //   return;
-    // }
-
     const batchSize = Math.min(parseInt(req.query.batchSize as string) || 100, 500);
 
     const stats = await ScheduledNotificationService.processPendingReminders(batchSize);
@@ -162,7 +156,7 @@ export const processRemindersManually = asyncHandler(
 );
 /**
  * Get monitoring statistics
- * GET /api/reminders/monitoring/stats
+ * GET /api/admin/reminders/monitoring/stats
  */
 export const getMonitoringStats = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -177,7 +171,7 @@ export const getMonitoringStats = asyncHandler(
 
 /**
  * Check scheduler health
- * GET /api/reminders/monitoring/health
+ * GET /api/admin/reminders/monitoring/health
  */
 export const checkSchedulerHealth = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -192,7 +186,7 @@ export const checkSchedulerHealth = asyncHandler(
 
 /**
  * Get failed reminders
- * GET /api/reminders/monitoring/failed
+ * GET /api/admin/reminders/monitoring/failed
  */
 export const getFailedReminders = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -209,16 +203,10 @@ export const getFailedReminders = asyncHandler(
 
 /**
  * Trigger health check manually (admin)
- * POST /api/reminders/monitoring/health-check
+ * POST /api/admin/reminders/monitoring/health-check
  */
 export const triggerHealthCheck = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    // Optional: Add admin role check here
-    // if (req.user?.role !== 'Admin') {
-    //   res.status(403).json({ success: false, message: 'Admin access required' });
-    //   return;
-    // }
-
     await ReminderMonitoringService.performHealthCheck();
 
     res.json({
@@ -230,11 +218,9 @@ export const triggerHealthCheck = asyncHandler(
 
 /**
  * Send daily summary manually (admin)
- * POST /api/reminders/monitoring/send-summary
+ * POST /api/admin/reminders/monitoring/send-summary
  */
 export const sendDailySummary = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-  // Optional: Add admin role check here
-
   await ReminderMonitoringService.sendDailySummary();
 
   res.json({
@@ -245,7 +231,7 @@ export const sendDailySummary = asyncHandler(async (req: Request, res: Response)
 
 /**
  * Retry a single failed reminder
- * POST /api/reminders/monitoring/retry/:id
+ * POST /api/admin/reminders/monitoring/retry/:id
  */
 export const retryFailedReminder = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -273,7 +259,7 @@ export const retryFailedReminder = asyncHandler(
 
 /**
  * Retry multiple failed reminders
- * POST /api/reminders/monitoring/retry-batch
+ * POST /api/admin/reminders/monitoring/retry-batch
  */
 export const retryMultipleReminders = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
