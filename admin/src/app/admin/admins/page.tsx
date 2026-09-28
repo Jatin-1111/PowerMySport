@@ -63,6 +63,16 @@ const PERMISSION_LABELS: Record<string, string> = {
   "orders:view": "View Orders",
   "orders:manage": "Manage Orders",
   "orders:refund": "Refund Orders",
+  // Sport Pathways
+  "pathways:view": "View Sport Pathways",
+  "pathways:manage": "Edit & Verify Sport Pathways",
+  // Admissions & Scholarships
+  "opportunities:view": "View Admissions & Scholarships",
+  "opportunities:manage": "Edit, Verify & Publish Admissions & Scholarships",
+  // Data Sources
+  "data-sources:view": "View Federation/Tournament Data Sources",
+  "data-sources:review": "Review & Approve Extracted Data",
+  "data-sources:manage": "Submit New Data Sources",
   // Notifications
   "notifications:view": "View Reminder Monitoring & Failures",
   "notifications:manage": "Retry Reminders & Send Summaries",
