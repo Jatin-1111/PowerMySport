@@ -9,7 +9,7 @@ import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
 import { ChevronLeft, ChevronRight, Mail, Pencil } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { RoleTemplate } from "@/types";
+import { PermissionModule, RoleTemplate } from "@/types";
 
 const formatLastLogin = (value?: string) => {
   if (!value) return "Never logged in";
@@ -20,67 +20,9 @@ const formatLastLogin = (value?: string) => {
   }
 };
 
-const PERMISSION_LABELS: Record<string, string> = {
-  // Users
-  "users:view": "View Users",
-  "users:manage": "Manage Users",
-  // Venues
-  "venues:view": "View Venues",
-  "venues:manage": "Manage Venues",
-  "venues:create": "Create Venues",
-  // Bookings
-  "bookings:view": "View Bookings",
-  "bookings:manage": "Manage Bookings",
-  "bookings:refund": "Process Refunds",
-  // Coaches
-  "coaches:view": "View Coaches",
-  "coaches:manage": "Manage Coaches",
-  "coaches:verify": "Verify Coaches",
-  "coaches:create": "Create Coaches",
-  // Academies
-  "academies:view": "View Academies",
-  "academies:manage": "Manage Academies",
-  // Inquiries
-  "inquiries:view": "View Inquiries",
-  "inquiries:manage": "Manage Inquiries",
-  // Disputes
-  "disputes:view": "View Disputes",
-  "disputes:resolve": "Resolve Disputes",
-  // Analytics
-  "analytics:view": "View Analytics",
-  "analytics:export": "Export Reports",
-  // Admins
-  "admins:view": "View Admins",
-  "admins:manage": "Manage Admins",
-  // Reviews
-  "reviews:view": "View Reviews",
-  "reviews:manage": "Manage Reviews",
-  // Products
-  "products:view": "View Products",
-  "products:create": "Create Products",
-  "products:manage": "Manage Products",
-  // Orders
-  "orders:view": "View Orders",
-  "orders:manage": "Manage Orders",
-  "orders:refund": "Refund Orders",
-  // Sport Pathways
-  "pathways:view": "View Sport Pathways",
-  "pathways:manage": "Edit & Verify Sport Pathways",
-  // Admissions & Scholarships
-  "opportunities:view": "View Admissions & Scholarships",
-  "opportunities:manage": "Edit, Verify & Publish Admissions & Scholarships",
-  // Data Sources
-  "data-sources:view": "View Federation/Tournament Data Sources",
-  "data-sources:review": "Review & Approve Extracted Data",
-  "data-sources:manage": "Submit New Data Sources",
-  // Notifications
-  "notifications:view": "View Reminder Monitoring & Failures",
-  "notifications:manage": "Retry Reminders & Send Summaries",
-};
-
-const formatPermissionLabel = (permission: string): string => {
-  if (PERMISSION_LABELS[permission]) {
-    return PERMISSION_LABELS[permission];
+const formatPermissionLabel = (permission: string, labels: Record<string, string>): string => {
+  if (labels[permission]) {
+    return labels[permission];
   }
 
   return permission
@@ -96,6 +38,7 @@ const formatPermissionLabel = (permission: string): string => {
 export default function AdminsManagementPage() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
+  const [permissionCatalog, setPermissionCatalog] = useState<PermissionModule[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,14 +120,28 @@ export default function AdminsManagementPage() {
 
   const loadRoleTemplates = useCallback(async () => {
     try {
-      const response = await adminApi.getRoleTemplates();
-      if (response.success && response.data) {
-        setRoleTemplates(response.data);
+      const [templates, catalog] = await Promise.all([
+        adminApi.getRoleTemplates(),
+        adminApi.getPermissionCatalog(),
+      ]);
+      if (templates.success && templates.data) {
+        setRoleTemplates(templates.data);
+      }
+      if (catalog.success && catalog.data) {
+        setPermissionCatalog(catalog.data);
       }
     } catch (err) {
       console.error("Failed to load role templates:", err);
     }
   }, []);
+
+  const permissionLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    for (const permModule of permissionCatalog) {
+      for (const p of permModule.permissions) labels[p.key] = p.label;
+    }
+    return labels;
+  }, [permissionCatalog]);
 
   useEffect(() => {
     loadAdmins();
@@ -427,6 +384,7 @@ export default function AdminsManagementPage() {
 
           <PermissionSelector
             roleTemplates={roleTemplates}
+            permissionCatalog={permissionCatalog}
             selectedRole={form.role}
             selectedPermissions={form.permissions}
             onRoleChange={(role) => setForm((prev) => ({ ...prev, role }))}
@@ -571,7 +529,7 @@ export default function AdminsManagementPage() {
                             : "border border-slate-200 bg-slate-100 text-slate-700"
                         }`}
                       >
-                        {formatPermissionLabel(permission)}
+                        {formatPermissionLabel(permission, permissionLabels)}
                       </span>
                     ))}
                     {admin.permissions.length > 8 && (
@@ -655,6 +613,7 @@ export default function AdminsManagementPage() {
 
               <PermissionSelector
                 roleTemplates={roleTemplates}
+                permissionCatalog={permissionCatalog}
                 selectedRole={editForm.role}
                 selectedPermissions={editForm.permissions}
                 onRoleChange={(role) => setEditForm((prev) => ({ ...prev, role }))}

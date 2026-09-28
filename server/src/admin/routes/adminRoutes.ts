@@ -36,6 +36,7 @@ import {
   updateVenueAdminHandler,
   updateUserSafetyStatus,
   getRoleTemplates,
+  getPermissionCatalog,
   updateAdminPermissionsHandler,
   updateAdminRoleHandler,
   updateAdminProfileHandler,
@@ -430,6 +431,7 @@ router.get(
   listAuditLogsHandler
 );
 router.get("/role-templates", authMiddleware, adminMiddleware, getRoleTemplates);
+router.get("/permission-catalog", authMiddleware, adminMiddleware, getPermissionCatalog);
 router.put(
   "/:adminId/permissions",
   authMiddleware,

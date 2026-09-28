@@ -6,6 +6,7 @@ import {
   updateAdminPermissions,
   updateAdminRole,
   getRoleTemplatesData,
+  getPermissionCatalogData,
 } from "../../services/AdminService";
 import { recordAuditLog, listAuditLogs } from "../../services/AuditLogService";
 import { auditContext, normalizeAdminResponse } from "./shared";
@@ -48,6 +49,17 @@ export const listAuditLogsHandler = asyncHandler(
         page: result.page,
         totalPages: result.totalPages,
       },
+    });
+  }
+);
+
+// Get the grantable permissions, grouped by module
+export const getPermissionCatalog = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
+    res.status(200).json({
+      success: true,
+      message: "Permission catalog retrieved successfully",
+      data: getPermissionCatalogData(),
     });
   }
 );

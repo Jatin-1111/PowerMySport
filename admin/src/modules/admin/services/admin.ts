@@ -4,6 +4,7 @@ import {
   CoachVerificationDocument,
   Coach,
   CoachVerificationStatus,
+  PermissionModule,
   RoleTemplate,
 } from "@/types";
 
@@ -428,6 +429,11 @@ export const adminApi = {
 
   getRoleTemplates: async (): Promise<ApiResponse<RoleTemplate[]>> => {
     const response = await axiosInstance.get("/admin/role-templates");
+    return response.data;
+  },
+
+  getPermissionCatalog: async (): Promise<ApiResponse<PermissionModule[]>> => {
+    const response = await axiosInstance.get("/admin/permission-catalog");
     return response.data;
   },
 

@@ -5,6 +5,8 @@ import {
   getRolePermissions,
   ALL_PERMISSIONS,
   ROLE_TEMPLATES,
+  PERMISSION_MODULES,
+  PERMISSION_LABELS,
 } from "../../constants/adminPermissions";
 import { normalizePermissions, areValidPermissions } from "../../utils/permissions";
 import { sendAdminTemporaryCredentialsEmail } from "../../utils/email";
@@ -340,4 +342,20 @@ export const updateAdminRole = async (adminId: string, role: string): Promise<IA
  */
 export const getRoleTemplatesData = () => {
   return Object.values(ROLE_TEMPLATES);
+};
+
+/**
+ * Every grantable permission, grouped by module, with its display label.
+ * The admin app renders its permission picker from this, so a permission
+ * added here shows up there without a second hand-kept copy.
+ */
+export const getPermissionCatalogData = () => {
+  return Object.entries(PERMISSION_MODULES).map(([key, module]) => ({
+    key,
+    name: module.name,
+    permissions: module.permissions.map((permission) => ({
+      key: permission,
+      label: PERMISSION_LABELS[permission] ?? permission,
+    })),
+  }));
 };

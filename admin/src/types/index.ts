@@ -24,6 +24,12 @@ export type AdminRole =
 
 export type Permission = string; // e.g., "users:view", "venues:manage"
 
+export interface PermissionModule {
+  key: string;
+  name: string;
+  permissions: { key: string; label: string }[];
+}
+
 export interface RoleTemplate {
   role: string;
   name: string;

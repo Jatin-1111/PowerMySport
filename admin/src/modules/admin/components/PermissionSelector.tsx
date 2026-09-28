@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { RoleTemplate } from "@/types";
+import { PermissionModule, RoleTemplate } from "@/types";
 import {
   BarChart3,
   BookOpen,
@@ -12,6 +12,8 @@ import {
   GraduationCap,
   Bell,
   Info,
+  KeyRound,
+  type LucideIcon,
   Package,
   Route,
   ShoppingBag,
@@ -22,71 +24,31 @@ import {
   Warehouse,
 } from "lucide-react";
 
-// Permission module structure for display
-const PERMISSION_MODULES = {
-  users: { name: "User Management", Icon: Users },
-  venues: { name: "Venue Management", Icon: Warehouse },
-  bookings: { name: "Booking Management", Icon: Calendar },
-  coaches: { name: "Coach Management", Icon: Briefcase },
-  academies: { name: "Academy Management", Icon: BookOpen },
-  inquiries: { name: "Inquiry Management", Icon: ShieldAlert },
-  disputes: { name: "Dispute & Refund Management", Icon: ShieldAlert },
-  analytics: { name: "Analytics & Reports", Icon: BarChart3 },
-  admins: { name: "Admin Management", Icon: UserCog },
-  reviews: { name: "Review Management", Icon: Star },
-  products: { name: "Product Management", Icon: Package },
-  orders: { name: "Order Management", Icon: ShoppingBag },
-  pathways: { name: "Sport Pathway Management", Icon: Route },
-  opportunities: { name: "Admissions & Scholarships", Icon: GraduationCap },
-  "data-sources": { name: "Federation & Tournament Data Sources", Icon: Database },
-  notifications: { name: "Notification Monitoring", Icon: Bell },
-};
-
-// Permission labels for display
-const PERMISSION_LABELS: Record<string, string> = {
-  "users:view": "View Users",
-  "users:manage": "Manage Users",
-  "venues:view": "View Venues",
-  "venues:manage": "Manage Venues",
-  "venues:create": "Create Venues",
-  "bookings:view": "View Bookings",
-  "bookings:manage": "Manage Bookings",
-  "bookings:refund": "Process Refunds",
-  "coaches:view": "View Coaches",
-  "coaches:manage": "Manage Coaches",
-  "coaches:verify": "Verify Coaches",
-  "coaches:create": "Create Coaches",
-  "academies:view": "View Academies",
-  "academies:manage": "Manage Academies",
-  "inquiries:view": "View Inquiries",
-  "inquiries:manage": "Manage Inquiries",
-  "disputes:view": "View Disputes",
-  "disputes:resolve": "Resolve Disputes",
-  "analytics:view": "View Analytics",
-  "analytics:export": "Export Reports",
-  "admins:view": "View Admins",
-  "admins:manage": "Manage Admins",
-  "reviews:view": "View Reviews",
-  "reviews:manage": "Manage Reviews",
-  "products:view": "View Products",
-  "products:create": "Create Products",
-  "products:manage": "Manage Products",
-  "orders:view": "View Orders",
-  "orders:manage": "Manage Orders",
-  "orders:refund": "Refund Orders",
-  "pathways:view": "View Sport Pathways",
-  "pathways:manage": "Edit & Verify Sport Pathways",
-  "opportunities:view": "View Admissions & Scholarships",
-  "opportunities:manage": "Edit, Verify & Publish Admissions & Scholarships",
-  "data-sources:view": "View Federation/Tournament Data Sources",
-  "data-sources:review": "Review & Approve Extracted Data",
-  "data-sources:manage": "Submit New Data Sources",
-  "notifications:view": "View Reminder Monitoring & Failures",
-  "notifications:manage": "Retry Reminders & Send Summaries",
+// Icons are presentation only; the modules, their names and permission labels
+// come from the server's permission catalog. A module the server adds later
+// renders with the fallback icon instead of disappearing.
+const MODULE_ICONS: Record<string, LucideIcon> = {
+  users: Users,
+  venues: Warehouse,
+  bookings: Calendar,
+  coaches: Briefcase,
+  academies: BookOpen,
+  inquiries: ShieldAlert,
+  disputes: ShieldAlert,
+  analytics: BarChart3,
+  admins: UserCog,
+  reviews: Star,
+  products: Package,
+  orders: ShoppingBag,
+  pathways: Route,
+  opportunities: GraduationCap,
+  dataSources: Database,
+  notifications: Bell,
 };
 
 interface PermissionSelectorProps {
   roleTemplates: RoleTemplate[];
+  permissionCatalog: PermissionModule[];
   selectedRole: string;
   selectedPermissions: string[];
   onRoleChange: (role: string) => void;
@@ -96,6 +58,7 @@ interface PermissionSelectorProps {
 
 export default function PermissionSelector({
   roleTemplates,
+  permissionCatalog,
   selectedRole,
   selectedPermissions,
   onRoleChange,
@@ -106,13 +69,12 @@ export default function PermissionSelector({
   const [customMode, setCustomMode] = useState(false);
   const [showPermissionInfo, setShowPermissionInfo] = useState(false);
 
-  // Group permissions by module
   const groupedPermissions: Record<string, string[]> = {};
-  Object.keys(PERMISSION_MODULES).forEach((module) => {
-    groupedPermissions[module] = Object.keys(PERMISSION_LABELS).filter((perm) =>
-      perm.startsWith(`${module}:`)
-    );
-  });
+  const permissionLabels: Record<string, string> = {};
+  for (const permModule of permissionCatalog) {
+    groupedPermissions[permModule.key] = permModule.permissions.map((p) => p.key);
+    for (const p of permModule.permissions) permissionLabels[p.key] = p.label;
+  }
 
   // Handle role template selection
   const handleRoleChange = (role: string) => {
@@ -208,7 +170,7 @@ export default function PermissionSelector({
                         ?.permissions.map((perm) => (
                           <div key={perm} className="flex items-start gap-1 text-xs text-gray-600">
                             <Gauge className="mt-0.5 h-3.5 w-3.5 text-green-600" />
-                            <span>{PERMISSION_LABELS[perm] || perm}</span>
+                            <span>{permissionLabels[perm] || perm}</span>
                           </div>
                         ))}
                     </div>
@@ -254,7 +216,7 @@ export default function PermissionSelector({
               type="button"
               onClick={() =>
                 expandedModules.size === 0
-                  ? setExpandedModules(new Set(Object.keys(PERMISSION_MODULES)))
+                  ? setExpandedModules(new Set(permissionCatalog.map((m) => m.key)))
                   : setExpandedModules(new Set())
               }
               className="text-sm text-green-600 hover:text-green-700"
@@ -264,7 +226,9 @@ export default function PermissionSelector({
           </div>
 
           <div className="divide-y divide-gray-200 rounded-lg border border-gray-200">
-            {Object.entries(PERMISSION_MODULES).map(([moduleKey, module]) => {
+            {permissionCatalog.map((permModule) => {
+              const moduleKey = permModule.key;
+              const ModuleIcon = MODULE_ICONS[moduleKey] ?? KeyRound;
               const isExpanded = expandedModules.has(moduleKey);
               const isFullySelected = isModuleFullySelected(moduleKey);
               const isPartiallySelected = isModulePartiallySelected(moduleKey);
@@ -293,8 +257,8 @@ export default function PermissionSelector({
                     >
                       <span className="font-medium text-gray-900">
                         <span className="inline-flex items-center gap-2">
-                          <module.Icon className="h-4 w-4" />
-                          {module.name}
+                          <ModuleIcon className="h-4 w-4" />
+                          {permModule.name}
                         </span>
                       </span>
                       <svg
@@ -331,7 +295,7 @@ export default function PermissionSelector({
                             className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500 disabled:cursor-not-allowed"
                           />
                           <span className="text-sm text-gray-700">
-                            {PERMISSION_LABELS[permission] || permission}
+                            {permissionLabels[permission] || permission}
                           </span>
                         </label>
                       ))}
