@@ -103,3 +103,43 @@ describe("statusOf", () => {
     assert.equal(statusOf(edit, undefined), "not found");
   });
 });
+
+const { TENNIS_POINTS_EDITS } = require("../scripts/pathwayTennisPointsEdits");
+
+describe("tennis points edit", () => {
+  const edit = TENNIS_POINTS_EDITS[0] as Edit;
+
+  it("replaces the table that was live and fits the limit", () => {
+    assert.equal(TENNIS_POINTS_EDITS.length, 1);
+    assert.ok(edit.old.includes("| Talent Series (TS) | 10 | 7 | 5 | 3 | 1 |"));
+    assert.ok(edit.next.length <= 2000);
+    assert.equal(edit.next, edit.next.trim());
+    assert.ok(!edit.next.includes("—"));
+    assert.deepEqual(cleanFieldText(edit.next).kinds, []);
+  });
+
+  it("carries AITA's published figures, row by row", () => {
+    const rows = edit.next.split("\n").filter((l) => l.startsWith("| ") && !l.includes("---"));
+    const cells = (row: string) =>
+      row
+        .split("|")
+        .slice(1, -1)
+        .map((c) => c.trim());
+    const table = Object.fromEntries(rows.slice(1).map((r) => [cells(r)[0], cells(r).slice(1)]));
+    assert.deepEqual(table["Talent Series (7 days)"], ["-", "2", "6", "8", "10", "12", "15"]);
+    assert.deepEqual(table["Championship Series (3 days)"], ["-", "1", "3", "4", "6", "8", "10"]);
+    assert.deepEqual(table["Championship Series (7 days)"], [
+      "-",
+      "4",
+      "8",
+      "10",
+      "15",
+      "20",
+      "25",
+    ]);
+    assert.deepEqual(table["Super Series"], ["-", "5", "10", "20", "30", "40", "50"]);
+    assert.deepEqual(table["National Series"], ["5", "10", "20", "30", "40", "50", "75"]);
+    assert.deepEqual(table["Nationals"], ["20", "40", "60", "80", "100", "150", "200"]);
+    for (const r of rows) assert.equal(cells(r).length, 8);
+  });
+});

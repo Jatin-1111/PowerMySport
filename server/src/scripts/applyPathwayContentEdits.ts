@@ -9,6 +9,13 @@ import { revalidatePathway } from "../admin/services/ClientCacheRevalidationServ
 import { PathwayGuide } from "../shared/models/PathwayGuide";
 import { writeField, type FieldChange } from "./cleanPathwayRichText";
 import { CHESS_FORMAT_EDITS, type ContentEdit } from "./pathwayChessFormatEdits";
+import { TENNIS_POINTS_EDITS } from "./pathwayTennisPointsEdits";
+
+// Which reviewed set to run: --set chess (default) or --set tennis.
+const SETS: Record<string, { sportSlug: string; edits: ContentEdit[] }> = {
+  chess: { sportSlug: "chess", edits: CHESS_FORMAT_EDITS },
+  tennis: { sportSlug: "tennis", edits: TENNIS_POINTS_EDITS },
+};
 
 // ─── Lay out the long chess answers as paragraphs and lists ─────────────────
 //
@@ -19,6 +26,8 @@ import { CHESS_FORMAT_EDITS, type ContentEdit } from "./pathwayChessFormatEdits"
 //
 //   npx ts-node src/scripts/applyPathwayContentEdits.ts            (dry run: shows each change in full)
 //   npx ts-node src/scripts/applyPathwayContentEdits.ts --apply    (writes, after saving a backup)
+//
+// Add `--set tennis` (placed before --apply) for the corrected AITA points table.
 //
 // To undo, use the cleanup script's revert, which reads the same backup file:
 //   npx ts-node src/scripts/cleanPathwayRichText.ts --revert <backup file>
@@ -67,6 +76,11 @@ const toFieldChange = (edit: ContentEdit): FieldChange => ({
 
 async function main(): Promise<void> {
   const apply = process.argv.includes("--apply");
+  const setIdx = process.argv.indexOf("--set");
+  const setName = (setIdx >= 0 ? process.argv[setIdx + 1] : undefined) ?? "chess";
+  const chosen = SETS[setName];
+  if (!chosen) throw new Error(`Unknown --set "${setName}". Use: ${Object.keys(SETS).join(", ")}`);
+  const { sportSlug, edits } = chosen;
   const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
   if (!uri) throw new Error("Set MONGO_URI (or MONGODB_URI) before running this.");
 
@@ -74,19 +88,17 @@ async function main(): Promise<void> {
   // build indexes in production even on a dry run.
   await mongoose.connect(uri, { autoIndex: false, autoCreate: false });
   try {
-    const guides = await PathwayGuide.find({ sportSlug: "chess" })
-      .select("sportSlug stages")
-      .lean();
+    const guides = await PathwayGuide.find({ sportSlug }).select("sportSlug stages").lean();
     const stages = (guides[0]?.stages ?? []) as unknown as StageLike[];
 
-    const rows = CHESS_FORMAT_EDITS.map((edit) => ({
+    const rows = edits.map((edit) => ({
       edit,
       status: statusOf(edit, currentText(edit, stages)),
     }));
 
     for (const { edit, status } of rows) {
       console.log(
-        `\nchess / ${edit.stageKey} / ${edit.label}${edit.heading ? `  "${edit.heading}"` : ""}`
+        `\n${sportSlug} / ${edit.stageKey} / ${edit.label}${edit.heading ? `  "${edit.heading}"` : ""}`
       );
       console.log(`  ${status.toUpperCase()}`);
       if (status === "will change") {
@@ -128,12 +140,12 @@ async function main(): Promise<void> {
     for (const { edit } of todo) {
       const ok = await writeField(toFieldChange(edit), edit.old, edit.next);
       console.log(
-        `${ok ? "written" : "skipped (text has changed since it was read)"}  chess / ${edit.stageKey} / ${edit.label}`
+        `${ok ? "written" : "skipped (text has changed since it was read)"}  ${sportSlug} / ${edit.stageKey} / ${edit.label}`
       );
       if (ok) written += 1;
     }
     console.log(`\nWrote ${written} of ${todo.length} field(s).`);
-    revalidatePathway("chess");
+    revalidatePathway(sportSlug);
   } finally {
     await mongoose.disconnect();
   }
