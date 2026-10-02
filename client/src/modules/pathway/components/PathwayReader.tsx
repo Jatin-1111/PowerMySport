@@ -38,6 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { PathwayAction, PathwayGuide, PathwayStage } from "@/modules/pathway/services/pathway";
 import { findStageForAge } from "../utils/ageRange";
+import { RichText } from "@/modules/shared/components/RichText";
 import { PathwayAskCommunity } from "./PathwayAskCommunity";
 import { parseTypedAge, rememberChildAge, useChildAge } from "../utils/childAge";
 import { headingDomId, sectionDomId } from "../utils/sectionIds";
@@ -337,11 +338,7 @@ function QuestionsList({ stage }: { stage: PathwayStage }) {
           <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
             {item.question}
           </span>
-          {item.answer?.trim() && (
-            <span className="mt-1 block max-w-[70ch] text-[13.5px] leading-relaxed text-slate-500">
-              {item.answer}
-            </span>
-          )}
+          <RichText className="mt-1.5 max-w-[70ch]">{item.answer}</RichText>
         </li>
       ))}
     </ul>
@@ -910,9 +907,9 @@ export function PathwayReader({
                 />
 
                 {section.id === "overview" && (
-                  <p className="max-w-[68ch] text-[15.5px] leading-relaxed text-slate-700">
+                  <RichText size="body" className="max-w-[68ch]">
                     {stage.overview}
-                  </p>
+                  </RichText>
                 )}
 
                 {section.id === "questions" && <QuestionsList stage={stage} />}
@@ -927,16 +924,12 @@ export function PathwayReader({
                         <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-black text-slate-500">
                           {String(i + 1).padStart(2, "0")}
                         </span>
-                        <span>
+                        <div className="min-w-0">
                           <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
                             {signal.title}
                           </span>
-                          {signal.detail && (
-                            <span className="mt-1 block text-[13.5px] leading-relaxed text-slate-500">
-                              {signal.detail}
-                            </span>
-                          )}
-                        </span>
+                          <RichText className="mt-1">{signal.detail}</RichText>
+                        </div>
                       </li>
                     ))}
                   </ol>
@@ -953,11 +946,7 @@ export function PathwayReader({
                           <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
                             {decision.title}
                           </span>
-                          {decision.detail && (
-                            <span className="mt-1 block text-[13.5px] leading-relaxed text-slate-500">
-                              {decision.detail}
-                            </span>
-                          )}
+                          <RichText className="mt-1">{decision.detail}</RichText>
                         </li>
                       ))}
                     </ul>
