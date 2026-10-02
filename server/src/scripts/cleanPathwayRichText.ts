@@ -239,7 +239,7 @@ function fitsLimit(change: FieldChange): boolean {
 // ─── Writing, and undoing ────────────────────────────────────────────────────
 
 /** Replace one field's text, only if it is still exactly `from`. Returns whether it was written. */
-async function writeField(change: FieldChange, from: string, to: string): Promise<boolean> {
+export async function writeField(change: FieldChange, from: string, to: string): Promise<boolean> {
   const stage = { "s.key": change.stageKey };
   let result;
   if (change.kind === "overview") {
