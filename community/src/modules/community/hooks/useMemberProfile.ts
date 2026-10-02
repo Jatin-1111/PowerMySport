@@ -4,12 +4,15 @@ import { useCallback, useRef, useState } from "react";
 import type { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
-import { CommunityMemberProfile } from "@/modules/community/types";
+import { CommunityMemberProfile, type MessagePrivacy } from "@/modules/community/types";
 import { GroupMember } from "@/modules/community/components/GroupMembersList";
 
 export function useMemberProfile(
   router: ReturnType<typeof useRouter>,
-  handleStartConversation: (targetUserId: string) => Promise<void>,
+  handleStartConversation: (
+    targetUserId: string,
+    options?: { name?: string; privacy?: MessagePrivacy }
+  ) => Promise<void>,
   setShowChatDetailsSidebar: (value: boolean) => void
 ) {
   const memberProfileRequestIdRef = useRef<string | null>(null);
@@ -61,7 +64,10 @@ export function useMemberProfile(
   const handleMessageSelectedMember = useCallback(() => {
     if (!selectedMemberProfile) return;
     handleCloseMemberProfile();
-    void handleStartConversation(selectedMemberProfile.id);
+    void handleStartConversation(selectedMemberProfile.id, {
+      name: selectedMemberProfile.displayName,
+      privacy: selectedMemberProfile.messagePrivacy,
+    });
   }, [handleCloseMemberProfile, handleStartConversation, selectedMemberProfile]);
 
   return {

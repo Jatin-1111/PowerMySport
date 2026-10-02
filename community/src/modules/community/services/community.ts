@@ -370,7 +370,16 @@ export const communityService = {
     return response.items;
   },
 
-  async startConversation(targetUserId: string): Promise<{
+  /**
+   * Opens a conversation. With a recipient who takes requests, `message` is the
+   * request's intro and is required: without one the server refuses (see
+   * isIntroRequiredError). A recipient who accepts messages from everyone needs
+   * none.
+   */
+  async startConversation(
+    targetUserId: string,
+    message?: string
+  ): Promise<{
     id: string;
     status: "PENDING" | "ACTIVE";
     requestedBy: string;
@@ -383,6 +392,7 @@ export const communityService = {
       }>
     >("/community/conversations/start", {
       targetUserId,
+      ...(message !== undefined ? { message } : {}),
     });
     clearCacheByPrefixes(["conversations", "groups"]);
     return response.data.data;

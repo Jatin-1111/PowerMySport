@@ -131,7 +131,7 @@ export function ChatAddModal({
                               page.handleJoinGroup(id);
                             }
                           } else {
-                            page.handleStartConversation(id);
+                            page.handleStartConversation(id, { name });
                           }
                           onClose();
                         }}

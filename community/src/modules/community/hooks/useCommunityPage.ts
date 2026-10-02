@@ -5,10 +5,12 @@ import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
 import { communityFollowStore } from "@/modules/community/lib/followStore";
+import { useConnectRequest } from "@/modules/community/hooks/useConnectRequest";
 import {
   CommunityUserSearchResult,
   CommunityGroupSummary,
   CommunityProfile,
+  MessagePrivacy,
   ConversationListResponse,
   ConversationItem,
   ConversationMessage,
@@ -796,29 +798,42 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     queueConversationRefresh,
   });
 
+  // What happens once a conversation exists. Runs straight away for someone who
+  // accepts messages from everyone, and after the request's message is sent for
+  // everyone else (see useConnectRequest).
+  const connectRequest = useConnectRequest(async (conversation) => {
+    try {
+      setPlayerSearchQuery("");
+      setPlayerSearchResults([]);
+      const updated = await communityService.listConversations(1, CONVERSATION_PAGE_SIZE);
+      applyConversationPage(updated, { preserveSelection: true });
+      setSelectedConversationId(conversation.id);
+      setActiveSidebarTab("conversations");
+      setWorkspaceView("CHAT");
+      toast.success(
+        conversation.status === "PENDING" ? "Message request sent" : "Conversation started"
+      );
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to open the conversation";
+      setError(message);
+      toast.error(message);
+    }
+  });
+  const startConnect = connectRequest.start;
+
   const handleStartConversation = useCallback(
-    async (targetUserId: string) => {
+    async (targetUserId: string, options?: { name?: string; privacy?: MessagePrivacy }) => {
       if (!targetUserId.trim()) return;
       setError(null);
       try {
-        const conversation = await communityService.startConversation(targetUserId.trim());
-        setPlayerSearchQuery("");
-        setPlayerSearchResults([]);
-        const updated = await communityService.listConversations(1, CONVERSATION_PAGE_SIZE);
-        applyConversationPage(updated, { preserveSelection: true });
-        setSelectedConversationId(conversation.id);
-        setActiveSidebarTab("conversations");
-        setWorkspaceView("CHAT");
-        toast.success(
-          conversation.status === "PENDING" ? "Message request sent" : "Conversation started"
-        );
+        await startConnect(targetUserId.trim(), options);
       } catch (e) {
         const message = e instanceof Error ? e.message : "Failed to start conversation";
         setError(message);
         toast.error(message);
       }
     },
-    [applyConversationPage]
+    [startConnect]
   );
 
   const refreshGroupDirectoryState = useCallback(
@@ -1092,6 +1107,7 @@ export function useCommunityPage(options?: { forceView?: "community-overview" | 
     isConversationsView && showChatDetailsSidebar && !!selectedConversation;
 
   return {
+    connectRequest,
     prefersReducedMotion,
     router,
     mainAppUrl,

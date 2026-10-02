@@ -7,6 +7,7 @@ import { ReportModal } from "@/modules/community/components/chat/ReportModal";
 import { ChatAddModal } from "./ChatAddModal";
 import { BlockedUsersModal } from "./BlockedUsersModal";
 import { DeleteMessageModal } from "@/modules/community/components/chat/DeleteMessageModal";
+import ConnectRequestModal from "@/modules/community/components/ConnectRequestModal";
 import { useSearchParams } from "next/navigation";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
 
@@ -105,6 +106,8 @@ export default function CommunityPageModals({ page }: Props) {
         mode={directoryView}
         page={page}
       />
+
+      <ConnectRequestModal request={page.connectRequest} />
 
       <BlockedUsersModal
         isOpen={showBlockedUsersModal}

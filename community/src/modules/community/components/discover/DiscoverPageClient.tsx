@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { communityService } from "@/modules/community/services/community";
+import ConnectRequestModal from "@/modules/community/components/ConnectRequestModal";
+import { useConnectRequest } from "@/modules/community/hooks/useConnectRequest";
 import { CommunityGroupSummary, CommunityUserSearchResult } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { hasAuthToken } from "@/lib/auth/token";
@@ -205,14 +207,21 @@ export default function DiscoverPageClient() {
     }
   };
 
-  const handlePlayerChat = async (userId: string) => {
+  // A chat opens at once for someone who accepts messages from everyone, and
+  // after the request's message is sent for everyone else.
+  const connect = useConnectRequest((conversation) => {
+    router.push(`/chats?conversation=${conversation.id}`);
+  });
+
+  // The directory does not say who takes requests, so the dialog opens when the
+  // server asks for the message rather than before.
+  const handlePlayerChat = async (userId: string, name?: string) => {
     if (!hasAuthToken()) {
       redirectToMainLogin();
       return;
     }
     try {
-      const conversation = await communityService.startConversation(userId);
-      router.push(`/chats?conversation=${conversation.id}`);
+      await connect.start(userId, name ? { name } : undefined);
     } catch (error) {
       console.error("Failed to start conversation:", error);
     }
@@ -765,7 +774,7 @@ export default function DiscoverPageClient() {
                                 <Eye size={12} /> Details
                               </button>
                               <button
-                                onClick={() => handlePlayerChat(player.id)}
+                                onClick={() => handlePlayerChat(player.id, player.displayName)}
                                 style={{ background: "rgba(233,115,22,0.85)" }}
                                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
                               >
@@ -822,8 +831,10 @@ export default function DiscoverPageClient() {
           setTimeout(() => setSelectedPlayerId(null), 200);
         }}
         userId={selectedPlayerId!}
-        onChat={handlePlayerChat}
+        onChat={(userId) => handlePlayerChat(userId)}
       />
+
+      <ConnectRequestModal request={connect} />
 
       {/* Photo lightbox — portalled to body so it covers the fixed header */}
       {typeof document !== "undefined" &&

@@ -2,6 +2,11 @@
 
 import { toast } from "@/lib/toast";
 import { communityService } from "@/modules/community/services/community";
+import ConnectRequestModal from "@/modules/community/components/ConnectRequestModal";
+import {
+  useConnectRequest,
+  type StartedConversation,
+} from "@/modules/community/hooks/useConnectRequest";
 import { CommunityMemberProfile } from "@/modules/community/types";
 import DependentSummaryList from "@/modules/community/components/DependentSummaryList";
 import {
@@ -128,6 +133,16 @@ export default function MemberProfilePage() {
   const dependents = useMemo(() => profile?.dependents || [], [profile?.dependents]);
   const age = profile?.age ?? calculateAgeFromDate(profile?.dob);
 
+  // Opens the chat once it exists: straight away for someone who accepts
+  // messages from everyone, after the request's message is sent otherwise.
+  const connect = useConnectRequest((conversation: StartedConversation) => {
+    window.localStorage.setItem(COMMUNITY_SELECTED_CONVERSATION_KEY, conversation.id);
+    toast.success(
+      conversation.status === "PENDING" ? "Message request sent" : "Conversation opened"
+    );
+    router.push(`/chats?conversation=${conversation.id}`);
+  });
+
   const handleStartConversation = async () => {
     if (!profile) {
       return;
@@ -135,10 +150,10 @@ export default function MemberProfilePage() {
 
     setIsMessaging(true);
     try {
-      const conversation = await communityService.startConversation(profile.id);
-      window.localStorage.setItem(COMMUNITY_SELECTED_CONVERSATION_KEY, conversation.id);
-      toast.success("Conversation opened");
-      router.push(`/chats?conversation=${conversation.id}`);
+      await connect.start(profile.id, {
+        name: profile.displayName,
+        privacy: profile.messagePrivacy,
+      });
     } catch (messageError) {
       const message =
         messageError instanceof Error ? messageError.message : "Failed to start conversation";
@@ -395,6 +410,7 @@ export default function MemberProfilePage() {
           </div>
         )}
       </div>
+      <ConnectRequestModal request={connect} />
     </motion.div>
   );
 }
