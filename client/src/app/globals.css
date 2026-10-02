@@ -3,6 +3,11 @@
 @import "shadcn/tailwind.css";
 @import "@powermysport/shared-tokens/tokens.css";
 
+/* The rich-text package carries Tailwind classes of its own. Tailwind v4 only
+   generates classes from files it scans, and a workspace package sits outside
+   this app, so without this its lists, tables and headings would be unstyled. */
+@source "../../../packages/rich-text/src";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "@powermysport/shared-tokens/tokens.css";
 
+/* The rich-text package carries Tailwind classes of its own. Tailwind v4 only
+   generates classes from files it scans, and a workspace package sits outside
+   this app, so without this its lists, tables and headings would be unstyled. */
+@source "../../../packages/rich-text/src";
+
 :root {
   /* PowerMySport Brand Colors — see packages/shared-tokens/tokens.css,
      imported above, for --power-orange/--power-orange-solid/etc. */

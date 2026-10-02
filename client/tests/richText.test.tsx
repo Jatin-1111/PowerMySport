@@ -7,8 +7,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { RichText } from "@/modules/shared/components/RichText";
-import { normalizeRichText } from "@/modules/shared/utils/richText";
+import { RichText, normalizeRichText } from "@powermysport/rich-text";
 
 // The renderer writes a newline after each <br/>; it is invisible on screen, so
 // it is folded away here and a line break reads as "<br/>" in the assertions.

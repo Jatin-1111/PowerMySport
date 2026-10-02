@@ -20,7 +20,8 @@ import type {
 import { Loader2, Save } from "lucide-react";
 import { useState } from "react";
 
-import { ErrorList, Field, RepeatableList, TextArea, TextInput } from "./fields";
+import { ErrorList, Field, RepeatableList, TextInput } from "./fields";
+import { RichTextField } from "./RichTextField";
 
 /** kebab-case, which is what the format requires of a stage key. */
 export function slugify(value: string): string {
@@ -183,9 +184,11 @@ export function StageEditor({
       </div>
 
       <Bucket number="01" title="Overview" subtitle="Where am I and what does this stage mean?">
-        <TextArea
+        <RichTextField
           value={draft.overview}
-          rows={4}
+          rows={5}
+          maxLength={1500}
+          previewSize="body"
           onChange={(overview) => set("overview", overview)}
           placeholder="Your child is discovering tennis and building a first relationship with the sport…"
         />
@@ -211,11 +214,12 @@ export function StageEditor({
                 onChange={(question) => setItem({ ...item, question })}
                 placeholder="Is tennis suitable for my child?"
               />
-              <TextArea
+              <RichTextField
                 value={item.answer ?? ""}
-                rows={3}
+                rows={5}
+                maxLength={2000}
                 onChange={(answer) => setItem({ ...item, answer })}
-                placeholder="The answer parents see when they open this question (optional)"
+                placeholder="The answer parents see under this question (optional)"
               />
             </>
           )}
@@ -241,9 +245,10 @@ export function StageEditor({
                 onChange={(title) => setItem({ ...item, title })}
                 placeholder="Enjoyment and willingness to return"
               />
-              <TextArea
+              <RichTextField
                 value={item.detail ?? ""}
-                rows={2}
+                rows={3}
+                maxLength={2000}
                 onChange={(detail) => setItem({ ...item, detail })}
                 placeholder="Optional explanation"
               />
@@ -267,9 +272,10 @@ export function StageEditor({
                 onChange={(title) => setItem({ ...item, title })}
                 placeholder="Which academy or coach?"
               />
-              <TextArea
+              <RichTextField
                 value={item.detail ?? ""}
-                rows={2}
+                rows={3}
+                maxLength={2000}
                 onChange={(detail) => setItem({ ...item, detail })}
                 placeholder="Optional explanation"
               />

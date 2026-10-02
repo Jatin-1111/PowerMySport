@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@powermysport/rich-text": "*",
     "@powermysport/shared-tokens": "*",
     "@powermysport/shared-types": "*",
     "axios": "^1.13.4",

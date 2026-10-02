@@ -38,7 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { PathwayAction, PathwayGuide, PathwayStage } from "@/modules/pathway/services/pathway";
 import { findStageForAge } from "../utils/ageRange";
-import { RichText } from "@/modules/shared/components/RichText";
+import { RichText } from "@powermysport/rich-text";
 import { PathwayAskCommunity } from "./PathwayAskCommunity";
 import { parseTypedAge, rememberChildAge, useChildAge } from "../utils/childAge";
 import { headingDomId, sectionDomId } from "../utils/sectionIds";

@@ -1,8 +1,7 @@
-import { cn } from "@/utils/cn";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { normalizeRichText, remarkKeepLineBreaks } from "../utils/richText";
+import { normalizeRichText, remarkKeepLineBreaks } from "./normalize";
 
 // ─── Formatted text for pathway answers and detail ──────────────────────────
 //
@@ -134,7 +133,7 @@ export function RichText({
   if (!text) return null;
 
   return (
-    <div className={cn(SIZE[size], className)}>
+    <div className={className ? `${SIZE[size]} ${className}` : SIZE[size]}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkKeepLineBreaks]}
         allowedElements={ALLOWED_ELEMENTS}
