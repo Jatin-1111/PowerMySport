@@ -17,8 +17,12 @@ const getConversationId = (req: Request): string => {
 export const startConversation = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { targetUserId } = req.body as { targetUserId: string };
-      const data = await CommunityService.startConversation(getUserId(req), targetUserId);
+      const { targetUserId, message } = req.body as { targetUserId: string; message?: string };
+      const data = await CommunityService.startConversation(
+        getUserId(req),
+        targetUserId,
+        typeof message === "string" ? message : undefined
+      );
       res.status(200).json({
         success: true,
         message: "Conversation ready",

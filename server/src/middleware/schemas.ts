@@ -76,6 +76,11 @@ export const communityBlockSchema = z.object({
 
 export const communityStartConversationSchema = z.object({
   targetUserId: z.string().min(1, "Target user ID is required"),
+  // The request's intro. Its length rules (and the message to show for them)
+  // live in conversationsService.startConversation; this only keeps an absurd
+  // body out. Absent is fine here: a recipient who accepts messages from
+  // everyone needs none.
+  message: z.string().max(2000).optional(),
 });
 
 export const communitySendMessageSchema = z.object({

@@ -21,8 +21,18 @@ import {
   trackCommunityRoleMixEvent,
 } from "../communityShared";
 
+/**
+ * A request is "connect with a message": it cannot be sent without one, so the
+ * person deciding whether to accept always has the sender's reason in front of
+ * them. Long enough to say something, short enough not to be a letter. The
+ * wording contains "required" because getStatusCode maps that to a 400.
+ */
+export const REQUEST_MESSAGE_MIN = 10;
+export const REQUEST_MESSAGE_MAX = 500;
+export const REQUEST_MESSAGE_REQUIRED = `A short message is required to send a request: say why you'd like to connect (at least ${REQUEST_MESSAGE_MIN} characters).`;
+
 export const conversationsService = {
-  async startConversation(userId: string, targetUserId: string) {
+  async startConversation(userId: string, targetUserId: string, introMessage?: string) {
     if (userId === targetUserId) {
       throw new Error("You cannot chat with yourself");
     }
@@ -72,6 +82,16 @@ export const conversationsService = {
 
     const initialStatus = targetProfile.messagePrivacy === "REQUEST_ONLY" ? "PENDING" : "ACTIVE";
 
+    // Checked before anything is created, so a request refused for want of a
+    // message leaves no empty conversation behind.
+    const intro = (introMessage ?? "").trim();
+    if (initialStatus === "PENDING") {
+      if (intro.length < REQUEST_MESSAGE_MIN) throw new Error(REQUEST_MESSAGE_REQUIRED);
+      if (intro.length > REQUEST_MESSAGE_MAX) {
+        throw new Error(`Your message cannot be longer than ${REQUEST_MESSAGE_MAX} characters.`);
+      }
+    }
+
     const conversation = await CommunityConversation.findOneAndUpdate(
       { participantKey },
       {
@@ -89,6 +109,25 @@ export const conversationsService = {
 
     if (!conversation) {
       throw new Error("Failed to start conversation");
+    }
+
+    // The request's one message is written with the request. Guarded on the
+    // conversation having no messages yet, so two simultaneous requests (the
+    // upsert above lets only one create it) cannot both post an intro, and the
+    // one-message cap in sendMessage still holds.
+    if (initialStatus === "PENDING" && String(conversation.requestedBy) === userId) {
+      const alreadyThere = await CommunityMessage.countDocuments({
+        conversationId: conversation._id,
+      });
+      if (alreadyThere === 0) {
+        await CommunityMessage.create({
+          conversationId: conversation._id,
+          senderId: userId,
+          type: "TEXT",
+          content: intro,
+          readBy: [new mongoose.Types.ObjectId(userId)],
+        });
+      }
     }
 
     if (targetUserId !== userId) {

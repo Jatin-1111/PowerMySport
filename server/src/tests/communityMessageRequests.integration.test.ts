@@ -81,11 +81,15 @@ const signedInAs = async (role = "Parent") => {
   return { userId, token };
 };
 
-const startConversation = (token: string, targetUserId: string) =>
+const INTRO = "Hi, my son plays U12 tennis and I'd like to connect.";
+
+// A request is "connect with a message", so the helper sends one by default.
+// Pass `null` to send none.
+const startConversation = (token: string, targetUserId: string, message: string | null = INTRO) =>
   request(app)
     .post("/api/community/conversations/start")
     .set("Authorization", `Bearer ${token}`)
-    .send({ targetUserId });
+    .send({ targetUserId, ...(message === null ? {} : { message }) });
 
 const sendMessage = (token: string, conversationId: string, content: string) =>
   request(app)
@@ -123,19 +127,20 @@ describe("community DM requests", () => {
     assert.equal(response.body.data.status, "PENDING");
   });
 
-  it("lets the sender send exactly one intro message, then stops them", async () => {
+  it("sends the intro with the request, then stops the sender", async () => {
     const sender = await signedInAs();
     const recipient = await signedInAs();
     const { body } = await startConversation(sender.token, recipient.userId.toString());
     const conversationId = body.data.id;
 
-    const first = await sendMessage(sender.token, conversationId, "Hi — my son plays U12 tennis.");
-    assert.equal(first.status, 201, "the intro message should go through");
+    const intro = await CommunityMessage.findOne({ conversationId }).lean();
+    assert.equal(intro?.content, INTRO, "the intro is written with the request");
+    assert.equal(String(intro?.senderId), String(sender.userId));
 
     const second = await sendMessage(sender.token, conversationId, "Hello? Are you there?");
     assert.ok(
       second.status >= 400,
-      `expected the second message to be refused, got ${second.status}`
+      `expected a further message to be refused, got ${second.status}`
     );
 
     assert.equal(
@@ -156,7 +161,6 @@ describe("community DM requests", () => {
     const { body } = await startConversation(sender.token, recipient.userId.toString());
     const conversationId = body.data.id;
 
-    await sendMessage(sender.token, conversationId, "First and only.");
     await CommunityMessage.updateMany({ conversationId }, { $set: { isDeleted: true } });
 
     const retry = await sendMessage(sender.token, conversationId, "Sneaking a second one in.");
@@ -168,7 +172,6 @@ describe("community DM requests", () => {
     const recipient = await signedInAs();
     const { body } = await startConversation(sender.token, recipient.userId.toString());
     const conversationId = body.data.id;
-    await sendMessage(sender.token, conversationId, "Hi there.");
 
     const earlyReply = await sendMessage(recipient.token, conversationId, "Who is this?");
     assert.ok(
@@ -182,7 +185,6 @@ describe("community DM requests", () => {
     const recipient = await signedInAs();
     const { body } = await startConversation(sender.token, recipient.userId.toString());
     const conversationId = body.data.id;
-    await sendMessage(sender.token, conversationId, "Hi there.");
 
     const accepted = await acceptRequest(recipient.token, conversationId);
     assert.equal(accepted.status, 200);
@@ -198,7 +200,6 @@ describe("community DM requests", () => {
     const sender = await signedInAs();
     const recipient = await signedInAs();
     const first = await startConversation(sender.token, recipient.userId.toString());
-    await sendMessage(sender.token, first.body.data.id, "First attempt.");
 
     await rejectRequest(recipient.token, first.body.data.id);
 
@@ -210,8 +211,11 @@ describe("community DM requests", () => {
     assert.equal(second.status, 200);
     assert.equal(second.body.data.status, "PENDING");
 
-    const retry = await sendMessage(sender.token, second.body.data.id, "Trying again politely.");
-    assert.equal(retry.status, 201);
+    assert.equal(
+      await CommunityMessage.countDocuments({ conversationId: second.body.data.id }),
+      1,
+      "the new request carries its own intro"
+    );
   });
 
   it("still opens straight to ACTIVE for someone who chose EVERYONE", async () => {
@@ -225,7 +229,8 @@ describe("community DM requests", () => {
       { $set: { messagePrivacy: "EVERYONE" } }
     );
 
-    const response = await startConversation(sender.token, recipient.userId.toString());
+    // No message needed: there is no request to explain.
+    const response = await startConversation(sender.token, recipient.userId.toString(), null);
 
     assert.equal(response.body.data.status, "ACTIVE");
 
@@ -236,5 +241,86 @@ describe("community DM requests", () => {
       201,
       "no cap applies outside a pending request"
     );
+  });
+});
+
+describe("the request's required message", () => {
+  it("refuses a request with no message, and leaves nothing behind", async () => {
+    const sender = await signedInAs();
+    const recipient = await signedInAs();
+
+    const response = await startConversation(sender.token, recipient.userId.toString(), null);
+
+    assert.equal(response.status, 400);
+    assert.match(response.body.message, /message is required/i);
+    assert.equal(await CommunityConversation.countDocuments({}), 0);
+    assert.equal(await CommunityMessage.countDocuments({}), 0);
+  });
+
+  it("refuses a message that is only whitespace or too short to say anything", async () => {
+    const sender = await signedInAs();
+    const recipient = await signedInAs();
+
+    for (const message of ["", "   \n  ", "hi"]) {
+      const response = await startConversation(sender.token, recipient.userId.toString(), message);
+      assert.equal(response.status, 400, `"${message}" should be refused`);
+    }
+    assert.equal(await CommunityConversation.countDocuments({}), 0);
+  });
+
+  it("refuses a message over the limit", async () => {
+    const sender = await signedInAs();
+    const recipient = await signedInAs();
+
+    const response = await startConversation(
+      sender.token,
+      recipient.userId.toString(),
+      "x".repeat(501)
+    );
+
+    assert.equal(response.status, 400);
+    assert.equal(await CommunityConversation.countDocuments({}), 0);
+  });
+
+  it("trims the message it stores", async () => {
+    const sender = await signedInAs();
+    const recipient = await signedInAs();
+
+    const { body } = await startConversation(
+      sender.token,
+      recipient.userId.toString(),
+      "   Hello, I'd like to connect.   "
+    );
+
+    const stored = await CommunityMessage.findOne({ conversationId: body.data.id }).lean();
+    assert.equal(stored?.content, "Hello, I'd like to connect.");
+  });
+
+  it("lets the recipient read the message before accepting", async () => {
+    const sender = await signedInAs();
+    const recipient = await signedInAs();
+    const { body } = await startConversation(sender.token, recipient.userId.toString());
+
+    const messages = await request(app)
+      .get(`/api/community/conversations/${body.data.id}/messages`)
+      .set("Authorization", `Bearer ${recipient.token}`);
+
+    assert.equal(messages.status, 200);
+    assert.equal(messages.body.data.messages[0].content, INTRO);
+  });
+
+  it("does not post a second intro when the same request is sent again", async () => {
+    const sender = await signedInAs();
+    const recipient = await signedInAs();
+    await startConversation(sender.token, recipient.userId.toString());
+
+    const again = await startConversation(
+      sender.token,
+      recipient.userId.toString(),
+      "A different message, sent a second time."
+    );
+
+    assert.equal(again.status, 200);
+    assert.equal(await CommunityMessage.countDocuments({}), 1);
   });
 });
