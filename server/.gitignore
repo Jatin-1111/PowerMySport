@@ -10,3 +10,6 @@ debug_output.txt
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# One-off pathway text cleanup backups (scripts/cleanPathwayRichText.ts)
+pathway-richtext-backup-*.json
