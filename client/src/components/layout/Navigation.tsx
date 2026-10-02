@@ -55,43 +55,52 @@ const servicesItems = [
     : []),
 ];
 
+// Grouped so six items read as three decisions: where to start, how to compete,
+// and what comes after. Descriptions stay to one or two lines so the menu is
+// an even height; the longer explanation lives on each page.
 const exploreItems = [
   {
+    group: "Start here",
     href: "/assessment",
     label: "Get Started",
-    description: "Know the sport, or need help deciding. Start here",
+    description: "Know the sport, or need help deciding",
     icon: Star,
   },
   {
+    group: "Start here",
     href: "/roadmap",
     label: "Sports Pathways",
-    description: "Explore the journey ahead for your child's sport",
+    description: "The journey ahead for your child's sport",
     icon: Map,
   },
   {
+    group: "Compete",
     href: "/tournaments",
     label: "Tournaments",
-    description: "Upcoming dates by sport, narrowed to your child's age group",
+    description: "Upcoming dates, by age group",
     icon: Trophy,
-  },
-  {
-    href: "/admissions",
-    label: "Admissions",
-    description: "Sports quotas at schools and universities, and college sport abroad",
-    icon: GraduationCap,
-  },
-  {
-    href: "/scholarships",
-    label: "Scholarships",
-    description: "Funding for young athletes, and whether you apply or get picked",
-    icon: HandCoins,
   },
   // Powermysport AI hidden for now.
   {
+    group: "Compete",
     href: "/rankings",
     label: "Rankings",
-    description: "Official federation lists, searchable by state and player",
+    description: "Official federation lists",
     icon: ListOrdered,
+  },
+  {
+    group: "Beyond the court",
+    href: "/admissions",
+    label: "Admissions",
+    description: "Sports quotas at schools and colleges",
+    icon: GraduationCap,
+  },
+  {
+    group: "Beyond the court",
+    href: "/scholarships",
+    label: "Scholarships",
+    description: "Funding for young athletes",
+    icon: HandCoins,
   },
 ];
 
@@ -230,47 +239,61 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                     exit={{ opacity: 0, y: -8, scale: 0.97 }}
                     transition={{ duration: 0.18, ease: "easeOut" }}
                     onMouseLeave={() => setExploreDropdownOpen(false)}
-                    className="absolute left-1/2 mt-3 w-64 -translate-x-1/2 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl"
+                    className="absolute left-1/2 mt-3 w-80 -translate-x-1/2 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl"
                   >
                     {/* subtle top accent */}
                     <div className="from-power-orange/60 via-power-orange to-power-orange/60 h-0.5 w-full bg-gradient-to-r" />
 
-                    <div className="py-2">
+                    <div className="py-1.5">
                       {exploreItems.map((item, index) => {
                         const Icon = item.icon;
+                        const startsGroup = item.group !== exploreItems[index - 1]?.group;
                         return (
                           <motion.div
                             key={item.href}
                             initial={{ opacity: 0, x: -6 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{
-                              delay: index * 0.05,
+                              delay: index * 0.04,
                               duration: 0.15,
                               ease: "easeOut",
                             }}
                           >
+                            {startsGroup && (
+                              <p
+                                className={cn(
+                                  "px-4 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400",
+                                  index === 0 ? "pt-2" : "mt-1 border-t border-slate-100 pt-3"
+                                )}
+                              >
+                                {item.group}
+                              </p>
+                            )}
                             <Link
                               href={item.href}
                               onClick={() => setExploreDropdownOpen(false)}
                               className={cn(
-                                "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-orange-50",
+                                "group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-orange-50",
                                 pathname === item.href && "bg-orange-50"
                               )}
                             >
+                              {/* shrink-0 keeps every tile the same size; without it the
+                                  longest description squeezed its tile and pushed its text
+                                  out of line with the rest. */}
                               <span
                                 className={cn(
-                                  "flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
                                   pathname === item.href
                                     ? "bg-power-orange-solid text-white"
                                     : "group-hover:bg-power-orange/10 group-hover:text-power-orange bg-slate-100 text-slate-500"
                                 )}
                               >
-                                <Icon className="h-4 w-4" />
+                                <Icon className="h-[18px] w-[18px]" />
                               </span>
-                              <div>
+                              <div className="min-w-0">
                                 <p
                                   className={cn(
-                                    "mb-0.5 text-sm font-medium leading-none",
+                                    "text-sm font-semibold leading-tight",
                                     pathname === item.href
                                       ? "text-power-orange"
                                       : "group-hover:text-power-orange text-slate-800"
@@ -278,7 +301,9 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                                 >
                                   {item.label}
                                 </p>
-                                <p className="text-xs text-slate-400">{item.description}</p>
+                                <p className="mt-0.5 text-xs leading-snug text-slate-500">
+                                  {item.description}
+                                </p>
                               </div>
                             </Link>
                           </motion.div>
