@@ -76,6 +76,11 @@ const PERIOD_START = new Date("2026-09-01T00:00:00.000Z");
 const PERIOD_END = new Date("2026-10-01T00:00:00.000Z");
 /** A moment before any session in the period. */
 const BEFORE_ALL = new Date("2026-08-31T00:00:00.000Z");
+// A few days before PERIOD_END: the renewal tests renew EARLY, which starts the
+// new period at the old one's end. Left to the real clock they renewed early
+// only until the real date passed PERIOD_END (1 Oct 2026), then silently
+// started testing the late-renewal branch and failed.
+const RENEWED_EARLY = new Date("2026-09-28T00:00:00.000Z");
 
 const seedOffering = async (
   overrides: Record<string, unknown> = {},
@@ -1185,6 +1190,7 @@ describe("renewal", () => {
       userId: userId.toString(),
       coachId: coachId.toString(),
       packageId: pkg._id.toString(),
+      now: RENEWED_EARLY,
     });
 
     const renewed = await CoachSubscription.findById(subscription._id);
@@ -1210,6 +1216,7 @@ describe("renewal", () => {
       userId: userId.toString(),
       coachId: coachId.toString(),
       packageId: pkg._id.toString(),
+      now: RENEWED_EARLY,
     });
     await offeringService.activateEnrollmentAfterPayment({
       enrollmentId: enrollment._id,
@@ -1405,6 +1412,7 @@ describe("renewal", () => {
       userId: userId.toString(),
       coachId: coachId.toString(),
       packageId: pkg._id.toString(),
+      now: new Date("2026-09-29T00:00:00.000Z"),
     });
 
     // The next period comes due; the payer must hear about it too.

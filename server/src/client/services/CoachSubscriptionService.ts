@@ -65,6 +65,13 @@ export const subscribeToCoachPackage = async (params: {
   dependentId?: string;
   coachId: string;
   packageId: string;
+  /**
+   * The moment this is happening, for tests. Whether a renewal starts at the
+   * old period's end (renewed early) or at this moment (renewed late) depends
+   * on it, and a test that leaves it to the real clock stops testing the early
+   * case the day the real date passes the period it hard-codes.
+   */
+  now?: Date;
 }): Promise<CoachSubscriptionDocument> => {
   const packageDoc = await CoachSubscriptionPackage.findById(toObjectId(params.packageId));
 
@@ -76,7 +83,7 @@ export const subscribeToCoachPackage = async (params: {
     throw new Error("Package does not belong to this coach");
   }
 
-  const now = new Date();
+  const now = params.now ?? new Date();
   const periodEnd = addBillingPeriod(now, packageDoc.frequency);
 
   const query: any = {
