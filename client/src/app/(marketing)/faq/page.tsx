@@ -468,11 +468,9 @@ export default function FAQPage() {
             Our support team is here to help. Reach out and we&apos;ll get back to you as soon as
             possible.
           </p>
-          <Link href="/contact">
-            <Button variant="primary" size="lg">
-              Contact Support
-            </Button>
-          </Link>
+          <Button asChild variant="primary" size="lg">
+            <Link href="/contact">Contact Support</Link>
+          </Button>
         </Card>
       </div>
     </div>

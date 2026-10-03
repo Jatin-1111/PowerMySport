@@ -33,17 +33,23 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
+    // Every variant carries a 1px border (transparent on the solid ones) so an
+    // outline button and a filled one placed side by side are the same height.
+    // Hover only ever darkens or tints: the primary used to go lighter on hover,
+    // to orange-600, which also dropped white text below AA while hovered.
+    // Focus rings are keyboard-only (`focus-visible`), not drawn on every click.
     const baseStyles =
-      "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+      "btn-motion inline-flex items-center justify-center gap-2 rounded-md border border-transparent font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
-      primary: "bg-power-orange-solid text-white hover:bg-orange-600 focus:ring-power-orange",
-      secondary: "bg-deep-slate text-white hover:bg-slate-700 focus:ring-deep-slate",
+      primary:
+        "bg-power-orange-solid text-white hover:bg-orange-800 focus-visible:ring-power-orange-solid",
+      secondary: "bg-deep-slate text-white hover:bg-slate-800 focus-visible:ring-deep-slate",
       outline:
-        "border-2 border-power-orange text-power-orange hover:bg-power-orange-solid hover:text-white focus:ring-power-orange",
-      ghost: "text-power-orange hover:bg-orange-50 focus:ring-power-orange",
-      success: "bg-turf-green text-white hover:bg-emerald-600 focus:ring-turf-green",
-      danger: "bg-error-red text-white hover:bg-red-600 focus:ring-error-red",
+        "border-power-orange-solid text-power-orange-solid hover:bg-orange-50 focus-visible:ring-power-orange-solid",
+      ghost: "text-power-orange-solid hover:bg-orange-50 focus-visible:ring-power-orange-solid",
+      success: "bg-turf-green text-white hover:bg-emerald-600 focus-visible:ring-turf-green",
+      danger: "bg-error-red text-white hover:bg-red-600 focus-visible:ring-error-red",
     };
 
     const sizes = {

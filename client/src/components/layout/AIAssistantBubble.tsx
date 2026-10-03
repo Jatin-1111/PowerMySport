@@ -28,10 +28,10 @@ export function AIAssistantBubble() {
             {hovered && (
               <motion.div
                 key="ai-popup"
-                initial={{ opacity: 0, y: 8, scale: 0.94 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.94 }}
-                transition={{ type: "spring", stiffness: 340, damping: 26 }}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.15, ease: [0.2, 0, 0, 1] }}
                 className="relative mb-1 w-52 rounded-lg border border-slate-100 bg-white px-4 py-3.5 shadow-2xl"
               >
                 {/* Downward caret */}
@@ -50,26 +50,25 @@ export function AIAssistantBubble() {
             )}
           </AnimatePresence>
 
-          {/* Main bubble — enters after 2 s so page loads first */}
-          <div className="flex items-center gap-2">
-            <motion.button
+          {/* Main bubble: fades in after 2 s so the page loads first. The
+              entrance lives on a wrapper because Framer Motion writes an inline
+              transform on whatever it animates, which would cancel the
+              button's CSS press. It no longer springs from zero, wobbles on
+              hover or pulses forever. */}
+          <motion.div
+            className="flex items-center gap-2"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1], delay: 2 }}
+          >
+            <button
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label="Chat with PowerMySport AI"
-              onHoverStart={() => setHovered(true)}
-              onHoverEnd={() => setHovered(false)}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 260, damping: 20, delay: 2 }}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.91 }}
-              className="bg-power-orange-solid relative flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg shadow-orange-500/30"
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => setHovered(false)}
+              className="btn-motion bg-power-orange-solid focus-visible:ring-power-orange-solid relative flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg shadow-slate-900/20 hover:bg-orange-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
-              {/* Attention pulse ring */}
-              <span
-                aria-hidden="true"
-                className="bg-power-orange absolute inset-0 animate-ping rounded-full opacity-25"
-              />
               <MessageCircle
                 className="relative z-10 h-7 w-7"
                 strokeWidth={2.25}
@@ -82,8 +81,8 @@ export function AIAssistantBubble() {
               >
                 <Sparkles className="text-power-orange h-3 w-3" fill="currentColor" />
               </span>
-            </motion.button>
-          </div>
+            </button>
+          </motion.div>
         </div>
       )}
     </>

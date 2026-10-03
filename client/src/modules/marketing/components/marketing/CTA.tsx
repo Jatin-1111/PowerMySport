@@ -38,9 +38,13 @@ function SkewPolygon({ className }: { className?: string }) {
   );
 }
 
-// ─── Button wrapper with spring hover ─────────────────────────────────────────
+// ─── CTA button ───────────────────────────────────────────────────────────────
+//
+// The link IS the button (`asChild`): one element, one tab stop. Motion is the
+// shared `btn-motion` from Button (colour on hover, a small press), not the
+// lift-and-scale wrapper this used to sit in.
 
-function AnimatedCTAButton({
+function CTAButton({
   href,
   children,
   variant,
@@ -55,26 +59,21 @@ function AnimatedCTAButton({
   const isWhatsApp = href.includes("wa.me");
 
   return (
-    <Link
-      href={href}
-      className="w-full sm:w-auto"
-      {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    <Button
+      asChild
+      variant={isWhatsApp ? "primary" : variant}
+      size="lg"
+      className={`w-full sm:w-auto ${
+        isWhatsApp
+          ? "bg-[#25D366] hover:bg-[#1da851] focus-visible:ring-[#25D366]"
+          : (className ?? "")
+      }`}
     >
-      <div className="transition-transform duration-200 will-change-transform hover:-translate-y-0.5 hover:scale-[1.03] active:scale-[0.97]">
-        <Button
-          variant={isWhatsApp ? "primary" : variant}
-          size="lg"
-          className={`w-full rounded-md ${
-            isWhatsApp
-              ? "border-[#25D366] bg-[#25D366] shadow-lg shadow-green-500/20 hover:bg-[#1da851] focus:ring-[#25D366]"
-              : (className ?? "")
-          }`}
-        >
-          {isWhatsApp && <WhatsAppIcon className="h-5 w-5 shrink-0" />}
-          {children}
-        </Button>
-      </div>
-    </Link>
+      <Link href={href} {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+        {isWhatsApp && <WhatsAppIcon className="h-5 w-5 shrink-0" />}
+        {children}
+      </Link>
+    </Button>
   );
 }
 
@@ -101,13 +100,13 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
               {description}
             </p>
             <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4">
-              <AnimatedCTAButton href={primaryCTA.href} variant="primary">
+              <CTAButton href={primaryCTA.href} variant="primary">
                 {primaryCTA.label}
-              </AnimatedCTAButton>
+              </CTAButton>
               {secondaryCTA && (
-                <AnimatedCTAButton href={secondaryCTA.href} variant="outline" className="bg-white">
+                <CTAButton href={secondaryCTA.href} variant="outline" className="bg-white">
                   {secondaryCTA.label}
-                </AnimatedCTAButton>
+                </CTAButton>
               )}
             </div>
           </div>
@@ -159,21 +158,13 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
               {description}
             </p>
             <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4">
-              <AnimatedCTAButton
-                href={primaryCTA.href}
-                variant="primary"
-                className="shadow-[0_8px_32px_-8px_rgba(233,115,22,0.5)]"
-              >
+              <CTAButton href={primaryCTA.href} variant="primary">
                 {primaryCTA.label}
-              </AnimatedCTAButton>
+              </CTAButton>
               {secondaryCTA && (
-                <AnimatedCTAButton
-                  href={secondaryCTA.href}
-                  variant="outline"
-                  className="bg-white/90"
-                >
+                <CTAButton href={secondaryCTA.href} variant="outline" className="bg-white/90">
                   {secondaryCTA.label}
-                </AnimatedCTAButton>
+                </CTAButton>
               )}
             </div>
           </div>
@@ -216,17 +207,17 @@ function ImageCTA({
           </h2>
           <p className="mb-10 text-lg text-white/90 sm:text-xl">{description}</p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-            <AnimatedCTAButton href={primaryCTA.href} variant="primary">
+            <CTAButton href={primaryCTA.href} variant="primary">
               {primaryCTA.label}
-            </AnimatedCTAButton>
+            </CTAButton>
             {secondaryCTA && (
-              <AnimatedCTAButton
+              <CTAButton
                 href={secondaryCTA.href}
                 variant="outline"
                 className="border-white/60 bg-white/10 text-white hover:bg-white/20"
               >
                 {secondaryCTA.label}
-              </AnimatedCTAButton>
+              </CTAButton>
             )}
           </div>
         </div>

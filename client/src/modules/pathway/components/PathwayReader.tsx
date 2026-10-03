@@ -181,22 +181,14 @@ function sectionsFor(stage: PathwayStage) {
 
 /** Renders as a link when it has an href, and as plain text when it doesn't. */
 function ActionChip({ action }: { action: PathwayAction }) {
-  const base =
-    "inline-flex items-center rounded-md border px-3 py-1.5 text-[13px] font-bold transition";
+  const base = "inline-flex items-center rounded-md border px-3 py-1.5 text-[13px] font-bold";
   return action.href ? (
-    <motion.div
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.97 }}
-      transition={{ type: "spring", stiffness: 400, damping: 28 }}
-      className="inline-flex"
+    <Link
+      href={action.href}
+      className={`${base} btn-motion hover:border-power-orange-solid hover:text-power-orange-solid border-slate-200 bg-white text-slate-700`}
     >
-      <Link
-        href={action.href}
-        className={`${base} hover:border-power-orange hover:text-power-orange border-slate-200 bg-white text-slate-700`}
-      >
-        {action.label}
-      </Link>
-    </motion.div>
+      {action.label}
+    </Link>
   ) : (
     <span className={`${base} border-slate-200 bg-slate-50 text-slate-400`}>{action.label}</span>
   );
@@ -225,13 +217,11 @@ function StageListItem({
   onSelect: () => void;
 }) {
   return (
-    <motion.button
+    <button
       type="button"
       onClick={onSelect}
       aria-current={active ? "step" : undefined}
-      whileTap={{ scale: 0.985 }}
-      transition={{ type: "spring", stiffness: 420, damping: 30 }}
-      className={`focus-visible:outline-power-orange relative flex w-full items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
+      className={`focus-visible:outline-power-orange relative flex w-full items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 ${
         active ? "" : "hover:bg-slate-50"
       }`}
     >
@@ -291,7 +281,7 @@ function StageListItem({
           </motion.span>
         )}
       </AnimatePresence>
-    </motion.button>
+    </button>
   );
 }
 
@@ -1011,44 +1001,38 @@ export function PathwayReader({
 
           {/* ── Previous / Next ── */}
           <footer className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-3 sm:px-6">
-            <motion.button
+            <button
               type="button"
               onClick={() => go(safeIndex - 1)}
               disabled={safeIndex === 0}
-              // The arrow leans the way it will take you. Guarded on `disabled`,
-              // or the dead button at either end still nudges under the cursor
-              // and promises a move it will not make.
-              whileHover={safeIndex === 0 ? undefined : { x: -2 }}
-              whileTap={safeIndex === 0 ? undefined : { scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 400, damping: 28 }}
-              className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-35 disabled:hover:bg-transparent"
+              // The chevron leans the way it will take you. Guarded on
+              // `group-enabled`, or the dead button at either end still nudges
+              // under the cursor and promises a move it will not make.
+              className="btn-motion focus-visible:outline-power-orange group inline-flex min-w-0 items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-bold text-slate-600 hover:bg-white hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-35 disabled:hover:bg-transparent"
             >
-              <ChevronLeft className="h-4 w-4 shrink-0" />
+              <ChevronLeft className="h-4 w-4 shrink-0 transition-transform duration-150 group-enabled:group-hover:-translate-x-0.5 motion-reduce:transition-none" />
               <span className="truncate">{stages[safeIndex - 1]?.name ?? "Previous"}</span>
-            </motion.button>
+            </button>
             {/* Hidden on a phone: the sticky bar carries the same "3/6" a thumb's
                 width away, and the two Previous/Next labels need the room more. */}
             <span className="hidden shrink-0 text-[12px] font-semibold text-slate-400 sm:inline">
               {safeIndex + 1} / {total}
             </span>
-            <motion.button
+            <button
               type="button"
               onClick={() => go(safeIndex + 1)}
               disabled={safeIndex === total - 1}
-              whileHover={safeIndex === total - 1 ? undefined : { x: 2 }}
-              whileTap={safeIndex === total - 1 ? undefined : { scale: 0.97 }}
-              transition={{ type: "spring", stiffness: 400, damping: 28 }}
               // Solid, unlike Previous. Reading a stage to the end and finding
               // two identical grey words is what sends a parent back up the page
               // looking for the control they already scrolled past; the forward
               // move is the one this footer exists to offer.
-              className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-[13px] font-bold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-slate-200 disabled:text-slate-400 disabled:opacity-100"
+              className="btn-motion focus-visible:outline-power-orange group inline-flex min-w-0 items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-[13px] font-bold text-white hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-slate-200 disabled:text-slate-400 disabled:opacity-100"
             >
               <span className="truncate">
                 {stages[safeIndex + 1] ? `Next: ${stages[safeIndex + 1]?.name}` : "Next"}
               </span>
-              <ChevronRight className="h-4 w-4 shrink-0" />
-            </motion.button>
+              <ChevronRight className="h-4 w-4 shrink-0 transition-transform duration-150 group-enabled:group-hover:translate-x-0.5 motion-reduce:transition-none" />
+            </button>
           </footer>
         </div>
       </div>

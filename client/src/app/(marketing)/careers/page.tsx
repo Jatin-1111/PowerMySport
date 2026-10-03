@@ -285,17 +285,15 @@ export default function CareersPage() {
             be a great addition to our team.
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row">
-            <a href="mailto:teams@powermysport.com">
-              <Button variant="primary" size="lg">
+            <Button asChild variant="primary" size="lg">
+              <a href="mailto:teams@powermysport.com">
                 <Mail size={18} className="mr-2" />
                 Email Your Resume
-              </Button>
-            </a>
-            <Link href="/contact">
-              <Button variant="outline" size="lg">
-                Contact Us
-              </Button>
-            </Link>
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/contact">Contact Us</Link>
+            </Button>
           </div>
         </Card>
       </div>

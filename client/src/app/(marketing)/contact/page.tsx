@@ -21,6 +21,7 @@ import {
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -345,7 +346,7 @@ function CustomSelect({
         {label} {required && <span className="text-power-orange">*</span>}
       </label>
 
-      <motion.button
+      <button
         ref={triggerRef}
         type="button"
         id={id}
@@ -353,8 +354,7 @@ function CustomSelect({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={handleTriggerKeyDown}
-        whileTap={{ scale: 0.985 }}
-        className={`flex w-full items-center justify-between gap-3 rounded-md border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-md border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-[color,background-color,border-color,box-shadow] duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25 ${
           open
             ? "border-orange-400 bg-white ring-2 ring-orange-400/25"
             : "border-slate-200 hover:border-orange-300 hover:shadow-md"
@@ -375,7 +375,7 @@ function CustomSelect({
             open ? "text-power-orange rotate-180" : ""
           }`}
         />
-      </motion.button>
+      </button>
 
       <AnimatePresence>
         {open && (
@@ -713,17 +713,15 @@ export default function ContactPage() {
 
                   {/* Submit */}
                   <div>
-                    <motion.div whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.975 }}>
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        size="lg"
-                        className="w-full rounded-md"
-                        loading={isSubmitting}
-                      >
-                        {isSubmitting ? "Sending…" : "Send Message →"}
-                      </Button>
-                    </motion.div>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="lg"
+                      className="w-full"
+                      loading={isSubmitting}
+                    >
+                      {isSubmitting ? "Sending…" : "Send Message →"}
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -814,21 +812,14 @@ export default function ContactPage() {
                 <h3 className="mb-4 text-base font-bold text-slate-900">Follow Us</h3>
                 <div className="flex gap-3">
                   {SOCIALS.map(({ Icon, label, href }) => (
-                    <motion.a
+                    <a
                       key={label}
                       href={href}
                       aria-label={label}
-                      className="hover:bg-power-orange-solid flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition-colors hover:text-white"
-                      whileHover={{ scale: 1.12, rotate: 7 }}
-                      whileTap={{ scale: 0.93 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 16,
-                      }}
+                      className="btn-motion hover:bg-power-orange-solid focus-visible:ring-power-orange-solid flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                     >
                       <Icon className="h-4.5 w-4.5" strokeWidth={2} />
-                    </motion.a>
+                    </a>
                   ))}
                 </div>
               </div>
@@ -879,34 +870,39 @@ export default function ContactPage() {
             </p>
 
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <motion.a
-                href="/register"
-                className="bg-power-orange-solid inline-flex items-center gap-2 rounded-md px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-xl hover:shadow-orange-500/30"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+              {/* Hover used to lighten this to orange-400, under AA with white
+                  text, on top of a lift, a scale and a growing glow. */}
+              <Button
+                asChild
+                variant="primary"
+                size="lg"
+                className="group px-8 py-4 text-base font-bold focus-visible:ring-offset-slate-950"
               >
-                Get Started
-                <svg
-                  viewBox="0 0 16 16"
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 8h10M9 4l4 4-4 4" />
-                </svg>
-              </motion.a>
+                <Link href="/register">
+                  Get Started
+                  <svg
+                    viewBox="0 0 16 16"
+                    className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M3 8h10M9 4l4 4-4 4" />
+                  </svg>
+                </Link>
+              </Button>
 
-              <motion.a
-                href="/faq"
-                className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-sm hover:border-white/40 hover:bg-white/10 focus-visible:ring-white focus-visible:ring-offset-slate-950"
               >
-                Browse FAQs
-              </motion.a>
+                <Link href="/faq">Browse FAQs</Link>
+              </Button>
             </div>
           </div>
         </div>

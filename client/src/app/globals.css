@@ -265,6 +265,37 @@
     box-shadow: 0 8px 30px rgb(255 255 255 / 0.1);
   }
 
+  /* ── Button motion ──
+     The one motion every button and button-styled link uses: colours change
+     on hover, a 2% press on click, and nothing that moves the layout. No lift,
+     no spring, no glow. 150ms with a fast-out curve reads as instant
+     feedback rather than as an animation someone has to wait for.
+
+     `scale` (the individual transform property) rather than `transform`,
+     because Tailwind v4's translate/scale utilities write the individual
+     properties too, so an arrow nudge on the same element still composes.
+     Disabled buttons do not press, and reduced motion keeps the colour change
+     but drops the press. */
+  .btn-motion {
+    transition-property: color, background-color, border-color, box-shadow, scale;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .btn-motion:active:not(:disabled, [aria-disabled="true"]) {
+    scale: 0.98;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-motion {
+      transition-property: color, background-color, border-color, box-shadow;
+    }
+
+    .btn-motion:active:not(:disabled, [aria-disabled="true"]) {
+      scale: none;
+    }
+  }
+
   .text-gradient {
     @apply from-power-orange to-turf-green bg-linear-to-r bg-clip-text text-transparent;
   }

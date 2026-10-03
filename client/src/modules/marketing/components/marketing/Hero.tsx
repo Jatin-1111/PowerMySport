@@ -250,46 +250,32 @@ function HomeHero({
             variants={itemVariants}
             className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4"
           >
+            {/* Plain colour-and-press buttons (`btn-motion`, via Button). The
+                spring lift, shine sweep and growing orange glow these had were
+                three effects competing on one click target. `asChild` makes the
+                link itself the button, so keyboard users get one tab stop. */}
             {primaryCTA && (
-              <Link href={primaryCTA.href} className="w-full sm:w-auto">
-                <motion.div
-                  whileHover={{ y: -3, scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="group relative h-auto w-full overflow-hidden rounded-md px-7 py-3.5 text-sm font-bold shadow-[0_10px_40px_-10px_rgba(233,115,22,0.7)] transition-shadow hover:shadow-[0_16px_48px_-10px_rgba(233,115,22,0.85)] sm:px-8 sm:py-4 sm:text-base"
-                  >
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      {primaryCTA.label}
-                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                    </span>
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full"
-                    />
-                  </Button>
-                </motion.div>
-              </Link>
+              <Button
+                asChild
+                variant="primary"
+                size="lg"
+                className="group h-auto w-full px-7 py-3.5 text-sm font-bold focus-visible:ring-offset-slate-950 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+              >
+                <Link href={primaryCTA.href}>
+                  {primaryCTA.label}
+                  <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                </Link>
+              </Button>
             )}
             {secondaryCTA && (
-              <Link href={secondaryCTA.href} className="w-full sm:w-auto">
-                <motion.div
-                  whileHover={{ y: -3, scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="h-auto w-full rounded-md border-white/25 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:border-white/50 hover:bg-white/20 hover:text-white sm:px-8 sm:py-4 sm:text-base"
-                  >
-                    {secondaryCTA.label}
-                  </Button>
-                </motion.div>
-              </Link>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="h-auto w-full border-white/25 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-md hover:border-white/50 hover:bg-white/20 focus-visible:ring-white focus-visible:ring-offset-slate-950 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+              >
+                <Link href={secondaryCTA.href}>{secondaryCTA.label}</Link>
+              </Button>
             )}
           </motion.div>
 
@@ -430,26 +416,28 @@ function PageHero({
           {(primaryCTA || secondaryCTA) && (
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
               {primaryCTA && (
-                <Link href={primaryCTA.href}>
-                  <Button variant="primary" size="lg" className="rounded-md">
-                    {primaryCTA.label}
-                  </Button>
-                </Link>
+                <Button
+                  asChild
+                  variant="primary"
+                  size="lg"
+                  className={hasImage ? "focus-visible:ring-offset-slate-950" : undefined}
+                >
+                  <Link href={primaryCTA.href}>{primaryCTA.label}</Link>
+                </Button>
               )}
               {secondaryCTA && (
-                <Link href={secondaryCTA.href}>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className={
-                      hasImage
-                        ? "rounded-md border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/20 hover:text-white"
-                        : "rounded-md bg-white"
-                    }
-                  >
-                    {secondaryCTA.label}
-                  </Button>
-                </Link>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className={
+                    hasImage
+                      ? "border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/20 focus-visible:ring-white focus-visible:ring-offset-slate-950"
+                      : "bg-white"
+                  }
+                >
+                  <Link href={secondaryCTA.href}>{secondaryCTA.label}</Link>
+                </Button>
               )}
             </div>
           )}
@@ -508,18 +496,14 @@ function SplitHero({
           )}
           <motion.div variants={itemVariants} className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             {primaryCTA && (
-              <Link href={primaryCTA.href}>
-                <Button variant="primary" size="lg" className="rounded-md">
-                  {primaryCTA.label}
-                </Button>
-              </Link>
+              <Button asChild variant="primary" size="lg">
+                <Link href={primaryCTA.href}>{primaryCTA.label}</Link>
+              </Button>
             )}
             {secondaryCTA && (
-              <Link href={secondaryCTA.href}>
-                <Button variant="outline" size="lg" className="rounded-md bg-white">
-                  {secondaryCTA.label}
-                </Button>
-              </Link>
+              <Button asChild variant="outline" size="lg" className="bg-white">
+                <Link href={secondaryCTA.href}>{secondaryCTA.label}</Link>
+              </Button>
             )}
           </motion.div>
         </motion.div>

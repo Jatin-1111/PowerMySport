@@ -423,16 +423,12 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
               </>
             ) : (
               <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button variant="primary" size="sm">
-                    Get Started
-                  </Button>
-                </Link>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button asChild variant="primary" size="sm">
+                  <Link href="/register">Get Started</Link>
+                </Button>
               </>
             )}
           </div>
@@ -653,46 +649,49 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                       </p>
                     </div>
 
-                    <Link href={getDashboardLink() || "/"}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="justify-start"
-                      >
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="justify-start"
+                    >
+                      <Link href={getDashboardLink() || "/"}>
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Dashboard
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
 
                     {user.role !== "EXPERT" && (
-                      <Link href="/experts/sessions">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          fullWidth
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="justify-start"
-                        >
-                          <CalendarCheck className="mr-2 h-4 w-4" />
-                          My Sessions
-                        </Button>
-                      </Link>
-                    )}
-
-                    <Link href={settingsHomeFor(user.role)}>
                       <Button
+                        asChild
                         variant="ghost"
                         size="sm"
                         fullWidth
                         onClick={() => setMobileMenuOpen(false)}
                         className="justify-start"
                       >
+                        <Link href="/experts/sessions">
+                          <CalendarCheck className="mr-2 h-4 w-4" />
+                          My Sessions
+                        </Link>
+                      </Button>
+                    )}
+
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="justify-start"
+                    >
+                      <Link href={settingsHomeFor(user.role)}>
                         <Settings className="mr-2 h-4 w-4" />
                         Settings
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
 
                     <Button
                       variant="ghost"
@@ -707,26 +706,24 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                   </>
                 ) : (
                   <>
-                    <Link href="/login">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Login
-                      </Button>
-                    </Link>
-                    <Link href="/register">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Get Started
-                      </Button>
-                    </Link>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Link href="/login">Login</Link>
+                    </Button>
+                    <Button
+                      asChild
+                      variant="primary"
+                      size="sm"
+                      fullWidth
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Link href="/register">Get Started</Link>
+                    </Button>
                   </>
                 )}
               </div>
