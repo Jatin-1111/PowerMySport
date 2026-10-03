@@ -227,9 +227,9 @@ export default function HomeClient() {
             {problems.map((p) => (
               <div
                 key={p.text}
-                className="group flex items-start gap-3 rounded-lg border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
+                className="flex items-start gap-3 rounded-lg border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
               >
-                <span className="group-hover:bg-power-orange/10 group-hover:text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition-colors duration-300">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
                   {p.icon}
                 </span>
                 <p className="text-sm font-medium leading-snug text-slate-700">
@@ -295,7 +295,7 @@ export default function HomeClient() {
                 ].map((item) => (
                   <div
                     key={item.title}
-                    className="flex flex-col gap-4 rounded-lg border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 will-change-transform hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/60 sm:flex-row sm:items-center"
+                    className="flex flex-col gap-4 rounded-lg border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:flex-row sm:items-center"
                   >
                     <div
                       className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md ${item.color}`}
@@ -336,13 +336,13 @@ export default function HomeClient() {
                 }}
               />
 
-              <div className="group relative aspect-[3/2] overflow-hidden rounded-xl shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
+              <div className="relative aspect-[3/2] overflow-hidden rounded-xl shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
                 <Image
                   src="https://media.istockphoto.com/id/1496936307/photo/young-boy-watching-british-indian-mother-working-at-home.jpg?s=612x612&w=0&k=20&c=KOg86wvMpgJe42K-2i3UKdcuOD7egEWcxHO1n3WHtl8="
                   alt="Parent planning their child's sports journey"
                   fill
                   sizes="(max-width: 1280px) 50vw, 600px"
-                  className="object-cover transition-transform duration-700 will-change-transform group-hover:scale-[1.04]"
+                  className="object-cover"
                 />
                 {/* Legibility gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
@@ -353,7 +353,7 @@ export default function HomeClient() {
                 />
 
                 {/* Glass caption — single, integrated overlay */}
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-md border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-md border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white shadow-lg shadow-orange-950/40">
                       <Map size={17} />

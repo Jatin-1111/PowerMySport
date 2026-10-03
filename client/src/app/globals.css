@@ -248,12 +248,15 @@
     @apply border border-white/30 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-white/20 dark:bg-slate-900/90;
   }
 
+  /* The hover only applies when the surface is itself a link or button. This
+     class sits on ~90 surfaces, most of them static panels, and a panel whose
+     shadow deepens under the cursor reads as clickable when it is not. */
   .premium-shadow {
     box-shadow: 0 8px 30px rgb(0 0 0 / 0.12);
-    transition: box-shadow 0.3s ease;
+    transition: box-shadow 150ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  .premium-shadow:hover {
+  :is(a, button).premium-shadow:hover {
     box-shadow: 0 8px 30px rgb(0 0 0 / 0.2);
   }
 
@@ -261,7 +264,7 @@
     box-shadow: 0 8px 30px rgb(255 255 255 / 0.05);
   }
 
-  .dark .premium-shadow:hover {
+  .dark :is(a, button).premium-shadow:hover {
     box-shadow: 0 8px 30px rgb(255 255 255 / 0.1);
   }
 

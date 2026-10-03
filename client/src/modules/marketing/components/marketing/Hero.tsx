@@ -529,7 +529,7 @@ function SplitHero({
                 alt={imageAlt || title}
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover transition-transform duration-700 hover:scale-105"
+                className="object-cover"
               />
               <div className="ring-black/8 absolute inset-0 rounded-xl ring-1 ring-inset" />
             </div>

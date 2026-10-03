@@ -85,14 +85,14 @@ export function WhyWeExist() {
             </div>
           </div>
 
-          <div className="premium-shadow group relative h-[320px] overflow-hidden rounded-xl shadow-2xl sm:h-[400px] lg:h-[460px]">
+          <div className="premium-shadow relative h-[320px] overflow-hidden rounded-xl shadow-2xl sm:h-[400px] lg:h-[460px]">
             <Image
               src="https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=1200&q=80"
               alt="Children playing sport on an outdoor court"
               fill
               priority
               sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-cover"
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent" />
           </div>

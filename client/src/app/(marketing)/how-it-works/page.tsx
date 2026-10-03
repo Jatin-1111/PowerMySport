@@ -93,7 +93,7 @@ function AssetFrame({
           src={src}
           alt={alt}
           fill
-          className="object-cover transition-transform duration-700 will-change-transform group-hover:scale-[1.04]"
+          className="object-cover"
           sizes="(max-width: 768px) 100vw, 50vw"
         />
 
@@ -122,7 +122,7 @@ function AssetFrame({
         )}
 
         {/* Floating glass overlay card */}
-        <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-md border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+        <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-md border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
             {overlayIcon}
           </div>
@@ -160,7 +160,7 @@ function StepRow({
   imageRight = false,
 }: StepRowProps) {
   return (
-    <div className="group grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
+    <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-20">
       {/* Copy block */}
       <div className={`reveal-on-scroll ${imageRight ? "order-2 lg:order-1" : "order-2"}`}>
         <h3 className="mb-4 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl lg:text-4xl">
@@ -175,9 +175,7 @@ function StepRow({
       </div>
 
       {/* Image frame */}
-      <div
-        className={`reveal-on-scroll transition-transform duration-300 hover:-translate-y-1 hover:scale-[1.015] ${imageRight ? "order-1 lg:order-2" : "order-1"}`}
-      >
+      <div className={`reveal-on-scroll ${imageRight ? "order-1 lg:order-2" : "order-1"}`}>
         <AssetFrame {...image} step={step} />
       </div>
     </div>
@@ -200,15 +198,17 @@ function DeliverableCard({
   glow: string;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-transform duration-300 will-change-transform hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/70 sm:p-8">
+    // Static content, so no hover: a card that lifts tells the reader it can be
+    // clicked, and this one cannot.
+    <div className="relative overflow-hidden rounded-lg border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-8">
       {/* Soft corner glow */}
       <div
         aria-hidden
-        className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-bl ${glow} to-transparent opacity-70 blur-2xl transition-transform duration-500 group-hover:scale-125`}
+        className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-bl ${glow} to-transparent opacity-70 blur-2xl`}
       />
 
       <div
-        className={`relative mb-5 flex h-12 w-12 items-center justify-center rounded-md ring-1 transition-transform duration-300 group-hover:scale-105 ${accent}`}
+        className={`relative mb-5 flex h-12 w-12 items-center justify-center rounded-md ring-1 ${accent}`}
       >
         <Icon className="h-[22px] w-[22px]" />
       </div>
@@ -222,12 +222,7 @@ function DeliverableCard({
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70">
-      {/* Accent left border stripe */}
-      <div
-        aria-hidden
-        className="from-power-orange absolute bottom-0 left-0 top-0 w-1 rounded-l-lg bg-gradient-to-b to-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-      />
+    <div className="rounded-lg border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <h3 className="mb-3 text-lg font-bold text-slate-900">{q}</h3>
       <p className="text-base leading-relaxed text-slate-500">{a}</p>
     </div>

@@ -19,7 +19,7 @@ import { Award, Dumbbell, MapPin, TrendingUp, Unlock, Zap } from "lucide-react";
 
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { AmbientBlob } from "./AmbientBlob";
-import { SPRING_STIFF, cardReveal, fadeUp, orchestrator } from "../utils/motion";
+import { cardReveal, fadeUp, orchestrator } from "../utils/motion";
 
 const STAT_CARDS = [
   {
@@ -67,12 +67,10 @@ export function PathwayStatsBanner() {
             <motion.div
               key={stat.label}
               variants={cardReveal}
-              whileHover={{ y: -4, scale: 1.02 }}
-              transition={SPRING_STIFF}
-              className="premium-shadow group flex flex-col items-center rounded-lg border border-white/70 bg-white/80 p-5 text-center backdrop-blur-sm will-change-transform sm:p-6"
+              className="premium-shadow flex flex-col items-center rounded-lg border border-white/70 bg-white/80 p-5 text-center backdrop-blur-sm sm:p-6"
             >
               <div
-                className={`mb-4 flex h-12 w-12 items-center justify-center rounded-md transition-transform duration-300 group-hover:scale-110 ${stat.color}`}
+                className={`mb-4 flex h-12 w-12 items-center justify-center rounded-md ${stat.color}`}
               >
                 {stat.icon}
               </div>
@@ -143,20 +141,20 @@ export function PathwayHelpSection() {
               color: "bg-emerald-100 text-emerald-600",
             },
           ].map((item) => (
+            // Static cards: no hover lift, icon tilt or growing circle, since
+            // nothing here is clickable.
             <motion.div
               key={item.title}
               variants={cardReveal}
-              whileHover={{ y: -6, scale: 1.015 }}
-              transition={SPRING_STIFF}
-              className="premium-shadow group relative overflow-hidden rounded-lg border border-white/70 bg-white/80 p-6 backdrop-blur-sm will-change-transform hover:border-white/90 sm:p-8"
+              className="premium-shadow relative overflow-hidden rounded-lg border border-white/70 bg-white/80 p-6 backdrop-blur-sm sm:p-8"
             >
               {/* decorative circle */}
               <div
                 aria-hidden
-                className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-slate-50 opacity-60 transition-transform duration-500 group-hover:scale-150"
+                className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-slate-50 opacity-60"
               />
               <div
-                className={`relative mb-5 flex h-14 w-14 items-center justify-center rounded-lg transition-transform duration-300 group-hover:rotate-3 group-hover:scale-110 ${item.color}`}
+                className={`relative mb-5 flex h-14 w-14 items-center justify-center rounded-lg ${item.color}`}
               >
                 {item.icon}
               </div>

@@ -44,20 +44,6 @@ const USER_TYPE_OPTIONS: SelectOption[] = [
 const SPORT_IMG_3 =
   "https://images.unsplash.com/photo-1544216717-3bbf52512659?auto=format&fit=crop&w=600&q=80";
 
-// ─── Motion Variants ──────────────────────────────────────────────────────────
-
-const iconPop = {
-  initial: { opacity: 0, scale: 0.7, rotate: -12 },
-  whileInView: {
-    opacity: 1,
-    scale: 1,
-    rotate: 0,
-    transition: { type: "spring" as const, stiffness: 320, damping: 18 },
-  },
-  whileHover: { scale: 1.18, rotate: 6 },
-  whileTap: { scale: 0.94 },
-};
-
 // ─── Decorative Geometry SVG ──────────────────────────────────────────────────
 
 function FloatingDots() {
@@ -156,24 +142,19 @@ interface InfoCardProps {
   children: React.ReactNode;
 }
 
+// Static: the email and phone links inside are what you click, not the card,
+// so the card does not lift or scale on hover and the icon does not pop.
 function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
   return (
     <div
-      className="group flex items-start gap-5 rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:scale-[1.015]"
+      className="flex items-start gap-5 rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md"
       style={{
         boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
       }}
     >
-      <motion.div
-        className="text-power-orange flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange-100 to-amber-50"
-        initial={iconPop.initial}
-        whileInView={iconPop.whileInView}
-        whileHover={iconPop.whileHover}
-        whileTap={iconPop.whileTap}
-        viewport={{ once: true }}
-      >
+      <div className="text-power-orange flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange-100 to-amber-50">
         <Icon className="h-5 w-5" strokeWidth={2} />
-      </motion.div>
+      </div>
       <div>
         <h3 className="mb-1 text-base font-bold text-slate-900">{title}</h3>
         {children}
@@ -804,7 +785,7 @@ export default function ContactPage() {
 
               {/* Social */}
               <div
-                className="rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 hover:-translate-y-1"
+                className="rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md"
                 style={{
                   boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
                 }}
