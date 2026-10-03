@@ -42,11 +42,6 @@ const itemVariants: Variants = {
 
 const headlineVariants: Variants = itemVariants;
 
-const wordVariants: Variants = {
-  hidden: {},
-  show: {},
-};
-
 const NOISE_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")`;
 
 function HomeHero({
@@ -66,33 +61,15 @@ function HomeHero({
   });
   const imageY = useTransform(scrollYProgress, [0, 1], ["0%", "8%"]);
 
-  // Split the title into words, tagging the highlighted phrase
-  const words: Array<{ text: string; hl: boolean }> = [];
-  if (titleHighlight && title.includes(titleHighlight)) {
-    const [before, ...rest] = title.split(titleHighlight);
-    before
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .forEach((w) => words.push({ text: w, hl: false }));
-    titleHighlight
-      .trim()
-      .split(/\s+/)
-      .forEach((w) => words.push({ text: w, hl: true }));
-    rest
-      .join(titleHighlight)
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .forEach((w) => words.push({ text: w, hl: false }));
-  } else {
-    title
-      .trim()
-      .split(/\s+/)
-      .forEach((w) => words.push({ text: w, hl: false }));
-  }
-  const hlStart = words.findIndex((w) => w.hl);
-  const hlWords = words.filter((w) => w.hl);
+  // The headline is real text with real spaces. It used to be one inline-block
+  // <span> per word, separated by margin, so the h1's text (what screen readers
+  // announce and what search engines index) read
+  // "HelpingParentsMakeConfidentSportsDecisions". Only the highlighted phrase
+  // gets its own element, for the gradient and the underline.
+  const hlIndex = titleHighlight ? title.indexOf(titleHighlight) : -1;
+  const before = hlIndex >= 0 ? title.slice(0, hlIndex).trim() : title;
+  const after =
+    hlIndex >= 0 && titleHighlight ? title.slice(hlIndex + titleHighlight.length).trim() : "";
 
   return (
     <section
@@ -148,30 +125,16 @@ function HomeHero({
           {/* ── Headline ── */}
           <motion.h1
             variants={headlineVariants}
-            className="font-title mb-4 text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-white sm:mb-6 sm:text-5xl lg:text-[4.5rem]"
+            className="font-title mb-4 text-balance text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-white sm:mb-6 sm:text-5xl lg:text-[4.5rem]"
           >
-            {words.map((w, i) => {
-              if (!w.hl) {
-                return (
-                  <motion.span key={i} variants={wordVariants} className="mr-[0.22em] inline-block">
-                    {w.text}
-                  </motion.span>
-                );
-              }
-              if (i !== hlStart) return null;
-              return (
-                <span key="hl" className="relative mr-[0.22em] inline-block whitespace-nowrap">
-                  {hlWords.map((hw, j) => (
-                    <motion.span
-                      key={j}
-                      variants={wordVariants}
-                      className={`via-power-orange inline-block bg-gradient-to-r from-orange-300 to-amber-400 bg-clip-text text-transparent ${
-                        j < hlWords.length - 1 ? "mr-[0.22em]" : ""
-                      }`}
-                    >
-                      {hw.text}
-                    </motion.span>
-                  ))}
+            {before}
+            {hlIndex >= 0 && (
+              <>
+                {before && " "}
+                <span className="relative inline-block whitespace-nowrap">
+                  <span className="via-power-orange bg-gradient-to-r from-orange-300 to-amber-400 bg-clip-text text-transparent">
+                    {titleHighlight}
+                  </span>
                   <svg
                     className="absolute -bottom-1.5 left-0 h-2.5 w-full sm:-bottom-2.5 sm:h-3"
                     viewBox="0 0 220 12"
@@ -196,8 +159,9 @@ function HomeHero({
                     </defs>
                   </svg>
                 </span>
-              );
-            })}
+                {after && ` ${after}`}
+              </>
+            )}
           </motion.h1>
 
           {/* ── Description ── */}
