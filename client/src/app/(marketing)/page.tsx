@@ -1,5 +1,6 @@
 import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationJsonLd, SITE_DESCRIPTION, websiteJsonLd } from "@/lib/seo";
+import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
 import type { Metadata } from "next";
 
 import HomeClient from "./HomeClient";
@@ -36,11 +37,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
+/** The pathway the homepage previews: the deepest one we have, or whichever is published first. */
+const PREVIEW_SPORT = "tennis";
+
+export default async function HomePage() {
+  // The summaries /roadmap renders from, so the preview cannot drift from the
+  // guide. fetchPublishedPathways fails soft to [], and no data means no card.
+  const pathways = await fetchPublishedPathways();
+  const withStages = pathways.filter((pathway) => (pathway.stages?.length ?? 0) > 0);
+  const preview =
+    withStages.find((pathway) => pathway.sportSlug === PREVIEW_SPORT) ?? withStages[0] ?? null;
+
   return (
     <>
       <JsonLd data={[organizationJsonLd, websiteJsonLd]} />
-      <HomeClient />
+      <HomeClient pathway={preview} />
     </>
   );
 }

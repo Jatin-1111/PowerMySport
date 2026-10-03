@@ -4,12 +4,13 @@ import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { FeaturesShowcase } from "@/modules/marketing/components/marketing/FeaturesShowcase";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
+import { PathwayPreviewCard } from "@/modules/pathway/components/PathwayPreviewCard";
 import { roadmapHref } from "@/modules/pathway/data/sports";
+import type { PathwayGuideSummary } from "@/modules/pathway/services/pathway";
 import {
   Activity,
   ArrowRight,
   Building2,
-  Check,
   CheckCircle2,
   Clock,
   Compass,
@@ -21,7 +22,6 @@ import {
   Users2,
 } from "lucide-react";
 
-import Image from "next/image";
 import Link from "next/link";
 
 // Section reveals use the `.reveal-on-scroll` utility in globals.css. The
@@ -29,7 +29,7 @@ import Link from "next/link";
 // in the server HTML until hydration ran. The hero keeps its own scroll-linked
 // motion — that one is a deliberate effect, not a reveal.
 
-export default function HomeClient() {
+export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary | null }) {
   const { user } = useAuthStore();
 
   // ── Personalize the hero for a logged-in parent ──
@@ -259,7 +259,7 @@ export default function HomeClient() {
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
+          <div className={`grid items-center gap-12 ${pathway ? "lg:grid-cols-[1fr_1fr]" : ""}`}>
             {/* Left: copy + capability cards */}
             <div className="reveal-on-scroll">
               <div className="mb-3">
@@ -314,36 +314,14 @@ export default function HomeClient() {
               </div>
             </div>
 
-            {/* Right: the photo, with its caption */}
-            <div className="reveal-on-scroll relative mx-auto hidden w-full max-w-[612px] lg:block">
-              <div className="relative aspect-[3/2] overflow-hidden rounded-xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5">
-                <Image
-                  src="https://media.istockphoto.com/id/1496936307/photo/young-boy-watching-british-indian-mother-working-at-home.jpg?s=612x612&w=0&k=20&c=KOg86wvMpgJe42K-2i3UKdcuOD7egEWcxHO1n3WHtl8="
-                  alt="Parent planning their child's sports journey"
-                  fill
-                  sizes="(max-width: 1280px) 50vw, 600px"
-                  className="object-cover"
-                />
-                {/* Legibility gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
-                {/* Caption */}
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-md bg-slate-950/75 px-4 py-3.5">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white shadow-lg shadow-orange-950/40">
-                      <Map size={17} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-white">Learn before you decide</p>
-                      <p className="text-[11px] text-white/60">Pathways · Community</p>
-                    </div>
-                  </div>
-                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-emerald-300/25 bg-emerald-400/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    Free to start
-                  </span>
-                </div>
+            {/* Right: a real pathway, stage by stage. This was an iStock preview
+                photo hot-linked without a licence; the product itself is the
+                honest picture. No pathway data (API down), no card. */}
+            {pathway && (
+              <div className="reveal-on-scroll mx-auto w-full max-w-[612px]">
+                <PathwayPreviewCard pathway={pathway} />
               </div>
-            </div>
+            )}
           </div>
         </div>
       </section>
