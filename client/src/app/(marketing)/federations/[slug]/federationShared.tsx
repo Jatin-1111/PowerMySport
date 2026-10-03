@@ -12,23 +12,25 @@ import { SPORT_LABEL } from "@/modules/pathway/config/tournamentDisplay";
 export { SPORT_LABEL };
 
 export const TYPE_META = {
+  // Light-surface chips: the federation header is a white PageHeader now, not
+  // the dark slate band these were first tinted for.
   govt: {
     label: "Government Body",
-    bg: "bg-blue-500/20",
-    text: "text-blue-200",
-    border: "border-blue-400/30",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    border: "border-blue-200",
   },
   national: {
     label: "National Federation",
-    bg: "bg-emerald-500/20",
-    text: "text-emerald-200",
-    border: "border-emerald-400/30",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
   },
   hybrid: {
     label: "Public-Private Body",
-    bg: "bg-violet-500/20",
-    text: "text-violet-200",
-    border: "border-violet-400/30",
+    bg: "bg-violet-50",
+    text: "text-violet-700",
+    border: "border-violet-200",
   },
 } as const;
 

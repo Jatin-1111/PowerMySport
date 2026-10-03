@@ -52,8 +52,8 @@ export function AddToCalendarButton({
   /** Already in the player's calendar — known from the one prefetch the calendar tab does. */
   saved?: boolean;
   onSaved?: (key: string) => void;
-  /** "icon" for calendar rows, "full" on light panels, "hero" on the dark tournament header. */
-  variant?: "icon" | "full" | "hero";
+  /** "icon" for calendar rows, "full" on light panels and the tournament header. */
+  variant?: "icon" | "full";
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -105,22 +105,17 @@ export function AddToCalendarButton({
 
   const label = isSaved ? "In your calendar" : "Add to your calendar";
 
-  if (variant === "full" || variant === "hero") {
-    const onDark = variant === "hero";
+  if (variant === "full") {
     return (
       <button
         type="button"
         onClick={handleClick}
         disabled={saving || isSaved}
         aria-label={label}
-        className={`inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-bold transition ${
+        className={`btn-motion inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-bold ${
           isSaved
-            ? onDark
-              ? "cursor-default border-emerald-400/25 bg-emerald-400/[0.1] text-emerald-400"
-              : "cursor-default border-emerald-200 bg-emerald-50 text-emerald-700"
-            : onDark
-              ? "border-white/[0.15] bg-white/[0.07] text-white hover:bg-white/[0.14]"
-              : "hover:border-power-orange hover:text-power-orange border-slate-200 text-slate-700"
+            ? "cursor-default border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "hover:border-power-orange-solid hover:text-power-orange-solid border-slate-200 bg-white text-slate-700"
         }`}
       >
         {saving ? (

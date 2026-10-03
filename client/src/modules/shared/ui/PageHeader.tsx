@@ -3,6 +3,7 @@ import React from "react";
 import { Breadcrumbs, type BreadcrumbItem } from "./Breadcrumbs";
 
 const WIDTHS = {
+  "3xl": "max-w-3xl",
   "4xl": "max-w-4xl",
   "5xl": "max-w-5xl",
   "6xl": "max-w-6xl",
@@ -13,6 +14,8 @@ export interface PageHeaderProps {
   title: React.ReactNode;
   /** Short kicker above the title, e.g. "Legal" or "Governing bodies". */
   eyebrow?: string;
+  /** Status chips above the title on a detail page: a level, a type, "Finished". */
+  badges?: React.ReactNode;
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
   /** A quiet line under the description, e.g. "Last updated 24 July 2026". */
@@ -43,6 +46,7 @@ export interface PageHeaderProps {
 export function PageHeader({
   title,
   eyebrow,
+  badges,
   description,
   breadcrumbs,
   meta,
@@ -72,6 +76,13 @@ export function PageHeader({
           <p className="text-power-orange-solid mb-3 text-xs font-semibold uppercase tracking-[0.16em]">
             {eyebrow}
           </p>
+        )}
+        {badges && (
+          <div
+            className={cn("mb-4 flex flex-wrap items-center gap-2", centered && "justify-center")}
+          >
+            {badges}
+          </div>
         )}
         <h1
           className={cn(

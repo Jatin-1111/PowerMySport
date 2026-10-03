@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -8,7 +6,6 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import { articleJsonLd } from "@/lib/seo";
 import { FederationBand } from "@/modules/federations/components/FederationBand";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { PathwayContributorCard } from "@/modules/pathway/components/PathwayContributorCard";
 import { PathwayReader } from "@/modules/pathway/components/PathwayReader";
 import {
@@ -17,6 +14,7 @@ import {
 } from "@/modules/pathway/components/PathwaySections";
 import { fetchPathwayGuide } from "@/modules/pathway/services/fetchGuide";
 import { sportFromSlug } from "@/modules/pathway/data/sports";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 
 // ─── /roadmap/[sport] ────────────────────────────────────────────────────────
 //
@@ -115,62 +113,41 @@ export default async function SportPathwayPage({
       />
 
       {/* ── Header ── */}
-      <section className="pt-10 sm:pt-14">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Link
-            href="/roadmap"
-            className="hover:text-power-orange inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            All sports
-          </Link>
-
-          {/* The hero is the headline block alone.
-              "About <sport>" used to sit beside it as a sidebar card, which
-              only worked while the two columns happened to be the same height.
-              They are not related: the card grows with however many intro
-              paragraphs a sport has, so whichever column was shorter left dead
-              space, bottom-aligned it was a void above the headline, top-
-              aligned it was a void below. Tennis has three short paragraphs and
-              got away with it; Chess has four longer ones and did not.
-              It reads as prose, so it is laid out as prose, below. */}
-          <div className="mt-4 max-w-3xl">
-            <div className="mb-3">
-              <SectionLabel
-                label={guide.intro.eyebrow ?? `${guide.sportName} pathway · for parents`}
-                color="orange"
-              />
+      {/* The hero is the headline block alone.
+          "About <sport>" used to sit beside it as a sidebar card, which
+          only worked while the two columns happened to be the same height.
+          They are not related: the card grows with however many intro
+          paragraphs a sport has, so whichever column was shorter left dead
+          space, bottom-aligned it was a void above the headline, top-
+          aligned it was a void below. Tennis has three short paragraphs and
+          got away with it; Chess has four longer ones and did not.
+          It reads as prose, so it is laid out as prose, below. */}
+      <PageHeader
+        width="7xl"
+        breadcrumbs={[{ label: "Sports pathways", href: "/roadmap" }, { label: guide.sportName }]}
+        eyebrow={guide.intro.eyebrow ?? `${guide.sportName} pathway · for parents`}
+        title={guide.intro.headline ?? "Understand. Question. Observe. Decide. Act."}
+        description={guide.intro.description ?? undefined}
+      >
+        {/* Two balanced columns on desktop, one on mobile. `columns` rather
+            than a grid so the paragraphs flow and the two sides end level
+            whatever the sport's intro length is, a grid would put a fixed
+            number of paragraphs in each and go lopsided at odd counts. */}
+        {guide.sportIntro.length > 0 && (
+          <section className="border-t border-slate-200/70 pt-6">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              About {guide.sportName}
+            </p>
+            <div className="mt-3 gap-x-10 text-base leading-relaxed text-slate-600 lg:columns-2">
+              {guide.sportIntro.map((paragraph) => (
+                <p key={paragraph} className="mb-3 break-inside-avoid">
+                  {paragraph}
+                </p>
+              ))}
             </div>
-            <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl">
-              {guide.intro.headline ?? "Understand. Question. Observe. Decide. Act."}
-            </h1>
-            {guide.intro.description && (
-              <p className="mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
-                {guide.intro.description}
-              </p>
-            )}
-          </div>
-
-          {/* Two balanced columns on desktop, one on mobile. `columns` rather
-              than a grid so the paragraphs flow and the two sides end level
-              whatever the sport's intro length is, a grid would put a fixed
-              number of paragraphs in each and go lopsided at odd counts. */}
-          {guide.sportIntro.length > 0 && (
-            <section className="mt-8 border-t border-slate-200/70 pt-6">
-              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
-                About {guide.sportName}
-              </p>
-              <div className="mt-3 gap-x-10 text-base leading-relaxed text-slate-600 lg:columns-2">
-                {guide.sportIntro.map((paragraph) => (
-                  <p key={paragraph} className="mb-3 break-inside-avoid">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      </section>
+          </section>
+        )}
+      </PageHeader>
 
       {/* ── The pathway ── */}
       <section className="py-8 sm:py-10">

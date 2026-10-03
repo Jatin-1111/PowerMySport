@@ -27,6 +27,7 @@ import {
   hasEditionFinished,
   levelColor,
 } from "../../federations/[slug]/editionUtils";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { AddToCalendarButton } from "../../federations/[slug]/AddToCalendarButton";
 import { SPORT_LABEL } from "../../federations/[slug]/federationShared";
 
@@ -233,79 +234,78 @@ export default async function TournamentEditionPage({
         ]}
       />
 
-      {/* ── Hero ── */}
-      <div className="bg-deep-slate">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          {federation && (
-            <div className="border-b border-white/[0.07] pb-4 pt-5">
-              <Link
-                href={`/federations/${federation.slug}?tab=calendar`}
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/50 transition hover:text-white"
-              >
-                <ArrowRight className="h-3.5 w-3.5 rotate-180" />
-                {federation.acronym} calendar
-              </Link>
+      <PageHeader
+        width="5xl"
+        breadcrumbs={[
+          { label: "Tournaments", href: "/tournaments" },
+          ...(federation
+            ? [
+                {
+                  label: `${federation.acronym} calendar`,
+                  href: `/federations/${federation.slug}?tab=calendar`,
+                },
+              ]
+            : []),
+          { label: edition.name },
+        ]}
+        badges={
+          (finished || (edition.level && lc) || edition.ageGroups?.length) && (
+            <>
+              {finished && (
+                <span className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600">
+                  <Clock className="h-3 w-3" />
+                  Finished
+                </span>
+              )}
+              {edition.level && lc && (
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold ${lc.pill}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${lc.dot}`} />
+                  {edition.level}
+                </span>
+              )}
+              {edition.ageGroups?.map((ag) => (
+                <span
+                  key={ag}
+                  className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold font-semibold text-slate-600"
+                >
+                  {ag}
+                </span>
+              ))}
+            </>
+          )
+        }
+        title={edition.officialName || edition.name}
+        meta={
+          <>
+            {/* The short calendar name is what the federation's own calendar
+                prints, so keep it visible when the official title differs:
+                parents match on it when cross-checking the source. */}
+            {edition.officialName && edition.officialName !== edition.name && (
+              <p className="mb-2 font-semibold text-slate-500">
+                Listed on the calendar as “{edition.name}”
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-slate-600">
+              <span className="flex items-center gap-1.5 font-semibold text-slate-800">
+                <CalendarDays aria-hidden className="h-4 w-4" />
+                {formatFullDate(edition.startDate)}
+              </span>
+              {location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin aria-hidden className="h-4 w-4" />
+                  {location}
+                </span>
+              )}
             </div>
-          )}
+          </>
+        }
+        // Nothing to add to a calendar once the event is over.
+        actions={!finished && <AddToCalendarButton edition={edition} variant="full" />}
+      />
 
-          <div className="mb-5 mt-6 flex flex-wrap items-center gap-2">
-            {finished && (
-              <span className="inline-flex items-center gap-1.5 rounded-sm border border-slate-400/30 bg-slate-400/15 px-3 py-1 text-[11px] font-bold text-white/70">
-                <Clock className="h-3 w-3" />
-                Finished
-              </span>
-            )}
-            {edition.level && lc && (
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold ${lc.pill}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${lc.dot}`} />
-                {edition.level}
-              </span>
-            )}
-            {edition.ageGroups?.map((ag) => (
-              <span
-                key={ag}
-                className="inline-flex items-center rounded-sm border border-white/[0.12] bg-white/[0.07] px-3 py-1 text-[11px] font-semibold text-white/60"
-              >
-                {ag}
-              </span>
-            ))}
-          </div>
-
-          <h1 className="font-title text-3xl font-bold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-[3rem]">
-            {edition.officialName || edition.name}
-          </h1>
-          {/* The short calendar name is what the federation's own calendar prints,
-              so keep it visible when the official title differs, parents match
-              on it when cross-checking the source. */}
-          {edition.officialName && edition.officialName !== edition.name && (
-            <p className="mt-2 text-sm font-semibold text-white/40">
-              Listed on the calendar as “{edition.name}”
-            </p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-5 text-sm text-white/60">
-            <span className="flex items-center gap-1.5 font-semibold text-white/80">
-              <CalendarDays className="h-4 w-4" />
-              {formatFullDate(edition.startDate)}
-            </span>
-            {location && (
-              <span className="flex items-center gap-1.5">
-                <MapPin className="h-4 w-4" />
-                {location}
-              </span>
-            )}
-          </div>
-
-          {/* Nothing to add to a calendar once the event is over. */}
-          <div className={finished ? "pb-8" : "pb-8 pt-5"}>
-            {!finished && <AddToCalendarButton edition={edition} variant="hero" />}
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         {/* ── Finished: say so, then move them forward ──
             These pages keep ranking for months after the event and are 62% of
             all tournament impressions, at less than half the click-through of

@@ -17,7 +17,13 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
   if (items.length === 0) return null;
 
   return (
-    <nav aria-label="Breadcrumb" className={cn("flex items-center space-x-1 text-sm", className)}>
+    // `flex-wrap` + `gap` rather than `space-x`: detail pages end the trail with
+    // a tournament or player name, and an unwrapped row pushed a phone page
+    // sideways.
+    <nav
+      aria-label="Breadcrumb"
+      className={cn("flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm", className)}
+    >
       <Link
         href="/"
         className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"

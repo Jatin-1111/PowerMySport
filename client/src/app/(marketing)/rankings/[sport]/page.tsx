@@ -4,7 +4,7 @@
 // grouping and federation attribution all come off the sport's registry entry,
 // so a second federation renders here without a new page.
 
-import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import { fetchRankingMeta, formatAsOn } from "@/modules/rankings/services/api";
 import {
@@ -58,7 +58,7 @@ export default async function SportRankingsPage({
   );
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <>
       <script
         id="sport-rankings-breadcrumb-jsonld"
         type="application/ld+json"
@@ -71,90 +71,82 @@ export default async function SportRankingsPage({
           ),
         }}
       />
-      <Breadcrumbs
-        items={[{ label: "Rankings", href: "/rankings" }, { label: sport.name }]}
-        className="mb-6"
+      <PageHeader
+        breadcrumbs={[{ label: "Rankings", href: "/rankings" }, { label: sport.name }]}
+        title={`${sport.federation.acronym} ${sport.name} rankings`}
+        description={`The official ${sport.federation.name} lists, made searchable. Filter by state, look up a player by name or registration number, and see how a ranking has moved week by week, something the source PDFs cannot show you.`}
       />
 
-      <header className="max-w-3xl">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          {sport.federation.acronym} {sport.name} Rankings
-        </h1>
-        <p className="text-muted-foreground mt-3 text-base sm:text-lg">
-          The official {sport.federation.name} lists, made searchable. Filter by state, look up a
-          player by name or registration number, and see how a ranking has moved week by week,
-          something the source PDFs cannot show you.
-        </p>
-      </header>
+      <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="space-y-10">
+          {sport.groups.map((group) => (
+            <section key={group.title}>
+              <div className="flex items-baseline justify-between gap-4">
+                <h2 className="text-xl font-semibold tracking-tight">{group.title}</h2>
+                <p className="text-muted-foreground text-sm">{group.blurb}</p>
+              </div>
 
-      <div className="mt-10 space-y-10">
-        {sport.groups.map((group) => (
-          <section key={group.title}>
-            <div className="flex items-baseline justify-between gap-4">
-              <h2 className="text-xl font-semibold tracking-tight">{group.title}</h2>
-              <p className="text-muted-foreground text-sm">{group.blurb}</p>
-            </div>
+              <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {group.combos.map((combo) => {
+                  const info = availability.get(`${combo.category}/${combo.subcategory}`);
+                  const available = info?.available ?? false;
+                  return (
+                    <li key={comboHref(sport.slug, combo)}>
+                      <Link
+                        href={comboHref(sport.slug, combo)}
+                        className="bg-card hover:border-power-orange focus-visible:ring-power-orange group flex h-full flex-col justify-between rounded-lg border p-4 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                      >
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="font-medium">{comboLabel(combo)}</span>
+                          <ArrowRight className="text-muted-foreground group-hover:text-power-orange h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                        <span className="text-muted-foreground mt-3 block text-sm">
+                          {available ? (
+                            <>
+                              {info?.rowCount?.toLocaleString("en-IN")} players
+                              <span className="mx-1.5" aria-hidden>
+                                ·
+                              </span>
+                              as on {formatAsOn(info?.asOnDate)}
+                            </>
+                          ) : (
+                            "Not published yet"
+                          )}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
 
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {group.combos.map((combo) => {
-                const info = availability.get(`${combo.category}/${combo.subcategory}`);
-                const available = info?.available ?? false;
-                return (
-                  <li key={comboHref(sport.slug, combo)}>
-                    <Link
-                      href={comboHref(sport.slug, combo)}
-                      className="bg-card hover:border-power-orange focus-visible:ring-power-orange group flex h-full flex-col justify-between rounded-lg border p-4 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                    >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{comboLabel(combo)}</span>
-                        <ArrowRight className="text-muted-foreground group-hover:text-power-orange h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
-                      </span>
-                      <span className="text-muted-foreground mt-3 block text-sm">
-                        {available ? (
-                          <>
-                            {info?.rowCount?.toLocaleString("en-IN")} players
-                            <span className="mx-1.5" aria-hidden>
-                              ·
-                            </span>
-                            as on {formatAsOn(info?.asOnDate)}
-                          </>
-                        ) : (
-                          "Not published yet"
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))}
-      </div>
-
-      {/*
+        {/*
         Attribution is not decoration. We are republishing another body's data,
         and a parent checking a rank they disagree with should be one click from
         the official source rather than stuck arguing with us.
       */}
-      <footer className="bg-muted/40 text-muted-foreground mt-12 rounded-lg border p-4 text-sm">
-        <p>
-          Rankings are published by the{" "}
-          <span className="text-foreground font-medium">
-            {meta?.source.federation ?? sport.federation.name}
-          </span>{" "}
-          and mirrored here for search and history. PowerMySport is not affiliated with{" "}
-          {sport.federation.acronym}. Always treat the official list as authoritative.
-        </p>
-        <a
-          href={meta?.source.url ?? sport.federation.officialUrl}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
-          className="text-power-orange mt-2 inline-flex items-center gap-1.5 font-medium hover:underline"
-        >
-          View the official {sport.federation.acronym} rankings page
-          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-        </a>
-      </footer>
-    </div>
+        <footer className="bg-muted/40 text-muted-foreground mt-12 rounded-lg border p-4 text-sm">
+          <p>
+            Rankings are published by the{" "}
+            <span className="text-foreground font-medium">
+              {meta?.source.federation ?? sport.federation.name}
+            </span>{" "}
+            and mirrored here for search and history. PowerMySport is not affiliated with{" "}
+            {sport.federation.acronym}. Always treat the official list as authoritative.
+          </p>
+          <a
+            href={meta?.source.url ?? sport.federation.officialUrl}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="text-power-orange mt-2 inline-flex items-center gap-1.5 font-medium hover:underline"
+          >
+            View the official {sport.federation.acronym} rankings page
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          </a>
+        </footer>
+      </div>
+    </>
   );
 }

@@ -1,9 +1,10 @@
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { ArrowUp, Award, Target, TrendingUp } from "lucide-react";
 import { formatAsOn } from "../services/api";
 import { formatPoints, nationalStandingPhrase, tierPhrase } from "../utils/insights";
 
 /**
- * The top of a player's page.
+ * The standing at the top of a player's page, under the shared PageHeader.
  *
  * ── What this is for ─────────────────────────────────────────────────────────
  * A parent opening this page is asking one question — *is my child doing well?*
@@ -49,14 +50,6 @@ export function displayName(raw: string): string {
       /(^|[\s'\-.])([a-z])/g,
       (_, boundary: string, char: string) => `${boundary}${char.toUpperCase()}`
     );
-}
-
-function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  const first = words[0]![0] ?? "";
-  const last = words.length > 1 ? (words[words.length - 1]![0] ?? "") : "";
-  return (first + last).toUpperCase();
 }
 
 export interface SeasonSummary {
@@ -145,22 +138,62 @@ export interface PrimaryStanding {
   nextTier: { rank: number; gap: number } | null;
 }
 
-export function PlayerHero({
+/**
+ * The player page's header: the shared PageHeader, with the name as its title
+ * and the identity chips (state, birth year, registration number) above it.
+ * Lives here rather than in the route so the route stays inside its line budget.
+ */
+export function PlayerPageHeader({
   name,
-  federationAcronym,
-  regNo,
-  state,
-  birthYear,
-  summary,
-  primary,
+  acronym,
+  player,
 }: {
   name: string;
+  acronym: string;
+  player: Omit<PlayerChipsProps, "federationAcronym">;
+}) {
+  return (
+    <PageHeader
+      width="4xl"
+      breadcrumbs={[{ label: "Rankings", href: "/rankings" }, { label: name }]}
+      badges={<PlayerChips federationAcronym={acronym} {...player} />}
+      title={name}
+    />
+  );
+}
+
+interface PlayerChipsProps {
   federationAcronym: string;
   regNo: string;
   // Nullable, not just optional: the API returns null for a player whose
   // registration row carries no state or birth year.
   state?: string | null | undefined;
   birthYear?: number | null | undefined;
+}
+
+function PlayerChips({ federationAcronym, regNo, state, birthYear }: PlayerChipsProps) {
+  return (
+    <>
+      {state && <Chip>{state}</Chip>}
+      {birthYear && <Chip>Born {birthYear}</Chip>}
+      <Chip>
+        {federationAcronym} #{regNo}
+      </Chip>
+    </>
+  );
+}
+
+/**
+ * The standing card under the header: the answer sentence, the best climb and
+ * the three numbers. The name, chips and initials tile that used to sit on top
+ * of it are now the shared PageHeader, like every other detail page.
+ */
+export function PlayerStanding({
+  federationAcronym,
+  summary,
+  primary,
+}: {
+  federationAcronym: string;
   summary: SeasonSummary;
   /** Null for a player we hold no current standing for — history only. */
   primary: PrimaryStanding | null;
@@ -168,37 +201,13 @@ export function PlayerHero({
   const standing = primary ? nationalStandingPhrase(primary.rank, primary.listSize) : null;
 
   return (
-    <header className="border-border bg-card overflow-hidden rounded-xl border shadow-sm">
-      <div className="relative isolate px-5 py-6 sm:px-8 sm:py-8">
-        {/* No photo: we hold no player imagery, and a stock face on a minor's
-            page would be worse than none. */}
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <div
-            aria-hidden
-            className="bg-power-orange-solid flex h-16 w-16 shrink-0 items-center justify-center rounded-lg text-xl font-bold text-white shadow-sm sm:h-20 sm:w-20 sm:text-2xl"
-          >
-            {initials(name)}
-          </div>
-
-          <div className="min-w-0">
-            <h1 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
-              {name}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {state && <Chip>{state}</Chip>}
-              {birthYear && <Chip>Born {birthYear}</Chip>}
-              <Chip>
-                {federationAcronym} #{regNo}
-              </Chip>
-            </div>
-          </div>
-        </div>
-
+    <section className="border-border bg-card overflow-hidden rounded-xl border shadow-sm">
+      <div className="px-5 py-6 sm:px-8 sm:py-7">
         {/* The answer, in a sentence, before any table. A parent who reads only
             this line and closes the tab has still been told the thing they came
             for. */}
         {primary && (
-          <p className="mt-6 max-w-2xl text-base leading-relaxed sm:text-lg">
+          <p className="max-w-2xl text-base leading-relaxed sm:text-lg">
             Ranked{" "}
             <span className="font-bold tabular-nums">#{primary.rank.toLocaleString("en-IN")}</span>
             {primary.listSize && <> of {primary.listSize.toLocaleString("en-IN")}</>} in{" "}
@@ -265,7 +274,7 @@ export function PlayerHero({
           />
         )}
       </dl>
-    </header>
+    </section>
   );
 }
 

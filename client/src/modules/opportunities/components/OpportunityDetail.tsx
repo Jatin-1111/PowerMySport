@@ -1,5 +1,5 @@
-import { AlertTriangle, ChevronRight, ExternalLink, Info } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangle, ExternalLink, Info } from "lucide-react";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import type { ReactNode } from "react";
 
 import { OWNER_TYPE_LABELS, SELECTION_LABELS, TRACKS } from "../config/tracks";
@@ -65,31 +65,23 @@ export function OpportunityDetail({ opportunity }: { opportunity: Opportunity })
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="from-power-orange bg-gradient-to-br to-orange-600 px-4 pb-10 pt-14 sm:px-6">
-        <div className="mx-auto max-w-3xl">
-          <nav aria-label="Breadcrumb" className="mb-3 text-[13px] font-semibold text-orange-50">
-            <Link href={track.path} className="hover:text-white hover:underline">
-              {track.title}
-            </Link>
-            <ChevronRight aria-hidden className="mx-1 inline h-3.5 w-3.5" />
-            <span className="text-white">{category?.label ?? opportunity.title}</span>
-          </nav>
-          <h1 className="font-title text-2xl font-extrabold leading-tight text-white sm:text-3xl">
-            {opportunity.title}
-          </h1>
-          {opportunity.owner?.name && (
-            <p className="mt-2 text-sm text-orange-50">
-              {opportunity.owner.name}
-              {OWNER_TYPE_LABELS[opportunity.owner.type]
-                ? ` · ${OWNER_TYPE_LABELS[opportunity.owner.type]}`
-                : ""}
-            </p>
-          )}
-          <p className="mt-3 text-[13px] font-semibold text-white/90">{facts.join(" · ")}</p>
-        </div>
-      </div>
+      <PageHeader
+        width="3xl"
+        breadcrumbs={[{ label: track.title, href: track.path }, { label: opportunity.title }]}
+        title={opportunity.title}
+        description={
+          opportunity.owner?.name
+            ? `${opportunity.owner.name}${
+                OWNER_TYPE_LABELS[opportunity.owner.type]
+                  ? ` · ${OWNER_TYPE_LABELS[opportunity.owner.type]}`
+                  : ""
+              }`
+            : undefined
+        }
+        meta={<span className="font-semibold text-slate-600">{facts.join(" · ")}</span>}
+      />
 
-      <article className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+      <article className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         {opportunity.stale && (
           <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />

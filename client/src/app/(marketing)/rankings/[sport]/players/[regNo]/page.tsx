@@ -1,4 +1,3 @@
-import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { NOINDEX_METADATA } from "@/lib/seo";
 import {
   fetchPlayer,
@@ -17,7 +16,12 @@ import {
   ownBracket,
   tierPhrase,
 } from "@/modules/rankings/utils/insights";
-import { PlayerHero, displayName, summariseSeason } from "@/modules/rankings/components/PlayerHero";
+import {
+  PlayerPageHeader,
+  PlayerStanding,
+  displayName,
+  summariseSeason,
+} from "@/modules/rankings/components/PlayerHero";
 import { PointsComposition } from "@/modules/rankings/components/PointsComposition";
 import { RankDelta } from "@/modules/rankings/components/RankDelta";
 import type { Metadata } from "next";
@@ -106,174 +110,169 @@ export default async function PlayerRankingPage({
   });
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-      <Breadcrumbs
-        items={[{ label: "Rankings", href: "/rankings" }, { label: name }]}
-        className="mb-6"
-      />
+    <>
+      <PlayerPageHeader name={name} acronym={sport.federation.acronym} player={player} />
 
-      <PlayerHero
-        name={name}
-        federationAcronym={sport.federation.acronym}
-        regNo={player.regNo}
-        state={player.state}
-        birthYear={player.birthYear}
-        summary={season}
-        primary={
-          primaryEntry
-            ? {
-                listLabel: comboLabel({
-                  category: primaryEntry.category,
-                  subcategory: primaryEntry.subcategory,
-                }),
-                rank: primaryEntry.rank,
-                listSize: primaryEntry.insight.listSize,
-                totalPoints: primaryEntry.totalPoints,
-                nextTier: primaryEntry.insight.nextTier,
+      <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+        <PlayerStanding
+          federationAcronym={sport.federation.acronym}
+          summary={season}
+          primary={
+            primaryEntry
+              ? {
+                  listLabel: comboLabel({
+                    category: primaryEntry.category,
+                    subcategory: primaryEntry.subcategory,
+                  }),
+                  rank: primaryEntry.rank,
+                  listSize: primaryEntry.insight.listSize,
+                  totalPoints: primaryEntry.totalPoints,
+                  nextTier: primaryEntry.insight.nextTier,
+                }
+              : null
+          }
+        />
+
+        {standings.length > 0 && (
+          <section className="mt-10">
+            <SectionHeading
+              title={standings.length > 1 ? "Both lists" : "Current standing"}
+              subtitle={
+                standings.length > 1 && home
+                  ? `${comboLabel({ category: standings[0]!.category, subcategory: home })} is the main list, the age group this player belongs to. Entering an older group as well is normal, and results there earn points on both lists.`
+                  : undefined
               }
-            : null
-        }
-      />
+            />
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              {standings.map((entry) => (
+                <li key={entry._id}>
+                  <StandingCard
+                    entry={entry}
+                    sportSlug={sport.slug}
+                    isHome={entry.subcategory === home}
+                    showRole={standings.length > 1 && home !== null}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-      {standings.length > 0 && (
-        <section className="mt-10">
-          <SectionHeading
-            title={standings.length > 1 ? "Both lists" : "Current standing"}
-            subtitle={
-              standings.length > 1 && home
-                ? `${comboLabel({ category: standings[0]!.category, subcategory: home })} is the main list, the age group this player belongs to. Entering an older group as well is normal, and results there earn points on both lists.`
-                : undefined
-            }
-          />
-          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
-            {standings.map((entry) => (
-              <li key={entry._id}>
-                <StandingCard
-                  entry={entry}
-                  sportSlug={sport.slug}
-                  isHome={entry.subcategory === home}
-                  showRole={standings.length > 1 && home !== null}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+        {charted.length > 0 && (
+          <section className="mt-10">
+            <SectionHeading
+              title="Progress week by week"
+              subtitle="Every list AITA has published since we started mirroring them."
+            />
 
-      {charted.length > 0 && (
-        <section className="mt-10">
-          <SectionHeading
-            title="Progress week by week"
-            subtitle="Every list AITA has published since we started mirroring them."
-          />
+            {charted.slice(0, 2).map(([key, points]) => {
+              const [category, subcategory] = key.split("|");
+              const label = comboLabel({
+                category: category ?? "",
+                subcategory: subcategory ?? "",
+              });
+              if (points.length < 2) return null;
+              return (
+                <div
+                  key={key}
+                  className="border-border bg-card mt-4 rounded-lg border p-4 shadow-sm sm:p-5"
+                >
+                  <h3 className="text-sm font-semibold">{label}</h3>
+                  <RankTrajectory
+                    points={points.map((p) => ({
+                      asOnDate: p.asOnDate,
+                      rank: p.rank,
+                      // Lets the hover readout answer the follow-up question —
+                      // a jump of 80 places is a different story depending on
+                      // whether the points moved with it.
+                      totalPoints: p.totalPoints,
+                    }))}
+                    label={label}
+                  />
+                </div>
+              );
+            })}
+          </section>
+        )}
 
-          {charted.slice(0, 2).map(([key, points]) => {
-            const [category, subcategory] = key.split("|");
-            const label = comboLabel({
-              category: category ?? "",
-              subcategory: subcategory ?? "",
-            });
-            if (points.length < 2) return null;
-            return (
-              <div
-                key={key}
-                className="border-border bg-card mt-4 rounded-lg border p-4 shadow-sm sm:p-5"
-              >
-                <h3 className="text-sm font-semibold">{label}</h3>
-                <RankTrajectory
-                  points={points.map((p) => ({
-                    asOnDate: p.asOnDate,
-                    rank: p.rank,
-                    // Lets the hover readout answer the follow-up question —
-                    // a jump of 80 places is a different story depending on
-                    // whether the points moved with it.
-                    totalPoints: p.totalPoints,
-                  }))}
-                  label={label}
-                />
-              </div>
-            );
-          })}
-        </section>
-      )}
-
-      {/* Where the trend is heading, and what ageing results will cost if nothing
+        {/* Where the trend is heading, and what ageing results will cost if nothing
           replaces them. Sits after the chart because it answers the question the
           chart raises, and before the rules because the rules are what a parent
           reaches for once they have decided something needs doing. Home bracket
           only: the 52-week cycle is per list, and two of these would be two
           different answers to one question. */}
-      {primaryEntry?.projection && (
-        <section className="mt-10">
-          <SeasonOutlook
-            projection={primaryEntry.projection}
-            listLabel={comboLabel({
-              category: primaryEntry.category,
-              subcategory: primaryEntry.subcategory,
-            })}
-            parentAudience={isJuniorBracket(primaryEntry.subcategory)}
-          />
-        </section>
-      )}
+        {primaryEntry?.projection && (
+          <section className="mt-10">
+            <SeasonOutlook
+              projection={primaryEntry.projection}
+              listLabel={comboLabel({
+                category: primaryEntry.category,
+                subcategory: primaryEntry.subcategory,
+              })}
+              parentAudience={isJuniorBracket(primaryEntry.subcategory)}
+            />
+          </section>
+        )}
 
-      {/* What the rank does, under AITA's rules. Only for the home bracket — the
+        {/* What the rank does, under AITA's rules. Only for the home bracket — the
           gates are per age group, and repeating the panel for a bracket the child
           is only visiting would read as two conflicting sets of rules. */}
-      {primaryEntry && isJuniorBracket(primaryEntry.subcategory) && (
-        <section className="mt-10">
-          <EntryRules
-            subcategory={primaryEntry.subcategory}
-            listLabel={comboLabel({
-              category: primaryEntry.category,
-              subcategory: primaryEntry.subcategory,
-            })}
-          />
-        </section>
-      )}
+        {primaryEntry && isJuniorBracket(primaryEntry.subcategory) && (
+          <section className="mt-10">
+            <EntryRules
+              subcategory={primaryEntry.subcategory}
+              listLabel={comboLabel({
+                category: primaryEntry.category,
+                subcategory: primaryEntry.subcategory,
+              })}
+            />
+          </section>
+        )}
 
-      {/* Their own point mix against the mix of the players above them. Reading
+        {/* Their own point mix against the mix of the players above them. Reading
           the two together is the actionable part: a player whose total is all
           singles, beside a top ten that draws a quarter of its points from
           doubles and international events, has been shown where the gap is.
 
           Home bracket only. Two of these panels, one per list, was four charts of
           near-identical shape and no reader got to the end of them. */}
-      {primaryEntry &&
-        (() => {
-          const band = playerBand(primaryEntry, name);
-          if (!band) return null;
-          const combo = {
-            category: primaryEntry.category,
-            subcategory: primaryEntry.subcategory,
-          };
-          return (
-            <section className="mt-10">
-              <PointsComposition
-                bands={[band, ...(primaryEntry.insight.bands ?? [])]}
-                subcategory={primaryEntry.subcategory}
-                title={`What makes up these points: ${comboLabel(combo)}`}
-                caption={
-                  `The top bar is ${name}, broken into where each point came from. ` +
-                  "The bars under it are the averages for each part of the list. " +
-                  "Where a colour is wide at the top of the list but thin or missing " +
-                  "on the top bar, that is what the leading players are doing differently."
-                }
-              />
-            </section>
-          );
-        })()}
+        {primaryEntry &&
+          (() => {
+            const band = playerBand(primaryEntry, name);
+            if (!band) return null;
+            const combo = {
+              category: primaryEntry.category,
+              subcategory: primaryEntry.subcategory,
+            };
+            return (
+              <section className="mt-10">
+                <PointsComposition
+                  bands={[band, ...(primaryEntry.insight.bands ?? [])]}
+                  subcategory={primaryEntry.subcategory}
+                  title={`What makes up these points: ${comboLabel(combo)}`}
+                  caption={
+                    `The top bar is ${name}, broken into where each point came from. ` +
+                    "The bars under it are the averages for each part of the list. " +
+                    "Where a colour is wide at the top of the list but thin or missing " +
+                    "on the top bar, that is what the leading players are doing differently."
+                  }
+                />
+              </section>
+            );
+          })()}
 
-      {history.length === 0 && current.length === 0 && (
-        <p className="text-muted-foreground mt-10 rounded-lg border border-dashed p-8 text-center">
-          No ranking history held for this player.
+        {history.length === 0 && current.length === 0 && (
+          <p className="text-muted-foreground mt-10 rounded-lg border border-dashed p-8 text-center">
+            No ranking history held for this player.
+          </p>
+        )}
+
+        <p className="text-muted-foreground mt-10 text-xs leading-relaxed">
+          Rankings are published by the All India Tennis Association and mirrored here. PowerMySport
+          is not affiliated with AITA.
         </p>
-      )}
-
-      <p className="text-muted-foreground mt-10 text-xs leading-relaxed">
-        Rankings are published by the All India Tennis Association and mirrored here. PowerMySport
-        is not affiliated with AITA.
-      </p>
-    </div>
+      </div>
+    </>
   );
 }
 

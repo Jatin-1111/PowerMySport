@@ -2,6 +2,8 @@
 
 import { BadgeCheck, Calendar, ExternalLink, Globe, Landmark, MapPin } from "lucide-react";
 import { BackToRoadmapLink } from "@/modules/pathway/components/BackToRoadmapLink";
+import { Button } from "@/modules/shared/ui/Button";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { useRef, useState, useCallback } from "react";
 import type { FederationDetail } from "./page";
 import { getSportArchetypeInfo } from "@/modules/sports/config/sportArchetypes";
@@ -54,90 +56,72 @@ export function FederationDetailClient({
 
   return (
     <main className="min-h-screen">
-      {/* ── Hero ── */}
-      <div className="bg-slate-900">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          {/* Breadcrumb */}
-          <div className="border-b border-white/[0.07] pb-4 pt-5">
-            <BackToRoadmapLink sportSlug={fed.sportSlug} hasPathway={hasPathway} />
-          </div>
-
-          {/* Header content */}
-          <div className="pb-9 pt-7">
-            <div className="mb-5 flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold ${typeMeta.bg} ${typeMeta.text} ${typeMeta.border}`}
-              >
-                <Landmark className="h-3 w-3" />
-                {typeMeta.label}
+      <PageHeader
+        breadcrumbs={[{ label: "Federations", href: "/federations" }, { label: fed.acronym }]}
+        badges={
+          <>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold ${typeMeta.bg} ${typeMeta.text} ${typeMeta.border}`}
+            >
+              <Landmark className="h-3 w-3" />
+              {typeMeta.label}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-600">
+              <Globe className="h-3 w-3" />
+              {sportLabel}
+            </span>
+            {isVerified && (
+              <span className="inline-flex items-center gap-1.5 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700">
+                <BadgeCheck className="h-3 w-3" />
+                Data verified
               </span>
-              <span className="inline-flex items-center gap-1 rounded-sm border border-white/[0.12] bg-white/[0.07] px-3 py-1 text-[11px] font-semibold text-white/50">
-                <Globe className="h-3 w-3" />
-                {sportLabel}
-              </span>
-              {isVerified && (
-                <span className="inline-flex items-center gap-1 rounded-sm border border-emerald-400/25 bg-emerald-400/[0.1] px-3 py-1 text-[11px] font-bold text-emerald-400">
-                  <BadgeCheck className="h-3 w-3" />
-                  Data Verified
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-start gap-5">
-              {/* Monogram */}
-              <div className="hidden h-[72px] w-[72px] shrink-0 select-none items-center justify-center rounded-lg bg-white/[0.08] text-2xl font-black tracking-tight text-white sm:flex">
-                {fed.acronym.slice(0, 2)}
-              </div>
-              <div>
-                <h1 className="font-title text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl">
-                  {fed.acronym}
-                </h1>
-                <p className="mt-2 text-base font-medium text-white/50">{fed.name}</p>
-                {fed.headquarters && (
-                  <p className="mt-1 flex items-center gap-1.5 text-sm text-white/30">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {fed.headquarters}
-                    {fed.founded && ` · Est. ${fed.founded}`}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Quick actions */}
-            <div className="mt-6 flex flex-wrap gap-3">
-              {fed.website && (
-                <a
-                  href={fed.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-bold text-slate-900 shadow transition hover:bg-slate-50"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Official Website
+            )}
+          </>
+        }
+        title={fed.acronym}
+        description={fed.name}
+        meta={
+          fed.headquarters && (
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin aria-hidden className="h-3.5 w-3.5" />
+              {fed.headquarters}
+              {fed.founded && ` · Est. ${fed.founded}`}
+            </span>
+          )
+        }
+        actions={
+          <>
+            {fed.website && (
+              <Button asChild variant="secondary">
+                <a href={fed.website} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink aria-hidden className="h-4 w-4" />
+                  Official website
                 </a>
-              )}
-              {fed.officialCalendarUrl && (
-                <a
-                  href={fed.officialCalendarUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-md border border-white/[0.15] bg-white/[0.07] px-5 py-2.5 text-sm font-bold text-white/75 transition hover:bg-white/[0.14] hover:text-white"
-                >
-                  <Calendar className="h-4 w-4" />
-                  Tournament Calendar
+              </Button>
+            )}
+            {fed.officialCalendarUrl && (
+              <Button asChild variant="outline">
+                <a href={fed.officialCalendarUrl} target="_blank" rel="noopener noreferrer">
+                  <Calendar aria-hidden className="h-4 w-4" />
+                  Tournament calendar
                 </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+              </Button>
+            )}
+            <BackToRoadmapLink
+              sportSlug={fed.sportSlug}
+              hasPathway={hasPathway}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900 sm:self-center"
+            />
+          </>
+        }
+      />
 
       {/* ── Sticky tab bar ── */}
       <div
         ref={tabBarRef}
         className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm"
       >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="scrollbar-none flex gap-0 overflow-x-auto">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
@@ -158,7 +142,7 @@ export function FederationDetailClient({
       </div>
 
       {/* ── Tab content ── */}
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         {activeTab === "overview" && (
           <OverviewTab
             fed={fed}

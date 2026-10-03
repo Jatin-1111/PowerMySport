@@ -1,4 +1,5 @@
-import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import { Button } from "@/modules/shared/ui/Button";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import {
   fetchRankingDates,
@@ -139,7 +140,7 @@ export default async function RankingListPage({
   const isJunior = isJuniorBracket(combo.subcategory);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+    <>
       <script
         id="ranking-list-breadcrumb-jsonld"
         type="application/ld+json"
@@ -155,132 +156,126 @@ export default async function RankingListPage({
       />
       {/* The sport rung matters now the URL has one — a crumb that jumps
           Rankings → Boys Under-14 hides a level the address bar shows. */}
-      <Breadcrumbs
-        items={[
+      <PageHeader
+        width="7xl"
+        breadcrumbs={[
           { label: "Rankings", href: "/rankings" },
           { label: sport.name, href: `/rankings/${sport.slug}` },
           { label },
         ]}
-        className="mb-6"
+        title={`${sport.federation.acronym} ${label} ranking`}
+        // One sentence saying what this is, for the reader who arrived from a
+        // forwarded link and has never seen an AITA list before.
+        description={`The official ${sport.federation.name} ranking for ${label} in India, updated most weeks.`}
+        // Freshness first and as a pill, not buried in a sentence. Anyone
+        // mirroring another body's data is asked "is this current?" before
+        // anything else, and the honest answer is the whole trust story.
+        meta={
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            {result?.snapshot ? (
+              <>
+                <span className="inline-flex items-center gap-1.5 rounded-sm bg-slate-100 px-2.5 py-1 font-medium text-slate-700">
+                  <CalendarDays className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+                  As on {formatAsOn(result.snapshot.asOnDate)}
+                </span>
+                {hasBaseline && (
+                  <span>movement against {formatAsOn(result.snapshot.comparedTo)}</span>
+                )}
+              </>
+            ) : (
+              <span>This list has not been published yet.</span>
+            )}
+          </div>
+        }
+        actions={
+          result?.snapshot?.sourceUrl && (
+            <Button asChild variant="outline" size="sm">
+              <a
+                href={result.snapshot.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+              >
+                Official {sport.federation.acronym} source
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </a>
+            </Button>
+          )
+        }
       />
 
-      <header>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {sport.federation.acronym} {label} Ranking
-            </h1>
-            {/* One sentence saying what this is, for the reader who arrived from
-                a forwarded link and has never seen an AITA list before. */}
-            <p className="text-muted-foreground mt-2 max-w-xl text-base">
-              The official {sport.federation.name} ranking for {label} in India, updated most weeks.
-            </p>
-            {/* Freshness first and as a pill, not buried in a sentence. Anyone
-                mirroring another body's data is asked "is this current?" before
-                anything else, and the honest answer is the whole trust story. */}
-            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
-              {result?.snapshot ? (
-                <>
-                  <span className="bg-muted inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 font-medium">
-                    <CalendarDays className="text-muted-foreground h-3.5 w-3.5" aria-hidden />
-                    As on {formatAsOn(result.snapshot.asOnDate)}
-                  </span>
-                  {hasBaseline && (
-                    <span className="text-muted-foreground">
-                      movement against {formatAsOn(result.snapshot.comparedTo)}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="text-muted-foreground">This list has not been published yet.</span>
-              )}
-            </div>
-          </div>
+      <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div>
+          <RankingStatStrip listSize={listSize} benchmarks={benchmarks} listLabel={label} />
 
-          {result?.snapshot?.sourceUrl && (
-            <a
-              href={result.snapshot.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer nofollow"
-              className="hover:border-power-orange hover:text-power-orange inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors"
-            >
-              Official {sport.federation.acronym} source
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-            </a>
-          )}
+          <HowToRead
+            listLabel={label}
+            listSize={listSize}
+            asOnLabel={formatAsOn(result?.snapshot?.asOnDate)}
+            top10Rank={scaled ? rankAtPercentile(10, listSize) : null}
+            top25Rank={scaled ? rankAtPercentile(25, listSize) : null}
+          />
         </div>
 
-        <RankingStatStrip listSize={listSize} benchmarks={benchmarks} listLabel={label} />
-
-        <HowToRead
-          listLabel={label}
-          listSize={listSize}
-          asOnLabel={formatAsOn(result?.snapshot?.asOnDate)}
-          top10Rank={scaled ? rankAtPercentile(10, listSize) : null}
-          top25Rank={scaled ? rankAtPercentile(25, listSize) : null}
-        />
-      </header>
-
-      {isHistorical && (
-        <p className="border-power-orange/30 bg-power-orange/5 mt-5 rounded-lg border px-3.5 py-2.5 text-sm">
-          You are viewing an archived week.{" "}
-          <Link href={comboHref(sport.slug, combo)} className="font-medium underline">
-            Back to the latest list
-          </Link>
-          .
-        </p>
-      )}
-
-      <div className="mt-7">
-        <RankingFilters
-          states={meta?.states ?? []}
-          dates={dates ?? []}
-          searchLabel={isJunior ? "Find your child on this list" : "Find a player"}
-        />
-      </div>
-
-      {spotlight.length > 0 && (
-        <PlayerSpotlight
-          entries={spotlight}
-          sportSlug={sport.slug}
-          listSize={listSize}
-          hasBaseline={hasBaseline}
-        />
-      )}
-
-      {entries.length === 0 ? (
-        <div className="mt-8 rounded-lg border border-dashed p-10 text-center">
-          <p className="font-medium">No players match these filters.</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Try a shorter name, the registration number on its own, or clear the state filter.
+        {isHistorical && (
+          <p className="border-power-orange/30 bg-power-orange/5 mt-5 rounded-lg border px-3.5 py-2.5 text-sm">
+            You are viewing an archived week.{" "}
+            <Link href={comboHref(sport.slug, combo)} className="font-medium underline">
+              Back to the latest list
+            </Link>
+            .
           </p>
+        )}
+
+        <div className="mt-7">
+          <RankingFilters
+            states={meta?.states ?? []}
+            dates={dates ?? []}
+            searchLabel={isJunior ? "Find your child on this list" : "Find a player"}
+          />
         </div>
-      ) : (
-        <>
-          <RankingTable
-            entries={entries}
+
+        {spotlight.length > 0 && (
+          <PlayerSpotlight
+            entries={spotlight}
             sportSlug={sport.slug}
-            listLabel={`${sport.federation.acronym} ${label}`}
             listSize={listSize}
             hasBaseline={hasBaseline}
-            benchmarks={benchmarks}
-            stateFiltered={query.state}
-            asOnLabel={formatAsOn(result?.snapshot?.asOnDate)}
           />
+        )}
 
-          {pagination && pagination.pages > 1 && (
-            <Pagination
-              basePath={comboHref(sport.slug, combo)}
-              query={query}
-              page={pagination.page}
-              pages={pagination.pages}
-              total={pagination.total}
+        {entries.length === 0 ? (
+          <div className="mt-8 rounded-lg border border-dashed p-10 text-center">
+            <p className="font-medium">No players match these filters.</p>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Try a shorter name, the registration number on its own, or clear the state filter.
+            </p>
+          </div>
+        ) : (
+          <>
+            <RankingTable
+              entries={entries}
+              sportSlug={sport.slug}
+              listLabel={`${sport.federation.acronym} ${label}`}
+              listSize={listSize}
+              hasBaseline={hasBaseline}
+              benchmarks={benchmarks}
+              stateFiltered={query.state}
+              asOnLabel={formatAsOn(result?.snapshot?.asOnDate)}
             />
-          )}
-        </>
-      )}
 
-      {/*
+            {pagination && pagination.pages > 1 && (
+              <Pagination
+                basePath={comboHref(sport.slug, combo)}
+                query={query}
+                page={pagination.page}
+                pages={pagination.pages}
+                total={pagination.total}
+              />
+            )}
+          </>
+        )}
+
+        {/*
         Read sideways.
 
         Everything below answers "is my child doing well" rather than "what number
@@ -294,34 +289,35 @@ export default async function RankingListPage({
         change with the filters. The entry rules are not computed at all. They are
         AITA's, and say so on screen.
       */}
-      {(hasInsights || isJunior) && (
-        <section className="mt-14 border-t pt-10" aria-labelledby="ranking-insights">
-          <h2 id="ranking-insights" className="scroll-mt-8 text-2xl font-bold tracking-tight">
-            What these numbers mean
-          </h2>
-          <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm leading-relaxed">
-            Worked out across all {listSize?.toLocaleString("en-IN") ?? "the"} ranked players, not
-            just the page above. The filters do not change anything here.
-          </p>
+        {(hasInsights || isJunior) && (
+          <section className="mt-14 border-t pt-10" aria-labelledby="ranking-insights">
+            <h2 id="ranking-insights" className="scroll-mt-8 text-2xl font-bold tracking-tight">
+              What these numbers mean
+            </h2>
+            <p className="text-muted-foreground mt-1.5 max-w-2xl text-sm leading-relaxed">
+              Worked out across all {listSize?.toLocaleString("en-IN") ?? "the"} ranked players, not
+              just the page above. The filters do not change anything here.
+            </p>
 
-          <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
-            <PointsLadder benchmarks={benchmarks} listLabel={label} parentAudience={isJunior} />
-            <EntryRules subcategory={combo.subcategory} listLabel={label} />
-            <div className="lg:col-span-2">
-              <PointsComposition bands={bandProfiles} subcategory={combo.subcategory} />
+            <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
+              <PointsLadder benchmarks={benchmarks} listLabel={label} parentAudience={isJunior} />
+              <EntryRules subcategory={combo.subcategory} listLabel={label} />
+              <div className="lg:col-span-2">
+                <PointsComposition bands={bandProfiles} subcategory={combo.subcategory} />
+              </div>
+              <div className="lg:col-span-2">
+                <StateDistribution stateCounts={stateCounts} listLabel={label} />
+              </div>
             </div>
-            <div className="lg:col-span-2">
-              <StateDistribution stateCounts={stateCounts} listLabel={label} />
-            </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      <p className="text-muted-foreground mt-10 text-xs leading-relaxed">
-        Rankings are published by the {sport.federation.name} and mirrored here. PowerMySport is not
-        affiliated with {sport.federation.acronym}.
-      </p>
-    </div>
+        <p className="text-muted-foreground mt-10 text-xs leading-relaxed">
+          Rankings are published by the {sport.federation.name} and mirrored here. PowerMySport is
+          not affiliated with {sport.federation.acronym}.
+        </p>
+      </div>
+    </>
   );
 }
 
