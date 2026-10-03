@@ -10,6 +10,7 @@ import {
   fetchSportFacets,
 } from "@/modules/tournaments/services/editionListing";
 import { tournamentListHref } from "@/modules/tournaments/utils/listHref";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { SPORT_LABEL } from "../federations/[slug]/federationShared";
 
 /**
@@ -66,19 +67,13 @@ export default async function TournamentsPage() {
       />
 
       <div className="min-h-screen bg-slate-50">
-        <div className="from-power-orange bg-gradient-to-br to-orange-600 px-4 pb-10 pt-14 sm:px-6">
-          <div className="mx-auto max-w-6xl">
-            <h1 className="font-title text-2xl font-extrabold text-white sm:text-3xl">
-              Tournaments
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-orange-50">
-              Upcoming tournaments across India, read from each federation&apos;s own calendar.
-              Narrow them to your child&apos;s age group, the type of event and the month.
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          breadcrumbs={[{ label: "Tournaments" }]}
+          title="Tournaments"
+          description="Upcoming tournaments across India, read from each federation's own calendar. Narrow them to your child's age group, the type of event and the month."
+        />
 
-        <div className="mx-auto max-w-6xl space-y-12 px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-6xl space-y-12 px-4 py-8 sm:px-6 lg:px-8">
           <section aria-labelledby="featured-heading">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div>

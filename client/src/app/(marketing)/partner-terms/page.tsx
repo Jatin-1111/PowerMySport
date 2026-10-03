@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { LegalPageHeader } from "@/modules/shared/components/legal/LegalPageHeader";
 
 import { Card } from "@/modules/shared/ui/Card";
-import { HandCoins } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -45,7 +44,6 @@ export default function PartnerTermsPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <LegalPageHeader
-        icon={HandCoins}
         title="Partner Terms for Experts & Academies"
         lastUpdated="August 11, 2026"
         effective="August 11, 2026"

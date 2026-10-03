@@ -155,7 +155,7 @@ function SportTile({
   return (
     // `isolate`, so the stretched link below covers this tile and stops at its
     // edge rather than sitting over the neighbouring one.
-    <div className="premium-shadow hover:border-power-orange/40 relative isolate flex h-full flex-col rounded-lg border border-white/70 bg-white/80 p-4 backdrop-blur-sm transition hover:shadow-lg">
+    <div className="premium-shadow hover:border-power-orange/40 relative isolate flex h-full flex-col rounded-lg border border-slate-200 bg-white p-4 transition hover:shadow-lg">
       {/* The whole tile is the target, but only one element is the link: an
           anchor with a stretched `::after` rather than a card-wide anchor with
           controls nested inside it. Nesting a button inside an anchor is invalid
@@ -312,7 +312,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
       <div
         className={`z-20 mx-auto mt-9 max-w-2xl px-1 py-1 ${
           dense
-            ? "premium-shadow sticky top-16 rounded-lg border border-white/70 bg-white/85 px-3 py-3 backdrop-blur-md"
+            ? "premium-shadow sticky top-16 rounded-lg border border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md"
             : ""
         }`}
       >
@@ -444,7 +444,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
         // A search that finds nothing is the clearest signal this page ever gets
         // that a parent knows exactly what they want and we do not have it. It
         // ends in a route to a person, not an apology.
-        <div className="premium-shadow mx-auto mt-6 max-w-md rounded-lg border border-white/70 bg-white/80 p-6 text-center backdrop-blur-sm">
+        <div className="premium-shadow mx-auto mt-6 max-w-md rounded-lg border border-slate-200 bg-white p-6 text-center">
           <p className="text-[15px] font-bold text-slate-900">
             No pathway for {needle ? `"${query.trim()}"` : "that group"} yet
           </p>
@@ -502,7 +502,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
           not, so a crawler indexes every pathway and a parent without
           JavaScript can still open it. */}
       {entries.length > BROWSE_TILES && (
-        <details className="group mt-6 rounded-lg border border-white/70 bg-white/70 px-4 py-3 backdrop-blur-sm">
+        <details className="group mt-6 rounded-lg border border-slate-200 bg-white px-4 py-3">
           <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 text-[13px] font-bold text-slate-600 transition hover:text-slate-900 [&::-webkit-details-marker]:hidden">
             All {entries.length} sports, A–Z
             <ChevronDown

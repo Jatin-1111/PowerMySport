@@ -196,7 +196,6 @@ export default function HomeClient() {
     <main>
       {/* ── Hero ── */}
       <Hero
-        variant="home"
         title="Helping Parents Make Confident Sports Decisions"
         titleHighlight="Sports Decisions"
         description="Understand the journey. Learn from parents and experts who've been there. Make better decisions for your child."
@@ -259,9 +258,6 @@ export default function HomeClient() {
 
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
-        <div className="pointer-events-none absolute -left-32 top-1/4 h-80 w-80 rounded-full bg-orange-100/30 blur-3xl" />
-        <div className="pointer-events-none absolute -right-32 bottom-1/4 h-80 w-80 rounded-full bg-slate-200/35 blur-3xl" />
-
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
             {/* Left: copy + capability cards */}
@@ -353,7 +349,7 @@ export default function HomeClient() {
                 />
 
                 {/* Glass caption — single, integrated overlay */}
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-md border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl">
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-md bg-slate-950/75 px-4 py-3.5">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white shadow-lg shadow-orange-950/40">
                       <Map size={17} />
@@ -364,7 +360,7 @@ export default function HomeClient() {
                     </div>
                   </div>
                   <span className="inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-emerald-300/25 bg-emerald-400/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     Free to start
                   </span>
                 </div>

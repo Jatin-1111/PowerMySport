@@ -2,9 +2,9 @@
 
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
-import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import {
@@ -147,7 +147,7 @@ interface InfoCardProps {
 function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
   return (
     <div
-      className="flex items-start gap-5 rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md"
+      className="flex items-start gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
       style={{
         boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
       }}
@@ -493,28 +493,14 @@ export default function ContactPage() {
   return (
     <main className="overflow-x-hidden">
       {/* ── Hero Section ── */}
-      <Hero
-        variant="page"
-        title="Contact Us"
-        subtitle="Get in Touch"
-        description="Have questions? We're here to help. Reach out to us anytime."
+      <PageHeader
+        eyebrow="Get in touch"
+        title="Contact us"
+        description="Questions about a pathway, a tournament or your account? Send us a message, call, or chat on WhatsApp."
+        width="7xl"
       />
       {/* ── Main Contact Section ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-white py-16 sm:py-24 lg:py-32">
-        {/* ── Background ambient blobs ── */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-32 top-24 h-[500px] w-[500px] rounded-full bg-orange-100/40 blur-[100px]"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-32 bottom-24 h-[400px] w-[400px] rounded-full bg-sky-100/30 blur-[80px]"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-amber-100/20 blur-[60px]"
-        />
-
         {/* ── Dot grid pattern ── */}
         <div
           aria-hidden="true"
@@ -537,7 +523,7 @@ export default function ContactPage() {
               <SkewedAccent />
 
               <div
-                className="relative rounded-xl border border-white/80 bg-white/85 px-5 py-8 shadow-sm backdrop-blur-md sm:px-10 sm:py-12"
+                className="relative rounded-xl border border-slate-200 bg-white px-5 py-8 shadow-sm sm:px-10 sm:py-12"
                 style={{
                   boxShadow:
                     "0 4px 40px rgba(0,0,0,0.07), 0 1px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
@@ -728,16 +714,11 @@ export default function ContactPage() {
                   width={500}
                   height={220}
                 />
-                {/* Floating glass badge */}
-                <div className="absolute bottom-4 left-5 flex items-center gap-2 rounded-sm bg-white/80 px-4 py-2 text-sm font-bold text-slate-900 shadow-lg backdrop-blur-md">
-                  <span className="bg-turf-green h-2 w-2 animate-pulse rounded-full" />
-                  Support team online
+                {/* The hours, not "Support team online" with a pulsing dot: nothing
+                    checked whether anyone was actually online. */}
+                <div className="absolute bottom-4 left-5 rounded-sm bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 shadow-sm">
+                  Mon to Sat, 9 AM to 8 PM IST
                 </div>
-                {/* Geo accent */}
-                <div
-                  aria-hidden="true"
-                  className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-orange-400/30 blur-2xl"
-                />
               </div>
 
               {/* Email */}
@@ -785,7 +766,7 @@ export default function ContactPage() {
 
               {/* Social */}
               <div
-                className="rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md"
+                className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
                 style={{
                   boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
                 }}
@@ -816,12 +797,6 @@ export default function ContactPage() {
 
       {/* ── CTA Section ──────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-slate-950 py-16 sm:py-24">
-        {/* Background radial burst */}
-        <div
-          aria-hidden="true"
-          className="bg-power-orange/10 pointer-events-none absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/3 rounded-full blur-[100px]"
-        />
-
         {/* Diagonal stripe overlay */}
         <div
           aria-hidden="true"
@@ -880,7 +855,7 @@ export default function ContactPage() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-sm hover:border-white/40 hover:bg-white/10 focus-visible:ring-white focus-visible:ring-offset-slate-950"
+                className="border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white hover:border-white/40 hover:bg-white/10 focus-visible:ring-white focus-visible:ring-offset-slate-950"
               >
                 <Link href="/faq">Browse FAQs</Link>
               </Button>

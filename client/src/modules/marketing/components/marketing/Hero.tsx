@@ -6,10 +6,8 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useRef } from "react";
-import { SectionLabel } from "./SectionLabel";
 
 export interface HeroProps {
-  variant?: "home" | "page" | "split";
   title: string;
   /** Substring of `title` rendered with the gradient + underline treatment */
   titleHighlight?: string;
@@ -19,9 +17,6 @@ export interface HeroProps {
   ctaPrompt?: string;
   primaryCTA?: { label: string; href: string };
   secondaryCTA?: { label: string; href: string };
-  imageSrc?: string;
-  imageAlt?: string;
-  gradient?: boolean;
   stats?: Array<{ label: string; value: string; helper?: string }>;
 }
 
@@ -40,16 +35,6 @@ const itemVariants: Variants = {
     opacity: 1,
     y: 0,
     transition: { type: "spring", stiffness: 280, damping: 22 },
-  },
-};
-
-const imageVariants: Variants = {
-  hidden: { opacity: 0, x: 40, scale: 0.96 },
-  show: {
-    opacity: 1,
-    x: 0,
-    scale: 1,
-    transition: { type: "spring", stiffness: 200, damping: 26, delay: 0.2 },
   },
 };
 
@@ -142,16 +127,6 @@ function HomeHero({
         style={{ backgroundImage: NOISE_TEXTURE }}
       />
 
-      {/* ── Aurora glows (toned down on mobile) ── */}
-      <div
-        aria-hidden
-        className="bg-power-orange/30 pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full blur-[100px] sm:-bottom-24 sm:-left-24 sm:h-[28rem] sm:w-[28rem] sm:blur-[130px]"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-16 right-[-4rem] h-48 w-48 rounded-full bg-sky-400/15 blur-[100px] sm:-top-32 sm:right-[-8rem] sm:h-[26rem] sm:w-[26rem] sm:blur-[130px]"
-      />
-
       <div className="relative mx-auto w-full max-w-7xl px-5 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
         <motion.div
           variants={containerVariants}
@@ -163,7 +138,7 @@ function HomeHero({
           {subtitle && (
             <motion.div
               variants={itemVariants}
-              className="mb-4 inline-flex items-center gap-1.5 rounded-sm border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-orange-200 backdrop-blur-md sm:mb-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
+              className="mb-4 inline-flex items-center gap-1.5 rounded-sm border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-orange-200 sm:mb-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
             >
               <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               {subtitle}
@@ -272,7 +247,7 @@ function HomeHero({
                 asChild
                 variant="outline"
                 size="lg"
-                className="h-auto w-full border-white/25 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-md hover:border-white/50 hover:bg-white/20 focus-visible:ring-white focus-visible:ring-offset-slate-950 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+                className="h-auto w-full border-white/25 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white hover:border-white/50 hover:bg-white/20 focus-visible:ring-white focus-visible:ring-offset-slate-950 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
               >
                 <Link href={secondaryCTA.href}>{secondaryCTA.label}</Link>
               </Button>
@@ -288,7 +263,7 @@ function HomeHero({
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-lg border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur-md sm:px-4 sm:py-3"
+                  className="rounded-lg border border-white/15 bg-white/10 px-3.5 py-2.5 sm:px-4 sm:py-3"
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-300 sm:text-xs">
                     {stat.label}
@@ -309,241 +284,9 @@ function HomeHero({
   );
 }
 
-// ─── PAGE VARIANT ─────────────────────────────────────────────────────────────
-//
-// The text here renders plainly, with no entrance animation. It used to be a
-// `whileInView` stagger, which is the wrong tool for a hero: the element is
-// already in view on load, so all the observer could do was hold the h1 — the
-// LCP element on /about, /contact and /how-it-works — at `opacity: 0` until
-// JavaScript had hydrated and a frame had run.
-//
-// The decorative motion below (the image's slow scale, the aurora pulse) stays.
-// It animates things that are not the content, so nothing is hidden waiting on
-// it.
-
-function PageHero({
-  title,
-  subtitle,
-  description,
-  primaryCTA,
-  secondaryCTA,
-  imageSrc,
-  imageAlt,
-}: HeroProps) {
-  const hasImage = Boolean(imageSrc);
-
-  return (
-    <section
-      className={
-        hasImage
-          ? "relative flex min-h-[72vh] items-center overflow-hidden bg-slate-950 py-28 sm:min-h-[82vh] sm:py-32 lg:min-h-[92vh]"
-          : "relative overflow-hidden py-20 sm:py-24"
-      }
-    >
-      {hasImage ? (
-        <>
-          {/* ── Full-bleed background image ── */}
-          <motion.div
-            className="absolute inset-0 will-change-transform"
-            initial={{ scale: 1.12 }}
-            animate={{ scale: 1.05 }}
-            transition={{ duration: 7, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Image
-              src={imageSrc!}
-              alt={imageAlt || title}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover object-center"
-            />
-          </motion.div>
-
-          {/* ── Scrims — centered text needs even coverage ── */}
-          <div className="absolute inset-0 bg-slate-950/60" />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/30 to-slate-950/85" />
-          <div className="absolute inset-0 bg-[radial-gradient(90%_90%_at_50%_40%,transparent_35%,rgba(2,6,23,0.65)_100%)]" />
-
-          {/* ── Film-grain texture ── */}
-          <div
-            aria-hidden
-            className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
-            style={{ backgroundImage: NOISE_TEXTURE }}
-          />
-
-          {/* ── Aurora glow ── */}
-          <motion.div
-            aria-hidden
-            className="bg-power-orange/20 pointer-events-none absolute -bottom-24 left-1/2 h-72 w-[36rem] -translate-x-1/2 rounded-full blur-[120px]"
-            animate={{ opacity: [0.35, 0.6, 0.35] }}
-            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </>
-      ) : (
-        <>
-          <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-200/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 left-8 h-64 w-64 rounded-full bg-amber-200/20 blur-3xl" />
-        </>
-      )}
-
-      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          {subtitle &&
-            (hasImage ? (
-              <div className="mb-6 flex justify-center">
-                <span className="inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur-md">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {subtitle}
-                </span>
-              </div>
-            ) : (
-              <div className="mb-5 flex justify-center">
-                <SectionLabel label={subtitle} color="slate" />
-              </div>
-            ))}
-          <h1 className={cnTitle(hasImage)}>{title}</h1>
-          {description && (
-            <p
-              className={
-                hasImage
-                  ? "mx-auto max-w-2xl text-lg leading-relaxed text-slate-200/95 sm:text-xl"
-                  : "mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 sm:text-xl"
-              }
-            >
-              {description}
-            </p>
-          )}
-          {(primaryCTA || secondaryCTA) && (
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-              {primaryCTA && (
-                <Button
-                  asChild
-                  variant="primary"
-                  size="lg"
-                  className={hasImage ? "focus-visible:ring-offset-slate-950" : undefined}
-                >
-                  <Link href={primaryCTA.href}>{primaryCTA.label}</Link>
-                </Button>
-              )}
-              {secondaryCTA && (
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className={
-                    hasImage
-                      ? "border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/20 focus-visible:ring-white focus-visible:ring-offset-slate-950"
-                      : "bg-white"
-                  }
-                >
-                  <Link href={secondaryCTA.href}>{secondaryCTA.label}</Link>
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function cnTitle(hasImage: boolean): string {
-  return hasImage
-    ? "font-title mb-5 text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl xl:text-6xl"
-    : "font-title mb-5 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl";
-}
-
-// ─── SPLIT VARIANT ────────────────────────────────────────────────────────────
-
-function SplitHero({
-  title,
-  subtitle,
-  description,
-  primaryCTA,
-  secondaryCTA,
-  imageSrc,
-  imageAlt,
-}: HeroProps) {
-  return (
-    <section className="bg-ghost-white relative overflow-hidden py-20 sm:py-24 lg:py-28">
-      <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-sky-200/20 blur-[100px]" />
-      <div className="pointer-events-none absolute -bottom-24 left-0 h-80 w-80 rounded-full bg-amber-200/20 blur-[100px]" />
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-80px" }}
-        >
-          {subtitle && (
-            <motion.div variants={itemVariants} className="mb-5">
-              <SectionLabel label={subtitle} color="orange" />
-            </motion.div>
-          )}
-          <motion.h1
-            variants={itemVariants}
-            className="font-title mb-6 text-3xl font-extrabold leading-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl"
-          >
-            {title}
-          </motion.h1>
-          {description && (
-            <motion.p
-              variants={itemVariants}
-              className="mb-8 text-lg leading-relaxed text-slate-600"
-            >
-              {description}
-            </motion.p>
-          )}
-          <motion.div variants={itemVariants} className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-            {primaryCTA && (
-              <Button asChild variant="primary" size="lg">
-                <Link href={primaryCTA.href}>{primaryCTA.label}</Link>
-              </Button>
-            )}
-            {secondaryCTA && (
-              <Button asChild variant="outline" size="lg" className="bg-white">
-                <Link href={secondaryCTA.href}>{secondaryCTA.label}</Link>
-              </Button>
-            )}
-          </motion.div>
-        </motion.div>
-
-        {imageSrc && (
-          <motion.div
-            variants={imageVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-80px" }}
-            className="relative h-[280px] w-full sm:h-[380px] lg:h-[460px]"
-          >
-            {/* Decorative glow */}
-            <div className="to-turf-green/10 absolute inset-4 rounded-xl bg-gradient-to-br from-orange-400/15 via-transparent blur-2xl" />
-            <div
-              className="relative h-full w-full overflow-hidden rounded-xl"
-              style={{
-                clipPath: "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
-              }}
-            >
-              <Image
-                src={imageSrc}
-                alt={imageAlt || title}
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
-              />
-              <div className="ring-black/8 absolute inset-0 rounded-xl ring-1 ring-inset" />
-            </div>
-          </motion.div>
-        )}
-      </div>
-    </section>
-  );
-}
-
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export const Hero: React.FC<HeroProps> = (props) => {
-  if (props.variant === "home") return <HomeHero {...props} />;
-  if (props.variant === "split") return <SplitHero {...props} />;
-  return <PageHero {...props} />;
-};
+// The homepage is the only page with a photo hero; every other page uses the
+// shared `PageHeader` (modules/shared/ui). The "page" and "split" variants that
+// used to live here gave the site five header styles between them.
+export const Hero: React.FC<HeroProps> = (props) => <HomeHero {...props} />;

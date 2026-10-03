@@ -1,6 +1,7 @@
 import { SPORT_LABEL } from "@/modules/pathway/config/tournamentDisplay";
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 
 import { TRACKS } from "../config/tracks";
 import { fetchOpportunities, type OpportunityTrack } from "../services/opportunities";
@@ -35,16 +36,13 @@ export async function OpportunityIndex({
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="from-power-orange bg-gradient-to-br to-orange-600 px-4 pb-10 pt-14 sm:px-6">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="font-title text-2xl font-extrabold text-white sm:text-3xl">
-            {config.heading}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-orange-50">{config.intro}</p>
-        </div>
-      </div>
+      <PageHeader
+        breadcrumbs={[{ label: config.title }]}
+        title={config.heading}
+        description={config.intro}
+      />
 
-      <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
         <p className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-4 text-[13.5px] leading-relaxed text-slate-600">
           <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
           <span>

@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { LegalPageHeader } from "@/modules/shared/components/legal/LegalPageHeader";
 
 import { Card } from "@/modules/shared/ui/Card";
-import { FileText } from "lucide-react";
 
 import {
   TermsToc,
@@ -46,7 +45,6 @@ export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <LegalPageHeader
-        icon={FileText}
         title="Terms of Service"
         lastUpdated="July 24, 2026"
         effective="July 24, 2026"

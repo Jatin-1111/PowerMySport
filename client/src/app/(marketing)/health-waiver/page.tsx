@@ -1,5 +1,6 @@
 import { TriangleAlert } from "lucide-react";
 
+import { LegalPageHeader } from "@/modules/shared/components/legal/LegalPageHeader";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -14,15 +15,14 @@ export const metadata: Metadata = {
 export default function HealthWaiver() {
   return (
     <main className="min-h-screen bg-white">
-      <div className="container mx-auto max-w-4xl px-4 py-16 md:py-24">
+      <LegalPageHeader
+        title="Health, Safety & Liability Waiver"
+        lastUpdated="July 9, 2026"
+        effective="July 9, 2026"
+        width="4xl"
+      />
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 md:py-14 lg:px-8">
         <article className="prose prose-lg max-w-none">
-          <h1 className="mb-4 text-4xl font-bold">Health, Safety & Liability Waiver</h1>
-
-          <p className="mb-8 text-sm text-gray-600">
-            <strong>Last Updated:</strong> July 9, 2026 | <strong>Effective Date:</strong> July 9,
-            2026
-          </p>
-
           <section className="mb-8">
             <h2 className="mb-4 mt-8 text-2xl font-semibold">1. Acknowledgment of Risk</h2>
             <p>

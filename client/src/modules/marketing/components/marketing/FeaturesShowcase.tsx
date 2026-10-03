@@ -371,10 +371,6 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
 
   return (
     <section className="relative py-16 sm:py-20 lg:py-24">
-      {/* Ambient blobs */}
-      <div className="pointer-events-none absolute left-1/4 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-100/25 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 h-64 w-64 translate-x-1/2 rounded-full bg-orange-100/20 blur-3xl" />
-
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section header ── */}
         {(title || subtitle || description) && (
@@ -574,7 +570,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                       transition={{ delay: 0.1 }}
                       className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm"
                     >
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       {feature.stat}
                     </motion.span>
                   )}
@@ -620,7 +616,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="mt-8 rounded-lg border border-slate-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm"
+                  className="mt-8 rounded-lg border border-slate-100 bg-white p-4 shadow-sm"
                 >
                   <Visual color={pal.dot} dotColor={pal.dot} chipCls={pal.chip} />
                 </motion.div>

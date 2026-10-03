@@ -2,7 +2,8 @@
 
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { ChevronDown, FileText, HelpCircle, MessageCircle } from "lucide-react";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
+import { ChevronDown, FileText, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -359,28 +360,12 @@ export default function FAQPage() {
           }),
         }}
       />
-      {/* Header Section */}
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="bg-linear-to-br relative overflow-hidden rounded-xl from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-            <div className="relative z-10">
-              <div className="mb-2 flex items-center gap-3">
-                <HelpCircle size={32} className="text-power-orange" />
-                <span className="inline-flex items-center rounded-sm bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
-                  Support
-                </span>
-              </div>
-              <h1 className="mb-3 text-3xl font-bold sm:text-4xl">Frequently Asked Questions</h1>
-              <p className="max-w-2xl text-base text-slate-200 sm:text-lg">
-                Find answers to common questions about PowerMySport. Can&apos;t find what
-                you&apos;re looking for? Contact our support team.
-              </p>
-            </div>
-            <div className="bg-power-orange/20 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
-            <div className="bg-turf-green/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Support"
+        title="Frequently asked questions"
+        description="Answers to common questions about PowerMySport. Can't find what you're looking for? Contact us."
+        width="4xl"
+      />
 
       {/* Main Content */}
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">

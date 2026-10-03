@@ -190,9 +190,9 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
   return (
     <nav
       className={cn(
-        "border-b border-white/60 bg-white/75 text-slate-900 backdrop-blur-xl transition-all duration-300",
+        "border-b border-slate-200/80 bg-white/90 text-slate-900 backdrop-blur-xl transition-all duration-300",
         sticky && "fixed inset-x-0 top-0 z-50 w-full shadow-sm",
-        variant === "dark" && "bg-white/80 text-slate-900"
+        variant === "dark" && "bg-white/90 text-slate-900"
       )}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

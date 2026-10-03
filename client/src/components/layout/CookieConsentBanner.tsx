@@ -54,13 +54,7 @@ export function CookieConsentBanner() {
           aria-modal="false"
           aria-label="Cookie notice"
         >
-          <div className="premium-shadow relative w-full max-w-sm overflow-hidden rounded-lg border border-white/70 bg-white/90 p-5 backdrop-blur-xl">
-            {/* Soft brand glow */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-orange-200/30 blur-3xl"
-            />
-
+          <div className="premium-shadow relative w-full max-w-sm overflow-hidden rounded-lg border border-slate-200 bg-white p-5">
             <div className="relative">
               {/* Header: icon + title + close */}
               <div className="mb-3 flex items-center gap-3">

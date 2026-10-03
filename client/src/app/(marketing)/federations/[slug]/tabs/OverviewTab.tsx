@@ -195,7 +195,6 @@ export function OverviewTab({
 
         {/* CTA */}
         <div className="relative overflow-hidden rounded-xl bg-slate-900 p-5">
-          <div className="bg-power-orange/[0.12] pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full blur-2xl" />
           <div className="relative z-10">
             <div className="mb-2 flex items-center gap-1.5">
               <Sparkles className="text-power-orange h-3.5 w-3.5" />

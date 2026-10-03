@@ -61,8 +61,6 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
       {/* Sidebar — Concierge */}
       <aside className="space-y-4 lg:sticky lg:top-20">
         <div className="relative overflow-hidden rounded-xl bg-slate-900 p-6">
-          <div className="bg-power-orange/[0.12] pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl" />
-          <div className="bg-power-orange/[0.07] pointer-events-none absolute -bottom-8 -left-8 h-24 w-24 rounded-full blur-2xl" />
           <div className="relative z-10">
             <div className="mb-3 flex items-center gap-1.5">
               <Sparkles className="text-power-orange h-3.5 w-3.5" />

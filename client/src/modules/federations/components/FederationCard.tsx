@@ -56,7 +56,7 @@ export function FederationCard({
   const href = `/federations/${federation.slug}`;
 
   return (
-    <div className="premium-shadow hover:border-power-orange/40 group flex h-full flex-col rounded-lg border border-white/70 bg-white/80 p-5 backdrop-blur-sm transition hover:shadow-lg sm:p-6">
+    <div className="premium-shadow hover:border-power-orange/40 group flex h-full flex-col rounded-lg border border-slate-200 bg-white p-5 transition hover:shadow-lg sm:p-6">
       <div className="flex items-start gap-4">
         <div
           aria-hidden

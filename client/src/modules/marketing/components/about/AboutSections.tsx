@@ -18,7 +18,7 @@ import {
 // client component, and the reveals are the `.reveal-on-scroll` CSS utility in
 // globals.css rather than a framer-motion stagger.
 
-const SURFACE = "rounded-lg border border-white/70 bg-white/80 backdrop-blur-sm premium-shadow";
+const SURFACE = "rounded-lg border border-slate-200 bg-white premium-shadow";
 
 function SectionHead({
   eyebrow,
@@ -57,8 +57,6 @@ function SectionHead({
 export function WhyWeExist() {
   return (
     <section className="reveal-on-scroll relative overflow-hidden py-16 sm:py-20 lg:py-24">
-      <div className="pointer-events-none absolute left-0 top-0 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-100/40 blur-3xl" />
-
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>

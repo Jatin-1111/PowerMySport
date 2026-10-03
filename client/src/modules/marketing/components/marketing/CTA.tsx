@@ -83,10 +83,8 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
   return (
     <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="premium-shadow relative overflow-hidden rounded-xl border border-white/70 bg-white/80 px-8 py-14 text-center shadow-sm backdrop-blur-md">
+        <div className="premium-shadow relative overflow-hidden rounded-xl border border-slate-200 bg-white px-8 py-14 text-center shadow-sm">
           <SkewPolygon className="absolute inset-0 h-full w-full" />
-          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange-200/25 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-sky-200/20 blur-3xl" />
           <div className="reveal-on-scroll relative">
             {label && (
               <div className="mb-5 flex justify-center">
@@ -140,10 +138,6 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
 
           {/* Decorative skew polygon */}
           <SkewPolygon className="absolute inset-0 h-full w-full" />
-
-          {/* Ambient blobs */}
-          <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-200/35 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-sky-200/30 blur-3xl" />
 
           <div className="reveal-on-scroll relative px-8 py-16 text-center sm:px-12 sm:py-20">
             {label && (

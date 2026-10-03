@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { LegalPageHeader } from "@/modules/shared/components/legal/LegalPageHeader";
 
 import { Card } from "@/modules/shared/ui/Card";
-import { Shield } from "lucide-react";
 
 import {
   PrivacyToc,
@@ -35,7 +34,6 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <LegalPageHeader
-        icon={Shield}
         title="Privacy Policy"
         lastUpdated="July 24, 2026"
         effective="July 24, 2026"

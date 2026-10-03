@@ -18,7 +18,6 @@ import { motion } from "framer-motion";
 import { Award, Dumbbell, MapPin, TrendingUp, Unlock, Zap } from "lucide-react";
 
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { AmbientBlob } from "./AmbientBlob";
 import { cardReveal, fadeUp, orchestrator } from "../utils/motion";
 
 const STAT_CARDS = [
@@ -67,7 +66,7 @@ export function PathwayStatsBanner() {
             <motion.div
               key={stat.label}
               variants={cardReveal}
-              className="premium-shadow flex flex-col items-center rounded-lg border border-white/70 bg-white/80 p-5 text-center backdrop-blur-sm sm:p-6"
+              className="premium-shadow flex flex-col items-center rounded-lg border border-slate-200 bg-white p-5 text-center sm:p-6"
             >
               <div
                 className={`mb-4 flex h-12 w-12 items-center justify-center rounded-md ${stat.color}`}
@@ -89,9 +88,6 @@ export function PathwayStatsBanner() {
 export function PathwayHelpSection() {
   return (
     <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
-      <AmbientBlob className="-right-24 top-16 h-80 w-80 bg-orange-100/40" />
-      <AmbientBlob className="-left-32 bottom-20 h-72 w-72 bg-emerald-100/30" />
-
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           variants={orchestrator}
@@ -146,7 +142,7 @@ export function PathwayHelpSection() {
             <motion.div
               key={item.title}
               variants={cardReveal}
-              className="premium-shadow relative overflow-hidden rounded-lg border border-white/70 bg-white/80 p-6 backdrop-blur-sm sm:p-8"
+              className="premium-shadow relative overflow-hidden rounded-lg border border-slate-200 bg-white p-6 sm:p-8"
             >
               {/* decorative circle */}
               <div

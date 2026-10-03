@@ -11,10 +11,10 @@ import {
 
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import { AmbientBlob } from "@/modules/pathway/components/AmbientBlob";
 import { PathwayPicker } from "@/modules/pathway/components/PathwayPicker";
 import { fetchPathwayIndex } from "@/modules/pathway/services/fetchGuide";
 import { sectionDomId } from "@/modules/pathway/utils/sectionIds";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 
 // ─── /roadmap ────────────────────────────────────────────────────────────────
 //
@@ -62,7 +62,7 @@ import { sectionDomId } from "@/modules/pathway/utils/sectionIds";
 // `position: sticky` for every descendant on the page.
 
 /** Every raised card on this page. One definition, so they cannot drift apart. */
-const SURFACE = "rounded-lg border border-white/70 bg-white/80 backdrop-blur-sm premium-shadow";
+const SURFACE = "rounded-lg border border-slate-200 bg-white premium-shadow";
 
 /** The same, plus the lift that marks a card as a link. */
 // Clickable surfaces answer the cursor with an orange border and the deeper
@@ -164,53 +164,45 @@ export default async function PathwaysIndexPage() {
           pushed the only thing a parent can actually click below the fold on a
           laptop: a page whose job is "pick your sport" opened with no sport in
           sight. */}
-      <section className="relative pb-14 pt-14 sm:pb-16 sm:pt-20">
-        <AmbientBlob className="-right-24 -top-10 h-80 w-80 bg-orange-100/50" />
-        <AmbientBlob className="-left-28 top-40 h-72 w-72 bg-emerald-100/40" />
+      <PageHeader
+        align="center"
+        width="7xl"
+        title={
+          <>
+            Starting a sport is easy.
+            {/* The turn is the whole headline, so it gets its own line rather
+                than wrapping wherever the viewport happens to break it. */}
+            <span className="mt-1 block text-slate-500">Navigating the journey is not.</span>
+          </>
+        }
+        description="Coaches, academies, competitions, costs, education. The answers are scattered everywhere. We put them in one place, stage by stage."
+      >
+        <PathwayPicker entries={sports} />
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* No eyebrow badge: "Sports Pathways" restated the headline a line
-              above it, and cost a row to do it. */}
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="font-title text-[2rem] font-bold leading-[1.1] tracking-[-0.02em] text-slate-900 sm:text-5xl lg:text-[3.5rem]">
-              Starting a sport is easy.
-              {/* The turn is the whole headline, so it gets its own line rather
-                  than wrapping wherever the viewport happens to break it. */}
-              <span className="mt-1 block text-slate-400">Navigating the journey is not.</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Coaches, academies, competitions, costs, education. The answers are scattered
-              everywhere. We put them in one place, stage by stage.
-            </p>
-          </div>
-
-          <PathwayPicker entries={sports} />
-
-          {/* ── Credibility, in one row ──
-              This was a four-card stats banner of its own, most of the way down
-              the page, saying "6 stages / 5 questions / Built with coaches / ₹0".
-              Two of those are facts the page itself demonstrates, and none of
-              them were worth a band. As a single meta line under the picker they
-              answer the two questions a first-time visitor actually has, who
-              wrote this, and what will it cost me — in the place they ask them. */}
-          <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12.5px] font-semibold text-slate-500">
+        {/* ── Credibility, in one row ──
+            This was a four-card stats banner of its own, most of the way down
+            the page, saying "6 stages / 5 questions / Built with coaches / ₹0".
+            Two of those are facts the page itself demonstrates, and none of
+            them were worth a band. As a single meta line under the picker they
+            answer the two questions a first-time visitor actually has, who
+            wrote this, and what will it cost me — in the place they ask them. */}
+        <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12.5px] font-semibold text-slate-500">
+          <li className="inline-flex items-center gap-1.5">
+            <PenLine aria-hidden className="h-3.5 w-3.5 text-slate-400" />
+            Written with coaches and sports parents
+          </li>
+          <li className="inline-flex items-center gap-1.5">
+            <Wallet aria-hidden className="h-3.5 w-3.5 text-slate-400" />
+            Free to read, no sign-up
+          </li>
+          {updated && (
             <li className="inline-flex items-center gap-1.5">
-              <PenLine aria-hidden className="h-3.5 w-3.5 text-slate-400" />
-              Written with coaches and sports parents
+              <Sparkles aria-hidden className="h-3.5 w-3.5 text-slate-400" />
+              Last updated {updated}
             </li>
-            <li className="inline-flex items-center gap-1.5">
-              <Wallet aria-hidden className="h-3.5 w-3.5 text-slate-400" />
-              Free to read, no sign-up
-            </li>
-            {updated && (
-              <li className="inline-flex items-center gap-1.5">
-                <Sparkles aria-hidden className="h-3.5 w-3.5 text-slate-400" />
-                Last updated {updated}
-              </li>
-            )}
-          </ul>
-        </div>
-      </section>
+          )}
+        </ul>
+      </PageHeader>
 
       {/* ── Real questions ──
           Proof, in the parent's own words, placed where a visitor decides
@@ -311,8 +303,6 @@ export default async function PathwaysIndexPage() {
           and the "PowerMySport helps you grow faster" pair, which between them
           asked for a long scroll and offered no specific action. */}
       <section className="reveal-on-scroll relative overflow-hidden border-y border-white/60 bg-white/50 py-16 sm:py-20">
-        <AmbientBlob className="-right-24 top-10 h-72 w-72 bg-orange-100/40" />
-
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHead
             eyebrow="If reading isn't enough"

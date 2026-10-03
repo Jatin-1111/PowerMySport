@@ -1,5 +1,4 @@
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import {
   ChildSafety,
   CompanyFacts,
@@ -12,6 +11,7 @@ import {
 } from "@/modules/marketing/components/about/AboutSections";
 import { fetchFederations } from "@/modules/federations/services/fetchFederations";
 import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 
 // ─── /about, the body ────────────────────────────────────────────────────────
 //
@@ -30,10 +30,9 @@ export async function AboutPageContent() {
 
   return (
     <main className="overflow-x-hidden">
-      <Hero
-        variant="page"
+      <PageHeader
+        eyebrow="Our story"
         title="The map we wish every parent had"
-        subtitle="Our story"
         description="Indian youth sport comes with no instruction manual. We are a small team trying to write one, clear, honest, and built around the parent doing the work."
       />
 

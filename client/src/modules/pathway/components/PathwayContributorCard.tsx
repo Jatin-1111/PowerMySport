@@ -35,7 +35,7 @@ export function PathwayContributorCard({
   const { name, organisation, url, blurb, profile } = contributor;
 
   return (
-    <aside className="premium-shadow rounded-lg border border-white/70 bg-white/80 p-5 backdrop-blur-sm sm:p-6">
+    <aside className="premium-shadow rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
       <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
         {sportName} pathway contributed by
       </p>

@@ -11,9 +11,9 @@ import {
   fetchFederations,
 } from "@/modules/federations/services/fetchFederations";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
 import { PATHWAY_SPORTS } from "@/modules/pathway/data/sports";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 
 // ─── /federations ────────────────────────────────────────────────────────────
 //
@@ -107,25 +107,12 @@ export default async function FederationsIndexPage() {
         ]}
       />
 
-      {/* ── Hero ── */}
-      <section className="pt-12 sm:pt-16 lg:pt-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-4 flex justify-center">
-              <SectionLabel label="Governing Bodies" color="green" />
-            </div>
-            <h1 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl">
-              Who decides what your child can enter
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
-              Every competitive sport in India runs on someone&apos;s rulebook: age cut-offs,
-              registration order, ranking points, an official calendar. We keep the details for each
-              body in one place, checked against its own published sources rather than summarised
-              from memory.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="Governing bodies"
+        title="Who decides what your child can enter"
+        description="Every competitive sport in India runs on someone's rulebook: age cut-offs, registration order, ranking points, an official calendar. We keep the details for each body in one place, checked against its own published sources rather than summarised from memory."
+        width="7xl"
+      />
 
       {/* ── Federations by sport ── */}
       <section className="py-12 sm:py-16">

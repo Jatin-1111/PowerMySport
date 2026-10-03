@@ -1,7 +1,7 @@
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
-import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Timeline, type TimelineEntry } from "@/modules/marketing/components/marketing/Timeline";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { cn } from "@/utils/cn";
 import {
   CalendarRange,
@@ -26,16 +26,6 @@ import Image from "next/image";
 // supported and the reader has not asked for reduced motion.
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-/** Floating ambient blob for atmospheric depth */
-function AmbientBlob({ className }: { className: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`pointer-events-none absolute rounded-full blur-3xl will-change-transform ${className}`}
-    />
-  );
-}
 
 /** Checklist item */
 function CheckItem({ text, iconColor }: { text: string; iconColor: string }) {
@@ -114,7 +104,7 @@ function AssetFrame({
 
         {/* Step chip — glass, top-left */}
         {step !== undefined && (
-          <div className="absolute left-5 top-5 rounded-sm border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-xl">
+          <div className="absolute left-5 top-5 rounded-sm bg-slate-950/70 px-3.5 py-1.5">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
               Step 0{step}
             </p>
@@ -122,7 +112,7 @@ function AssetFrame({
         )}
 
         {/* Floating glass overlay card */}
-        <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-md border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl">
+        <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-md bg-slate-950/75 px-5 py-3.5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
             {overlayIcon}
           </div>
@@ -189,24 +179,16 @@ function DeliverableCard({
   title,
   desc,
   accent,
-  glow,
 }: {
   icon: LucideIcon;
   title: string;
   desc: string;
   accent: string;
-  glow: string;
 }) {
   return (
     // Static content, so no hover: a card that lifts tells the reader it can be
     // clicked, and this one cannot.
     <div className="relative overflow-hidden rounded-lg border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-8">
-      {/* Soft corner glow */}
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-bl ${glow} to-transparent opacity-70 blur-2xl`}
-      />
-
       <div
         className={`relative mb-5 flex h-12 w-12 items-center justify-center rounded-md ring-1 ${accent}`}
       >
@@ -337,28 +319,24 @@ export default function HowItWorksPage() {
       title: "The right sport, not a guess",
       desc: "A match from 50+ sports based on your child's age, personality, and physical traits, with the reasons behind every pick.",
       accent: "bg-orange-50 text-power-orange ring-orange-200/60",
-      glow: "from-orange-400/25",
     },
     {
       icon: CalendarRange,
       title: "Milestones that fit their age",
       desc: "What to focus on now and when to level up, because a 7-year-old and a 14-year-old need very different plans.",
       accent: "bg-blue-50 text-blue-600 ring-blue-200/60",
-      glow: "from-blue-400/20",
     },
     {
       icon: Wallet,
       title: "Real costs, in rupees",
       desc: "Know what training actually costs each month before you commit, from the first trial session to serious competition.",
       accent: "bg-emerald-50 text-emerald-600 ring-emerald-200/60",
-      glow: "from-emerald-400/20",
     },
     {
       icon: Trophy,
       title: "The competition ladder, mapped",
       desc: "District to state to nationals. See the real tournaments and federations on your child's path, and what it takes to get there.",
       accent: "bg-teal-50 text-teal-600 ring-teal-200/60",
-      glow: "from-teal-400/20",
     },
   ];
 
@@ -384,22 +362,15 @@ export default function HowItWorksPage() {
   return (
     <main className="overflow-x-hidden">
       {/* ── Hero ── */}
-      <Hero
-        variant="page"
-        title="How It Works"
-        subtitle="Getting Started"
+      <PageHeader
+        eyebrow="Getting started"
+        title="How it works"
         description="What PowerMySport does for you today: a roadmap for your child's sport, a community of parents who have been there, and support in carrying the plan out."
-        imageSrc="https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?auto=format&fit=crop&w=2000&q=80"
-        imageAlt="A floodlit cricket stadium in India packed with spectators"
+        width="7xl"
       />
 
       {/* ── Players Journey ── */}
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
-        {/* Ambient blobs */}
-        <AmbientBlob className="-left-48 top-24 h-96 w-96 bg-orange-100/40" />
-        <AmbientBlob className="-right-40 top-1/3 h-80 w-80 bg-slate-200/40" />
-        <AmbientBlob className="-left-32 bottom-1/4 h-72 w-72 bg-slate-200/40" />
-
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Section header */}
           <div className="reveal-on-scroll mb-12 text-center lg:mb-28">
@@ -439,8 +410,6 @@ export default function HowItWorksPage() {
             backgroundSize: "32px 32px",
           }}
         />
-        <AmbientBlob className="-right-32 top-20 h-96 w-96 bg-orange-100/50" />
-        <AmbientBlob className="-left-24 bottom-16 h-72 w-72 bg-sky-100/40" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-14 text-center">
@@ -466,9 +435,6 @@ export default function HowItWorksPage() {
 
       {/* ── The old way vs the clear way ── */}
       <section className="relative overflow-hidden py-20 sm:py-24 lg:py-32">
-        <AmbientBlob className="-right-40 top-24 h-96 w-96 bg-orange-100/40" />
-        <AmbientBlob className="-left-32 bottom-16 h-72 w-72 bg-slate-200/40" />
-
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-14 text-center">
             <div className="mb-5 flex justify-center">
@@ -509,11 +475,6 @@ export default function HowItWorksPage() {
 
             {/* With PowerMySport */}
             <div className="relative overflow-hidden rounded-xl border border-orange-200/70 bg-white p-7 shadow-xl shadow-orange-100/60 sm:p-8">
-              {/* Corner glow */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-gradient-to-bl from-orange-400/20 to-transparent blur-2xl"
-              />
               <p className="text-power-orange mb-1 text-[11px] font-bold uppercase tracking-[0.16em]">
                 With PowerMySport
               </p>
@@ -560,7 +521,6 @@ export default function HowItWorksPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        <AmbientBlob className="-right-24 top-16 h-80 w-80 bg-slate-200/50" />
 
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-12 text-center">

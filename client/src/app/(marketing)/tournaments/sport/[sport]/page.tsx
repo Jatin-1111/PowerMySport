@@ -3,7 +3,7 @@ import { breadcrumbJsonLd, itemListJsonLd, NOINDEX_METADATA } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Trophy } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { EditionCard } from "@/modules/tournaments/components/EditionCard";
 import { EditionFilters } from "@/modules/tournaments/components/EditionFilters";
 import {
@@ -11,6 +11,7 @@ import {
   fetchSportFacets,
 } from "@/modules/tournaments/services/editionListing";
 import { tournamentListHref, type TournamentListState } from "@/modules/tournaments/utils/listHref";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { SPORT_LABEL } from "../../../federations/[slug]/federationShared";
 
 /**
@@ -125,27 +126,17 @@ export default async function SportTournamentsHubPage({
       />
 
       <div className="min-h-screen bg-slate-50">
-        <div className="from-power-orange bg-gradient-to-br to-orange-600 px-4 pb-10 pt-14 sm:px-6">
-          <div className="mx-auto max-w-6xl">
-            <nav aria-label="Breadcrumb" className="mb-3 text-[13px] font-semibold text-orange-50">
-              <Link href="/tournaments" className="hover:text-white hover:underline">
-                Tournaments
-              </Link>
-              <ChevronRight aria-hidden className="mx-1 inline h-3.5 w-3.5" />
-              <span className="text-white">{sportLabel}</span>
-            </nav>
-            <h1 className="font-title text-2xl font-extrabold text-white sm:text-3xl">
-              {sportLabel} Tournaments in India
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-orange-50">
-              {total > 0
-                ? `${total} ${upcoming ? "upcoming" : "past"} ${sportLower} tournament${total === 1 ? "" : "s"}${filtered ? " match these filters" : ""}: dates, venues and entry fact sheets as federations publish them.`
-                : `${upcoming ? "Upcoming" : "Past"} ${sportLower} tournaments across India.`}
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          breadcrumbs={[{ label: "Tournaments", href: "/tournaments" }, { label: sportLabel }]}
+          title={`${sportLabel} tournaments in India`}
+          description={
+            total > 0
+              ? `${total} ${upcoming ? "upcoming" : "past"} ${sportLower} tournament${total === 1 ? "" : "s"}${filtered ? " match these filters" : ""}: dates, venues and entry fact sheets as federations publish them.`
+              : `${upcoming ? "Upcoming" : "Past"} ${sportLower} tournaments across India.`
+          }
+        />
 
-        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Upcoming / past toggle */}
           <div className="mb-4 flex gap-2">
             {([true, false] as const).map((isUpcoming) => (
