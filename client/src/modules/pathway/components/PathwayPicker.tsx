@@ -76,6 +76,7 @@ import { findStageForAge } from "../utils/ageRange";
 import { useChildAge } from "../utils/childAge";
 import type { PathwayIndexEntry } from "../services/fetchGuide";
 import { filterSports, groupCounts, indexSports } from "../utils/pickerFilter";
+import { colorFor } from "../utils/stageColors";
 import type { SportGroup } from "../data/sports";
 
 /** Below this many sports, the group filter is noise. */
@@ -112,24 +113,6 @@ const BROWSE_TILES = 8;
  */
 const RESULT_TILES = 12;
 
-/**
- * One colour per stage position, matching the reader's rail so a stage keeps its
- * identity across the two pages.
- */
-const STAGE_COLORS = [
-  "#16a34a",
-  "#ea580c",
-  "#d97706",
-  "#7c3aed",
-  "#2563eb",
-  "#0d9488",
-  "#db2777",
-  "#0891b2",
-  "#65a30d",
-];
-
-const colorFor = (index: number) => STAGE_COLORS[index % STAGE_COLORS.length] as string;
-
 /** `/roadmap/tennis?stage=compete` — the reader renders that stage server-side. */
 const stageHref = (slug: string, key?: string) =>
   key ? `/roadmap/${slug}?stage=${encodeURIComponent(key)}` : `/roadmap/${slug}`;
@@ -163,12 +146,12 @@ function SportTile({
           secondary "show stages" toggle tempts you into. */}
       <Link
         href={stageHref(entry.sportSlug, match?.key)}
-        className="font-title hover:text-power-orange focus-visible:outline-power-orange text-[17px] font-bold leading-tight text-slate-900 transition after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="font-title hover:text-power-orange-solid focus-visible:outline-power-orange text-[17px] font-bold leading-tight text-slate-900 transition after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {entry.sportName}
       </Link>
 
-      <p className="mt-0.5 text-[12.5px] font-semibold text-slate-400">
+      <p className="mt-0.5 text-[12.5px] font-semibold text-slate-500">
         {entry.stageCount} stage{entry.stageCount === 1 ? "" : "s"}
       </p>
 
@@ -220,13 +203,13 @@ function SportTile({
                   >
                     <span
                       aria-hidden
-                      className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black text-white"
+                      className="flex h-5 w-5 items-center justify-center rounded-full text-xs font-black text-white"
                       style={{ background: colorFor(i) }}
                     >
                       {i + 1}
                     </span>
                     {stage.name}
-                    <span className="font-semibold text-slate-400">{stage.ageRange}</span>
+                    <span className="font-semibold text-slate-500">{stage.ageRange}</span>
                     {i === matchIndex && (
                       <span className="sr-only">, where a {age}-year-old starts</span>
                     )}
@@ -357,7 +340,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="focus-visible:outline-power-orange absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="focus-visible:outline-power-orange absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 <X aria-hidden className="h-4 w-4" />
                 <span className="sr-only">Clear search</span>
@@ -388,7 +371,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
                     }`}
                   >
                     {name}{" "}
-                    <span className={group === name ? "text-white/60" : "text-slate-400"}>
+                    <span className={group === name ? "text-white/60" : "text-slate-500"}>
                       {count}
                     </span>
                   </button>
@@ -515,7 +498,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
               <li key={entry.sportSlug} className="break-inside-avoid">
                 <Link
                   href={`/roadmap/${entry.sportSlug}`}
-                  className="hover:text-power-orange block truncate py-1 text-[13.5px] font-semibold text-slate-600 transition"
+                  className="hover:text-power-orange-solid block truncate py-1 text-[13.5px] font-semibold text-slate-600 transition"
                 >
                   {entry.sportName}
                 </Link>
@@ -525,7 +508,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
         </details>
       )}
 
-      <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-slate-400">
+      <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
         <Sparkles aria-hidden className="h-3.5 w-3.5" />
         More sports are being written with coaches and experienced parents, one at a time.
       </p>

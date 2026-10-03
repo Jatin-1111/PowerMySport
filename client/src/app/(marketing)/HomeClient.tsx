@@ -240,7 +240,8 @@ export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary |
 
           <p className="reveal-on-scroll mx-auto mt-12 max-w-2xl text-center text-lg font-medium text-slate-800">
             PowerMySport turns that confusion into one{" "}
-            <span className="text-power-orange">clear, personalised plan</span> for your child.
+            <span className="text-power-orange-solid">clear, personalised plan</span> for your
+            child.
           </p>
         </div>
       </section>

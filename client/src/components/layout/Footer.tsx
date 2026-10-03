@@ -66,7 +66,9 @@ const socialLinks = [
     href: WA_FOOTER_URL,
     icon: <WhatsAppIcon />,
     external: true,
-    hoverClass: "hover:bg-[#25D366] hover:text-white",
+    // WhatsApp's own #25D366 is 2:1 under a white glyph; green-700 keeps the
+    // signal and clears 3:1 for the icon.
+    hoverClass: "hover:bg-green-700 hover:text-white",
   },
   {
     name: "Instagram",
@@ -151,7 +153,7 @@ export const Footer: React.FC = () => {
           {/* Navigation columns */}
           {navColumns.map((col) => (
             <div key={col.title}>
-              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
+              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-300">
                 {col.title}
               </h3>
               <ul className="space-y-2.5">
@@ -175,25 +177,30 @@ export const Footer: React.FC = () => {
 
         {/* Bottom bar */}
         <div className="flex flex-col items-center justify-between gap-3 py-6 sm:flex-row">
-          <p className="text-xs text-slate-600">
+          {/* slate-400 is the darkest grey that stays legible on slate-950: 500
+              measured 4.2:1 here, 600 2.7:1 and 700 1.9:1. */}
+          <p className="text-xs text-slate-400">
             © {currentYear} Powermysport PVT. LTD. All rights reserved.
           </p>
-          <p className="text-center text-xs text-slate-700 sm:text-right">
+          <p className="text-center text-xs text-slate-400 sm:text-right">
             PowerMySport is a marketplace. Users assume all risks.{" "}
             <Link
               href="/health-waiver"
-              className="text-slate-500 transition-colors hover:text-slate-300"
+              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
             >
               Health Waiver
             </Link>
             {" · "}
-            <Link href="/terms" className="text-slate-500 transition-colors hover:text-slate-300">
+            <Link
+              href="/terms"
+              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+            >
               Terms
             </Link>
             {" · "}
             <a
               href="mailto:teams@powermysport.com"
-              className="text-slate-500 transition-colors hover:text-slate-300"
+              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
             >
               Legal Enquiries
             </a>

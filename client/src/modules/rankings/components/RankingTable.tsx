@@ -98,7 +98,7 @@ export function RankingTable({
               <td className="px-3 py-3 sm:px-4">
                 <Link
                   href={playerHref(sportSlug, entry.regNo)}
-                  className="hover:text-power-orange focus-visible:ring-power-orange rounded font-medium leading-snug hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  className="hover:text-power-orange-solid focus-visible:ring-power-orange rounded font-medium leading-snug hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 >
                   {entry.fullName}
                 </Link>

@@ -124,7 +124,7 @@ export default async function RankingsIndexPage() {
                     Not available yet ·{" "}
                     <Link
                       href={`/roadmap/${sport.slug}`}
-                      className="text-power-orange font-medium hover:underline"
+                      className="text-power-orange-solid font-medium hover:underline"
                     >
                       pathway guide
                     </Link>

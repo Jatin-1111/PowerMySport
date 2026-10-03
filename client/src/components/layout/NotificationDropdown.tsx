@@ -299,7 +299,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
-                    className="border-power-orange/30 bg-power-orange/10 text-power-orange hover:bg-power-orange/15 rounded-md border px-2 py-1 text-xs font-semibold transition focus:outline-none"
+                    className="border-power-orange/30 bg-power-orange/10 text-power-orange-solid hover:bg-power-orange/15 rounded-md border px-2 py-1 text-xs font-semibold transition focus:outline-none"
                   >
                     Mark all read
                   </button>
@@ -375,7 +375,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                           <div className="text-muted-foreground mt-2 flex items-center gap-2 text-xs">
                             <span
                               className={cn(
-                                "rounded-sm border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                "rounded-sm border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide",
                                 tone.chip
                               )}
                             >
@@ -419,7 +419,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
                 <Link
                   href="/notifications"
                   onClick={() => setIsOpen(false)}
-                  className="text-power-orange block text-center text-sm font-semibold hover:underline"
+                  className="text-power-orange-solid block text-center text-sm font-semibold hover:underline"
                 >
                   View All Notifications
                 </Link>

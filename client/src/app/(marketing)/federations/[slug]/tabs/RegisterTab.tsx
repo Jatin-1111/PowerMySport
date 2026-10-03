@@ -12,14 +12,14 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
         {fed.registrationSteps && fed.registrationSteps.length > 0 ? (
           <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>Step-by-Step Registration</SectionHeading>
-            <p className="mb-8 text-sm text-slate-400">
+            <p className="mb-8 text-sm text-slate-500">
               Follow these steps in order. Starting early gives your child a significant advantage,
               many spots fill fast.
             </p>
             <ol className="space-y-6">
               {fed.registrationSteps.map((step, i) => (
                 <li key={i} className="flex items-start gap-5">
-                  <span className="bg-power-orange/10 border-power-orange/20 text-power-orange flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold">
+                  <span className="bg-power-orange/10 border-power-orange/20 text-power-orange-solid flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold">
                     {i + 1}
                   </span>
                   <p className="flex-1 pt-1 text-[15px] leading-relaxed text-slate-700">{step}</p>
@@ -37,7 +37,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
         {fed.requiredDocuments && fed.requiredDocuments.length > 0 && (
           <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>Required Documents</SectionHeading>
-            <p className="mb-6 text-sm text-slate-400">
+            <p className="mb-6 text-sm text-slate-500">
               Prepare these before the tournament entry deadline. Missing documents result in
               rejection.
             </p>
@@ -64,7 +64,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
           <div className="relative z-10">
             <div className="mb-3 flex items-center gap-1.5">
               <Sparkles className="text-power-orange h-3.5 w-3.5" />
-              <p className="text-power-orange text-[10px] font-bold uppercase tracking-[0.13em]">
+              <p className="text-power-orange text-xs font-bold uppercase tracking-[0.13em]">
                 PowerMySport Concierge
               </p>
             </div>
@@ -103,7 +103,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
                 href={fed.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 flex w-full items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-white/35 transition hover:text-white/65"
+                className="mt-2 flex w-full items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-white/60 transition hover:text-white"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Official {fed.acronym} Portal
@@ -115,7 +115,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
         {/* Quick facts */}
         {fed.eligibilityCriteria && (
           <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.13em] text-slate-500">
               Quick reference
             </p>
             <div className="space-y-3 text-sm">

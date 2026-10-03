@@ -140,7 +140,7 @@ export function AddToCalendarButton({
       className={`relative z-10 mt-0.5 shrink-0 rounded-lg p-1 transition ${
         isSaved
           ? "cursor-default text-emerald-600"
-          : "hover:text-power-orange text-slate-300 hover:bg-white"
+          : "hover:text-power-orange-solid text-slate-300 hover:bg-white"
       }`}
     >
       {saving ? (

@@ -61,17 +61,17 @@ export function FederationDetailClient({
         badges={
           <>
             <span
-              className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold ${typeMeta.bg} ${typeMeta.text} ${typeMeta.border}`}
+              className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-xs font-bold ${typeMeta.bg} ${typeMeta.text} ${typeMeta.border}`}
             >
               <Landmark className="h-3 w-3" />
               {typeMeta.label}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-600">
+            <span className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600">
               <Globe className="h-3 w-3" />
               {sportLabel}
             </span>
             {isVerified && (
-              <span className="inline-flex items-center gap-1.5 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700">
+              <span className="inline-flex items-center gap-1.5 rounded-sm border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                 <BadgeCheck className="h-3 w-3" />
                 Data verified
               </span>
@@ -129,7 +129,7 @@ export function FederationDetailClient({
                 onClick={() => switchTab(id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-5 py-3.5 text-sm font-semibold transition-colors ${
                   activeTab === id
-                    ? "border-power-orange text-power-orange"
+                    ? "border-power-orange text-power-orange-solid"
                     : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
                 }`}
               >

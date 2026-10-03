@@ -8,7 +8,7 @@ export function Cancellations() {
       </h2>
       <p className="mb-4 leading-relaxed text-slate-600">
         Client-facing cancellation and refund entitlements are governed by our{" "}
-        <Link href="/refund-policy" className="text-orange-600 hover:underline">
+        <Link href="/refund-policy" className="text-power-orange-solid hover:underline">
           Cancellation, Refund &amp; Dispute Policy
         </Link>
         . As between you and PowerMySport:

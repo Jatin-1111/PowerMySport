@@ -135,7 +135,7 @@ export default async function SportPathwayPage({
             number of paragraphs in each and go lopsided at odd counts. */}
         {guide.sportIntro.length > 0 && (
           <section className="border-t border-slate-200/70 pt-6">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+            <p className="text-xs font-black uppercase tracking-widest text-slate-500">
               About {guide.sportName}
             </p>
             <div className="mt-3 gap-x-10 text-base leading-relaxed text-slate-600 lg:columns-2">
@@ -158,7 +158,7 @@ export default async function SportPathwayPage({
               <PathwayContributorCard contributor={guide.contributor} sportName={guide.sportName} />
             </div>
           )}
-          {guide.reviewedOn && <p className="mt-4 text-xs text-slate-400">{guide.reviewedOn}</p>}
+          {guide.reviewedOn && <p className="mt-4 text-xs text-slate-500">{guide.reviewedOn}</p>}
         </div>
       </section>
 

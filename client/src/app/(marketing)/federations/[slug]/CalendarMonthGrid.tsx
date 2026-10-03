@@ -61,7 +61,7 @@ export function CalendarMonthGrid({
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div
             key={d}
-            className="text-center text-[10px] font-bold uppercase tracking-wide text-slate-400"
+            className="text-center text-xs font-bold uppercase tracking-wide text-slate-500"
           >
             {d.charAt(0)}
           </div>
@@ -100,12 +100,12 @@ export function CalendarMonthGrid({
               className={`flex h-11 flex-col items-center justify-center rounded-lg border transition ${
                 isSelected
                   ? "border-power-orange-solid bg-power-orange-solid text-white"
-                  : "text-power-orange hover:border-power-orange border-orange-200 bg-orange-50"
+                  : "text-power-orange-solid hover:border-power-orange border-orange-200 bg-orange-50"
               } ${isToday && !isSelected ? "ring-power-orange/40 ring-1 ring-inset" : ""}`}
             >
               <span className="text-sm font-bold leading-none">{cell.day}</span>
               <span
-                className={`mt-0.5 text-[10px] font-semibold leading-none ${
+                className={`mt-0.5 text-xs font-semibold leading-none ${
                   isSelected ? "text-white/80" : "text-power-orange/70"
                 }`}
               >

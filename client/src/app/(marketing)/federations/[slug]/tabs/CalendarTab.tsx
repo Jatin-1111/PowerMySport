@@ -114,7 +114,7 @@ export function CalendarTab({
                   }}
                   disabled={editionMonths.findIndex((m) => m.key === activeMonthKey) <= 0}
                   aria-label="Previous month"
-                  className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -135,12 +135,12 @@ export function CalendarTab({
                     editionMonths.length - 1
                   }
                   aria-label="Next month"
-                  className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
+                  className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
-              <span className="shrink-0 text-xs font-semibold text-slate-400">
+              <span className="shrink-0 text-xs font-semibold text-slate-500">
                 {monthEditions.length}
               </span>
             </div>
@@ -162,7 +162,7 @@ export function CalendarTab({
                     ? "Nothing matches these filters"
                     : "Pick a highlighted date"}
                 </p>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-500">
                   {editionFiltersActive
                     ? "Try a different age group or state"
                     : "The orange dates on the left have tournaments"}
@@ -182,7 +182,7 @@ export function CalendarTab({
                       : (activeMonth?.fullLabel ?? "Upcoming")}
                   </span>
                   <div className="flex shrink-0 items-center gap-3">
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-slate-500">
                       {visibleEditions.length} event{visibleEditions.length === 1 ? "" : "s"}
                     </span>
                     {(editionAgeGroupOptions.length > 0 || editionStateOptions.length > 1) && (
@@ -190,7 +190,7 @@ export function CalendarTab({
                         onClick={() => setShowEditionFilters((v) => !v)}
                         className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs font-semibold transition ${
                           editionFiltersActive
-                            ? "text-power-orange bg-orange-50"
+                            ? "text-power-orange-solid bg-orange-50"
                             : "text-slate-500 hover:bg-slate-100"
                         }`}
                       >
@@ -219,7 +219,7 @@ export function CalendarTab({
                             className={`rounded-sm px-2.5 py-1 text-xs font-semibold transition ${
                               editionAgeGroup === ag
                                 ? "bg-power-orange-solid text-white"
-                                : "hover:text-power-orange bg-white text-slate-600"
+                                : "hover:text-power-orange-solid bg-white text-slate-600"
                             }`}
                           >
                             {ag}
@@ -247,7 +247,7 @@ export function CalendarTab({
                           setEditionAgeGroup("All");
                           setEditionState("All");
                         }}
-                        className="hover:text-power-orange text-xs font-semibold text-slate-400 underline transition"
+                        className="hover:text-power-orange-solid text-xs font-semibold text-slate-500 underline transition"
                       >
                         Clear
                       </button>
@@ -283,7 +283,7 @@ export function CalendarTab({
                           {group.label}
                         </span>
                         {ageSpan && (
-                          <span className="hidden shrink-0 text-xs text-slate-400 sm:block">
+                          <span className="hidden shrink-0 text-xs text-slate-500 sm:block">
                             {ageSpan}
                           </span>
                         )}
@@ -316,17 +316,17 @@ export function CalendarTab({
               </div>
             )}
 
-            <p className="text-xs leading-relaxed text-slate-400">
+            <p className="text-xs leading-relaxed text-slate-500">
               {archetypeNote.calendar}{" "}
               <button
                 onClick={() => switchTab("tournaments")}
-                className="hover:text-power-orange font-semibold text-slate-500 underline transition"
+                className="hover:text-power-orange-solid font-semibold text-slate-500 underline transition"
               >
                 {archetypeNote.competitions}
               </button>
             </p>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               {filteredEditions.length} confirmed {sportLabel} date
               {filteredEditions.length === 1 ? "" : "s"} through{" "}
               {new Date(
@@ -350,7 +350,7 @@ export function CalendarTab({
                     href={officialCalendarUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-power-orange font-semibold text-slate-500 underline transition"
+                    className="hover:text-power-orange-solid font-semibold text-slate-500 underline transition"
                   >
                     official calendar
                   </a>
@@ -365,7 +365,7 @@ export function CalendarTab({
         <div className="rounded-lg border border-dashed border-slate-300 py-16 text-center">
           <CalendarDays className="mx-auto mb-3 h-8 w-8 text-slate-300" />
           <p className="text-sm font-semibold text-slate-600">No {fedAcronym} dates curated yet</p>
-          <p className="mx-auto mt-1 max-w-sm text-xs text-slate-400">
+          <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">
             We only list events a body runs itself, so nothing here is borrowed from another
             federation&apos;s calendar. We haven&apos;t curated {fedAcronym}&apos;s own dates yet.
             {officialCalendarUrl && " Their official calendar has them in the meantime."}
@@ -375,7 +375,7 @@ export function CalendarTab({
               href={officialCalendarUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:border-power-orange hover:text-power-orange mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition"
+              className="hover:border-power-orange hover:text-power-orange-solid mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition"
             >
               <ExternalLink className="h-4 w-4" />
               View Official Calendar

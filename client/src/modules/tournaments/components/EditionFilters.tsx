@@ -65,7 +65,7 @@ function FilterRow({
               className={chipClass(selected === option.value)}
             >
               {option.label}
-              <span className={selected === option.value ? "text-orange-100" : "text-slate-400"}>
+              <span className={selected === option.value ? "text-orange-100" : "text-slate-500"}>
                 {option.count}
               </span>
             </Link>

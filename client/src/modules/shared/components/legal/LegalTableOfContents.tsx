@@ -111,7 +111,7 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
             className={cn(
               "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm leading-snug transition-colors",
               activeId === id
-                ? "bg-power-orange/10 text-power-orange font-semibold"
+                ? "bg-power-orange/10 text-power-orange-solid font-semibold"
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             )}
           >
@@ -163,7 +163,7 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
             aria-label="Table of contents"
             className="pointer-events-auto max-h-[calc(100vh-8rem)] w-[280px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
           >
-            <p className="mb-2 px-2.5 pt-1.5 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <p className="mb-2 px-2.5 pt-1.5 text-xs font-bold uppercase tracking-widest text-slate-500">
               On this page
             </p>
             {list}

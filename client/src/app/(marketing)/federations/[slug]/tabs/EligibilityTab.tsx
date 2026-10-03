@@ -15,7 +15,7 @@ export function EligibilityTab({
         <div className="rounded-lg border border-dashed border-slate-300 py-16 text-center">
           <Users className="mx-auto mb-3 h-8 w-8 text-slate-300" />
           <p className="text-sm font-semibold text-slate-600">Eligibility data coming soon</p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-slate-500">
             We&apos;re verifying this information against official {fed.acronym} sources.
           </p>
         </div>
@@ -52,16 +52,16 @@ export function EligibilityTab({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100">
-                  <th className="py-3 pr-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <th className="py-3 pr-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
                     Category
                   </th>
-                  <th className="py-3 pr-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <th className="py-3 pr-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
                     Max Age
                   </th>
-                  <th className="py-3 pr-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <th className="py-3 pr-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
                     Genders
                   </th>
-                  <th className="py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <th className="py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
                     Notes
                   </th>
                 </tr>

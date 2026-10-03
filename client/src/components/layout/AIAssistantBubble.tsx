@@ -39,13 +39,13 @@ export function AIAssistantBubble() {
                   aria-hidden="true"
                   className="absolute -bottom-[7px] right-[22px] h-3.5 w-3.5 rotate-45 border-b border-r border-slate-100 bg-white"
                 />
-                <p className="text-power-orange text-[11px] font-bold uppercase tracking-widest">
+                <p className="text-power-orange-solid text-xs font-bold uppercase tracking-widest">
                   PowerMySport AI
                 </p>
                 <p className="mt-1 text-sm font-bold leading-snug text-slate-900">
                   Get instant sports guidance
                 </p>
-                <p className="mt-0.5 text-xs text-slate-400">Free, personalized for your child</p>
+                <p className="mt-0.5 text-xs text-slate-500">Free, personalized for your child</p>
               </motion.div>
             )}
           </AnimatePresence>

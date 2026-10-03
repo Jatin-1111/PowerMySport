@@ -67,23 +67,23 @@ export function FederationCard({
 
         <div className="min-w-0 flex-1">
           <h3 className="font-title text-base font-bold leading-snug text-slate-900">
-            <Link href={href} className="group-hover:text-power-orange transition">
+            <Link href={href} className="group-hover:text-power-orange-solid transition">
               {federation.name}
             </Link>
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span
-              className={`inline-flex items-center rounded-sm border px-2.5 py-0.5 text-[11px] font-semibold ${type.className}`}
+              className={`inline-flex items-center rounded-sm border px-2.5 py-0.5 text-xs font-semibold ${type.className}`}
             >
               {type.label}
             </span>
             {showSport && (
-              <span className="inline-flex items-center rounded-sm border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+              <span className="inline-flex items-center rounded-sm border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
                 {federation.sportSlug}
               </span>
             )}
             {federation.dataVerifiedAt && (
-              <span className="inline-flex items-center gap-1 rounded-sm border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+              <span className="inline-flex items-center gap-1 rounded-sm border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
                 <BadgeCheck className="h-3 w-3" />
                 Verified
               </span>
@@ -104,7 +104,7 @@ export function FederationCard({
             <Link
               key={quick.tab}
               href={`${href}?tab=${quick.tab}`}
-              className="hover:border-power-orange/40 hover:text-power-orange inline-flex items-center rounded-sm border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition"
+              className="hover:border-power-orange/40 hover:text-power-orange-solid inline-flex items-center rounded-sm border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition"
             >
               {quick.label}
             </Link>
@@ -113,7 +113,7 @@ export function FederationCard({
 
         <Link
           href={href}
-          className="text-power-orange mt-3 inline-flex items-center gap-1 text-sm font-semibold transition hover:gap-1.5"
+          className="text-power-orange-solid mt-3 inline-flex items-center gap-1 text-sm font-semibold transition hover:gap-1.5"
         >
           Read the full guide
           <ArrowUpRight className="h-4 w-4" />

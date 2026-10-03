@@ -74,7 +74,7 @@ function AssetFrame({
         {/* Step chip */}
         {step !== undefined && (
           <div className="absolute left-5 top-5 rounded-sm bg-slate-950/70 px-3.5 py-1.5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/90">
               Step 0{step}
             </p>
           </div>
@@ -87,9 +87,7 @@ function AssetFrame({
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white">{overlayLabel}</p>
-            {overlayCaption && (
-              <p className="truncate text-[11px] text-white/60">{overlayCaption}</p>
-            )}
+            {overlayCaption && <p className="truncate text-xs text-white/60">{overlayCaption}</p>}
           </div>
         </div>
       </div>
@@ -404,7 +402,7 @@ export default function HowItWorksPage() {
           <div className="reveal-on-scroll mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Old way */}
             <div className="relative overflow-hidden rounded-xl border border-slate-200/60 bg-slate-50/80 p-7 sm:p-8">
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+              <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
                 Without a plan
               </p>
               <h3 className="mb-6 text-xl font-bold text-slate-700">Figuring it out alone</h3>
@@ -427,7 +425,7 @@ export default function HowItWorksPage() {
 
             {/* With PowerMySport */}
             <div className="relative overflow-hidden rounded-xl border border-orange-200/70 bg-white p-7 shadow-xl shadow-orange-100/60 sm:p-8">
-              <p className="text-power-orange mb-1 text-[11px] font-bold uppercase tracking-[0.16em]">
+              <p className="text-power-orange-solid mb-1 text-xs font-bold uppercase tracking-[0.16em]">
                 With PowerMySport
               </p>
               <h3 className="mb-6 text-xl font-bold text-slate-900">
@@ -450,7 +448,7 @@ export default function HowItWorksPage() {
               </ul>
               <a
                 href="/assessment"
-                className="text-power-orange group mt-7 inline-flex items-center gap-1.5 text-sm font-bold transition-colors hover:text-orange-600"
+                className="text-power-orange-solid hover:text-power-orange-solid group mt-7 inline-flex items-center gap-1.5 text-sm font-bold transition-colors"
               >
                 Start free. It takes 10 minutes
                 <span className="transition-transform duration-200 group-hover:translate-x-0.5">

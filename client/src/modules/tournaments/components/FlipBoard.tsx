@@ -184,7 +184,7 @@ function Board({
     <div className={cn("@container rounded-lg bg-slate-950 p-2.5 sm:p-4", className)}>
       <div
         aria-hidden
-        className="mb-2 grid gap-[2px] text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
+        className="mb-2 grid gap-[2px] text-xs font-semibold uppercase tracking-[0.14em] text-slate-400"
         style={grid}
       >
         {labels.map((label) => (

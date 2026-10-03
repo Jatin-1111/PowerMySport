@@ -140,7 +140,7 @@ export default async function SportRankingsPage({
             href={meta?.source.url ?? sport.federation.officialUrl}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            className="text-power-orange mt-2 inline-flex items-center gap-1.5 font-medium hover:underline"
+            className="text-power-orange-solid mt-2 inline-flex items-center gap-1.5 font-medium hover:underline"
           >
             View the official {sport.federation.acronym} rankings page
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />

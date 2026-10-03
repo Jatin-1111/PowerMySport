@@ -36,7 +36,7 @@ export function PathwayContributorCard({
 
   return (
     <aside className="premium-shadow rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
-      <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+      <p className="text-xs font-black uppercase tracking-widest text-slate-500">
         {sportName} pathway contributed by
       </p>
 
@@ -76,7 +76,7 @@ export function PathwayContributorCard({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    className="hover:text-power-orange inline-flex items-center gap-1 transition"
+                    className="hover:text-power-orange-solid inline-flex items-center gap-1 transition"
                   >
                     {organisation}
                     <ExternalLink className="h-3 w-3" />

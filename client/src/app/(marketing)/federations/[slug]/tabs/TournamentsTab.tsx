@@ -71,7 +71,7 @@ export function TournamentsTab({
                 className={`rounded-sm border px-3 py-1 text-xs font-semibold transition ${
                   activeLevelFilter === l
                     ? "bg-power-orange-solid border-power-orange-solid text-white"
-                    : "hover:text-power-orange border-slate-200 bg-white text-slate-600 hover:border-orange-200"
+                    : "hover:text-power-orange-solid border-slate-200 bg-white text-slate-600 hover:border-orange-200"
                 }`}
               >
                 {l}
@@ -93,7 +93,7 @@ export function TournamentsTab({
           </p>
           <button
             onClick={() => switchTab("calendar")}
-            className="text-power-orange inline-flex items-center gap-1.5 text-xs font-semibold transition hover:text-orange-600"
+            className="text-power-orange-solid hover:text-power-orange-solid inline-flex items-center gap-1.5 text-xs font-semibold transition"
           >
             <CalendarDays className="h-3.5 w-3.5" />
             {editionsLoaded && editionsCount > 0
@@ -129,7 +129,7 @@ export function TournamentsTab({
                 <div className="flex flex-col p-4" style={{ minHeight: "130px" }}>
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest ${lc.pill}`}
+                      className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-widest ${lc.pill}`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${lc.dot}`} />
                       {t.level}
@@ -139,7 +139,7 @@ export function TournamentsTab({
                     {t.name}
                   </p>
                   {t.ageGroup && (
-                    <div className="mt-3 flex min-w-0 items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400">
+                    <div className="mt-3 flex min-w-0 items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-500">
                       <Users className="h-3 w-3 shrink-0" />
                       <span className="truncate">{t.ageGroup}</span>
                     </div>
@@ -155,7 +155,7 @@ export function TournamentsTab({
         <div className="rounded-lg border border-dashed border-slate-300 py-12 text-center">
           <Trophy className="mx-auto mb-3 h-8 w-8 text-slate-300" />
           <p className="text-sm font-semibold text-slate-600">No tournaments match these filters</p>
-          <p className="mt-1 text-xs text-slate-400">Try clearing the filters above</p>
+          <p className="mt-1 text-xs text-slate-500">Try clearing the filters above</p>
         </div>
       )}
 

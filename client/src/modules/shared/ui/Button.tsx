@@ -48,8 +48,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       outline:
         "border-power-orange-solid text-power-orange-solid hover:bg-orange-50 focus-visible:ring-power-orange-solid",
       ghost: "text-power-orange-solid hover:bg-orange-50 focus-visible:ring-power-orange-solid",
-      success: "bg-turf-green text-white hover:bg-emerald-600 focus-visible:ring-turf-green",
-      danger: "bg-error-red text-white hover:bg-red-600 focus-visible:ring-error-red",
+      // The 700 steps, not the brand turf-green/error-red: white text on those
+      // measures 2.3:1 and 3.8:1.
+      success: "bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-700",
+      danger: "bg-red-700 text-white hover:bg-red-800 focus-visible:ring-red-700",
     };
 
     const sizes = {

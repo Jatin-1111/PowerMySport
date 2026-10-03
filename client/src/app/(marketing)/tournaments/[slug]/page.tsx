@@ -252,14 +252,14 @@ export default async function TournamentEditionPage({
           (finished || (edition.level && lc) || edition.ageGroups?.length) && (
             <>
               {finished && (
-                <span className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600">
+                <span className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                   <Clock className="h-3 w-3" />
                   Finished
                 </span>
               )}
               {edition.level && lc && (
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold ${lc.pill}`}
+                  className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-xs font-bold ${lc.pill}`}
                 >
                   <span className={`h-1.5 w-1.5 rounded-full ${lc.dot}`} />
                   {edition.level}
@@ -268,7 +268,7 @@ export default async function TournamentEditionPage({
               {edition.ageGroups?.map((ag) => (
                 <span
                   key={ag}
-                  className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1 text-[11px] font-bold font-semibold text-slate-600"
+                  className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1 text-xs font-bold font-semibold text-slate-600"
                 >
                   {ag}
                 </span>
@@ -331,10 +331,10 @@ export default async function TournamentEditionPage({
                     className="border-power-orange/30 group mt-5 flex items-center justify-between gap-3 rounded-lg border bg-orange-50/50 p-4 transition hover:bg-orange-50"
                   >
                     <div className="min-w-0">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                         Next edition
                       </p>
-                      <p className="group-hover:text-power-orange mt-0.5 truncate text-sm font-bold text-slate-800">
+                      <p className="group-hover:text-power-orange-solid mt-0.5 truncate text-sm font-bold text-slate-800">
                         {nextInSeries.name}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-500">
@@ -347,7 +347,7 @@ export default async function TournamentEditionPage({
                 ) : (
                   <Link
                     href={`/tournaments/sport/${edition.sportSlug}`}
-                    className="text-power-orange mt-4 inline-flex items-center gap-1.5 text-sm font-bold transition hover:text-orange-600"
+                    className="text-power-orange-solid hover:text-power-orange-solid mt-4 inline-flex items-center gap-1.5 text-sm font-bold transition"
                   >
                     See upcoming {SPORT_LABEL[edition.sportSlug] ?? edition.sportSlug} tournaments
                     <ArrowRight className="h-4 w-4" />
@@ -382,13 +382,13 @@ export default async function TournamentEditionPage({
             {edition.detailUrl && (
               // Federation document links are often time-limited signed URLs, so
               // the tournament's own page is the link that still works later.
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-3 text-xs text-slate-500">
                 Link not working?{" "}
                 <a
                   href={edition.detailUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-power-orange font-semibold text-slate-500 underline"
+                  className="hover:text-power-orange-solid font-semibold text-slate-500 underline"
                 >
                   Open this tournament on the federation site
                 </a>{" "}
@@ -416,7 +416,7 @@ export default async function TournamentEditionPage({
                     href={edition.detailUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-power-orange mt-3 inline-flex items-center gap-1.5 text-sm font-semibold"
+                    className="text-power-orange-solid mt-3 inline-flex items-center gap-1.5 text-sm font-semibold"
                   >
                     Check the federation&apos;s page
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -435,7 +435,7 @@ export default async function TournamentEditionPage({
               <div key={fact.label} className="flex items-start gap-3">
                 <span className="mt-0.5 shrink-0 text-slate-400">{fact.icon}</span>
                 <div className="min-w-0">
-                  <dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                  <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
                     {fact.label}
                   </dt>
                   <dd className="text-sm font-semibold text-slate-700">{fact.value}</dd>
@@ -453,12 +453,12 @@ export default async function TournamentEditionPage({
                 repeating under every row of the same type. */}
             {groupDocumentsByKind(otherDocuments).map((group) => (
               <div key={group.kind} className="mt-5 first:mt-4">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                   {group.items.length > 1
                     ? `${DOCUMENT_META[group.kind].label}s`
                     : DOCUMENT_META[group.kind].label}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-400">{DOCUMENT_META[group.kind].hint}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{DOCUMENT_META[group.kind].hint}</p>
                 <ul className="mt-2 divide-y divide-slate-100">
                   {group.items.map((doc) => (
                     <li key={doc.url}>
@@ -469,7 +469,7 @@ export default async function TournamentEditionPage({
                         className="group flex items-center gap-3 py-2.5 transition hover:bg-slate-50/60"
                       >
                         <ListChecks className="h-4 w-4 shrink-0 text-slate-400" />
-                        <p className="group-hover:text-power-orange min-w-0 flex-1 text-sm font-semibold text-slate-700">
+                        <p className="group-hover:text-power-orange-solid min-w-0 flex-1 text-sm font-semibold text-slate-700">
                           {doc.displayLabel}
                         </p>
                         <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-300" />
@@ -512,10 +512,10 @@ export default async function TournamentEditionPage({
                     className="group flex items-center justify-between gap-3 py-3"
                   >
                     <div className="min-w-0">
-                      <p className="group-hover:text-power-orange truncate text-sm font-semibold text-slate-700">
+                      <p className="group-hover:text-power-orange-solid truncate text-sm font-semibold text-slate-700">
                         {r.name}
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-500">
                         {formatShortDate(r.startDate)}
                         {r.ageGroups?.length ? ` · ${r.ageGroups.join(", ")}` : ""}
                       </p>
@@ -529,7 +529,7 @@ export default async function TournamentEditionPage({
         )}
 
         {/* ── Provenance ── */}
-        <p className="px-1 text-xs text-slate-400">
+        <p className="px-1 text-xs text-slate-500">
           Details published by{" "}
           {federation ? `${federation.name} (${federation.acronym})` : "the federation"}
           {edition.lastCheckedAt && <> · last checked {formatShortDate(edition.lastCheckedAt)}</>}.
@@ -540,7 +540,7 @@ export default async function TournamentEditionPage({
                 href={edition.detailUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-power-orange font-semibold underline"
+                className="hover:text-power-orange-solid font-semibold underline"
               >
                 View the original listing
               </a>

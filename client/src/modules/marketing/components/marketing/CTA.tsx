@@ -45,8 +45,9 @@ function CTAButton({
       variant={isWhatsApp ? "primary" : variant}
       size="lg"
       className={`w-full sm:w-auto ${
+        // Not WhatsApp's own #25D366: white text on it measures 2:1.
         isWhatsApp
-          ? "bg-[#25D366] hover:bg-[#1da851] focus-visible:ring-[#25D366]"
+          ? "bg-green-700 hover:bg-green-800 focus-visible:ring-green-700"
           : (className ?? "")
       }`}
     >

@@ -42,6 +42,9 @@ import { RichText } from "@powermysport/rich-text";
 import { PathwayAskCommunity } from "./PathwayAskCommunity";
 import { parseTypedAge, rememberChildAge, useChildAge } from "../utils/childAge";
 import { headingDomId, sectionDomId } from "../utils/sectionIds";
+// One colour per stage, so the rail reads as a sequence of distinct places
+// rather than six identical rows.
+import { colorFor } from "../utils/stageColors";
 import type { SectionId } from "../utils/sectionIds";
 
 // ─── Motion ──────────────────────────────────────────────────────────────────
@@ -91,25 +94,6 @@ function useHasMounted() {
   }, []);
   return mounted;
 }
-
-/**
- * One colour per stage, so the rail reads as a sequence of distinct places
- * rather than six identical rows. Cycled, because a sport is free to have more
- * stages than tennis does.
- */
-const STAGE_COLORS = [
-  "#16a34a",
-  "#ea580c",
-  "#d97706",
-  "#7c3aed",
-  "#2563eb",
-  "#0d9488",
-  "#db2777",
-  "#0891b2",
-  "#65a30d",
-];
-
-const colorFor = (index: number) => STAGE_COLORS[index % STAGE_COLORS.length] as string;
 
 const SECTIONS: Array<{
   id: SectionId;
@@ -190,7 +174,7 @@ function ActionChip({ action }: { action: PathwayAction }) {
       {action.label}
     </Link>
   ) : (
-    <span className={`${base} border-slate-200 bg-slate-50 text-slate-400`}>{action.label}</span>
+    <span className={`${base} border-slate-200 bg-slate-50 text-slate-500`}>{action.label}</span>
   );
 }
 
@@ -237,7 +221,7 @@ function StageListItem({
         />
       )}
       <span
-        className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white"
+        className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-black text-white"
         style={{ background: colorFor(index) }}
       >
         {index + 1}
@@ -250,7 +234,7 @@ function StageListItem({
         >
           {stage.name}
         </span>
-        <span className="block truncate text-[12px] text-slate-400">{stage.ageRange}</span>
+        <span className="block truncate text-xs text-slate-600">{stage.ageRange}</span>
         <AnimatePresence initial={false}>
           {isCurrent && (
             <motion.span
@@ -261,7 +245,7 @@ function StageListItem({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ type: "spring", stiffness: 500, damping: 26 }}
-              className="mt-1 inline-flex origin-left items-center gap-1 rounded-sm bg-amber-400 px-1.5 py-px text-[10px] font-black uppercase tracking-wide text-amber-950"
+              className="mt-1 inline-flex origin-left items-center gap-1 rounded-sm bg-amber-400 px-1.5 py-px text-xs font-black uppercase tracking-wide text-amber-950"
             >
               <MapPin className="h-2.5 w-2.5" /> You are here
             </motion.span>
@@ -303,7 +287,7 @@ function SectionHeading({
       {/* The bucket number is decoration beside a heading that already says the
           same thing — read aloud it would announce "zero one" before every
           section title. */}
-      <p aria-hidden className="text-power-orange text-[11px] font-black tracking-[0.18em]">
+      <p aria-hidden className="text-power-orange-solid text-xs font-black tracking-[0.18em]">
         {n}
       </p>
       <h3
@@ -560,7 +544,7 @@ export function PathwayReader({
 
   const ageField = (
     <div className="px-3 pb-2 pt-1">
-      <label className="block text-[11px] font-bold text-slate-500">
+      <label className="block text-xs font-bold text-slate-500">
         How old is your child?
         <input
           type="number"
@@ -580,7 +564,7 @@ export function PathwayReader({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2, ease: EASE_OUT }}
-            className="overflow-hidden text-[11px] text-slate-400"
+            className="overflow-hidden text-xs text-slate-500"
           >
             <span className="mt-1 block">No stage covers age {childAge} yet.</span>
           </motion.p>
@@ -621,7 +605,7 @@ export function PathwayReader({
               <span className="block truncate text-[14px] font-bold leading-tight text-slate-900">
                 {stage.name}
               </span>
-              <span className="block text-[11.5px] font-semibold text-slate-400">
+              <span className="block text-xs font-semibold text-slate-500">
                 Stage {safeIndex + 1} of {total}
               </span>
             </span>
@@ -632,7 +616,7 @@ export function PathwayReader({
           </button>
 
           <div className="hidden rounded-lg border border-slate-200 bg-white p-2 lg:block">
-            <p className="px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
+            <p className="px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-500">
               {total} stages
             </p>
             {ageField}
@@ -687,7 +671,7 @@ export function PathwayReader({
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     id="pathway-stage-position"
-                    className="inline-block rounded-md px-2 py-1 text-[11px] font-black uppercase tracking-widest text-white"
+                    className="inline-block rounded-md px-2 py-1 text-xs font-black uppercase tracking-widest text-white"
                     style={{ background: colorFor(safeIndex) }}
                   >
                     Stage {safeIndex + 1} of {total}
@@ -701,7 +685,7 @@ export function PathwayReader({
                         stiffness: 500,
                         damping: 24,
                       }}
-                      className="inline-flex items-center gap-1 rounded-sm bg-amber-400 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-950"
+                      className="inline-flex items-center gap-1 rounded-sm bg-amber-400 px-2 py-1 text-xs font-black uppercase tracking-wide text-amber-950"
                     >
                       <MapPin className="h-3 w-3" /> Your child is here
                     </motion.span>
@@ -729,7 +713,7 @@ export function PathwayReader({
                 <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5">
                   <Users className="h-4 w-4 shrink-0 text-emerald-600" />
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                    <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
                       Typical age
                     </p>
                     <p className="text-[15px] font-extrabold text-emerald-900">{stage.ageRange}</p>
@@ -786,7 +770,7 @@ export function PathwayReader({
             >
               <span
                 aria-hidden
-                className="h-4.5 w-4.5 flex items-center justify-center rounded-full text-[10px] font-black text-white"
+                className="h-4.5 w-4.5 flex items-center justify-center rounded-full text-xs font-black text-white"
                 style={{ background: colorFor(safeIndex) }}
               >
                 {safeIndex + 1}
@@ -911,7 +895,7 @@ export function PathwayReader({
                         key={signal.title}
                         className="flex gap-3 rounded-lg border border-slate-200 bg-white p-3.5"
                       >
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[11px] font-black text-slate-500">
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-black text-slate-600">
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <div className="min-w-0">
@@ -943,7 +927,7 @@ export function PathwayReader({
 
                     {stage.helpLinks.length > 0 && (
                       <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                        <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">
                           Get help with this
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -964,7 +948,7 @@ export function PathwayReader({
                           key={`${step.when}-${step.action}`}
                           className="grid gap-1 rounded-lg border border-slate-200 bg-white p-3.5 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-4"
                         >
-                          <span className="text-power-orange inline-flex w-fit items-center rounded-lg bg-orange-100 px-2.5 py-1 text-[12.5px] font-black">
+                          <span className="text-power-orange-solid inline-flex w-fit items-center rounded-lg bg-orange-100 px-2.5 py-1 text-[12.5px] font-black">
                             {step.when}
                           </span>
                           <span className="text-[14.5px] leading-relaxed text-slate-700">
@@ -1015,7 +999,7 @@ export function PathwayReader({
             </button>
             {/* Hidden on a phone: the sticky bar carries the same "3/6" a thumb's
                 width away, and the two Previous/Next labels need the room more. */}
-            <span className="hidden shrink-0 text-[12px] font-semibold text-slate-400 sm:inline">
+            <span className="hidden shrink-0 text-[12px] font-semibold text-slate-500 sm:inline">
               {safeIndex + 1} / {total}
             </span>
             <button
@@ -1089,7 +1073,7 @@ export function PathwayReader({
                 <button
                   type="button"
                   onClick={dismissSheet}
-                  className="focus-visible:outline-power-orange mt-2 shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2"
+                  className="focus-visible:outline-power-orange mt-2 shrink-0 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   <X aria-hidden className="h-5 w-5" />
                   <span className="sr-only">Close</span>

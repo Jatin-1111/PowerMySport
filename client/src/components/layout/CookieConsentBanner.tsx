@@ -77,7 +77,7 @@ export function CookieConsentBanner() {
                 you agree to our{" "}
                 <Link
                   href="/cookies"
-                  className="text-power-orange font-semibold underline-offset-2 hover:underline"
+                  className="text-power-orange-solid font-semibold underline-offset-2 hover:underline"
                 >
                   Cookie Policy
                 </Link>

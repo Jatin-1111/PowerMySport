@@ -34,7 +34,7 @@ function SectionHead({
   const centered = align === "center";
   return (
     <div className={centered ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <p className="text-power-orange text-[11px] font-black uppercase tracking-[0.2em]">
+      <p className="text-power-orange-solid text-xs font-black uppercase tracking-[0.2em]">
         {eyebrow}
       </p>
       <h2 className="font-title mt-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -154,7 +154,7 @@ export function LiveToday({ sportNames, federationCount }: LiveTodayProps) {
               <h3 className="text-[15px] font-bold leading-snug text-slate-900">{item.title}</h3>
               <p className="text-sm leading-relaxed text-slate-600">{item.description}</p>
               {detail[item.title] && (
-                <p className="text-power-orange mt-auto pt-1 text-[13px] font-semibold">
+                <p className="text-power-orange-solid mt-auto pt-1 text-[13px] font-semibold">
                   {detail[item.title]}
                 </p>
               )}
@@ -165,7 +165,7 @@ export function LiveToday({ sportNames, federationCount }: LiveTodayProps) {
         <div className="mt-8 text-center">
           <Link
             href="/how-it-works"
-            className="text-power-orange group inline-flex items-center gap-1.5 text-sm font-bold"
+            className="text-power-orange-solid group inline-flex items-center gap-1.5 text-sm font-bold"
           >
             See how it works
             <ArrowRight aria-hidden className="h-4 w-4 transition group-hover:translate-x-0.5" />
@@ -188,7 +188,7 @@ export function Principles() {
         <ul className="mt-10 grid gap-4 lg:grid-cols-3">
           {PRINCIPLES.map((principle, i) => (
             <li key={principle.title} className={`flex h-full flex-col gap-3 p-6 ${SURFACE}`}>
-              <span className="text-power-orange text-[11px] font-black tabular-nums tracking-[0.2em]">
+              <span className="text-power-orange-solid text-xs font-black tabular-nums tracking-[0.2em]">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <h3 className="text-lg font-bold leading-snug text-slate-900">{principle.title}</h3>
@@ -291,7 +291,7 @@ export function WhoWeAre() {
               className={`flex h-full flex-col gap-1.5 p-6 text-center ${SURFACE}`}
             >
               <h3 className="text-base font-bold text-slate-900">{member.name}</h3>
-              <p className="text-power-orange text-xs font-semibold uppercase tracking-wider">
+              <p className="text-power-orange-solid text-xs font-semibold uppercase tracking-wider">
                 {member.role}
               </p>
               <p className="text-sm leading-relaxed text-slate-600">{member.desc}</p>
@@ -303,7 +303,7 @@ export function WhoWeAre() {
           When we get something wrong, tell us.{" "}
           <a
             href={`mailto:${ORGANIZATION.email}`}
-            className="text-power-orange inline-flex items-center gap-1 font-semibold"
+            className="text-power-orange-solid inline-flex items-center gap-1 font-semibold"
           >
             <Mail aria-hidden className="h-3.5 w-3.5" />
             {ORGANIZATION.email}
@@ -337,7 +337,7 @@ export function WhatsNext() {
               key={phase.when}
               className={`flex flex-col gap-1.5 p-5 sm:flex-row sm:items-baseline sm:gap-6 ${SURFACE}`}
             >
-              <span className="text-power-orange w-24 shrink-0 text-[11px] font-black uppercase tracking-[0.2em]">
+              <span className="text-power-orange-solid w-24 shrink-0 text-xs font-black uppercase tracking-[0.2em]">
                 {phase.when}
               </span>
               <span className="text-[15px] leading-relaxed text-slate-700">{phase.what}</span>

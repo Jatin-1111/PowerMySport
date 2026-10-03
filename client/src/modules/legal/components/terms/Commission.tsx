@@ -11,7 +11,7 @@ export function Commission() {
           For Experts and Academies, the platform commission is 15% of the listed fee on every
           completed transaction, plus GST on the commission. This and the full onboarding terms for
           these partners are set out in our{" "}
-          <a href="/partner-terms" className="text-orange-600 hover:underline">
+          <a href="/partner-terms" className="text-power-orange-solid hover:underline">
             Partner Terms (Experts &amp; Academies)
           </a>
           which control over this section for those partners

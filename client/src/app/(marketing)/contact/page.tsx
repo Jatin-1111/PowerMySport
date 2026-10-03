@@ -93,7 +93,7 @@ function Field({ label, id, required, ...props }: FieldProps) {
   return (
     <div>
       <label htmlFor={id} className="mb-2 block text-sm font-semibold text-slate-800">
-        {label} {required && <span className="text-power-orange">*</span>}
+        {label} {required && <span className="text-power-orange-solid">*</span>}
       </label>
       <input
         id={id}
@@ -236,7 +236,7 @@ function CustomSelect({
   return (
     <div ref={containerRef} className="relative">
       <label htmlFor={id} className="mb-2 block text-sm font-semibold text-slate-800">
-        {label} {required && <span className="text-power-orange">*</span>}
+        {label} {required && <span className="text-power-orange-solid">*</span>}
       </label>
 
       <button
@@ -259,7 +259,7 @@ function CustomSelect({
               <SelectedIcon className="h-4 w-4" strokeWidth={2} />
             </span>
           )}
-          <span className={selected ? "font-medium text-slate-900" : "text-slate-400"}>
+          <span className={selected ? "font-medium text-slate-900" : "text-slate-500"}>
             {selected ? selected.label : placeholder}
           </span>
         </span>
@@ -296,7 +296,7 @@ function CustomSelect({
                     onKeyDown={(e) => handleOptionKeyDown(e, index, opt)}
                     className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm transition-colors focus:outline-none focus-visible:bg-orange-50/70 focus-visible:ring-2 focus-visible:ring-orange-400/40 ${
                       isSelected
-                        ? "text-power-orange bg-orange-50 font-semibold"
+                        ? "text-power-orange-solid bg-orange-50 font-semibold"
                         : "text-slate-700 hover:bg-slate-50"
                     }`}
                   >
@@ -573,7 +573,7 @@ export default function ContactPage() {
                       htmlFor="message"
                       className="mb-2 block text-sm font-semibold text-slate-800"
                     >
-                      Message <span className="text-power-orange">*</span>
+                      Message <span className="text-power-orange-solid">*</span>
                     </label>
                     <textarea
                       id="message"
@@ -649,7 +649,7 @@ export default function ContactPage() {
               <InfoCard icon={Mail} title="Email">
                 <a
                   href="mailto:teams@powermysport.com"
-                  className="hover:text-power-orange text-sm text-slate-600 transition-colors"
+                  className="hover:text-power-orange-solid text-sm text-slate-600 transition-colors"
                 >
                   teams@powermysport.com
                 </a>
@@ -659,11 +659,11 @@ export default function ContactPage() {
               <InfoCard icon={Phone} title="Phone">
                 <a
                   href="tel:+918968582443"
-                  className="hover:text-power-orange text-sm text-slate-600 transition-colors"
+                  className="hover:text-power-orange-solid text-sm text-slate-600 transition-colors"
                 >
                   +91 89685 82443
                 </a>
-                <p className="mt-0.5 text-xs text-slate-400">Mon–Sat: 9 AM – 8 PM IST</p>
+                <p className="mt-0.5 text-xs text-slate-500">Mon–Sat: 9 AM – 8 PM IST</p>
               </InfoCard>
 
               {/* WhatsApp */}
@@ -672,11 +672,11 @@ export default function ContactPage() {
                   href={`https://wa.me/918968582443?text=${encodeURIComponent("Hi! I have a question about PowerMySport.")}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-power-orange text-sm text-slate-600 transition-colors"
+                  className="hover:text-power-orange-solid text-sm text-slate-600 transition-colors"
                 >
                   Chat with us on WhatsApp →
                 </a>
-                <p className="mt-0.5 text-xs text-slate-400">Usually replies within minutes</p>
+                <p className="mt-0.5 text-xs text-slate-500">Usually replies within minutes</p>
               </InfoCard>
 
               {/* Address */}

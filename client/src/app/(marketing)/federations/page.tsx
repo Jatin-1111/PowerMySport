@@ -132,7 +132,7 @@ export default async function FederationsIndexPage() {
                     {publishedSports.has(slug) && (
                       <Link
                         href={`/roadmap/${slug}`}
-                        className="text-power-orange inline-flex items-center gap-1 text-sm font-semibold transition hover:gap-1.5"
+                        className="text-power-orange-solid inline-flex items-center gap-1 text-sm font-semibold transition hover:gap-1.5"
                       >
                         Read the {sportName(slug)} pathway
                         <ArrowRight className="h-4 w-4" />

@@ -29,13 +29,13 @@ export function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
     >
       <div className="mb-3 flex flex-wrap gap-1.5">
         {selection && (
-          <span className="rounded-md bg-orange-50 px-2 py-0.5 text-[11px] font-bold text-orange-800">
+          <span className="rounded-md bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-800">
             {selection.label}
           </span>
         )}
         {opportunity.cycleState !== "rolling" && (
           <span
-            className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${CYCLE_TONE[opportunity.cycleState]}`}
+            className={`rounded-md px-2 py-0.5 text-xs font-bold ${CYCLE_TONE[opportunity.cycleState]}`}
           >
             {CYCLE_LABELS[opportunity.cycleState]}
           </span>

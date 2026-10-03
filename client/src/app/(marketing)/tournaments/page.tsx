@@ -123,7 +123,7 @@ export default async function TournamentsPage() {
                         className="hover:border-power-orange/50 inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-700 transition hover:text-orange-700"
                       >
                         {category.label}
-                        <span className="text-slate-400">{category.count}</span>
+                        <span className="text-slate-500">{category.count}</span>
                       </Link>
                     </li>
                   ))}

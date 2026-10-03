@@ -124,7 +124,7 @@ function SectionHead({
 }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="text-power-orange text-[11px] font-black uppercase tracking-[0.2em]">
+      <p className="text-power-orange-solid text-xs font-black uppercase tracking-[0.2em]">
         {eyebrow}
       </p>
       <h2 className="font-title mt-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -234,11 +234,11 @@ export default async function PathwaysIndexPage() {
                     )}#${sectionDomId("questions")}`}
                     className={`group flex h-full flex-col justify-between gap-3 p-4 ${SURFACE_LINK}`}
                   >
-                    <span className="group-hover:text-power-orange text-[15px] font-bold leading-snug text-slate-900 transition">
+                    <span className="group-hover:text-power-orange-solid text-[15px] font-bold leading-snug text-slate-900 transition">
                       {item.question}
                     </span>
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[12px] font-semibold uppercase tracking-wider text-slate-400">
+                      <span className="truncate text-[12px] font-semibold uppercase tracking-wider text-slate-500">
                         {item.sportName} · {item.stageName}
                       </span>
                       <ArrowRight
@@ -282,7 +282,7 @@ export default async function PathwaysIndexPage() {
             <ol className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
               {BUCKETS.map((bucket) => (
                 <li key={bucket.n} className="flex h-full flex-col">
-                  <span className="font-title text-power-orange mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white text-[13px] font-extrabold shadow-sm">
+                  <span className="font-title text-power-orange-solid mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white text-[13px] font-extrabold shadow-sm">
                     {bucket.n}
                   </span>
                   <p className="font-title text-[15px] font-bold text-slate-900">{bucket.title}</p>
@@ -329,7 +329,7 @@ export default async function PathwaysIndexPage() {
                   <span className="mt-2.5 flex-1 text-[14px] leading-relaxed text-slate-600">
                     {step.body}
                   </span>
-                  <span className="text-power-orange mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold">
+                  <span className="text-power-orange-solid mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold">
                     {step.cta}
                     <ArrowRight
                       aria-hidden

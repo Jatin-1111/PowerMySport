@@ -111,7 +111,7 @@ export function NavDropdownHeading({
     <motion.p
       variants={variants}
       className={cn(
-        "px-4 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400",
+        "px-4 pb-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500",
         first ? "pt-2" : "mt-1 border-t border-slate-100 pt-3"
       )}
     >
@@ -168,7 +168,9 @@ export function NavDropdownItem({
           <p
             className={cn(
               "text-sm font-semibold leading-tight transition-colors",
-              active ? "text-power-orange" : "group-hover:text-power-orange text-slate-800"
+              active
+                ? "text-power-orange-solid"
+                : "group-hover:text-power-orange-solid text-slate-800"
             )}
           >
             {label}

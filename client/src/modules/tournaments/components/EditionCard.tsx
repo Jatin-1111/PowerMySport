@@ -20,11 +20,11 @@ export function EditionCard({ edition }: { edition: ListedEdition }) {
       className="hover:border-power-orange/40 group flex flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
     >
       {kindLabel && (
-        <span className="mb-2 w-fit rounded-md bg-orange-50 px-2 py-0.5 text-[11px] font-bold text-orange-800">
+        <span className="mb-2 w-fit rounded-md bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-800">
           {kindLabel}
         </span>
       )}
-      <p className="font-title group-hover:text-power-orange line-clamp-2 text-[15px] font-bold leading-snug text-slate-900">
+      <p className="font-title group-hover:text-power-orange-solid line-clamp-2 text-[15px] font-bold leading-snug text-slate-900">
         {edition.name}
       </p>
       <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3 text-[13px] text-slate-600">

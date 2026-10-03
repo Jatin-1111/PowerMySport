@@ -377,28 +377,37 @@ export default function FAQPage() {
             </span>
           </h2>
           <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-            <Link href="/terms" className="text-power-orange font-medium hover:underline">
+            <Link href="/terms" className="text-power-orange-solid font-medium hover:underline">
               → Terms of Service
             </Link>
-            <Link href="/privacy" className="text-power-orange font-medium hover:underline">
+            <Link href="/privacy" className="text-power-orange-solid font-medium hover:underline">
               → Privacy Policy
             </Link>
-            <Link href="/refund-policy" className="text-power-orange font-medium hover:underline">
+            <Link
+              href="/refund-policy"
+              className="text-power-orange-solid font-medium hover:underline"
+            >
               → Full Refund Policy
             </Link>
-            <Link href="/health-waiver" className="text-power-orange font-medium hover:underline">
+            <Link
+              href="/health-waiver"
+              className="text-power-orange-solid font-medium hover:underline"
+            >
               → Health & Safety Waiver
             </Link>
             <Link
               href="/parental-consent"
-              className="text-power-orange font-medium hover:underline"
+              className="text-power-orange-solid font-medium hover:underline"
             >
               → Parental Consent Agreement
             </Link>
-            <Link href="/content-policy" className="text-power-orange font-medium hover:underline">
+            <Link
+              href="/content-policy"
+              className="text-power-orange-solid font-medium hover:underline"
+            >
               → Content Moderation Policy
             </Link>
-            <Link href="/cookies" className="text-power-orange font-medium hover:underline">
+            <Link href="/cookies" className="text-power-orange-solid font-medium hover:underline">
               → Cookie Policy
             </Link>
           </div>

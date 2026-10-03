@@ -21,19 +21,19 @@ export function Scope() {
       </div>
       <p className="mb-4 leading-relaxed text-slate-600">
         These Partner Terms are supplemental to, and are read together with, our{" "}
-        <Link href="/terms" className="text-orange-600 hover:underline">
+        <Link href="/terms" className="text-power-orange-solid hover:underline">
           Terms of Service
         </Link>
         ,{" "}
-        <Link href="/privacy" className="text-orange-600 hover:underline">
+        <Link href="/privacy" className="text-power-orange-solid hover:underline">
           Privacy Policy
         </Link>
         ,{" "}
-        <Link href="/refund-policy" className="text-orange-600 hover:underline">
+        <Link href="/refund-policy" className="text-power-orange-solid hover:underline">
           Cancellation, Refund &amp; Dispute Policy
         </Link>
         and{" "}
-        <Link href="/content-policy" className="text-orange-600 hover:underline">
+        <Link href="/content-policy" className="text-power-orange-solid hover:underline">
           Content Policy
         </Link>
         each of which is incorporated here by reference.

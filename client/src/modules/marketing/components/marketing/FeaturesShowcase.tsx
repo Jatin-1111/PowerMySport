@@ -89,7 +89,7 @@ function StepsSketch() {
         <li key={step} className="flex items-center gap-3">
           <span
             className={cn(
-              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
               i === 0 ? cn(ACCENT, "text-white") : "bg-slate-200 text-slate-500"
             )}
           >
@@ -144,7 +144,7 @@ function TrialSketch() {
             className="flex flex-col items-center gap-1.5 rounded-md border border-slate-200 px-2 py-2.5"
           >
             <span className={cn("h-2 w-2 rounded-full", ACCENT)} />
-            <span className="text-center text-[11px] font-medium text-slate-600">{label}</span>
+            <span className="text-center text-xs font-medium text-slate-600">{label}</span>
           </div>
         ))}
       </div>
@@ -173,7 +173,7 @@ function Sketch({
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-6 flex items-center justify-between gap-4 text-xs font-semibold">
         <span className="text-slate-700">{feature.title}</span>
-        <span className="tabular-nums text-slate-400">
+        <span className="tabular-nums text-slate-500">
           {pad(step + 1)} / {pad(total)}
         </span>
       </div>
@@ -276,10 +276,13 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                 data-step={i}
                 className="border-t border-slate-200 py-8 first:border-t-0 lg:flex lg:min-h-[60vh] lg:items-center lg:border-t-0 lg:py-0"
               >
+                {/* A rail marks the step the illustration is showing. The other
+                    steps keep full-strength text: fading them to 40% dropped
+                    their headings and paragraphs to about 2:1. */}
                 <div
                   className={cn(
-                    "transition-opacity duration-300 motion-reduce:transition-none",
-                    i === active ? "lg:opacity-100" : "lg:opacity-40"
+                    "transition-colors duration-300 motion-reduce:transition-none lg:border-l-2 lg:pl-8",
+                    i === active ? "lg:border-power-orange-solid" : "lg:border-slate-200"
                   )}
                 >
                   <p className="text-power-orange-solid text-sm font-semibold">

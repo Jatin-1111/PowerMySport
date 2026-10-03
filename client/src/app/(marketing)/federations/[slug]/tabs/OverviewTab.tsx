@@ -83,14 +83,14 @@ export function OverviewTab({
                 >
                   <div>
                     <p className="text-sm font-semibold leading-tight text-slate-800">{sa.name}</p>
-                    <p className="mt-0.5 text-xs text-slate-400">{sa.state}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{sa.state}</p>
                   </div>
                   {sa.website && (
                     <a
                       href={sa.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:text-power-orange shrink-0 text-slate-400 transition"
+                      className="hover:text-power-orange-solid shrink-0 text-slate-500 transition"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
@@ -141,7 +141,7 @@ export function OverviewTab({
       <aside className="space-y-4 lg:sticky lg:top-20">
         {/* Quick nav */}
         <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.13em] text-slate-500">
             In this guide
           </p>
           <div className="space-y-1.5">
@@ -151,7 +151,7 @@ export function OverviewTab({
                 onClick={() => switchTab(id)}
                 className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
                   activeTab === id
-                    ? "text-power-orange bg-orange-50"
+                    ? "text-power-orange-solid bg-orange-50"
                     : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
@@ -166,13 +166,11 @@ export function OverviewTab({
         {/* Contact */}
         {(fed.contact?.email || fed.contact?.phone || fed.contact?.address) && (
           <div className="space-y-3 rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
-              Contact
-            </p>
+            <p className="text-xs font-bold uppercase tracking-[0.13em] text-slate-500">Contact</p>
             {fed.contact.email && (
               <a
                 href={`mailto:${fed.contact.email}`}
-                className="hover:text-power-orange flex items-start gap-2.5 text-sm text-slate-600 transition"
+                className="hover:text-power-orange-solid flex items-start gap-2.5 text-sm text-slate-600 transition"
               >
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                 {fed.contact.email}
@@ -198,14 +196,14 @@ export function OverviewTab({
           <div className="relative z-10">
             <div className="mb-2 flex items-center gap-1.5">
               <Sparkles className="text-power-orange h-3.5 w-3.5" />
-              <p className="text-power-orange text-[10px] font-bold uppercase tracking-[0.13em]">
+              <p className="text-power-orange text-xs font-bold uppercase tracking-[0.13em]">
                 Concierge
               </p>
             </div>
             <p className="mb-1.5 text-[15px] font-bold leading-snug text-white">
               We handle registration for you
             </p>
-            <p className="mb-4 text-xs leading-relaxed text-white/45">
+            <p className="mb-4 text-xs leading-relaxed text-white/60">
               Federation IDs, documents, form submissions. Our team takes care of everything at no
               cost.
             </p>

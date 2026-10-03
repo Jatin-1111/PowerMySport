@@ -133,19 +133,19 @@ export function RankTrajectory({ points, label }: { points: TrajectoryPoint[]; l
             which is what lets the plot stretch to the full width of the card. */}
         <div className="relative w-12 shrink-0 sm:w-14" style={{ height: "13rem" }}>
           <span
-            className="text-muted-foreground absolute right-1.5 text-[10px] font-medium leading-none"
+            className="text-muted-foreground absolute right-1.5 text-xs font-medium leading-none"
             style={{ top: `${INSET.top}%`, transform: "translateY(-1.35rem)" }}
           >
             better ↑
           </span>
           <span
-            className="text-muted-foreground absolute right-1.5 text-[11px] tabular-nums leading-none"
+            className="text-muted-foreground absolute right-1.5 text-xs tabular-nums leading-none"
             style={{ top: `${INSET.top}%`, transform: "translateY(-50%)" }}
           >
             #{best.toLocaleString("en-IN")}
           </span>
           <span
-            className="text-muted-foreground absolute right-1.5 text-[11px] tabular-nums leading-none"
+            className="text-muted-foreground absolute right-1.5 text-xs tabular-nums leading-none"
             style={{ top: `${100 - INSET.bottom}%`, transform: "translateY(-50%)" }}
           >
             #{worst.toLocaleString("en-IN")}
@@ -269,7 +269,7 @@ export function RankTrajectory({ points, label }: { points: TrajectoryPoint[]; l
       </div>
 
       {/* Dates under the plot, aligned to the gutter above. */}
-      <div className="text-muted-foreground ml-12 flex justify-between text-[11px] sm:ml-14">
+      <div className="text-muted-foreground ml-12 flex justify-between text-xs sm:ml-14">
         <span>{formatAsOn(first.asOnDate)}</span>
         <span>{formatAsOn(last.asOnDate)}</span>
       </div>
@@ -343,7 +343,7 @@ function Readout({
         ].join(" "),
       }}
     >
-      <p className="text-muted-foreground text-[11px] font-medium">{formatAsOn(asOnDate)}</p>
+      <p className="text-muted-foreground text-xs font-medium">{formatAsOn(asOnDate)}</p>
       <p className="mt-0.5 flex items-baseline gap-2">
         <span className="text-base font-bold tabular-nums">#{rank.toLocaleString("en-IN")}</span>
         {movement !== null && movement !== 0 && (
@@ -358,7 +358,7 @@ function Readout({
         {movement === 0 && <span className="text-muted-foreground text-xs">no change</span>}
       </p>
       {totalPoints !== undefined && (
-        <p className="text-muted-foreground text-[11px] tabular-nums">
+        <p className="text-muted-foreground text-xs tabular-nums">
           {formatPoints(totalPoints)} points
         </p>
       )}

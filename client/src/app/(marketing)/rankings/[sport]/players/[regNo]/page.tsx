@@ -310,7 +310,7 @@ function FieldPosition({ rank, listSize }: { rank: number; listSize: number }) {
           style={{ left: `${position}%` }}
         />
       </div>
-      <div aria-hidden className="text-muted-foreground mt-1 flex justify-between text-[11px]">
+      <div aria-hidden className="text-muted-foreground mt-1 flex justify-between text-xs">
         <span>best</span>
         <span>{listSize.toLocaleString("en-IN")}th</span>
       </div>
@@ -355,7 +355,7 @@ function StandingCard({
         <div className="min-w-0">
           <Link
             href={comboHref(sportSlug, combo)}
-            className="text-foreground hover:text-power-orange focus-visible:ring-power-orange text-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            className="text-foreground hover:text-power-orange-solid focus-visible:ring-power-orange text-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           >
             {comboLabel(combo)}
           </Link>

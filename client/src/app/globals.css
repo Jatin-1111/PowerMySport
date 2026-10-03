@@ -21,13 +21,16 @@
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.5 0 0);
   --border: oklch(0.922 0 0);
   /* 8px base gives the crisp scale the theme derives below: sm 4 (chips,
      badges), md 6 (buttons, inputs), lg 8 (cards), xl 12 (modals, large
      media). Marketing pages stop at xl; 2xl and up are legacy app surfaces. */
   --radius: 0.5rem;
-  --background: #f4f7ff;
+  /* Ghost white (slate-50), not the old blue-tinted #f4f7ff: on that tint the
+     site's secondary text (slate-500, muted-foreground) measured 4.42-4.44:1,
+     just under AA, while on slate-50 the same text clears it. */
+  --background: var(--ghost-white);
   --foreground: #111827;
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
