@@ -33,8 +33,32 @@ const wideRows = (container: HTMLElement) => {
   return [...boards[1].querySelectorAll("li")].map((li) => li.textContent ?? "");
 };
 
+/**
+ * Replaces IntersectionObserver so a test decides when the board "scrolls into
+ * view". Returns a function that reports every observed board as visible.
+ */
+const mockViewport = () => {
+  const callbacks: Array<(entries: Array<{ isIntersecting: boolean }>) => void> = [];
+  class FakeObserver {
+    constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) {
+      callbacks.push(callback);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  vi.stubGlobal("IntersectionObserver", FakeObserver);
+  return () => callbacks.forEach((callback) => callback([{ isIntersecting: true }]));
+};
+
 beforeEach(() => setReducedMotion(true));
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe("FlipBoard", () => {
   it("renders nothing when there is nothing upcoming", () => {
@@ -76,12 +100,25 @@ describe("FlipBoard", () => {
     expect(wideRows(container)[0]).toBe(before);
   });
 
-  it("flips once and settles on the real text", () => {
+  it("does not flip until the board is scrolled into view", () => {
     setReducedMotion(false);
     vi.useFakeTimers();
+    mockViewport();
     const { container } = render(<FlipBoard editions={[edition({})]} title="Next up" />);
     const settled = wideRows(container)[0];
 
+    act(() => vi.advanceTimersByTime(500));
+    expect(wideRows(container)[0]).toBe(settled);
+  });
+
+  it("flips once and settles on the real text", () => {
+    setReducedMotion(false);
+    vi.useFakeTimers();
+    const scrollIntoView = mockViewport();
+    const { container } = render(<FlipBoard editions={[edition({})]} title="Next up" />);
+    const settled = wideRows(container)[0];
+
+    act(() => scrollIntoView());
     act(() => vi.advanceTimersByTime(90));
     expect(wideRows(container)[0]).not.toBe(settled);
 

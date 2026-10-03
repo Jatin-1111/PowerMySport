@@ -7,7 +7,8 @@ import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { PathwayPreviewCard } from "@/modules/pathway/components/PathwayPreviewCard";
 import { roadmapHref } from "@/modules/pathway/data/sports";
-import type { PathwayGuideSummary } from "@/modules/pathway/services/pathway";
+import type { PathwayGuideSummary, TournamentEdition } from "@/modules/pathway/services/pathway";
+import { NextTournamentsSection } from "@/modules/tournaments/components/NextTournamentsSection";
 import {
   Activity,
   ArrowRight,
@@ -30,7 +31,13 @@ import Link from "next/link";
 // in the server HTML until hydration ran. The hero keeps its own scroll-linked
 // motion — that one is a deliberate effect, not a reveal.
 
-export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary | null }) {
+export default function HomeClient({
+  pathway,
+  tournaments,
+}: {
+  pathway: PathwayGuideSummary | null;
+  tournaments: { editions: TournamentEdition[]; sportSlug: string; sportLabel: string };
+}) {
   const { user } = useAuthStore();
 
   // ── Personalize the hero for a logged-in parent ──
@@ -330,6 +337,13 @@ export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary |
           </div>
         </div>
       </section>
+
+      {/* ── Next tournaments ── */}
+      <NextTournamentsSection
+        editions={tournaments.editions}
+        sportSlug={tournaments.sportSlug}
+        sportLabel={tournaments.sportLabel}
+      />
 
       {/* ── Final CTA ── */}
       <CTA

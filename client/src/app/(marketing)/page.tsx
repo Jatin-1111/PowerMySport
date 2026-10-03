@@ -1,6 +1,9 @@
 import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationJsonLd, SITE_DESCRIPTION, websiteJsonLd } from "@/lib/seo";
 import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
+import { FEATURED_TOURNAMENT_SPORT } from "@/modules/tournaments/config/featured";
+import { fetchSportEditions } from "@/modules/tournaments/services/editionListing";
+import { SPORT_LABEL } from "./federations/[slug]/federationShared";
 import type { Metadata } from "next";
 
 import HomeClient from "./HomeClient";
@@ -40,10 +43,16 @@ export const metadata: Metadata = {
 /** The pathway the homepage previews: the deepest one we have, or whichever is published first. */
 const PREVIEW_SPORT = "tennis";
 
+/** Rows on the homepage departures board: enough to read as a board, few enough to scan. */
+const BOARD_ROWS = 5;
+
 export default async function HomePage() {
   // The summaries /roadmap renders from, so the preview cannot drift from the
   // guide. fetchPublishedPathways fails soft to [], and no data means no card.
-  const pathways = await fetchPublishedPathways();
+  const [pathways, upcoming] = await Promise.all([
+    fetchPublishedPathways(),
+    fetchSportEditions(FEATURED_TOURNAMENT_SPORT, { page: 1, limit: BOARD_ROWS, upcoming: true }),
+  ]);
   const withStages = pathways.filter((pathway) => (pathway.stages?.length ?? 0) > 0);
   const preview =
     withStages.find((pathway) => pathway.sportSlug === PREVIEW_SPORT) ?? withStages[0] ?? null;
@@ -51,7 +60,14 @@ export default async function HomePage() {
   return (
     <>
       <JsonLd data={[organizationJsonLd, websiteJsonLd]} />
-      <HomeClient pathway={preview} />
+      <HomeClient
+        pathway={preview}
+        tournaments={{
+          editions: upcoming?.editions.slice(0, BOARD_ROWS) ?? [],
+          sportSlug: FEATURED_TOURNAMENT_SPORT,
+          sportLabel: SPORT_LABEL[FEATURED_TOURNAMENT_SPORT] ?? FEATURED_TOURNAMENT_SPORT,
+        }}
+      />
     </>
   );
 }

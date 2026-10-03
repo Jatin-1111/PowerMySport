@@ -3,7 +3,7 @@
 import type { TournamentEdition } from "@/modules/pathway/services/pathway";
 import { cn } from "@/utils/cn";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * The next few tournaments as a split-flap departures board.
@@ -121,11 +121,39 @@ function spokenLabel(edition: TournamentEdition): string {
   return `${edition.name}, ${when}${ages}`;
 }
 
+/**
+ * True once the element has been at least half on screen. A board far down a
+ * page would otherwise flip while nobody is looking and arrive already settled.
+ * A browser without IntersectionObserver simply never flips; the board is
+ * already showing its settled text.
+ */
+function useSeen(ref: React.RefObject<HTMLElement | null>): boolean {
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    if (typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setSeen(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ref]);
+  return seen;
+}
+
 /** Flips each character through a few random ones, settling left to right. */
-function useFlip(lines: string[]): string[] {
+function useFlip(lines: string[], active: boolean): string[] {
   const [shown, setShown] = useState(lines);
 
   useEffect(() => {
+    if (!active) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let tick = 0;
     const lastTick = Math.max(...lines.map((line, row) => settleTick(line.length - 1, row)));
@@ -147,7 +175,7 @@ function useFlip(lines: string[]): string[] {
     return () => window.clearInterval(timer);
     // `lines` is derived from props on every render; its content is what matters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines.join("\n")]);
+  }, [lines.join("\n"), active]);
 
   return shown;
 }
@@ -164,7 +192,12 @@ function Board({
   className?: string;
 }) {
   const cols = width(layout);
-  const lines = useFlip(editions.map((edition) => boardLine(edition, layout)));
+  const boardRef = useRef<HTMLDivElement>(null);
+  const seen = useSeen(boardRef);
+  const lines = useFlip(
+    editions.map((edition) => boardLine(edition, layout)),
+    seen
+  );
   const grid = { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` };
   // Sized from the board's own width (container query units), so the same
   // board fills a phone and a desktop header without a horizontal scrollbar.
@@ -181,7 +214,10 @@ function Board({
   ];
 
   return (
-    <div className={cn("@container rounded-lg bg-slate-950 p-2.5 sm:p-4", className)}>
+    <div
+      ref={boardRef}
+      className={cn("@container rounded-lg bg-slate-950 p-2.5 sm:p-4", className)}
+    >
       <div
         aria-hidden
         className="mb-2 grid gap-[2px] text-xs font-semibold uppercase tracking-[0.14em] text-slate-400"
