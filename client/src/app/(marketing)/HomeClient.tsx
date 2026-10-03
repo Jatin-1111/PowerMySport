@@ -146,7 +146,7 @@ export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary |
       "Ask for a hands-on session that checks the online result against how your child actually moves. Our team will contact you to arrange a time.",
     icon: <Activity className="h-6 w-6" />,
     stat: "We call to confirm a time",
-    visual: "steps",
+    visual: "screening",
     theme: "blue",
   };
 

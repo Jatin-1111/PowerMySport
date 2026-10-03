@@ -11,7 +11,7 @@ export interface ShowcaseFeature {
   icon?: React.ReactNode;
   label?: string;
   stat?: string;
-  /** Which illustration to show: "roadmap", "steps", "chat" or "trial". */
+  /** Which illustration to show: "roadmap", "screening", "chat" or "trial". */
   visual?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [k: string]: any;
@@ -81,8 +81,14 @@ function RoadmapSketch() {
   );
 }
 
-function StepsSketch() {
-  const steps = ["First session", "Build basics", "Join a team", "First tournament"];
+// The request flow as it works: the parent asks, the team calls to agree a
+// time, then the session. The first step is lit; no dates, venues or results.
+function ScreeningSketch() {
+  const steps = [
+    "You send a request",
+    "We call to confirm a time",
+    "The session checks your result",
+  ];
   return (
     <ol className="flex flex-col gap-3">
       {steps.map((step, i) => (
@@ -90,14 +96,16 @@ function StepsSketch() {
           <span
             className={cn(
               "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-              i === 0 ? cn(ACCENT, "text-white") : "bg-slate-200 text-slate-500"
+              i === 0 ? cn(ACCENT, "text-white") : "bg-slate-200 text-slate-600"
             )}
           >
             {i + 1}
           </span>
-          <span className={cn("h-1.5 flex-1 rounded-full", i === 0 ? ACCENT : "bg-slate-100")} />
           <span
-            className={cn("text-xs", i === 0 ? "font-semibold text-slate-700" : "text-slate-500")}
+            className={cn("h-1.5 w-8 shrink-0 rounded-full", i === 0 ? ACCENT : "bg-slate-100")}
+          />
+          <span
+            className={cn("text-sm", i === 0 ? "font-semibold text-slate-800" : "text-slate-600")}
           >
             {step}
           </span>
@@ -165,7 +173,7 @@ function TrialSketch() {
 
 const SKETCHES: Record<string, React.FC> = {
   roadmap: RoadmapSketch,
-  steps: StepsSketch,
+  screening: ScreeningSketch,
   chat: ChatSketch,
   trial: TrialSketch,
 };
