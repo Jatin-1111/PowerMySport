@@ -23,11 +23,9 @@ import type { ReactElement } from "react";
  *
  * ── The font ────────────────────────────────────────────────────────────────
  * No `fonts` option is passed, so this uses the Geist face that `next/og` ships
- * with. That is a deliberate trade: the site's display face is Space Grotesk,
- * but using it here means committing a .ttf and keeping it in step with the
- * Google-hosted copy `next/font` serves. Geist is close in character and costs
- * nothing. To switch, drop the .ttf in and pass it through `fonts` — the
- * layout below does not depend on the face.
+ * with. Geist is also the site's own face, so the preview card matches the page
+ * without committing a .ttf. To switch, drop the .ttf in and pass it through
+ * `fonts` — the layout below does not depend on the face.
  */
 
 /** Brand tokens, literal because Satori cannot read a CSS custom property. */

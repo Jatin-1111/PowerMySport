@@ -6,12 +6,12 @@ import { FriendSocketProvider } from "@/hooks/useFriendSocket";
 import { QueryProvider } from "@/lib/query/QueryProvider";
 import { SITE_DESCRIPTION as siteDescription, SITE_URL as siteUrl } from "@/lib/seo";
 import type { Metadata } from "next";
-import { Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
@@ -110,8 +110,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${spaceGrotesk.variable} ${geistMono.variable} antialiased`}>
+    // The font variables go on <html>, not <body>. Tailwind resolves
+    // `--font-sans` on :root, so a variable that only exists from <body> down
+    // is undefined there and every page silently falls back to the system
+    // font, which is how Space Grotesk never rendered anywhere.
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="antialiased">
         <NumericInputGuard />
         <GuestAnalyticsTracker />
         <HydrationBoundary>
