@@ -141,11 +141,11 @@ export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary |
   };
   const screeningStep = {
     label: "Ready for the next step?",
-    title: "Book a Physical Screening",
+    title: "Request a Physical Screening",
     description:
-      "Bring your child in for a hands-on session with a certified coach. We validate the online result against real movement, strength, and coordination.",
+      "Ask for a hands-on session that checks the online result against how your child actually moves. Our team will contact you to arrange a time.",
     icon: <Activity className="h-6 w-6" />,
-    stat: "Book anytime after your results",
+    stat: "We call to confirm a time",
     visual: "steps",
     theme: "blue",
   };
