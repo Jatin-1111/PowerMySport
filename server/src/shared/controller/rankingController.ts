@@ -128,6 +128,10 @@ export const listRankings = asyncHandler(async (req: Request, res: Response): Pr
       status: "published",
       ...(date ? { asOnDate: new Date(date) } : { isLatestForCombo: true }),
     })
+      // An archived week can hold a corrected re-upload beside the original;
+      // without a sort, findOne returned whichever was stored first, so the
+      // insights could describe the version the correction replaced.
+      .sort({ version: -1 })
       .select(SNAPSHOT_INSIGHT_FIELDS)
       .lean(),
   ]);
@@ -225,19 +229,32 @@ export const listRankingDates = asyncHandler(async (req: Request, res: Response)
     throw new AppError("category and subcategory are both required.", 400);
   }
 
+  // Newest version first within a date, so the first snapshot seen for each
+  // week is the one that wins everywhere else (see resolveSnapshotVersions).
   const snapshots = await RankingSnapshot.find({
     sportSlug: sportOf(req),
     category,
     subcategory,
     status: "published",
   })
-    .sort({ asOnDate: -1 })
+    .sort({ asOnDate: -1, version: -1 })
     .select("asOnDate rowCount isLatestForCombo")
     .lean();
 
+  // One entry per week. A corrected re-upload keeps every version published on
+  // purpose, and between the August cutover and 2026-09-17 unchanged re-fetches
+  // were recorded as corrections too (see aitaIngestDedupe). Listing each one
+  // gave the week picker the same date two or three times over: Boys U-12 had
+  // 31 Aug three times, each option a duplicate React key.
+  const weeks = new Map<number, (typeof snapshots)[number]>();
+  for (const snapshot of snapshots) {
+    const week = new Date(snapshot.asOnDate).getTime();
+    if (!weeks.has(week)) weeks.set(week, snapshot);
+  }
+
   res.json({
     success: true,
-    data: snapshots.map((s) => ({
+    data: [...weeks.values()].map((s) => ({
       asOnDate: s.asOnDate,
       rowCount: s.rowCount ?? 0,
       isLatest: Boolean(s.isLatestForCombo),

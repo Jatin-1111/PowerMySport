@@ -203,3 +203,70 @@ describe("the projection attached to a player's standing", () => {
     assert.equal(response.body.data.player.birthYear, 2012);
   });
 });
+
+// The week picker on a ranking list reads /api/rankings/dates. A corrected
+// re-upload keeps every version of a week published, so the endpoint has to
+// collapse them to one entry per week and let the newest version win, the same
+// rule resolveSnapshotVersions applies to a player's history.
+describe("the week picker's dates", () => {
+  it("lists a week with a corrected re-upload once", async () => {
+    const corrected = weeksBefore(1);
+    await seedWeek({ asOnDate: corrected, rank: 360, totalPoints: 120, version: 1 });
+    await seedWeek({ asOnDate: corrected, rank: 350, totalPoints: 125, version: 2 });
+    await seedWeek({ asOnDate: corrected, rank: 350, totalPoints: 125, version: 3 });
+    await seedWeek({ asOnDate: LATEST, rank: 312, totalPoints: 148, isLatest: true });
+
+    const response = await request(app)
+      .get("/api/rankings/dates?category=Boys&subcategory=U-14")
+      .expect(200);
+    const dates = response.body.data.map((entry: { asOnDate: string }) => entry.asOnDate);
+
+    assert.deepEqual(dates, [LATEST.toISOString(), corrected.toISOString()]);
+    assert.equal(response.body.data[0].isLatest, true);
+    assert.equal(response.body.data[1].isLatest, false);
+  });
+
+  it("does not list a week whose only version never published", async () => {
+    await seedWeek({
+      asOnDate: weeksBefore(2),
+      rank: 380,
+      totalPoints: 110,
+      status: "quarantined",
+    });
+    await seedWeek({ asOnDate: LATEST, rank: 312, totalPoints: 148, isLatest: true });
+
+    const response = await request(app)
+      .get("/api/rankings/dates?category=Boys&subcategory=U-14")
+      .expect(200);
+
+    assert.deepEqual(
+      response.body.data.map((entry: { asOnDate: string }) => entry.asOnDate),
+      [LATEST.toISOString()]
+    );
+  });
+
+  it("shows an archived week with its corrected version's insights", async () => {
+    const corrected = weeksBefore(1);
+    await seedWeek({
+      asOnDate: corrected,
+      rank: 360,
+      totalPoints: 120,
+      version: 1,
+      benchmarks: [{ rank: 100, points: 300 }],
+    });
+    await seedWeek({
+      asOnDate: corrected,
+      rank: 350,
+      totalPoints: 125,
+      version: 2,
+      benchmarks: [{ rank: 100, points: 310 }],
+    });
+
+    const day = corrected.toISOString().slice(0, 10);
+    const response = await request(app)
+      .get(`/api/rankings?category=Boys&subcategory=U-14&date=${day}`)
+      .expect(200);
+
+    assert.equal(response.body.data.snapshot.benchmarks[0].points, 310);
+  });
+});
