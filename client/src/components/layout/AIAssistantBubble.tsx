@@ -1,14 +1,66 @@
 "use client";
 
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { AssistantChatDrawer } from "@/modules/guidance/components/chat/AssistantChatDrawer";
+import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
+import {
+  OPEN_ASSISTANT_EVENT,
+  type OpenAssistantDetail,
+} from "@/modules/guidance/utils/assistantLauncher";
 import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 export function AIAssistantBubble() {
   const [hovered, setHovered] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginRedirect, setLoginRedirect] = useState("/");
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const { user, hydrated } = useAuthStore();
+  const pathname = usePathname();
+
+  // The assistant needs an account (its API is behind login), so a guest gets
+  // the sign-in prompt instead of a drawer that fails to start a session. The
+  // question they picked rides along in `?ask=` and is asked after login.
+  const openAssistant = useCallback(
+    (question?: string) => {
+      if (!hydrated) return;
+      if (!user) {
+        const query = question ? `?ask=${encodeURIComponent(question)}` : "";
+        setLoginRedirect(`${pathname}${query}`);
+        setLoginOpen(true);
+        return;
+      }
+      setPendingQuestion(question ?? null);
+      setDrawerOpen(true);
+    },
+    [hydrated, user, pathname]
+  );
+
+  useEffect(() => {
+    const handler = (e: Event) =>
+      openAssistant((e as CustomEvent<OpenAssistantDetail>).detail?.question);
+    window.addEventListener(OPEN_ASSISTANT_EVENT, handler);
+    return () => window.removeEventListener(OPEN_ASSISTANT_EVENT, handler);
+  }, [openAssistant]);
+
+  // Back from login with a question in the URL: ask it, then tidy the address.
+  useEffect(() => {
+    if (!hydrated || !user) return;
+    const params = new URLSearchParams(window.location.search);
+    const question = params.get("ask");
+    if (!question) return;
+    params.delete("ask");
+    const rest = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}`);
+    // Deferred a tick: opening sets state, which an effect body should not do.
+    // Not cancelled on cleanup: the param is already gone from the URL, so a
+    // second (Strict Mode) run would find nothing and the question would be lost.
+    window.setTimeout(() => openAssistant(question), 0);
+  }, [hydrated, user, openAssistant]);
 
   useEffect(() => {
     const handler = (e: Event) =>
@@ -19,7 +71,21 @@ export function AIAssistantBubble() {
 
   return (
     <>
-      <AssistantChatDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <AssistantChatDrawer
+        isOpen={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setPendingQuestion(null);
+        }}
+        initialQuestion={pendingQuestion}
+        onInitialQuestionSent={() => setPendingQuestion(null)}
+      />
+      <LoginRequiredModal
+        isOpen={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        variant="assistant"
+        redirectPath={loginRedirect}
+      />
 
       {!chatOpen && (
         <div className="fixed bottom-6 right-6 z-50 flex select-none flex-col items-end gap-3">
@@ -63,7 +129,7 @@ export function AIAssistantBubble() {
           >
             <button
               type="button"
-              onClick={() => setDrawerOpen(true)}
+              onClick={() => openAssistant()}
               aria-label="Chat with PowerMySport AI"
               onMouseEnter={() => setHovered(true)}
               onMouseLeave={() => setHovered(false)}
