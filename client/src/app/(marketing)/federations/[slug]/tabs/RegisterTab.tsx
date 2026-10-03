@@ -59,7 +59,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
       </div>
 
       {/* Sidebar — Concierge */}
-      <aside className="space-y-4 lg:sticky lg:top-20">
+      <aside className="space-y-4 lg:sticky lg:top-36">
         <div className="relative overflow-hidden rounded-xl bg-slate-900 p-6">
           <div className="relative z-10">
             <div className="mb-3 flex items-center gap-1.5">

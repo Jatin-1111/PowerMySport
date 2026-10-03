@@ -116,10 +116,12 @@ export function FederationDetailClient({
         }
       />
 
-      {/* ── Sticky tab bar ── */}
+      {/* ── Sticky tab bar ── pinned under the fixed nav (h-16 plus its 1px
+          border = 65px); at top-0 it slid underneath and the tabs vanished. The
+          sidebars below sit under both: nav 65 + this bar 51 + a 16px gap. */}
       <div
         ref={tabBarRef}
-        className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm"
+        className="sticky top-[65px] z-30 scroll-mt-[65px] border-b border-slate-200 bg-white shadow-sm"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="scrollbar-none flex gap-0 overflow-x-auto">

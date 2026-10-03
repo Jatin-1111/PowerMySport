@@ -100,7 +100,7 @@ export function CalendarTab({
           {/* ── Left: the calendar. Stretches to the detail panel's height
                  (grid items stretch by default — no items-start here) with the
                  month centred in whatever room that leaves. ── */}
-          <div className="rounded-lg border border-slate-200 bg-white p-4 lg:sticky lg:top-[63px]">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 lg:sticky lg:top-[132px]">
             <div className="mb-4 flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-0.5">
                 <button

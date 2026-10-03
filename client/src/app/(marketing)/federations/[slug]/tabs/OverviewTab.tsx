@@ -138,7 +138,7 @@ export function OverviewTab({
       </div>
 
       {/* Sidebar */}
-      <aside className="space-y-4 lg:sticky lg:top-20">
+      <aside className="space-y-4 lg:sticky lg:top-36">
         {/* Quick nav */}
         <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.13em] text-slate-500">
