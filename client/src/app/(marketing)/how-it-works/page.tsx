@@ -45,8 +45,6 @@ interface AssetFrameProps {
   overlayIcon: React.ReactNode;
   overlayLabel: string;
   overlayCaption?: string;
-  accentColor?: string;
-  backdropTint?: string;
   step?: number;
 }
 
@@ -56,28 +54,11 @@ function AssetFrame({
   overlayIcon,
   overlayLabel,
   overlayCaption,
-  accentColor = "from-orange-500/25",
-  backdropTint = "from-orange-100/70 via-orange-50/40 to-transparent",
   step,
 }: AssetFrameProps) {
   return (
     <div className="relative">
-      {/* Offset tinted backdrop panel */}
-      <div
-        aria-hidden
-        className={`absolute -inset-x-5 -bottom-5 top-8 rounded-xl bg-gradient-to-br ${backdropTint}`}
-      />
-      {/* Dotted accent */}
-      <div
-        aria-hidden
-        className="absolute -right-6 -top-6 h-24 w-24 opacity-50"
-        style={{
-          backgroundImage: "radial-gradient(circle, rgba(15,23,42,0.25) 1.5px, transparent 1.5px)",
-          backgroundSize: "13px 13px",
-        }}
-      />
-
-      <div className="relative h-[280px] w-full overflow-hidden rounded-xl shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5 sm:h-[420px] lg:h-[480px]">
+      <div className="relative h-[280px] w-full overflow-hidden rounded-xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5 sm:h-[420px] lg:h-[480px]">
         {/* Main image */}
         <Image
           src={src}
@@ -90,19 +71,7 @@ function AssetFrame({
         {/* Legibility gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-950/15 to-transparent" />
 
-        {/* Diagonal color accent overlay */}
-        <div
-          aria-hidden
-          className={`absolute inset-0 bg-gradient-to-br ${accentColor} via-transparent to-transparent opacity-50`}
-        />
-
-        {/* Inset hairline frame */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-3 rounded-sm ring-1 ring-white/20"
-        />
-
-        {/* Step chip — glass, top-left */}
+        {/* Step chip */}
         {step !== undefined && (
           <div className="absolute left-5 top-5 rounded-sm bg-slate-950/70 px-3.5 py-1.5">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
@@ -111,7 +80,7 @@ function AssetFrame({
           </div>
         )}
 
-        {/* Floating glass overlay card */}
+        {/* Caption */}
         <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-md bg-slate-950/75 px-5 py-3.5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
             {overlayIcon}
@@ -133,7 +102,6 @@ function AssetFrame({
 interface StepRowProps {
   step: number;
   stepColor: string;
-  badgeBg: string;
   title: string;
   description: string;
   checkItems: { text: string; iconColor: string }[];
@@ -217,8 +185,7 @@ export default function HowItWorksPage() {
   const playerSteps: StepRowProps[] = [
     {
       step: 1,
-      stepColor: "text-power-orange",
-      badgeBg: "bg-gradient-to-r from-orange-500 to-orange-400",
+      stepColor: "text-power-orange-solid",
       title: "Roadmap: See the Whole Road",
       description:
         "Every sport we cover has a pathway guide, stage by stage and by age: what matters now, what parents usually ask, the decisions coming up, and what to actually do next.",
@@ -242,15 +209,12 @@ export default function HowItWorksPage() {
         overlayIcon: <Map size={20} />,
         overlayLabel: "Roadmap",
         overlayCaption: "The starting line, mapped to the finish",
-        accentColor: "from-orange-500/25",
-        backdropTint: "from-orange-100/70 via-orange-50/40 to-transparent",
       },
       imageRight: true,
     },
     {
       step: 2,
-      stepColor: "text-teal-600",
-      badgeBg: "bg-gradient-to-r from-blue-600 to-blue-500",
+      stepColor: "text-power-orange-solid",
       title: "Community: Ask Parents Who Have Done It",
       description:
         "Some questions only another parent can answer. Ask yours in the community, read the experiences families have written, and message parents directly.",
@@ -274,15 +238,12 @@ export default function HowItWorksPage() {
         overlayIcon: <Users size={20} />,
         overlayLabel: "Community",
         overlayCaption: "Parents answering parents",
-        accentColor: "from-blue-500/25",
-        backdropTint: "from-blue-100/60 via-cyan-50/40 to-transparent",
       },
       imageRight: false,
     },
     {
       step: 3,
-      stepColor: "text-emerald-600",
-      badgeBg: "bg-gradient-to-r from-emerald-600 to-emerald-400",
+      stepColor: "text-power-orange-solid",
       title: "Execution Support: Help Doing It",
       description:
         "A plan only helps once it is carried out. Connect with an expert who has taken a child down this road, find the tournaments on your child's calendar, and understand where they stand.",
@@ -306,8 +267,6 @@ export default function HowItWorksPage() {
         overlayIcon: <Trophy size={20} />,
         overlayLabel: "Execution Support",
         overlayCaption: "Experts, calendars and rankings",
-        accentColor: "from-emerald-500/25",
-        backdropTint: "from-emerald-100/60 via-teal-50/40 to-transparent",
       },
       imageRight: true,
     },
@@ -360,7 +319,10 @@ export default function HowItWorksPage() {
   ];
 
   return (
-    <main className="overflow-x-hidden">
+    // `overflow-x-clip`, not `overflow-x-hidden`: hidden makes <main> a scroll
+    // container that never scrolls, and the `.reveal-on-scroll` view timelines
+    // inside then track it instead of the page, freezing part-way transparent.
+    <main className="overflow-x-clip">
       {/* ── Hero ── */}
       <PageHeader
         eyebrow="Getting started"
@@ -383,7 +345,7 @@ export default function HowItWorksPage() {
                 Execution Support
                 <span
                   aria-hidden
-                  className="absolute -bottom-1 left-0 h-1 w-full rounded-full bg-gradient-to-r from-orange-400 to-orange-200"
+                  className="bg-power-orange absolute -bottom-1 left-0 h-1 w-full rounded-full"
                 />
               </span>
             </h2>
@@ -401,16 +363,6 @@ export default function HowItWorksPage() {
 
       {/* ── What you walk away with ── */}
       <section className="relative overflow-hidden bg-slate-50 py-20 sm:py-24 lg:py-32">
-        {/* Decorative SVG grid pattern */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: "radial-gradient(circle, #0f172a 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-14 text-center">
             <div className="mb-5 flex justify-center">
@@ -512,16 +464,6 @@ export default function HowItWorksPage() {
 
       {/* ── FAQ ── */}
       <section className="relative overflow-hidden bg-slate-50 py-20 sm:py-24 lg:py-32">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "linear-gradient(0deg, #0f172a 1px, transparent 1px), linear-gradient(90deg, #0f172a 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-12 text-center">
             <div className="mb-5 flex justify-center">
@@ -542,7 +484,6 @@ export default function HowItWorksPage() {
 
       {/* ── Final CTA ── */}
       <CTA
-        variant="gradient"
         title="Ready to Build Your Child's Plan?"
         description="It takes a few minutes and it's completely free. Get a clear roadmap and expert guidance for your child today."
         primaryCTA={{

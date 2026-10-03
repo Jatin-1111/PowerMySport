@@ -29,7 +29,10 @@ export async function AboutPageContent() {
   const [pathways, federations] = await Promise.all([fetchPublishedPathways(), fetchFederations()]);
 
   return (
-    <main className="overflow-x-hidden">
+    // `overflow-x-clip`, not `overflow-x-hidden`: hidden makes <main> a scroll
+    // container that never scrolls, and the `.reveal-on-scroll` view timelines
+    // inside then track it instead of the page, freezing part-way transparent.
+    <main className="overflow-x-clip">
       <PageHeader
         eyebrow="Our story"
         title="The map we wish every parent had"
@@ -49,7 +52,6 @@ export async function AboutPageContent() {
       <CompanyFacts />
 
       <CTA
-        variant="gradient"
         title="Start with the plan"
         description="Tell us about your child and see the roadmap. It takes a few minutes and costs nothing."
         primaryCTA={{

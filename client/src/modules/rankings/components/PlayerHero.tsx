@@ -170,17 +170,12 @@ export function PlayerHero({
   return (
     <header className="border-border bg-card overflow-hidden rounded-xl border shadow-sm">
       <div className="relative isolate px-5 py-6 sm:px-8 sm:py-8">
-        {/* A soft wash rather than a photo — we hold no player imagery, and a
-            stock face on a minor's page would be worse than none. */}
-        <div
-          aria-hidden
-          className="from-power-orange/10 to-turf-green/10 pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br via-transparent"
-        />
-
+        {/* No photo: we hold no player imagery, and a stock face on a minor's
+            page would be worse than none. */}
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div
             aria-hidden
-            className="from-power-orange to-power-orange/70 flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-xl font-bold text-white shadow-sm sm:h-20 sm:w-20 sm:text-2xl"
+            className="bg-power-orange-solid flex h-16 w-16 shrink-0 items-center justify-center rounded-lg text-xl font-bold text-white shadow-sm sm:h-20 sm:w-20 sm:text-2xl"
           >
             {initials(name)}
           </div>

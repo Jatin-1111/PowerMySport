@@ -347,7 +347,6 @@ export default async function PathwaysIndexPage() {
           of its own three inches up, and the thing most likely to bring a parent
           back is other parents. */}
       <CTA
-        variant="gradient"
         title="You are not the first parent doing this"
         description="Thousands of Indian sports parents comparing academies, coaches, costs and competitions. Ask the question you have not found an answer to yet."
         primaryCTA={{ label: "Join Parent Community", href: communityUrl }}

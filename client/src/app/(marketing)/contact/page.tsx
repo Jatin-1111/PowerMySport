@@ -44,96 +44,6 @@ const USER_TYPE_OPTIONS: SelectOption[] = [
 const SPORT_IMG_3 =
   "https://images.unsplash.com/photo-1544216717-3bbf52512659?auto=format&fit=crop&w=600&q=80";
 
-// ─── Decorative Geometry SVG ──────────────────────────────────────────────────
-
-function FloatingDots() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="pointer-events-none absolute right-0 top-0 h-64 w-64 opacity-30"
-      viewBox="0 0 200 200"
-    >
-      {Array.from({ length: 36 }).map((_, i) => {
-        const x = (i % 6) * 34 + 10;
-        const y = Math.floor(i / 6) * 34 + 10;
-        return (
-          <circle key={i} cx={x} cy={y} r="2.5" fill="currentColor" className="text-orange-400" />
-        );
-      })}
-    </svg>
-  );
-}
-
-function WaveDivider() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 1440 60"
-      preserveAspectRatio="none"
-      className="h-12 w-full text-white"
-      fill="currentColor"
-    >
-      <path d="M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z" />
-    </svg>
-  );
-}
-
-function SkewedAccent() {
-  return (
-    <div
-      aria-hidden="true"
-      className="from-orange-500/8 via-amber-400/6 pointer-events-none absolute -left-12 top-1/4 h-80 w-[120%] -rotate-[6deg] rounded-lg bg-gradient-to-r to-transparent"
-    />
-  );
-}
-
-// ─── Clipped Image Frame Component ───────────────────────────────────────────
-
-interface ClippedFrameProps {
-  src: string;
-  alt: string;
-  clipVariant?: "parallelogram" | "hexTilt" | "trapezoid";
-  className?: string;
-  width?: number;
-  height?: number;
-}
-
-function ClippedFrame({
-  src,
-  alt,
-  clipVariant = "parallelogram",
-  className = "",
-  width = 600,
-  height = 500,
-}: ClippedFrameProps) {
-  const clips: Record<string, string> = {
-    parallelogram: "polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%)",
-    hexTilt: "polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%)",
-    trapezoid: "polygon(6% 0%, 100% 0%, 94% 100%, 0% 100%)",
-  };
-
-  return (
-    <div
-      className={`relative overflow-hidden ${className}`}
-      style={{ clipPath: clips[clipVariant] }}
-    >
-      <Image
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        className="h-full w-full object-cover"
-        priority={false}
-        unoptimized
-      />
-      {/* Colour-wash overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-transparent to-slate-900/30" />
-    </div>
-  );
-}
-
-// ─── Geometric Overlay Backdrop ───────────────────────────────────────────────
-
 // ─── Info Card Component ───────────────────────────────────────────────────────
 
 interface InfoCardProps {
@@ -152,7 +62,7 @@ function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
         boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
       }}
     >
-      <div className="text-power-orange flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange-100 to-amber-50">
+      <div className="text-power-orange-solid flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-orange-50">
         <Icon className="h-5 w-5" strokeWidth={2} />
       </div>
       <div>
@@ -491,7 +401,10 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="overflow-x-hidden">
+    // `overflow-x-clip`, not `overflow-x-hidden`: hidden makes <main> a scroll
+    // container that never scrolls, and the `.reveal-on-scroll` view timelines
+    // inside then track it instead of the page, freezing part-way transparent.
+    <main className="overflow-x-clip">
       {/* ── Hero Section ── */}
       <PageHeader
         eyebrow="Get in touch"
@@ -501,27 +414,10 @@ export default function ContactPage() {
       />
       {/* ── Main Contact Section ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-white py-16 sm:py-24 lg:py-32">
-        {/* ── Dot grid pattern ── */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: "radial-gradient(circle, #000 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
-
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px] lg:gap-16 xl:grid-cols-[1fr_460px]">
             {/* ── LEFT COLUMN: Form ─────────────────────────────────────────── */}
             <div className="relative z-10">
-              {/* Floating geometric backdrop behind card */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -inset-4 rounded-xl bg-gradient-to-br from-orange-50/80 via-white/20 to-transparent"
-              />
-              <SkewedAccent />
-
               <div
                 className="relative rounded-xl border border-slate-200 bg-white px-5 py-8 shadow-sm sm:px-10 sm:py-12"
                 style={{
@@ -529,9 +425,6 @@ export default function ContactPage() {
                     "0 4px 40px rgba(0,0,0,0.07), 0 1px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
                 }}
               >
-                {/* Floating dots decorative element */}
-                <FloatingDots />
-
                 {/* Pill label */}
                 <div className="mb-4 inline-block">
                   <SectionLabel label="Send a message" color="orange" />
@@ -704,15 +597,13 @@ export default function ContactPage() {
                 </h2>
               </div>
 
-              {/* Clipped sport image with overlapping badge */}
               <div className="relative h-36 w-full overflow-hidden rounded-xl sm:h-44">
-                <ClippedFrame
+                <Image
                   src={SPORT_IMG_3}
                   alt="Outdoor sports court"
-                  clipVariant="parallelogram"
-                  className="h-full w-full"
-                  width={500}
-                  height={220}
+                  fill
+                  sizes="(min-width: 1024px) 460px, 100vw"
+                  className="object-cover"
                 />
                 {/* The hours, not "Support team online" with a pulsing dot: nothing
                     checked whether anyone was actually online. */}
@@ -790,23 +681,8 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* ── Wave Divider into CTA ─────────────────────────────────────────────── */}
-      <div className="text-slate-900/4 relative z-10 -mb-1">
-        <WaveDivider />
-      </div>
-
       {/* ── CTA Section ──────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden bg-slate-950 py-16 sm:py-24">
-        {/* Diagonal stripe overlay */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(135deg, white 0px, white 1px, transparent 1px, transparent 40px)",
-          }}
-        />
-
         <div className="relative mx-auto max-w-4xl px-6 text-center">
           <div className="reveal-on-scroll">
             <div className="mb-4 inline-flex">

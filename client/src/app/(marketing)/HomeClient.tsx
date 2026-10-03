@@ -314,25 +314,9 @@ export default function HomeClient() {
               </div>
             </div>
 
-            {/* Right: layered image composition */}
+            {/* Right: the photo, with its caption */}
             <div className="reveal-on-scroll relative mx-auto hidden w-full max-w-[612px] lg:block">
-              {/* Offset backdrop panel */}
-              <div
-                aria-hidden
-                className="absolute -inset-x-6 -bottom-6 top-10 rounded-xl bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-slate-100/40"
-              />
-              {/* Dotted accent */}
-              <div
-                aria-hidden
-                className="absolute -right-7 -top-7 h-28 w-28 opacity-50"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(circle, rgba(233,115,22,0.35) 1.5px, transparent 1.5px)",
-                  backgroundSize: "14px 14px",
-                }}
-              />
-
-              <div className="relative aspect-[3/2] overflow-hidden rounded-xl shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
+              <div className="relative aspect-[3/2] overflow-hidden rounded-xl shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/5">
                 <Image
                   src="https://media.istockphoto.com/id/1496936307/photo/young-boy-watching-british-indian-mother-working-at-home.jpg?s=612x612&w=0&k=20&c=KOg86wvMpgJe42K-2i3UKdcuOD7egEWcxHO1n3WHtl8="
                   alt="Parent planning their child's sports journey"
@@ -342,13 +326,7 @@ export default function HomeClient() {
                 />
                 {/* Legibility gradient */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/10 to-transparent" />
-                {/* Inset hairline frame */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-3 rounded-sm ring-1 ring-white/20"
-                />
-
-                {/* Glass caption — single, integrated overlay */}
+                {/* Caption */}
                 <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-md bg-slate-950/75 px-4 py-3.5">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white shadow-lg shadow-orange-950/40">

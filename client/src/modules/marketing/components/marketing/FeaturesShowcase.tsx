@@ -39,9 +39,7 @@ type PaletteEntry = {
   iconBg: string;
   numColor: string;
   stepHex: string;
-  glowColor: string;
   progressBar: string;
-  cardAccentFrom: string;
 };
 
 const PALETTE_MAP: Record<string, PaletteEntry> = {
@@ -51,9 +49,7 @@ const PALETTE_MAP: Record<string, PaletteEntry> = {
     iconBg: "bg-orange-50 text-power-orange ring-1 ring-orange-200",
     numColor: "text-power-orange",
     stepHex: "#FED7AA",
-    glowColor: "rgba(249,115,22,0.12)",
     progressBar: "bg-power-orange",
-    cardAccentFrom: "from-orange-50/60",
   },
   blue: {
     dot: "bg-blue-500",
@@ -61,9 +57,7 @@ const PALETTE_MAP: Record<string, PaletteEntry> = {
     iconBg: "bg-blue-50 text-blue-600 ring-1 ring-blue-200",
     numColor: "text-blue-600",
     stepHex: "#BFDBFE",
-    glowColor: "rgba(59,130,246,0.12)",
     progressBar: "bg-blue-500",
-    cardAccentFrom: "from-blue-50/60",
   },
   teal: {
     dot: "bg-teal-500",
@@ -71,9 +65,7 @@ const PALETTE_MAP: Record<string, PaletteEntry> = {
     iconBg: "bg-teal-50 text-teal-600 ring-1 ring-teal-200",
     numColor: "text-teal-600",
     stepHex: "#99F6E4",
-    glowColor: "rgba(13,148,136,0.12)",
     progressBar: "bg-teal-500",
-    cardAccentFrom: "from-teal-50/60",
   },
   emerald: {
     dot: "bg-emerald-500",
@@ -81,9 +73,7 @@ const PALETTE_MAP: Record<string, PaletteEntry> = {
     iconBg: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
     numColor: "text-emerald-600",
     stepHex: "#A7F3D0",
-    glowColor: "rgba(16,185,129,0.12)",
     progressBar: "bg-emerald-500",
-    cardAccentFrom: "from-emerald-50/60",
   },
   amber: {
     dot: "bg-amber-500",
@@ -91,9 +81,7 @@ const PALETTE_MAP: Record<string, PaletteEntry> = {
     iconBg: "bg-amber-50 text-amber-600 ring-1 ring-amber-200",
     numColor: "text-amber-600",
     stepHex: "#FDE68A",
-    glowColor: "rgba(245,158,11,0.12)",
     progressBar: "bg-amber-500",
-    cardAccentFrom: "from-amber-50/60",
   },
   rose: {
     dot: "bg-rose-500",
@@ -101,9 +89,7 @@ const PALETTE_MAP: Record<string, PaletteEntry> = {
     iconBg: "bg-rose-50 text-rose-600 ring-1 ring-rose-200",
     numColor: "text-rose-600",
     stepHex: "#FECDD3",
-    glowColor: "rgba(244,63,94,0.12)",
     progressBar: "bg-rose-500",
-    cardAccentFrom: "from-rose-50/60",
   },
 };
 
@@ -521,21 +507,12 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
                 "relative flex min-h-[460px] flex-col overflow-hidden rounded-xl border border-slate-100",
-                "bg-gradient-to-br lg:h-full lg:min-h-0",
-                "from-white to-slate-50/40",
+                "bg-white lg:h-full lg:min-h-0",
                 "shadow-[0_4px_32px_-4px_rgba(0,0,0,0.09)]"
               )}
             >
               {/* Top accent bar */}
               <div className={cn("h-1 w-full shrink-0", pal.dot)} />
-
-              {/* Radial glow top-right */}
-              <div
-                className="pointer-events-none absolute right-0 top-0 h-80 w-80 rounded-full"
-                style={{
-                  background: `radial-gradient(circle at 100% 0%, ${pal.glowColor}, transparent 65%)`,
-                }}
-              />
 
               {/* Big decorative step number */}
               <div

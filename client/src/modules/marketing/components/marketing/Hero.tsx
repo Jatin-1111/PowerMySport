@@ -42,8 +42,6 @@ const itemVariants: Variants = {
 
 const headlineVariants: Variants = itemVariants;
 
-const NOISE_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")`;
-
 function HomeHero({
   title,
   titleHighlight,
@@ -96,13 +94,6 @@ function HomeHero({
       <div className="from-slate-950/98 absolute inset-0 bg-gradient-to-r via-slate-950/80 to-slate-950/50 sm:from-slate-950/95 sm:via-slate-950/55 sm:to-slate-950/15" />
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-slate-950/55 sm:from-slate-950/85 sm:via-slate-950/10 sm:to-slate-950/40" />
       <div className="absolute inset-0 bg-[radial-gradient(110%_110%_at_50%_20%,transparent_45%,rgba(2,6,23,0.6)_100%)]" />
-
-      {/* ── Film-grain texture ── */}
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
-        style={{ backgroundImage: NOISE_TEXTURE }}
-      />
 
       <div className="relative mx-auto w-full max-w-7xl px-5 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
         <motion.div

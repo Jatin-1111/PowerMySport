@@ -293,7 +293,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
             className="max-h-150 absolute right-0 z-50 mt-2 w-96 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-200 bg-[linear-gradient(120deg,#f9fbff_0%,#eef5ff_100%)] px-4 py-3">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
               <h3 className="text-lg font-semibold text-slate-900">Notifications</h3>
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
@@ -415,7 +415,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
 
             {/* Footer */}
             {notifications.length > 0 && (
-              <div className="border-t border-slate-200 bg-[linear-gradient(120deg,#f8fbff_0%,#eef5ff_100%)] px-4 py-3">
+              <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
                 <Link
                   href="/notifications"
                   onClick={() => setIsOpen(false)}

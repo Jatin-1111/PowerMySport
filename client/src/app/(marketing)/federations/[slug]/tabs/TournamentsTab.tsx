@@ -125,7 +125,7 @@ export function TournamentsTab({
                 key={i}
                 className="relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
               >
-                <div className="from-power-orange h-[3px] w-full bg-gradient-to-r to-amber-400" />
+                <div className="bg-power-orange h-[3px] w-full" />
                 <div className="flex flex-col p-4" style={{ minHeight: "130px" }}>
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <span

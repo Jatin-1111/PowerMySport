@@ -50,10 +50,6 @@ const STAT_CARDS = [
 export function PathwayStatsBanner() {
   return (
     <section className="relative py-10 sm:py-16">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-64 w-full -translate-x-1/2 bg-gradient-to-b from-orange-50/40 to-transparent" />
-      </div>
-
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           variants={orchestrator}
