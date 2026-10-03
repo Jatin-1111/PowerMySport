@@ -1,5 +1,6 @@
 "use client";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { AskSection } from "@/modules/marketing/components/marketing/AskSection";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { FeaturesShowcase } from "@/modules/marketing/components/marketing/FeaturesShowcase";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
@@ -256,6 +257,9 @@ export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary |
           { key: "known", label: "Already know the sport?", features: knownSportFeatures },
         ]}
       />
+
+      {/* ── Ask the assistant ── */}
+      <AskSection />
 
       {/* ── Available Now: Explore (Roadmap + Guidance) ── */}
       <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
