@@ -1,9 +1,8 @@
 "use client";
 
 import { cn } from "@/utils/cn";
-import { AnimatePresence, motion } from "framer-motion";
-import { CalendarCheck, ChevronRight } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { CalendarCheck } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import { SectionLabel } from "./SectionLabel";
 
 export interface ShowcaseFeature {
@@ -12,6 +11,8 @@ export interface ShowcaseFeature {
   icon?: React.ReactNode;
   label?: string;
   stat?: string;
+  /** Which illustration to show: "roadmap", "steps", "chat" or "trial". */
+  visual?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [k: string]: any;
 }
@@ -28,102 +29,51 @@ interface FeaturesShowcaseProps {
   description?: string;
   /** Single-track mode — renders the walkthrough directly with no track toggle. */
   features?: ShowcaseFeature[];
-  /** Multi-track mode — renders a pill toggle above the walkthrough to switch feature sets. */
+  /** Multi-track mode — renders a toggle above the walkthrough to switch feature sets. */
   tracks?: FeatureTrack[];
 }
 
-// ─── Per-feature color palette (keyed so the same feature always gets the same color) ──
-type PaletteEntry = {
-  dot: string;
-  chip: string;
-  iconBg: string;
-  numColor: string;
-  stepHex: string;
-  progressBar: string;
-};
+/**
+ * The homepage walkthrough, driven by the reader's own scroll.
+ *
+ * It used to be a carousel that advanced itself every five seconds and paused
+ * only under a mouse, so on a phone nobody could stop it. Now the steps are
+ * ordinary content in the page's own scroll. On a wide screen the illustration
+ * column pins with CSS `sticky` and shows whichever step is at the middle of
+ * the viewport; the others dim so the reader can see where they are. On a
+ * phone each step simply carries its illustration inline.
+ *
+ * Deliberately not Aceternity's StickyScroll, which scrolls inside a fixed-height
+ * box of its own: a second scrollbar inside the page is a trap on a phone.
+ */
 
-const PALETTE_MAP: Record<string, PaletteEntry> = {
-  orange: {
-    dot: "bg-power-orange",
-    chip: "bg-orange-100 text-orange-700 ring-orange-200",
-    iconBg: "bg-orange-50 text-power-orange ring-1 ring-orange-200",
-    numColor: "text-power-orange",
-    stepHex: "#FED7AA",
-    progressBar: "bg-power-orange",
-  },
-  blue: {
-    dot: "bg-blue-500",
-    chip: "bg-blue-100 text-blue-700 ring-blue-200",
-    iconBg: "bg-blue-50 text-blue-600 ring-1 ring-blue-200",
-    numColor: "text-blue-600",
-    stepHex: "#BFDBFE",
-    progressBar: "bg-blue-500",
-  },
-  teal: {
-    dot: "bg-teal-500",
-    chip: "bg-teal-100 text-teal-700 ring-teal-200",
-    iconBg: "bg-teal-50 text-teal-600 ring-1 ring-teal-200",
-    numColor: "text-teal-600",
-    stepHex: "#99F6E4",
-    progressBar: "bg-teal-500",
-  },
-  emerald: {
-    dot: "bg-emerald-500",
-    chip: "bg-emerald-100 text-emerald-700 ring-emerald-200",
-    iconBg: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200",
-    numColor: "text-emerald-600",
-    stepHex: "#A7F3D0",
-    progressBar: "bg-emerald-500",
-  },
-  amber: {
-    dot: "bg-amber-500",
-    chip: "bg-amber-100 text-amber-700 ring-amber-200",
-    iconBg: "bg-amber-50 text-amber-600 ring-1 ring-amber-200",
-    numColor: "text-amber-600",
-    stepHex: "#FDE68A",
-    progressBar: "bg-amber-500",
-  },
-  rose: {
-    dot: "bg-rose-500",
-    chip: "bg-rose-100 text-rose-700 ring-rose-200",
-    iconBg: "bg-rose-50 text-rose-600 ring-1 ring-rose-200",
-    numColor: "text-rose-600",
-    stepHex: "#FECDD3",
-    progressBar: "bg-rose-500",
-  },
-};
+const pad = (n: number) => String(n).padStart(2, "0");
 
-const PALETTE_FALLBACK = Object.values(PALETTE_MAP);
+// ─── Illustrations ────────────────────────────────────────────────────────────
+// Small product sketches in plain JSX. One brand accent throughout; they used to
+// cycle orange, blue, teal and emerald per step.
 
-function getPalette(feature: ShowcaseFeature, index: number): PaletteEntry {
-  if (feature.theme && PALETTE_MAP[feature.theme]) return PALETTE_MAP[feature.theme];
-  return PALETTE_FALLBACK[index % PALETTE_FALLBACK.length];
-}
+const ACCENT = "bg-power-orange-solid";
 
-const STEPS = ["01", "02", "03", "04", "05", "06", "07", "08"];
-
-// ─── Mini abstract visuals per feature ────────────────────────────────────────
-// Pure CSS / JSX visuals — no images needed.
-
-function MiniRoadmap({ color = "bg-power-orange" }: { color?: string }) {
+function RoadmapSketch() {
   const nodes = ["Age 7", "Age 9", "Age 11", "Compete"];
   return (
     <div className="flex items-center gap-2">
-      {nodes.map((n, i) => (
-        <React.Fragment key={i}>
-          <div className="flex flex-col items-center gap-1">
+      {nodes.map((node, i) => (
+        <React.Fragment key={node}>
+          <div className="flex flex-col items-center gap-1.5">
             <div
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold",
-                i === 0 ? color + " text-white" : "bg-slate-100 text-slate-400"
+                "flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold",
+                i === 0 ? cn(ACCENT, "text-white") : "bg-slate-100 text-slate-500"
               )}
             >
               {i + 1}
             </div>
-            <span className="text-[9px] text-slate-400">{n}</span>
+            <span className="text-xs text-slate-500">{node}</span>
           </div>
           {i < nodes.length - 1 && (
-            <div className="mb-4 h-px flex-1 border-t border-dashed border-slate-200" />
+            <div className="mb-6 h-px flex-1 border-t border-dashed border-slate-300" />
           )}
         </React.Fragment>
       ))}
@@ -131,117 +81,70 @@ function MiniRoadmap({ color = "bg-power-orange" }: { color?: string }) {
   );
 }
 
-function MiniSteps({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
+function StepsSketch() {
   const steps = ["First session", "Build basics", "Join a team", "First tournament"];
   return (
-    <div className="flex flex-col gap-2">
-      {steps.map((s, i) => (
-        <div key={i} className="flex items-center gap-2.5">
-          <div
+    <ol className="flex flex-col gap-3">
+      {steps.map((step, i) => (
+        <li key={step} className="flex items-center gap-3">
+          <span
             className={cn(
-              "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white",
-              i === 0 ? dotColor : "bg-slate-200"
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+              i === 0 ? cn(ACCENT, "text-white") : "bg-slate-200 text-slate-500"
             )}
           >
             {i + 1}
-          </div>
-          <div
-            className={cn(
-              "h-1.5 flex-1 rounded-full",
-              i === 0 ? dotColor + " opacity-70" : "bg-slate-100"
-            )}
-          />
-          <span
-            className={cn(
-              "text-[10px]",
-              i === 0 ? "font-semibold text-slate-600" : "text-slate-400"
-            )}
-          >
-            {s}
           </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function MiniChat({ chipCls = "bg-orange-100 text-orange-700" }: { chipCls?: string }) {
-  const bubbles = [
-    { q: "Is tennis right for my 8-year-old?", isUser: true },
-    { q: "Yes. Here's a personalised 3-month plan", isUser: false },
-  ];
-  return (
-    <div className="flex flex-col gap-2">
-      {bubbles.map((b, i) => (
-        <div key={i} className={cn("flex", b.isUser ? "justify-end" : "justify-start")}>
-          <div
-            className={cn(
-              "max-w-[80%] rounded-lg px-3 py-2 text-[10px] leading-tight",
-              b.isUser ? "bg-slate-100 text-slate-600" : cn(chipCls, "font-medium")
-            )}
-          >
-            {b.q}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function MiniMilestones({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
-  const items = ["District Level", "State Level", "National Circuit", "Pro Track"];
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {items.map((label, i) => (
-        <div
-          key={i}
-          className={cn(
-            "flex items-center gap-1.5 rounded-lg border px-2.5 py-2",
-            i === 0 ? "border-transparent bg-slate-100" : "border-slate-100 bg-white"
-          )}
-        >
-          <div
-            className={cn("h-2 w-2 shrink-0 rounded-full", i === 0 ? dotColor : "bg-slate-300")}
-          />
+          <span className={cn("h-1.5 flex-1 rounded-full", i === 0 ? ACCENT : "bg-slate-100")} />
           <span
-            className={cn("text-[10px] font-medium", i === 0 ? "text-slate-700" : "text-slate-400")}
+            className={cn("text-xs", i === 0 ? "font-semibold text-slate-700" : "text-slate-500")}
           >
-            {label}
+            {step}
           </span>
-        </div>
+        </li>
       ))}
+    </ol>
+  );
+}
+
+function ChatSketch() {
+  return (
+    <div className="flex flex-col gap-2.5">
+      <p className="ml-auto max-w-[80%] rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-700">
+        Is tennis right for my 8-year-old?
+      </p>
+      <p className="max-w-[80%] rounded-lg bg-orange-50 px-3 py-2 text-xs font-medium text-orange-900">
+        Yes. Here&apos;s a personalised 3-month plan.
+      </p>
     </div>
   );
 }
 
-function MiniTrialClass({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
+function TrialSketch() {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white p-3">
-        <div
+      <div className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+        <span
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white",
-            dotColor
+            ACCENT
           )}
         >
           <CalendarCheck className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold text-slate-700">Trial Session Booked</p>
-          <p className="text-[9px] text-slate-400">Saturday, 10:00 AM · Sunrise Academy</p>
-        </div>
-        <span className="rounded-sm bg-emerald-100 px-2 py-0.5 text-[9px] font-semibold text-emerald-700">
-          Confirmed
         </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-800">Trial session booked</p>
+          <p className="text-xs text-slate-500">Saturday, 10:00 AM</p>
+        </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        {["Sport Matched", "Screening Done", "Trial Booked"].map((label, i) => (
+        {["Sport matched", "Screening done", "Trial booked"].map((label) => (
           <div
-            key={i}
-            className="flex flex-col items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-2 py-2"
+            key={label}
+            className="flex flex-col items-center gap-1.5 rounded-md border border-slate-200 px-2 py-2.5"
           >
-            <div className={cn("h-2 w-2 rounded-full", i <= 2 ? dotColor : "bg-slate-200")} />
-            <span className="text-center text-[8px] font-medium text-slate-500">{label}</span>
+            <span className={cn("h-2 w-2 rounded-full", ACCENT)} />
+            <span className="text-center text-[11px] font-medium text-slate-600">{label}</span>
           </div>
         ))}
       </div>
@@ -249,78 +152,37 @@ function MiniTrialClass({ dotColor = "bg-power-orange" }: { dotColor?: string })
   );
 }
 
-function MiniDashboard({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
-  const stats = [
-    { label: "Roadmap", val: "Active" },
-    { label: "Guidance", val: "3 Q&A" },
-    { label: "Next Step", val: "Today" },
-    { label: "Progress", val: "68%" },
-  ];
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {stats.map((s, i) => (
-        <div key={i} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-          <p className="text-[9px] font-medium uppercase tracking-wide text-slate-400">{s.label}</p>
-          <p
-            className={cn(
-              "text-sm font-bold",
-              i === 0 ? dotColor.replace("bg-", "text-") : "text-slate-700"
-            )}
-          >
-            {s.val}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function MiniBudget() {
-  const bars = [40, 65, 30, 80, 50];
-  return (
-    <div className="flex items-end gap-2 pt-2">
-      {bars.map((h, i) => (
-        <div key={i} className="flex flex-1 flex-col items-center gap-1">
-          <div
-            className={cn(
-              "w-full rounded-t-sm transition-all",
-              i === 3 ? "bg-power-orange" : "bg-slate-200"
-            )}
-            style={{ height: `${h * 0.6}px` }}
-          />
-          <span className="text-[8px] text-slate-400">
-            {["Jan", "Feb", "Mar", "Apr", "May"][i]}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-const VISUALS_MAP: Record<
-  string,
-  React.FC<{ color?: string; dotColor?: string; chipCls?: string }>
-> = {
-  roadmap: MiniRoadmap,
-  steps: MiniSteps,
-  chat: MiniChat,
-  trial: MiniTrialClass,
-  milestones: MiniMilestones,
-  dashboard: MiniDashboard,
-  budget: MiniBudget,
+const SKETCHES: Record<string, React.FC> = {
+  roadmap: RoadmapSketch,
+  steps: StepsSketch,
+  chat: ChatSketch,
+  trial: TrialSketch,
 };
 
-const VISUALS_FALLBACK = [
-  MiniRoadmap,
-  MiniSteps,
-  MiniChat,
-  MiniTrialClass,
-  MiniMilestones,
-  MiniDashboard,
-  MiniBudget,
-];
+function Sketch({
+  feature,
+  step,
+  total,
+}: {
+  feature: ShowcaseFeature;
+  step: number;
+  total: number;
+}) {
+  const Drawing = (feature.visual && SKETCHES[feature.visual]) || RoadmapSketch;
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-6 flex items-center justify-between gap-4 text-xs font-semibold">
+        <span className="text-slate-700">{feature.title}</span>
+        <span className="tabular-nums text-slate-400">
+          {pad(step + 1)} / {pad(total)}
+        </span>
+      </div>
+      <Drawing />
+    </div>
+  );
+}
 
-// ─── Main component ────────────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
   title,
@@ -331,36 +193,37 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
 }) => {
   const [trackIdx, setTrackIdx] = useState(0);
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const stepRefs = useRef<Array<HTMLLIElement | null>>([]);
 
   const features = tracks ? tracks[trackIdx].features : (singleFeatures ?? []);
 
-  // Reset to the first step whenever the track changes
+  // The step crossing the middle of the viewport is the active one. A zero-
+  // height band at 50% means exactly one step can be "in" it at a time.
   useEffect(() => {
+    const steps = stepRefs.current.filter((el): el is HTMLLIElement => el !== null);
+    if (steps.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActive(Number((entry.target as HTMLElement).dataset.step));
+        }
+      },
+      { rootMargin: "-50% 0px -50% 0px" }
+    );
+    steps.forEach((step) => observer.observe(step));
+    return () => observer.disconnect();
+  }, [trackIdx, features.length]);
+
+  const chooseTrack = (index: number) => {
+    setTrackIdx(index);
     setActive(0);
-  }, [trackIdx]);
-
-  // Auto-advance every 5 s, paused on hover
-  useEffect(() => {
-    if (paused) return;
-    const id = setInterval(() => {
-      setActive((prev) => (prev + 1) % features.length);
-    }, 5000);
-    return () => clearInterval(id);
-  }, [paused, features.length]);
-
-  const feature = features[active];
-  const pal = getPalette(feature, active);
-  const Visual =
-    (feature.visual && VISUALS_MAP[feature.visual]) ||
-    VISUALS_FALLBACK[active % VISUALS_FALLBACK.length];
+  };
 
   return (
-    <section className="relative py-16 sm:py-20 lg:py-24">
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* ── Section header ── */}
+    <section className="py-16 sm:py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {(title || subtitle || description) && (
-          <div className="reveal-on-scroll mb-12 sm:mb-16">
+          <div className="reveal-on-scroll mb-10 sm:mb-12">
             {subtitle && (
               <div className="mb-4">
                 <SectionLabel label={subtitle} color="orange" />
@@ -379,252 +242,90 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
           </div>
         )}
 
-        {/* ── Track toggle (multi-track mode only) ── */}
         {tracks && tracks.length > 1 && (
-          <div className="mb-8 flex flex-wrap gap-2">
-            {tracks.map((t, i) => (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Where you are starting">
+            {tracks.map((track, i) => (
               <button
-                key={t.key}
+                key={track.key}
                 type="button"
-                onClick={() => {
-                  setTrackIdx(i);
-                  setPaused(true);
-                }}
+                aria-pressed={i === trackIdx}
+                onClick={() => chooseTrack(i)}
                 className={cn(
-                  "rounded-md border px-4 py-2 text-sm font-semibold transition-colors",
+                  "btn-motion rounded-md border px-4 py-2 text-sm font-semibold",
                   i === trackIdx
-                    ? "border-power-orange text-power-orange bg-orange-50"
-                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+                    ? "border-power-orange-solid text-power-orange-solid bg-orange-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                 )}
               >
-                {t.label}
+                {track.label}
               </button>
             ))}
           </div>
         )}
 
-        {/* ── Two-panel layout ── */}
-        <div
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          className="reveal-on-scroll grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr] lg:gap-6 xl:grid-cols-[400px_1fr]"
-        >
-          {/* ── Left: Parent worry list ── */}
-          <div className="flex flex-col gap-2">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-              Parents ask us…
-            </p>
-
-            {features.map((f, i) => {
-              const p = getPalette(f, i);
-              const isActive = i === active;
-              return (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setActive(i);
-                    setPaused(true);
-                  }}
-                  className={cn(
-                    "group relative flex w-full items-center gap-3 overflow-hidden rounded-xl border p-3.5 text-left transition-all duration-200",
-                    isActive
-                      ? "border-slate-200 bg-white shadow-[0_2px_16px_-2px_rgba(0,0,0,0.08)]"
-                      : "border-transparent bg-white/50 hover:border-slate-100 hover:bg-white hover:shadow-sm"
-                  )}
-                >
-                  {/* Colored active bar (left edge) */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeBar"
-                      className={cn("absolute inset-y-3 left-0 w-[3px] rounded-r-full", p.dot)}
-                      transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                    />
-                  )}
-
-                  {/* Step number */}
-                  <span
-                    className={cn(
-                      "shrink-0 text-sm font-bold tabular-nums transition-colors duration-200",
-                      isActive ? p.numColor : "text-slate-300 group-hover:text-slate-400"
-                    )}
-                  >
-                    {STEPS[i]}
-                  </span>
-
-                  {/* Icon */}
-                  {f.icon && (
-                    <span
-                      className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-all duration-200",
-                        isActive ? p.iconBg : "bg-slate-100 text-slate-400"
-                      )}
-                    >
-                      {f.icon}
-                    </span>
-                  )}
-
-                  {/* Text */}
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        "text-[11px] font-medium leading-snug transition-colors duration-200",
-                        isActive ? p.numColor : "text-slate-400 group-hover:text-slate-500"
-                      )}
-                    >
-                      &ldquo;{f.label}&rdquo;
-                    </p>
-                    <p
-                      className={cn(
-                        "mt-0.5 text-sm font-semibold leading-snug transition-colors duration-200",
-                        isActive ? "text-slate-900" : "text-slate-500 group-hover:text-slate-700"
-                      )}
-                    >
-                      {f.title}
-                    </p>
-                  </div>
-
-                  {/* Chevron */}
-                  <ChevronRight
-                    className={cn(
-                      "h-4 w-4 shrink-0 transition-all duration-200",
-                      isActive
-                        ? cn(p.numColor, "opacity-100")
-                        : "text-slate-300 opacity-0 group-hover:opacity-100"
-                    )}
-                  />
-                </button>
-              );
-            })}
-          </div>
-
-          {/* ── Right: Solution showcase ── */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${trackIdx}-${active}`}
-              initial={{ opacity: 0, y: 14, scale: 0.99 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.99 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className={cn(
-                "relative flex min-h-[460px] flex-col overflow-hidden rounded-xl border border-slate-100",
-                "bg-white lg:h-full lg:min-h-0",
-                "shadow-[0_4px_32px_-4px_rgba(0,0,0,0.09)]"
-              )}
-            >
-              {/* Top accent bar */}
-              <div className={cn("h-1 w-full shrink-0", pal.dot)} />
-
-              {/* Big decorative step number */}
-              <div
-                className="pointer-events-none absolute right-3 top-0 select-none text-[9rem] font-black leading-none"
-                style={{ color: pal.stepHex, opacity: 0.55 }}
+        <div className="mt-6 lg:mt-0 lg:grid lg:grid-cols-2 lg:gap-16">
+          {/* Room under the last step on a wide screen, so the pinned illustration
+              is still pinned when that step reaches the middle of the viewport. */}
+          <ol key={trackIdx} className="lg:pb-[20vh]">
+            {features.map((feature, i) => (
+              <li
+                key={feature.title}
+                ref={(el) => {
+                  stepRefs.current[i] = el;
+                }}
+                data-step={i}
+                className="border-t border-slate-200 py-8 first:border-t-0 lg:flex lg:min-h-[60vh] lg:items-center lg:border-t-0 lg:py-0"
               >
-                {STEPS[active]}
-              </div>
-
-              <div className="relative z-10 flex h-full flex-col p-7 sm:p-9">
-                {/* Top: worry chip + stat badge */}
-                <div className="mb-8 flex flex-wrap items-start gap-3">
-                  {feature.label && (
-                    <motion.span
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.06 }}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold ring-1",
-                        pal.chip
-                      )}
-                    >
-                      <span className={cn("h-1.5 w-1.5 rounded-full", pal.dot)} />
-                      {feature.label}
-                    </motion.span>
+                <div
+                  className={cn(
+                    "transition-opacity duration-300 motion-reduce:transition-none",
+                    i === active ? "lg:opacity-100" : "lg:opacity-40"
                   )}
-
+                >
+                  <p className="text-power-orange-solid text-sm font-semibold">
+                    <span className="tabular-nums">{pad(i + 1)}</span>
+                    {feature.label && (
+                      <span className="text-slate-500"> · &ldquo;{feature.label}&rdquo;</span>
+                    )}
+                  </p>
+                  <h3 className="font-title mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-3 max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg">
+                    {feature.description}
+                  </p>
                   {feature.stat && (
-                    <motion.span
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                      className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      {feature.stat}
-                    </motion.span>
+                    <p className="mt-4 text-sm font-medium text-slate-500">{feature.stat}</p>
                   )}
+                  {/* On a phone the illustration sits with its step. */}
+                  <div className="mt-6 lg:hidden" aria-hidden>
+                    <Sketch feature={feature} step={i} total={features.length} />
+                  </div>
                 </div>
+              </li>
+            ))}
+          </ol>
 
-                {/* Icon */}
-                {feature.icon && (
-                  <motion.div
-                    initial={{ scale: 0.75, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.07, type: "spring", stiffness: 320, damping: 20 }}
+          {/* On a wide screen one pinned illustration follows the reader. The
+              steps carry the meaning, so the sketches are hidden from screen
+              readers rather than announced twice. */}
+          <div className="hidden lg:block" aria-hidden>
+            <div className="sticky top-16 flex h-[calc(100vh-4rem)] items-center">
+              <div className="grid w-full">
+                {features.map((feature, i) => (
+                  <div
+                    key={feature.title}
                     className={cn(
-                      "mb-6 flex h-14 w-14 items-center justify-center rounded-lg [&_svg]:h-6 [&_svg]:w-6",
-                      pal.iconBg
+                      "transition duration-300 [grid-area:1/1] motion-reduce:transition-none",
+                      i === active ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
                     )}
                   >
-                    {feature.icon}
-                  </motion.div>
-                )}
-
-                {/* Title */}
-                <motion.h3
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="mb-4 text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl"
-                >
-                  {feature.title}
-                </motion.h3>
-
-                {/* Description */}
-                <motion.p
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.14 }}
-                  className="max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg"
-                >
-                  {feature.description}
-                </motion.p>
-
-                {/* Mini visual */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="mt-8 rounded-lg border border-slate-100 bg-white p-4 shadow-sm"
-                >
-                  <Visual color={pal.dot} dotColor={pal.dot} chipCls={pal.chip} />
-                </motion.div>
-
-                {/* Bottom: progress dots + counter */}
-                <div className="mt-auto flex items-center justify-between pt-6">
-                  <div className="flex items-center gap-1.5">
-                    {features.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          setActive(i);
-                          setPaused(true);
-                        }}
-                        aria-label={`Go to feature ${i + 1}`}
-                        className={cn(
-                          "h-1.5 rounded-full transition-all duration-300",
-                          i === active
-                            ? cn("w-6", pal.progressBar)
-                            : "w-1.5 bg-slate-200 hover:bg-slate-300"
-                        )}
-                      />
-                    ))}
+                    <Sketch feature={feature} step={i} total={features.length} />
                   </div>
-                  <span className="text-xs font-medium tabular-nums text-slate-300">
-                    {STEPS[active]}&nbsp;/&nbsp;{String(features.length).padStart(2, "0")}
-                  </span>
-                </div>
+                ))}
               </div>
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          </div>
         </div>
       </div>
     </section>
