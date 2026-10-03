@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Trophy } from "lucide-react";
 import { EditionCard } from "@/modules/tournaments/components/EditionCard";
+import { FlipBoard } from "@/modules/tournaments/components/FlipBoard";
 import { FEATURED_TOURNAMENT_SPORT } from "@/modules/tournaments/config/featured";
 import {
   fetchSportEditions,
@@ -21,6 +22,8 @@ import { SPORT_LABEL } from "../federations/[slug]/federationShared";
  */
 
 const FEATURED_COUNT = 6;
+/** Rows on the departures board in the header: enough to read as a board, few enough to scan. */
+const BOARD_ROWS = 5;
 
 export const metadata: Metadata = {
   title: "Sports Tournaments in India: Upcoming Dates by Sport",
@@ -71,7 +74,12 @@ export default async function TournamentsPage() {
           breadcrumbs={[{ label: "Tournaments" }]}
           title="Tournaments"
           description="Upcoming tournaments across India, read from each federation's own calendar. Narrow them to your child's age group, the type of event and the month."
-        />
+        >
+          <FlipBoard
+            editions={featuredEditions.slice(0, BOARD_ROWS)}
+            title={`Next up in ${featuredLabel.toLowerCase()}`}
+          />
+        </PageHeader>
 
         <div className="mx-auto max-w-6xl space-y-12 px-4 py-8 sm:px-6 lg:px-8">
           <section aria-labelledby="featured-heading">
