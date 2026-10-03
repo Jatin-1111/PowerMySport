@@ -4,6 +4,7 @@ import {
   listAssistantChatSessions,
   createAssistantChatSession,
   getAssistantChatSession,
+  deleteAssistantChatSession,
   sendAssistantChatSessionMessage,
 } from "../controllers/assistantChatController";
 import { authMiddleware } from "../../middleware/auth";
@@ -29,6 +30,7 @@ const chatBurstLimiter = rateLimit({
 assistantChatRouter.get("/sessions", authMiddleware, listAssistantChatSessions);
 assistantChatRouter.post("/sessions", authMiddleware, createAssistantChatSession);
 assistantChatRouter.get("/sessions/:sessionId", authMiddleware, getAssistantChatSession);
+assistantChatRouter.delete("/sessions/:sessionId", authMiddleware, deleteAssistantChatSession);
 assistantChatRouter.post(
   "/sessions/:sessionId",
   authMiddleware,

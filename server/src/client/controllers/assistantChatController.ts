@@ -24,7 +24,10 @@ function deriveTitle(firstUserMessage: string): string {
 }
 
 // ─── GET /api/assistant-chat/sessions ────────────────────────────────────────
-// List all assistant chat sessions for the authenticated user, newest first.
+// List the authenticated user's assistant chats, newest first. A chat nobody
+// has written in is left out: every visit to the assistant opens a fresh
+// session (so it starts clean), and the unused ones would otherwise fill the
+// history with "New conversation" rows.
 
 export const listAssistantChatSessions = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -32,7 +35,10 @@ export const listAssistantChatSessions = asyncHandler(
       throw new AppError("Authentication required", 401);
     }
 
-    const sessions = await AssistantChatSession.find({ userId: req.user.id })
+    const sessions = await AssistantChatSession.find({
+      userId: req.user.id,
+      totalMessageCount: { $gt: 0 },
+    })
       .select("_id title totalMessageCount createdAt updatedAt")
       .sort({ updatedAt: -1 })
       .limit(50)
@@ -110,6 +116,37 @@ export const getAssistantChatSession = asyncHandler(
         lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - session.totalMessageCount),
       },
     });
+  }
+);
+
+// ─── DELETE /api/assistant-chat/sessions/:sessionId ──────────────────────────
+// Permanently removes one of the caller's chats. The owner is part of the
+// match, so someone else's session id is indistinguishable from a missing one
+// (404). Deleting does not hand back any allowance: the daily cap is a
+// per-user counter that does not depend on stored chats, and the per-chat cap
+// goes with the chat.
+
+export const deleteAssistantChatSession = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw new AppError("Authentication required", 401);
+    }
+
+    const { sessionId } = req.params;
+    if (!mongoose.isValidObjectId(sessionId)) {
+      throw new AppError("Invalid session ID", 400);
+    }
+
+    const result = await AssistantChatSession.deleteOne({
+      _id: sessionId as string,
+      userId: req.user.id,
+    });
+
+    if (result.deletedCount === 0) {
+      throw new AppError("Session not found", 404);
+    }
+
+    res.status(200).json({ success: true });
   }
 );
 
