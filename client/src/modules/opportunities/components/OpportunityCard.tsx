@@ -25,7 +25,7 @@ export function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
   return (
     <Link
       href={`${track.path}/${opportunity.slug}`}
-      className="hover:border-power-orange/40 group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+      className="hover:border-power-orange/40 group flex h-full flex-col rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
     >
       <div className="mb-3 flex flex-wrap gap-1.5">
         {selection && (

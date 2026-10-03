@@ -54,7 +54,7 @@ export function CookieConsentBanner() {
           aria-modal="false"
           aria-label="Cookie notice"
         >
-          <div className="premium-shadow relative w-full max-w-sm overflow-hidden rounded-2xl border border-white/70 bg-white/90 p-5 backdrop-blur-xl">
+          <div className="premium-shadow relative w-full max-w-sm overflow-hidden rounded-lg border border-white/70 bg-white/90 p-5 backdrop-blur-xl">
             {/* Soft brand glow */}
             <div
               aria-hidden
@@ -64,14 +64,14 @@ export function CookieConsentBanner() {
             <div className="relative">
               {/* Header: icon + title + close */}
               <div className="mb-3 flex items-center gap-3">
-                <span className="text-power-orange flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100">
+                <span className="text-power-orange flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-orange-100">
                   <Cookie className="h-5 w-5" />
                 </span>
                 <p className="flex-1 font-bold text-slate-900">We use cookies</p>
                 <button
                   onClick={dismiss}
                   aria-label="Dismiss cookie notice"
-                  className="focus:ring-power-orange/40 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2"
+                  className="focus:ring-power-orange/40 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-2"
                 >
                   <X className="h-[18px] w-[18px]" strokeWidth={2.25} />
                 </button>
@@ -93,13 +93,13 @@ export function CookieConsentBanner() {
               <div className="flex gap-2">
                 <button
                   onClick={dismiss}
-                  className="bg-power-orange-solid focus:ring-power-orange flex-1 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.55)] transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  className="bg-power-orange-solid focus:ring-power-orange flex-1 rounded-md px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_-8px_rgba(233,115,22,0.55)] transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
                 >
                   Got it
                 </button>
                 <Link
                   href="/cookies"
-                  className="flex-1 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-center text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                  className="flex-1 rounded-md border border-slate-200 bg-white px-6 py-2.5 text-center text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
                 >
                   Read cookie policy
                 </Link>

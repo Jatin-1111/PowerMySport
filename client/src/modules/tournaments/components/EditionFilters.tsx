@@ -93,7 +93,7 @@ export function EditionFilters({
   return (
     <section
       aria-label="Filter tournaments"
-      className="mb-6 space-y-3 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
+      className="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4 sm:p-5"
     >
       {rows.map((row) => (
         <FilterRow

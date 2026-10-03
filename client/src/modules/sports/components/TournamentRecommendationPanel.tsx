@@ -197,7 +197,7 @@ export function TournamentRecommendationPanel({
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white shadow-sm"
+      className="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white shadow-sm"
     >
       {/* Panel header */}
       <button
@@ -205,7 +205,7 @@ export function TournamentRecommendationPanel({
         onClick={() => setIsExpanded((o) => !o)}
         className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-50/80"
       >
-        <div className="from-power-orange flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br to-amber-400 text-white shadow">
+        <div className="from-power-orange flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gradient-to-br to-amber-400 text-white shadow">
           <Sparkles className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
@@ -262,7 +262,7 @@ export function TournamentRecommendationPanel({
                         key={goal.level}
                         type="button"
                         onClick={() => setGoalLevel(active ? 0 : goal.level)}
-                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
+                        className={`flex items-center gap-1.5 rounded-sm border px-3 py-1.5 text-xs font-semibold transition-all ${
                           active
                             ? `bg-gradient-to-r ${goal.color} border-transparent text-white shadow-md`
                             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -278,7 +278,7 @@ export function TournamentRecommendationPanel({
 
               {/* Recommended tournaments */}
               {recommended.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center">
+                <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center">
                   <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-300" />
                   <p className="text-sm text-slate-500">
                     {goalLevel
@@ -314,12 +314,12 @@ export function TournamentRecommendationPanel({
                             transition={{ delay: i * 0.04 }}
                             type="button"
                             onClick={() => onViewTournament(t)}
-                            className="hover:border-power-orange group flex w-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left transition-all hover:shadow-sm"
+                            className="hover:border-power-orange group flex w-full items-start gap-3 rounded-lg border border-slate-200 bg-white p-3.5 text-left transition-all hover:shadow-sm"
                           >
                             {/* Priority badge */}
                             <div className="flex shrink-0 flex-col items-center gap-1 pt-0.5">
                               <span
-                                className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold ${meta.style}`}
+                                className={`flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[9px] font-bold ${meta.style}`}
                               >
                                 {meta.icon}
                                 {meta.label}

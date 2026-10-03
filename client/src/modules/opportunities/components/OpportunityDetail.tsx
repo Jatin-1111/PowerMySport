@@ -91,7 +91,7 @@ export function OpportunityDetail({ opportunity }: { opportunity: Opportunity })
 
       <article className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
         {opportunity.stale && (
-          <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
             <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               We last checked this more than a year ago, and the rules may have changed. Treat the
@@ -100,7 +100,7 @@ export function OpportunityDetail({ opportunity }: { opportunity: Opportunity })
           </p>
         )}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-lg border border-slate-200 bg-white p-5">
           {selection && (
             <p className="text-[15px] font-bold text-slate-900">
               {selection.label}.{" "}
@@ -113,7 +113,7 @@ export function OpportunityDetail({ opportunity }: { opportunity: Opportunity })
               href={opportunity.applyUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-power-orange-solid mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-white transition hover:bg-orange-700"
+              className="bg-power-orange-solid mt-4 inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-sm font-bold text-white transition hover:bg-orange-700"
             >
               Go to the official application
               <ExternalLink aria-hidden className="h-4 w-4" />
@@ -193,7 +193,7 @@ export function OpportunityDetail({ opportunity }: { opportunity: Opportunity })
             </p>
           )}
           {opportunity.verificationNote && (
-            <p className="mt-3 flex items-start gap-2 rounded-xl bg-slate-100 p-3 text-[14px] text-slate-700">
+            <p className="mt-3 flex items-start gap-2 rounded-lg bg-slate-100 p-3 text-[14px] text-slate-700">
               <Info aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
               <span>{opportunity.verificationNote}</span>
             </p>

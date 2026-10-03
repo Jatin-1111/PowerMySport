@@ -139,7 +139,7 @@ export const Footer: React.FC = () => {
                   key={social.name}
                   href={social.href}
                   aria-label={social.name}
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition-all duration-200 ${social.hoverClass}`}
+                  className={`flex h-9 w-9 items-center justify-center rounded-md bg-white/5 text-slate-400 transition-all duration-200 ${social.hoverClass}`}
                   {...(social.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 >
                   {social.icon}

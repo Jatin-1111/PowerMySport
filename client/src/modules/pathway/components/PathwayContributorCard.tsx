@@ -35,7 +35,7 @@ export function PathwayContributorCard({
   const { name, organisation, url, blurb, profile } = contributor;
 
   return (
-    <aside className="premium-shadow rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm sm:p-6">
+    <aside className="premium-shadow rounded-lg border border-white/70 bg-white/80 p-5 backdrop-blur-sm sm:p-6">
       <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
         {sportName} pathway contributed by
       </p>
@@ -94,7 +94,7 @@ export function PathwayContributorCard({
         {profile && (
           <Link
             href={profile.href}
-            className="bg-power-orange-solid inline-flex shrink-0 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+            className="bg-power-orange-solid inline-flex shrink-0 items-center justify-center rounded-md px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
           >
             {profile.ctaLabel}
           </Link>

@@ -75,7 +75,7 @@ function AssetFrame({
       {/* Offset tinted backdrop panel */}
       <div
         aria-hidden
-        className={`absolute -inset-x-5 -bottom-5 top-8 rounded-[2.5rem] bg-gradient-to-br ${backdropTint}`}
+        className={`absolute -inset-x-5 -bottom-5 top-8 rounded-xl bg-gradient-to-br ${backdropTint}`}
       />
       {/* Dotted accent */}
       <div
@@ -87,7 +87,7 @@ function AssetFrame({
         }}
       />
 
-      <div className="relative h-[280px] w-full overflow-hidden rounded-[2rem] shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5 sm:h-[420px] lg:h-[480px]">
+      <div className="relative h-[280px] w-full overflow-hidden rounded-xl shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5 sm:h-[420px] lg:h-[480px]">
         {/* Main image */}
         <Image
           src={src}
@@ -109,12 +109,12 @@ function AssetFrame({
         {/* Inset hairline frame */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-3 rounded-[1.5rem] ring-1 ring-white/20"
+          className="pointer-events-none absolute inset-3 rounded-sm ring-1 ring-white/20"
         />
 
         {/* Step chip — glass, top-left */}
         {step !== undefined && (
-          <div className="absolute left-5 top-5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-xl">
+          <div className="absolute left-5 top-5 rounded-sm border border-white/20 bg-white/10 px-3.5 py-1.5 backdrop-blur-xl">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/90">
               Step 0{step}
             </p>
@@ -122,8 +122,8 @@ function AssetFrame({
         )}
 
         {/* Floating glass overlay card */}
-        <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
+        <div className="absolute bottom-5 left-5 right-5 flex items-center gap-3 rounded-md border border-white/15 bg-white/10 px-5 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
             {overlayIcon}
           </div>
           <div className="min-w-0">
@@ -200,7 +200,7 @@ function DeliverableCard({
   glow: string;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-transform duration-300 will-change-transform hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/70 sm:p-8">
+    <div className="group relative overflow-hidden rounded-lg border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-transform duration-300 will-change-transform hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/70 sm:p-8">
       {/* Soft corner glow */}
       <div
         aria-hidden
@@ -208,7 +208,7 @@ function DeliverableCard({
       />
 
       <div
-        className={`relative mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ring-1 transition-transform duration-300 group-hover:scale-105 ${accent}`}
+        className={`relative mb-5 flex h-12 w-12 items-center justify-center rounded-md ring-1 transition-transform duration-300 group-hover:scale-105 ${accent}`}
       >
         <Icon className="h-[22px] w-[22px]" />
       </div>
@@ -222,11 +222,11 @@ function DeliverableCard({
 
 function FAQItem({ q, a }: { q: string; a: string }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70">
+    <div className="group relative overflow-hidden rounded-lg border border-slate-200/60 bg-white p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70">
       {/* Accent left border stripe */}
       <div
         aria-hidden
-        className="from-power-orange absolute bottom-0 left-0 top-0 w-1 rounded-l-2xl bg-gradient-to-b to-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="from-power-orange absolute bottom-0 left-0 top-0 w-1 rounded-l-lg bg-gradient-to-b to-orange-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
       />
       <h3 className="mb-3 text-lg font-bold text-slate-900">{q}</h3>
       <p className="text-base leading-relaxed text-slate-500">{a}</p>
@@ -490,7 +490,7 @@ export default function HowItWorksPage() {
 
           <div className="reveal-on-scroll mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Old way */}
-            <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-slate-50/80 p-7 sm:p-8">
+            <div className="relative overflow-hidden rounded-xl border border-slate-200/60 bg-slate-50/80 p-7 sm:p-8">
               <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
                 Without a plan
               </p>
@@ -513,7 +513,7 @@ export default function HowItWorksPage() {
             </div>
 
             {/* With PowerMySport */}
-            <div className="relative overflow-hidden rounded-3xl border border-orange-200/70 bg-white p-7 shadow-xl shadow-orange-100/60 sm:p-8">
+            <div className="relative overflow-hidden rounded-xl border border-orange-200/70 bg-white p-7 shadow-xl shadow-orange-100/60 sm:p-8">
               {/* Corner glow */}
               <div
                 aria-hidden

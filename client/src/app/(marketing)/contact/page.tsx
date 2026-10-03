@@ -95,7 +95,7 @@ function SkewedAccent() {
   return (
     <div
       aria-hidden="true"
-      className="from-orange-500/8 via-amber-400/6 pointer-events-none absolute -left-12 top-1/4 h-80 w-[120%] -rotate-[6deg] rounded-3xl bg-gradient-to-r to-transparent"
+      className="from-orange-500/8 via-amber-400/6 pointer-events-none absolute -left-12 top-1/4 h-80 w-[120%] -rotate-[6deg] rounded-lg bg-gradient-to-r to-transparent"
     />
   );
 }
@@ -158,13 +158,13 @@ interface InfoCardProps {
 function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
   return (
     <div
-      className="group flex items-start gap-5 rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:scale-[1.015]"
+      className="group flex items-start gap-5 rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 will-change-transform hover:-translate-y-1 hover:scale-[1.015]"
       style={{
         boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
       }}
     >
       <motion.div
-        className="text-power-orange flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-100 to-amber-50"
+        className="text-power-orange flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-orange-100 to-amber-50"
         initial={iconPop.initial}
         whileInView={iconPop.whileInView}
         whileHover={iconPop.whileHover}
@@ -204,7 +204,7 @@ function Field({ label, id, required, ...props }: FieldProps) {
       <input
         id={id}
         required={required}
-        className="w-full rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
+        className="w-full rounded-md border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
         {...props}
       />
     </div>
@@ -354,7 +354,7 @@ function CustomSelect({
         onClick={() => setOpen((o) => !o)}
         onKeyDown={handleTriggerKeyDown}
         whileTap={{ scale: 0.985 }}
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25 ${
+        className={`flex w-full items-center justify-between gap-3 rounded-md border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-all duration-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25 ${
           open
             ? "border-orange-400 bg-white ring-2 ring-orange-400/25"
             : "border-slate-200 hover:border-orange-300 hover:shadow-md"
@@ -362,7 +362,7 @@ function CustomSelect({
       >
         <span className="flex items-center gap-2.5 truncate">
           {SelectedIcon && (
-            <span className="text-power-orange flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-50">
+            <span className="text-power-orange flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-orange-50">
               <SelectedIcon className="h-4 w-4" strokeWidth={2} />
             </span>
           )}
@@ -387,7 +387,7 @@ function CustomSelect({
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 420, damping: 30 }}
             style={{ originY: 0 }}
-            className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-100 bg-white p-1.5 shadow-xl shadow-slate-900/10"
+            className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-100 bg-white p-1.5 shadow-xl shadow-slate-900/10"
           >
             {options.map((opt, index) => {
               const isSelected = opt.value === value;
@@ -401,7 +401,7 @@ function CustomSelect({
                     type="button"
                     onClick={() => selectOption(opt)}
                     onKeyDown={(e) => handleOptionKeyDown(e, index, opt)}
-                    className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors focus:outline-none focus-visible:bg-orange-50/70 focus-visible:ring-2 focus-visible:ring-orange-400/40 ${
+                    className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm transition-colors focus:outline-none focus-visible:bg-orange-50/70 focus-visible:ring-2 focus-visible:ring-orange-400/40 ${
                       isSelected
                         ? "text-power-orange bg-orange-50 font-semibold"
                         : "text-slate-700 hover:bg-slate-50"
@@ -409,7 +409,7 @@ function CustomSelect({
                   >
                     {OptIcon && (
                       <span
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
                           isSelected ? "text-power-orange bg-white" : "bg-slate-100 text-slate-400"
                         }`}
                       >
@@ -551,12 +551,12 @@ export default function ContactPage() {
               {/* Floating geometric backdrop behind card */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-orange-50/80 via-white/20 to-transparent"
+                className="pointer-events-none absolute -inset-4 rounded-xl bg-gradient-to-br from-orange-50/80 via-white/20 to-transparent"
               />
               <SkewedAccent />
 
               <div
-                className="relative rounded-[2rem] border border-white/80 bg-white/85 px-5 py-8 shadow-sm backdrop-blur-md sm:px-10 sm:py-12"
+                className="relative rounded-xl border border-white/80 bg-white/85 px-5 py-8 shadow-sm backdrop-blur-md sm:px-10 sm:py-12"
                 style={{
                   boxShadow:
                     "0 4px 40px rgba(0,0,0,0.07), 0 1px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
@@ -706,7 +706,7 @@ export default function ContactPage() {
                       onChange={handleChange}
                       required
                       rows={5}
-                      className="w-full resize-none rounded-xl border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
+                      className="w-full resize-none rounded-md border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
                       placeholder="Tell us about your inquiry..."
                     />
                   </div>
@@ -718,7 +718,7 @@ export default function ContactPage() {
                         type="submit"
                         variant="primary"
                         size="lg"
-                        className="w-full rounded-xl"
+                        className="w-full rounded-md"
                         loading={isSubmitting}
                       >
                         {isSubmitting ? "Sending…" : "Send Message →"}
@@ -740,7 +740,7 @@ export default function ContactPage() {
               </div>
 
               {/* Clipped sport image with overlapping badge */}
-              <div className="relative h-36 w-full overflow-hidden rounded-2xl sm:h-44">
+              <div className="relative h-36 w-full overflow-hidden rounded-xl sm:h-44">
                 <ClippedFrame
                   src={SPORT_IMG_3}
                   alt="Outdoor sports court"
@@ -750,7 +750,7 @@ export default function ContactPage() {
                   height={220}
                 />
                 {/* Floating glass badge */}
-                <div className="absolute bottom-4 left-5 flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-slate-900 shadow-lg backdrop-blur-md">
+                <div className="absolute bottom-4 left-5 flex items-center gap-2 rounded-sm bg-white/80 px-4 py-2 text-sm font-bold text-slate-900 shadow-lg backdrop-blur-md">
                   <span className="bg-turf-green h-2 w-2 animate-pulse rounded-full" />
                   Support team online
                 </div>
@@ -806,7 +806,7 @@ export default function ContactPage() {
 
               {/* Social */}
               <div
-                className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 hover:-translate-y-1"
+                className="rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 hover:-translate-y-1"
                 style={{
                   boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
                 }}
@@ -818,7 +818,7 @@ export default function ContactPage() {
                       key={label}
                       href={href}
                       aria-label={label}
-                      className="hover:bg-power-orange-solid flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors hover:text-white"
+                      className="hover:bg-power-orange-solid flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition-colors hover:text-white"
                       whileHover={{ scale: 1.12, rotate: 7 }}
                       whileTap={{ scale: 0.93 }}
                       transition={{
@@ -863,7 +863,7 @@ export default function ContactPage() {
         <div className="relative mx-auto max-w-4xl px-6 text-center">
           <div className="reveal-on-scroll">
             <div className="mb-4 inline-flex">
-              <span className="border-power-orange/40 bg-power-orange/10 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
+              <span className="border-power-orange/40 bg-power-orange/10 rounded-sm border px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
                 Ready to play?
               </span>
             </div>
@@ -881,7 +881,7 @@ export default function ContactPage() {
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <motion.a
                 href="/register"
-                className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-xl hover:shadow-orange-500/30"
+                className="bg-power-orange-solid inline-flex items-center gap-2 rounded-md px-8 py-4 text-base font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-xl hover:shadow-orange-500/30"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >
@@ -901,7 +901,7 @@ export default function ContactPage() {
 
               <motion.a
                 href="/faq"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10"
+                className="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/10"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
               >

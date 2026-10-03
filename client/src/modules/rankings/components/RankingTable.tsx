@@ -56,7 +56,7 @@ export function RankingTable({
   const showPercentile = listSize !== null && listSize >= 100;
 
   return (
-    <div className="mt-5 overflow-x-auto rounded-xl border">
+    <div className="mt-5 overflow-x-auto rounded-lg border">
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">
           {listLabel} ranking{stateFiltered ? `, ${stateFiltered}` : ""}, as on {asOnLabel}

@@ -130,7 +130,7 @@ export function summariseSeason(
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="border-border bg-background/60 text-muted-foreground inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium">
+    <span className="border-border bg-background/60 text-muted-foreground inline-flex items-center rounded-sm border px-2.5 py-1 text-xs font-medium">
       {children}
     </span>
   );
@@ -168,7 +168,7 @@ export function PlayerHero({
   const standing = primary ? nationalStandingPhrase(primary.rank, primary.listSize) : null;
 
   return (
-    <header className="border-border bg-card overflow-hidden rounded-2xl border shadow-sm">
+    <header className="border-border bg-card overflow-hidden rounded-xl border shadow-sm">
       <div className="relative isolate px-5 py-6 sm:px-8 sm:py-8">
         {/* A soft wash rather than a photo — we hold no player imagery, and a
             stock face on a minor's page would be worse than none. */}
@@ -180,7 +180,7 @@ export function PlayerHero({
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <div
             aria-hidden
-            className="from-power-orange to-power-orange/70 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-xl font-bold text-white shadow-sm sm:h-20 sm:w-20 sm:text-2xl"
+            className="from-power-orange to-power-orange/70 flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-xl font-bold text-white shadow-sm sm:h-20 sm:w-20 sm:text-2xl"
           >
             {initials(name)}
           </div>

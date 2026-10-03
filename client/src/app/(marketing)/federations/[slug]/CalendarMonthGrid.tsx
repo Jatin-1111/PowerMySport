@@ -56,7 +56,7 @@ export function CalendarMonthGrid({
   ];
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-slate-100 bg-white p-4 shadow-sm">
       <div className="mb-2 grid grid-cols-7 gap-1">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div

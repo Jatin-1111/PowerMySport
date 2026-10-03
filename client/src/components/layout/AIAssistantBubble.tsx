@@ -32,7 +32,7 @@ export function AIAssistantBubble() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 8, scale: 0.94 }}
                 transition={{ type: "spring", stiffness: 340, damping: 26 }}
-                className="relative mb-1 w-52 rounded-2xl border border-slate-100 bg-white px-4 py-3.5 shadow-2xl"
+                className="relative mb-1 w-52 rounded-lg border border-slate-100 bg-white px-4 py-3.5 shadow-2xl"
               >
                 {/* Downward caret */}
                 <div

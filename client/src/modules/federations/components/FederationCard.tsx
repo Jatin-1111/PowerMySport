@@ -56,11 +56,11 @@ export function FederationCard({
   const href = `/federations/${federation.slug}`;
 
   return (
-    <div className="premium-shadow hover:border-power-orange/40 group flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm transition hover:shadow-lg sm:p-6">
+    <div className="premium-shadow hover:border-power-orange/40 group flex h-full flex-col rounded-lg border border-white/70 bg-white/80 p-5 backdrop-blur-sm transition hover:shadow-lg sm:p-6">
       <div className="flex items-start gap-4">
         <div
           aria-hidden
-          className="font-title flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-sm font-extrabold tracking-tight text-white"
+          className="font-title flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-slate-900 text-sm font-extrabold tracking-tight text-white"
         >
           {federation.acronym.slice(0, 4)}
         </div>
@@ -73,17 +73,17 @@ export function FederationCard({
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span
-              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${type.className}`}
+              className={`inline-flex items-center rounded-sm border px-2.5 py-0.5 text-[11px] font-semibold ${type.className}`}
             >
               {type.label}
             </span>
             {showSport && (
-              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+              <span className="inline-flex items-center rounded-sm border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
                 {federation.sportSlug}
               </span>
             )}
             {federation.dataVerifiedAt && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+              <span className="inline-flex items-center gap-1 rounded-sm border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
                 <BadgeCheck className="h-3 w-3" />
                 Verified
               </span>
@@ -104,7 +104,7 @@ export function FederationCard({
             <Link
               key={quick.tab}
               href={`${href}?tab=${quick.tab}`}
-              className="hover:border-power-orange/40 hover:text-power-orange inline-flex items-center rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition"
+              className="hover:border-power-orange/40 hover:text-power-orange inline-flex items-center rounded-sm border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition"
             >
               {quick.label}
             </Link>

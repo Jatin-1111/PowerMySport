@@ -45,7 +45,7 @@ export function RouteError({
 }) {
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
-      <div className="shadow-xs max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center">
+      <div className="shadow-xs max-w-md rounded-lg border border-slate-200 bg-white p-6 text-center">
         <AlertTriangle className="mx-auto h-8 w-8 text-amber-600" />
         <h1 className="mt-3 text-lg font-bold text-slate-900">{title}</h1>
         <p className="mt-2 text-sm text-slate-600">{description}</p>
@@ -53,14 +53,14 @@ export function RouteError({
           <button
             type="button"
             onClick={reset}
-            className="bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+            className="bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
           >
             <RotateCcw className="h-4 w-4" />
             Try again
           </button>
           <Link
             href={homeHref}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex items-center justify-center rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Go back
           </Link>

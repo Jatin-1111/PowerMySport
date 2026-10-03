@@ -155,7 +155,7 @@ function SportTile({
   return (
     // `isolate`, so the stretched link below covers this tile and stops at its
     // edge rather than sitting over the neighbouring one.
-    <div className="premium-shadow hover:border-power-orange/40 relative isolate flex h-full flex-col rounded-2xl border border-white/70 bg-white/80 p-4 backdrop-blur-sm transition hover:shadow-lg">
+    <div className="premium-shadow hover:border-power-orange/40 relative isolate flex h-full flex-col rounded-lg border border-white/70 bg-white/80 p-4 backdrop-blur-sm transition hover:shadow-lg">
       {/* The whole tile is the target, but only one element is the link: an
           anchor with a stretched `::after` rather than a card-wide anchor with
           controls nested inside it. Nesting a button inside an anchor is invalid
@@ -177,7 +177,7 @@ function SportTile({
           need to: once the age is known there is exactly one stage this parent
           should open, and the tile links straight to it. */}
       {match && (
-        <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[12px] font-bold text-amber-900 ring-1 ring-amber-200">
+        <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-sm bg-amber-50 px-2 py-1 text-[12px] font-bold text-amber-900 ring-1 ring-amber-200">
           <MapPin aria-hidden className="h-3 w-3 shrink-0" />
           Stage {matchIndex + 1} · {match.name}
         </p>
@@ -194,7 +194,7 @@ function SportTile({
             onClick={onToggle}
             aria-expanded={expanded}
             aria-controls={panelId}
-            className="focus-visible:outline-power-orange relative z-10 mt-2.5 inline-flex w-fit items-center gap-1 rounded-lg px-1.5 py-1 text-[12px] font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="focus-visible:outline-power-orange relative z-10 mt-2.5 inline-flex w-fit items-center gap-1 rounded-sm px-1.5 py-1 text-[12px] font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {expanded ? "Hide stages" : "All stages"}
             <ChevronDown
@@ -212,7 +212,7 @@ function SportTile({
                 <li key={stage.key}>
                   <Link
                     href={stageHref(entry.sportSlug, stage.key)}
-                    className={`focus-visible:outline-power-orange inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[12px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                    className={`focus-visible:outline-power-orange inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[12px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 ${
                       i === matchIndex
                         ? "border-amber-300 bg-amber-50 text-amber-900"
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
@@ -312,7 +312,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
       <div
         className={`z-20 mx-auto mt-9 max-w-2xl px-1 py-1 ${
           dense
-            ? "premium-shadow sticky top-16 rounded-2xl border border-white/70 bg-white/85 px-3 py-3 backdrop-blur-md"
+            ? "premium-shadow sticky top-16 rounded-lg border border-white/70 bg-white/85 px-3 py-3 backdrop-blur-md"
             : ""
         }`}
       >
@@ -351,7 +351,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={`Search ${entries.length} sport${entries.length === 1 ? "" : "s"}`}
-              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-[15px] font-semibold text-slate-800 shadow-sm placeholder:font-normal placeholder:text-slate-400 focus:outline-none"
+              className="focus:border-power-orange w-full rounded-md border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-[15px] font-semibold text-slate-800 shadow-sm placeholder:font-normal placeholder:text-slate-400 focus:outline-none"
             />
             {query && (
               <button
@@ -381,7 +381,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
                     type="button"
                     onClick={() => setGroup(name)}
                     aria-pressed={group === name}
-                    className={`focus-visible:outline-power-orange rounded-full px-3 py-1.5 text-[12.5px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                    className={`focus-visible:outline-power-orange rounded-md px-3 py-1.5 text-[12.5px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 ${
                       group === name
                         ? "bg-slate-900 text-white"
                         : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
@@ -444,7 +444,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
         // A search that finds nothing is the clearest signal this page ever gets
         // that a parent knows exactly what they want and we do not have it. It
         // ends in a route to a person, not an apology.
-        <div className="premium-shadow mx-auto mt-6 max-w-md rounded-2xl border border-white/70 bg-white/80 p-6 text-center backdrop-blur-sm">
+        <div className="premium-shadow mx-auto mt-6 max-w-md rounded-lg border border-white/70 bg-white/80 p-6 text-center backdrop-blur-sm">
           <p className="text-[15px] font-bold text-slate-900">
             No pathway for {needle ? `"${query.trim()}"` : "that group"} yet
           </p>
@@ -455,7 +455,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Link
               href="/assessment"
-              className="bg-power-orange-solid inline-flex items-center rounded-xl px-3.5 py-2 text-[13px] font-bold text-white transition hover:bg-orange-600"
+              className="bg-power-orange-solid inline-flex items-center rounded-md px-3.5 py-2 text-[13px] font-bold text-white transition hover:bg-orange-600"
             >
               Get a plan for their sport
             </Link>
@@ -465,7 +465,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
                 setQuery("");
                 setGroup("All");
               }}
-              className="inline-flex items-center rounded-xl border border-slate-300 px-3.5 py-2 text-[13px] font-bold text-slate-700 transition hover:border-slate-400"
+              className="inline-flex items-center rounded-md border border-slate-300 px-3.5 py-2 text-[13px] font-bold text-slate-700 transition hover:border-slate-400"
             >
               Show all sports
             </button>
@@ -502,7 +502,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
           not, so a crawler indexes every pathway and a parent without
           JavaScript can still open it. */}
       {entries.length > BROWSE_TILES && (
-        <details className="group mt-6 rounded-2xl border border-white/70 bg-white/70 px-4 py-3 backdrop-blur-sm">
+        <details className="group mt-6 rounded-lg border border-white/70 bg-white/70 px-4 py-3 backdrop-blur-sm">
           <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 text-[13px] font-bold text-slate-600 transition hover:text-slate-900 [&::-webkit-details-marker]:hidden">
             All {entries.length} sports, A–Z
             <ChevronDown

@@ -250,14 +250,14 @@ export default async function TournamentEditionPage({
 
           <div className="mb-5 mt-6 flex flex-wrap items-center gap-2">
             {finished && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-400/30 bg-slate-400/15 px-3 py-1 text-[11px] font-bold text-white/70">
+              <span className="inline-flex items-center gap-1.5 rounded-sm border border-slate-400/30 bg-slate-400/15 px-3 py-1 text-[11px] font-bold text-white/70">
                 <Clock className="h-3 w-3" />
                 Finished
               </span>
             )}
             {edition.level && lc && (
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${lc.pill}`}
+                className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold ${lc.pill}`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${lc.dot}`} />
                 {edition.level}
@@ -266,7 +266,7 @@ export default async function TournamentEditionPage({
             {edition.ageGroups?.map((ag) => (
               <span
                 key={ag}
-                className="inline-flex items-center rounded-full border border-white/[0.12] bg-white/[0.07] px-3 py-1 text-[11px] font-semibold text-white/60"
+                className="inline-flex items-center rounded-sm border border-white/[0.12] bg-white/[0.07] px-3 py-1 text-[11px] font-semibold text-white/60"
               >
                 {ag}
               </span>
@@ -312,7 +312,7 @@ export default async function TournamentEditionPage({
             an upcoming one. The entry paperwork below is no use to whoever is
             reading now, so the next running goes above it. */}
         {finished && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-200 bg-white p-7 shadow-sm sm:p-8">
             <div className="flex items-start gap-3">
               <Clock className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
               <div className="min-w-0 flex-1">
@@ -328,7 +328,7 @@ export default async function TournamentEditionPage({
                 {nextInSeries ? (
                   <Link
                     href={`/tournaments/${nextInSeries.slug}`}
-                    className="border-power-orange/30 group mt-5 flex items-center justify-between gap-3 rounded-xl border bg-orange-50/50 p-4 transition hover:bg-orange-50"
+                    className="border-power-orange/30 group mt-5 flex items-center justify-between gap-3 rounded-lg border bg-orange-50/50 p-4 transition hover:bg-orange-50"
                   >
                     <div className="min-w-0">
                       <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
@@ -360,7 +360,7 @@ export default async function TournamentEditionPage({
 
         {/* ── Fact sheet: the thing a parent actually came for ── */}
         {factSheet ? (
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <h2 className="font-title text-deep-slate text-xl font-bold">
               {finished ? "Entry details (archived)" : "Entry details"}
             </h2>
@@ -373,7 +373,7 @@ export default async function TournamentEditionPage({
               href={factSheet.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-power-orange-solid mt-4 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition hover:opacity-90"
+              className="bg-power-orange-solid mt-4 inline-flex items-center gap-2 rounded-md px-5 py-3 text-sm font-bold text-white transition hover:opacity-90"
             >
               <FileText className="h-4 w-4" />
               Open the fact sheet
@@ -400,7 +400,7 @@ export default async function TournamentEditionPage({
           // Only meaningful while the event is still ahead — "entry details go
           // up a few weeks before it starts" is nonsense on an event that ran
           // last month, and the finished panel above already explains the page.
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
               <div>
@@ -428,7 +428,7 @@ export default async function TournamentEditionPage({
         )}
 
         {/* ── At a glance ── */}
-        <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+        <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
           <h2 className="font-title text-deep-slate text-xl font-bold">At a glance</h2>
           <dl className="mt-5 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
             {facts.map((fact) => (
@@ -447,7 +447,7 @@ export default async function TournamentEditionPage({
 
         {/* ── Remaining documents ── */}
         {otherDocuments.length > 0 && (
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <h2 className="font-title text-deep-slate text-xl font-bold">Documents</h2>
             {/* Grouped by kind so the explanation is stated once, instead of
                 repeating under every row of the same type. */}
@@ -496,7 +496,7 @@ export default async function TournamentEditionPage({
 
         {/* ── Other events nearby ── */}
         {related.length > 0 && (
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <h2 className="font-title text-deep-slate text-xl font-bold">
               {/* The list tops up sport-wide when the city runs dry, so only
                   claim the city when every row actually is in it. */}

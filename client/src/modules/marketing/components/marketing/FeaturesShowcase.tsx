@@ -190,7 +190,7 @@ function MiniChat({ chipCls = "bg-orange-100 text-orange-700" }: { chipCls?: str
         <div key={i} className={cn("flex", b.isUser ? "justify-end" : "justify-start")}>
           <div
             className={cn(
-              "max-w-[80%] rounded-2xl px-3 py-2 text-[10px] leading-tight",
+              "max-w-[80%] rounded-lg px-3 py-2 text-[10px] leading-tight",
               b.isUser ? "bg-slate-100 text-slate-600" : cn(chipCls, "font-medium")
             )}
           >
@@ -231,10 +231,10 @@ function MiniMilestones({ dotColor = "bg-power-orange" }: { dotColor?: string })
 function MiniTrialClass({ dotColor = "bg-power-orange" }: { dotColor?: string }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3">
+      <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white p-3">
         <div
           className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white",
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white",
             dotColor
           )}
         >
@@ -244,7 +244,7 @@ function MiniTrialClass({ dotColor = "bg-power-orange" }: { dotColor?: string })
           <p className="text-[11px] font-bold text-slate-700">Trial Session Booked</p>
           <p className="text-[9px] text-slate-400">Saturday, 10:00 AM · Sunrise Academy</p>
         </div>
-        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-semibold text-emerald-700">
+        <span className="rounded-sm bg-emerald-100 px-2 py-0.5 text-[9px] font-semibold text-emerald-700">
           Confirmed
         </span>
       </div>
@@ -409,7 +409,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                   setPaused(true);
                 }}
                 className={cn(
-                  "rounded-full border px-4 py-2 text-sm font-semibold transition-colors",
+                  "rounded-md border px-4 py-2 text-sm font-semibold transition-colors",
                   i === trackIdx
                     ? "border-power-orange text-power-orange bg-orange-50"
                     : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
@@ -473,7 +473,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                   {f.icon && (
                     <span
                       className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200",
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-all duration-200",
                         isActive ? p.iconBg : "bg-slate-100 text-slate-400"
                       )}
                     >
@@ -524,7 +524,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
               exit={{ opacity: 0, y: -6, scale: 0.99 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
-                "relative flex min-h-[460px] flex-col overflow-hidden rounded-2xl border border-slate-100",
+                "relative flex min-h-[460px] flex-col overflow-hidden rounded-xl border border-slate-100",
                 "bg-gradient-to-br lg:h-full lg:min-h-0",
                 "from-white to-slate-50/40",
                 "shadow-[0_4px_32px_-4px_rgba(0,0,0,0.09)]"
@@ -558,7 +558,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.06 }}
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1",
+                        "inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-xs font-semibold ring-1",
                         pal.chip
                       )}
                     >
@@ -572,7 +572,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 }}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm"
+                      className="inline-flex items-center gap-1.5 rounded-sm border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm"
                     >
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                       {feature.stat}
@@ -587,7 +587,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.07, type: "spring", stiffness: 320, damping: 20 }}
                     className={cn(
-                      "mb-6 flex h-14 w-14 items-center justify-center rounded-2xl [&_svg]:h-6 [&_svg]:w-6",
+                      "mb-6 flex h-14 w-14 items-center justify-center rounded-lg [&_svg]:h-6 [&_svg]:w-6",
                       pal.iconBg
                     )}
                   >
@@ -620,7 +620,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="mt-8 rounded-xl border border-slate-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm"
+                  className="mt-8 rounded-lg border border-slate-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm"
                 >
                   <Visual color={pal.dot} dotColor={pal.dot} chipCls={pal.chip} />
                 </motion.div>

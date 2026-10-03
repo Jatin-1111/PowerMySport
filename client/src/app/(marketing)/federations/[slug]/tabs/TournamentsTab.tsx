@@ -50,7 +50,7 @@ export function TournamentsTab({
             placeholder="Search tournaments…"
             value={tournamentSearch}
             onChange={(e) => setTournamentSearch(e.target.value)}
-            className="focus:ring-power-orange/20 focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2"
+            className="focus:ring-power-orange/20 focus:border-power-orange w-full rounded-md border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2"
           />
         </div>
         {/* Age group */}
@@ -59,7 +59,7 @@ export function TournamentsTab({
           placeholder="Age group (e.g. U-14)…"
           value={ageGroupFilter}
           onChange={(e) => setAgeGroupFilter(e.target.value)}
-          className="focus:ring-power-orange/20 focus:border-power-orange w-48 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2"
+          className="focus:ring-power-orange/20 focus:border-power-orange w-48 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2"
         />
         {/* Level pills — omitted entirely when the data offers no real choice */}
         {showLevelFilters && (
@@ -68,7 +68,7 @@ export function TournamentsTab({
               <button
                 key={l}
                 onClick={() => setLevelFilter(l)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                className={`rounded-sm border px-3 py-1 text-xs font-semibold transition ${
                   activeLevelFilter === l
                     ? "bg-power-orange-solid border-power-orange-solid text-white"
                     : "hover:text-power-orange border-slate-200 bg-white text-slate-600 hover:border-orange-200"
@@ -106,7 +106,7 @@ export function TournamentsTab({
 
       {/* Loading */}
       {tournamentsLoading && (
-        <div className="rounded-2xl border border-dashed border-slate-200 py-16 text-center">
+        <div className="rounded-lg border border-dashed border-slate-200 py-16 text-center">
           <div className="border-power-orange inline-block h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
           <p className="mt-3 text-sm text-slate-500">Loading tournaments…</p>
         </div>
@@ -123,13 +123,13 @@ export function TournamentsTab({
               // arrow would promise a destination that doesn't exist.
               <div
                 key={i}
-                className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                className="relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
               >
                 <div className="from-power-orange h-[3px] w-full bg-gradient-to-r to-amber-400" />
                 <div className="flex flex-col p-4" style={{ minHeight: "130px" }}>
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest ${lc.pill}`}
+                      className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest ${lc.pill}`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${lc.dot}`} />
                       {t.level}
@@ -152,7 +152,7 @@ export function TournamentsTab({
       )}
 
       {!tournamentsLoading && tournamentsLoaded && filteredTournaments.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 py-12 text-center">
+        <div className="rounded-lg border border-dashed border-slate-300 py-12 text-center">
           <Trophy className="mx-auto mb-3 h-8 w-8 text-slate-300" />
           <p className="text-sm font-semibold text-slate-600">No tournaments match these filters</p>
           <p className="mt-1 text-xs text-slate-400">Try clearing the filters above</p>
@@ -160,7 +160,7 @@ export function TournamentsTab({
       )}
 
       {!tournamentsLoaded && !tournamentsLoading && (
-        <div className="rounded-2xl border border-dashed border-slate-300 py-12 text-center">
+        <div className="rounded-lg border border-dashed border-slate-300 py-12 text-center">
           <p className="text-sm text-slate-500">Tournament data is loading…</p>
         </div>
       )}

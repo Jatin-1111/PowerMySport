@@ -30,18 +30,18 @@ export function OverviewTab({
     <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
       <div className="space-y-6">
         {/* About */}
-        <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+        <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
           <SectionHeading>About {fed.acronym}</SectionHeading>
           <p className="text-[15px] leading-[1.85] text-slate-600">{fed.about}</p>
         </section>
 
         {/* Key Facts */}
         {fed.keyFacts && fed.keyFacts.length > 0 && (
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>Key Facts</SectionHeading>
             <div className="grid gap-3 sm:grid-cols-2">
               {fed.keyFacts.map((fact, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl bg-slate-50 px-4 py-3.5">
+                <div key={i} className="flex items-start gap-3 rounded-lg bg-slate-50 px-4 py-3.5">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                   <p className="text-sm leading-snug text-slate-700">{fact}</p>
                 </div>
@@ -52,13 +52,13 @@ export function OverviewTab({
 
         {/* Affiliations */}
         {fed.affiliations && fed.affiliations.length > 0 && (
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>International Affiliations</SectionHeading>
             <div className="flex flex-wrap gap-2">
               {fed.affiliations.map((aff, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-sm font-medium text-slate-700"
+                  className="inline-flex items-center rounded-sm border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-sm font-medium text-slate-700"
                 >
                   {aff}
                 </span>
@@ -69,7 +69,7 @@ export function OverviewTab({
 
         {/* State Associations */}
         {fed.stateAssociations && fed.stateAssociations.length > 0 && (
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>State Associations</SectionHeading>
             <p className="mb-5 text-sm text-slate-500">
               Your child must register with the state association for your state before
@@ -79,7 +79,7 @@ export function OverviewTab({
               {fed.stateAssociations.map((sa, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between gap-2 rounded-xl bg-slate-50 px-4 py-3"
+                  className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-4 py-3"
                 >
                   <div>
                     <p className="text-sm font-semibold leading-tight text-slate-800">{sa.name}</p>
@@ -103,7 +103,7 @@ export function OverviewTab({
 
         {/* Data source notice */}
         {isVerified && (
-          <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+          <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-4">
             <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
             <div>
               <p className="text-sm font-semibold text-emerald-800">
@@ -140,7 +140,7 @@ export function OverviewTab({
       {/* Sidebar */}
       <aside className="space-y-4 lg:sticky lg:top-20">
         {/* Quick nav */}
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
             In this guide
           </p>
@@ -149,7 +149,7 @@ export function OverviewTab({
               <button
                 key={id}
                 onClick={() => switchTab(id)}
-                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+                className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm font-medium transition ${
                   activeTab === id
                     ? "text-power-orange bg-orange-50"
                     : "text-slate-600 hover:bg-slate-50"
@@ -165,7 +165,7 @@ export function OverviewTab({
 
         {/* Contact */}
         {(fed.contact?.email || fed.contact?.phone || fed.contact?.address) && (
-          <div className="space-y-3 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <div className="space-y-3 rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
               Contact
             </p>
@@ -194,7 +194,7 @@ export function OverviewTab({
         )}
 
         {/* CTA */}
-        <div className="relative overflow-hidden rounded-2xl bg-slate-900 p-5">
+        <div className="relative overflow-hidden rounded-xl bg-slate-900 p-5">
           <div className="bg-power-orange/[0.12] pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full blur-2xl" />
           <div className="relative z-10">
             <div className="mb-2 flex items-center gap-1.5">
@@ -216,7 +216,7 @@ export function OverviewTab({
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white transition hover:bg-orange-500"
+              className="bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-md py-2.5 text-sm font-bold text-white transition hover:bg-orange-500"
             >
               <WhatsAppIcon className="h-4 w-4 text-white" />
               Get Help via WhatsApp

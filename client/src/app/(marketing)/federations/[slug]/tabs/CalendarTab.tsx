@@ -84,7 +84,7 @@ export function CalendarTab({
   return (
     <div className="space-y-5">
       {editionsLoading && (
-        <div className="rounded-2xl border border-dashed border-slate-200 py-16 text-center">
+        <div className="rounded-lg border border-dashed border-slate-200 py-16 text-center">
           <div className="border-power-orange inline-block h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
           <p className="mt-3 text-sm text-slate-500">Loading upcoming dates…</p>
         </div>
@@ -100,7 +100,7 @@ export function CalendarTab({
           {/* ── Left: the calendar. Stretches to the detail panel's height
                  (grid items stretch by default — no items-start here) with the
                  month centred in whatever room that leaves. ── */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 lg:sticky lg:top-[63px]">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 lg:sticky lg:top-[63px]">
             <div className="mb-4 flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-0.5">
                 <button
@@ -156,7 +156,7 @@ export function CalendarTab({
           {/* ── Right: what is actually on ── */}
           <div className="space-y-3">
             {visibleSeries.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 py-12 text-center">
+              <div className="rounded-lg border border-dashed border-slate-300 py-12 text-center">
                 <p className="text-sm font-semibold text-slate-600">
                   {editionFiltersActive
                     ? "Nothing matches these filters"
@@ -169,7 +169,7 @@ export function CalendarTab({
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <div className="flex items-center justify-between gap-3 px-5 py-2.5">
                   <span className="min-w-0 truncate text-sm font-bold text-slate-800">
                     {activeDate
@@ -188,7 +188,7 @@ export function CalendarTab({
                     {(editionAgeGroupOptions.length > 0 || editionStateOptions.length > 1) && (
                       <button
                         onClick={() => setShowEditionFilters((v) => !v)}
-                        className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition ${
+                        className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs font-semibold transition ${
                           editionFiltersActive
                             ? "text-power-orange bg-orange-50"
                             : "text-slate-500 hover:bg-slate-100"
@@ -216,7 +216,7 @@ export function CalendarTab({
                           <button
                             key={ag}
                             onClick={() => setEditionAgeGroup(ag)}
-                            className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                            className={`rounded-sm px-2.5 py-1 text-xs font-semibold transition ${
                               editionAgeGroup === ag
                                 ? "bg-power-orange-solid text-white"
                                 : "hover:text-power-orange bg-white text-slate-600"
@@ -231,7 +231,7 @@ export function CalendarTab({
                       <select
                         value={editionState}
                         onChange={(e) => setEditionState(e.target.value)}
-                        className="focus:ring-power-orange/20 rounded-xl border-0 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2"
+                        className="focus:ring-power-orange/20 rounded-md border-0 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2"
                       >
                         <option value="All">All states</option>
                         {editionStateOptions.map((st) => (
@@ -362,7 +362,7 @@ export function CalendarTab({
       )}
 
       {!editionsLoading && editionsLoaded && editions.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 py-16 text-center">
+        <div className="rounded-lg border border-dashed border-slate-300 py-16 text-center">
           <CalendarDays className="mx-auto mb-3 h-8 w-8 text-slate-300" />
           <p className="text-sm font-semibold text-slate-600">No {fedAcronym} dates curated yet</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-slate-400">
@@ -375,7 +375,7 @@ export function CalendarTab({
               href={officialCalendarUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:border-power-orange hover:text-power-orange mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition"
+              className="hover:border-power-orange hover:text-power-orange mt-4 inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition"
             >
               <ExternalLink className="h-4 w-4" />
               View Official Calendar
@@ -385,7 +385,7 @@ export function CalendarTab({
       )}
 
       {!editionsLoaded && !editionsLoading && (
-        <div className="rounded-2xl border border-dashed border-slate-300 py-12 text-center">
+        <div className="rounded-lg border border-dashed border-slate-300 py-12 text-center">
           <p className="text-sm text-slate-500">Tournament dates are loading…</p>
         </div>
       )}

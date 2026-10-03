@@ -67,7 +67,7 @@ export function RankingFilters({
   const hasFilters = Boolean(state || date || currentSearch);
 
   const selectClass =
-    "h-10 rounded-lg border bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2";
+    "h-10 rounded-md border bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2";
 
   return (
     // Search gets its own row and the whole width. It is not one filter among
@@ -102,7 +102,7 @@ export function RankingFilters({
               go-key is not obvious, and this is the page's primary action. */}
           <button
             type="submit"
-            className="bg-power-orange-solid focus-visible:ring-power-orange inline-flex h-11 shrink-0 items-center rounded-lg px-4 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            className="bg-power-orange-solid focus-visible:ring-power-orange inline-flex h-11 shrink-0 items-center rounded-md px-4 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           >
             Search
           </button>
@@ -163,7 +163,7 @@ export function RankingFilters({
           <button
             type="button"
             onClick={() => apply({ state: null, date: null, search: null })}
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange inline-flex h-10 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange inline-flex h-10 items-center gap-1.5 rounded-md border px-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           >
             <X className="h-4 w-4" aria-hidden />
             Clear

@@ -181,7 +181,7 @@ export default async function RankingListPage({
             <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
               {result?.snapshot ? (
                 <>
-                  <span className="bg-muted inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium">
+                  <span className="bg-muted inline-flex items-center gap-1.5 rounded-sm px-2.5 py-1 font-medium">
                     <CalendarDays className="text-muted-foreground h-3.5 w-3.5" aria-hidden />
                     As on {formatAsOn(result.snapshot.asOnDate)}
                   </span>
@@ -202,7 +202,7 @@ export default async function RankingListPage({
               href={result.snapshot.sourceUrl}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className="hover:border-power-orange hover:text-power-orange inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
+              className="hover:border-power-orange hover:text-power-orange inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors"
             >
               Official {sport.federation.acronym} source
               <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -249,7 +249,7 @@ export default async function RankingListPage({
       )}
 
       {entries.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed p-10 text-center">
+        <div className="mt-8 rounded-lg border border-dashed p-10 text-center">
           <p className="font-medium">No players match these filters.</p>
           <p className="text-muted-foreground mt-1 text-sm">
             Try a shorter name, the registration number on its own, or clear the state filter.

@@ -62,7 +62,7 @@ import { sectionDomId } from "@/modules/pathway/utils/sectionIds";
 // `position: sticky` for every descendant on the page.
 
 /** Every raised card on this page. One definition, so they cannot drift apart. */
-const SURFACE = "rounded-2xl border border-white/70 bg-white/80 backdrop-blur-sm premium-shadow";
+const SURFACE = "rounded-lg border border-white/70 bg-white/80 backdrop-blur-sm premium-shadow";
 
 /** The same, plus the lift that marks a card as a link. */
 const SURFACE_LINK = `${SURFACE} transition duration-300 hover:-translate-y-0.5 hover:border-power-orange/40 hover:shadow-lg`;
@@ -327,7 +327,7 @@ export default async function PathwaysIndexPage() {
                   className={`group flex h-full flex-col p-6 sm:p-7 ${SURFACE_LINK}`}
                 >
                   <span
-                    className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 ${step.tone}`}
+                    className={`mb-5 flex h-12 w-12 items-center justify-center rounded-md transition-transform duration-300 group-hover:scale-110 ${step.tone}`}
                   >
                     <Icon aria-hidden className="h-5 w-5" />
                   </span>

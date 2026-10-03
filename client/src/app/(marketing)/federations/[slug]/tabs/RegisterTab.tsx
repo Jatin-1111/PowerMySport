@@ -10,7 +10,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
       <div className="space-y-6">
         {/* Steps */}
         {fed.registrationSteps && fed.registrationSteps.length > 0 ? (
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>Step-by-Step Registration</SectionHeading>
             <p className="mb-8 text-sm text-slate-400">
               Follow these steps in order. Starting early gives your child a significant advantage,
@@ -28,14 +28,14 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
             </ol>
           </section>
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-sm text-slate-500">
+          <div className="rounded-lg border border-dashed border-slate-300 py-10 text-center text-sm text-slate-500">
             Registration steps not yet available for this federation.
           </div>
         )}
 
         {/* Required documents */}
         {fed.requiredDocuments && fed.requiredDocuments.length > 0 && (
-          <section className="rounded-2xl border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
+          <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
             <SectionHeading>Required Documents</SectionHeading>
             <p className="mb-6 text-sm text-slate-400">
               Prepare these before the tournament entry deadline. Missing documents result in
@@ -45,7 +45,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
               {fed.requiredDocuments.map((doc, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                  className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3"
                 >
                   <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border border-slate-300">
                     <FileText className="h-3 w-3 text-slate-400" />
@@ -60,7 +60,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
 
       {/* Sidebar — Concierge */}
       <aside className="space-y-4 lg:sticky lg:top-20">
-        <div className="relative overflow-hidden rounded-2xl bg-slate-900 p-6">
+        <div className="relative overflow-hidden rounded-xl bg-slate-900 p-6">
           <div className="bg-power-orange/[0.12] pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full blur-2xl" />
           <div className="bg-power-orange/[0.07] pointer-events-none absolute -bottom-8 -left-8 h-24 w-24 rounded-full blur-2xl" />
           <div className="relative z-10">
@@ -95,7 +95,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-lg shadow-orange-900/30 transition hover:bg-orange-500"
+              className="bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-bold text-white shadow-lg shadow-orange-900/30 transition hover:bg-orange-500"
             >
               <WhatsAppIcon className="h-4 w-4 text-white" />
               Get Help via WhatsApp
@@ -116,7 +116,7 @@ export function RegisterTab({ fed, sportLabel }: { fed: FederationDetail; sportL
 
         {/* Quick facts */}
         {fed.eligibilityCriteria && (
-          <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <div className="rounded-lg border border-slate-100 bg-white p-5 shadow-sm">
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.13em] text-slate-400">
               Quick reference
             </p>

@@ -113,7 +113,7 @@ export function AddToCalendarButton({
         onClick={handleClick}
         disabled={saving || isSaved}
         aria-label={label}
-        className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition ${
+        className={`inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-bold transition ${
           isSaved
             ? onDark
               ? "cursor-default border-emerald-400/25 bg-emerald-400/[0.1] text-emerald-400"

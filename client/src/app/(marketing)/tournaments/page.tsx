@@ -135,7 +135,7 @@ export default async function TournamentsPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 py-14 text-center">
+              <div className="rounded-lg border border-dashed border-slate-300 py-14 text-center">
                 <Trophy aria-hidden className="mx-auto mb-3 h-8 w-8 text-slate-300" />
                 <p className="text-sm font-semibold text-slate-600">
                   No upcoming {featuredLabel.toLowerCase()} tournaments are listed right now.
@@ -157,7 +157,7 @@ export default async function TournamentsPage() {
                   <li key={sport.sportSlug}>
                     <Link
                       href={`/tournaments/sport/${sport.sportSlug}`}
-                      className="hover:border-power-orange/40 group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                      className="hover:border-power-orange/40 group flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
                     >
                       <span>
                         <span className="font-title block text-[15px] font-bold text-slate-900 group-hover:text-orange-700">

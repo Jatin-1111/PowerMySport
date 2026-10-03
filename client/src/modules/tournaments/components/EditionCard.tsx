@@ -17,7 +17,7 @@ export function EditionCard({ edition }: { edition: ListedEdition }) {
   return (
     <Link
       href={`/tournaments/${edition.slug}`}
-      className="hover:border-power-orange/40 group flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+      className="hover:border-power-orange/40 group flex flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
     >
       {kindLabel && (
         <span className="mb-2 w-fit rounded-md bg-orange-50 px-2 py-0.5 text-[11px] font-bold text-orange-800">

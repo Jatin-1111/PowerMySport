@@ -66,7 +66,7 @@ export function HowToRead({
   ];
 
   return (
-    <dl className="bg-muted/30 mt-6 grid gap-x-6 gap-y-3 rounded-xl border border-dashed px-5 py-4 sm:grid-cols-3">
+    <dl className="bg-muted/30 mt-6 grid gap-x-6 gap-y-3 rounded-lg border border-dashed px-5 py-4 sm:grid-cols-3">
       {items.map((item) => (
         <div key={item.term}>
           <dt className="text-sm font-semibold">{item.term}</dt>
@@ -93,7 +93,7 @@ export function EntryRules({ subcategory, listLabel }: { subcategory: string; li
   const isUnder18 = subcategory.trim().toUpperCase() === "U-18";
 
   return (
-    <section className="bg-card rounded-xl border p-5 sm:p-6">
+    <section className="bg-card rounded-lg border p-5 sm:p-6">
       <h3 className="text-base font-semibold tracking-tight">What a rank opens and closes</h3>
 
       {/* The ladder first. The gates below are stated in these names, and they

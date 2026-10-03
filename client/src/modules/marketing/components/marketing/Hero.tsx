@@ -163,7 +163,7 @@ function HomeHero({
           {subtitle && (
             <motion.div
               variants={itemVariants}
-              className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-orange-200 backdrop-blur-md sm:mb-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
+              className="mb-4 inline-flex items-center gap-1.5 rounded-sm border border-white/20 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-orange-200 backdrop-blur-md sm:mb-6 sm:gap-2 sm:px-4 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
             >
               <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               {subtitle}
@@ -260,7 +260,7 @@ function HomeHero({
                   <Button
                     variant="primary"
                     size="lg"
-                    className="group relative h-auto w-full overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold shadow-[0_10px_40px_-10px_rgba(233,115,22,0.7)] transition-shadow hover:shadow-[0_16px_48px_-10px_rgba(233,115,22,0.85)] sm:px-8 sm:py-4 sm:text-base"
+                    className="group relative h-auto w-full overflow-hidden rounded-md px-7 py-3.5 text-sm font-bold shadow-[0_10px_40px_-10px_rgba(233,115,22,0.7)] transition-shadow hover:shadow-[0_16px_48px_-10px_rgba(233,115,22,0.85)] sm:px-8 sm:py-4 sm:text-base"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">
                       {primaryCTA.label}
@@ -284,7 +284,7 @@ function HomeHero({
                   <Button
                     variant="outline"
                     size="lg"
-                    className="h-auto w-full rounded-2xl border-white/25 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:border-white/50 hover:bg-white/20 hover:text-white sm:px-8 sm:py-4 sm:text-base"
+                    className="h-auto w-full rounded-md border-white/25 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:border-white/50 hover:bg-white/20 hover:text-white sm:px-8 sm:py-4 sm:text-base"
                   >
                     {secondaryCTA.label}
                   </Button>
@@ -302,7 +302,7 @@ function HomeHero({
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3"
+                  className="rounded-lg border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur-md sm:px-4 sm:py-3"
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-300 sm:text-xs">
                     {stat.label}
@@ -405,7 +405,7 @@ function PageHero({
           {subtitle &&
             (hasImage ? (
               <div className="mb-6 flex justify-center">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur-md">
+                <span className="inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur-md">
                   <Sparkles className="h-3.5 w-3.5" />
                   {subtitle}
                 </span>
@@ -431,7 +431,7 @@ function PageHero({
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
               {primaryCTA && (
                 <Link href={primaryCTA.href}>
-                  <Button variant="primary" size="lg" className="rounded-xl">
+                  <Button variant="primary" size="lg" className="rounded-md">
                     {primaryCTA.label}
                   </Button>
                 </Link>
@@ -443,8 +443,8 @@ function PageHero({
                     size="lg"
                     className={
                       hasImage
-                        ? "rounded-xl border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/20 hover:text-white"
-                        : "rounded-xl bg-white"
+                        ? "rounded-md border-white/25 bg-white/10 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/20 hover:text-white"
+                        : "rounded-md bg-white"
                     }
                   >
                     {secondaryCTA.label}
@@ -509,14 +509,14 @@ function SplitHero({
           <motion.div variants={itemVariants} className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             {primaryCTA && (
               <Link href={primaryCTA.href}>
-                <Button variant="primary" size="lg" className="rounded-xl">
+                <Button variant="primary" size="lg" className="rounded-md">
                   {primaryCTA.label}
                 </Button>
               </Link>
             )}
             {secondaryCTA && (
               <Link href={secondaryCTA.href}>
-                <Button variant="outline" size="lg" className="rounded-xl bg-white">
+                <Button variant="outline" size="lg" className="rounded-md bg-white">
                   {secondaryCTA.label}
                 </Button>
               </Link>
@@ -533,9 +533,9 @@ function SplitHero({
             className="relative h-[280px] w-full sm:h-[380px] lg:h-[460px]"
           >
             {/* Decorative glow */}
-            <div className="to-turf-green/10 absolute inset-4 rounded-3xl bg-gradient-to-br from-orange-400/15 via-transparent blur-2xl" />
+            <div className="to-turf-green/10 absolute inset-4 rounded-xl bg-gradient-to-br from-orange-400/15 via-transparent blur-2xl" />
             <div
-              className="relative h-full w-full overflow-hidden rounded-3xl"
+              className="relative h-full w-full overflow-hidden rounded-xl"
               style={{
                 clipPath: "polygon(8% 0, 100% 0, 100% 92%, 92% 100%, 0 100%, 0 8%)",
               }}
@@ -547,7 +547,7 @@ function SplitHero({
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover transition-transform duration-700 hover:scale-105"
               />
-              <div className="ring-black/8 absolute inset-0 rounded-3xl ring-1 ring-inset" />
+              <div className="ring-black/8 absolute inset-0 rounded-xl ring-1 ring-inset" />
             </div>
           </motion.div>
         )}

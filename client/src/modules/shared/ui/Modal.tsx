@@ -137,7 +137,7 @@ export const Modal: React.FC<ModalProps> = ({
             aria-modal="true"
             aria-labelledby={title ? "modal-title" : undefined}
             onKeyDown={handleKeyDown}
-            className={`relative z-10 flex max-h-[90vh] w-full flex-col rounded-2xl bg-white shadow-2xl ${sizeClasses[size]}`}
+            className={`relative z-10 flex max-h-[90vh] w-full flex-col rounded-xl bg-white shadow-2xl ${sizeClasses[size]}`}
           >
             {/* Header */}
             {(title || closeButton) && (
@@ -168,7 +168,7 @@ export const Modal: React.FC<ModalProps> = ({
 
             {/* Footer */}
             {footer && (
-              <div className="shrink-0 rounded-b-2xl border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+              <div className="shrink-0 rounded-b-xl border-t border-slate-100 bg-slate-50/50 px-6 py-4">
                 {footer}
               </div>
             )}

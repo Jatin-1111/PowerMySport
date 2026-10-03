@@ -153,7 +153,7 @@ export default async function SportTournamentsHubPage({
                 key={String(isUpcoming)}
                 href={tournamentListHref(sport, state, { upcoming: isUpcoming })}
                 aria-current={isUpcoming === upcoming ? "true" : undefined}
-                className={`rounded-lg border px-4 py-1.5 text-xs font-semibold transition ${
+                className={`rounded-md border px-4 py-1.5 text-xs font-semibold transition ${
                   isUpcoming === upcoming
                     ? "bg-power-orange-solid border-power-orange-solid text-white"
                     : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-orange-700"
@@ -175,7 +175,7 @@ export default async function SportTournamentsHubPage({
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 py-16 text-center">
+            <div className="rounded-lg border border-dashed border-slate-300 py-16 text-center">
               <Trophy className="mx-auto mb-3 h-8 w-8 text-slate-300" />
               <p className="text-sm font-semibold text-slate-600">
                 {filtered
@@ -205,7 +205,7 @@ export default async function SportTournamentsHubPage({
                   key={p}
                   href={tournamentListHref(sport, state, { page: p })}
                   aria-current={p === page ? "page" : undefined}
-                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded-sm border px-3 py-1.5 text-xs font-semibold transition ${
                     p === page
                       ? "bg-power-orange-solid border-power-orange-solid text-white"
                       : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-orange-700"

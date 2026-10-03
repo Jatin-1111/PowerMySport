@@ -125,7 +125,7 @@ export function SectionHeading({ children }: { children: React.ReactNode }) {
 export function RequirementPill({ label, active }: { label: string; active: boolean }) {
   return (
     <div
-      className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 ${active ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
+      className={`flex items-center gap-2.5 rounded-lg border px-4 py-3 ${active ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
     >
       <div
         className={`h-2 w-2 shrink-0 rounded-full ${active ? "bg-emerald-500" : "bg-slate-300"}`}

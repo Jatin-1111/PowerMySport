@@ -71,14 +71,14 @@ export function EditionRow({
             <span className="text-sm font-semibold leading-snug text-slate-800">{title}</span>
           )}
           {e.documents?.some((d) => d.kind === "factSheet") && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
+            <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-50 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
               <FileText className="h-2.5 w-2.5" />
               Fact sheet
             </span>
           )}
           {lc && (
             <span
-              className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${lc.pill}`}
+              className={`inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${lc.pill}`}
             >
               <span className={`h-1 w-1 rounded-full ${lc.dot}`} />
               {e.level}
@@ -87,7 +87,7 @@ export function EditionRow({
           {e.ageGroups?.map((ag) => (
             <span
               key={ag}
-              className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+              className={`rounded-sm px-1.5 py-0.5 text-[10px] font-medium ${
                 highlightAgeGroup && ag === highlightAgeGroup
                   ? "text-power-orange bg-orange-100"
                   : "bg-slate-100 text-slate-600"

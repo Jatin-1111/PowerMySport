@@ -140,11 +140,11 @@ export default function CareersPage() {
       {/* Header Section */}
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="bg-linear-to-br relative overflow-hidden rounded-2xl from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+          <div className="bg-linear-to-br relative overflow-hidden rounded-xl from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
             <div className="relative z-10">
               <div className="mb-2 flex items-center gap-3">
                 <Briefcase size={32} className="text-power-orange" />
-                <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+                <span className="inline-flex items-center rounded-sm bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
                   Join Us
                 </span>
               </div>

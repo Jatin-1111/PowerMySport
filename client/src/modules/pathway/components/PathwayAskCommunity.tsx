@@ -36,9 +36,9 @@ export function PathwayAskCommunity({
       aria-labelledby={`${inputId}-heading`}
       className="border-t border-slate-100 px-4 py-6 sm:px-6"
     >
-      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+      <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 ring-1 ring-slate-200">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-slate-600 ring-1 ring-slate-200">
             <MessageCircleQuestion aria-hidden className="h-[18px] w-[18px]" />
           </span>
           <div className="min-w-0">
@@ -65,11 +65,11 @@ export function PathwayAskCommunity({
             onChange={(event) => setQuestion(event.target.value)}
             maxLength={500}
             placeholder={`Type your ${sportName} question`}
-            className="focus:border-power-orange/60 focus:ring-power-orange/15 min-h-11 w-full min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3.5 text-[14.5px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4"
+            className="focus:border-power-orange/60 focus:ring-power-orange/15 min-h-11 w-full min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3.5 text-[14.5px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4"
           />
           <button
             type="submit"
-            className="bg-power-orange-solid min-h-11 shrink-0 rounded-xl px-4 text-sm font-bold text-white transition hover:bg-orange-600"
+            className="bg-power-orange-solid min-h-11 shrink-0 rounded-md px-4 text-sm font-bold text-white transition hover:bg-orange-600"
           >
             Ask the community
           </button>

@@ -182,7 +182,7 @@ function sectionsFor(stage: PathwayStage) {
 /** Renders as a link when it has an href, and as plain text when it doesn't. */
 function ActionChip({ action }: { action: PathwayAction }) {
   const base =
-    "inline-flex items-center rounded-full border px-3 py-1.5 text-[13px] font-bold transition";
+    "inline-flex items-center rounded-md border px-3 py-1.5 text-[13px] font-bold transition";
   return action.href ? (
     <motion.div
       whileHover={{ y: -2 }}
@@ -231,7 +231,7 @@ function StageListItem({
       aria-current={active ? "step" : undefined}
       whileTap={{ scale: 0.985 }}
       transition={{ type: "spring", stiffness: 420, damping: 30 }}
-      className={`focus-visible:outline-power-orange relative flex w-full items-start gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
+      className={`focus-visible:outline-power-orange relative flex w-full items-start gap-2.5 rounded-md px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
         active ? "" : "hover:bg-slate-50"
       }`}
     >
@@ -243,7 +243,7 @@ function StageListItem({
           aria-hidden
           layoutId={`pathway-rail-active-${railId}`}
           transition={{ type: "spring", stiffness: 460, damping: 38 }}
-          className="absolute inset-0 rounded-xl bg-slate-100"
+          className="absolute inset-0 rounded-md bg-slate-100"
         />
       )}
       <span
@@ -271,7 +271,7 @@ function StageListItem({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ type: "spring", stiffness: 500, damping: 26 }}
-              className="mt-1 inline-flex origin-left items-center gap-1 rounded-full bg-amber-400 px-1.5 py-px text-[10px] font-black uppercase tracking-wide text-amber-950"
+              className="mt-1 inline-flex origin-left items-center gap-1 rounded-sm bg-amber-400 px-1.5 py-px text-[10px] font-black uppercase tracking-wide text-amber-950"
             >
               <MapPin className="h-2.5 w-2.5" /> You are here
             </motion.span>
@@ -334,7 +334,7 @@ function QuestionsList({ stage }: { stage: PathwayStage }) {
   return (
     <ul className="space-y-2.5">
       {stage.questions.map((item) => (
-        <li key={item.question} className="rounded-xl border border-slate-200 bg-white p-3.5">
+        <li key={item.question} className="rounded-lg border border-slate-200 bg-white p-3.5">
           <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
             {item.question}
           </span>
@@ -619,7 +619,7 @@ export function PathwayReader({
             onClick={openSheet}
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
-            className="focus-visible:outline-power-orange flex w-full items-center gap-2.5 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-slate-300 focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden"
+            className="focus-visible:outline-power-orange flex w-full items-center gap-2.5 rounded-md border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-slate-300 focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden"
           >
             <span
               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-black text-white"
@@ -635,13 +635,13 @@ export function PathwayReader({
                 Stage {safeIndex + 1} of {total}
               </span>
             </span>
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[12px] font-bold text-white">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-sm bg-slate-900 px-2.5 py-1.5 text-[12px] font-bold text-white">
               Change
               <ChevronDown aria-hidden className="h-3.5 w-3.5" />
             </span>
           </button>
 
-          <div className="hidden rounded-2xl border border-slate-200 bg-white p-2 lg:block">
+          <div className="hidden rounded-lg border border-slate-200 bg-white p-2 lg:block">
             <p className="px-3 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
               {total} stages
             </p>
@@ -669,7 +669,7 @@ export function PathwayReader({
           // parent's min-content width, so `hidden` was silently keeping this
           // grid item inside its track; `clip` is not a scroll container, and
           // without the override the panel grew past the phone's screen.
-          className="min-w-0 scroll-mt-24 overflow-clip rounded-2xl border border-slate-200 bg-white shadow-sm lg:self-start"
+          className="min-w-0 scroll-mt-24 overflow-clip rounded-lg border border-slate-200 bg-white shadow-sm lg:self-start"
         >
           <header
             ref={stageHeaderRef}
@@ -711,7 +711,7 @@ export function PathwayReader({
                         stiffness: 500,
                         damping: 24,
                       }}
-                      className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-950"
+                      className="inline-flex items-center gap-1 rounded-sm bg-amber-400 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-950"
                     >
                       <MapPin className="h-3 w-3" /> Your child is here
                     </motion.span>
@@ -736,7 +736,7 @@ export function PathwayReader({
               </div>
 
               {stage.ageRange && (
-                <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5">
+                <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5">
                   <Users className="h-4 w-4 shrink-0 text-emerald-600" />
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
@@ -830,7 +830,7 @@ export function PathwayReader({
                       // "location" is the value for the current place within a page;
                       // "true" is the generic fallback and says less.
                       aria-current={activeSection === id ? "location" : undefined}
-                      className={`focus-visible:outline-power-orange relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                      className={`focus-visible:outline-power-orange relative inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 ${
                         activeSection === id
                           ? "text-white"
                           : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
@@ -919,9 +919,9 @@ export function PathwayReader({
                     {stage.signals.map((signal, i) => (
                       <li
                         key={signal.title}
-                        className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3.5"
+                        className="flex gap-3 rounded-lg border border-slate-200 bg-white p-3.5"
                       >
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[11px] font-black text-slate-500">
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[11px] font-black text-slate-500">
                           {String(i + 1).padStart(2, "0")}
                         </span>
                         <div className="min-w-0">
@@ -941,7 +941,7 @@ export function PathwayReader({
                       {stage.decisions.map((decision) => (
                         <li
                           key={decision.title}
-                          className="rounded-xl border border-slate-200 bg-white p-3.5"
+                          className="rounded-lg border border-slate-200 bg-white p-3.5"
                         >
                           <span className="block text-[14.5px] font-semibold leading-snug text-slate-900">
                             {decision.title}
@@ -952,7 +952,7 @@ export function PathwayReader({
                     </ul>
 
                     {stage.helpLinks.length > 0 && (
-                      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
                         <p className="text-[11px] font-black uppercase tracking-widest text-slate-500">
                           Get help with this
                         </p>
@@ -972,7 +972,7 @@ export function PathwayReader({
                       {stage.nextSteps.map((step) => (
                         <li
                           key={`${step.when}-${step.action}`}
-                          className="grid gap-1 rounded-xl border border-slate-200 bg-white p-3.5 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-4"
+                          className="grid gap-1 rounded-lg border border-slate-200 bg-white p-3.5 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-4"
                         >
                           <span className="text-power-orange inline-flex w-fit items-center rounded-lg bg-orange-100 px-2.5 py-1 text-[12.5px] font-black">
                             {step.when}
@@ -988,7 +988,7 @@ export function PathwayReader({
                       {stage.primaryAction?.href && (
                         <Link
                           href={stage.primaryAction.href}
-                          className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
+                          className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
                         >
                           {stage.primaryAction.label}
                           <ArrowRight className="h-4 w-4" />
@@ -996,7 +996,7 @@ export function PathwayReader({
                       )}
                       <Link
                         href="/booking?tab=experts"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-slate-400"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-slate-400"
                       >
                         Connect with an expert
                       </Link>
@@ -1021,7 +1021,7 @@ export function PathwayReader({
               whileHover={safeIndex === 0 ? undefined : { x: -2 }}
               whileTap={safeIndex === 0 ? undefined : { scale: 0.97 }}
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
-              className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-35 disabled:hover:bg-transparent"
+              className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-bold text-slate-600 transition-colors hover:bg-white hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-35 disabled:hover:bg-transparent"
             >
               <ChevronLeft className="h-4 w-4 shrink-0" />
               <span className="truncate">{stages[safeIndex - 1]?.name ?? "Previous"}</span>
@@ -1042,7 +1042,7 @@ export function PathwayReader({
               // two identical grey words is what sends a parent back up the page
               // looking for the control they already scrolled past; the forward
               // move is the one this footer exists to offer.
-              className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-[13px] font-bold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-slate-200 disabled:text-slate-400 disabled:opacity-100"
+              className="focus-visible:outline-power-orange inline-flex min-w-0 items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-[13px] font-bold text-white transition-colors hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:bg-slate-200 disabled:text-slate-400 disabled:opacity-100"
             >
               <span className="truncate">
                 {stages[safeIndex + 1] ? `Next: ${stages[safeIndex + 1]?.name}` : "Next"}
@@ -1082,7 +1082,7 @@ export function PathwayReader({
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 420, damping: 40 }}
-              className="relative flex max-h-[85vh] w-full flex-col rounded-t-3xl bg-white shadow-2xl focus:outline-none"
+              className="relative flex max-h-[85vh] w-full flex-col rounded-t-xl bg-white shadow-2xl focus:outline-none"
             >
               <div className="flex items-start gap-3 border-b border-slate-100 px-4 pb-3 pt-3">
                 <div className="min-w-0 flex-1">

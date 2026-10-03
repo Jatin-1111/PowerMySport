@@ -60,15 +60,15 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
   const colorClass = iconBgColors[index % iconBgColors.length];
 
   return (
-    <div className="premium-shadow group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 will-change-transform hover:-translate-y-2 hover:scale-[1.015] hover:border-white/90 hover:bg-white/90">
+    <div className="premium-shadow group relative flex h-full flex-col overflow-hidden rounded-lg border border-white/70 bg-white/80 p-6 shadow-sm backdrop-blur-md transition-transform duration-300 will-change-transform hover:-translate-y-2 hover:scale-[1.015] hover:border-white/90 hover:bg-white/90">
       {/* Subtle corner accent */}
-      <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-[3rem] bg-gradient-to-bl from-slate-100/80 to-transparent opacity-40" />
+      <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 rounded-bl-xl bg-gradient-to-bl from-slate-100/80 to-transparent opacity-40" />
 
       {/* Icon badge */}
       {feature.icon && (
         <motion.div
           className={cn(
-            "mb-5 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl will-change-transform",
+            "mb-5 flex h-12 w-12 shrink-0 items-center justify-center rounded-md will-change-transform",
             colorClass
           )}
           whileHover={{ rotate: 8, scale: 1.18 }}
@@ -150,7 +150,7 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
   return (
     <div
       className={cn(
-        "group relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-3xl border border-white/10 transition-transform duration-300 will-change-transform hover:-translate-y-1.5 md:min-h-0",
+        "group relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-xl border border-white/10 transition-transform duration-300 will-change-transform hover:-translate-y-1.5 md:min-h-0",
         "shadow-[0_8px_40px_-8px_rgba(0,0,0,0.45)]",
         "hover:shadow-[0_20px_60px_-8px_rgba(0,0,0,0.65)]",
         "transition-shadow duration-500",
@@ -190,7 +190,7 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
       />
 
       {/* Top gradient accent bar */}
-      <div className={cn("absolute inset-x-0 top-0 h-[3px] rounded-t-3xl", accent.edgeCls)} />
+      <div className={cn("absolute inset-x-0 top-0 h-[3px] rounded-t-xl", accent.edgeCls)} />
 
       {/* Floating stat pill — top right */}
       {feature.stat && (
@@ -205,7 +205,7 @@ function BentoFeatureCard({ feature, index }: { feature: Feature; index: number 
         {feature.icon && (
           <motion.div
             className={cn(
-              "mb-5 flex shrink-0 items-center justify-center rounded-2xl text-white ring-1 backdrop-blur-sm will-change-transform",
+              "mb-5 flex shrink-0 items-center justify-center rounded-lg text-white ring-1 backdrop-blur-sm will-change-transform",
               accent.chip,
               isHero ? "h-14 w-14" : "h-11 w-11"
             )}

@@ -156,7 +156,7 @@ export function NavDropdownItem({
             description squeezed its tile and pushed its text out of line. */}
         <span
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition duration-200 motion-reduce:transition-none",
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition duration-200 motion-reduce:transition-none",
             active
               ? "bg-power-orange-solid text-white"
               : "group-hover:bg-power-orange/10 group-hover:text-power-orange bg-slate-100 text-slate-500 group-hover:scale-105"

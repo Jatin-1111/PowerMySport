@@ -18,7 +18,7 @@ import {
 // client component, and the reveals are the `.reveal-on-scroll` CSS utility in
 // globals.css rather than a framer-motion stagger.
 
-const SURFACE = "rounded-2xl border border-white/70 bg-white/80 backdrop-blur-sm premium-shadow";
+const SURFACE = "rounded-lg border border-white/70 bg-white/80 backdrop-blur-sm premium-shadow";
 
 function SectionHead({
   eyebrow,
@@ -85,7 +85,7 @@ export function WhyWeExist() {
             </div>
           </div>
 
-          <div className="premium-shadow group relative h-[320px] overflow-hidden rounded-3xl shadow-2xl sm:h-[400px] lg:h-[460px]">
+          <div className="premium-shadow group relative h-[320px] overflow-hidden rounded-xl shadow-2xl sm:h-[400px] lg:h-[460px]">
             <Image
               src="https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=1200&q=80"
               alt="Children playing sport on an outdoor court"

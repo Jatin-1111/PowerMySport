@@ -69,10 +69,10 @@ export function PathwayStatsBanner() {
               variants={cardReveal}
               whileHover={{ y: -4, scale: 1.02 }}
               transition={SPRING_STIFF}
-              className="premium-shadow group flex flex-col items-center rounded-2xl border border-white/70 bg-white/80 p-5 text-center backdrop-blur-sm will-change-transform sm:p-6"
+              className="premium-shadow group flex flex-col items-center rounded-lg border border-white/70 bg-white/80 p-5 text-center backdrop-blur-sm will-change-transform sm:p-6"
             >
               <div
-                className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${stat.color}`}
+                className={`mb-4 flex h-12 w-12 items-center justify-center rounded-md transition-transform duration-300 group-hover:scale-110 ${stat.color}`}
               >
                 {stat.icon}
               </div>
@@ -148,7 +148,7 @@ export function PathwayHelpSection() {
               variants={cardReveal}
               whileHover={{ y: -6, scale: 1.015 }}
               transition={SPRING_STIFF}
-              className="premium-shadow group relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 p-6 backdrop-blur-sm will-change-transform hover:border-white/90 sm:p-8"
+              className="premium-shadow group relative overflow-hidden rounded-lg border border-white/70 bg-white/80 p-6 backdrop-blur-sm will-change-transform hover:border-white/90 sm:p-8"
             >
               {/* decorative circle */}
               <div
@@ -156,7 +156,7 @@ export function PathwayHelpSection() {
                 className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-slate-50 opacity-60 transition-transform duration-500 group-hover:scale-150"
               />
               <div
-                className={`relative mb-5 flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:rotate-3 group-hover:scale-110 ${item.color}`}
+                className={`relative mb-5 flex h-14 w-14 items-center justify-center rounded-lg transition-transform duration-300 group-hover:rotate-3 group-hover:scale-110 ${item.color}`}
               >
                 {item.icon}
               </div>

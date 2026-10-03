@@ -64,7 +64,7 @@ function AnimatedCTAButton({
         <Button
           variant={isWhatsApp ? "primary" : variant}
           size="lg"
-          className={`w-full rounded-xl ${
+          className={`w-full rounded-md ${
             isWhatsApp
               ? "border-[#25D366] bg-[#25D366] shadow-lg shadow-green-500/20 hover:bg-[#1da851] focus:ring-[#25D366]"
               : (className ?? "")
@@ -84,7 +84,7 @@ function DefaultCTA({ title, description, primaryCTA, secondaryCTA, label }: CTA
   return (
     <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="premium-shadow relative overflow-hidden rounded-3xl border border-white/70 bg-white/80 px-8 py-14 text-center shadow-sm backdrop-blur-md">
+        <div className="premium-shadow relative overflow-hidden rounded-xl border border-white/70 bg-white/80 px-8 py-14 text-center shadow-sm backdrop-blur-md">
           <SkewPolygon className="absolute inset-0 h-full w-full" />
           <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange-200/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-sky-200/20 blur-3xl" />
@@ -123,7 +123,7 @@ function GradientCTA({ title, description, primaryCTA, secondaryCTA, label }: CT
   return (
     <section className="py-16 sm:py-20 lg:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="premium-shadow relative overflow-hidden rounded-3xl border border-white/60 shadow-xl">
+        <div className="premium-shadow relative overflow-hidden rounded-xl border border-white/60 shadow-xl">
           {/* Unsplash sports backdrop — very subtle */}
           <div className="absolute inset-0">
             <Image

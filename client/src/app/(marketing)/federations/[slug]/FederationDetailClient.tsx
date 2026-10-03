@@ -66,17 +66,17 @@ export function FederationDetailClient({
           <div className="pb-9 pt-7">
             <div className="mb-5 flex flex-wrap items-center gap-2">
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold ${typeMeta.bg} ${typeMeta.text} ${typeMeta.border}`}
+                className={`inline-flex items-center gap-1.5 rounded-sm border px-3 py-1 text-[11px] font-bold ${typeMeta.bg} ${typeMeta.text} ${typeMeta.border}`}
               >
                 <Landmark className="h-3 w-3" />
                 {typeMeta.label}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.12] bg-white/[0.07] px-3 py-1 text-[11px] font-semibold text-white/50">
+              <span className="inline-flex items-center gap-1 rounded-sm border border-white/[0.12] bg-white/[0.07] px-3 py-1 text-[11px] font-semibold text-white/50">
                 <Globe className="h-3 w-3" />
                 {sportLabel}
               </span>
               {isVerified && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/[0.1] px-3 py-1 text-[11px] font-bold text-emerald-400">
+                <span className="inline-flex items-center gap-1 rounded-sm border border-emerald-400/25 bg-emerald-400/[0.1] px-3 py-1 text-[11px] font-bold text-emerald-400">
                   <BadgeCheck className="h-3 w-3" />
                   Data Verified
                 </span>
@@ -85,7 +85,7 @@ export function FederationDetailClient({
 
             <div className="flex items-start gap-5">
               {/* Monogram */}
-              <div className="hidden h-[72px] w-[72px] shrink-0 select-none items-center justify-center rounded-2xl bg-white/[0.08] text-2xl font-black tracking-tight text-white sm:flex">
+              <div className="hidden h-[72px] w-[72px] shrink-0 select-none items-center justify-center rounded-lg bg-white/[0.08] text-2xl font-black tracking-tight text-white sm:flex">
                 {fed.acronym.slice(0, 2)}
               </div>
               <div>
@@ -110,7 +110,7 @@ export function FederationDetailClient({
                   href={fed.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-slate-900 shadow transition hover:bg-slate-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-bold text-slate-900 shadow transition hover:bg-slate-50"
                 >
                   <ExternalLink className="h-4 w-4" />
                   Official Website
@@ -121,7 +121,7 @@ export function FederationDetailClient({
                   href={fed.officialCalendarUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.07] px-5 py-2.5 text-sm font-bold text-white/75 transition hover:bg-white/[0.14] hover:text-white"
+                  className="inline-flex items-center gap-2 rounded-md border border-white/[0.15] bg-white/[0.07] px-5 py-2.5 text-sm font-bold text-white/75 transition hover:bg-white/[0.14] hover:text-white"
                 >
                   <Calendar className="h-4 w-4" />
                   Tournament Calendar

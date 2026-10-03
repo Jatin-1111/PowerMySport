@@ -177,7 +177,7 @@ export default async function PlayerRankingPage({
             return (
               <div
                 key={key}
-                className="border-border bg-card mt-4 rounded-xl border p-4 shadow-sm sm:p-5"
+                className="border-border bg-card mt-4 rounded-lg border p-4 shadow-sm sm:p-5"
               >
                 <h3 className="text-sm font-semibold">{label}</h3>
                 <RankTrajectory
@@ -348,7 +348,7 @@ function StandingCard({
 
   return (
     <div
-      className={`bg-card flex h-full flex-col rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md ${
+      className={`bg-card flex h-full flex-col rounded-lg border p-5 shadow-sm transition-shadow hover:shadow-md ${
         isHome ? "border-power-orange/40 ring-power-orange/20 ring-1" : "border-border"
       }`}
     >

@@ -227,9 +227,9 @@ export default function HomeClient() {
             {problems.map((p) => (
               <div
                 key={p.text}
-                className="group flex items-start gap-3 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
+                className="group flex items-start gap-3 rounded-lg border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70"
               >
-                <span className="group-hover:bg-power-orange/10 group-hover:text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-colors duration-300">
+                <span className="group-hover:bg-power-orange/10 group-hover:text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500 transition-colors duration-300">
                   {p.icon}
                 </span>
                 <p className="text-sm font-medium leading-snug text-slate-700">
@@ -295,10 +295,10 @@ export default function HomeClient() {
                 ].map((item) => (
                   <div
                     key={item.title}
-                    className="flex flex-col gap-4 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 will-change-transform hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/60 sm:flex-row sm:items-center"
+                    className="flex flex-col gap-4 rounded-lg border border-slate-200/60 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all duration-300 will-change-transform hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/60 sm:flex-row sm:items-center"
                   >
                     <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${item.color}`}
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md ${item.color}`}
                     >
                       {item.icon}
                     </div>
@@ -308,7 +308,7 @@ export default function HomeClient() {
                     </div>
                     <Link
                       href={item.cta.href}
-                      className="group inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+                      className="group inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
                     >
                       {item.cta.label}
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -323,7 +323,7 @@ export default function HomeClient() {
               {/* Offset backdrop panel */}
               <div
                 aria-hidden
-                className="absolute -inset-x-6 -bottom-6 top-10 rounded-[2.5rem] bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-slate-100/40"
+                className="absolute -inset-x-6 -bottom-6 top-10 rounded-xl bg-gradient-to-br from-orange-100/50 via-orange-50/30 to-slate-100/40"
               />
               {/* Dotted accent */}
               <div
@@ -336,7 +336,7 @@ export default function HomeClient() {
                 }}
               />
 
-              <div className="group relative aspect-[3/2] overflow-hidden rounded-[2rem] shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
+              <div className="group relative aspect-[3/2] overflow-hidden rounded-xl shadow-2xl shadow-slate-900/10 ring-1 ring-slate-900/5">
                 <Image
                   src="https://media.istockphoto.com/id/1496936307/photo/young-boy-watching-british-indian-mother-working-at-home.jpg?s=612x612&w=0&k=20&c=KOg86wvMpgJe42K-2i3UKdcuOD7egEWcxHO1n3WHtl8="
                   alt="Parent planning their child's sports journey"
@@ -349,13 +349,13 @@ export default function HomeClient() {
                 {/* Inset hairline frame */}
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-3 rounded-[1.5rem] ring-1 ring-white/20"
+                  className="pointer-events-none absolute inset-3 rounded-sm ring-1 ring-white/20"
                 />
 
                 {/* Glass caption — single, integrated overlay */}
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-md border border-white/15 bg-white/10 px-4 py-3.5 backdrop-blur-xl transition-colors duration-300 group-hover:bg-white/15">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg shadow-orange-950/40">
+                    <div className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-white shadow-lg shadow-orange-950/40">
                       <Map size={17} />
                     </div>
                     <div className="min-w-0">
@@ -363,7 +363,7 @@ export default function HomeClient() {
                       <p className="text-[11px] text-white/60">Pathways · Community</p>
                     </div>
                   </div>
-                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300/25 bg-emerald-400/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200">
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-emerald-300/25 bg-emerald-400/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-200">
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                     Free to start
                   </span>

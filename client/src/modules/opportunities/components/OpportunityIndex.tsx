@@ -45,7 +45,7 @@ export async function OpportunityIndex({
       </div>
 
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-8 sm:px-6">
-        <p className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-4 text-[13.5px] leading-relaxed text-slate-600">
+        <p className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-4 text-[13.5px] leading-relaxed text-slate-600">
           <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
           <span>
             Every entry links the official source it was checked against and the date we last
@@ -95,7 +95,7 @@ export async function OpportunityIndex({
             </section>
           ))
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+          <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
             <p className="text-sm font-semibold text-slate-700">
               We are checking these against their official sources.
             </p>
