@@ -4,6 +4,7 @@ import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
+import { cn } from "@/utils/cn";
 import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
@@ -13,6 +14,7 @@ import {
   Check,
   ChevronDown,
   HelpCircle,
+  Loader2,
   Instagram,
   Linkedin,
   Mail,
@@ -352,6 +354,14 @@ export default function ContactPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  // The button's own confirmation: a check and "Sent" for a few seconds after a
+  // successful submit, then back to normal. The banner above says the rest.
+  const [justSent, setJustSent] = useState(false);
+  useEffect(() => {
+    if (!justSent) return;
+    const timer = window.setTimeout(() => setJustSent(false), 3000);
+    return () => window.clearTimeout(timer);
+  }, [justSent]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -361,6 +371,9 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // The button stays clickable while sending (it would dim if disabled), so
+    // a second click is ignored here instead.
+    if (isSubmitting) return;
 
     if (!formData.subject) {
       toast.error("Please select a subject.");
@@ -382,6 +395,7 @@ export default function ContactPage() {
       });
 
       setSubmitStatus("success");
+      setJustSent(true);
       setFormData({
         name: "",
         email: "",
@@ -394,6 +408,7 @@ export default function ContactPage() {
     } catch (error) {
       console.error("Contact form submission failed:", error);
       setSubmitStatus("error");
+      setJustSent(false);
       toast.error("Failed to send message. Try again.");
     } finally {
       setIsSubmitting(false);
@@ -466,8 +481,9 @@ export default function ContactPage() {
                       exit={{ opacity: 0, y: -8, height: 0 }}
                       className="mb-6 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3"
                     >
-                      <p className="text-sm font-semibold text-emerald-800">
-                        ✓ Message sent. We&apos;ll be in touch within 24 hours.
+                      <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+                        <Check aria-hidden className="h-4 w-4 shrink-0" />
+                        Message sent. We&apos;ll be in touch within 24 hours.
                       </p>
                     </motion.div>
                   )}
@@ -577,10 +593,27 @@ export default function ContactPage() {
                       type="submit"
                       variant="primary"
                       size="lg"
-                      className="w-full"
-                      loading={isSubmitting}
+                      aria-disabled={isSubmitting}
+                      aria-busy={isSubmitting}
+                      className={
+                        justSent
+                          ? "w-full bg-emerald-700 hover:bg-emerald-700 focus-visible:ring-emerald-700"
+                          : cn("w-full", isSubmitting && "cursor-wait")
+                      }
                     >
-                      {isSubmitting ? "Sending…" : "Send Message →"}
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 aria-hidden className="h-5 w-5 animate-spin" />
+                          Sending…
+                        </>
+                      ) : justSent ? (
+                        <>
+                          <Check aria-hidden className="h-5 w-5" />
+                          Sent
+                        </>
+                      ) : (
+                        "Send Message →"
+                      )}
                     </Button>
                   </div>
                 </form>

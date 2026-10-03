@@ -187,3 +187,26 @@ describe("ContactPage — submitting the form", () => {
     expect(screen.getByLabelText(/Full Name/i)).toHaveValue("Jane Doe");
   });
 });
+
+describe("ContactPage — the submit button's own states", () => {
+  it("ignores a second click while sending, then confirms on the button", async () => {
+    let resolvePost: (value: unknown) => void = () => {};
+    postMock.mockReturnValue(new Promise((resolve) => (resolvePost = resolve)));
+    render(<ContactPage />);
+    fillRequiredFields();
+    selectSubject("General enquiry");
+
+    const button = screen.getByRole("button", { name: /Send Message/i });
+    fireEvent.click(button);
+    expect(await screen.findByRole("button", { name: /Sending/i })).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
+    // Still clickable, so it does not dim; the handler is what refuses.
+    fireEvent.click(screen.getByRole("button", { name: /Sending/i }));
+    expect(postMock).toHaveBeenCalledTimes(1);
+
+    resolvePost({ data: { success: true } });
+    expect(await screen.findByRole("button", { name: /^Sent$/ })).toBeInTheDocument();
+  });
+});
