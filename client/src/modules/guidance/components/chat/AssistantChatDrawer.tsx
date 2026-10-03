@@ -16,17 +16,9 @@ const QUICK_REPLIES = [
 interface AssistantChatDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Sent as the first message once the new session is ready (e.g. a suggested question). */
-  initialQuestion?: string | null;
-  onInitialQuestionSent?: () => void;
 }
 
-export function AssistantChatDrawer({
-  isOpen,
-  onClose,
-  initialQuestion,
-  onInitialQuestionSent,
-}: AssistantChatDrawerProps) {
+export function AssistantChatDrawer({ isOpen, onClose }: AssistantChatDrawerProps) {
   const {
     messages,
     currentSessionId,
@@ -59,30 +51,6 @@ export function AssistantChatDrawer({
       hasInitializedRef.current = false;
     }
   }, [isOpen, initialize]);
-
-  // A question handed in from outside is sent once, as soon as the fresh
-  // session exists. The ref keeps Strict Mode and re-renders from sending it
-  // twice; the parent clears it through the callback.
-  const sentQuestionRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!isOpen || !initialQuestion) return;
-    if (isInitializing || isStreaming || !currentSessionId) return;
-    if (sentQuestionRef.current === initialQuestion) return;
-    sentQuestionRef.current = initialQuestion;
-    void sendMessage(initialQuestion);
-    onInitialQuestionSent?.();
-  }, [
-    isOpen,
-    initialQuestion,
-    isInitializing,
-    isStreaming,
-    currentSessionId,
-    sendMessage,
-    onInitialQuestionSent,
-  ]);
-  useEffect(() => {
-    if (!isOpen) sentQuestionRef.current = null;
-  }, [isOpen]);
 
   return (
     <ChatDrawer

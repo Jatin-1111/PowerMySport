@@ -94,8 +94,8 @@ export function useAssistantChat() {
   // ── Switch to an existing session ─────────────────────────────────────────
 
   const switchToSession = useCallback(
-    async (sessionId: string) => {
-      if (sessionId === currentSessionId) return;
+    async (sessionId: string): Promise<boolean> => {
+      if (sessionId === currentSessionId) return true;
       setIsInitializing(true);
       setError(null);
       try {
@@ -113,16 +113,44 @@ export function useAssistantChat() {
             dailyMessageCount: data.data.dailyMessageCount ?? 0,
             totalMessageCount: data.data.totalMessageCount,
           });
-        } else {
-          setError(data.message || "Failed to load session");
+          return true;
         }
+        setError(data.message || "Failed to load session");
+        return false;
       } catch {
         setError("Failed to connect to chat service");
+        return false;
       } finally {
         setIsInitializing(false);
       }
     },
     [currentSessionId, setMessages, setError]
+  );
+
+  // ── Delete a chat ───────────────────────────────────────────────────
+
+  /** Removes one chat for good. Resolves true when it is gone. */
+  const deleteSession = useCallback(
+    async (sessionId: string): Promise<boolean> => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/assistant-chat/sessions/${sessionId}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+          credentials: "include",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          setError(data.message || "Could not delete this chat");
+          return false;
+        }
+        setSessions((prev) => prev.filter((s) => s._id !== sessionId));
+        return true;
+      } catch {
+        setError("Failed to connect to chat service");
+        return false;
+      }
+    },
+    [setError]
   );
 
   // ── Send a message ────────────────────────────────────────────────────────
@@ -142,18 +170,31 @@ export function useAssistantChat() {
             dailyRemaining: Math.max(0, m.dailyRemaining - 1),
             lifetimeRemaining: Math.max(0, m.lifetimeRemaining - 1),
           }));
+          const now = new Date().toISOString();
+          const derivedTitle =
+            userContent.trim().slice(0, 60) + (userContent.trim().length > 60 ? "…" : "");
           setSessions((prev) =>
-            prev.map((s) =>
-              s._id === currentSessionId
-                ? {
-                    ...s,
-                    title:
-                      s.title ??
-                      userContent.trim().slice(0, 60) + (userContent.trim().length > 60 ? "…" : ""),
-                    updatedAt: new Date().toISOString(),
-                  }
-                : s
-            )
+            prev.some((s) => s._id === currentSessionId)
+              ? prev.map((s) =>
+                  s._id === currentSessionId
+                    ? { ...s, title: s.title ?? derivedTitle, updatedAt: now }
+                    : s
+                )
+              : // The server leaves a chat out of the list until it has been written in,
+                // so the first message is what adds it.
+                currentSessionId
+                ? [
+                    {
+                      _id: currentSessionId,
+                      sportSlug: "",
+                      title: derivedTitle,
+                      totalMessageCount: 1,
+                      updatedAt: now,
+                      createdAt: now,
+                    },
+                    ...prev,
+                  ]
+                : prev
           );
         },
       });
@@ -178,6 +219,7 @@ export function useAssistantChat() {
     loadSessions,
     createNewSession: initialize,
     switchToSession,
+    deleteSession,
     sendMessage,
     clearError,
   };

@@ -12,7 +12,7 @@ interface LoginRequiredModalProps {
   /** Path (with query string) to return to after login, e.g. "/guidance?submissionId=X&openChat=1" */
   redirectPath: string;
   /** What triggered this modal — swaps the icon/title/copy to match. Defaults to "chat". */
-  variant?: "chat" | "plan" | "assistant";
+  variant?: "chat" | "plan";
 }
 
 export function LoginRequiredModal({
@@ -35,29 +35,21 @@ export function LoginRequiredModal({
       : "your guidance";
 
   const copy =
-    variant === "assistant"
+    variant === "plan"
       ? {
-          icon: <MessageCircle className="text-power-orange h-7 w-7" />,
-          title: "Log in to ask the assistant",
-          description:
-            "Create a free account or log in to ask PowerMySport AI about sports pathways, tournaments and experts.",
-          footerNote: "The assistant needs a free account.",
+          icon: <Sparkles className="text-power-orange h-7 w-7" />,
+          title: "Log in to get your personalised plan",
+          description: `Create a free account or log in to unlock a personalised plan for ${
+            sport ? sport : "this level"
+          }.`,
+          footerNote: "Personalised plans require a free account.",
         }
-      : variant === "plan"
-        ? {
-            icon: <Sparkles className="text-power-orange h-7 w-7" />,
-            title: "Log in to get your personalised plan",
-            description: `Create a free account or log in to unlock a personalised plan for ${
-              sport ? sport : "this level"
-            }.`,
-            footerNote: "Personalised plans require a free account.",
-          }
-        : {
-            icon: <MessageCircle className="text-power-orange h-7 w-7" />,
-            title: "Log in to chat with your coach",
-            description: `Create a free account or log in to get personalized coaching advice about ${subjectLabel}.`,
-            footerNote: "Coaching chat requires a free account.",
-          };
+      : {
+          icon: <MessageCircle className="text-power-orange h-7 w-7" />,
+          title: "Log in to chat with your coach",
+          description: `Create a free account or log in to get personalized coaching advice about ${subjectLabel}.`,
+          footerNote: "Coaching chat requires a free account.",
+        };
 
   // Rendered via a portal to <body> — an ancestor with a CSS transform (e.g.
   // a Framer Motion scale/translate animation) would otherwise turn this
