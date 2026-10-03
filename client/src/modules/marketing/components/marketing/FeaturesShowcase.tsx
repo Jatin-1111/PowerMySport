@@ -140,7 +140,7 @@ function TrialSketch() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-800">Choose a trial class</p>
-          <p className="text-xs text-slate-500">At an academy near you, before you commit</p>
+          <p className="text-xs text-slate-500">Try the sport before you commit</p>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">

@@ -152,11 +152,11 @@ export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary |
 
   const trialClassStep = {
     label: "Ready to get started?",
-    title: "Book a Trial Class",
+    title: "Try a Trial Class",
     description:
-      "Now that you know which sport suits your child, book a trial class at a verified academy near you. Your child gets to experience the sport first-hand before you commit.",
+      "Once you know which sport suits your child, let them try it before you commit. Our team can help you find a trial class to start with.",
     icon: <Building2 className="h-6 w-6" />,
-    stat: "No commitment, cancel anytime",
+    stat: "Try before you commit",
     visual: "trial",
     theme: "emerald",
   };
@@ -330,7 +330,7 @@ export default function HomeClient({ pathway }: { pathway: PathwayGuideSummary |
       {/* ── Final CTA ── */}
       <CTA
         title="All Set to Play?"
-        description="From booking a trial class to finding the right academy, our team can help with any sports service your child needs, every step of the way."
+        description="Not sure what comes next? Our team can help you work out the next step for your child, from choosing a sport to finding a trial class."
         primaryCTA={{
           label: user ? "Go to Roadmap" : "Explore Your Roadmap",
           href: "/roadmap",
