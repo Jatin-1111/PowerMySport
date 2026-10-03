@@ -1,13 +1,13 @@
 import { Suspense } from "react";
-import { Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import CommunityNotificationToastListener from "@/modules/community/components/layout/CommunityNotificationToastListener";
 import CommunityTopNav from "@/modules/community/components/layout/CommunityTopNav";
 import { rootMetadata } from "@/lib/seo";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
@@ -31,10 +31,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
-      <body
-        className={`${spaceGrotesk.variable} ${geistMono.variable} bg-app overflow-hidden text-slate-900 antialiased`}
-      >
+    // The font variables go on <html>, not <body>. Tailwind resolves
+    // `--font-sans` on :root, so a variable that only exists from <body> down
+    // is undefined there and every page fell back to the system font, which is
+    // how Space Grotesk never rendered. Geist matches the client app.
+    <html lang="en" className={`h-full ${geistSans.variable} ${geistMono.variable}`}>
+      <body className="bg-app overflow-hidden text-slate-900 antialiased">
         <div className="flex h-dvh flex-col">
           <Suspense fallback={<div className="h-16 w-full border-b border-white/70 bg-white/90" />}>
             <CommunityTopNav />

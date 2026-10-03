@@ -32,8 +32,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-ring: var(--ring);
-  --font-sans: var(--font-space-grotesk);
-  --font-title: var(--font-space-grotesk);
+  --font-sans: var(--font-geist-sans);
+  --font-title: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
