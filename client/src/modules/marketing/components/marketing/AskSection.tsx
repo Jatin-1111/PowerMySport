@@ -33,8 +33,8 @@ export const AskSection: React.FC = () => {
       return;
     }
     event?.preventDefault();
-    startAskTransition(cardRef.current);
-    router.push(href);
+    // The route changes once the homepage has dissolved behind the growing card.
+    startAskTransition(cardRef.current, () => router.push(href));
   };
 
   return (

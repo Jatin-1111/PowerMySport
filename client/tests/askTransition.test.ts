@@ -36,10 +36,15 @@ const makeCard = () => {
   return card;
 };
 
-const ghostOnScreen = () => document.querySelector('body > div[aria-hidden="true"][inert]');
+const navigate = vi.fn();
+const veilOnScreen = () =>
+  document.querySelector('body > div[aria-hidden="true"][inert][style*="z-index: 39"]');
+const ghostOnScreen = () =>
+  document.querySelector('body > div[aria-hidden="true"][inert]:not([style*="z-index: 39"])');
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 beforeEach(() => {
+  navigate.mockClear();
   setReducedMotion(false);
   Object.defineProperty(document.documentElement, "clientWidth", {
     value: 1440,
@@ -71,7 +76,7 @@ describe("askPanelBox", () => {
 describe("startAskTransition", () => {
   it("lays a copy of the card over it, hidden from assistive technology", () => {
     installAnimate();
-    startAskTransition(makeCard());
+    startAskTransition(makeCard(), navigate);
 
     const ghost = ghostOnScreen() as HTMLElement;
     expect(ghost).toBeTruthy();
@@ -82,7 +87,7 @@ describe("startAskTransition", () => {
 
   it("strips ids from the copy so the page never has two of them", () => {
     installAnimate();
-    startAskTransition(makeCard());
+    startAskTransition(makeCard(), navigate);
 
     const ghost = ghostOnScreen() as HTMLElement;
     expect(ghost.querySelector("[id]")).toBeNull();
@@ -91,7 +96,7 @@ describe("startAskTransition", () => {
 
   it("grows the copy to the workspace's box", () => {
     const animate = installAnimate();
-    startAskTransition(makeCard());
+    startAskTransition(makeCard(), navigate);
 
     const [keyframes] = animate.mock.calls[0] as unknown as [Array<Record<string, string>>];
     expect(keyframes[1]).toEqual({ left: "176px", top: "88px", width: "1088px", height: "764px" });
@@ -100,25 +105,136 @@ describe("startAskTransition", () => {
   it("does nothing when the visitor prefers reduced motion", () => {
     installAnimate();
     setReducedMotion(true);
-    startAskTransition(makeCard());
+    startAskTransition(makeCard(), navigate);
 
     expect(ghostOnScreen()).toBeNull();
   });
 
   it("does nothing in a browser without Web Animations, or without a card", () => {
-    startAskTransition(makeCard());
+    startAskTransition(makeCard(), navigate);
     expect(ghostOnScreen()).toBeNull();
 
     installAnimate();
-    startAskTransition(null);
+    startAskTransition(null, navigate);
     expect(ghostOnScreen()).toBeNull();
+  });
+});
+
+describe("navigating once the old page has dissolved", () => {
+  /** An animate() whose animations finish only when the test says so. */
+  const manualAnimate = () => {
+    const finishers: Array<() => void> = [];
+    const animate = vi.fn(() => {
+      let resolve!: () => void;
+      const finished = new Promise<void>((done) => (resolve = done));
+      finishers.push(resolve);
+      return { playState: "running", finished, cancel: vi.fn() };
+    });
+    Element.prototype.animate = animate as unknown as typeof Element.prototype.animate;
+    return { animate, finishAll: () => finishers.forEach((finish) => finish()) };
+  };
+
+  it("lays a veil in the page's background colour over the homepage", () => {
+    installAnimate();
+    startAskTransition(makeCard(), navigate);
+
+    const veil = veilOnScreen() as HTMLElement;
+    expect(veil).toBeTruthy();
+    expect(veil.style.background).toContain("var(--background)");
+    expect(veil.style.top).toBe("65px");
+  });
+
+  it("does not change the route while the page is still dissolving", async () => {
+    manualAnimate();
+    startAskTransition(makeCard(), navigate);
+    await tick();
+
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("changes the route once the veil is complete, and only once", async () => {
+    const { finishAll } = manualAnimate();
+    startAskTransition(makeCard(), navigate);
+
+    finishAll();
+    await tick();
+    await tick();
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("changes the route straight away when there is nothing to animate", () => {
+    setReducedMotion(true);
+    startAskTransition(makeCard(), navigate);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(veilOnScreen()).toBeNull();
+
+    navigate.mockClear();
+    startAskTransition(null, navigate);
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("changes the route straight away in a browser without Web Animations", () => {
+    startAskTransition(makeCard(), navigate);
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("removes the veil along with the copy", async () => {
+    installAnimate();
+    startAskTransition(makeCard(), navigate);
+
+    cancelAskTransition();
+
+    expect(veilOnScreen()).toBeNull();
+    expect(ghostOnScreen()).toBeNull();
+  });
+});
+
+describe("keeping the real workspace out of sight while the copy grows", () => {
+  const marked = () => document.documentElement.hasAttribute("data-ask-transition");
+
+  it("marks the page while the copy is on screen", () => {
+    installAnimate();
+    expect(marked()).toBe(false);
+
+    startAskTransition(makeCard(), navigate);
+
+    expect(marked()).toBe(true);
+  });
+
+  it("leaves the page unmarked when nothing is animated", () => {
+    installAnimate();
+    setReducedMotion(true);
+    startAskTransition(makeCard(), navigate);
+
+    expect(marked()).toBe(false);
+  });
+
+  it("lifts the mark as the copy begins to fade, so the workspace crossfades in", async () => {
+    installAnimate();
+    startAskTransition(makeCard(), navigate);
+
+    finishAskTransition();
+    await tick();
+
+    expect(marked()).toBe(false);
+  });
+
+  it("lifts the mark when the copy is cancelled", () => {
+    installAnimate();
+    startAskTransition(makeCard(), navigate);
+
+    cancelAskTransition();
+
+    expect(marked()).toBe(false);
   });
 });
 
 describe("finishing and cancelling", () => {
   it("fades the copy out and removes it once the workspace is ready", async () => {
     installAnimate();
-    startAskTransition(makeCard());
+    startAskTransition(makeCard(), navigate);
     expect(ghostOnScreen()).toBeTruthy();
 
     finishAskTransition();
@@ -135,7 +251,7 @@ describe("finishing and cancelling", () => {
 
   it("removes the copy at once when cancelled", () => {
     installAnimate();
-    startAskTransition(makeCard());
+    startAskTransition(makeCard(), navigate);
 
     cancelAskTransition();
 
@@ -144,9 +260,13 @@ describe("finishing and cancelling", () => {
 
   it("replaces an earlier copy rather than stacking a second", () => {
     installAnimate();
-    startAskTransition(makeCard());
-    startAskTransition(makeCard());
+    startAskTransition(makeCard(), navigate);
+    startAskTransition(makeCard(), navigate);
 
-    expect(document.querySelectorAll('body > div[aria-hidden="true"][inert]').length).toBe(1);
+    expect(
+      document.querySelectorAll('body > div[aria-hidden="true"][inert]:not([style*="z-index: 39"])')
+        .length
+    ).toBe(1);
+    expect(document.querySelectorAll('body > div[style*="z-index: 39"]').length).toBe(1);
   });
 });

@@ -142,7 +142,10 @@ export function AskWorkspace() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
-      <div className="flex h-[calc(100dvh-8.5rem)] min-h-[520px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div
+        data-ask-panel
+        className="flex h-[calc(100dvh-8.5rem)] min-h-[520px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-opacity duration-[420ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
+      >
         {!signedOut && (
           <aside
             aria-label="Past chats"

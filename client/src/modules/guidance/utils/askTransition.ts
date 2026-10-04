@@ -2,10 +2,12 @@
  * The homepage "Ask before you decide" card growing into the /ask workspace.
  *
  * On click, a copy of the card is laid over it, fixed to the viewport, and
- * animated to the exact box the workspace occupies. The route changes while it
- * grows, and once the workspace has rendered the copy fades away to reveal it.
- * The copy lives on `document.body`, outside React, so it survives the route
- * change.
+ * animated to the exact box the workspace occupies. Meanwhile a veil in the
+ * page's own background colour fades in over the rest of the homepage, so it
+ * dissolves instead of being cut away. Only once the veil is complete does the
+ * route change, which means the swap to the new page happens out of sight. When
+ * the workspace has rendered, the copy and veil fade away to reveal it. Both
+ * live on `document.body`, outside React, so they survive the route change.
  *
  * This is deliberately not the browser's View Transitions API. That needs the
  * destination page to be ready in the same render as the navigation, which only
@@ -15,16 +17,25 @@
  * Reduced motion skips the whole thing: the navigation is just a navigation.
  */
 
-const DURATION_MS = 760;
-const FADE_OUT_MS = 240;
+const DURATION_MS = 1100;
+const FADE_OUT_MS = 420;
+/** How long the old page takes to dissolve before the route is allowed to change. */
+const VEIL_MS = 500;
 /** Never leave the copy on screen longer than this, whatever the page is doing. */
 const MAX_LIFETIME_MS = 6000;
 
-// A damped spring sampled into linear(): peaks about 3% past the target and
-// settles. Browsers without linear() get the cubic-bezier below.
-const SPRING =
-  "linear(0, 0.052, 0.186, 0.357, 0.532, 0.688, 0.813, 0.904, 0.966, 1.005, 1.026, 1.034, 1.033, 1.027, 1.02, 1.013, 1.008, 1.004, 1.001, 0.999, 0.999, 0.999, 1, 1, 1, 1)";
-const FALLBACK_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+/**
+ * Set on <html> while the copy is on screen. globals.css hides the real
+ * workspace under it, so the page never shows through a copy that has not yet
+ * grown to cover it; removing the attribute is what starts the crossfade.
+ */
+const ACTIVE_ATTRIBUTE = "data-ask-transition";
+
+// Eases in and out symmetrically: it leaves gently, covers the distance
+// steadily and settles without a bounce. An earlier spring covered half the
+// distance in the first fifth of the time, which read as a snap, and its
+// overshoot added to the sense of speed.
+const EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
 
 interface Box {
   left: number;
@@ -34,6 +45,7 @@ interface Box {
 }
 
 let ghost: HTMLElement | null = null;
+let veil: HTMLElement | null = null;
 let growing: Animation | null = null;
 let lifetimeTimer: number | undefined;
 
@@ -63,12 +75,7 @@ const px = (box: Box) => ({
 });
 
 function animate(el: Element, keyframes: Keyframe[], options: KeyframeAnimationOptions) {
-  try {
-    return el.animate(keyframes, options);
-  } catch {
-    // A browser that rejects linear() easing: retry with a plain curve.
-    return el.animate(keyframes, { ...options, easing: FALLBACK_EASE });
-  }
+  return el.animate(keyframes, { easing: EASE, ...options });
 }
 
 /** The workspace's header and composer as outlines, so it arrives already looking like a chat. */
@@ -82,18 +89,38 @@ const WORKSPACE_HINT = `
   </div>`;
 
 function dispose() {
+  document.documentElement.removeAttribute(ACTIVE_ATTRIBUTE);
   window.clearTimeout(lifetimeTimer);
   growing?.cancel();
   growing = null;
   ghost?.remove();
   ghost = null;
+  veil?.remove();
+  veil = null;
 }
 
-/** Start the grow. Safe to call anywhere: it does nothing it cannot do. */
-export function startAskTransition(card: HTMLElement | null): void {
-  if (typeof window === "undefined" || !card) return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  if (typeof card.animate !== "function") return;
+/**
+ * Start the grow, and call `navigate` once the old page is out of sight (at
+ * once when there is nothing to animate: reduced motion, or no Web Animations).
+ * `navigate` is called exactly once, whatever happens to the animation.
+ */
+export function startAskTransition(card: HTMLElement | null, navigate: () => void): void {
+  let navigated = false;
+  const go = () => {
+    if (navigated) return;
+    navigated = true;
+    navigate();
+  };
+
+  if (
+    typeof window === "undefined" ||
+    !card ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    typeof card.animate !== "function"
+  ) {
+    go();
+    return;
+  }
 
   dispose();
 
@@ -129,25 +156,48 @@ export function startAskTransition(card: HTMLElement | null): void {
   hint.innerHTML = WORKSPACE_HINT;
   el.appendChild(hint);
 
+  // The page dissolves into its own background beneath the card, below the nav.
+  const cover = document.createElement("div");
+  cover.setAttribute("aria-hidden", "true");
+  cover.setAttribute("inert", "");
+  Object.assign(cover.style, {
+    position: "fixed",
+    top: "65px",
+    right: "0",
+    bottom: "0",
+    left: "0",
+    zIndex: "39",
+    background: "var(--background)",
+    opacity: "0",
+    pointerEvents: "none",
+  });
+
+  document.body.appendChild(cover);
   document.body.appendChild(el);
+  document.documentElement.setAttribute(ACTIVE_ATTRIBUTE, "");
+  veil = cover;
   ghost = el;
 
-  growing = animate(el, [px(from), px(to)], {
-    duration: DURATION_MS,
-    easing: SPRING,
-    fill: "forwards",
-  });
+  growing = animate(el, [px(from), px(to)], { duration: DURATION_MS, fill: "forwards" });
+  // The card's contents leave over the first half; the workspace's outline
+  // arrives over the second, so the two never fight for the same pixels.
   animate(clone, [{ opacity: 1 }, { opacity: 0 }], {
-    duration: 260,
-    easing: "ease-out",
+    duration: DURATION_MS * 0.45,
     fill: "forwards",
   });
   animate(hint, [{ opacity: 0 }, { opacity: 1 }], {
-    duration: 320,
-    delay: 220,
-    easing: "ease-out",
+    duration: DURATION_MS * 0.45,
+    delay: DURATION_MS * 0.4,
     fill: "forwards",
   });
+
+  const dissolving = animate(cover, [{ opacity: 0 }, { opacity: 1 }], {
+    duration: VEIL_MS,
+    fill: "forwards",
+  });
+  dissolving.finished.then(go, go);
+  // If the animation never reports in (a hidden tab), navigate anyway.
+  window.setTimeout(go, VEIL_MS + 300);
 
   lifetimeTimer = window.setTimeout(dispose, MAX_LIFETIME_MS);
 }
@@ -161,9 +211,13 @@ export function finishAskTransition(): void {
   const el = ghost;
   const reveal = () => {
     if (ghost !== el) return;
+    // The real workspace fades in (its own CSS transition) as the copy fades out.
+    document.documentElement.removeAttribute(ACTIVE_ATTRIBUTE);
+    if (veil) {
+      animate(veil, [{ opacity: 1 }, { opacity: 0 }], { duration: FADE_OUT_MS, fill: "forwards" });
+    }
     const fade = animate(el, [{ opacity: 1 }, { opacity: 0 }], {
       duration: FADE_OUT_MS,
-      easing: "ease-out",
       fill: "forwards",
     });
     fade.finished.then(dispose, dispose);

@@ -369,3 +369,16 @@
     scroll-margin-top: 6rem;
   }
 }
+
+/* While the homepage card's copy is growing into /ask, the real workspace waits
+   invisible beneath it (see utils/askTransition); it fades in when the copy
+   fades out. Only set when the visitor has not asked for reduced motion. */
+html[data-ask-transition] [data-ask-panel] {
+  opacity: 0;
+}
+
+/* The floating chat button fades out with the page instead of vanishing when the
+   route changes under the growing card. */
+html[data-ask-transition] [data-ai-bubble] {
+  opacity: 0;
+}
