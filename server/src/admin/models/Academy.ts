@@ -135,6 +135,8 @@ export interface AcademyDocument extends Document {
   rejectionReason?: string; // If rejected, store reason
   onboardingStep: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   onboardingCompleted: boolean;
+  /** SHA-256 of the capability token issued at `start`. Never selected by default. */
+  onboardingTokenHash?: string;
 
   // Ratings & Engagement
   rating: number;
@@ -554,6 +556,13 @@ const academySchema = new Schema<AcademyDocument>(
     onboardingCompleted: {
       type: Boolean,
       default: false,
+    },
+    // Hash of the token that authorises the anonymous onboarding calls (see
+    // utils/academyOnboardingToken.ts). select:false so it never rides along in
+    // a profile or progress response.
+    onboardingTokenHash: {
+      type: String,
+      select: false,
     },
 
     // Ratings & Engagement

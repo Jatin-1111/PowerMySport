@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  COACH_PUBLIC_SELECT,
   createCoach,
   deleteCoach,
   getCoachById,
@@ -101,8 +102,13 @@ export const getCoach = asyncHandler(async (req: Request, res: Response): Promis
   // without the key here the refresh silently no-ops and this endpoint serves a
   // URL that 403s ("Request has expired") for any photo uploaded over a week
   // ago. The coach LISTING already selects it; this one did not.
+  //
+  // The field allowlist matters as much as the user projection: this route is
+  // cached publicly for 60s, and the Coach schema decrypts payout details on
+  // serialization, so an unprojected read serves bank/UPI details to anyone.
   const coach = await getCoachById(coachId, {
     populateUserFields: "name photoUrl photoS3Key",
+    select: COACH_PUBLIC_SELECT,
   });
 
   if (!coach) {

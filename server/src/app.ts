@@ -146,6 +146,7 @@ const corsOptions: CorsOptions = {
     "Accept",
     "Origin",
     "Idempotency-Key",
+    "X-Academy-Onboarding-Token",
   ],
   maxAge: 86400,
   optionsSuccessStatus: 204,

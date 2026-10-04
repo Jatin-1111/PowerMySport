@@ -24,6 +24,45 @@ import { ADMIN_ROLES } from "../../constants/adminPermissions";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
 
+/** Fields the public academy profile may serve. See getAcademyProfileHandler. */
+const ACADEMY_PUBLIC_SELECT = [
+  "name",
+  "slug",
+  "description",
+  "establishedYear",
+  "logoUrl",
+  "coverPhotoUrl",
+  "photos",
+  "sports",
+  "ageGroups",
+  "location",
+  "address",
+  "city",
+  "state",
+  "pincode",
+  "placeId",
+  "operatingHours",
+  "languagesSpoken",
+  "whatsappNumber",
+  "contactEmail",
+  "contactPhone",
+  "contactPersonName",
+  "maxBatchSize",
+  "batchTimings",
+  "sessionRatePerHour",
+  "trialsessionOffered",
+  "trialSessionPrice",
+  "venueIds",
+  "coachIds",
+  "subscriptionPlans",
+  "sessionPackages",
+  "kycVerified",
+  "isApproved",
+  "rating",
+  "reviewCount",
+  "createdAt",
+].join(" ");
+
 // Helper to check if role is admin
 const isAdminRole = (role: string): boolean => {
   return Object.values(ADMIN_ROLES).includes(
@@ -44,7 +83,7 @@ const isAdminRole = (role: string): boolean => {
  */
 export const startAcademyOnboardingHandler = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const academy = await startAcademyOnboarding(req.body);
+    const { academy, onboardingToken } = await startAcademyOnboarding(req.body);
 
     res.status(201).json({
       success: true,
@@ -55,6 +94,9 @@ export const startAcademyOnboardingHandler = asyncHandler(
         slug: academy.slug,
         currentStep: 1,
         nextStep: "Enter location & contact details",
+        // Shown once. Every later onboarding call must send it back in the
+        // X-Academy-Onboarding-Token header (see academyOnboardingAccess).
+        onboardingToken,
       },
     });
   }
@@ -324,13 +366,18 @@ export const getAcademyProfileHandler = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const slug = (req.params as Record<string, unknown>).slug as string;
 
+    // Allowlist, not a denylist. This route is unauthenticated and the Academy
+    // schema decrypts bank/UPI fields on serialization (`toJSON` getters), and
+    // also holds PAN, Aadhaar last 4, KYC document links and S3 keys. Anything
+    // not named here never leaves the database. The owner's User record is
+    // deliberately not populated either: nothing on the profile page reads it.
     const academy = await Academy.findOne({
       slug,
       isApproved: true,
       kycVerified: true,
       isActive: true,
     })
-      .populate("ownerId", "name email phone")
+      .select(ACADEMY_PUBLIC_SELECT)
       .populate("subscriptionPlans")
       .populate("sessionPackages");
 

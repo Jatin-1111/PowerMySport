@@ -11,6 +11,16 @@ const COACH_LISTING_SELECT =
 
 const COACH_LISTING_USER_SELECT = "_id name photoUrl photoS3Key";
 
+/**
+ * What the PUBLIC coach profile may serve: the listing fields plus the extras
+ * the detail page reads. An allowlist on purpose. The Coach document carries
+ * payout details (`payoutMethods`), KYC files, admin notes, GST and the
+ * coach's private block-out reasons, and the schema's `toJSON({getters:true})`
+ * runs the decrypt getters over the payout fields, so anything not excluded
+ * here is served in plaintext to anyone with a coach id.
+ */
+export const COACH_PUBLIC_SELECT = `${COACH_LISTING_SELECT} certifications availability availabilityBySport travelBufferTime createdAt updatedAt`;
+
 const resolveCoachVenueImageUrl = async (key: string): Promise<string> => {
   try {
     return await s3Service.generateCachedDownloadUrl(key, "images", 604800);
@@ -529,13 +539,18 @@ export const checkCoachAvailability = async (
  */
 export const getCoachById = async (
   coachId: string,
-  options?: { populateUserFields?: string }
+  options?: { populateUserFields?: string; select?: string }
 ): Promise<CoachDocument | null> => {
   // Validate coachId
   if (!coachId || coachId === "undefined") {
     return null;
   }
   const query = Coach.findById(coachId);
+  // Public callers pass COACH_PUBLIC_SELECT; without it the whole document
+  // comes back, payout details included.
+  if (options?.select) {
+    query.select(options.select);
+  }
   if (options?.populateUserFields) {
     query.populate("userId", options.populateUserFields);
   }

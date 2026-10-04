@@ -19,7 +19,13 @@ import {
   createSubscriptionPlanHandler,
   createSessionPackageHandler,
 } from "../../client/controllers/academyOnboardingController";
-import { authMiddleware, adminMiddleware, requirePermission } from "../../middleware/auth";
+import {
+  authMiddleware,
+  adminMiddleware,
+  optionalAuthMiddleware,
+  requirePermission,
+} from "../../middleware/auth";
+import { requireAcademyOnboardingAccess } from "../../middleware/academyOnboardingAccess";
 import {
   getAcademyEarningsHandler,
   getAcademyAnalyticsHandler,
@@ -36,6 +42,12 @@ import {
 } from "../../middleware/schemas";
 
 const router = Router();
+
+// Every /onboarding/:academyId/* call is gated: the creator's onboarding token,
+// the linked owner account, or an admin. `start` is the only open onboarding
+// route, since it is where the token is issued. `optionalAuthMiddleware` only
+// fills `req.user` when a valid session exists; it never rejects.
+const onboardingAccess = [optionalAuthMiddleware, requireAcademyOnboardingAccess];
 
 // Middleware to validate step-specific requests
 const validateAcademyStep = (req: Request, res: Response, next: NextFunction) => {
@@ -97,43 +109,60 @@ router.post(
  * GET: Academy onboarding progress
  * GET /api/academies/onboarding/:academyId/progress
  */
-router.get("/onboarding/:academyId/progress", getAcademyProgressHandler);
+router.get("/onboarding/:academyId/progress", ...onboardingAccess, getAcademyProgressHandler);
 
 /**
  * PUT: Save any step (2-7)
  * PUT /api/academies/onboarding/:academyId/step/:stepNumber
  */
-router.put("/onboarding/:academyId/step/:stepNumber", validateAcademyStep, saveAcademyStepHandler);
+router.put(
+  "/onboarding/:academyId/step/:stepNumber",
+  ...onboardingAccess,
+  validateAcademyStep,
+  saveAcademyStepHandler
+);
 
 /**
  * POST: Get image upload presigned URLs
  * POST /api/academies/onboarding/:academyId/image-upload-urls
  */
-router.post("/onboarding/:academyId/image-upload-urls", getImageUploadUrlsHandler);
+router.post(
+  "/onboarding/:academyId/image-upload-urls",
+  ...onboardingAccess,
+  getImageUploadUrlsHandler
+);
 
 /**
  * POST: Confirm images uploaded
  * POST /api/academies/onboarding/:academyId/confirm-images
  */
-router.post("/onboarding/:academyId/confirm-images", confirmImagesHandler);
+router.post("/onboarding/:academyId/confirm-images", ...onboardingAccess, confirmImagesHandler);
 
 /**
  * POST: Get document upload presigned URLs
  * POST /api/academies/onboarding/:academyId/document-upload-urls
  */
-router.post("/onboarding/:academyId/document-upload-urls", getDocumentUploadUrlsHandler);
+router.post(
+  "/onboarding/:academyId/document-upload-urls",
+  ...onboardingAccess,
+  getDocumentUploadUrlsHandler
+);
 
 /**
  * POST: Confirm documents uploaded
  * POST /api/academies/onboarding/:academyId/confirm-documents
  */
-router.post("/onboarding/:academyId/confirm-documents", confirmDocumentsHandler);
+router.post(
+  "/onboarding/:academyId/confirm-documents",
+  ...onboardingAccess,
+  confirmDocumentsHandler
+);
 
 /**
  * POST: Submit academy for approval
  * POST /api/academies/onboarding/:academyId/submit
  */
-router.post("/onboarding/:academyId/submit", submitAcademyHandler);
+router.post("/onboarding/:academyId/submit", ...onboardingAccess, submitAcademyHandler);
 
 /**
  * GET: List all approved academies (public discovery)

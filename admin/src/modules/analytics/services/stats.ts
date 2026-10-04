@@ -519,7 +519,9 @@ export const statsApi = {
   },
 
   getVenueById: async (venueId: string): Promise<ApiResponse<Venue>> => {
-    const response = await axiosInstance.get(`/venues/${venueId}`);
+    // Permissioned admin route: the public GET /venues/:id no longer carries
+    // the owner's contact details or payout/verification fields.
+    const response = await axiosInstance.get(`/stats/venues/${venueId}`);
     return response.data;
   },
 

@@ -4,6 +4,7 @@ import {
   getPlatformStats,
   getAllUsers,
   getAllVenues,
+  getVenueDetail,
   getAllBookings,
   getUserRoleSummary,
   getPlayersUsers,
@@ -132,6 +133,7 @@ router.get("/users/experts", requirePermission("users:view"), getExpertUsers);
 router.get("/users/parents", requirePermission("users:view"), getParentUsers);
 router.get("/users", requirePermission("users:view"), getAllUsers);
 router.get("/venues", requirePermission("venues:view"), getAllVenues);
+router.get("/venues/:venueId", requirePermission("venues:view"), getVenueDetail);
 router.get("/bookings", requirePermission("bookings:view"), getAllBookings);
 
 router.get(

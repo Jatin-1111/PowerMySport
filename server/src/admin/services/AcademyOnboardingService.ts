@@ -6,8 +6,16 @@ import { IAcademyPendingReview, IOnboardingUploadUrl } from "../../types/index";
 import { sendEmail } from "../../utils/email";
 import { NotificationService } from "../../client/services/NotificationService";
 import { s3Service } from "../../shared/services/S3Service";
+import { encryptValue, isEncryptedValue } from "../../shared/utils/encryption";
+import { issueOnboardingToken } from "../../utils/academyOnboardingToken";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("academyOnboarding");
+
+// `updateAcademyStep` writes with findByIdAndUpdate, which does not run the
+// model's pre-save hook, so the payout fields have to be sealed here or they
+// land in the database as plaintext.
+const sealPayoutValue = (value: unknown): unknown =>
+  typeof value === "string" && value && !isEncryptedValue(value) ? encryptValue(value) : value;
 
 export const UPLOAD_CONSTRAINTS = {
   IMAGES: {
@@ -83,7 +91,7 @@ export const startAcademyOnboarding = async (payload: {
   description: string;
   logoUrl?: string;
   logoKey?: string;
-}): Promise<AcademyDocument> => {
+}): Promise<{ academy: AcademyDocument; onboardingToken: string }> => {
   const existingAcademy = await Academy.findOne({
     contactEmail: payload.ownerEmail,
     onboardingCompleted: false,
@@ -105,7 +113,12 @@ export const startAcademyOnboarding = async (payload: {
     $or: [{ email: payload.ownerEmail }, { phone: payload.ownerPhone }],
   }).select("_id");
 
+  // The caller has no account to authorise later steps against, so they are
+  // handed this token once; only its hash is stored.
+  const { token: onboardingToken, hash: onboardingTokenHash } = issueOnboardingToken();
+
   const academy = await Academy.create({
+    onboardingTokenHash,
     name: payload.name,
     legalName: payload.legalName,
     slug,
@@ -193,7 +206,7 @@ export const startAcademyOnboarding = async (payload: {
     maxBatchSize: 20,
   });
 
-  return academy;
+  return { academy, onboardingToken };
 };
 
 export const updateAcademyStep = async (
@@ -250,10 +263,10 @@ export const updateAcademyStep = async (
   }
 
   if (stepNumber === 7) {
-    updateData.bankAccountNumber = payload.bankAccountNumber;
-    updateData.bankIfsc = payload.bankIfsc;
+    updateData.bankAccountNumber = sealPayoutValue(payload.bankAccountNumber);
+    updateData.bankIfsc = sealPayoutValue(payload.bankIfsc);
     updateData.bankAccountName = payload.bankAccountName;
-    updateData.upiId = payload.upiId;
+    updateData.upiId = sealPayoutValue(payload.upiId);
     updateData.payoutFrequency = payload.payoutFrequency;
     updateData.cancellationPolicy = payload.cancellationPolicy;
     updateData.refundPolicy = payload.refundPolicy;

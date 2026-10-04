@@ -155,8 +155,30 @@ export const createVenue = async (payload: CreateVenuePayload): Promise<VenueDoc
   return venue;
 };
 
-export const getVenueById = async (id: string): Promise<VenueDocument | null> => {
-  const venue = await Venue.findById(id).populate("ownerId");
+/**
+ * Fields that never belong in a public venue response. `payoutMethods` and
+ * `documents` are bank details and verification files (the schema's
+ * `toJSON({getters:true})` decrypts the former on serialization); the owner
+ * contact fields and moderation notes are the lister's private data and the
+ * admin team's working notes. Admin callers opt out via `forAdmin`.
+ */
+const VENUE_PUBLIC_EXCLUDE =
+  "-payoutMethods -documents -ownerEmail -ownerPhone -emailVerified -reviewNotes -rejectionReason";
+
+export const getVenueById = async (
+  id: string,
+  options?: { forAdmin?: boolean }
+): Promise<VenueDocument | null> => {
+  // The public detail route is cached for 60s and unauthenticated: it must not
+  // populate the owner (the whole User document used to ride along: email,
+  // phone, dob, addresses, push subscriptions, refund bank details) and must
+  // not serve payout or verification fields. The admin venue page needs the
+  // owner's contact details, so it gets them through its own permissioned
+  // route, with only the three fields it renders.
+  const query = options?.forAdmin
+    ? Venue.findById(id).populate("ownerId", "name email phone")
+    : Venue.findById(id).select(VENUE_PUBLIC_EXCLUDE);
+  const venue = await query;
   if (venue) {
     // For venue detail reads, only image URLs are needed.
     // Avoid refreshing document URLs here because it adds expensive S3 calls.
@@ -240,7 +262,17 @@ export const findVenuesNearby = async (
           data: [
             { $skip: skip },
             { $limit: limit },
-            { $project: { payoutMethods: 0, documents: 0 } },
+            {
+              $project: {
+                payoutMethods: 0,
+                documents: 0,
+                ownerEmail: 0,
+                ownerPhone: 0,
+                emailVerified: 0,
+                reviewNotes: 0,
+                rejectionReason: 0,
+              },
+            },
           ],
         },
       },
@@ -280,7 +312,8 @@ export const getAllVenues = async (
     search?: string;
   },
   page: number = 1,
-  limit: number = 20
+  limit: number = 20,
+  options?: { forAdmin?: boolean }
 ): Promise<{
   venues: VenueDocument[];
   total: number;
@@ -316,8 +349,12 @@ export const getAllVenues = async (
   // specifically runs a decrypt getter per field on every serialization
   // (see Venue.ts's toJSON/toObject getters:true), which was pure wasted
   // CPU on data nothing renders.
+  //
+  // The admin Venues page shares this function and does render the rejection
+  // reason, so `forAdmin` keeps those fields; the public callers (search,
+  // discovery) drop the owner contact fields and moderation notes as well.
   const venues = await Venue.find(query)
-    .select("-payoutMethods -documents")
+    .select(options?.forAdmin ? "-payoutMethods -documents" : VENUE_PUBLIC_EXCLUDE)
     .sort({ rating: -1, reviewCount: -1, _id: 1 })
     .skip(skip)
     .limit(limit);

@@ -1,9 +1,13 @@
 import { Request, Response } from "express";
 import { Booking } from "../../../client/models/Booking";
-import { transformDocuments } from "../../../middleware/responseTransform";
-import { getAllVenues as getAllVenuesService } from "../../../client/services/VenueService";
+import { transformDocument, transformDocuments } from "../../../middleware/responseTransform";
+import {
+  getAllVenues as getAllVenuesService,
+  getVenueById,
+} from "../../../client/services/VenueService";
 import { getPaginationParams } from "../../../utils/pagination";
 import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
 
 // Get all venues
 export const getAllVenues = asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -11,7 +15,11 @@ export const getAllVenues = asyncHandler(async (req: Request, res: Response): Pr
   const search = typeof req.query.search === "string" ? req.query.search : undefined;
 
   // Using the service method matching the new signature
-  const result = await getAllVenuesService(search ? { search } : {}, page, limit);
+  // forAdmin: this list renders the rejection reason, which the public
+  // callers of the same service no longer receive.
+  const result = await getAllVenuesService(search ? { search } : {}, page, limit, {
+    forAdmin: true,
+  });
 
   res.status(200).json({
     success: true,
@@ -22,6 +30,25 @@ export const getAllVenues = asyncHandler(async (req: Request, res: Response): Pr
       page: result.page,
       totalPages: result.totalPages,
     },
+  });
+});
+
+// One venue, with the owner's name/email/phone, for the admin venue page. This
+// used to be served by the public GET /api/venues/:id, which is why that route
+// populated the whole owner User; the admin page now has its own route behind
+// `venues:view`, so the public one can stay free of owner and payout data.
+export const getVenueDetail = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const venueId = (req.params as Record<string, unknown>).venueId as string;
+  const venue = await getVenueById(venueId, { forAdmin: true });
+
+  if (!venue) {
+    throw new AppError("Venue not found", 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Venue retrieved successfully",
+    data: transformDocument(venue),
   });
 });
 
