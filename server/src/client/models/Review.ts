@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { REVIEW_UNIQUE_INDEXES } from "./reviewIndexes";
 
 export interface ReviewDocument extends Document {
   bookingId?: mongoose.Types.ObjectId; // For venues/coaches
@@ -130,12 +131,14 @@ reviewSchema.index({ userId: 1 });
 // {reportCount:-1, createdAt:-1}. The index above has no createdAt tiebreak.
 // Production has autoIndex off, so this also needs migration 35.
 reviewSchema.index({ moderationStatus: 1, reportCount: -1, createdAt: -1 });
-// Allow multiple reviews per booking (one for venue, one for coach)
-reviewSchema.index({ bookingId: 1, targetType: 1, userId: 1 }, { unique: true, sparse: true });
-// Allow one review per product per order
-reviewSchema.index(
-  { orderId: 1, targetType: 1, targetId: 1, userId: 1 },
-  { unique: true, sparse: true }
-);
+// The unique rules (one review per user per booking per target, per order per
+// product, per user per product) live in reviewIndexes.ts so migration 50 and
+// this model share one definition. They are PARTIAL on purpose: the sparse
+// versions that used to be here still indexed bookingless reviews, so only one
+// product review could ever exist and nobody could review a venue twice.
+// Production has autoIndex off, so changing these needs migration 50.
+for (const { key, ...options } of REVIEW_UNIQUE_INDEXES) {
+  reviewSchema.index(key, options);
+}
 
 export const Review = mongoose.model<ReviewDocument>("Review", reviewSchema);

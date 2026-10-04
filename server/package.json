@@ -73,6 +73,7 @@
     "migrate:edition-series": "ts-node src/migrations/45_classify_tennis_edition_series.ts",
     "migrate:season-plan-index": "ts-node src/migrations/46_add_season_plan_index.ts",
     "migrate:notifications-permissions": "ts-node src/migrations/49_backfill_notifications_permissions.ts",
+    "migrate:review-indexes": "ts-node src/migrations/50_fix_review_unique_indexes.ts",
     "test:season-plan": "npm run build && node --test --test-force-exit dist/tests/seasonPlan.integration.test.js",
     "prune:rankings": "ts-node src/scripts/pruneRankingHistory.ts"
   },
