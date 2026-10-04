@@ -96,36 +96,84 @@ export async function initiateRefund(
     );
   }
 
-  // Validate refund not already processed
-  if (transaction.refundState && transaction.refundState !== "FAILED") {
-    throw new Error(`Refund already ${transaction.refundState.toLowerCase()} for this transaction`);
+  // Reject bad input BEFORE claiming, so a request that was never going to work
+  // cannot leave the transaction marked as having a refund in flight.
+  if (refundMethod === "BANK_TRANSFER" && !payload.bankDetails) {
+    throw new Error("Bank details required for bank transfer refunds");
+  }
+  if (!["ORIGINAL_CARD", "BANK_TRANSFER", "STORE_CREDIT"].includes(refundMethod)) {
+    throw new Error(`Unknown refund method: ${refundMethod}`);
   }
 
-  let refundId: string | undefined;
-  let state: string = "INITIATED";
+  // A payment made from the wallet was never charged to a card, so there is no
+  // card to reverse: the gateway would be asked to refund an order it has never
+  // heard of, and fail forever. Money paid from the wallet goes back to it.
+  const effectiveMethod: RefundMethod =
+    refundMethod === "ORIGINAL_CARD" && isWalletPayment(transaction)
+      ? "STORE_CREDIT"
+      : refundMethod;
+
+  // Claim the refund atomically BEFORE touching the gateway or the wallet. The
+  // old check read `refundState` off a document loaded earlier and acted on it,
+  // so two triggers (the expiry job, a cancel, an admin) could each pass it and
+  // each send a refund. Now exactly one caller flips the state from "none or
+  // FAILED" to INITIATED; every other caller is turned away here. A failed
+  // attempt releases the claim by setting FAILED, so it stays retryable.
+  const claimed = await claimRefund(source, transaction._id, amount);
 
   try {
-    switch (refundMethod) {
+    switch (effectiveMethod) {
       case "ORIGINAL_CARD":
-        return await initiateCardRefund(transaction, amount);
+        return await initiateCardRefund(claimed, amount);
 
       case "BANK_TRANSFER":
-        if (!payload.bankDetails) {
-          throw new Error("Bank details required for bank transfer refunds");
-        }
-        return await initiateBankTransferRefund(transaction, amount, payload.bankDetails);
+        return await initiateBankTransferRefund(claimed, amount, payload.bankDetails!);
 
       case "STORE_CREDIT":
-        return await initiateStoreCreditRefund(transaction, amount);
+        return await initiateStoreCreditRefund(claimed, amount);
 
       default:
-        throw new Error(`Unknown refund method: ${refundMethod}`);
+        throw new Error(`Unknown refund method: ${effectiveMethod}`);
     }
   } catch (error) {
     log.error("Error initiating refund:", error);
     throw error;
   }
 }
+
+const refundModelFor = (source: RefundSource): any =>
+  source === "COACH_SUBSCRIPTION" ? CoachSubscriptionPaymentTransaction : BookingPaymentTransaction;
+
+const isWalletPayment = (transaction: any): boolean =>
+  typeof transaction?.merchantOrderId === "string" &&
+  transaction.merchantOrderId.startsWith("WALLET-");
+
+/** One conditional update: only a transaction with no refund (or a FAILED one) is claimed. */
+const claimRefund = async (source: RefundSource, id: unknown, amount: number): Promise<any> => {
+  const Model = refundModelFor(source);
+  const claimed = await Model.findOneAndUpdate(
+    {
+      _id: id,
+      $or: [
+        { refundState: { $exists: false } },
+        { refundState: null },
+        { refundState: "" },
+        { refundState: "FAILED" },
+      ],
+    },
+    { $set: { refundState: "INITIATED", refundAmount: amount } },
+    { new: true }
+  );
+
+  if (!claimed) {
+    const current = await Model.findById(id).select("refundState").lean();
+    throw new Error(
+      `Refund already ${String(current?.refundState ?? "initiated").toLowerCase()} for this transaction`
+    );
+  }
+
+  return claimed;
+};
 
 /**
  * Refund via PhonePe to original card (default method)

@@ -675,6 +675,125 @@ export const confirmMockPaymentSuccess = async (
   return updatedBooking;
 };
 
+type PaymentStatusContext = {
+  actorType?: BookingEventActorType;
+  channel?: BookingEventChannel;
+  actorUserId?: string;
+  metadata?: Record<string, unknown>;
+};
+
+/**
+ * Marks one payer's share PAID, and confirms the booking once every player
+ * share is paid. Safe to call any number of times and from any number of places
+ * at once: the PhonePe webhook, the user's browser polling for status, the
+ * wallet-pay route and an outbox retry all end up here for the same payment.
+ *
+ * This used to load the booking, rewrite the whole `payments` array in memory
+ * and `save()` it. Two consequences, both silent:
+ *   • two split-payment participants paying together overwrote each other, and
+ *     one share stayed PENDING for good;
+ *   • every caller recorded the audit event and sent the confirmation, so a
+ *     webhook racing a poll produced two of each.
+ *
+ * Now each step is a conditional single-document update, so exactly one caller
+ * wins each transition, and the audit event and the confirmation belong to the
+ * winner:
+ *   1. flip this payer's own player share, only if it is not already PAID;
+ *   2. claim the confirmation (`paymentConfirmedAt` + AWAITING_PROVIDER), only
+ *      while it is unset and no player share is outstanding.
+ * Step 2 is attempted even when step 1 flipped nothing, so a call that died
+ * between the two steps is healed by the retry.
+ */
+const markPaymentPaid = async (
+  bookingId: string,
+  payerUserId: string,
+  session: ClientSession | undefined,
+  context: PaymentStatusContext | undefined
+): Promise<BookingDocument> => {
+  const payer = new mongoose.Types.ObjectId(payerUserId);
+  const options = session ? { session } : {};
+  const now = new Date();
+
+  // Only the payer's PLAYER share is theirs to pay. Their payee rows (if they
+  // are also the provider) are released by the payout job, never by paying.
+  const flipped = await Booking.findOneAndUpdate(
+    {
+      _id: bookingId,
+      payments: { $elemMatch: { userId: payer, userType: "Player", status: { $ne: "PAID" } } },
+    },
+    { $set: { "payments.$[share].status": "PAID", "payments.$[share].paidAt": now } },
+    {
+      new: true,
+      arrayFilters: [
+        { "share.userId": payer, "share.userType": "Player", "share.status": { $ne: "PAID" } },
+      ],
+      ...options,
+    }
+  );
+
+  const noPlayerShareOutstanding = {
+    payments: { $not: { $elemMatch: { userType: "Player", status: { $ne: "PAID" } } } },
+  };
+
+  // The booking is now fully paid, so it moves from "we are waiting on the
+  // customer" to "we are waiting on the provider". That is why AWAITING_PAYMENT
+  // and AWAITING_PROVIDER are separate states. A booking in any other state
+  // (for example PENDING_INVITES) is confirmed without changing its status.
+  let confirmed = await Booking.findOneAndUpdate(
+    {
+      _id: bookingId,
+      paymentConfirmedAt: null,
+      status: "AWAITING_PAYMENT",
+      ...noPlayerShareOutstanding,
+    },
+    { $set: { paymentConfirmedAt: now, status: "AWAITING_PROVIDER" } },
+    { new: true, ...options }
+  );
+  if (!confirmed) {
+    confirmed = await Booking.findOneAndUpdate(
+      { _id: bookingId, paymentConfirmedAt: null, ...noPlayerShareOutstanding },
+      { $set: { paymentConfirmedAt: now } },
+      { new: true, ...options }
+    );
+  }
+
+  const booking =
+    confirmed ?? flipped ?? (await Booking.findById(bookingId).session(session ?? null));
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  // Only the call that actually changed something records it. A repeat finds
+  // the share already PAID and the booking already confirmed, and does nothing.
+  if (flipped || confirmed) {
+    const payerShare = booking.payments?.find(
+      (payment) => payment.userId.toString() === payerUserId && payment.userType === "Player"
+    );
+    await recordBookingEventFor(booking, {
+      type: "PAYMENT_CONFIRMED",
+      toStatus: booking.status,
+      actorType: context?.actorType ?? "GATEWAY",
+      actorUserId: context?.actorUserId ?? payerUserId,
+      channel: context?.channel ?? "WEBHOOK",
+      amountPaise: toPaise(payerShare?.amount ?? booking.totalAmount),
+      summary: booking.paymentConfirmedAt
+        ? "Payment confirmed — booking fully paid"
+        : "Payment received for one share — awaiting remaining shares",
+      metadata: {
+        payerUserId,
+        fullyPaid: Boolean(booking.paymentConfirmedAt),
+        ...(context?.metadata ?? {}),
+      },
+    });
+  }
+
+  if (confirmed) {
+    await sendBookingPaymentConfirmation(bookingId);
+  }
+
+  return booking;
+};
+
 /**
  * `context` attributes the resulting audit event to the surface that drove it
  * — the same payment can be confirmed by the user's browser returning from
@@ -687,13 +806,12 @@ export const updatePaymentStatus = async (
   payerUserId: string,
   status: "PAID" | "PENDING" | "FAILED",
   session?: ClientSession,
-  context?: {
-    actorType?: BookingEventActorType;
-    channel?: BookingEventChannel;
-    actorUserId?: string;
-    metadata?: Record<string, unknown>;
-  }
+  context?: PaymentStatusContext
 ): Promise<BookingDocument> => {
+  if (status === "PAID") {
+    return markPaymentPaid(bookingId, payerUserId, session, context);
+  }
+
   const bookingQuery = Booking.findById(bookingId);
   if (session) {
     bookingQuery.session(session);
@@ -705,7 +823,22 @@ export const updatePaymentStatus = async (
     throw new Error("Booking not found");
   }
 
-  const wasPaymentConfirmed = Boolean(booking.paymentConfirmedAt);
+  // A failure report for a share that is already PAID is stale: an earlier
+  // attempt failing after a later one succeeded, or a redelivered event. The
+  // FAILED path below deletes the booking outright, so honouring it would
+  // destroy a booking the customer has paid for.
+  const alreadyPaid = booking.payments?.some(
+    (payment) =>
+      payment.userId.toString() === payerUserId &&
+      payment.userType === "Player" &&
+      payment.status === "PAID"
+  );
+  if (status === "FAILED" && alreadyPaid) {
+    log.warn(
+      `Ignoring FAILED payment report for booking ${bookingId}: payer ${payerUserId} has already paid`
+    );
+    return booking;
+  }
 
   if (booking.payments && booking.payments.length > 0) {
     booking.payments = booking.payments.map((payment) => {
@@ -719,32 +852,8 @@ export const updatePaymentStatus = async (
       return {
         ...plain,
         status,
-        ...(status === "PAID" ? { paidAt: new Date() } : {}),
       };
     });
-  }
-
-  // Set paymentConfirmedAt when all PLAYER entries are PAID.
-  // VENUE_LISTER/COACH entries represent payee splits (payout tracking)
-  // and are released by the scheduled payout job, not by the player paying.
-  if (
-    status === "PAID" &&
-    (!booking.payments.length ||
-      booking.payments
-        .filter((payment) => payment.userType === "Player")
-        .every((payment) => payment.status === "PAID"))
-  ) {
-    booking.paymentConfirmedAt = new Date();
-
-    // The booking is now fully paid, so it moves from "we are waiting on the
-    // customer" to "we are waiting on the provider". This transition is the
-    // reason AWAITING_PAYMENT and AWAITING_PROVIDER are separate states: it
-    // used to be expressed only by paymentConfirmedAt appearing on a booking
-    // whose status never changed, which meant every consumer had to know to
-    // check a timestamp to understand what the booking was waiting for.
-    if (booking.status === "AWAITING_PAYMENT") {
-      booking.status = "AWAITING_PROVIDER";
-    }
   }
 
   if (session) {
@@ -756,29 +865,6 @@ export const updatePaymentStatus = async (
   const payerShare = booking.payments?.find((payment) => payment.userId.toString() === payerUserId);
   const eventActorType = context?.actorType ?? "GATEWAY";
   const eventChannel = context?.channel ?? "WEBHOOK";
-
-  if (status === "PAID") {
-    await recordBookingEventFor(booking, {
-      type: "PAYMENT_CONFIRMED",
-      toStatus: booking.status,
-      actorType: eventActorType,
-      actorUserId: context?.actorUserId ?? payerUserId,
-      channel: eventChannel,
-      amountPaise: toPaise(payerShare?.amount ?? booking.totalAmount),
-      summary: booking.paymentConfirmedAt
-        ? "Payment confirmed — booking fully paid"
-        : "Payment received for one share — awaiting remaining shares",
-      metadata: {
-        payerUserId,
-        fullyPaid: Boolean(booking.paymentConfirmedAt),
-        ...(context?.metadata ?? {}),
-      },
-    });
-  }
-
-  if (status === "PAID" && booking.paymentConfirmedAt && !wasPaymentConfirmed) {
-    await sendBookingPaymentConfirmation(bookingId);
-  }
 
   // Send payment status notification and delete booking if failed
   if (status === "FAILED") {

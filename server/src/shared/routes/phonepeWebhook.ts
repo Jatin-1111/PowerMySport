@@ -67,33 +67,53 @@ router.post("/webhook", async (req, res) => {
     return res.status(400).send("invalid json");
   }
 
+  // An id the gateway gave us is the identity of the event. Without one, the
+  // identity is a hash of the exact body: a redelivery is byte-identical and so
+  // dedupes, while a state change for the same order (PENDING then COMPLETED)
+  // is a different body and is kept. The old fallback keyed on the transaction
+  // id, or the first 200 characters, so the COMPLETED event could be discarded
+  // as a "duplicate" of the PENDING one that came before it.
+  const explicitId = payload?.eventId || payload?.id;
   const eventId =
-    payload?.eventId ||
-    payload?.id ||
-    payload?.data?.transactionId ||
-    JSON.stringify(payload).slice(0, 200);
+    typeof explicitId === "string" && explicitId.length > 0
+      ? explicitId
+      : `sha256:${crypto.createHash("sha256").update(rawBody, "utf8").digest("hex")}`;
+
+  const enqueue = () =>
+    OutboxMessage.create({
+      type: "process_payment_webhook",
+      payload: { eventId },
+      status: "PENDING",
+      attempts: 0,
+    });
 
   try {
-    const existing = await PaymentWebhookEvent.findOne({ eventId }).lean();
-    if (!existing) {
-      await PaymentWebhookEvent.create({
-        eventId,
-        eventType: payload?.event || payload?.type || null,
-        payload,
-        status: "PENDING",
-      });
-
-      // enqueue processing via outbox
-      await OutboxMessage.create({
-        type: "process_payment_webhook",
-        payload: { eventId },
-        status: "PENDING",
-        attempts: 0,
-      });
-    } else {
-      log.info("duplicate webhook received, eventId=", eventId);
-    }
+    // The unique index on eventId is the dedupe, so two deliveries arriving
+    // together cannot both pass a check-then-insert and one of them 500.
+    await PaymentWebhookEvent.create({
+      eventId,
+      eventType: payload?.event || payload?.type || null,
+      payload,
+      status: "PENDING",
+    });
+    await enqueue();
   } catch (err) {
+    if ((err as { code?: number })?.code === 11000) {
+      log.info("duplicate webhook received, eventId=", eventId);
+      // The first delivery may have stored the event and died before enqueuing
+      // it; a retry must not leave it unprocessed forever.
+      try {
+        const queued = await OutboxMessage.exists({
+          type: "process_payment_webhook",
+          "payload.eventId": eventId,
+        });
+        if (!queued) await enqueue();
+      } catch (enqueueErr) {
+        log.error("failed to re-enqueue webhook event", enqueueErr);
+        return res.status(500).send("db error");
+      }
+      return res.status(200).send("ok");
+    }
     log.error("failed to persist webhook event", err);
     return res.status(500).send("db error");
   }

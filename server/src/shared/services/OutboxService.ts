@@ -2,6 +2,7 @@ import { reconcileBookingPaymentFromWebhookPayload } from "../../client/services
 import { reconcileCoachSubscriptionPaymentFromWebhookPayload } from "../../client/services/CoachSubscriptionPaymentService";
 import { reconcileExpertSessionPaymentFromWebhookPayload } from "../../client/services/ExpertsService";
 import { NotificationService } from "../../client/services/NotificationService";
+import { reconcileWalletTopUpFromWebhookPayload } from "../../client/services/WalletService";
 import { reconcileEcommerceOrderFromWebhookPayload } from "../../shop/services/EcommerceService";
 import { sendEmail } from "../../utils/email";
 import OutboxMessage from "../models/OutboxMessage";
@@ -94,6 +95,11 @@ export const startOutboxWorker = () => {
               // Also try expert session reconciliation — the webhook may be
               // for an expert session (merchantOrderId prefix "EXP_").
               await reconcileExpertSessionPaymentFromWebhookPayload(event.payload);
+
+              // And wallet top-ups (merchantOrderId prefix "WTOPUP-"). Without
+              // this a user who paid and closed the tab was charged and never
+              // credited: only their own browser calling verify credited them.
+              await reconcileWalletTopUpFromWebhookPayload(event.payload);
 
               event.status = "DONE";
               event.processedAt = new Date();

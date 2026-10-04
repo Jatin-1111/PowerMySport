@@ -337,13 +337,6 @@ export const payBookingWithWallet = asyncHandler(
       throw new AppError("Booking not found", 404);
     }
 
-    // Only a booking still awaiting payment can be paid for. AWAITING_PROVIDER
-    // means the money already landed, so accepting another payment there would
-    // charge the customer twice.
-    if (booking.status !== "AWAITING_PAYMENT" && booking.status !== "PENDING_INVITES") {
-      throw new AppError("Booking cannot be paid for in its current state", 400);
-    }
-
     // Verify user is part of the booking (organizer or participant)
     if (booking.userId.toString() !== user.id && booking.organizerId?.toString() !== user.id) {
       // Find if they are a participant
@@ -353,8 +346,39 @@ export const payBookingWithWallet = asyncHandler(
       }
     }
 
-    // Calculate user's share
-    const paymentShare = booking.payments?.find((p) => p.userId.toString() === user.id);
+    // Calculate user's share. Only their PLAYER row is theirs to pay: if they
+    // are also the venue or coach on this booking, the first row carrying their
+    // id can be their payee row (the net payout), which is not what they owe.
+    const paymentShare = booking.payments?.find(
+      (p) => p.userId.toString() === user.id && p.userType === "Player"
+    );
+
+    // Deterministic, and still `WALLET-`-prefixed, which is how refunds and the
+    // wallet migration recognise a wallet payment.
+    const merchantOrderId = `WALLET-${bookingId}-${user.id}`;
+
+    // A repeat of a payment that already went through is a success, not an
+    // error: the same request twice (a double tap, a client retry after a lost
+    // response) must not show the customer a failure for money that is correctly
+    // paid. This runs before the state check, because a paid booking has moved on.
+    const paidByWallet = await BookingPaymentTransaction.exists({
+      merchantOrderId,
+      status: "COMPLETED",
+    });
+    const shareSettled = paymentShare
+      ? paymentShare.status === "PAID"
+      : Boolean(booking.paymentConfirmedAt);
+    if (paidByWallet && shareSettled) {
+      res.status(200).json({ success: true, message: "Paid via wallet successfully" });
+      return;
+    }
+
+    // Only a booking still awaiting payment can be paid for. AWAITING_PROVIDER
+    // means the money already landed, so accepting another payment there would
+    // charge the customer twice.
+    if (booking.status !== "AWAITING_PAYMENT" && booking.status !== "PENDING_INVITES") {
+      throw new AppError("Booking cannot be paid for in its current state", 400);
+    }
 
     const amount = paymentShare ? paymentShare.amount : booking.totalAmount;
 
@@ -366,45 +390,94 @@ export const payBookingWithWallet = asyncHandler(
       throw new AppError("Booking is already paid", 400);
     }
 
-    // Deduct from wallet
-    await WalletService.debitWallet(user.id, amount, `Booking Payment: ${bookingId}`, bookingId);
+    // Everything from here is safe to repeat. A double tap, a retry after a
+    // crash, or two requests at once all converge on ONE debit, ONE payment
+    // record and ONE confirmation:
+    //   • the wallet debit is idempotent per booking (see WalletService);
+    //   • the payment record has a deterministic id, so the unique index on
+    //     merchantOrderId means only the first request creates it;
+    //   • updatePaymentStatus(PAID) is idempotent.
+    // The wallet document is the serialisation point, so there is no window in
+    // which two requests both pass a check and both charge.
+    try {
+      await WalletService.debitWallet(user.id, amount, `Booking Payment: ${bookingId}`, bookingId);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.message === "Insufficient wallet balance" || error.message === "Wallet not found")
+      ) {
+        throw new AppError("Insufficient wallet balance", 400);
+      }
+      throw error;
+    }
 
-    const merchantOrderId = `WALLET-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
-    // Create payment transaction.
     // BookingPaymentTransaction.amount is denominated in PAISE — the PhonePe
     // path stores Math.round(amount * 100), and every downstream reader
     // (RefundService.initiateRefund, timer.ts expireOldBookings, the refund
     // retry job in scheduledJobs.ts) divides by 100 to get rupees. Storing
     // the raw rupee figure here made wallet-paid bookings refund and report
     // 100x too small.
-    await BookingPaymentTransaction.create({
-      bookingId: booking._id,
-      userId: user.id,
-      merchantOrderId,
-      amount: Math.round(amount * 100),
-      status: "COMPLETED",
-      state: "COMPLETED",
-    });
+    const paise = Math.round(amount * 100);
+    const claim = await BookingPaymentTransaction.updateOne(
+      { merchantOrderId },
+      {
+        $setOnInsert: {
+          bookingId: booking._id,
+          userId: user.id,
+          amount: paise,
+          status: "COMPLETED",
+          state: "COMPLETED",
+        },
+      },
+      { upsert: true }
+    );
 
-    await recordBookingEventFor(booking, {
-      type: "PAYMENT_INITIATED",
-      toStatus: booking.status,
-      actorType: "USER",
-      actorUserId: user.id,
-      channel: "CLIENT_WEB",
-      amountPaise: Math.round(amount * 100),
-      summary: "Wallet debited for booking payment",
-      metadata: { merchantOrderId, method: "WALLET" },
-    });
+    // Only the request that created the record logs the debit.
+    if (claim.upsertedCount > 0) {
+      await recordBookingEventFor(booking, {
+        type: "PAYMENT_INITIATED",
+        toStatus: booking.status,
+        actorType: "USER",
+        actorUserId: user.id,
+        channel: "CLIENT_WEB",
+        amountPaise: paise,
+        summary: "Wallet debited for booking payment",
+        metadata: { merchantOrderId, method: "WALLET" },
+      });
+    }
 
-    // Update booking status
-    await updatePaymentStatus(bookingId, user.id, "PAID", undefined, {
-      actorType: "USER",
-      actorUserId: user.id,
-      channel: "CLIENT_WEB",
-      metadata: { merchantOrderId, method: "WALLET" },
-    });
+    try {
+      await updatePaymentStatus(bookingId, user.id, "PAID", undefined, {
+        actorType: "USER",
+        actorUserId: user.id,
+        channel: "CLIENT_WEB",
+        metadata: { merchantOrderId, method: "WALLET" },
+      });
+    } catch (error) {
+      // The booking vanished between the check above and now (expired and
+      // cleaned up, or failed elsewhere). The money has left the wallet for
+      // nothing, so put it back. The credit is idempotent per booking, and
+      // marking the record FAILED keeps the books honest. Any other error is
+      // left to propagate: the debit is idempotent, so the customer can simply
+      // retry and the same steps finish the job.
+      if (error instanceof Error && error.message === "Booking not found") {
+        await BookingPaymentTransaction.updateOne(
+          { merchantOrderId },
+          { $set: { status: "FAILED", state: "FAILED" } }
+        );
+        await WalletService.creditWallet(
+          user.id,
+          amount,
+          "Booking payment reversed",
+          `reversal:${bookingId}`
+        );
+        throw new AppError(
+          "This booking is no longer available. The amount has been returned to your wallet.",
+          409
+        );
+      }
+      throw error;
+    }
 
     res.status(200).json({
       success: true,
