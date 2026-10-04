@@ -22,9 +22,11 @@ import { AppError } from "../../utils/AppError";
 /** Open windows first: those are the ones a parent can still act on this year. */
 const CYCLE_ORDER: Record<CycleState, number> = { open: 0, upcoming: 1, rolling: 2, closed: 3 };
 
+// `eligibility` is here because the list shows who an entry is for (age, gender)
+// and the page checks it against the child the parent describes.
 const LIST_FIELDS =
-  "slug track category title summary owner sports allSports geography selection benefit " +
-  "cycle lastVerifiedOn";
+  "slug track category title summary owner sports allSports geography eligibility selection " +
+  "benefit cycle lastVerifiedOn";
 
 const isTrack = (value: unknown): value is OpportunityTrack =>
   typeof value === "string" && (OPPORTUNITY_TRACKS as readonly string[]).includes(value);
@@ -71,7 +73,9 @@ export const listOpportunities = asyncHandler(
           a.title.localeCompare(b.title)
       );
 
-    res.json({ success: true, data: { items, sports, categories: categoryOrder } });
+    // `today` is India's date, the one every window above was worked out against, so
+    // the page's "days left" can never disagree with an entry's open/closed state.
+    res.json({ success: true, data: { items, sports, categories: categoryOrder, today } });
   }
 );
 

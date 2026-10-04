@@ -259,6 +259,35 @@ describe("public reads", () => {
     );
   });
 
+  it("carries who each entry is for, and today's date in India, for the list page", async () => {
+    await publishNew({
+      slug: "under-14s",
+      title: "Under 14s",
+      eligibility: { ageMin: 10, ageMax: 14, gender: "female", level: "State level" },
+    });
+
+    const res = await request(app).get("/api/opportunities?track=admission");
+
+    assert.deepEqual(res.body.data.items[0].eligibility, {
+      ageMin: 10,
+      ageMax: 14,
+      gender: "female",
+      level: "State level",
+    });
+    assert.equal(res.body.data.today, todayInIndia());
+  });
+
+  it("still keeps the review-only fields out of the list", async () => {
+    await publishNew({ slug: "plain", title: "Plain" });
+
+    const res = await request(app).get("/api/opportunities?track=admission");
+    const item = res.body.data.items[0];
+
+    assert.equal(item.sources, undefined);
+    assert.equal(item.watchUrls, undefined);
+    assert.equal(item.updatedBy, undefined);
+  });
+
   it("does not serve a draft by its slug", async () => {
     await createDraft(complete());
     const res = await request(app).get("/api/opportunities/du-sports-quota");
