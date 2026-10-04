@@ -59,6 +59,7 @@ import experienceRoutes from "./community/routes/experienceRoutes";
 import authRoutes from "./shared/routes/authRoutes";
 import geoRoutes from "./shared/routes/geoRoutes";
 import phonepeWebhook from "./shared/routes/phonepeWebhook";
+import whatsappWebhook from "./shared/routes/whatsappWebhook";
 import sportsRoutes from "./shared/routes/sportsRoutes";
 import findSportTestRoutes from "./shared/routes/findSportTestRoutes";
 import pathwayRoutes from "./shared/routes/pathwayRoutes";
@@ -211,6 +212,8 @@ app.use("/api/season-plans", seasonPlanRoutes);
 app.use("/api/concierge", conciergeRoutes);
 // PhonePe webhook route (use raw body captured above for HMAC verification)
 app.use("/api/payments/phonepe", phonepeWebhook);
+// WhatsApp Cloud API webhook (verified against the raw body captured above)
+app.use("/api/whatsapp", whatsappWebhook);
 
 // Client Domain
 app.use("/api/venues", venueRoutes);
