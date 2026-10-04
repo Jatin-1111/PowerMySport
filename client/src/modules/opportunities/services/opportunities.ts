@@ -56,6 +56,8 @@ export interface Opportunity {
 
 export interface OpportunityList {
   items: Opportunity[];
+  /** India's date, which every window in `items` was worked out against ("2026-10-03"). */
+  today: string;
   /** Sport-specific slugs present in this track, for deciding whether to offer a filter. */
   sports: string[];
   categories: string[];

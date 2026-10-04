@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { OWNER_TYPE_LABELS, SELECTION_LABELS, TRACKS } from "../config/tracks";
 import type { Opportunity } from "../services/opportunities";
 import { cycleLine, formatAmount, formatDay, sportsLabel, whereLabel } from "../utils/format";
+import { EligibilityChecklist } from "./EligibilityChecklist";
 
 // ─── One admission route or scholarship ─────────────────────────────────────
 //
@@ -22,33 +23,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function eligibilityLines(e: Opportunity["eligibility"]): Array<[string, string]> {
-  if (!e) return [];
-  const lines: Array<[string, string]> = [];
-  const ages =
-    e.ageMin !== undefined && e.ageMax !== undefined
-      ? `${e.ageMin} to ${e.ageMax}`
-      : e.ageMax !== undefined
-        ? `Up to ${e.ageMax}`
-        : e.ageMin !== undefined
-          ? `${e.ageMin} and over`
-          : null;
-  if (ages || e.ageNote) lines.push(["Age", [ages, e.ageNote].filter(Boolean).join(". ")]);
-  if (e.gender === "female") lines.push(["Who", "Girls and women only"]);
-  if (e.gender === "male") lines.push(["Who", "Boys and men only"]);
-  if (e.level) lines.push(["Sporting level", e.level]);
-  if (e.academic) lines.push(["Academic", e.academic]);
-  if (e.income) lines.push(["Income", e.income]);
-  return lines;
-}
-
 export function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
   const track = TRACKS[opportunity.track];
   const category = track.categories[opportunity.category];
   const selection = opportunity.selection ? SELECTION_LABELS[opportunity.selection] : null;
   const amount = formatAmount(opportunity.benefit?.amount);
   const cycle = cycleLine(opportunity);
-  const eligibility = eligibilityLines(opportunity.eligibility);
   const keyDates = [...(opportunity.cycle?.keyDates ?? [])].sort((a, b) =>
     a.date.localeCompare(b.date)
   );
@@ -124,18 +104,9 @@ export function OpportunityDetail({ opportunity }: { opportunity: Opportunity })
           </Section>
         )}
 
-        {eligibility.length > 0 && (
-          <Section title="Who it is for">
-            <dl className="space-y-3">
-              {eligibility.map(([label, value]) => (
-                <div key={label} className="grid gap-1 sm:grid-cols-[150px_minmax(0,1fr)]">
-                  <dt className="text-[13px] font-bold text-slate-500">{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </Section>
-        )}
+        <Section title="Who it is for">
+          <EligibilityChecklist opportunity={opportunity} />
+        </Section>
 
         {(opportunity.steps?.length ?? 0) > 0 && (
           <Section

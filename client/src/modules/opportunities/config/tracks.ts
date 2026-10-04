@@ -20,9 +20,9 @@ export const TRACKS: Record<
     title: "Admissions",
     heading: "Sports admissions",
     intro:
-      "Routes into schools and universities that count your child's sporting record: sports quotas, exam and attendance concessions, academies, and college sport abroad.",
+      "Ways into schools, colleges and academies that count your child's sporting record. Each entry says how it works, who it is for and where we checked it.",
     metaDescription:
-      "Sports-quota admissions for young athletes in India: Delhi University, IIT Sports Excellence Admission, Kendriya Vidyalaya, CBSE concessions and US college tennis, each with its sources.",
+      "Sports admissions for young athletes in India: schools, colleges and academies that count a sporting record, each with its sources.",
     categories: {
       college: {
         label: "Colleges and universities",
@@ -42,9 +42,9 @@ export const TRACKS: Record<
     title: "Scholarships",
     heading: "Scholarships and funding",
     intro:
-      "Money and support for young athletes, from the government, federations, international bodies, companies and universities. Many are not applied for: players are picked from results, and each entry says which.",
+      "Money and support for young athletes. Some you apply for; many pick players from their results, and each entry says which, who it is for and where we checked it.",
     metaDescription:
-      "Sports scholarships for young athletes in India: Khelo India, TOPS, state schemes, ITF and Asian Tennis Federation programmes, company and university scholarships, each with its sources.",
+      "Sports scholarships for young athletes in India: funding and support from governments, federations, companies and universities, each with its sources.",
     categories: {
       government: { label: "Government", blurb: "Central and state schemes." },
       federation: { label: "Federations", blurb: "Support run by a sport's own federation." },
@@ -94,3 +94,22 @@ export const OWNER_TYPE_LABELS: Record<string, string> = {
   company: "Company",
   foundation: "Foundation",
 };
+
+/** The site's WhatsApp number, the one every other "ask us" link uses. */
+const WHATSAPP_NUMBER = "918968582443";
+
+/**
+ * A WhatsApp link, with the message already written, for a parent who did not
+ * find what they were after. It goes to a person; there is no form behind it.
+ */
+export function askUsHref(track: OpportunityTrack, sportLabel?: string): string {
+  const what = track === "scholarship" ? "a sports scholarship" : "a sports admission route";
+  const text = `Hi! I'm looking for ${what}${sportLabel ? ` for ${sportLabel}` : ""} for my child and did not find it on PowerMySport. Can you help?`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+/**
+ * Below this many entries a list is shown flat, with the category on each card.
+ * Grouped into five headed sections, a handful of entries is mostly headings.
+ */
+export const GROUP_THRESHOLD = 8;
