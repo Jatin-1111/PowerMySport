@@ -2,17 +2,10 @@
 
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
-import {
-  nextStatus,
-  STATUS_LABEL,
-  type SeasonPlanEntry,
-} from "@/modules/planner/services/seasonPlan";
-import { Badge } from "@/modules/shared/ui/Badge";
-import { Button } from "@/modules/shared/ui/Button";
+import { PlanEntryRow } from "@/modules/planner/components/PlanEntryRow";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import { ClipboardList, X } from "lucide-react";
-import Link from "next/link";
+import { ClipboardList } from "lucide-react";
 
 /**
  * The tournaments a parent has decided on.
@@ -29,14 +22,6 @@ import Link from "next/link";
  * after its date, and after it leaves the federation's calendar, which is why
  * each entry carries the name and date it had when it was planned.
  */
-
-const DATE = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" });
-
-const TONE: Record<SeasonPlanEntry["status"], string> = {
-  shortlisted: "border-slate-200 bg-slate-50 text-slate-600",
-  entered: "border-amber-200 bg-amber-50 text-amber-700",
-  played: "border-emerald-200 bg-emerald-50 text-emerald-700",
-};
 
 export function SeasonPlanCard({ dependentId }: { dependentId: string }) {
   const { entries, isLoading, setStatus, remove } = useSeasonPlan(dependentId);
@@ -61,55 +46,15 @@ export function SeasonPlanCard({ dependentId }: { dependentId: string }) {
           </div>
         ) : (
           <ul>
-            {entries.map((entry) => {
-              const advance = nextStatus(entry.status);
-              return (
-                <li
-                  key={entry.editionSlug}
-                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-100 py-3 last:border-0 last:pb-0"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">
-                      <Link href={`/tournaments/${entry.editionSlug}`} className="hover:underline">
-                        {entry.name}
-                      </Link>
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {DATE.format(new Date(entry.startDate))}
-                      {entry.note ? ` · ${entry.note}` : ""}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Badge className={`${TONE[entry.status]} text-[11px]`}>
-                      {STATUS_LABEL[entry.status]}
-                    </Badge>
-                    {advance && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={setStatus.isPending}
-                        onClick={() =>
-                          setStatus.mutate({ editionSlug: entry.editionSlug, status: advance })
-                        }
-                      >
-                        Mark {STATUS_LABEL[advance].toLowerCase()}
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={`Remove ${entry.name} from the plan`}
-                      disabled={remove.isPending}
-                      onClick={() => remove.mutate(entry.editionSlug)}
-                      className="text-slate-400"
-                    >
-                      <X className="h-4 w-4" aria-hidden />
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
+            {entries.map((entry) => (
+              <PlanEntryRow
+                key={entry.editionSlug}
+                entry={entry}
+                busy={setStatus.isPending || remove.isPending}
+                onAdvance={(status) => setStatus.mutate({ editionSlug: entry.editionSlug, status })}
+                onRemove={() => remove.mutate(entry.editionSlug)}
+              />
+            ))}
           </ul>
         )}
       </CardContent>

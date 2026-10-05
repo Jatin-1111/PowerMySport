@@ -89,6 +89,13 @@ const exploreItems = [
   // Powermysport AI hidden for now.
   {
     group: "Compete",
+    href: "/planner",
+    label: "Season Planner",
+    description: "Plan the events they can enter",
+    icon: CalendarCheck,
+  },
+  {
+    group: "Compete",
     href: "/rankings",
     label: "Rankings",
     description: "Official federation lists",

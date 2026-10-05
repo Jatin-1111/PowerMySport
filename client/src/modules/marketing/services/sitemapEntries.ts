@@ -431,6 +431,12 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
 
     ...opportunityEntries,
     {
+      url: `${siteUrl}/planner`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    },
+    {
       url: `${siteUrl}/tournaments`,
       lastModified: now,
       changeFrequency: "daily" as const,

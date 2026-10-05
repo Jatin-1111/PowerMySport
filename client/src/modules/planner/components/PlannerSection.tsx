@@ -2,6 +2,8 @@
 
 import { SeasonPlanCard } from "@/modules/planner/components/SeasonPlanCard";
 import { UpcomingFixturesCard } from "@/modules/planner/components/UpcomingFixturesCard";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 /**
  * Both halves of the planner, in the order a parent reads them.
@@ -19,6 +21,13 @@ export function PlannerSection({ dependentId }: { dependentId: string }) {
     <>
       <SeasonPlanCard dependentId={dependentId} />
       <UpcomingFixturesCard dependentId={dependentId} />
+      <Link
+        href="/planner"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-orange-700 hover:underline"
+      >
+        Open the full season planner
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      </Link>
     </>
   );
 }

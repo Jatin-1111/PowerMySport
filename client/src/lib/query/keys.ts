@@ -90,6 +90,11 @@ export const queryKeys = {
     forDependent: (dependentId: string) => ["season-plan", dependentId] as const,
   },
 
+  /** The server-judged planner for one child: verdicts and plan together. */
+  planner: {
+    forDependent: (dependentId: string) => ["planner", dependentId] as const,
+  },
+
   bookings: {
     all: ["bookings"] as const,
     quote: (subtotal: number, discount: number) =>
