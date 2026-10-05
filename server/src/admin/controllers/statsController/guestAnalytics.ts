@@ -8,6 +8,20 @@ import { asyncHandler } from "../../../middleware/asyncHandler";
 // Only events carrying a guestId — i.e. activity from not-signed-in visitors.
 const GUEST_EVENT_MATCH = { guestId: { $exists: true, $nin: [null, ""] } };
 
+// The metadata the real tracker sends (referrer, UTM values, a page title, a
+// path) is under about 1 KB. This leaves twice that. Past it the metadata is
+// replaced rather than the event refused: refusing would drop the whole batch,
+// up to 20 legitimate events, because of one odd one.
+const MAX_METADATA_BYTES = 2048;
+const MAX_METADATA_KEYS = 20;
+
+export const boundMetadata = (metadata: Record<string, unknown>): Record<string, unknown> => {
+  const bounded = Object.fromEntries(Object.entries(metadata).slice(0, MAX_METADATA_KEYS));
+  return Buffer.byteLength(JSON.stringify(bounded), "utf8") <= MAX_METADATA_BYTES
+    ? bounded
+    : { truncated: true };
+};
+
 /**
  * Public, unauthenticated ingest for anonymous visitor activity.
  *
@@ -31,7 +45,7 @@ export const trackGuestEvents = asyncHandler(async (req: Request, res: Response)
     eventName: event.eventName,
     ...(event.entityType ? { entityType: event.entityType } : {}),
     ...(event.entityId ? { entityId: event.entityId } : {}),
-    ...(event.metadata ? { metadata: event.metadata } : {}),
+    ...(event.metadata ? { metadata: boundMetadata(event.metadata) } : {}),
     source: "WEB" as const,
   }));
 

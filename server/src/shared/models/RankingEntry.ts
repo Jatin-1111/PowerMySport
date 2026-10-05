@@ -124,7 +124,11 @@ const rankingEntrySchema = new Schema<RankingEntryDocument>(
       type: Schema.Types.ObjectId,
       ref: "RankingSnapshot",
       required: true,
-      index: true,
+      // No `index: true`: the unique {snapshot, regNo} index below has `snapshot`
+      // as its leading key and serves every lookup a single-field index would. A
+      // separate one cost about 2.5 MB of a quota that is full, and because
+      // autoIndex is on for any local boot it kept coming back after
+      // pruneRankingHistory dropped it.
     },
     sportSlug: { type: String, required: true, lowercase: true, default: "tennis" },
     federationCode: { type: String, required: true, uppercase: true, default: "AITA" },

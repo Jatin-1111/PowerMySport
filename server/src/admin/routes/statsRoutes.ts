@@ -41,6 +41,7 @@ import {
 import { funnelEventSchema, guestEventSchema } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
 import { guestTrackRateLimiter } from "../../middleware/rateLimit";
+import { guestEventBudget } from "../../utils/guestEventBudget";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
 
 const router = Router();
@@ -48,11 +49,15 @@ const router = Router();
 router.get("/public", getPublicPlatformStats);
 
 // Public, anonymous visitor activity ingest (no auth — not-signed-in guests).
-// Rate-limited and schema-validated; stores no personal data.
+// Rate-limited, schema-validated and byte-budgeted; stores no personal data.
+// The rate limiter counts requests; the budget counts what is actually stored,
+// which is what fills the cluster. Stored events expire after 90 days (TTL
+// index, migration 51).
 router.post(
   "/guest/event",
   guestTrackRateLimiter,
   validateRequest(guestEventSchema),
+  guestEventBudget,
   trackGuestEvents
 );
 
