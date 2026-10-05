@@ -1,12 +1,25 @@
 import { listActiveExperts } from "../../client/services/ExpertsService";
 import { PathwayGuide } from "../models/PathwayGuide";
+import {
+  loadPlannerChatContext,
+  PLANNER_CHAT_RULES,
+} from "../../client/services/PlannerChatContext";
 import { getUpcomingEditions } from "./tournamentEditionQueries";
+
+/**
+ * Who is asking, when that is known. Absent for a channel that has no account
+ * behind it (a WhatsApp number is not a user id), and a tool must then answer
+ * from public data alone.
+ */
+export interface ChatToolContext {
+  userId?: string;
+}
 
 export interface ChatToolDefinition {
   name: string;
   description: string;
   parametersJsonSchema: Record<string, unknown>;
-  execute: (args: Record<string, unknown>) => Promise<unknown>;
+  execute: (args: Record<string, unknown>, context?: ChatToolContext) => Promise<unknown>;
 }
 
 // ─── search_experts ────────────────────────────────────────────────────────────
@@ -109,21 +122,47 @@ const getPathwayStageTool: ChatToolDefinition = {
 const getUpcomingTournamentsTool: ChatToolDefinition = {
   name: "get_upcoming_tournaments",
   description:
-    "Get upcoming tournament dates for a sport from the platform's tournament calendar. Use when a parent asks about tournament dates, competitions, or what's coming up next for a sport.",
+    "Get upcoming tournament dates for a sport from the platform's tournament calendar. Use when a parent asks about tournament dates, competitions, or what's coming up next for a sport. For a signed-in parent with a linked ranking this returns the events THEIR CHILD can enter, judged by the same rules as the planner page, so prefer it over any general list.",
   parametersJsonSchema: {
     type: "object",
     properties: {
       sportSlug: { type: "string", description: "URL slug for the sport, e.g. 'badminton'." },
+      childName: {
+        type: "string",
+        description:
+          "First name of the child, when the parent names one. Omit to cover every child with a linked ranking.",
+      },
     },
     required: ["sportSlug"],
   },
-  execute: async (args) => {
+  execute: async (args, context) => {
     const sportSlug = String(args.sportSlug || "");
+
+    // The personal answer first. It is the same output the planner page renders,
+    // so the chat cannot recommend an event the page shows as closed.
+    if (context?.userId) {
+      const childName = typeof args.childName === "string" ? args.childName : undefined;
+      const personal = await loadPlannerChatContext(context.userId, sportSlug, childName).catch(
+        () => null
+      );
+      if (personal) {
+        return {
+          personalised: true,
+          children: personal,
+          rules: PLANNER_CHAT_RULES,
+        };
+      }
+    }
+
     const upcoming = await getUpcomingEditions(sportSlug, 5);
     if (upcoming.length === 0) {
       return { message: "No upcoming tournaments found in the calendar for this sport." };
     }
     return {
+      // Said to the model so it can say it to the parent: this list is not
+      // judged against anyone's age or rank.
+      personalised: false,
+      note: "This is the general calendar, not filtered for any child's age group or rank. Say so, and mention that linking a ranking at /planner shows which events a child can actually enter.",
       tournaments: upcoming.map((t) => ({
         name: t.name,
         startDate: t.startDate,

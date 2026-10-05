@@ -69,6 +69,7 @@ import tournamentEditionRoutes from "./shared/routes/tournamentEditionRoutes";
 import rankingRoutes from "./shared/routes/rankingRoutes";
 import rankingClaimRoutes from "./client/routes/rankingClaimRoutes";
 import seasonPlanRoutes from "./client/routes/seasonPlanRoutes";
+import plannerRoutes from "./client/routes/plannerRoutes";
 import conciergeRoutes from "./shared/routes/conciergeRoutes";
 import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
 import { log as __rootLog } from "./utils/logger";
@@ -209,6 +210,7 @@ app.use("/api/opportunities", opportunityRoutes);
 app.use("/api/rankings", rankingRoutes);
 app.use("/api/ranking-claims", rankingClaimRoutes);
 app.use("/api/season-plans", seasonPlanRoutes);
+app.use("/api/planner", plannerRoutes);
 app.use("/api/concierge", conciergeRoutes);
 // PhonePe webhook route (use raw body captured above for HMAC verification)
 app.use("/api/payments/phonepe", phonepeWebhook);

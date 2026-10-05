@@ -214,7 +214,8 @@ export const sendAssistantChatSessionMessage = asyncHandler(
         session,
         systemPrompt,
         userMessage,
-        ASSISTANT_CHAT_TOOLS
+        ASSISTANT_CHAT_TOOLS,
+        { userId: req.user.id }
       );
     } catch (error) {
       if (!res.headersSent) {

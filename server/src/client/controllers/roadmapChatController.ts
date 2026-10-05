@@ -4,6 +4,7 @@ import { PathwayGuide } from "../../shared/models/PathwayGuide";
 import { RoadmapChatSession } from "../models/RoadmapChatSession";
 import { buildRoadmapChatSystemPrompt } from "../../shared/services/roadmapChatService";
 import { streamChatAndPersist } from "../../shared/services/chatStreamService";
+import { formatPlannerForPrompt, loadPlannerChatContext } from "../services/PlannerChatContext";
 import { getUpcomingEditions } from "../../shared/services/tournamentEditionQueries";
 import {
   DAILY_MESSAGE_CAP,
@@ -225,10 +226,14 @@ export const sendRoadmapChatSessionMessage = asyncHandler(
 
       // ── Build system prompt ────────────────────────────────────────────────────
       const upcomingTournaments = await getUpcomingEditions(session.sportSlug, 5).catch(() => []);
+      const personalPlanner = await loadPlannerChatContext(req.user.id, session.sportSlug).catch(
+        () => null
+      );
       const systemPrompt = buildRoadmapChatSystemPrompt(
         toPathwayContext(pathway),
         stageKey,
-        upcomingTournaments
+        upcomingTournaments,
+        personalPlanner ? formatPlannerForPrompt(personalPlanner) : null
       );
 
       // ── Stream response and persist both turns ─────────────────────────────────
@@ -376,10 +381,14 @@ export const sendRoadmapChatMessage = asyncHandler(
       }
 
       const upcomingTournaments = await getUpcomingEditions(sportSlug, 5).catch(() => []);
+      const personalPlanner = await loadPlannerChatContext(req.user.id, sportSlug).catch(
+        () => null
+      );
       const systemPrompt = buildRoadmapChatSystemPrompt(
         toPathwayContext(pathway),
         stageKey,
-        upcomingTournaments
+        upcomingTournaments,
+        personalPlanner ? formatPlannerForPrompt(personalPlanner) : null
       );
 
       await streamChatAndPersist(res, req.user.id, session, systemPrompt, userMessage);

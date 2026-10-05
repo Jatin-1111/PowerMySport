@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import type { Content, FunctionCall, Part } from "@google/genai";
-import type { ChatToolDefinition } from "./chatToolsService";
+import type { ChatToolContext, ChatToolDefinition } from "./chatToolsService";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
@@ -22,14 +22,17 @@ export interface ChatHistoryMessage {
 
 async function executeToolCalls(
   calls: FunctionCall[],
-  toolsByName: Map<string, ChatToolDefinition>
+  toolsByName: Map<string, ChatToolDefinition>,
+  toolContext: ChatToolContext
 ): Promise<Part[]> {
   const parts: Part[] = [];
   for (const call of calls) {
     const tool = call.name ? toolsByName.get(call.name) : undefined;
     let output: unknown;
     try {
-      output = tool ? await tool.execute(call.args || {}) : { error: `Unknown tool: ${call.name}` };
+      output = tool
+        ? await tool.execute(call.args || {}, toolContext)
+        : { error: `Unknown tool: ${call.name}` };
     } catch (toolError) {
       output = {
         error: toolError instanceof Error ? toolError.message : "Tool execution failed",
@@ -60,7 +63,8 @@ export async function* streamAgenticChatResponse(
   systemPrompt: string,
   history: ChatHistoryMessage[],
   userMessage: string,
-  tools: ChatToolDefinition[] = []
+  tools: ChatToolDefinition[] = [],
+  toolContext: ChatToolContext = {}
 ): AsyncGenerator<string> {
   if (!apiKey) {
     throw new Error("Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable");
@@ -123,7 +127,10 @@ export async function* streamAgenticChatResponse(
       if (!pendingCalls) return; // No tool call — hop 0's stream WAS the full answer.
 
       if (modelTurnContent) contents.push(modelTurnContent);
-      contents.push({ role: "user", parts: await executeToolCalls(pendingCalls, toolsByName) });
+      contents.push({
+        role: "user",
+        parts: await executeToolCalls(pendingCalls, toolsByName, toolContext),
+      });
 
       // ── Tool-resolution hops (non-streaming, so we can inspect for more calls) ─
       let hops = 1;
@@ -139,7 +146,10 @@ export async function* streamAgenticChatResponse(
 
         const turnContent = response.candidates?.[0]?.content;
         if (turnContent) contents.push(turnContent);
-        contents.push({ role: "user", parts: await executeToolCalls(calls, toolsByName) });
+        contents.push({
+          role: "user",
+          parts: await executeToolCalls(calls, toolsByName, toolContext),
+        });
         hops++;
       }
 

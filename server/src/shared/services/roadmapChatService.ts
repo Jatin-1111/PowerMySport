@@ -75,7 +75,14 @@ When the parent asks about tournament dates or "what's next", answer DIRECTLY fr
 export function buildRoadmapChatSystemPrompt(
   pathway: PathwayContext,
   currentStageKey?: string,
-  upcomingTournaments: UpcomingTournamentContext[] = []
+  upcomingTournaments: UpcomingTournamentContext[] = [],
+  /**
+   * The planner's verdicts for this parent's children (see PlannerChatContext).
+   * When present it REPLACES the general upcoming list rather than sitting beside
+   * it: two lists in one prompt is how the chat ends up recommending an event the
+   * planner page shows as closed.
+   */
+  personalPlannerBlock: string | null = null
 ): string {
   const stage = pathway.stages.find((s) => s.key === currentStageKey) || pathway.stages[0];
 
@@ -128,7 +135,7 @@ ${nextStepsBlock}
 
 ${stageListBlock}
 
-${buildUpcomingTournamentsBlock(pathway.sportName, upcomingTournaments)}
+${personalPlannerBlock ?? buildUpcomingTournamentsBlock(pathway.sportName, upcomingTournaments)}
 
 ## In scope
 - Anything about this sport's development pathway, this stage, or the broader journey through ${pathway.sportName}

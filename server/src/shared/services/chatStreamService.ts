@@ -2,7 +2,7 @@ import { Response } from "express";
 import { decrementDailyMessageCount } from "./chatRateLimitService";
 import { streamGuidanceChatResponse } from "./guidanceChatService";
 import { streamAgenticChatResponse } from "./agenticChatService";
-import type { ChatToolDefinition } from "./chatToolsService";
+import type { ChatToolContext, ChatToolDefinition } from "./chatToolsService";
 import type { ChatMessage } from "../../client/models/GuidanceChatSession";
 
 export interface ChatPersistableSession {
@@ -28,7 +28,8 @@ export async function streamChatAndPersist(
   session: ChatPersistableSession,
   systemPrompt: string,
   userMessage: string,
-  tools?: ChatToolDefinition[]
+  tools?: ChatToolDefinition[],
+  toolContext?: ChatToolContext
 ): Promise<void> {
   const historyForAI = session.messages.map((m) => ({
     role: m.role,
@@ -43,7 +44,7 @@ export async function streamChatAndPersist(
   let fullAssistantResponse = "";
 
   const responseStream = tools?.length
-    ? streamAgenticChatResponse(systemPrompt, historyForAI, userMessage, tools)
+    ? streamAgenticChatResponse(systemPrompt, historyForAI, userMessage, tools, toolContext)
     : streamGuidanceChatResponse(systemPrompt, historyForAI, userMessage);
 
   try {
