@@ -34,6 +34,21 @@ import mongoose, { Document, Schema, Types } from "mongoose";
  */
 export type SeasonPlanEntryStatus = "shortlisted" | "entered" | "played";
 
+/**
+ * What a parent says an event costs, in whole rupees. Each is optional and each
+ * replaces the planner's estimate for that part when present. Entry fees are only
+ * ever stored here: the calendar does not publish them and we do not guess.
+ */
+export interface EntryCosts {
+  travel?: number;
+  stay?: number;
+  entryFee?: number;
+}
+
+/** A ceiling that stops a typo (an extra zero) from becoming a budget. */
+export const MAX_COST_INR = 1_000_000;
+export const MAX_BUDGET_INR = 10_000_000;
+
 export interface SeasonPlanEntry {
   /** Identity on the calendar. Stable, and present on every edition. */
   editionSlug: string;
@@ -43,6 +58,8 @@ export interface SeasonPlanEntry {
   status: SeasonPlanEntryStatus;
   /** The parent's own words. Short on purpose; this is not a journal. */
   note?: string;
+  /** The parent's own figures, where they have given any. */
+  costs?: EntryCosts;
   addedAt: Date;
 }
 
@@ -69,6 +86,8 @@ export interface BlockedRange {
 export interface SeasonPlanPreferences {
   goal: SeasonGoal;
   blockedRanges: BlockedRange[];
+  /** What they want the season to stay within, in rupees. Absent means no ceiling. */
+  budget?: number;
 }
 
 /** Five ranges is a season's worth of exams and holidays; more is a calendar. */
@@ -107,6 +126,16 @@ const seasonPlanEntrySchema = new Schema<SeasonPlanEntry>(
       default: "shortlisted",
     },
     note: { type: String, trim: true, maxlength: MAX_NOTE_LENGTH },
+    costs: {
+      type: new Schema<EntryCosts>(
+        {
+          travel: { type: Number, min: 0, max: MAX_COST_INR },
+          stay: { type: Number, min: 0, max: MAX_COST_INR },
+          entryFee: { type: Number, min: 0, max: MAX_COST_INR },
+        },
+        { _id: false }
+      ),
+    },
     addedAt: { type: Date, required: true, default: Date.now },
   },
   { _id: false }
@@ -125,6 +154,7 @@ const preferencesSchema = new Schema<SeasonPlanPreferences>(
   {
     goal: { type: String, enum: SEASON_GOALS, default: DEFAULT_SEASON_GOAL },
     blockedRanges: { type: [blockedRangeSchema], default: [] },
+    budget: { type: Number, min: 0, max: MAX_BUDGET_INR },
   },
   { _id: false }
 );

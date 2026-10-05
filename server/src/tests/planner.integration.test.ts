@@ -22,6 +22,7 @@ const { RankingEntry } = require("../shared/models/RankingEntry");
 const { TournamentEdition } = require("../shared/models/TournamentEdition");
 const { PlannerService } = require("../client/services/PlannerService");
 const { SeasonPlanService } = require("../client/services/SeasonPlanService");
+const { resolveOrigin, setHomeCity } = require("../client/services/plannerCosts/origin");
 
 let memoryServer: { getUri(): string; stop(): Promise<void> };
 
@@ -283,7 +284,7 @@ describe("planning preferences", () => {
   it("defaults to the points goal with nothing blocked", async () => {
     const { userId, dependentId } = await setup();
     const plan = await SeasonPlanService.get(userId, dependentId);
-    assert.deepEqual(plan.preferences, { goal: "points", blockedRanges: [] });
+    assert.deepEqual(plan.preferences, { goal: "points", blockedRanges: [], budget: null });
   });
 
   it("saves the goal and blocked dates, creating the plan if there is none", async () => {
@@ -439,5 +440,232 @@ describe("planning preferences", () => {
     assert.equal(overview.plan.preferences.goal, "experience");
     assert.equal(overview.plan.preferences.blockedRanges.length, 1);
     assert.equal(overview.standing.state, "Maharashtra");
+  });
+});
+
+describe("the home city", () => {
+  const ADDRESS = {
+    fullName: "Rahul Test",
+    email: "rahul.addr@example.test",
+    phone: "9000000001",
+    addressLine1: "1 Test Road",
+    city: "Nagpur",
+    state: "Maharashtra",
+    postalCode: "440001",
+  };
+
+  it("is read from the profile city first", async () => {
+    const parent = await seedParent("Rahul City");
+    await User.updateOne({ _id: parent._id }, { $set: { city: "Pune" } });
+
+    const origin = await resolveOrigin(String(parent._id), "Haryana");
+
+    assert.deepEqual(origin, { kind: "city", city: "Pune", label: "Pune" });
+  });
+
+  it("falls back to a saved address, then the state on the ranking list, then nothing", async () => {
+    const withAddress = await seedParent("Rahul Address");
+    await User.updateOne({ _id: withAddress._id }, { $set: { addresses: [ADDRESS] } });
+    const bare = await seedParent("Rahul Bare");
+
+    assert.equal((await resolveOrigin(String(withAddress._id), "Haryana")).city, "Nagpur");
+    assert.deepEqual(await resolveOrigin(String(bare._id), "Haryana"), {
+      kind: "state",
+      state: "Haryana",
+      label: "Haryana",
+    });
+    assert.deepEqual(await resolveOrigin(String(bare._id), null), { kind: "none", label: null });
+  });
+
+  it("saves the city on the profile, trimmed, so the profile and the planner agree", async () => {
+    const parent = await seedParent("Rahul Save");
+
+    const saved = await setHomeCity(String(parent._id), "  Navi   Mumbai ");
+
+    assert.equal(saved, "Navi Mumbai");
+    assert.equal((await User.findById(parent._id).lean()).city, "Navi Mumbai");
+    assert.equal((await resolveOrigin(String(parent._id), null)).city, "Navi Mumbai");
+  });
+
+  it("accepts the punctuation real place names use", async () => {
+    const parent = await seedParent("Rahul Names");
+    for (const name of [
+      "Bengaluru",
+      "Greater Noida",
+      "Dehradun",
+      "St. Thomas Mount",
+      "Hazaribagh",
+    ]) {
+      assert.equal(await setHomeCity(String(parent._id), name), name);
+    }
+  });
+
+  it("refuses what is not a city: empty, digits, markup, or far too long", async () => {
+    const parent = await seedParent("Rahul Bad");
+    const bad = (value: unknown) => () => setHomeCity(String(parent._id), value);
+
+    for (const value of [
+      "",
+      "  ",
+      "12345",
+      "<script>x</script>",
+      "Pune; DROP",
+      "a".repeat(80),
+      42,
+      null,
+      undefined,
+    ]) {
+      await assert.rejects(
+        bad(value),
+        (error: { statusCode?: number }) => error.statusCode === 400
+      );
+    }
+    assert.equal((await User.findById(parent._id).lean()).city, undefined);
+  });
+});
+
+describe("a parent's own costs and budget", () => {
+  const setup = async () => {
+    const parent = await seedParent("Rahul Costs");
+    const child = await seedChild(parent._id);
+    const edition = await seedEdition();
+    await SeasonPlanService.addEntry({
+      userId: String(parent._id),
+      dependentId: String(child._id),
+      editionSlug: edition.slug,
+    });
+    return { userId: String(parent._id), dependentId: String(child._id), slug: edition.slug };
+  };
+  const costsOf = (plan: { entries: Array<{ costs?: unknown }> }) => plan.entries[0]?.costs;
+
+  it("stores the figures a parent types, per part", async () => {
+    const { userId, dependentId, slug } = await setup();
+
+    const plan = await SeasonPlanService.updateEntry({
+      userId,
+      dependentId,
+      editionSlug: slug,
+      costs: { travel: 8000, entryFee: 1500 },
+    });
+
+    assert.deepEqual(costsOf(plan), { travel: 8000, entryFee: 1500 });
+  });
+
+  it("changes one part without wiping the others, and clears a part with null", async () => {
+    const { userId, dependentId, slug } = await setup();
+    const update = (costs: unknown) =>
+      SeasonPlanService.updateEntry({ userId, dependentId, editionSlug: slug, costs });
+    await update({ travel: 8000, stay: 9000 });
+
+    assert.deepEqual(costsOf(await update({ travel: 7000 })), { travel: 7000, stay: 9000 });
+    assert.deepEqual(costsOf(await update({ stay: null })), { travel: 7000 });
+  });
+
+  it("leaves no empty costs behind once every part is cleared", async () => {
+    const { userId, dependentId, slug } = await setup();
+    const update = (costs: unknown) =>
+      SeasonPlanService.updateEntry({ userId, dependentId, editionSlug: slug, costs });
+    await update({ travel: 8000 });
+
+    assert.equal(costsOf(await update(null)), undefined);
+  });
+
+  it("does not touch the costs when the status changes", async () => {
+    const { userId, dependentId, slug } = await setup();
+    await SeasonPlanService.updateEntry({
+      userId,
+      dependentId,
+      editionSlug: slug,
+      costs: { travel: 8000 },
+    });
+
+    const plan = await SeasonPlanService.updateEntry({
+      userId,
+      dependentId,
+      editionSlug: slug,
+      status: "entered",
+    });
+
+    assert.deepEqual(costsOf(plan), { travel: 8000 });
+  });
+
+  it("refuses an amount that is not whole rupees within a sane ceiling", async () => {
+    const { userId, dependentId, slug } = await setup();
+    const bad = (costs: unknown) => () =>
+      SeasonPlanService.updateEntry({ userId, dependentId, editionSlug: slug, costs });
+
+    for (const costs of [
+      { travel: -1 },
+      { travel: 1.5 },
+      { stay: "9000" },
+      { entryFee: 99999999 },
+      { travel: NaN },
+      "lots",
+      [1],
+    ]) {
+      await assert.rejects(
+        bad(costs),
+        (error: { statusCode?: number }) => error.statusCode === 400
+      );
+    }
+  });
+
+  it("saves a season budget with the preferences, and 0 or nothing means no ceiling", async () => {
+    const { userId, dependentId } = await setup();
+    const save = (budget: unknown) =>
+      SeasonPlanService.setPreferences({
+        userId,
+        dependentId,
+        goal: "points",
+        blockedRanges: [],
+        budget,
+      });
+
+    assert.equal((await save(60000)).preferences.budget, 60000);
+    assert.equal((await save(0)).preferences.budget, null);
+    assert.equal((await save(60000)).preferences.budget, 60000);
+    assert.equal((await save(null)).preferences.budget, null);
+    assert.equal((await save(undefined)).preferences.budget, null);
+  });
+
+  it("refuses a budget that is not whole rupees within the ceiling", async () => {
+    const { userId, dependentId } = await setup();
+    const bad = (budget: unknown) => () =>
+      SeasonPlanService.setPreferences({
+        userId,
+        dependentId,
+        goal: "points",
+        blockedRanges: [],
+        budget,
+      });
+
+    for (const budget of [-5, 1000.5, "50000", 999999999, NaN]) {
+      await assert.rejects(
+        bad(budget),
+        (error: { statusCode?: number }) => error.statusCode === 400
+      );
+    }
+  });
+
+  it("returns the budget and the costs with every plan response, so the page never loses them", async () => {
+    const { userId, dependentId, slug } = await setup();
+    await SeasonPlanService.setPreferences({
+      userId,
+      dependentId,
+      goal: "points",
+      blockedRanges: [],
+      budget: 50000,
+    });
+    await SeasonPlanService.updateEntry({
+      userId,
+      dependentId,
+      editionSlug: slug,
+      costs: { travel: 8000 },
+    });
+
+    const read = await SeasonPlanService.get(userId, dependentId);
+
+    assert.equal(read.preferences.budget, 50000);
+    assert.deepEqual(costsOf(read), { travel: 8000 });
   });
 });

@@ -47,6 +47,7 @@ export const updateSeasonPlanEntry = asyncHandler(
       editionSlug: String(req.params.editionSlug ?? ""),
       status: asOptionalString(req.body?.status),
       note: asOptionalString(req.body?.note),
+      costs: req.body?.costs,
     });
     res.json({ success: true, data: plan });
   }
@@ -72,6 +73,7 @@ export const setSeasonPlanPreferences = asyncHandler(
       dependentId: String(req.params.dependentId ?? ""),
       goal: req.body?.goal,
       blockedRanges: req.body?.blockedRanges,
+      budget: req.body?.budget,
     });
     res.json({ success: true, data: plan });
   }

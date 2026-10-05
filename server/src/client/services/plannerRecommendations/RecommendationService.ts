@@ -88,8 +88,9 @@ export const redisStore: RecommendationStore = {
   },
 };
 
-export const redisCounter = (now: () => Date): DailyCounter => {
-  const key = (userId: string) => `planner:ai:daily:${userId}:${istDateKey(now())}`;
+/** `prefix` keeps each feature's daily allowance separate from the others. */
+export const redisCounter = (now: () => Date, prefix = "planner:ai:daily"): DailyCounter => {
+  const key = (userId: string) => `${prefix}:${userId}:${istDateKey(now())}`;
   return {
     async get(userId) {
       try {

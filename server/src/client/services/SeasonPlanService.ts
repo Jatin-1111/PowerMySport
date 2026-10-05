@@ -4,6 +4,8 @@ import { AppError } from "../../utils/AppError";
 import { Player } from "../models/Player";
 import {
   DEFAULT_SEASON_GOAL,
+  MAX_BUDGET_INR,
+  MAX_COST_INR,
   MAX_BLOCKED_LABEL_LENGTH,
   MAX_BLOCKED_RANGES,
   MAX_NOTE_LENGTH,
@@ -11,6 +13,7 @@ import {
   SEASON_GOALS,
   SeasonPlan,
   type BlockedRange,
+  type EntryCosts,
   type SeasonGoal,
   type SeasonPlanEntry,
   type SeasonPlanEntryStatus,
@@ -51,20 +54,52 @@ export interface BlockedRangeView {
 export interface PlanPreferencesView {
   goal: SeasonGoal;
   blockedRanges: BlockedRangeView[];
+  /** Rupees. Null when the parent has set no ceiling. */
+  budget: number | null;
 }
 
 const toDay = (date: Date): string => date.toISOString().slice(0, 10);
 
 const presentPreferences = (
   preferences:
-    { goal?: SeasonGoal | undefined; blockedRanges?: BlockedRange[] | undefined } | undefined
+    | {
+        goal?: SeasonGoal | undefined;
+        blockedRanges?: BlockedRange[] | undefined;
+        budget?: number | undefined;
+      }
+    | undefined
 ): PlanPreferencesView => ({
   goal: preferences?.goal ?? DEFAULT_SEASON_GOAL,
+  budget: typeof preferences?.budget === "number" ? preferences.budget : null,
   blockedRanges: (preferences?.blockedRanges ?? []).map((range) => ({
     from: toDay(range.from),
     to: toDay(range.to),
     ...(range.label ? { label: range.label } : {}),
   })),
+});
+
+/**
+ * One entry as plain data. A hydrated document hands back its sub-documents as
+ * live objects, and listing the fields here makes the response what we say it is
+ * rather than whatever the database layer holds.
+ */
+const presentEntry = (entry: SeasonPlanEntry): SeasonPlanEntry => {
+  const costs = entry.costs ? plainCosts(entry.costs) : undefined;
+  return {
+    editionSlug: entry.editionSlug,
+    name: entry.name,
+    startDate: entry.startDate,
+    status: entry.status,
+    ...(entry.note ? { note: entry.note } : {}),
+    ...(costs && Object.keys(costs).length > 0 ? { costs } : {}),
+    addedAt: entry.addedAt,
+  };
+};
+
+const plainCosts = (costs: EntryCosts): EntryCosts => ({
+  ...(costs.travel !== undefined ? { travel: costs.travel } : {}),
+  ...(costs.stay !== undefined ? { stay: costs.stay } : {}),
+  ...(costs.entryFee !== undefined ? { entryFee: costs.entryFee } : {}),
 });
 
 /**
@@ -82,9 +117,51 @@ const presentPlan = (
 ) => ({
   dependentId,
   sportSlug: plan?.sportSlug ?? "tennis",
-  entries: (plan?.entries ?? []).slice().sort(byDate),
+  entries: (plan?.entries ?? []).map(presentEntry).sort(byDate),
   preferences: presentPreferences(plan?.preferences),
 });
+
+const COST_PARTS = ["travel", "stay", "entryFee"] as const;
+
+/**
+ * Apply a parent's cost edits to what is already stored. A number sets that part,
+ * null clears it, and a part left out is untouched, so editing the travel figure
+ * never wipes the stay figure. Rupees only, whole numbers, within a sane ceiling.
+ *
+ * Returns undefined when nothing is left, so an entry with no figures carries no
+ * empty `costs` object.
+ */
+const mergeCosts = (current: EntryCosts | undefined, raw: unknown): EntryCosts | undefined => {
+  if (raw === null) return undefined;
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    throw new AppError("Costs must be an object of rupee amounts.", 400);
+  }
+  const merged: EntryCosts = {};
+  for (const part of COST_PARTS) {
+    if (current?.[part] !== undefined) merged[part] = current[part]!;
+  }
+  for (const part of COST_PARTS) {
+    const value = (raw as Record<string, unknown>)[part];
+    if (value === undefined) continue;
+    if (value === null) {
+      delete merged[part];
+      continue;
+    }
+    if (
+      typeof value !== "number" ||
+      !Number.isInteger(value) ||
+      value < 0 ||
+      value > MAX_COST_INR
+    ) {
+      throw new AppError(
+        `Enter ${part === "entryFee" ? "the entry fee" : part} as whole rupees up to ${MAX_COST_INR.toLocaleString("en-IN")}.`,
+        400
+      );
+    }
+    merged[part] = value;
+  }
+  return Object.keys(merged).length > 0 ? merged : undefined;
+};
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -187,6 +264,8 @@ export const SeasonPlanService = {
     editionSlug: string;
     status?: string | undefined;
     note?: string | undefined;
+    /** Per part, a rupee figure to set or null to clear. Absent leaves it alone. */
+    costs?: unknown;
   }) {
     await assertOwnedDependent(params.userId, params.dependentId);
 
@@ -214,6 +293,10 @@ export const SeasonPlanService = {
       // read and the note a parent cleared reappears. Assigning undefined is
       // what actually unsets the path on save.
       entry.note = note || (undefined as unknown as string);
+    }
+    if (params.costs !== undefined) {
+      const next = mergeCosts(entry.costs, params.costs);
+      entry.costs = next as EntryCosts;
     }
 
     plan.markModified("entries");
@@ -254,6 +337,8 @@ export const SeasonPlanService = {
     dependentId: string;
     goal?: unknown;
     blockedRanges?: unknown;
+    /** Rupees, or null / absent for no ceiling. */
+    budget?: unknown;
   }) {
     await assertOwnedDependent(params.userId, params.dependentId);
 
@@ -282,6 +367,23 @@ export const SeasonPlanService = {
     });
     blockedRanges.sort((a, b) => a.from.getTime() - b.from.getTime());
 
+    let budget: number | undefined;
+    if (params.budget !== undefined && params.budget !== null) {
+      if (
+        typeof params.budget !== "number" ||
+        !Number.isInteger(params.budget) ||
+        params.budget < 0 ||
+        params.budget > MAX_BUDGET_INR
+      ) {
+        throw new AppError(
+          `Budget must be whole rupees up to ${MAX_BUDGET_INR.toLocaleString("en-IN")}.`,
+          400
+        );
+      }
+      // Zero is "no ceiling", the same as leaving it blank.
+      budget = params.budget > 0 ? params.budget : undefined;
+    }
+
     const plan =
       (await SeasonPlan.findOne({ userId: params.userId, dependentId: params.dependentId })) ??
       new SeasonPlan({
@@ -289,7 +391,11 @@ export const SeasonPlanService = {
         dependentId: params.dependentId,
         sportSlug: "tennis",
       });
-    plan.preferences = { goal: params.goal as SeasonGoal, blockedRanges };
+    plan.preferences = {
+      goal: params.goal as SeasonGoal,
+      blockedRanges,
+      ...(budget !== undefined ? { budget } : {}),
+    };
     await plan.save();
     return presentPlan(params.dependentId, plan);
   },

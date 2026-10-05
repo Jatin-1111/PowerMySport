@@ -2,8 +2,10 @@ import { Router } from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import {
   createRecommendations,
+  getCosts,
   getPlanner,
   getRecommendations,
+  putHomeCity,
 } from "../controllers/plannerController";
 import { authMiddleware } from "../../middleware/auth";
 import { createRedisRateLimitStore } from "../../middleware/rateLimit";
@@ -32,7 +34,9 @@ const suggestLimiter = rateLimit({
 
 // A planner is always about a profile this account owns: authenticated, and the
 // service re-checks ownership rather than trusting the id in the path.
+plannerRouter.put("/home-city", authMiddleware, putHomeCity);
 plannerRouter.get("/:dependentId", authMiddleware, getPlanner);
+plannerRouter.get("/:dependentId/costs", authMiddleware, getCosts);
 plannerRouter.get("/:dependentId/recommendations", authMiddleware, getRecommendations);
 plannerRouter.post(
   "/:dependentId/recommendations",
