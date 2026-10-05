@@ -271,6 +271,30 @@ describe("what the model is given", () => {
   });
 });
 
+describe("what the chat may say about cost", () => {
+  it("is told not to quote prices, and to point to the planner for labelled estimates", () => {
+    const prompt = formatPlannerForPrompt([
+      {
+        child: "Aarav",
+        list: "Boys U-14",
+        rank: 312,
+        listAsOn: "7 Sept 2026",
+        yearlyEntryAllowance: 25,
+        openToEnter: [],
+        moreOpenInOwnGroup: 0,
+        openInOlderGroup: 0,
+        needFactSheetCheck: 0,
+        cannotEnter: [],
+        onTheirPlan: [],
+      },
+    ]);
+
+    assert.match(prompt, /Do not state what a tournament costs/);
+    assert.match(prompt, /Entry fees are not published/);
+    assert.match(prompt, /labelled estimates/);
+  });
+});
+
 describe("the season the chat quotes", () => {
   const suggestion = (slug: string) => ({
     source: "ai",

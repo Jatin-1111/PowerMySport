@@ -170,13 +170,50 @@ const byStart = (a: Candidate, b: Candidate): number =>
  * The model's answer, made safe. Null when nothing usable is left, which the
  * caller treats as "use the rules".
  */
+/**
+ * What validation had to change, counted. Quality drift in the model shows up here
+ * first: a model that starts inventing events, or writing reasons that fail the
+ * checks, is visible as these numbers rising long before a parent notices.
+ */
+export interface ValidationStats {
+  /** Picks the model returned, before any were dropped. */
+  picks: number;
+  /** Picks naming an event that was never offered, or naming one twice. */
+  dropped: number;
+  /** Recommended picks moved to "consider" (a clash, or over the allowance). */
+  demoted: number;
+  /** Reasons that failed the checks and were replaced by the rule-based one. */
+  reasonsReplaced: number;
+  summaryReplaced: boolean;
+  /** True when the answer was not the agreed shape at all. */
+  malformed: boolean;
+}
+
 export function validateModelOutput(
   raw: unknown,
   context: RecommendationContext,
   now: Date
 ): RecommendationResult | null {
+  return inspectModelOutput(raw, context, now).result;
+}
+
+/** As {@link validateModelOutput}, with a count of what it had to repair. */
+export function inspectModelOutput(
+  raw: unknown,
+  context: RecommendationContext,
+  now: Date
+): { result: RecommendationResult | null; stats: ValidationStats } {
+  const stats: ValidationStats = {
+    picks: 0,
+    dropped: 0,
+    demoted: 0,
+    reasonsReplaced: 0,
+    summaryReplaced: false,
+    malformed: false,
+  };
   const parsed = outputSchema.safeParse(raw);
-  if (!parsed.success) return null;
+  if (!parsed.success) return { result: null, stats: { ...stats, malformed: true } };
+  stats.picks = parsed.data.picks.length;
 
   const bySlug = new Map(context.candidates.map((candidate) => [candidate.slug, candidate]));
   const room = Math.min(MAX_RECOMMENDED, context.allowanceLeft ?? MAX_RECOMMENDED);
@@ -188,13 +225,16 @@ export function validateModelOutput(
   for (const pick of parsed.data.picks) {
     const candidate = bySlug.get(pick.slug);
     // An event the rules did not allow, or one made up: gone.
-    if (!candidate || seen.has(candidate.slug)) continue;
+    if (!candidate || seen.has(candidate.slug)) {
+      stats.dropped += 1;
+      continue;
+    }
     seen.add(candidate.slug);
 
     const cleaned = tidy(pick.reason);
-    const reason = isGrounded(cleaned, allowedNumbers(candidate, context))
-      ? cleaned
-      : reasonFor(candidate, context.effectiveGoal, context);
+    const grounded = isGrounded(cleaned, allowedNumbers(candidate, context));
+    if (!grounded) stats.reasonsReplaced += 1;
+    const reason = grounded ? cleaned : reasonFor(candidate, context.effectiveGoal, context);
 
     const onTopOfPlan = context.committed.some(
       (other) => conflictBetween(candidate, other) === "overlap"
@@ -208,13 +248,16 @@ export function validateModelOutput(
     } else if (!onTopOfPlan && consider.length < MAX_CONSIDER) {
       // Over the allowance, or too close to something chosen: still an option,
       // just not one to book alongside the rest.
+      if (pick.tier === "recommended") stats.demoted += 1;
       consider.push({ candidate, reason });
+    } else {
+      stats.dropped += 1;
     }
   }
 
   // A season with nothing recommended is not an answer, unless the allowance is
   // genuinely spent.
-  if (recommended.length === 0 && room > 0) return null;
+  if (recommended.length === 0 && room > 0) return { result: null, stats };
 
   const items: RecommendationItem[] = [
     ...recommended.sort((a, b) => byStart(a.candidate, b.candidate)),
@@ -231,13 +274,17 @@ export function validateModelOutput(
     consider.length,
   ]);
   const summary = tidy(parsed.data.summary);
+  stats.summaryReplaced = !isGrounded(summary, everything);
 
   return {
-    source: "ai",
-    generatedAt: now.toISOString(),
-    goal: context.goal,
-    summary: isGrounded(summary, everything) ? summary : summaryFor(context, recommended.length),
-    items,
-    notes: notesFor(context),
+    result: {
+      source: "ai",
+      generatedAt: now.toISOString(),
+      goal: context.goal,
+      summary: stats.summaryReplaced ? summaryFor(context, recommended.length) : summary,
+      items,
+      notes: notesFor(context),
+    },
+    stats,
   };
 }

@@ -169,11 +169,14 @@ export function createCostService(deps: CostDeps) {
     routes: Map<string, Route>
   ): Promise<Map<string, RouteEstimate>> => {
     const found = new Map<string, RouteEstimate>();
+    const startedAt = Date.now();
+    let modelCalls = 0;
 
     const cached = await Promise.all(
       [...routes.keys()].map(async (key) => [key, await deps.store.get(key)] as const)
     );
     for (const [key, estimate] of cached) if (estimate) found.set(key, estimate);
+    const fromCache = found.size;
 
     const missing = [...routes.values()].filter((route) => !found.has(route.key));
     for (let i = 0; i < missing.length; i += ROUTES_PER_CALL) {
@@ -186,6 +189,7 @@ export function createCostService(deps: CostDeps) {
       }
 
       let accepted: Map<string, RouteEstimate> | null = null;
+      modelCalls += 1;
       try {
         const { prompt, byId } = buildCostPrompt(batch);
         accepted = validateCostOutput(await deps.model(COST_SYSTEM_PROMPT, prompt), byId);
@@ -205,8 +209,17 @@ export function createCostService(deps: CostDeps) {
     }
 
     // Anything still unpriced gets the rough table, uncached.
+    const fromModel = found.size - fromCache;
     for (const route of routes.values()) {
       if (!found.has(route.key)) found.set(route.key, roughFor(route));
+    }
+
+    // One line per request that did any work beyond the cache: the rate of rough
+    // fallbacks is the signal that the model is failing or being refused.
+    if (modelCalls > 0 || found.size - fromCache - fromModel > 0) {
+      log.info(
+        `costs routes=${routes.size} cached=${fromCache} priced=${fromModel} rough=${found.size - fromCache - fromModel} modelCalls=${modelCalls} ms=${Date.now() - startedAt}`
+      );
     }
     return found;
   };

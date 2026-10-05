@@ -14,7 +14,7 @@ import {
   type RecommendationUsage,
   type RecommendationView,
 } from "./types";
-import { validateModelOutput } from "./validate";
+import { inspectModelOutput } from "./validate";
 const log = __rootLog.child("plannerRecommendations");
 
 /**
@@ -237,13 +237,24 @@ export function createRecommendationService(deps: RecommendationDeps) {
 
       let result: RecommendationResult | null = null;
       let fallback: "ai-unavailable" | "invalid-output" = "ai-unavailable";
+      let repairs = "";
+      const startedAt = Date.now();
       try {
         const raw = await deps.model(SYSTEM_PROMPT, buildUserPrompt(context));
-        result = validateModelOutput(raw, context, now);
+        const inspected = inspectModelOutput(raw, context, now);
+        result = inspected.result;
+        const stats = inspected.stats;
+        repairs = `picks=${stats.picks} dropped=${stats.dropped} demoted=${stats.demoted} reasonsReplaced=${stats.reasonsReplaced} summaryReplaced=${stats.summaryReplaced}`;
         if (!result) fallback = "invalid-output";
       } catch (error) {
         log.warn("Planner model call failed", error instanceof Error ? error.message : error);
       }
+
+      // One line per model call, with no identifiers: enough to watch cost,
+      // latency and how often the validator has to repair the model's answer.
+      log.info(
+        `suggest outcome=${result ? "ai" : fallback} candidates=${context.candidates.length} force=${options.force === true} ms=${Date.now() - startedAt} ${repairs}`.trim()
+      );
 
       if (!result) {
         // Our failure, not the parent's: give the answer back.

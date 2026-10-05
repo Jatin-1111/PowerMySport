@@ -165,6 +165,7 @@ export const PLANNER_CHAT_RULES = [
   'If an entry deadline says "not published", say the deadline is not published and point to the event\'s fact sheet. Do not guess one.',
   "Dates can change. Mention the list date (listAsOn) when you quote a rank or a verdict.",
   "Playing up uses the same yearly entry allowance as the child's own age group.",
+  "Do not state what a tournament costs: no entry fees, travel or hotel prices. Entry fees are not published, and the planner page at /planner shows travel and stay as labelled estimates with the assumptions behind them. Point the parent there for costs.",
   "If a child has suggestedSeason, that is the season the parent was already shown at /planner. Quote it and do not make up a different one. If it is absent, do not invent a season plan: describe what is open to enter and point the parent to /planner for suggestions.",
   "The parent can see all of this, with calendar links, on the planner page at /planner.",
 ].join("\n- ");

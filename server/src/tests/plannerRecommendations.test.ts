@@ -706,3 +706,77 @@ describe("the recommendation service", () => {
     assert.equal(other.recommendations, null);
   });
 });
+
+// ─── What the validator had to repair, counted ────────────────────────────────
+
+describe("counting what validation repaired", () => {
+  const { inspectModelOutput } = require("../client/services/plannerRecommendations/validate");
+  const context = contextOf([
+    edition("a", 10, { ladder: "Super Series" }),
+    edition("b", 30),
+    edition("c", 31),
+  ]);
+  const pick = (slug: string, reason = "A good fit for this child.", t = "recommended") => ({
+    slug,
+    tier: t,
+    reason,
+  });
+  const answer = (
+    picks: unknown[],
+    summary = "A steady run of events across the weeks ahead."
+  ) => ({
+    summary,
+    picks,
+  });
+
+  it("reports a clean answer as clean", () => {
+    const { stats } = inspectModelOutput(answer([pick("a"), pick("b")]), context, NOW);
+    assert.deepEqual(stats, {
+      picks: 2,
+      dropped: 0,
+      demoted: 0,
+      reasonsReplaced: 0,
+      summaryReplaced: false,
+      malformed: false,
+    });
+  });
+
+  it("counts an invented event and a duplicate as dropped", () => {
+    const { stats } = inspectModelOutput(
+      answer([pick("a"), pick("made-up"), pick("a")]),
+      context,
+      NOW
+    );
+    assert.equal(stats.picks, 3);
+    assert.equal(stats.dropped, 2);
+  });
+
+  it("counts a clashing recommendation that was moved down", () => {
+    const { stats } = inspectModelOutput(answer([pick("b"), pick("c")]), context, NOW);
+    assert.equal(stats.demoted, 1);
+  });
+
+  it("counts a reason and a summary that failed the checks", () => {
+    const { stats } = inspectModelOutput(
+      answer([pick("a", "Guaranteed to get in, costs 5000.")], "This will earn 900 points."),
+      context,
+      NOW
+    );
+    assert.equal(stats.reasonsReplaced, 1);
+    assert.equal(stats.summaryReplaced, true);
+  });
+
+  it("flags an answer that is not the agreed shape", () => {
+    const { result, stats } = inspectModelOutput({ nope: true }, context, NOW);
+    assert.equal(result, null);
+    assert.equal(stats.malformed, true);
+  });
+
+  it("returns the same answer as validateModelOutput", () => {
+    const raw = answer([pick("a"), pick("b")]);
+    assert.deepEqual(
+      inspectModelOutput(raw, context, NOW).result,
+      validateModelOutput(raw, context, NOW)
+    );
+  });
+});
