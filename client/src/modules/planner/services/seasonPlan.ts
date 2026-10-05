@@ -11,6 +11,16 @@ import axiosInstance from "@/lib/api/axios";
 
 export type SeasonPlanEntryStatus = "shortlisted" | "entered" | "played";
 
+/**
+ * What a parent says an event costs, in whole rupees. Each part replaces our
+ * estimate when set. Entry fees only ever come from here.
+ */
+export interface EntryCosts {
+  travel?: number;
+  stay?: number;
+  entryFee?: number;
+}
+
 export interface SeasonPlanEntry {
   editionSlug: string;
   /** Captured when the tournament was planned — see the model's note on why. */
@@ -18,6 +28,7 @@ export interface SeasonPlanEntry {
   startDate: string;
   status: SeasonPlanEntryStatus;
   note?: string;
+  costs?: EntryCosts;
   addedAt: string;
 }
 
@@ -37,6 +48,8 @@ export interface BlockedRange {
 export interface PlanPreferences {
   goal: SeasonGoal;
   blockedRanges: BlockedRange[];
+  /** Rupees the season should stay within. Null means no ceiling. */
+  budget: number | null;
 }
 
 /** The most blocked ranges a plan holds. The server enforces the same number. */
@@ -75,6 +88,19 @@ export const seasonPlanApi = {
     const { data } = await axiosInstance.patch(
       `${base(dependentId)}/entries/${encodeURIComponent(editionSlug)}`,
       { status }
+    );
+    return data?.data;
+  },
+
+  /** A number sets that part, null clears it, and a part left out is untouched. */
+  async setCosts(
+    dependentId: string,
+    editionSlug: string,
+    costs: { [K in keyof EntryCosts]: number | null }
+  ): Promise<SeasonPlanData> {
+    const { data } = await axiosInstance.patch(
+      `${base(dependentId)}/entries/${encodeURIComponent(editionSlug)}`,
+      { costs }
     );
     return data?.data;
   },

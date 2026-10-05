@@ -1,6 +1,9 @@
 "use client";
 
+import { BudgetBar } from "@/modules/planner/components/BudgetBar";
+import { CostLine } from "@/modules/planner/components/CostLine";
 import { PlanEntryRow } from "@/modules/planner/components/PlanEntryRow";
+import type { CostResponse } from "@/modules/planner/services/planner";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import {
   downloadIcs,
@@ -28,14 +31,19 @@ export function PlanPanel({
   calendar,
   annualCap,
   bracket,
+  costs,
+  costsLoading,
 }: {
   dependentId: string;
   /** Every event the page knows about, to enrich plan entries by slug. */
   calendar: Map<string, PlannerEdition>;
   annualCap: number | null;
   bracket: string;
+  /** Travel and stay for the plan, once the server has priced it. */
+  costs: CostResponse | null;
+  costsLoading: boolean;
 }) {
-  const { entries, isLoading, setStatus, remove } = useSeasonPlan(dependentId);
+  const { entries, isLoading, setStatus, remove, setCosts } = useSeasonPlan(dependentId);
 
   if (isLoading) {
     return (
@@ -106,6 +114,19 @@ export function PlanPanel({
             endDate={endDate}
             location={location || undefined}
             warning={warnings.get(entry.editionSlug)}
+            details={
+              entry.status === "played" ? undefined : (
+                <CostLine
+                  cost={costs?.events[entry.editionSlug]}
+                  loading={costsLoading}
+                  yours={entry.costs}
+                  saving={setCosts.isPending}
+                  onSave={(figures) =>
+                    setCosts.mutate({ editionSlug: entry.editionSlug, costs: figures })
+                  }
+                />
+              )
+            }
             busy={setStatus.isPending || remove.isPending}
             onAdvance={(status) => setStatus.mutate({ editionSlug: entry.editionSlug, status })}
             onRemove={() => remove.mutate(entry.editionSlug)}
@@ -126,6 +147,16 @@ export function PlanPanel({
           />
         ))}
       </ul>
+
+      <div className="mt-4 border-t border-slate-100 pt-4">
+        {costs ? (
+          <BudgetBar season={costs.season} />
+        ) : (
+          <p className="text-xs text-slate-500">
+            {costsLoading ? "Estimating what the season may cost..." : ""}
+          </p>
+        )}
+      </div>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
         <p className="text-xs leading-relaxed text-slate-600">

@@ -1,9 +1,11 @@
 "use client";
 
+import { CostLine } from "@/modules/planner/components/CostLine";
 import { EventActions } from "@/modules/planner/components/EventActions";
 import { PreferencesPanel } from "@/modules/planner/components/PreferencesPanel";
 import { useRecommendations } from "@/modules/planner/hooks/useRecommendations";
 import type {
+  EventCost,
   FallbackReason,
   RecommendationItem,
   Recommendations,
@@ -43,12 +45,16 @@ const FALLBACK_NOTICE: Record<FallbackReason, (cap: number) => string> = {
 function SuggestionCard({
   item,
   edition,
+  cost,
+  costsLoading,
   isPlanned,
   isAdding,
   onAdd,
 }: {
   item: RecommendationItem;
   edition: PlannerEdition;
+  cost: EventCost | undefined;
+  costsLoading: boolean;
   isPlanned: boolean;
   isAdding: boolean;
   onAdd: () => void;
@@ -80,6 +86,7 @@ function SuggestionCard({
         <EventActions edition={edition} isPlanned={isPlanned} isAdding={isAdding} onAdd={onAdd} />
       </div>
       <p className="mt-2 text-sm leading-relaxed text-slate-700">{item.reason}</p>
+      <CostLine cost={cost} loading={costsLoading} />
       {edition.registrationDeadlineDate && (
         <p className="mt-1 text-xs text-slate-600">
           Entries close {formatLongDate(edition.registrationDeadlineDate)}
@@ -91,12 +98,16 @@ function SuggestionCard({
 
 function Suggestions({
   recommendations,
+  costs,
+  costsLoading,
   calendar,
   plannedSlugs,
   isAdding,
   onAdd,
 }: {
   recommendations: Recommendations;
+  costs: Record<string, EventCost> | undefined;
+  costsLoading: boolean;
   calendar: Map<string, PlannerEdition>;
   plannedSlugs: Set<string>;
   isAdding: boolean;
@@ -119,6 +130,8 @@ function Suggestions({
           key={item.slug}
           item={item}
           edition={edition}
+          cost={costs?.[item.slug]}
+          costsLoading={costsLoading}
           isPlanned={plannedSlugs.has(item.slug)}
           isAdding={isAdding}
           onAdd={() => onAdd(item.slug)}
@@ -179,6 +192,8 @@ function Suggestions({
 export function RecommendationsSection({
   dependentId,
   homeState,
+  costs,
+  costsLoading,
   calendar,
   plannedSlugs,
   isAdding,
@@ -186,6 +201,9 @@ export function RecommendationsSection({
 }: {
   dependentId: string;
   homeState: string | null;
+  /** Estimates by event, once priced. */
+  costs: Record<string, EventCost> | undefined;
+  costsLoading: boolean;
   /** Every event the page knows about, so a suggestion can be drawn in full. */
   calendar: Map<string, PlannerEdition>;
   plannedSlugs: Set<string>;
@@ -252,6 +270,8 @@ export function RecommendationsSection({
 
           <Suggestions
             recommendations={recommendations}
+            costs={costs}
+            costsLoading={costsLoading}
             calendar={calendar}
             plannedSlugs={plannedSlugs}
             isAdding={isAdding}

@@ -74,6 +74,56 @@ export interface RecommendationResponse {
   usage: RecommendationUsage;
 }
 
+export interface CostRange {
+  low: number;
+  high: number;
+}
+
+export type CostBasis = "estimate" | "yours";
+
+export interface CostPart extends CostRange {
+  basis: CostBasis;
+}
+
+export interface EventCost {
+  slug: string;
+  /** "rough" is the rule-of-thumb table, not the AI model. Null with no estimate. */
+  source: "ai" | "rough" | null;
+  assumptions: string | null;
+  travel: CostPart | null;
+  stay: CostPart | null;
+  /** Only ever the parent's own figure. We do not estimate entry fees. */
+  entryFee: number | null;
+  total: CostRange | null;
+  entryFeeMissing: boolean;
+  /** Why there is no total, in words. */
+  note: string | null;
+}
+
+export interface CostOrigin {
+  kind: "city" | "state" | "none";
+  city?: string;
+  state?: string;
+  label: string | null;
+}
+
+export type BudgetStatus = "within" | "may-exceed" | "over" | "none";
+
+export interface SeasonCost {
+  events: number;
+  withoutFigures: number;
+  total: CostRange | null;
+  budget: number | null;
+  status: BudgetStatus;
+  missingEntryFees: number;
+}
+
+export interface CostResponse {
+  origin: CostOrigin;
+  events: Record<string, EventCost>;
+  season: SeasonCost;
+}
+
 export const plannerApi = {
   async get(dependentId: string): Promise<PlannerOverview> {
     const { data } = await axiosInstance.get(`/planner/${dependentId}`);
@@ -95,5 +145,22 @@ export const plannerApi = {
       force,
     });
     return data?.data;
+  },
+
+  /**
+   * Travel and stay for the events on the plan, plus any named in `slugs`. The
+   * server prices by route and caches, so asking again is cheap.
+   */
+  async getCosts(dependentId: string, slugs: string[]): Promise<CostResponse> {
+    const { data } = await axiosInstance.get(`/planner/${dependentId}/costs`, {
+      params: slugs.length > 0 ? { slugs: slugs.join(",") } : {},
+    });
+    return data?.data;
+  },
+
+  /** Saves the city on the parent's profile, where the estimates start from. */
+  async saveHomeCity(city: string): Promise<string> {
+    const { data } = await axiosInstance.put("/planner/home-city", { city });
+    return data?.data?.city;
   },
 };

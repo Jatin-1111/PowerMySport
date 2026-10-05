@@ -43,6 +43,9 @@ export function useSeasonPlan(dependentId: string) {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.planner.recommendations(dependentId),
     });
+    // Costs follow the plan: a new event, a removed one or a typed figure all
+    // change the season total.
+    void queryClient.invalidateQueries({ queryKey: queryKeys.planner.costsFor(dependentId) });
   };
 
   /** The server's message is the useful one — it says which rule was hit. */
@@ -77,6 +80,18 @@ export function useSeasonPlan(dependentId: string) {
     onError: failed("Could not remove that tournament."),
   });
 
+  const setCosts = useMutation({
+    mutationFn: (input: {
+      editionSlug: string;
+      costs: Parameters<typeof seasonPlanApi.setCosts>[2];
+    }) => seasonPlanApi.setCosts(dependentId, input.editionSlug, input.costs),
+    onSuccess: (plan) => {
+      apply(plan);
+      toast.success("Figures saved.");
+    },
+    onError: failed("Could not save those figures."),
+  });
+
   const savePreferences = useMutation({
     mutationFn: (preferences: PlanPreferences) =>
       seasonPlanApi.setPreferences(dependentId, preferences),
@@ -99,6 +114,7 @@ export function useSeasonPlan(dependentId: string) {
     add,
     setStatus,
     remove,
+    setCosts,
     savePreferences,
   };
 }

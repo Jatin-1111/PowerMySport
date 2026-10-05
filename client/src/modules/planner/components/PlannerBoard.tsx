@@ -1,9 +1,12 @@
 "use client";
 
+import { HomeCityPrompt } from "@/modules/planner/components/HomeCityPrompt";
 import { LinkRankingPrompt } from "@/modules/planner/components/LinkRankingPrompt";
 import { PlanPanel } from "@/modules/planner/components/PlanPanel";
 import { RecommendationsSection } from "@/modules/planner/components/RecommendationsSection";
 import { Timeline } from "@/modules/planner/components/Timeline";
+import { useCosts } from "@/modules/planner/hooks/useCosts";
+import { useRecommendations } from "@/modules/planner/hooks/useRecommendations";
 import { usePlanner } from "@/modules/planner/hooks/usePlanner";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import { formatLongDate } from "@/modules/planner/utils/eventFormat";
@@ -54,6 +57,12 @@ export function PlannerBoard({
 }) {
   const { data, isPending, isError, refetch } = usePlanner(dependentId);
   const { plannedSlugs, add } = useSeasonPlan(dependentId);
+
+  // The suggestions on screen are priced alongside the plan. These hooks sit above
+  // the early returns below so they run on every render.
+  const { recommendations } = useRecommendations(dependentId);
+  const suggestedSlugs = recommendations?.items.map((item) => item.slug) ?? [];
+  const { costs, isLoading: costsLoading, saveHomeCity } = useCosts(dependentId, suggestedSlugs);
 
   if (isPending) {
     return (
@@ -145,6 +154,14 @@ export function PlannerBoard({
         </p>
       </div>
 
+      {costs && (
+        <HomeCityPrompt
+          origin={costs.origin}
+          saving={saveHomeCity.isPending}
+          onSave={(city) => saveHomeCity.mutate(city)}
+        />
+      )}
+
       <Section
         title="Suggested season"
         description="Which of these events to put on the plan, and why."
@@ -152,6 +169,8 @@ export function PlannerBoard({
         <RecommendationsSection
           dependentId={dependentId}
           homeState={standing.state}
+          costs={costs?.events}
+          costsLoading={costsLoading}
           calendar={calendar}
           plannedSlugs={plannedSlugs}
           isAdding={add.isPending}
@@ -168,6 +187,8 @@ export function PlannerBoard({
           calendar={calendar}
           annualCap={data.annualEntryCap}
           bracket={standing.subcategory}
+          costs={costs}
+          costsLoading={costsLoading}
         />
       </Section>
 

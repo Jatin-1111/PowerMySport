@@ -33,6 +33,7 @@ export function PlanEntryRow({
   location,
   warning,
   extraActions,
+  details,
   busy,
   onAdvance,
   onRemove,
@@ -44,6 +45,8 @@ export function PlanEntryRow({
   /** A clash or tight gap against the event before it. */
   warning?: string | undefined;
   extraActions?: ReactNode;
+  /** Anything that belongs under the row, such as what the event is expected to cost. */
+  details?: ReactNode;
   busy: boolean;
   onAdvance: (status: SeasonPlanEntryStatus) => void;
   onRemove: () => void;
@@ -87,6 +90,7 @@ export function PlanEntryRow({
           </Button>
         </div>
       </div>
+      {details}
       {warning && (
         <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-relaxed text-amber-700">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />

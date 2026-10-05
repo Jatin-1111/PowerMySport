@@ -7,6 +7,7 @@ import {
   type PlanPreferences,
   type SeasonGoal,
 } from "@/modules/planner/services/seasonPlan";
+import { formatInr, parseRupees } from "@/modules/planner/utils/money";
 import { Button } from "@/modules/shared/ui/Button";
 import { ChevronDown, Plus, X } from "lucide-react";
 import { useState } from "react";
@@ -51,7 +52,7 @@ const GOAL_LABEL: Record<SeasonGoal, string> = {
   home: "Stay close to home",
 };
 
-const DEFAULT_PREFERENCES: PlanPreferences = { goal: "points", blockedRanges: [] };
+const DEFAULT_PREFERENCES: PlanPreferences = { goal: "points", blockedRanges: [], budget: null };
 
 const INPUT =
   "min-h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange-solid";
@@ -77,12 +78,25 @@ function PreferencesForm({
 }) {
   const [goal, setGoal] = useState<SeasonGoal>(saved.goal);
   const [rows, setRows] = useState<BlockedRange[]>(saved.blockedRanges);
+  const [budgetText, setBudgetText] = useState<string>(
+    saved.budget === null ? "" : String(saved.budget)
+  );
+
+  // Blank means no ceiling. Anything else must be a plain whole-rupee amount.
+  const parsedBudget = parseRupees(budgetText);
+  const budgetProblem =
+    parsedBudget !== null && (Number.isNaN(parsedBudget) || parsedBudget > 10_000_000)
+      ? "Enter the budget in whole rupees, for example 60000."
+      : null;
+  const budget = parsedBudget === null || budgetProblem ? null : parsedBudget;
 
   const problems = rows.map(rowProblem);
   const usable = rows.filter((row) => row.from && row.to);
   const changed =
-    goal !== saved.goal || JSON.stringify(usable) !== JSON.stringify(saved.blockedRanges);
-  const canSave = changed && problems.every((problem) => problem === null);
+    goal !== saved.goal ||
+    budget !== saved.budget ||
+    JSON.stringify(usable) !== JSON.stringify(saved.blockedRanges);
+  const canSave = changed && !budgetProblem && problems.every((problem) => problem === null);
 
   const update = (index: number, patch: Partial<BlockedRange>) =>
     setRows((current) => current.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -94,6 +108,7 @@ function PreferencesForm({
         if (canSave) {
           onSave({
             goal,
+            budget,
             blockedRanges: usable.map(({ from, to, label }) => ({
               from,
               to,
@@ -220,6 +235,36 @@ function PreferencesForm({
         )}
       </fieldset>
 
+      <div>
+        <label htmlFor="season-budget" className="text-sm font-semibold text-slate-900">
+          Season budget (optional)
+        </label>
+        <p className="mt-1 text-xs leading-relaxed text-slate-600">
+          What you want the plan to stay within, for travel and stay. The planner shows the plan
+          against it.
+        </p>
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-sm text-slate-600" aria-hidden>
+            ₹
+          </span>
+          <input
+            id="season-budget"
+            type="text"
+            inputMode="numeric"
+            value={budgetText}
+            placeholder="60000"
+            onChange={(event) => setBudgetText(event.target.value)}
+            className={`${INPUT} w-40`}
+            aria-describedby={budgetProblem ? "season-budget-problem" : undefined}
+          />
+        </div>
+        {budgetProblem && (
+          <p id="season-budget-problem" role="alert" className="mt-1 text-xs text-red-700">
+            {budgetProblem}
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" size="sm" disabled={!canSave || saving}>
           {saving ? "Saving..." : "Save preferences"}
@@ -244,7 +289,7 @@ export function PreferencesPanel({
   const blocked = saved.blockedRanges.length;
   const summary = `${GOAL_LABEL[saved.goal]}${
     blocked > 0 ? `, ${blocked} blocked date range${blocked === 1 ? "" : "s"}` : ""
-  }`;
+  }${saved.budget !== null ? `, budget ${formatInr(saved.budget)}` : ""}`;
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50">

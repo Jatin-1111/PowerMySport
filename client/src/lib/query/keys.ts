@@ -94,6 +94,10 @@ export const queryKeys = {
   planner: {
     forDependent: (dependentId: string) => ["planner", dependentId] as const,
     recommendations: (dependentId: string) => ["planner", dependentId, "recommendations"] as const,
+    /** Prefix for every cost query of one child, whatever slugs it was asked about. */
+    costsFor: (dependentId: string) => ["planner", dependentId, "costs"] as const,
+    costs: (dependentId: string, slugs: string[]) =>
+      ["planner", dependentId, "costs", [...slugs].sort().join(",")] as const,
   },
 
   bookings: {
