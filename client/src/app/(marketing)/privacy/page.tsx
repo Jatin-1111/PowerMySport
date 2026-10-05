@@ -10,6 +10,7 @@ import {
   InformationCollected,
   HowWeUseInformation,
   InformationSharing,
+  AiProcessing,
   DataRetention,
   DataSecurity,
   YourRights,
@@ -35,7 +36,9 @@ export default function PrivacyPolicyPage() {
     <div className="min-h-screen bg-slate-50">
       <LegalPageHeader
         title="Privacy Policy"
-        lastUpdated="July 24, 2026"
+        lastUpdated="October 5, 2026"
+        // TODO(owner + lawyer): decide the effective date of the AI section. Only
+        // "last updated" moved with it.
         effective="July 24, 2026"
       />
 
@@ -48,6 +51,7 @@ export default function PrivacyPolicyPage() {
             <InformationCollected />
             <HowWeUseInformation />
             <InformationSharing />
+            <AiProcessing />
             <DataRetention />
             <DataSecurity />
             <YourRights />

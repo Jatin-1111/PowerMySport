@@ -17,6 +17,7 @@ import {
   Megaphone,
   ScrollText,
   Settings2,
+  Sparkles,
   Users,
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ const ITEMS: LegalTocItem[] = [
   { id: "information-collected", label: "Information We Collect", icon: Fingerprint },
   { id: "how-we-use-information", label: "How We Use Your Information", icon: Settings2 },
   { id: "information-sharing", label: "Information Sharing and Disclosure", icon: Handshake },
+  { id: "ai-processing", label: "AI Features and Model Providers", icon: Sparkles },
   { id: "data-retention", label: "Data Retention", icon: Clock },
   { id: "data-security", label: "Data Security", icon: Lock },
   { id: "your-rights", label: "Your Rights", icon: ListChecks },

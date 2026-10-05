@@ -4,6 +4,7 @@ export { Introduction } from "./Introduction";
 export { InformationCollected } from "./InformationCollected";
 export { HowWeUseInformation } from "./HowWeUseInformation";
 export { InformationSharing } from "./InformationSharing";
+export { AiProcessing } from "./AiProcessing";
 export { DataRetention } from "./DataRetention";
 export { DataSecurity } from "./DataSecurity";
 export { YourRights } from "./YourRights";

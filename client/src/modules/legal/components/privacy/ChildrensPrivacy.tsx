@@ -14,8 +14,9 @@ export function ChildrensPrivacy() {
         We do not use a dependent profile&apos;s data for behavioural tracking, profiling, or
         targeted advertising. Parents and guardians are solely responsible for the accuracy of the
         information provided for a dependent and for supervising the minor&apos;s participation in
-        any booked activity. We reserve the right to terminate any account found to violate this
-        section.
+        any booked activity. When a feature sends information about a dependent to an AI model
+        provider, it is limited to what that feature needs, as described under AI Features and Model
+        Providers. We reserve the right to terminate any account found to violate this section.
       </p>
     </section>
   );

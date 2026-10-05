@@ -9,9 +9,10 @@ export function InformationSharing() {
       <h3 className="mb-3 text-xl font-semibold text-slate-900">With Service Providers</h3>
       <p className="mb-4 leading-relaxed text-slate-600">
         We share information with third-party service providers who perform services on our behalf,
-        such as payment processing, hosting, data analysis, email delivery, and customer support. We
-        require these providers to protect your information, but we are not responsible for their
-        independent privacy or security practices.
+        such as payment processing, hosting, data analysis, email delivery, and customer support,
+        and with AI model providers for the features described under AI Features and Model
+        Providers. We require these providers to protect your information, but we are not
+        responsible for their independent privacy or security practices.
       </p>
 
       <h3 className="mb-3 text-xl font-semibold text-slate-900">With Venue Owners and Coaches</h3>
