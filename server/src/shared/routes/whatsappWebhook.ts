@@ -17,9 +17,12 @@
  *   META_APP_SECRET             App settings > Basic > App secret
  *   WHATSAPP_ACCESS_TOKEN       system-user token, needed to send replies
  *   WHATSAPP_PHONE_NUMBER_ID    the sending number's id, needed to send replies
+ *   WHATSAPP_ASSISTANT          "on" answers with the real assistant; anything
+ *                               else sends the fixed holding message
  */
 import crypto from "crypto";
 import express from "express";
+import { replyToWhatsAppMessage } from "../services/whatsappAssistantService";
 import {
   extractInboundMessages,
   isValidMetaSignature,
@@ -61,7 +64,9 @@ async function handleInboundMessage(message: InboundWhatsAppMessage): Promise<vo
   if (!whatsappSendingConfigured()) return;
 
   await markWhatsAppRead(message.id);
-  await sendWhatsAppText(message.from, HOLDING_REPLY);
+  const reply =
+    process.env.WHATSAPP_ASSISTANT === "on" ? await replyToWhatsAppMessage(message) : HOLDING_REPLY;
+  await sendWhatsAppText(message.from, reply);
 }
 
 router.get("/webhook", (req, res) => {
