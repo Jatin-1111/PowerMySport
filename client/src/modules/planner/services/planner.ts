@@ -1,6 +1,6 @@
 import axiosInstance from "@/lib/api/axios";
 import type { PlannerEntry, Shortlist } from "@powermysport/shared-types";
-import type { SeasonPlanData } from "@/modules/planner/services/seasonPlan";
+import type { SeasonGoal, SeasonPlanData } from "@/modules/planner/services/seasonPlan";
 
 /**
  * One child's planner, as the server assembles it.
@@ -19,6 +19,8 @@ export interface PlannerStanding {
   subcategory: string;
   rank: number;
   totalPoints: number;
+  /** Where the player is registered, when the list records it. */
+  state: string | null;
   asOnDate: string;
 }
 
@@ -37,9 +39,61 @@ export interface PlannerOverview {
 
 export type { PlannerEntry };
 
+export type RecommendationTier = "recommended" | "consider";
+export type RecommendationSource = "ai" | "rules";
+export type FallbackReason = "ai-unavailable" | "invalid-output" | "daily-limit";
+
+export interface RecommendationItem {
+  slug: string;
+  tier: RecommendationTier;
+  reason: string;
+}
+
+export interface Recommendations {
+  source: RecommendationSource;
+  fallbackReason?: FallbackReason;
+  generatedAt: string;
+  goal: SeasonGoal;
+  summary: string;
+  items: RecommendationItem[];
+  /** Plain facts about what was left out. */
+  notes: string[];
+  /** The child's list, plan or preferences changed after this was made. */
+  stale: boolean;
+}
+
+export interface RecommendationUsage {
+  used: number;
+  cap: number;
+}
+
+export interface RecommendationResponse {
+  /** False until the child has a ranking to plan against. */
+  ready: boolean;
+  recommendations: Recommendations | null;
+  usage: RecommendationUsage;
+}
+
 export const plannerApi = {
   async get(dependentId: string): Promise<PlannerOverview> {
     const { data } = await axiosInstance.get(`/planner/${dependentId}`);
+    return data?.data;
+  },
+
+  /** The saved suggestions. Never calls the model and costs nothing. */
+  async getRecommendations(dependentId: string): Promise<RecommendationResponse> {
+    const { data } = await axiosInstance.get(`/planner/${dependentId}/recommendations`);
+    return data?.data;
+  },
+
+  /**
+   * Make suggestions, or reuse the saved ones when nothing has changed. `force`
+   * asks for a fresh answer and spends one of the day's allowance.
+   */
+  async suggest(dependentId: string, force: boolean): Promise<RecommendationResponse> {
+    const { data } = await axiosInstance.post(`/planner/${dependentId}/recommendations`, {
+      force,
+    });
     return data?.data;
   },
 };

@@ -21,10 +21,32 @@ export interface SeasonPlanEntry {
   addedAt: string;
 }
 
+/**
+ * What the parent wants the season to be for. Mirrors the server's list, which is
+ * the only list the recommender is built to serve.
+ */
+export type SeasonGoal = "points" | "experience" | "home";
+
+/** Whole calendar days, `YYYY-MM-DD`, both ends included. */
+export interface BlockedRange {
+  from: string;
+  to: string;
+  label?: string;
+}
+
+export interface PlanPreferences {
+  goal: SeasonGoal;
+  blockedRanges: BlockedRange[];
+}
+
+/** The most blocked ranges a plan holds. The server enforces the same number. */
+export const MAX_BLOCKED_RANGES = 5;
+
 export interface SeasonPlanData {
   dependentId: string;
   sportSlug: string;
   entries: SeasonPlanEntry[];
+  preferences: PlanPreferences;
 }
 
 const base = (dependentId: string) => `/season-plans/${dependentId}`;
@@ -32,6 +54,11 @@ const base = (dependentId: string) => `/season-plans/${dependentId}`;
 export const seasonPlanApi = {
   async get(dependentId: string): Promise<SeasonPlanData> {
     const { data } = await axiosInstance.get(base(dependentId));
+    return data?.data;
+  },
+
+  async setPreferences(dependentId: string, preferences: PlanPreferences): Promise<SeasonPlanData> {
+    const { data } = await axiosInstance.put(`${base(dependentId)}/preferences`, preferences);
     return data?.data;
   },
 

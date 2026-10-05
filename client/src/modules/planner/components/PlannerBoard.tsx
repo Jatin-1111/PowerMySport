@@ -2,6 +2,7 @@
 
 import { LinkRankingPrompt } from "@/modules/planner/components/LinkRankingPrompt";
 import { PlanPanel } from "@/modules/planner/components/PlanPanel";
+import { RecommendationsSection } from "@/modules/planner/components/RecommendationsSection";
 import { Timeline } from "@/modules/planner/components/Timeline";
 import { usePlanner } from "@/modules/planner/hooks/usePlanner";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
@@ -143,6 +144,20 @@ export function PlannerBoard({
           Events are judged against this list. It updates when a new one is published.
         </p>
       </div>
+
+      <Section
+        title="Suggested season"
+        description="Which of these events to put on the plan, and why."
+      >
+        <RecommendationsSection
+          dependentId={dependentId}
+          homeState={standing.state}
+          calendar={calendar}
+          plannedSlugs={plannedSlugs}
+          isAdding={add.isPending}
+          onAdd={(slug) => add.mutate(slug)}
+        />
+      </Section>
 
       <Section
         title="Their plan"

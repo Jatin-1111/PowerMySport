@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
   seasonPlanApi,
+  type PlanPreferences,
   type SeasonPlanData,
   type SeasonPlanEntryStatus,
 } from "@/modules/planner/services/seasonPlan";
@@ -32,7 +33,17 @@ export function useSeasonPlan(dependentId: string) {
     enabled: hydrated && Boolean(token) && Boolean(dependentId),
   });
 
-  const apply = (plan: SeasonPlanData) => queryClient.setQueryData(key, plan);
+  /**
+   * Every change to the plan or its preferences changes what the suggestions were
+   * built from. The saved suggestions are re-read, which is free, so the page can
+   * say they are out of date instead of presenting them as current.
+   */
+  const apply = (plan: SeasonPlanData) => {
+    queryClient.setQueryData(key, plan);
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.planner.recommendations(dependentId),
+    });
+  };
 
   /** The server's message is the useful one — it says which rule was hit. */
   const failed = (fallback: string) => (error: unknown) => {
@@ -66,15 +77,28 @@ export function useSeasonPlan(dependentId: string) {
     onError: failed("Could not remove that tournament."),
   });
 
+  const savePreferences = useMutation({
+    mutationFn: (preferences: PlanPreferences) =>
+      seasonPlanApi.setPreferences(dependentId, preferences),
+    onSuccess: (plan) => {
+      apply(plan);
+      toast.success("Preferences saved.");
+    },
+    onError: failed("Could not save those preferences."),
+  });
+
   const entries = query.data?.entries ?? [];
 
   return {
     entries,
+    /** The parent's goal and blocked dates. Defaults until a plan has been saved. */
+    preferences: query.data?.preferences,
     isLoading: query.isPending && hydrated && Boolean(token),
     /** Slugs already on the plan, so a list can mark what is already chosen. */
     plannedSlugs: new Set(entries.map((entry) => entry.editionSlug)),
     add,
     setStatus,
     remove,
+    savePreferences,
   };
 }
