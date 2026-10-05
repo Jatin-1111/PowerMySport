@@ -33,6 +33,7 @@ export function PlanPanel({
   bracket,
   costs,
   costsLoading,
+  costsFailed,
 }: {
   dependentId: string;
   /** Every event the page knows about, to enrich plan entries by slug. */
@@ -42,6 +43,8 @@ export function PlanPanel({
   /** Travel and stay for the plan, once the server has priced it. */
   costs: CostResponse | null;
   costsLoading: boolean;
+  /** The estimates request failed. Said, so a blank is never mistaken for "free". */
+  costsFailed: boolean;
 }) {
   const { entries, isLoading, setStatus, remove, setCosts } = useSeasonPlan(dependentId);
 
@@ -153,7 +156,11 @@ export function PlanPanel({
           <BudgetBar season={costs.season} />
         ) : (
           <p className="text-xs text-slate-500">
-            {costsLoading ? "Estimating what the season may cost..." : ""}
+            {costsLoading
+              ? "Estimating what the season may cost..."
+              : costsFailed
+                ? "Cost estimates are not available just now. Everything else still works."
+                : ""}
           </p>
         )}
       </div>

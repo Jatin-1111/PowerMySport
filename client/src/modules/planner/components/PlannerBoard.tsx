@@ -62,7 +62,12 @@ export function PlannerBoard({
   // the early returns below so they run on every render.
   const { recommendations } = useRecommendations(dependentId);
   const suggestedSlugs = recommendations?.items.map((item) => item.slug) ?? [];
-  const { costs, isLoading: costsLoading, saveHomeCity } = useCosts(dependentId, suggestedSlugs);
+  const {
+    costs,
+    isLoading: costsLoading,
+    isError: costsFailed,
+    saveHomeCity,
+  } = useCosts(dependentId, suggestedSlugs);
 
   if (isPending) {
     return (
@@ -189,6 +194,7 @@ export function PlannerBoard({
           bracket={standing.subcategory}
           costs={costs}
           costsLoading={costsLoading}
+          costsFailed={costsFailed}
         />
       </Section>
 
