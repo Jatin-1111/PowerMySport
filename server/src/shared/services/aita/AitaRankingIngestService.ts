@@ -1,3 +1,4 @@
+import mongoose, { ClientSession } from "mongoose";
 import { createHash } from "node:crypto";
 import { RankingEntry } from "../../models/RankingEntry";
 import { RankingSnapshot, RankingSnapshotDocument } from "../../models/RankingSnapshot";
@@ -785,22 +786,53 @@ export class AitaRankingIngestService {
     return null;
   }
 
-  /** Writes the rows and promotes the snapshot, demoting whatever it replaces. */
+  /**
+   * Publishes a parsed list: rows go in dark, then readers are switched over to
+   * them in one transaction.
+   *
+   * This used to write the new rows already marked `isLatest: true` and only
+   * afterwards demote the old week's. Readers therefore saw BOTH weeks for the
+   * whole write, and for good if the demote never ran. A full cluster does
+   * exactly that to it: writes fail partway, nothing is demoted, every list is
+   * doubled (2026-09-17). Now a failure at any point leaves the old week live and
+   * the new one invisible.
+   */
   private async publish(snapshot: RankingSnapshotDocument, parsed: ParseResult): Promise<void> {
-    const newestPublished = await RankingSnapshot.findOne({
-      category: snapshot.category,
-      subcategory: snapshot.subcategory,
-      status: "published",
-    })
-      .sort({ asOnDate: -1 })
-      .select("asOnDate")
-      .lean();
+    await this.writeRowsDark(snapshot, parsed);
 
-    // A backfilled older list must not steal `isLatest` from a newer one.
-    const becomesLatest =
-      !newestPublished?.asOnDate ||
-      new Date(snapshot.asOnDate).getTime() >= new Date(newestPublished.asOnDate).getTime();
+    // Derived analytics — movement against last week, state ranks, benchmark
+    // tiers, state distribution, points-by-source bands. Computed here rather
+    // than per request because every public read wants all of it.
+    //
+    // Now computed BEFORE the cut-over, on rows nobody can see yet, so the list
+    // goes live complete. Before, it went live first and filled in behind.
+    //
+    // Known limitation: this measures against whatever the preceding published
+    // list is *right now*. Backfilling an older week after newer ones are live
+    // leaves those newer weeks comparing against the wrong baseline, so the
+    // backfill migration exists to re-run a combo's whole chain in date order.
+    // A forward-only sweep never hits that, because it only ever adds the
+    // newest list.
+    try {
+      await recomputeSnapshotInsights(snapshot._id);
+    } catch (error) {
+      // Analytics are additive. A failure here must not turn a good ingest into a
+      // failed one, so the list is still published without them.
+      log.warn(
+        `[aita-rankings] insight computation failed for ${snapshot.category}/` +
+          `${snapshot.subcategory} ${toIsoDate(snapshot.asOnDate)}:`,
+        error instanceof Error ? error.message : error
+      );
+    }
 
+    await this.cutOver(snapshot);
+  }
+
+  /** Writes the rows with `isLatest: false`, and removes them again if that fails. */
+  private async writeRowsDark(
+    snapshot: RankingSnapshotDocument,
+    parsed: ParseResult
+  ): Promise<void> {
     const operations = parsed.rows.map((row) => {
       // `fullName` comes from the parser because the source prints one name
       // field and gives no reliable way to split it.
@@ -817,7 +849,9 @@ export class AitaRankingIngestService {
               category: snapshot.category,
               subcategory: snapshot.subcategory,
               asOnDate: snapshot.asOnDate,
-              isLatest: becomesLatest,
+              // Always written dark. Nothing a reader sees changes until the
+              // cut-over below flips the flags in one transaction.
+              isLatest: false,
               rank: row.rank,
               givenName: row.givenName,
               familyName: row.familyName,
@@ -847,60 +881,116 @@ export class AitaRankingIngestService {
       };
     });
 
-    for (let i = 0; i < operations.length; i += ENTRY_CHUNK_SIZE) {
-      await RankingEntry.bulkWrite(operations.slice(i, i + ENTRY_CHUNK_SIZE), {
-        ordered: false,
-      });
-    }
-
-    if (becomesLatest) {
-      await RankingEntry.updateMany(
-        {
-          category: snapshot.category,
-          subcategory: snapshot.subcategory,
-          isLatest: true,
-          snapshot: { $ne: snapshot._id },
-        },
-        { $set: { isLatest: false } }
-      );
-      await RankingSnapshot.updateMany(
-        {
-          category: snapshot.category,
-          subcategory: snapshot.subcategory,
-          isLatestForCombo: true,
-          _id: { $ne: snapshot._id },
-        },
-        { $set: { isLatestForCombo: false } }
-      );
-    }
-
-    // Derived analytics — movement against last week, state ranks, benchmark
-    // tiers, state distribution, points-by-source bands. Computed here rather
-    // than per request because every public read wants all of it.
-    //
-    // Known limitation: this measures against whatever the preceding published
-    // list is *right now*. Backfilling an older week after newer ones are live
-    // leaves those newer weeks comparing against the wrong baseline, so the
-    // backfill migration exists to re-run a combo's whole chain in date order.
-    // A forward-only sweep never hits that, because it only ever adds the
-    // newest list.
     try {
-      await recomputeSnapshotInsights(snapshot._id);
+      for (let i = 0; i < operations.length; i += ENTRY_CHUNK_SIZE) {
+        await RankingEntry.bulkWrite(operations.slice(i, i + ENTRY_CHUNK_SIZE), {
+          ordered: false,
+        });
+      }
     } catch (error) {
-      // The rows are already correct and published; analytics are additive. A
-      // failure here must not turn a good ingest into a failed one.
-      log.warn(
-        `[aita-rankings] insight computation failed for ${snapshot.category}/` +
-          `${snapshot.subcategory} ${toIsoDate(snapshot.asOnDate)}:`,
-        error instanceof Error ? error.message : error
+      // Typically a full cluster. Half a week of rows nobody can see is pure
+      // dead weight on the one resource that is short, and deletes still work
+      // when writes are blocked, so hand it back. The next run starts clean.
+      // Never touches a row that is live: those belong to a published snapshot,
+      // and this one is not.
+      await RankingEntry.deleteMany({ snapshot: snapshot._id, isLatest: { $ne: true } }).catch(
+        (cleanupError: unknown) =>
+          log.warn(
+            `[aita-rankings] could not remove partial rows for snapshot ${String(snapshot._id)}:`,
+            cleanupError instanceof Error ? cleanupError.message : cleanupError
+          )
       );
+      throw error;
+    }
+  }
+
+  /**
+   * Makes the snapshot live and demotes whatever it replaces, in ONE transaction:
+   * its rows go live, the previous week's rows go dark, the snapshot pointers
+   * swap, and the snapshot is marked published. A reader sees the old week or the
+   * new one, never both and never neither, and a failure anywhere aborts the lot.
+   *
+   * Whether it takes over is decided INSIDE the transaction, so a backfilled older
+   * list can never steal `isLatest` from a newer one, even if a newer one was
+   * published while this one was being written.
+   *
+   * A standalone mongod (some local dev setups) cannot run transactions. That one
+   * specific refusal falls back to the same steps in order, promoting before
+   * demoting so there is never an empty list, which is not atomic. Production is
+   * a replica set, so it never takes that path.
+   */
+  private async cutOver(snapshot: RankingSnapshotDocument): Promise<void> {
+    const flip = async (session?: ClientSession) => {
+      const options = session ? { session } : {};
+
+      const newestOther = await RankingSnapshot.findOne({
+        category: snapshot.category,
+        subcategory: snapshot.subcategory,
+        status: "published",
+        _id: { $ne: snapshot._id },
+      })
+        .sort({ asOnDate: -1 })
+        .select("asOnDate")
+        .session(session ?? null)
+        .lean();
+
+      const becomesLatest =
+        !newestOther?.asOnDate ||
+        new Date(snapshot.asOnDate).getTime() >= new Date(newestOther.asOnDate).getTime();
+
+      if (becomesLatest) {
+        await RankingEntry.updateMany(
+          { snapshot: snapshot._id },
+          { $set: { isLatest: true } },
+          options
+        );
+        await RankingEntry.updateMany(
+          {
+            category: snapshot.category,
+            subcategory: snapshot.subcategory,
+            isLatest: true,
+            snapshot: { $ne: snapshot._id },
+          },
+          { $set: { isLatest: false } },
+          options
+        );
+        await RankingSnapshot.updateMany(
+          {
+            category: snapshot.category,
+            subcategory: snapshot.subcategory,
+            isLatestForCombo: true,
+            _id: { $ne: snapshot._id },
+          },
+          { $set: { isLatestForCombo: false } },
+          options
+        );
+      }
+
+      const changes = {
+        status: "published",
+        isLatestForCombo: becomesLatest,
+        publishedAt: new Date(),
+      };
+      await RankingSnapshot.updateOne({ _id: snapshot._id }, { $set: changes }, options);
+      return changes;
+    };
+
+    let changes: Awaited<ReturnType<typeof flip>> | undefined;
+    const session = await mongoose.startSession();
+    try {
+      try {
+        await session.withTransaction(async () => {
+          changes = await flip(session);
+        });
+      } catch (error) {
+        if (!isTransactionsUnsupported(error)) throw error;
+        changes = await flip();
+      }
+    } finally {
+      await session.endSession();
     }
 
-    await applyToSnapshot(snapshot, {
-      status: "published",
-      isLatestForCombo: becomesLatest,
-      publishedAt: new Date(),
-    });
+    Object.assign(snapshot, changes);
   }
 
   /**
@@ -1053,6 +1143,17 @@ export function isAgeGroupRollover(
  * the same dates. These writes are last-writer-wins field updates on disjoint
  * fields, so optimistic concurrency buys nothing and only invents failures.
  */
+/** A standalone mongod refuses transactions with exactly this error. */
+const isTransactionsUnsupported = (error: unknown): boolean =>
+  Boolean(
+    error &&
+    typeof error === "object" &&
+    (error as { code?: number }).code === 20 &&
+    /transaction numbers are only allowed on a replica set/i.test(
+      String((error as { message?: string }).message ?? "")
+    )
+  );
+
 async function applyToSnapshot(
   snapshot: RankingSnapshotDocument,
   changes: Record<string, unknown>
