@@ -763,11 +763,20 @@ const markPaymentPaid = async (
     throw new Error("Booking not found");
   }
 
-  // Only the call that actually changed something records it. A repeat finds
-  // the share already PAID and the booking already confirmed, and does nothing.
-  if (flipped || confirmed) {
-    const payerShare = booking.payments?.find(
+  // Only the call that flipped this payer's share records it: a share flips to
+  // PAID exactly once, so that makes one event per payment. Do NOT also record
+  // for the caller that won the confirmation claim. The two steps can be won by
+  // different callers (A flips, B's own flip matches nothing, B claims the
+  // confirmation before A reaches its claim), and `flipped || confirmed` then
+  // wrote two events for one payment. A confirmation-only winner is either that
+  // race or the retry of a call that died after flipping; the confirmation
+  // itself is still applied and mailed by whoever claimed it.
+  if (flipped) {
+    const payerShare = flipped.payments?.find(
       (payment) => payment.userId.toString() === payerUserId && payment.userType === "Player"
+    );
+    const fullyPaid = !flipped.payments?.some(
+      (payment) => payment.userType === "Player" && payment.status !== "PAID"
     );
     await recordBookingEventFor(booking, {
       type: "PAYMENT_CONFIRMED",
@@ -776,12 +785,12 @@ const markPaymentPaid = async (
       actorUserId: context?.actorUserId ?? payerUserId,
       channel: context?.channel ?? "WEBHOOK",
       amountPaise: toPaise(payerShare?.amount ?? booking.totalAmount),
-      summary: booking.paymentConfirmedAt
+      summary: fullyPaid
         ? "Payment confirmed — booking fully paid"
         : "Payment received for one share — awaiting remaining shares",
       metadata: {
         payerUserId,
-        fullyPaid: Boolean(booking.paymentConfirmedAt),
+        fullyPaid,
         ...(context?.metadata ?? {}),
       },
     });
