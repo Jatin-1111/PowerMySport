@@ -3,6 +3,7 @@ import {
   addSeasonPlanEntry,
   getSeasonPlan,
   removeSeasonPlanEntry,
+  setSeasonPlanPreferences,
   updateSeasonPlanEntry,
 } from "../controllers/seasonPlanController";
 import { authMiddleware } from "../../middleware/auth";
@@ -13,6 +14,7 @@ const seasonPlanRouter = Router();
 // authenticated and every handler re-checks that ownership rather than
 // trusting the id in the path.
 seasonPlanRouter.get("/:dependentId", authMiddleware, getSeasonPlan);
+seasonPlanRouter.put("/:dependentId/preferences", authMiddleware, setSeasonPlanPreferences);
 seasonPlanRouter.post("/:dependentId/entries", authMiddleware, addSeasonPlanEntry);
 seasonPlanRouter.patch("/:dependentId/entries/:editionSlug", authMiddleware, updateSeasonPlanEntry);
 seasonPlanRouter.delete(

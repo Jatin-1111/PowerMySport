@@ -60,6 +60,8 @@ const seedStanding = (
     nameSearch: "aarav khandelwal",
     dob: new Date(Date.UTC(2012, 4, 17)),
     birthYear: 2012,
+    state: "Maharashtra",
+    stateCode: "MH",
     totalPoints: 148,
   });
 
@@ -268,5 +270,174 @@ describe("ownership", () => {
       () => PlannerService.forDependent(String(parent._id), "not-an-id"),
       (error: { statusCode?: number }) => error.statusCode === 400
     );
+  });
+});
+
+describe("planning preferences", () => {
+  const setup = async () => {
+    const parent = await seedParent("Rahul Prefs");
+    const child = await seedChild(parent._id);
+    return { userId: String(parent._id), dependentId: String(child._id) };
+  };
+
+  it("defaults to the points goal with nothing blocked", async () => {
+    const { userId, dependentId } = await setup();
+    const plan = await SeasonPlanService.get(userId, dependentId);
+    assert.deepEqual(plan.preferences, { goal: "points", blockedRanges: [] });
+  });
+
+  it("saves the goal and blocked dates, creating the plan if there is none", async () => {
+    const { userId, dependentId } = await setup();
+
+    const plan = await SeasonPlanService.setPreferences({
+      userId,
+      dependentId,
+      goal: "home",
+      blockedRanges: [{ from: "2026-11-02", to: "2026-11-20", label: "  Board exams " }],
+    });
+
+    assert.equal(plan.preferences.goal, "home");
+    assert.deepEqual(plan.preferences.blockedRanges, [
+      { from: "2026-11-02", to: "2026-11-20", label: "Board exams" },
+    ]);
+    assert.deepEqual(
+      (await SeasonPlanService.get(userId, dependentId)).preferences,
+      plan.preferences
+    );
+  });
+
+  it("keeps blocked ranges in date order", async () => {
+    const { userId, dependentId } = await setup();
+    const plan = await SeasonPlanService.setPreferences({
+      userId,
+      dependentId,
+      goal: "points",
+      blockedRanges: [
+        { from: "2026-12-01", to: "2026-12-05" },
+        { from: "2026-11-01", to: "2026-11-05" },
+      ],
+    });
+    assert.deepEqual(
+      plan.preferences.blockedRanges.map((range: { from: string }) => range.from),
+      ["2026-11-01", "2026-12-01"]
+    );
+  });
+
+  it("returns the preferences with every plan change, so the page never loses them", async () => {
+    const { userId, dependentId } = await setup();
+    await SeasonPlanService.setPreferences({
+      userId,
+      dependentId,
+      goal: "experience",
+      blockedRanges: [],
+    });
+    const edition = await seedEdition();
+
+    const added = await SeasonPlanService.addEntry({
+      userId,
+      dependentId,
+      editionSlug: edition.slug,
+    });
+    const moved = await SeasonPlanService.updateEntry({
+      userId,
+      dependentId,
+      editionSlug: edition.slug,
+      status: "entered",
+    });
+    const removed = await SeasonPlanService.removeEntry(userId, dependentId, edition.slug);
+
+    for (const plan of [added, moved, removed]) {
+      assert.equal(plan.preferences.goal, "experience");
+    }
+  });
+
+  it("rejects what is not a goal, a list, or a real date", async () => {
+    const { userId, dependentId } = await setup();
+    // Lazy, so each attempt starts only when it is awaited. Building them all up
+    // front leaves most rejecting with nobody listening yet.
+    const bad = (overrides: Record<string, unknown>) => () =>
+      SeasonPlanService.setPreferences({
+        userId,
+        dependentId,
+        goal: "points",
+        blockedRanges: [],
+        ...overrides,
+      });
+
+    for (const attempt of [
+      bad({ goal: "glory" }),
+      bad({ goal: undefined }),
+      bad({ blockedRanges: "soon" }),
+      bad({ blockedRanges: [{ from: "2026-02-31", to: "2026-03-02" }] }),
+      bad({ blockedRanges: [{ from: "11/02/2026", to: "2026-11-20" }] }),
+      bad({ blockedRanges: [{ from: "2026-11-20", to: "2026-11-02" }] }),
+      bad({ blockedRanges: [{ from: "2026-11-02" }] }),
+    ]) {
+      await assert.rejects(attempt, (error: { statusCode?: number }) => error.statusCode === 400);
+    }
+  });
+
+  it("allows five blocked ranges and refuses a sixth", async () => {
+    const { userId, dependentId } = await setup();
+    const pad = (month: number) => String(month).padStart(2, "0");
+    const range = (month: number) => ({
+      from: `2026-${pad(month)}-01`,
+      to: `2026-${pad(month)}-05`,
+    });
+    const five = [1, 2, 3, 4, 5].map(range);
+
+    const saved = await SeasonPlanService.setPreferences({
+      userId,
+      dependentId,
+      goal: "points",
+      blockedRanges: five,
+    });
+    assert.equal(saved.preferences.blockedRanges.length, 5);
+
+    await assert.rejects(
+      () =>
+        SeasonPlanService.setPreferences({
+          userId,
+          dependentId,
+          goal: "points",
+          blockedRanges: [...five, range(6)],
+        }),
+      (error: { statusCode?: number }) => error.statusCode === 400
+    );
+  });
+
+  it("will not touch another account's child", async () => {
+    const owner = await seedParent("Rahul Owner Two");
+    const stranger = await seedParent("Priya Stranger Two");
+    const child = await seedChild(owner._id);
+
+    await assert.rejects(
+      () =>
+        SeasonPlanService.setPreferences({
+          userId: String(stranger._id),
+          dependentId: String(child._id),
+          goal: "points",
+          blockedRanges: [],
+        }),
+      (error: { statusCode?: number }) => error.statusCode === 404
+    );
+  });
+
+  it("flows into the planner overview, where the recommender reads it", async () => {
+    const { userId, dependentId } = await setup();
+    await SeasonPlanService.setPreferences({
+      userId,
+      dependentId,
+      goal: "experience",
+      blockedRanges: [{ from: "2026-11-02", to: "2026-11-03" }],
+    });
+    await seedStanding("440199", { rank: 312 });
+    await link(userId, dependentId, "440199");
+
+    const overview = await PlannerService.forDependent(userId, dependentId);
+
+    assert.equal(overview.plan.preferences.goal, "experience");
+    assert.equal(overview.plan.preferences.blockedRanges.length, 1);
+    assert.equal(overview.standing.state, "Maharashtra");
   });
 });

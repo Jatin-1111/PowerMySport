@@ -44,6 +44,8 @@ export interface PlannerStanding {
   subcategory: string;
   rank: number;
   totalPoints: number;
+  /** The state the player is registered in, when the list records one. */
+  state: string | null;
   asOnDate: Date;
 }
 
@@ -178,6 +180,7 @@ export const PlannerService = {
         subcategory: home.subcategory,
         rank: home.rank,
         totalPoints: home.totalPoints,
+        state: home.state,
         asOnDate: home.asOnDate,
       },
       annualEntryCap: annualEntryCap(home.subcategory),

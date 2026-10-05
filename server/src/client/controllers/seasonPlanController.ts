@@ -63,3 +63,16 @@ export const removeSeasonPlanEntry = asyncHandler(
     res.json({ success: true, data: plan });
   }
 );
+
+/** PUT /api/season-plans/:dependentId/preferences  { goal, blockedRanges } */
+export const setSeasonPlanPreferences = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const plan = await SeasonPlanService.setPreferences({
+      userId: requireUser(req),
+      dependentId: String(req.params.dependentId ?? ""),
+      goal: req.body?.goal,
+      blockedRanges: req.body?.blockedRanges,
+    });
+    res.json({ success: true, data: plan });
+  }
+);

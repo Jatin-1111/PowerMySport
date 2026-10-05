@@ -270,3 +270,62 @@ describe("what the model is given", () => {
     assert.equal(summary, null);
   });
 });
+
+describe("the season the chat quotes", () => {
+  const suggestion = (slug: string) => ({
+    source: "ai",
+    generatedAt: new Date().toISOString(),
+    goal: "points",
+    summary: "Two events across the weeks ahead.",
+    items: [{ slug, tier: "recommended", reason: "A good fit for this child." }],
+    notes: [],
+  });
+
+  it("includes the saved suggestion by event name, and says how it was made", async () => {
+    const parent = await seedParent("Rahul Season");
+    const child = await linkedChild(parent._id, "Aarav", "550010", 312);
+    const edition = await seedEdition("AITA CS7 (Sonipat)", "Championship Series");
+    const overview = await PlannerService.forDependent(String(parent._id), String(child._id));
+
+    const summary = summarizePlanner(overview, suggestion(edition.slug));
+
+    assert.equal(summary.suggestedSeason.picks[0].name, "AITA CS7 (Sonipat)");
+    assert.equal(summary.suggestedSeason.picks[0].advice, "recommended");
+    assert.match(summary.suggestedSeason.madeBy, /AI model, checked against the entry rules/);
+  });
+
+  it("leaves it out when there is no saved suggestion, so the chat does not invent one", async () => {
+    const parent = await seedParent("Rahul NoSeason");
+    const child = await linkedChild(parent._id, "Aarav", "550011", 312);
+    await seedEdition("AITA CS7 (Sonipat)", "Championship Series");
+    const overview = await PlannerService.forDependent(String(parent._id), String(child._id));
+
+    assert.equal(summarizePlanner(overview, null).suggestedSeason, undefined);
+    assert.match(
+      formatPlannerForPrompt([summarizePlanner(overview, null)]),
+      /do not invent a season plan/
+    );
+  });
+
+  it("never names an event the child can no longer enter", async () => {
+    const parent = await seedParent("Rahul Closed");
+    const child = await linkedChild(parent._id, "Aarav", "550012", 40);
+    const talent = await seedEdition("AITA TS (Pune)", "Talent Series");
+    const overview = await PlannerService.forDependent(String(parent._id), String(child._id));
+
+    // A stale suggestion naming an event that has since closed to them.
+    const summary = summarizePlanner(overview, suggestion(talent.slug));
+
+    assert.equal(summary.suggestedSeason.picks.length, 0);
+  });
+
+  it("does not spend the parent's allowance: loading the chat context never calls the model", async () => {
+    const parent = await seedParent("Rahul NoSpend");
+    await linkedChild(parent._id, "Aarav", "550013", 312);
+    await seedEdition("AITA CS7 (Sonipat)", "Championship Series");
+
+    const summaries = await loadPlannerChatContext(String(parent._id), "tennis");
+
+    assert.equal(summaries[0].suggestedSeason, undefined);
+  });
+});

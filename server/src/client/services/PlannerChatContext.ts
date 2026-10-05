@@ -1,5 +1,7 @@
 import type { PlannerEntry } from "@powermysport/shared-types";
 import { PlannerService, type PlannerOverview } from "./PlannerService";
+import { RecommendationService } from "./plannerRecommendations/RecommendationService";
+import type { RecommendationResult } from "./plannerRecommendations/types";
 import { RankingClaimService } from "./RankingClaimService";
 
 /**
@@ -51,6 +53,16 @@ export interface PlannerChatSummary {
   needFactSheetCheck: number;
   cannotEnter: Array<{ name: string; why: string }>;
   onTheirPlan: Array<{ name: string; starts: string; status: string }>;
+  /**
+   * The season the parent was shown at /planner, present only while it still
+   * matches their child's situation. The chat quotes it and never makes its own.
+   */
+  suggestedSeason?: {
+    madeBy: "an AI model, checked against the entry rules" | "the planner's rules";
+    goal: string;
+    summary: string;
+    picks: Array<{ name: string; advice: "recommended" | "worth considering"; why: string }>;
+  };
 }
 
 const DATE = new Intl.DateTimeFormat("en-IN", {
@@ -84,7 +96,10 @@ const toEvent = (entry: PlannerEntry): PlannerChatEvent => {
  * are no verdicts to give (no link, or no junior list), so a caller never has to
  * guess what an empty summary means.
  */
-export function summarizePlanner(overview: PlannerOverview): PlannerChatSummary | null {
+export function summarizePlanner(
+  overview: PlannerOverview,
+  suggestion: RecommendationResult | null = null
+): PlannerChatSummary | null {
   if (overview.linkState !== "ready" || !overview.standing || !overview.shortlist) return null;
   const { standing, shortlist } = overview;
 
@@ -106,6 +121,36 @@ export function summarizePlanner(overview: PlannerOverview): PlannerChatSummary 
       starts: fmt(new Date(entry.startDate).toISOString()),
       status: entry.status,
     })),
+    ...(suggestion && suggestion.items.length > 0
+      ? { suggestedSeason: toSuggestedSeason(suggestion, overview) }
+      : {}),
+  };
+}
+
+function toSuggestedSeason(
+  suggestion: RecommendationResult,
+  overview: PlannerOverview
+): NonNullable<PlannerChatSummary["suggestedSeason"]> {
+  const names = new Map(
+    (overview.shortlist?.ownGroup ?? [])
+      .filter((entry) => entry.edition.slug)
+      .map((entry) => [entry.edition.slug!, entry.edition.name])
+  );
+  return {
+    madeBy:
+      suggestion.source === "ai"
+        ? "an AI model, checked against the entry rules"
+        : "the planner's rules",
+    goal: suggestion.goal,
+    summary: suggestion.summary,
+    picks: suggestion.items
+      .filter((item) => names.has(item.slug))
+      .map((item) => ({
+        name: names.get(item.slug)!,
+        advice:
+          item.tier === "recommended" ? ("recommended" as const) : ("worth considering" as const),
+        why: item.reason,
+      })),
   };
 }
 
@@ -120,6 +165,7 @@ export const PLANNER_CHAT_RULES = [
   'If an entry deadline says "not published", say the deadline is not published and point to the event\'s fact sheet. Do not guess one.',
   "Dates can change. Mention the list date (listAsOn) when you quote a rank or a verdict.",
   "Playing up uses the same yearly entry allowance as the child's own age group.",
+  "If a child has suggestedSeason, that is the season the parent was already shown at /planner. Quote it and do not make up a different one. If it is absent, do not invent a season plan: describe what is open to enter and point the parent to /planner for suggestions.",
   "The parent can see all of this, with calendar links, on the planner page at /planner.",
 ].join("\n- ");
 

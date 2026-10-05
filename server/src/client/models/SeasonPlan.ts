@@ -46,12 +46,47 @@ export interface SeasonPlanEntry {
   addedAt: Date;
 }
 
+/**
+ * What the parent wants the season to be for. Chosen from a short list rather
+ * than typed, because the recommender is built to serve exactly these.
+ *
+ *   points      climb the ranking: favour the higher rungs of the circuit
+ *   experience  play often: favour events where entry is by registration
+ *   home        stay close: favour events in the child's own state
+ */
+export type SeasonGoal = "points" | "experience" | "home";
+export const SEASON_GOALS: readonly SeasonGoal[] = ["points", "experience", "home"];
+export const DEFAULT_SEASON_GOAL: SeasonGoal = "points";
+
+/** Dates the child cannot play, such as exams. Whole calendar days, inclusive. */
+export interface BlockedRange {
+  from: Date;
+  to: Date;
+  /** Short and optional: "Board exams". Shown back to the parent only. */
+  label?: string;
+}
+
+export interface SeasonPlanPreferences {
+  goal: SeasonGoal;
+  blockedRanges: BlockedRange[];
+}
+
+/** Five ranges is a season's worth of exams and holidays; more is a calendar. */
+export const MAX_BLOCKED_RANGES = 5;
+export const MAX_BLOCKED_LABEL_LENGTH = 40;
+
 export interface SeasonPlanDocument extends Document {
   userId: Types.ObjectId;
   /** The child this plan belongs to. */
   dependentId: Types.ObjectId;
   sportSlug: string;
   entries: SeasonPlanEntry[];
+  /**
+   * Stored on the plan, not beside it. Preferences are tiny and read with the
+   * plan every time, and the cluster is at its size cap, so a second collection
+   * (with its own index) would cost more than the data it holds.
+   */
+  preferences?: SeasonPlanPreferences;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,12 +112,30 @@ const seasonPlanEntrySchema = new Schema<SeasonPlanEntry>(
   { _id: false }
 );
 
+const blockedRangeSchema = new Schema<BlockedRange>(
+  {
+    from: { type: Date, required: true },
+    to: { type: Date, required: true },
+    label: { type: String, trim: true, maxlength: MAX_BLOCKED_LABEL_LENGTH },
+  },
+  { _id: false }
+);
+
+const preferencesSchema = new Schema<SeasonPlanPreferences>(
+  {
+    goal: { type: String, enum: SEASON_GOALS, default: DEFAULT_SEASON_GOAL },
+    blockedRanges: { type: [blockedRangeSchema], default: [] },
+  },
+  { _id: false }
+);
+
 const seasonPlanSchema = new Schema<SeasonPlanDocument>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     dependentId: { type: Schema.Types.ObjectId, ref: "Player", required: true },
     sportSlug: { type: String, required: true, lowercase: true, trim: true, default: "tennis" },
     entries: { type: [seasonPlanEntrySchema], default: [] },
+    preferences: { type: preferencesSchema },
   },
   { timestamps: true }
 );

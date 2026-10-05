@@ -3,9 +3,15 @@ import { TournamentEdition } from "../../shared/models/TournamentEdition";
 import { AppError } from "../../utils/AppError";
 import { Player } from "../models/Player";
 import {
+  DEFAULT_SEASON_GOAL,
+  MAX_BLOCKED_LABEL_LENGTH,
+  MAX_BLOCKED_RANGES,
   MAX_NOTE_LENGTH,
   MAX_PLAN_ENTRIES,
+  SEASON_GOALS,
   SeasonPlan,
+  type BlockedRange,
+  type SeasonGoal,
   type SeasonPlanEntry,
   type SeasonPlanEntryStatus,
 } from "../models/SeasonPlan";
@@ -35,6 +41,60 @@ const STATUSES: SeasonPlanEntryStatus[] = ["shortlisted", "entered", "played"];
 const byDate = (a: SeasonPlanEntry, b: SeasonPlanEntry) =>
   new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
 
+/** A blocked range as the API speaks it: plain calendar dates, no clock. */
+export interface BlockedRangeView {
+  from: string;
+  to: string;
+  label?: string;
+}
+
+export interface PlanPreferencesView {
+  goal: SeasonGoal;
+  blockedRanges: BlockedRangeView[];
+}
+
+const toDay = (date: Date): string => date.toISOString().slice(0, 10);
+
+const presentPreferences = (
+  preferences:
+    { goal?: SeasonGoal | undefined; blockedRanges?: BlockedRange[] | undefined } | undefined
+): PlanPreferencesView => ({
+  goal: preferences?.goal ?? DEFAULT_SEASON_GOAL,
+  blockedRanges: (preferences?.blockedRanges ?? []).map((range) => ({
+    from: toDay(range.from),
+    to: toDay(range.to),
+    ...(range.label ? { label: range.label } : {}),
+  })),
+});
+
+/**
+ * Every response that returns a plan returns it in this one shape, preferences
+ * included. The client writes each response straight into its cache, so a
+ * mutation that left preferences out would silently wipe them from the page.
+ */
+const presentPlan = (
+  dependentId: string,
+  plan: {
+    sportSlug?: string | undefined;
+    entries?: SeasonPlanEntry[] | undefined;
+    preferences?: Parameters<typeof presentPreferences>[0];
+  } | null
+) => ({
+  dependentId,
+  sportSlug: plan?.sportSlug ?? "tennis",
+  entries: (plan?.entries ?? []).slice().sort(byDate),
+  preferences: presentPreferences(plan?.preferences),
+});
+
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const parseDay = (value: unknown): Date | null => {
+  if (typeof value !== "string" || !DAY_PATTERN.test(value)) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  // Round-trip to reject 2026-02-31, which `Date` would quietly roll forward.
+  return Number.isNaN(date.getTime()) || toDay(date) !== value ? null : date;
+};
+
 const assertOwnedDependent = async (userId: string, dependentId: string) => {
   if (!mongoose.isValidObjectId(dependentId)) {
     throw new AppError("Choose which player this plan is for.", 400);
@@ -50,11 +110,7 @@ export const SeasonPlanService = {
   async get(userId: string, dependentId: string) {
     await assertOwnedDependent(userId, dependentId);
     const plan = await SeasonPlan.findOne({ userId, dependentId }).lean();
-    return {
-      dependentId,
-      sportSlug: plan?.sportSlug ?? "tennis",
-      entries: (plan?.entries ?? []).slice().sort(byDate),
-    };
+    return presentPlan(dependentId, plan);
   },
 
   /**
@@ -98,11 +154,7 @@ export const SeasonPlanService = {
       });
 
     if (plan.entries.some((entry) => entry.editionSlug === slug)) {
-      return {
-        dependentId: params.dependentId,
-        sportSlug: plan.sportSlug,
-        entries: plan.entries.slice().sort(byDate),
-      };
+      return presentPlan(params.dependentId, plan);
     }
     if (plan.entries.length >= MAX_PLAN_ENTRIES) {
       throw new AppError(
@@ -125,11 +177,7 @@ export const SeasonPlanService = {
     });
     await plan.save();
 
-    return {
-      dependentId: params.dependentId,
-      sportSlug: plan.sportSlug,
-      entries: plan.entries.slice().sort(byDate),
-    };
+    return presentPlan(params.dependentId, plan);
   },
 
   /** Move an entry along: shortlisted, entered, played. Or edit its note. */
@@ -170,11 +218,7 @@ export const SeasonPlanService = {
 
     plan.markModified("entries");
     await plan.save();
-    return {
-      dependentId: params.dependentId,
-      sportSlug: plan.sportSlug,
-      entries: plan.entries.slice().sort(byDate),
-    };
+    return presentPlan(params.dependentId, plan);
   },
 
   /** Take a tournament off the plan. */
@@ -192,7 +236,62 @@ export const SeasonPlanService = {
     }
 
     await plan.save();
-    return { dependentId, sportSlug: plan.sportSlug, entries: plan.entries.slice().sort(byDate) };
+    return presentPlan(dependentId, plan);
+  },
+
+  /**
+   * Replace the plan's preferences: the goal and the dates the child cannot play.
+   *
+   * Validated as a whole and applied as a whole, because the form that sends it
+   * is a whole: a half-valid list that saved its good rows would leave the page
+   * showing a different list from the one stored.
+   *
+   * Creates the plan if there is none yet, since a parent may set preferences
+   * before choosing a single event.
+   */
+  async setPreferences(params: {
+    userId: string;
+    dependentId: string;
+    goal?: unknown;
+    blockedRanges?: unknown;
+  }) {
+    await assertOwnedDependent(params.userId, params.dependentId);
+
+    if (!SEASON_GOALS.includes(params.goal as SeasonGoal)) {
+      throw new AppError(`Goal must be one of ${SEASON_GOALS.join(", ")}.`, 400);
+    }
+    const rawRanges = params.blockedRanges ?? [];
+    if (!Array.isArray(rawRanges)) {
+      throw new AppError("Blocked dates must be a list.", 400);
+    }
+    if (rawRanges.length > MAX_BLOCKED_RANGES) {
+      throw new AppError(`Add up to ${MAX_BLOCKED_RANGES} blocked date ranges.`, 400);
+    }
+
+    const blockedRanges: BlockedRange[] = rawRanges.map((raw) => {
+      const from = parseDay((raw as { from?: unknown })?.from);
+      const to = parseDay((raw as { to?: unknown })?.to);
+      if (!from || !to) throw new AppError("Blocked dates need a valid start and end date.", 400);
+      if (to.getTime() < from.getTime()) {
+        throw new AppError("A blocked range cannot end before it starts.", 400);
+      }
+      const label = String((raw as { label?: unknown })?.label ?? "")
+        .trim()
+        .slice(0, MAX_BLOCKED_LABEL_LENGTH);
+      return { from, to, ...(label ? { label } : {}) };
+    });
+    blockedRanges.sort((a, b) => a.from.getTime() - b.from.getTime());
+
+    const plan =
+      (await SeasonPlan.findOne({ userId: params.userId, dependentId: params.dependentId })) ??
+      new SeasonPlan({
+        userId: params.userId,
+        dependentId: params.dependentId,
+        sportSlug: "tennis",
+      });
+    plan.preferences = { goal: params.goal as SeasonGoal, blockedRanges };
+    await plan.save();
+    return presentPlan(params.dependentId, plan);
   },
 
   /** Cascade for profile deletion — see `AuthService/dependents.ts`. */
