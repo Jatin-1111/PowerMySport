@@ -14,7 +14,7 @@ import {
   getRankingSport,
   resolveCombo,
 } from "@/modules/rankings/config/rankings";
-import { isJuniorBracket } from "@/modules/rankings/utils/aitaRules";
+import { isJuniorBracket } from "@powermysport/shared-types";
 import { EntryRules, HowToRead } from "@/modules/rankings/components/HowToRead";
 import { rankAtPercentile } from "@/modules/rankings/utils/insights";
 import { PlayerSpotlight } from "@/modules/rankings/components/PlayerSpotlight";

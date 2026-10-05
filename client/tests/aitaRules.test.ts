@@ -6,7 +6,7 @@ import {
   annualEntryCap,
   entryStatus,
   isJuniorBracket,
-} from "./aitaRules";
+} from "@powermysport/shared-types";
 
 /**
  * These are the only facts on either ranking page that are not derived from the

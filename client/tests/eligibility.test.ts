@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildShortlist, judgeEdition } from "@/modules/planner/utils/eligibility";
-import type { PlannerEdition } from "@/modules/planner/utils/eligibility";
+import { buildShortlist, homeStanding, judgeEdition } from "@powermysport/shared-types";
+import type { PlannerEdition } from "@powermysport/shared-types";
 
 /**
  * The rules this pins are the ones a parent would otherwise discover at the
@@ -164,5 +164,20 @@ describe("the shortlist", () => {
 
     expect(result.ownGroup.map((e) => e.edition.name)).toEqual(["own group"]);
     expect(result.playingUp.map((e) => e.edition.name)).toEqual(["older"]);
+  });
+});
+
+describe("homeStanding", () => {
+  it("picks the youngest junior list, because that is the age group the child belongs to", () => {
+    const standings = [
+      { subcategory: "U-16", rank: 12 },
+      { subcategory: "U-14", rank: 140 },
+    ];
+    expect(homeStanding(standings)).toBe(standings[1]);
+  });
+
+  it("ignores open-age lists, which carry none of the junior rules", () => {
+    expect(homeStanding([{ subcategory: "Men", rank: 3 }])).toBeNull();
+    expect(homeStanding([])).toBeNull();
   });
 });

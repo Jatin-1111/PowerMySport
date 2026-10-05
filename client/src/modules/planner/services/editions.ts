@@ -1,5 +1,5 @@
 import axiosInstance from "@/lib/api/axios";
-import type { PlannerEdition } from "@/modules/planner/utils/eligibility";
+import type { PlannerEdition } from "@powermysport/shared-types";
 
 /**
  * The upcoming calendar for one sport.

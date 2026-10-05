@@ -5,7 +5,7 @@ import {
   RULES_SOURCE,
   annualEntryCap,
   isJuniorBracket,
-} from "../utils/aitaRules";
+} from "@powermysport/shared-types";
 
 /**
  * The two panels that explain the page rather than measure anything.

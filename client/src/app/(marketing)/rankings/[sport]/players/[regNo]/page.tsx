@@ -5,7 +5,7 @@ import {
   type PlayerCurrentEntry,
   type RankingBandProfile,
 } from "@/modules/rankings/services/api";
-import { entryStatus, isJuniorBracket } from "@/modules/rankings/utils/aitaRules";
+import { entryStatus, isJuniorBracket } from "@powermysport/shared-types";
 import { EntryRules } from "@/modules/rankings/components/HowToRead";
 import { RankTrajectory } from "@/modules/rankings/components/RankTrajectory";
 import { SeasonOutlook } from "@/modules/rankings/components/SeasonOutlook";

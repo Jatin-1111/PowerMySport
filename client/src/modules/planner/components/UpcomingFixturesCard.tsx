@@ -3,14 +3,14 @@
 import { queryKeys } from "@/lib/query/keys";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { rankingClaimApi, type RankingClaim } from "@/modules/player/services/rankingClaim";
+import { rankingClaimApi } from "@/modules/player/services/rankingClaim";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import { fetchUpcomingEditions } from "@/modules/planner/services/editions";
-import { buildShortlist, type PlannerEntry } from "@/modules/planner/utils/eligibility";
 import { Badge } from "@/modules/shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { buildShortlist, homeStanding, type PlannerEntry } from "@powermysport/shared-types";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Info, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
@@ -40,20 +40,6 @@ const formatWindow = (entry: PlannerEntry): string => {
   if (!end || end.getTime() === start.getTime()) return DATE.format(start);
   return `${DATE.format(start)} to ${DATE.format(end)}`;
 };
-
-/**
- * The list a child belongs to, rather than one they are visiting.
- *
- * A player ranked in both U-14 and U-16 is a U-14 who plays up; judging their
- * entries against U-16 would let them "enter" events below their own age group.
- */
-const homeStanding = (claim: RankingClaim) =>
-  [...claim.standings]
-    .filter((standing) => /^U-\d+$/i.test(standing.subcategory))
-    .sort(
-      (a, b) =>
-        Number(/\d+/.exec(a.subcategory)?.[0] ?? 99) - Number(/\d+/.exec(b.subcategory)?.[0] ?? 99)
-    )[0] ?? null;
 
 function FixtureRow({
   entry,
@@ -160,7 +146,7 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
   });
 
   const claim = claims?.find((entry) => entry.dependentId === dependentId) ?? null;
-  const standing = claim ? homeStanding(claim) : null;
+  const standing = claim ? homeStanding(claim.standings) : null;
 
   const { data: editions, isPending } = useQuery({
     queryKey: queryKeys.tournamentEditions.upcoming(claim?.sportSlug ?? "tennis"),

@@ -1,4 +1,4 @@
-import { entryStatus, TALENT_SERIES_ZONE_RULE } from "@/modules/rankings/utils/aitaRules";
+import { entryStatus, TALENT_SERIES_ZONE_RULE } from "./aitaRules";
 
 /**
  * Which of the upcoming tournaments a ranked child can actually enter.
@@ -11,11 +11,12 @@ import { entryStatus, TALENT_SERIES_ZONE_RULE } from "@/modules/rankings/utils/a
  * the event sits on — and the last of those did not exist as data until the
  * name parser landed.
  *
- * ── Kept pure on purpose ────────────────────────────────────────────────────
- * No React, no fetch, no dates beyond what is passed in. The server will need
- * this same logic when the digest starts naming next week's entries, and a pure
- * module moves to `packages/` mechanically. Its one import, `aitaRules`, is
- * equally pure and would move with it.
+ * ── Kept pure on purpose, and shared on purpose ─────────────────────────────
+ * No React, no fetch, no dates beyond what is passed in. It lives in
+ * `shared-types` because the website and the server must give the same answer:
+ * the planner page shows the verdicts and the assistant chat quotes them, and
+ * two copies of a rule set is how a parent gets told "open" in one place and
+ * "closed" in the other. `aitaRules`, its one import, moved with it.
  *
  * ── What it deliberately does not claim ─────────────────────────────────────
  * "Open" here means *not barred by the rules we hold*. AITA publishes bars, not
@@ -32,6 +33,9 @@ export interface PlannerEdition {
   endDate?: string;
   city?: string | null;
   state?: string | null;
+  venue?: string | null;
+  /** Absent on most rows: the calendar does not publish one. Never guessed. */
+  registrationDeadlineDate?: string | null;
   ageGroups?: string[];
   /** From editionSeries.ts. Absent on editions ingested before it existed. */
   ladder?: string | null;
@@ -223,4 +227,23 @@ export function buildShortlist(editions: PlannerEdition[], player: PlannerPlayer
     closed: judged.filter((entry) => entry.status === "closed"),
     unknown: judged.filter((entry) => entry.status === "unknown"),
   };
+}
+
+/**
+ * The list a child belongs to, rather than one they are visiting.
+ *
+ * A player ranked in both U-14 and U-16 is a U-14 who plays up; judging their
+ * entries against U-16 would let them "enter" events below their own age group.
+ * Only junior lists count: an open-age list carries none of these rules.
+ *
+ * Generic over the standing so the client's and the server's shapes both fit,
+ * and returns the caller's own object rather than a copy.
+ */
+export function homeStanding<T extends { subcategory: string }>(standings: readonly T[]): T | null {
+  const ageOf = (standing: T): number => Number(/\d+/.exec(standing.subcategory)?.[0] ?? 99);
+  return (
+    [...standings]
+      .filter((standing) => /^U-\d+$/i.test(standing.subcategory))
+      .sort((a, b) => ageOf(a) - ageOf(b))[0] ?? null
+  );
 }
