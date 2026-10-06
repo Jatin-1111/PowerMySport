@@ -42,9 +42,9 @@ export default function PlannerPage() {
           eyebrow="Tennis"
           title="Season planner"
           description="Plan your child's season around the tournaments they can actually enter. Events are checked against the federation's published entry rules for their age list and rank."
-          width="5xl"
+          width="7xl"
         />
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <PlannerApp />
         </div>
       </div>

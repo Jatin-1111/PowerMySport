@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildIcs, googleCalendarUrl } from "@/modules/planner/utils/calendarLinks";
+import { formatClockTime } from "@/modules/planner/utils/eventFormat";
 import {
   deadlineState,
   groupByMonth,
@@ -53,6 +54,29 @@ describe("googleCalendarUrl", () => {
     expect(url.get("location")).toBe("Sonipat, Haryana");
     expect(url.get("details")).toContain("/tournaments/aita-cs7-sonipat-2026-10-05");
     expect(url.get("dates")).not.toMatch(/T\d/);
+  });
+
+  it("puts the withdrawal and freeze dates and AITA's page in the notes when AITA printed them", () => {
+    const details = params(
+      googleCalendarUrl(
+        edition({
+          official: {
+            withdrawalDeadline: "2026-09-28",
+            freezeDeadline: "2026-10-01",
+            pageUrl: "https://www.aita.hitcourt.com/tournament-acceptance-factsheet-MjkyMQ==",
+          },
+        })
+      )
+    ).get("details");
+    expect(details).toContain("Withdraw by: 28 Sept 2026");
+    expect(details).toContain("Draw freezes: 1 Oct 2026");
+    expect(details).toContain("AITA event page: https://www.aita.hitcourt.com/");
+  });
+
+  it("adds nothing about withdrawal when AITA printed nothing", () => {
+    const details = params(googleCalendarUrl(edition())).get("details");
+    expect(details).not.toContain("Withdraw by");
+    expect(details).not.toContain("Draw freezes");
   });
 
   it("omits the location parameter when none is known", () => {
@@ -210,5 +234,20 @@ describe("planWarnings", () => {
   it("has nothing to say about zero or one event", () => {
     expect(planWarnings([])).toEqual([]);
     expect(planWarnings([event("a", "2026-10-05")])).toEqual([]);
+  });
+});
+
+describe("formatClockTime", () => {
+  it("writes a 24-hour time the way a parent says it", () => {
+    expect(formatClockTime("23:59")).toBe("11:59 pm");
+    expect(formatClockTime("15:00")).toBe("3:00 pm");
+    expect(formatClockTime("09:30")).toBe("9:30 am");
+    expect(formatClockTime("00:05")).toBe("12:05 am");
+    expect(formatClockTime("12:00")).toBe("12:00 pm");
+  });
+
+  it("returns anything it cannot read unchanged, rather than guessing", () => {
+    expect(formatClockTime("noon")).toBe("noon");
+    expect(formatClockTime("25:00")).toBe("25:00");
   });
 });

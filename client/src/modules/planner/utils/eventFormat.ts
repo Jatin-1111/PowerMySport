@@ -24,3 +24,14 @@ export function formatEventWindow(startIso: string, endIso?: string | null): str
   if (!end || end.getTime() <= start.getTime()) return SHORT.format(start);
   return `${SHORT.format(start)} to ${SHORT.format(end)}`;
 }
+
+/** "23:59" becomes "11:59 pm". Anything that is not a 24-hour time comes back unchanged. */
+export function formatClockTime(time: string): string {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!match) return time;
+  const hours = Number(match[1]);
+  const minutes = match[2];
+  if (hours > 23) return time;
+  const suffix = hours >= 12 ? "pm" : "am";
+  return `${hours % 12 === 0 ? 12 : hours % 12}:${minutes} ${suffix}`;
+}

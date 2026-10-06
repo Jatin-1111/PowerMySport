@@ -92,8 +92,13 @@ export interface EventCost {
   assumptions: string | null;
   travel: CostPart | null;
   stay: CostPart | null;
-  /** Only ever the parent's own figure. We do not estimate entry fees. */
+  /**
+   * The parent's own figure, else the singles fee AITA publishes for the event,
+   * else null. We never estimate an entry fee.
+   */
   entryFee: number | null;
+  /** Whose figure it is. "fact-sheet" is the event's page, "rules" AITA's 2026 fee table. */
+  entryFeeBasis: "yours" | "fact-sheet" | "rules" | null;
   total: CostRange | null;
   entryFeeMissing: boolean;
   /** Why there is no total, in words. */

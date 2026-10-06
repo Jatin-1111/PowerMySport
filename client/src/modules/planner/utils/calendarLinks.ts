@@ -28,6 +28,14 @@ export interface CalendarEdition {
   ageGroups?: string[] | undefined;
   /** Present only when the federation published one. Never filled in by us. */
   registrationDeadlineDate?: string | null | undefined;
+  /** From AITA's own pages, where we have read them. */
+  official?:
+    | {
+        withdrawalDeadline?: string | undefined;
+        freezeDeadline?: string | undefined;
+        pageUrl?: string | undefined;
+      }
+    | undefined;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -70,6 +78,20 @@ const eventDetails = (edition: CalendarEdition): string => {
       })}`
     );
   }
+  const dayText = (iso: string): string =>
+    new Date(iso).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+  if (edition.official?.withdrawalDeadline) {
+    lines.push(`Withdraw by: ${dayText(edition.official.withdrawalDeadline)}`);
+  }
+  if (edition.official?.freezeDeadline) {
+    lines.push(`Draw freezes: ${dayText(edition.official.freezeDeadline)}`);
+  }
+  if (edition.official?.pageUrl) lines.push(`AITA event page: ${edition.official.pageUrl}`);
   lines.push("Dates can change. Check the fact sheet before you travel.");
   if (edition.slug) lines.push(absoluteUrl(`/tournaments/${edition.slug}`));
   return lines.join("\n");

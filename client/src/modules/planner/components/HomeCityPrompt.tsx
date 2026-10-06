@@ -22,10 +22,13 @@ export function HomeCityPrompt({
   origin,
   saving,
   onSave,
+  bare = false,
 }: {
   origin: CostOrigin;
   saving: boolean;
   onSave: (city: string) => void;
+  /** No box of its own, for use inside a tile that already has one. */
+  bare?: boolean;
 }) {
   const [editing, setEditing] = useState(origin.kind !== "city");
   const [city, setCity] = useState(origin.kind === "city" ? (origin.city ?? "") : "");
@@ -38,7 +41,7 @@ export function HomeCityPrompt({
         : "Add your city to estimate travel and stay.";
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-5 py-3">
+    <div className={bare ? "" : "rounded-lg border border-slate-200 bg-white px-5 py-3"}>
       <p className="flex items-start gap-2 text-sm text-slate-700">
         <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
         <span>
@@ -78,7 +81,7 @@ export function HomeCityPrompt({
               autoComplete="address-level2"
               placeholder="Pune"
               onChange={(event) => setCity(event.target.value)}
-              className="focus-visible:ring-power-orange-solid min-h-10 w-56 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2"
+              className="focus-visible:ring-power-orange-solid min-h-10 w-full max-w-56 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2"
             />
             <Button type="submit" size="sm" disabled={saving || city.trim().length < 2}>
               {saving ? "Saving..." : "Save city"}

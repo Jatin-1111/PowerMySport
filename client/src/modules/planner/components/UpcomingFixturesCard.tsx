@@ -76,7 +76,10 @@ function FixtureRow({
             (plan.isPlanned ? (
               // Said rather than hidden: a parent scanning the list needs to
               // see what they have already chosen without opening the plan.
-              <Badge className="border-emerald-200 bg-emerald-50 text-[11px] text-emerald-700">
+              <Badge
+                variant="outline"
+                className="border-emerald-200 bg-emerald-50 text-[11px] text-emerald-700"
+              >
                 On the plan
               </Badge>
             ) : (
@@ -103,7 +106,10 @@ function FixtureRow({
         )}
         {entry.edition.ladder && <span>{entry.edition.ladder}</span>}
         {entry.playingUp && (
-          <Badge className="border-slate-200 bg-slate-50 text-[11px] text-slate-600 hover:bg-slate-50">
+          <Badge
+            variant="outline"
+            className="border-slate-200 bg-slate-50 text-[11px] text-slate-600 hover:bg-slate-50"
+          >
             Playing up
           </Badge>
         )}

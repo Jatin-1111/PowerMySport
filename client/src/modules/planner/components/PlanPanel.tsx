@@ -1,6 +1,5 @@
 "use client";
 
-import { BudgetBar } from "@/modules/planner/components/BudgetBar";
 import { CostLine } from "@/modules/planner/components/CostLine";
 import { PlanEntryRow } from "@/modules/planner/components/PlanEntryRow";
 import type { CostResponse } from "@/modules/planner/services/planner";
@@ -29,22 +28,15 @@ import { CalendarPlus, Download } from "lucide-react";
 export function PlanPanel({
   dependentId,
   calendar,
-  annualCap,
-  bracket,
   costs,
   costsLoading,
-  costsFailed,
 }: {
   dependentId: string;
   /** Every event the page knows about, to enrich plan entries by slug. */
   calendar: Map<string, PlannerEdition>;
-  annualCap: number | null;
-  bracket: string;
   /** Travel and stay for the plan, once the server has priced it. */
   costs: CostResponse | null;
   costsLoading: boolean;
-  /** The estimates request failed. Said, so a blank is never mistaken for "free". */
-  costsFailed: boolean;
 }) {
   const { entries, isLoading, setStatus, remove, setCosts } = useSeasonPlan(dependentId);
 
@@ -60,8 +52,8 @@ export function PlanPanel({
   if (entries.length === 0) {
     return (
       <p className="text-sm leading-relaxed text-slate-600">
-        Nothing planned yet. Add events from the calendar below and they appear here, in the order
-        they happen.
+        Nothing planned yet. Add events from the suggestions or the calendar and they appear here,
+        in the order they happen.
       </p>
     );
   }
@@ -96,14 +88,6 @@ export function PlanPanel({
       }))
     ).map((warning) => [warning.slug, warning.message])
   );
-
-  // The allowance counts entries in the calendar year, which is AITA's window.
-  // It counts what is on THIS plan, not what the child has entered elsewhere,
-  // and the line says so.
-  const thisYear = new Date().getUTCFullYear();
-  const countedThisYear = entries.filter(
-    (entry) => new Date(entry.startDate).getUTCFullYear() === thisYear
-  ).length;
 
   const upcoming = merged.filter(({ entry }) => entry.status !== "played");
 
@@ -143,7 +127,7 @@ export function PlanPanel({
                   className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                 >
                   <CalendarPlus className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Google Calendar</span>
+                  <span>Google Calendar</span>
                 </a>
               )
             }
@@ -152,25 +136,6 @@ export function PlanPanel({
       </ul>
 
       <div className="mt-4 border-t border-slate-100 pt-4">
-        {costs ? (
-          <BudgetBar season={costs.season} />
-        ) : (
-          <p className="text-xs text-slate-500">
-            {costsLoading
-              ? "Estimating what the season may cost..."
-              : costsFailed
-                ? "Cost estimates are not available just now. Everything else still works."
-                : ""}
-          </p>
-        )}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-        <p className="text-xs leading-relaxed text-slate-600">
-          {annualCap
-            ? `${countedThisYear} of ${annualCap} yearly entries in ${bracket} are on this plan. Playing up uses the same allowance.`
-            : `${countedThisYear} event${countedThisYear === 1 ? "" : "s"} on this plan for ${thisYear}.`}
-        </p>
         <Button
           variant="outline"
           size="sm"

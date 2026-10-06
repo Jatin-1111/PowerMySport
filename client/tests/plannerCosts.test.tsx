@@ -26,6 +26,7 @@ const cost = (over: Partial<EventCost> = {}): EventCost => ({
   travel: { low: 13000, high: 27000, basis: "estimate" },
   stay: { low: 11500, high: 22500, basis: "estimate" },
   entryFee: null,
+  entryFeeBasis: null,
   total: { low: 24500, high: 49500 },
   entryFeeMissing: true,
   note: null,
@@ -83,6 +84,7 @@ describe("the cost line", () => {
           travel: { low: 8000, high: 8000, basis: "yours" },
           stay: { low: 9000, high: 9000, basis: "yours" },
           entryFee: 1500,
+          entryFeeBasis: "yours",
           entryFeeMissing: false,
           total: { low: 18500, high: 18500 },
         })}
@@ -92,6 +94,39 @@ describe("the cost line", () => {
 
     expect(screen.getByText(/Travel and stay ₹18,500/)).toBeTruthy();
     expect(screen.getByText(/your figures, includes your entry fee of ₹1,500/)).toBeTruthy();
+  });
+
+  it("says when the entry fee is AITA's own, and not the parent's", () => {
+    render(
+      <CostLine
+        cost={cost({
+          entryFee: 600,
+          entryFeeBasis: "fact-sheet",
+          entryFeeMissing: false,
+          total: { low: 25100, high: 50100 },
+        })}
+        loading={false}
+      />
+    );
+
+    expect(screen.getByText(/includes the ₹600 AITA entry fee/)).toBeTruthy();
+    expect(screen.queryByText(/your entry fee/)).toBeNull();
+  });
+
+  it("says when the entry fee is the rules' figure because the event's page could not be read", () => {
+    render(
+      <CostLine
+        cost={cost({
+          entryFee: 600,
+          entryFeeBasis: "rules",
+          entryFeeMissing: false,
+          total: { low: 25100, high: 50100 },
+        })}
+        loading={false}
+      />
+    );
+
+    expect(screen.getByText(/includes the ₹600 entry fee from AITA's rules/)).toBeTruthy();
   });
 
   it("says when only part of it is theirs", () => {
@@ -215,7 +250,7 @@ describe("the budget bar", () => {
     render(<BudgetBar season={season({ missingEntryFees: 2, withoutFigures: 1 })} />);
 
     expect(screen.getByText(/Entry fees are not included for 2 events/)).toBeTruthy();
-    expect(screen.getByText(/not published them|does not publish them/)).toBeTruthy();
+    expect(screen.getByText(/has not published a fee/)).toBeTruthy();
     expect(screen.getByText(/1 event has no travel and stay figure yet/)).toBeTruthy();
   });
 

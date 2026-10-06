@@ -2,7 +2,8 @@
 
 import { deadlineState } from "@/modules/planner/utils/timeline";
 import { EventActions } from "@/modules/planner/components/EventActions";
-import { formatEventWindow, formatLongDate } from "@/modules/planner/utils/eventFormat";
+import { DeadlineLine } from "@/modules/planner/components/DeadlineLine";
+import { formatEventWindow } from "@/modules/planner/utils/eventFormat";
 import { Badge } from "@/modules/shared/ui/Badge";
 import type { PlannerEntry } from "@powermysport/shared-types";
 import { Info, MapPin } from "lucide-react";
@@ -15,29 +16,6 @@ import Link from "next/link";
  * Closed events render the same card without the actions, with the rule that
  * closes them in place of the notes, so a parent can see WHY and not just that.
  */
-
-function DeadlineLine({ deadline }: { deadline: string | null | undefined }) {
-  const state = deadlineState(deadline);
-  if (state.kind === "unpublished") {
-    // Said, not omitted: an empty space reads as "no deadline", which is the
-    // opposite of what is true. The federation just has not printed one.
-    return <span className="text-slate-500">Entry deadline not published</span>;
-  }
-  if (state.kind === "passed") {
-    return <span className="text-slate-500">Entries closed {formatLongDate(state.date)}</span>;
-  }
-  const when =
-    state.daysLeft === 0
-      ? "today"
-      : state.daysLeft === 1
-        ? "tomorrow"
-        : `in ${state.daysLeft} days`;
-  return (
-    <span className={state.kind === "soon" ? "font-semibold text-amber-700" : "text-slate-600"}>
-      Entries close {formatLongDate(state.date)} ({when})
-    </span>
-  );
-}
 
 export function TimelineEventCard({
   entry,
@@ -97,7 +75,10 @@ export function TimelineEventCard({
         )}
         {edition.ladder && <span>{edition.ladder}</span>}
         {entry.playingUp && (
-          <Badge className="border-slate-200 bg-slate-50 text-[11px] text-slate-600">
+          <Badge
+            variant="outline"
+            className="border-slate-200 bg-slate-50 text-[11px] text-slate-600"
+          >
             Playing up
           </Badge>
         )}

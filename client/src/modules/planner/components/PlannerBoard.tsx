@@ -1,9 +1,8 @@
 "use client";
 
-import { HomeCityPrompt } from "@/modules/planner/components/HomeCityPrompt";
 import { LinkRankingPrompt } from "@/modules/planner/components/LinkRankingPrompt";
-import { PlanPanel } from "@/modules/planner/components/PlanPanel";
-import { RecommendationsSection } from "@/modules/planner/components/RecommendationsSection";
+import { SeasonSummary } from "@/modules/planner/components/SeasonSummary";
+import { SeasonWorkspace } from "@/modules/planner/components/SeasonWorkspace";
 import { Timeline } from "@/modules/planner/components/Timeline";
 import { useCosts } from "@/modules/planner/hooks/useCosts";
 import { useRecommendations } from "@/modules/planner/hooks/useRecommendations";
@@ -13,8 +12,9 @@ import { formatLongDate } from "@/modules/planner/utils/eventFormat";
 import { rankedSportFor } from "@/modules/player/services/rankingClaim";
 import { Button } from "@/modules/shared/ui/Button";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { useState } from "react";
 import type { PlannerEdition } from "@powermysport/shared-types";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 /**
@@ -27,20 +27,42 @@ import Link from "next/link";
  *   - ready: the standing, the plan, and the calendar
  */
 
-function Section({
+/**
+ * The full list of what the child can enter, closed until it is wanted. It is the
+ * reference the calendar and the suggestions are drawn from, and it also says which
+ * events the child cannot enter and why, so it stays available but no longer sits
+ * between the parent and their plan.
+ */
+function Collapsible({
   title,
   description,
   children,
 }: {
   title: string;
-  description?: string;
+  description: string;
   children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
-      <h2 className="font-title text-lg font-extrabold text-slate-900">{title}</h2>
-      {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}
-      <div className="mt-4">{children}</div>
+    <section className="rounded-lg border border-slate-200 bg-white">
+      <h2 className="font-title text-lg font-extrabold text-slate-900">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          className="flex min-h-14 w-full items-center justify-between gap-4 rounded-lg px-5 py-3 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-6"
+        >
+          <span>
+            {title}
+            <span className="mt-0.5 block text-sm font-normal text-slate-600">{description}</span>
+          </span>
+          <ChevronDown
+            className={`h-5 w-5 shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        </button>
+      </h2>
+      {open && <div className="border-t border-slate-100 p-5 sm:p-6">{children}</div>}
     </section>
   );
 }
@@ -56,18 +78,22 @@ export function PlannerBoard({
   sport: string | null;
 }) {
   const { data, isPending, isError, refetch } = usePlanner(dependentId);
-  const { plannedSlugs, add } = useSeasonPlan(dependentId);
+  const { entries, preferences, plannedSlugs, add } = useSeasonPlan(dependentId);
+  // The event open on the calendar. It lives here because opening one asks for its
+  // estimate, and the estimates are fetched here.
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   // The suggestions on screen are priced alongside the plan. These hooks sit above
   // the early returns below so they run on every render.
   const { recommendations } = useRecommendations(dependentId);
   const suggestedSlugs = recommendations?.items.map((item) => item.slug) ?? [];
+  const pricedSlugs = selectedSlug ? [...suggestedSlugs, selectedSlug] : suggestedSlugs;
   const {
     costs,
     isLoading: costsLoading,
     isError: costsFailed,
     saveHomeCity,
-  } = useCosts(dependentId, suggestedSlugs);
+  } = useCosts(dependentId, pricedSlugs);
 
   if (isPending) {
     return (
@@ -145,9 +171,11 @@ export function PlannerBoard({
     if (entry.edition.slug) calendar.set(entry.edition.slug, entry.edition);
   }
 
+  const openCount = shortlist.ownGroup.length;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 rounded-lg border border-slate-200 bg-white px-5 py-4">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <p className="text-sm text-slate-700">
           <span className="font-semibold text-slate-900">
             {standing.category} {standing.subcategory}, rank {standing.rank}
@@ -157,50 +185,41 @@ export function PlannerBoard({
         <p className="text-xs text-slate-500">
           Events are judged against this list. It updates when a new one is published.
         </p>
-      </div>
+      </header>
 
-      {costs && (
-        <HomeCityPrompt
-          origin={costs.origin}
-          saving={saveHomeCity.isPending}
-          onSave={(city) => saveHomeCity.mutate(city)}
-        />
-      )}
+      <SeasonSummary
+        entries={entries}
+        calendar={calendar}
+        openCount={openCount}
+        annualCap={data.annualEntryCap}
+        bracket={standing.subcategory}
+        costs={costs}
+        costsLoading={costsLoading}
+        costsFailed={costsFailed}
+        saveHomeCity={{ saving: saveHomeCity.isPending, save: (city) => saveHomeCity.mutate(city) }}
+        onOpenEvent={setSelectedSlug}
+      />
 
-      <Section
-        title="Suggested season"
-        description="Which of these events to put on the plan, and why."
-      >
-        <RecommendationsSection
-          dependentId={dependentId}
-          homeState={standing.state}
-          costs={costs?.events}
-          costsLoading={costsLoading}
-          calendar={calendar}
-          plannedSlugs={plannedSlugs}
-          isAdding={add.isPending}
-          onAdd={(slug) => add.mutate(slug)}
-        />
-      </Section>
+      <SeasonWorkspace
+        dependentId={dependentId}
+        homeState={standing.state ?? null}
+        shortlist={shortlist}
+        planEntries={entries}
+        preferences={preferences}
+        recommendations={recommendations}
+        calendar={calendar}
+        costs={costs}
+        costsLoading={costsLoading}
+        plannedSlugs={plannedSlugs}
+        isAdding={add.isPending}
+        onAdd={(slug) => add.mutate(slug)}
+        selectedSlug={selectedSlug}
+        onSelect={setSelectedSlug}
+      />
 
-      <Section
-        title="Their plan"
-        description="Tournaments you have chosen, in the order they happen."
-      >
-        <PlanPanel
-          dependentId={dependentId}
-          calendar={calendar}
-          annualCap={data.annualEntryCap}
-          bracket={standing.subcategory}
-          costs={costs}
-          costsLoading={costsLoading}
-          costsFailed={costsFailed}
-        />
-      </Section>
-
-      <Section
-        title="What they can enter"
-        description={`Upcoming events judged against ${standing.category} ${standing.subcategory}, rank ${standing.rank}.`}
+      <Collapsible
+        title="Every event they can enter"
+        description={`Upcoming events judged against ${standing.category} ${standing.subcategory}, rank ${standing.rank}, including the ones they cannot enter and why.`}
       >
         <Timeline
           shortlist={shortlist}
@@ -208,7 +227,7 @@ export function PlannerBoard({
           isAdding={add.isPending}
           onAdd={(slug) => add.mutate(slug)}
         />
-      </Section>
+      </Collapsible>
     </div>
   );
 }

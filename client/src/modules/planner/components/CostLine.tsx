@@ -30,6 +30,15 @@ function sourceLabel(cost: EventCost): string {
   return cost.source === "rough" ? "rough estimate" : "estimate";
 }
 
+/** Who the entry fee in the total comes from, in the words a parent would use. */
+function feeLabel(cost: EventCost): string {
+  if (cost.entryFee === null) return "entry fee not included";
+  const amount = formatInr(cost.entryFee);
+  if (cost.entryFeeBasis === "fact-sheet") return `includes the ${amount} AITA entry fee`;
+  if (cost.entryFeeBasis === "rules") return `includes the ${amount} entry fee from AITA's rules`;
+  return `includes your entry fee of ${amount}`;
+}
+
 function FigureForm({
   cost,
   initial,
@@ -149,11 +158,7 @@ export function CostLine({
           </span>
           <span className="text-slate-500">
             {" "}
-            ({sourceLabel(cost)}
-            {cost.entryFee !== null
-              ? `, includes your entry fee of ${formatInr(cost.entryFee)}`
-              : ", entry fee not included"}
-            )
+            ({sourceLabel(cost)}, {feeLabel(cost)})
           </span>
         </p>
       ) : (
@@ -204,9 +209,15 @@ export function CostLine({
           <div className="flex justify-between gap-4">
             <dt>Entry fee</dt>
             <dd>
-              {cost.entryFee !== null
-                ? `${formatInr(cost.entryFee)} (yours)`
-                : "Not estimated, check the fact sheet"}
+              {cost.entryFee === null
+                ? "Not estimated, check the fact sheet"
+                : `${formatInr(cost.entryFee)} (${
+                    cost.entryFeeBasis === "yours"
+                      ? "yours"
+                      : cost.entryFeeBasis === "fact-sheet"
+                        ? "singles, from AITA"
+                        : "singles, from AITA's rules"
+                  })`}
             </dd>
           </div>
           {cost.assumptions && <p className="pt-1 text-slate-500">{cost.assumptions}</p>}

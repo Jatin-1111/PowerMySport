@@ -97,8 +97,9 @@ export function BudgetBar({ season }: { season: SeasonCost }) {
       {season.missingEntryFees > 0 && (
         <p className="mt-1 text-xs leading-relaxed text-slate-600">
           Entry fees are not included for {season.missingEntryFees} event
-          {season.missingEntryFees === 1 ? "" : "s"}. The calendar does not publish them, so add
-          them from the fact sheet to complete the total.
+          {season.missingEntryFees === 1 ? "" : "s"}. AITA has not published a fee for{" "}
+          {season.missingEntryFees === 1 ? "it" : "them"}, so add{" "}
+          {season.missingEntryFees === 1 ? "it" : "them"} from the fact sheet to complete the total.
         </p>
       )}
     </div>
