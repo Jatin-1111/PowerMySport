@@ -70,11 +70,16 @@ export interface EventCostView {
   assumptions: string | null;
   travel: PartView | null;
   stay: PartView | null;
-  /** Only ever the parent's own figure. */
+  /**
+   * The parent's own figure when they gave one, otherwise the singles fee AITA
+   * publishes for the event, otherwise null. Never estimated by the model.
+   */
   entryFee: number | null;
+  /** Whose figure `entryFee` is. "fact-sheet" is the event's page, "rules" AITA's 2026 fee table. */
+  entryFeeBasis: "yours" | "fact-sheet" | "rules" | null;
   /** Travel and stay plus the fee if given. Null when there is no figure at all. */
   total: Range | null;
-  /** True while no entry fee has been entered, so the total is not the whole cost. */
+  /** True while there is no entry fee at all, so the total is not the whole cost. */
   entryFeeMissing: boolean;
   /** Why there is no estimate, in words. Null when there is one. */
   note: string | null;
@@ -90,7 +95,7 @@ export interface SeasonCostSummary {
   total: Range | null;
   budget: number | null;
   status: BudgetStatus;
-  /** Events whose entry fee has not been entered. */
+  /** Events with no entry fee, neither the parent's nor AITA's. */
   missingEntryFees: number;
 }
 

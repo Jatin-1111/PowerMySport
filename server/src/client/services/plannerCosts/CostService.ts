@@ -95,6 +95,8 @@ interface EventInfo {
   endDate?: string | undefined;
   city?: string | null | undefined;
   state?: string | null | undefined;
+  /** AITA's published entry fee for the event, when we have read it. */
+  officialFee?: { singles: number; source: "factSheet" | "rules" } | undefined;
 }
 
 type PlanEntry = PlannerOverview["plan"]["entries"][number];
@@ -114,7 +116,17 @@ export function viewFor(
   const yours = entry?.costs;
   const travel = partFor(yours?.travel, estimate?.travel ?? null);
   const stay = partFor(yours?.stay, estimate?.stay ?? null);
-  const entryFee = yours?.entryFee ?? null;
+  // The parent's own figure always wins. Next best is what AITA prints for this
+  // event, which is a fact and not an estimate; the model is never asked for one.
+  const entryFee = yours?.entryFee ?? event.officialFee?.singles ?? null;
+  const entryFeeBasis: EventCostView["entryFeeBasis"] =
+    yours?.entryFee !== undefined
+      ? "yours"
+      : event.officialFee
+        ? event.officialFee.source === "factSheet"
+          ? "fact-sheet"
+          : "rules"
+        : null;
 
   // A total needs both halves of the trip. Half a trip priced would read as the
   // whole of it.
@@ -141,6 +153,7 @@ export function viewFor(
     travel,
     stay,
     entryFee,
+    entryFeeBasis,
     total,
     entryFeeMissing: entryFee === null,
     note,
@@ -275,6 +288,10 @@ export function createCostService(deps: CostDeps) {
           endDate: live?.endDate,
           city: live?.city,
           state: live?.state,
+          officialFee:
+            typeof live?.official?.feeSingles === "number"
+              ? { singles: live.official.feeSingles, source: live.official.source }
+              : undefined,
         };
       };
 

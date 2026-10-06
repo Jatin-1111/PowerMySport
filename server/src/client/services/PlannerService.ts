@@ -3,6 +3,7 @@ import {
   buildShortlist,
   homeStanding,
   type PlannerEdition,
+  type PlannerOfficialDetails,
   type Shortlist,
 } from "@powermysport/shared-types";
 import { TournamentEdition } from "../../shared/models/TournamentEdition";
@@ -71,7 +72,10 @@ export interface PlannerOverview {
 const UPCOMING_LIMIT = 100;
 
 const EDITION_FIELDS =
-  "slug name startDate endDate city state venue registrationDeadlineDate ageGroups ladder grade kind";
+  "slug name startDate endDate city state venue registrationDeadlineDate ageGroups ladder grade kind " +
+  "externalId detailUrl lastCheckedAt entryOpensDate withdrawalDeadlineDate freezeDeadlineDate " +
+  "deadlineTimes feeSingles feeDoubles dailyAllowance surface qualifyingStartDate mainDrawStartDate " +
+  "officialDetailsSource";
 
 type EditionRow = {
   slug?: string;
@@ -86,6 +90,54 @@ type EditionRow = {
   ladder?: string;
   grade?: number;
   kind?: string;
+  externalId?: string;
+  detailUrl?: string;
+  lastCheckedAt?: Date;
+  entryOpensDate?: Date;
+  withdrawalDeadlineDate?: Date;
+  freezeDeadlineDate?: Date;
+  deadlineTimes?: { entryCloses?: string; withdrawal?: string; freeze?: string };
+  feeSingles?: number;
+  feeDoubles?: number;
+  dailyAllowance?: number;
+  surface?: string;
+  qualifyingStartDate?: Date;
+  mainDrawStartDate?: Date;
+  officialDetailsSource?: "factSheet" | "rules";
+};
+
+/** The printed calendar day. Stored at midnight UTC, so the UTC date is the date. */
+const day = (value: Date): string => value.toISOString().slice(0, 10);
+
+/**
+ * What AITA's pages say, or nothing. Only events read from AITA's calendar carry an
+ * `officialDetailsSource`, and only those get a page link: an older row's `detailUrl`
+ * is a signed, expiring address on a platform AITA has since left.
+ */
+const officialOf = (row: EditionRow): PlannerOfficialDetails | undefined => {
+  if (!row.officialDetailsSource) return undefined;
+  const times = row.deadlineTimes;
+  return {
+    source: row.officialDetailsSource,
+    ...(row.entryOpensDate ? { entryOpens: day(row.entryOpensDate) } : {}),
+    ...(row.registrationDeadlineDate ? { entryCloses: day(row.registrationDeadlineDate) } : {}),
+    ...(row.withdrawalDeadlineDate ? { withdrawalDeadline: day(row.withdrawalDeadlineDate) } : {}),
+    ...(row.freezeDeadlineDate ? { freezeDeadline: day(row.freezeDeadlineDate) } : {}),
+    ...(times && Object.keys(times).length > 0 ? { times } : {}),
+    ...(typeof row.feeSingles === "number" ? { feeSingles: row.feeSingles } : {}),
+    ...(typeof row.feeDoubles === "number" ? { feeDoubles: row.feeDoubles } : {}),
+    ...(typeof row.dailyAllowance === "number" ? { dailyAllowance: row.dailyAllowance } : {}),
+    ...(row.surface ? { surface: row.surface } : {}),
+    ...(row.qualifyingStartDate ? { qualifyingStart: day(row.qualifyingStartDate) } : {}),
+    ...(row.mainDrawStartDate ? { mainDrawStart: day(row.mainDrawStartDate) } : {}),
+    ...(row.externalId && row.detailUrl ? { pageUrl: row.detailUrl } : {}),
+    ...(row.lastCheckedAt ? { checkedAt: row.lastCheckedAt.toISOString() } : {}),
+  };
+};
+
+const official = (row: EditionRow): { official?: PlannerOfficialDetails } => {
+  const details = officialOf(row);
+  return details ? { official: details } : {};
 };
 
 /**
@@ -109,6 +161,7 @@ export const toPlannerEdition = (row: EditionRow): PlannerEdition => ({
   ...(row.ladder ? { ladder: row.ladder } : {}),
   ...(typeof row.grade === "number" ? { grade: row.grade } : {}),
   ...(row.kind ? { kind: row.kind } : {}),
+  ...official(row),
 });
 
 /** Editions still ahead, soonest first. Merged duplicates only redirect, so they are skipped. */
