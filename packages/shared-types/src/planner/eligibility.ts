@@ -25,6 +25,37 @@ import { entryStatus, TALENT_SERIES_ZONE_RULE } from "./aitaRules";
  * "open to enter", never "you will get in".
  */
 
+/**
+ * What AITA's own pages say about an event, where we have read them. Every date is
+ * a calendar day `YYYY-MM-DD`, with the printed IST time kept apart in `times`.
+ * Any field can be absent: a page may not print it, and absent means "not stated".
+ */
+export interface PlannerOfficialDetails {
+  /**
+   * Where the deadlines and fees came from. "factSheet" is the event's own page.
+   * "rules" is AITA's published rules applied to its level and dates because the
+   * page could not be read, so it states the rule and not the event.
+   */
+  source: "factSheet" | "rules";
+  entryOpens?: string;
+  entryCloses?: string;
+  withdrawalDeadline?: string;
+  freezeDeadline?: string;
+  times?: { entryCloses?: string; withdrawal?: string; freeze?: string };
+  /** Rupees. Singles per player, doubles per pair. */
+  feeSingles?: number;
+  feeDoubles?: number;
+  /** Paid by the tournament to main-draw players, per day. */
+  dailyAllowance?: number;
+  surface?: string;
+  qualifyingStart?: string;
+  mainDrawStart?: string;
+  /** AITA's own page for the event, where a parent enters. */
+  pageUrl?: string;
+  /** When we last confirmed the event against AITA's calendar (ISO timestamp). */
+  checkedAt?: string;
+}
+
 /** The shape the editions endpoint returns, narrowed to what matters here. */
 export interface PlannerEdition {
   slug?: string;
@@ -41,6 +72,8 @@ export interface PlannerEdition {
   ladder?: string | null;
   grade?: number | null;
   kind?: string | null;
+  /** From AITA's own pages. Absent on events we have not read them for. */
+  official?: PlannerOfficialDetails;
 }
 
 export interface PlannerPlayer {

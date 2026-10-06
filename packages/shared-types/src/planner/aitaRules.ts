@@ -47,6 +47,25 @@ export const RULES_SOURCE = {
     "Rules_Collated_AITA_Junior_Circuit_Tournaments_2026.pdf",
 } as const;
 
+/**
+ * What AITA's 2026 rules say happens when a player withdraws late or does not turn
+ * up, from the same document as `RULES_SOURCE`. Shown beside an event a parent has
+ * entered. Fines are rupees including 18% GST, as the rules print them.
+ *
+ * Fines are stated for the two levels the rules print them for (Championship Series
+ * of 3 days, and Talent Series with Championship Series of 7 days) and for no other:
+ * Super, National and Nationals print none, and nothing here fills that gap.
+ */
+export const AITA_WITHDRAWAL_RULES = {
+  /** After the withdrawal deadline, withdrawing is from every event of the tournament. */
+  lateWithdrawalWithdrawsFromAll: true,
+  /** Late withdrawals allowed per calendar year, whatever the reason. A third is penalised. */
+  lateWithdrawalsPerYear: 2,
+  noShowFine: { championship3Day: 1180, talentAndChampionship7Day: 1770 },
+  /** Entry fees are not refunded to a player who does not show up. */
+  noShowFeeRefunded: false,
+} as const;
+
 /** Junior age brackets are `U-12`…`U-18`; open-age lists have none of these rules. */
 export const isJuniorBracket = (subcategory: string): boolean =>
   /^U-\d+$/i.test(subcategory.trim());
