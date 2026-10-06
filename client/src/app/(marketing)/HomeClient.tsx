@@ -10,7 +10,6 @@ import { roadmapHref } from "@/modules/pathway/data/sports";
 import type { PathwayGuideSummary, TournamentEdition } from "@/modules/pathway/services/pathway";
 import { NextTournamentsSection } from "@/modules/tournaments/components/NextTournamentsSection";
 import {
-  Activity,
   ArrowRight,
   Building2,
   CheckCircle2,
@@ -147,17 +146,6 @@ export default function HomeClient({
     visual: "chat",
     theme: "teal",
   };
-  const screeningStep = {
-    label: "Ready for the next step?",
-    title: "Request a Physical Screening",
-    description:
-      "Ask for a hands-on session that checks the online result against how your child actually moves. Our team will contact you to arrange a time.",
-    icon: <Activity className="h-6 w-6" />,
-    stat: "We call to confirm a time",
-    visual: "screening",
-    theme: "blue",
-  };
-
   const trialClassStep = {
     label: "Ready to get started?",
     title: "Try a Trial Class",
@@ -180,7 +168,6 @@ export default function HomeClient({
       visual: "roadmap",
       theme: "orange",
     },
-    screeningStep,
     expertStep,
     trialClassStep,
   ];
