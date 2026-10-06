@@ -18,6 +18,7 @@ import { initializeExperienceNudgeScheduler } from "./utils/experienceNudgeSched
 import { startOutboxWorker } from "./shared/services/OutboxService";
 import { initializeScraperScheduler } from "./utils/scraperScheduler";
 import { initializeAitaRankingScheduler } from "./utils/aitaRankingScheduler";
+import { initializeAitaCalendarScheduler } from "./utils/aitaCalendarScheduler";
 import { initializeRankingDigestScheduler } from "./utils/rankingDigestScheduler";
 import { initializeOpportunityWatchScheduler } from "./utils/opportunityWatchScheduler";
 import { initializeOpportunityDiscoveryScheduler } from "./utils/opportunityDiscoveryScheduler";
@@ -179,6 +180,11 @@ const startServer = async () => {
 
           // Hourly tripwire + Thursday sweep for the AITA ranking mirror.
           initializeAitaRankingScheduler();
+
+          // Tuesday and Friday sweep of AITA's tournament calendar. Runs on the
+          // deployed server only (NODE_ENV=production), or locally when
+          // AITA_CALENDAR_CRON=on, because it writes to the one database.
+          initializeAitaCalendarScheduler();
 
           // Daily check for a published list nobody has been told about yet,
           // for parents who have linked a child's ranking.

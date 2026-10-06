@@ -88,6 +88,35 @@ export interface TournamentEditionDocument extends Document {
    */
   kind?: string;
 
+  // ── From AITA's own tournament pages (services/aita/calendarIngest.ts) ──────
+  // All optional: rows from the older calendar carry none of them. Dates are the
+  // printed calendar day at 00:00 UTC, like `registrationDeadlineDate`, with the
+  // printed IST time kept separately in `deadlineTimes`.
+  /** AITA's own id for the event; the key rows from this source are matched on. */
+  externalId?: string;
+  /** When entries open. */
+  entryOpensDate?: Date;
+  /** Last day to withdraw without it counting as a late withdrawal. */
+  withdrawalDeadlineDate?: Date;
+  /** The day the draw is frozen (no further changes). */
+  freezeDeadlineDate?: Date;
+  /** `HH:MM` IST as printed, per deadline. */
+  deadlineTimes?: { entryCloses?: string; withdrawal?: string; freeze?: string };
+  /** Entry fee per player in rupees; singles, and doubles per pair. */
+  feeSingles?: number;
+  feeDoubles?: number;
+  /** Paid by the tournament to main-draw players, per day, in rupees. */
+  dailyAllowance?: number;
+  surface?: string;
+  qualifyingStartDate?: Date;
+  mainDrawStartDate?: Date;
+  /**
+   * Where the deadlines and fees above came from: the event's own fact sheet, or
+   * AITA's published 2026 rules applied to its level and dates when the sheet could
+   * not be read. A figure from the rules is a statement of the rule, not of the page.
+   */
+  officialDetailsSource?: "factSheet" | "rules";
+
   /** The registry URL this edition was extracted from — shown to parents as provenance */
   sourceUrl: string;
   /**
@@ -143,6 +172,27 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
     grade: { type: Number },
     circuit: { type: String, trim: true },
     kind: { type: String, trim: true },
+
+    externalId: { type: String, trim: true },
+    entryOpensDate: { type: Date },
+    withdrawalDeadlineDate: { type: Date },
+    freezeDeadlineDate: { type: Date },
+    deadlineTimes: {
+      type: {
+        _id: false,
+        entryCloses: { type: String },
+        withdrawal: { type: String },
+        freeze: { type: String },
+      },
+      default: undefined,
+    },
+    feeSingles: { type: Number },
+    feeDoubles: { type: Number },
+    dailyAllowance: { type: Number },
+    surface: { type: String, trim: true },
+    qualifyingStartDate: { type: Date },
+    mainDrawStartDate: { type: Date },
+    officialDetailsSource: { type: String, enum: ["factSheet", "rules"] },
 
     sourceUrl: { type: String, required: true },
     mergedInto: { type: String, lowercase: true, trim: true },

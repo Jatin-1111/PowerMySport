@@ -10,15 +10,9 @@ import { TournamentEdition } from "../models/TournamentEdition";
  * different URLs.
  */
 
-/** "AITA CS7 (Delhi)" -> "aita-cs7-delhi" */
-export function slugifyEditionName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80)
-    .replace(/-+$/, "");
-}
+// Lives in its own file so a script can mint slugs without importing the model.
+export { slugifyEditionName } from "./editionSlugText";
+import { slugifyEditionName } from "./editionSlugText";
 
 export interface EditionKey {
   sportSlug: string;
