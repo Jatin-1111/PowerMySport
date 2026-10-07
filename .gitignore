@@ -21,3 +21,6 @@ docs
 # One-off migration audit reports (see server/src/migrations/20_*, 21_*)
 migration-*.json
 migration-reports/
+
+# local DB dump (contains production data)
+pms-dump.gz
