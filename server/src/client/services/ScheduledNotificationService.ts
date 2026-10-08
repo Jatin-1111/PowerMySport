@@ -12,6 +12,7 @@ import {
   sendRankingDigestEmail,
 } from "../../utils/email";
 import mongoose from "mongoose";
+import { PlanCheckIn } from "../../shared/models/PlanCheckIn";
 import { log as __rootLog } from "../../utils/logger";
 /** "7 Sep 2026". The list's own date, in the form the ranking pages use. */
 const formatAsOnDate = (value: unknown): string => {
@@ -342,6 +343,18 @@ export class ScheduledNotificationService {
             status: "SENT",
             sentAt: new Date(),
           });
+
+          // The check-in is "due" once its nudge is out: waiting on the parent,
+          // no longer waiting on the date. Nothing else ever made this move, so
+          // sent trials stayed `active` forever, and anything keyed on "active"
+          // (the one-active-trial guard, reuse on a wizard retake) treated a
+          // trial whose nudge had already gone as still waiting.
+          if (reminder.type === "PLAN_CHECKIN") {
+            const checkInId = (reminder.data as Record<string, unknown> | undefined)?.checkInId;
+            if (typeof checkInId === "string" && mongoose.isValidObjectId(checkInId)) {
+              await PlanCheckIn.updateOne({ _id: checkInId, status: "active" }, { status: "due" });
+            }
+          }
 
           stats.sent++;
           log.info(`Sent reminder ${reminder._id}${booking ? ` for booking ${booking._id}` : ""}`);

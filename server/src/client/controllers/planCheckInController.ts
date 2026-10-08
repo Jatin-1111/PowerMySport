@@ -42,10 +42,11 @@ export const createFindSportTrialCheckIn = asyncHandler(
     const checkInDueAt = new Date(Date.now() + TRIAL_WEEKS * 7 * 24 * 60 * 60 * 1000);
     const sportName = sport.trim().slice(0, 60);
 
-    const checkIn = await PlanCheckInService.schedule({
+    // Idempotent: retaking the wizard reuses the child's active trial rather
+    // than queuing another nudge and email.
+    const checkIn = await PlanCheckInService.scheduleFindSportTrial({
       userId: req.user.id,
       dependentId: validDependentId,
-      source: "find_sport_trial",
       sport: sportName,
       title: `We recommended ${sportName} about ${TRIAL_WEEKS} weeks ago — how did the trial go?`,
       signals: cleanSignals,
@@ -127,10 +128,9 @@ export const recordFindSportChoice = asyncHandler(
     // registered later, or the original scheduling failed. Start the clock now.
     const checkIn =
       retargeted ??
-      (await PlanCheckInService.schedule({
+      (await PlanCheckInService.scheduleFindSportTrial({
         userId: req.user.id,
         dependentId: validDependentId,
-        source: "find_sport_trial",
         sport: sportName,
         title,
         signals: cleanSignals,

@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { ACTIVE_FIND_SPORT_TRIAL_INDEX } from "./planCheckInIndexes";
 
 export type PlanCheckInSource = "find_sport_trial" | "guidance_short_plan" | "guidance_journey";
 export type PlanCheckInStatus =
@@ -63,5 +64,15 @@ planCheckInSchema.index({ userId: 1, status: 1, createdAt: -1 });
 // so that sort had no supporting index. Production has autoIndex off, so
 // this also needs migration 35.
 planCheckInSchema.index({ userId: 1, status: 1, checkInDueAt: 1 });
+
+// Re-running the find-sport wizard used to queue a fresh trial check-in (and a
+// fresh email) every time. The service now reuses the active one; this index is
+// what makes that hold under a race. Production has autoIndex off, so this also
+// needs migration 52.
+planCheckInSchema.index(ACTIVE_FIND_SPORT_TRIAL_INDEX.key, {
+  name: ACTIVE_FIND_SPORT_TRIAL_INDEX.name,
+  unique: true,
+  partialFilterExpression: ACTIVE_FIND_SPORT_TRIAL_INDEX.partialFilterExpression,
+});
 
 export const PlanCheckIn = mongoose.model<PlanCheckInDocument>("PlanCheckIn", planCheckInSchema);

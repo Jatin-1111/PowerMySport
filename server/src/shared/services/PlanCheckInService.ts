@@ -85,6 +85,62 @@ export class PlanCheckInService {
     if (!checkIn) return null;
     if (checkIn.sport === params.sport) return checkIn;
 
+    return this.repoint(checkIn, params);
+  }
+
+  /**
+   * Schedules the 4-week trial nudge for a find-sport result — once.
+   *
+   * The wizard calls this every time it finishes, and a family can finish it
+   * many times (retakes, back-and-forward on the processing step). Each call used
+   * to queue another check-in and another email, so a single child got the same
+   * "How's Badminton going?" several times. Now an existing ACTIVE trial for the
+   * same parent and child is reused: its sport and signals follow the latest run
+   * and its due date is left alone, so retaking the assessment can't keep pushing
+   * the nudge back or multiply it.
+   *
+   * `due` records are deliberately not reused — the nudge has already gone out
+   * and the parent is mid-response, so a new run is a new trial.
+   */
+  static async scheduleFindSportTrial(
+    params: Omit<ScheduleParams, "source" | "sourceId">
+  ): Promise<PlanCheckInDocument> {
+    const findActive = () =>
+      PlanCheckIn.findOne({
+        userId: params.userId,
+        source: "find_sport_trial",
+        status: "active",
+        // "No child selected" is its own slot, matching how the unique index
+        // treats a missing dependentId (as null) — not "any child".
+        dependentId: params.dependentId ? params.dependentId : { $exists: false },
+      });
+
+    const existing = await findActive();
+    if (existing) return this.repoint(existing, params);
+
+    try {
+      return await this.schedule({ ...params, source: "find_sport_trial" });
+    } catch (error) {
+      // Two runs raced past the lookup above and the unique index stopped the
+      // second. The winner's record is the one to reuse.
+      if ((error as { code?: number }).code === 11000) {
+        const winner = await findActive();
+        if (winner) return this.repoint(winner, params);
+      }
+      throw error;
+    }
+  }
+
+  /** Points an existing check-in, and its still-queued nudge, at the given sport. */
+  private static async repoint(
+    checkIn: PlanCheckInDocument,
+    params: {
+      userId: mongoose.Types.ObjectId | string;
+      sport: string;
+      title: string;
+      signals: string[];
+    }
+  ): Promise<PlanCheckInDocument> {
     checkIn.sport = params.sport;
     checkIn.title = params.title;
     checkIn.signals = params.signals;
