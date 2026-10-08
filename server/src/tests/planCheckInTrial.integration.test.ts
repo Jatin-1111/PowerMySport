@@ -15,6 +15,8 @@ const { ScheduledNotification } = require("../client/models/ScheduledNotificatio
 const { PlanCheckInService } = require("../shared/services/PlanCheckInService");
 const { ScheduledNotificationService } = require("../client/services/ScheduledNotificationService");
 const { User } = require("../client/models/User");
+const Notification = require("../client/models/Notification").default;
+const { up: refileMigration } = require("../migrations/53_refile_plan_checkin_notifications");
 const { up: dedupeMigration } = require("../migrations/52_dedupe_find_sport_trial_checkins");
 
 const oid = () => new mongoose.Types.ObjectId();
@@ -37,6 +39,7 @@ beforeEach(async () => {
   await PlanCheckIn.deleteMany({});
   await ScheduledNotification.deleteMany({});
   await User.collection.deleteMany({});
+  await Notification.deleteMany({});
 });
 
 const trial = (
@@ -346,5 +349,68 @@ describe("migration 52", () => {
     await dedupeMigration({ apply: true }, mongoose.connection.db);
 
     assert.equal(await PlanCheckIn.countDocuments({ userId, status: "active" }), 1);
+  });
+});
+
+describe("the in-app card for a plan check-in", () => {
+  it("is filed under PLAN, not BOOKING", async () => {
+    const userId = oid();
+    await PlanCheckInService.scheduleFindSportTrial(trial(userId, oid(), "Badminton"));
+    await User.collection.insertOne({
+      _id: userId,
+      name: "Parent Test",
+      email: `${userId.toString()}@example.test`,
+    });
+    await ScheduledNotification.updateMany(
+      { userId },
+      {
+        $set: {
+          scheduledFor: new Date(Date.now() - 1000),
+          channels: { email: false, push: false, inApp: true },
+        },
+      }
+    );
+
+    await ScheduledNotificationService.processPendingReminders();
+
+    const [card] = await Notification.find({ userId }).lean();
+    assert.ok(card, "an in-app notification was created");
+    assert.equal(card.type, "PLAN_CHECKIN");
+    assert.equal(card.category, "PLAN");
+    assert.equal(card.title, "How's Badminton going?");
+  });
+});
+
+describe("migration 53", () => {
+  const card = (userId: any, over: Record<string, unknown>) => ({
+    userId,
+    type: "BOOKING_REMINDER",
+    category: "BOOKING",
+    title: "x",
+    message: "x",
+    isRead: false,
+    createdAt: new Date(),
+    ...over,
+  });
+
+  it("refiles delivered check-in cards and leaves real booking reminders alone", async () => {
+    const userId = oid();
+    await Notification.collection.insertMany([
+      card(userId, { title: "checkin", data: { checkInId: oid().toString(), sport: "Badminton" } }),
+      card(userId, { title: "booking", data: { bookingId: oid().toString() } }),
+    ]);
+
+    await refileMigration({ apply: false }, mongoose.connection.db);
+    assert.equal(await Notification.countDocuments({ userId, category: "PLAN" }), 0);
+
+    await refileMigration({ apply: true }, mongoose.connection.db);
+    await refileMigration({ apply: true }, mongoose.connection.db); // idempotent
+
+    const moved = await Notification.findOne({ userId, title: "checkin" }).lean();
+    assert.equal(moved.type, "PLAN_CHECKIN");
+    assert.equal(moved.category, "PLAN");
+    const untouched = await Notification.findOne({ userId, title: "booking" }).lean();
+    assert.equal(untouched.type, "BOOKING_REMINDER");
+    assert.equal(untouched.category, "BOOKING");
   });
 });

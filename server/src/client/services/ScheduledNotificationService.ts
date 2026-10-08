@@ -249,13 +249,17 @@ export class ScheduledNotificationService {
                 ? ("EXPERIENCE_NUDGE" as const)
                 : reminder.type === "RANKING_DIGEST"
                   ? ("RANKING_DIGEST" as const)
-                  : ("BOOKING_REMINDER" as const);
+                  : reminder.type === "PLAN_CHECKIN"
+                    ? ("PLAN_CHECKIN" as const)
+                    : ("BOOKING_REMINDER" as const);
             const inAppCategory =
               inAppType === "EXPERIENCE_NUDGE"
                 ? ("COMMUNITY" as const)
                 : inAppType === "RANKING_DIGEST"
                   ? ("RANKING" as const)
-                  : ("BOOKING" as const);
+                  : inAppType === "PLAN_CHECKIN"
+                    ? ("PLAN" as const)
+                    : ("BOOKING" as const);
             sendPromises.push(
               NotificationService.create({
                 userId: reminder.userId._id.toString(),

@@ -44,9 +44,13 @@ export type NotificationType =
  * The categories drive how the notification centre groups things, and a ranking
  * update is not social, not a booking and not administrative — filing it under
  * any of those would put a child's standing in a list a parent scrolls past.
+ *
+ * "PLAN" is the same call for plan check-ins ("how did the trial go?"). They
+ * rode in BOOKING by default and showed up under a "Booking" badge for a nudge
+ * that has nothing to do with a booking.
  */
 export type NotificationCategory =
-  "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "RANKING";
+  "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "RANKING" | "PLAN";
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
@@ -118,7 +122,7 @@ const notificationSchema = new Schema<INotification, {}, {}, NotificationQueryHe
     },
     category: {
       type: String,
-      enum: ["SOCIAL", "BOOKING", "Admin", "REVIEW", "PAYMENT", "COMMUNITY", "RANKING"],
+      enum: ["SOCIAL", "BOOKING", "Admin", "REVIEW", "PAYMENT", "COMMUNITY", "RANKING", "PLAN"],
       required: true,
       index: true,
     },

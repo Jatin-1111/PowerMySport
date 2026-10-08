@@ -4,7 +4,7 @@ export interface Notification {
   _id: string;
   userId: string;
   type: string;
-  category: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
+  category: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "PLAN";
   title: string;
   message: string;
   data?: Record<string, unknown>;
@@ -15,7 +15,7 @@ export interface Notification {
 }
 
 export interface NotificationFilters {
-  category?: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY";
+  category?: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "PLAN";
   isRead?: boolean;
 }
 
@@ -90,7 +90,7 @@ export const notificationApi = {
    * Get unread notification count
    */
   getUnreadCount: async (
-    category?: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY"
+    category?: "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "PLAN"
   ): Promise<UnreadCountResponse> => {
     const params = category ? `?category=${category}` : "";
     const response = await axios.get(`/notifications/unread-count${params}`);

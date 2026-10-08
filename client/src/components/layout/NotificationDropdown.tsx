@@ -9,6 +9,7 @@ import {
   Bell,
   Calendar,
   Check,
+  ClipboardCheck,
   CreditCard,
   MessageCircle,
   Settings,
@@ -52,6 +53,11 @@ function getNotificationLink(notification: Notification): string {
           : getCommunityAppUrl({ path: "q" });
       }
       return getCommunityAppUrl({ path: "chats" });
+    }
+    case "PLAN_CHECKIN": {
+      // The same page the nudge email links to.
+      const checkInId = data.checkInId as string | undefined;
+      return checkInId ? `/check-in/${checkInId}` : "/dashboard";
     }
     case "FRIEND_REQUEST":
     case "FRIEND_REQUEST_ACCEPTED":
@@ -209,6 +215,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
       REVIEW: Star,
       ADMIN: Settings,
       COMMUNITY: MessageCircle,
+      PLAN: ClipboardCheck,
     };
     return iconMap[category] || Bell;
   };
@@ -253,6 +260,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
         iconColor: "text-orange-700",
         dot: "bg-power-orange",
         chip: "bg-orange-50 text-orange-700 border-orange-200",
+      },
+      PLAN: {
+        iconWrap: "bg-teal-100",
+        iconColor: "text-teal-700",
+        dot: "bg-teal-500",
+        chip: "bg-teal-50 text-teal-700 border-teal-200",
       },
     };
 
