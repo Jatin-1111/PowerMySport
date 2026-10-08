@@ -62,6 +62,7 @@ export default async function HomePage() {
       <JsonLd data={[organizationJsonLd, websiteJsonLd]} />
       <HomeClient
         pathway={preview}
+        coveredSports={withStages.map((pathway) => pathway.sportName)}
         tournaments={{
           editions: upcoming?.editions.slice(0, BOARD_ROWS) ?? [],
           sportSlug: FEATURED_TOURNAMENT_SPORT,

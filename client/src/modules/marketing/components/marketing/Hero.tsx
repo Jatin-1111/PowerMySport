@@ -1,8 +1,9 @@
 "use client";
 
 import { Button } from "@/modules/shared/ui/Button";
+import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import { motion, useScroll, useTransform, Variants } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useRef } from "react";
@@ -16,6 +17,10 @@ export interface HeroProps {
   /** Short question shown above the CTA row — use to frame two CTAs as a self-segmenting fork */
   ctaPrompt?: string;
   primaryCTA?: { label: string; href: string };
+  /** One line under the CTAs saying what happens after the click */
+  ctaNote?: string;
+  /** Short reassurances under the CTAs, e.g. "No account needed" */
+  trustPoints?: string[];
   secondaryCTA?: { label: string; href: string };
   stats?: Array<{ label: string; value: string; helper?: string }>;
 }
@@ -50,6 +55,8 @@ function HomeHero({
   ctaPrompt,
   primaryCTA,
   secondaryCTA,
+  ctaNote,
+  trustPoints,
   stats,
 }: HeroProps) {
   const containerRef = useRef<HTMLElement>(null);
@@ -64,6 +71,7 @@ function HomeHero({
   // announce and what search engines index) read
   // "HelpingParentsMakeConfidentSportsDecisions". Only the highlighted phrase
   // gets its own element, for the gradient and the underline.
+  const primaryIsWhatsApp = Boolean(primaryCTA?.href.includes("wa.me"));
   const hlIndex = titleHighlight ? title.indexOf(titleHighlight) : -1;
   const before = hlIndex >= 0 ? title.slice(0, hlIndex).trim() : title;
   const after =
@@ -189,9 +197,18 @@ function HomeHero({
                 asChild
                 variant="primary"
                 size="lg"
-                className="group h-auto w-full px-7 py-3.5 text-sm font-bold focus-visible:ring-offset-slate-950 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+                className={`group h-auto w-full px-7 py-3.5 text-sm font-bold focus-visible:ring-offset-slate-950 sm:w-auto sm:px-8 sm:py-4 sm:text-base ${
+                  // Not WhatsApp's own #25D366: white text on it measures 2:1.
+                  primaryIsWhatsApp
+                    ? "bg-green-700 hover:bg-green-800 focus-visible:ring-green-700"
+                    : ""
+                }`}
               >
-                <Link href={primaryCTA.href}>
+                <Link
+                  href={primaryCTA.href}
+                  {...(primaryIsWhatsApp ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                >
+                  {primaryIsWhatsApp && <WhatsAppIcon className="h-5 w-5 shrink-0" />}
                   {primaryCTA.label}
                   <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />
                 </Link>
@@ -208,6 +225,27 @@ function HomeHero({
               </Button>
             )}
           </motion.div>
+
+          {ctaNote && (
+            <motion.p variants={itemVariants} className="mt-4 text-sm text-slate-200/90">
+              {ctaNote}
+            </motion.p>
+          )}
+
+          {/* ── Trust points ── */}
+          {trustPoints && trustPoints.length > 0 && (
+            <motion.ul
+              variants={itemVariants}
+              className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-200/90"
+            >
+              {trustPoints.map((point) => (
+                <li key={point} className="flex items-center gap-2">
+                  <Check className="h-4 w-4 shrink-0 text-orange-300" aria-hidden />
+                  {point}
+                </li>
+              ))}
+            </motion.ul>
+          )}
 
           {/* ── Stats ── */}
           {stats && stats.length > 0 && (
