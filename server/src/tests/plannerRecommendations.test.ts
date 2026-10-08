@@ -736,6 +736,7 @@ describe("counting what validation repaired", () => {
       dropped: 0,
       demoted: 0,
       reasonsReplaced: 0,
+      foreignNames: 0,
       summaryReplaced: false,
       malformed: false,
     });
@@ -778,5 +779,364 @@ describe("counting what validation repaired", () => {
       inspectModelOutput(raw, context, NOW).result,
       validateModelOutput(raw, context, NOW)
     );
+  });
+});
+
+// ─── Names in a reason ────────────────────────────────────────────────────────
+
+describe("holding a reason to the event it is about", () => {
+  const {
+    validateModelOutput: validate,
+  } = require("../client/services/plannerRecommendations/validate");
+  const { inspectModelOutput } = require("../client/services/plannerRecommendations/validate");
+
+  const at = (
+    slug: string,
+    offset: number,
+    city: string,
+    state: string,
+    ladder = "Championship Series"
+  ) => ({
+    ...edition(slug, offset, { ladder, state }),
+    city,
+    name: `AITA ${slug} (${city})`,
+  });
+
+  const context = contextOf(
+    [
+      at("jaipur", 10, "Jaipur", "Rajasthan"),
+      at("pune", 30, "Pune", "Maharashtra", "Super Series"),
+      at("delhi", 60, "New Delhi", "Delhi"),
+    ],
+    { state: "Haryana" }
+  );
+
+  const ask = (slug: string, reason: string) => {
+    const result = validate(
+      {
+        summary: "A steady run of events across the weeks ahead.",
+        picks: [{ slug, tier: "recommended", reason }],
+      },
+      context,
+      NOW
+    );
+    return result.items.find((item: { slug: string }) => item.slug === slug).reason;
+  };
+
+  it("keeps a reason that names its own city, state and level", () => {
+    const reason = "Super Series in Pune, Maharashtra.";
+    assert.equal(ask("pune", reason), reason);
+  });
+
+  it("keeps the child's own state, which is what 'close to home' refers to", () => {
+    const reason = "Outside Haryana, but a Super Series.";
+    assert.equal(ask("pune", reason), reason);
+  });
+
+  it("replaces a reason that puts the event in another event's city", () => {
+    const wrong = "Close to home in Delhi.";
+    const result = ask("jaipur", wrong);
+    assert.notEqual(result, wrong);
+    assert.doesNotMatch(result, /Delhi/);
+  });
+
+  it("replaces a reason that names a state it is not in", () => {
+    assert.notEqual(
+      ask("jaipur", "A Championship Series in Gujarat."),
+      "A Championship Series in Gujarat."
+    );
+  });
+
+  it("replaces a reason that names a level the event is not", () => {
+    const wrong = "A Super Series event in Jaipur.";
+    assert.notEqual(ask("jaipur", wrong), wrong);
+  });
+
+  it("does not mistake a city for its state, or the reverse", () => {
+    const reason = "In New Delhi, Delhi.";
+    assert.equal(ask("delhi", reason), reason);
+    // "Delhi" alone is the state: allowed for the Delhi event, not for the Jaipur one.
+    assert.notEqual(
+      ask("jaipur", "A Championship Series near Delhi."),
+      "A Championship Series near Delhi."
+    );
+  });
+
+  it("allows 'above Championship Series' as the comparison the prompt asks for", () => {
+    const reason = "Super Series is above Championship Series, so a place is earned.";
+    assert.equal(ask("pune", reason), reason);
+  });
+
+  it("lets an event be named as the thing another fits around, when it is on the plan", () => {
+    const planned = contextOf(
+      [at("jaipur", 10, "Jaipur", "Rajasthan"), at("pune", 30, "Pune", "Maharashtra")],
+      {
+        entries: [
+          {
+            editionSlug: "ludhiana",
+            name: "AITA ludhiana (Ludhiana)",
+            startDate: midnight(20),
+            status: "shortlisted",
+          },
+        ],
+      }
+    );
+    const reason = "A week before the Ludhiana event in Jaipur.";
+    const result = validate(
+      {
+        summary: "Two events around the one already planned.",
+        picks: [{ slug: "jaipur", tier: "recommended", reason }],
+      },
+      planned,
+      NOW
+    );
+    assert.equal(result.items[0].reason, reason);
+  });
+
+  it("counts a reason that failed only on a name, apart from one that failed on a number", () => {
+    const { stats } = inspectModelOutput(
+      {
+        summary: "A steady run of events across the weeks ahead.",
+        picks: [
+          { slug: "jaipur", tier: "recommended", reason: "Close to home in Delhi." },
+          { slug: "pune", tier: "recommended", reason: "Entries close in 99 days." },
+        ],
+      },
+      context,
+      NOW
+    );
+    assert.equal(stats.reasonsReplaced, 2);
+    assert.equal(stats.foreignNames, 1);
+  });
+
+  it("replaces a summary that names a place nowhere in the data", () => {
+    const result = validate(
+      {
+        summary: "A season centred on Goa and Kerala.",
+        picks: [{ slug: "jaipur", tier: "recommended", reason: "Championship Series in Jaipur." }],
+      },
+      context,
+      NOW
+    );
+    assert.doesNotMatch(result.summary, /Goa|Kerala/);
+  });
+
+  it("lets a summary name any place that is on offer", () => {
+    const summary = "Events in Jaipur and Pune across the weeks ahead.";
+    const result = validate(
+      {
+        summary,
+        picks: [{ slug: "jaipur", tier: "recommended", reason: "Championship Series in Jaipur." }],
+      },
+      context,
+      NOW
+    );
+    assert.equal(result.summary, summary);
+  });
+});
+
+// ─── What the model is sent ───────────────────────────────────────────────────
+
+describe("what the model is sent", () => {
+  const {
+    buildUserPrompt,
+    SYSTEM_PROMPT,
+  } = require("../client/services/plannerRecommendations/prompt");
+  const { responseSchemaFor } = require("../client/services/plannerRecommendations/gemini");
+
+  it("never includes the child's name", () => {
+    const context = contextOf([edition("a", 10)]);
+    const prompt = buildUserPrompt(context);
+    assert.doesNotMatch(prompt, /Aarav/);
+    assert.doesNotMatch(prompt, /firstName/);
+    assert.match(SYSTEM_PROMPT, /only as "they"/);
+  });
+
+  it("limits the model to the events on offer, so none can be invented", () => {
+    const schema = responseSchemaFor(["a", "b"]);
+    assert.deepEqual(schema.properties.picks.items.properties.slug.enum, ["a", "b"]);
+    assert.deepEqual(schema.properties.picks.items.properties.tier.enum, [
+      "recommended",
+      "consider",
+    ]);
+    assert.deepEqual(schema.required, ["summary", "picks"]);
+  });
+
+  it("does not limit slugs when none are given", () => {
+    const schema = responseSchemaFor(undefined);
+    assert.equal(schema.properties.picks.items.properties.slug.enum, undefined);
+  });
+});
+
+// ─── Counters ─────────────────────────────────────────────────────────────────
+
+describe("counting what the recommender does", () => {
+  const events = [edition("a", 10, { ladder: "Super Series" }), edition("b", 30), edition("c", 60)];
+
+  function counted(modelImpl?: () => Promise<unknown>, overviewOptions: OverviewOptions = {}) {
+    const counts: Record<string, number> = {};
+    const stored = new Map<string, unknown>();
+    const seen: { slugs?: string[] | undefined } = {};
+    let used = 0;
+    const service = createRecommendationService({
+      model: async (_system: string, _user: string, options?: { slugs?: string[] }) => {
+        seen.slugs = options?.slugs;
+        return modelImpl
+          ? modelImpl()
+          : {
+              summary: "Three events spread across the weeks ahead.",
+              picks: ["a", "b", "c"].map((slug) => ({
+                slug,
+                tier: "recommended",
+                reason: "Championship Series in Sonipat.",
+              })),
+            };
+      },
+      store: {
+        get: async (key: string) => (stored.get(key) as never) ?? null,
+        set: async (key: string, value: unknown) => {
+          stored.set(key, value);
+        },
+      },
+      counter: {
+        get: async () => used,
+        increment: async () => ++used,
+        decrement: async () => {
+          used -= 1;
+        },
+      },
+      now: () => NOW,
+      loadOverview: async () => overviewOf(events, overviewOptions),
+      metrics: {
+        increment: async (name: string, by = 1) => {
+          counts[name] = (counts[name] ?? 0) + by;
+        },
+      },
+    });
+    return { service, counts, seen };
+  }
+
+  it("tells the model which events it may name", async () => {
+    const { service, seen } = counted();
+    await service.generate("u1", "d1");
+    assert.deepEqual([...(seen.slugs ?? [])].sort(), ["a", "b", "c"]);
+  });
+
+  it("counts a request, a model call and a model answer", async () => {
+    const { service, counts } = counted();
+    await service.generate("u1", "d1");
+    assert.equal(counts.asked, 1);
+    assert.equal(counts.model_called, 1);
+    assert.equal(counts.answered_by_model, 1);
+    assert.equal(counts.model_picks, 3);
+    assert.equal(counts.cache_hit, undefined);
+  });
+
+  it("counts a repeat as a cache hit, and a forced ask as forced", async () => {
+    const { service, counts } = counted();
+    await service.generate("u1", "d1");
+    await service.generate("u1", "d1");
+    await service.generate("u1", "d1", { force: true });
+    assert.equal(counts.asked, 3);
+    assert.equal(counts.cache_hit, 1);
+    assert.equal(counts.forced, 1);
+    assert.equal(counts.model_called, 2);
+  });
+
+  it("counts a failed model and why the rules answered", async () => {
+    const { service, counts } = counted(async () => {
+      throw new Error("offline");
+    });
+    await service.generate("u1", "d1");
+    assert.equal(counts["fallback_ai-unavailable"], 1);
+    assert.equal(counts.answered_by_model, undefined);
+  });
+
+  it("counts an answer that failed validation separately", async () => {
+    const { service, counts } = counted(async () => ({ nonsense: true }));
+    await service.generate("u1", "d1");
+    assert.equal(counts["fallback_invalid-output"], 1);
+  });
+
+  it("counts what validation repaired", async () => {
+    const { service, counts } = counted(async () => ({
+      summary: "Two events across the weeks ahead.",
+      picks: [
+        { slug: "a", tier: "recommended", reason: "Close to home in Delhi." },
+        { slug: "ghost", tier: "recommended", reason: "Not offered." },
+        { slug: "b", tier: "recommended", reason: "Championship Series in Sonipat." },
+      ],
+    }));
+    await service.generate("u1", "d1");
+    assert.equal(counts.model_dropped, 1);
+    assert.equal(counts.model_foreign_names, 1);
+    assert.equal(counts.model_reasons_replaced, 1);
+  });
+
+  it("counts an add as from a suggestion only when it was one", async () => {
+    const { service, counts } = counted();
+    await service.generate("u1", "d1");
+    await service.noteAdded("u1", "d1", "a");
+    await service.noteAdded("u1", "d1", "not-suggested");
+    assert.equal(counts.added_from_suggestion, 1);
+    assert.equal(counts.added_other, 1);
+  });
+
+  it("counts an add as other when nothing was ever suggested", async () => {
+    const { service, counts } = counted();
+    await service.noteAdded("u1", "d1", "a");
+    assert.equal(counts.added_other, 1);
+  });
+
+  it("never lets a failing counter break a request", async () => {
+    const service = createRecommendationService({
+      model: async () => ({
+        summary: "Three events across the weeks ahead.",
+        picks: [{ slug: "a", tier: "recommended", reason: "Super Series in Sonipat." }],
+      }),
+      store: { get: async () => null, set: async () => {} },
+      counter: { get: async () => 0, increment: async () => 1, decrement: async () => {} },
+      now: () => NOW,
+      loadOverview: async () => overviewOf(events),
+      metrics: {
+        increment: async () => {
+          throw new Error("redis down");
+        },
+      },
+    });
+    const answer = await service.generate("u1", "d1");
+    assert.equal(answer.recommendations.source, "ai");
+  });
+});
+
+// ─── The allowance, spent ─────────────────────────────────────────────────────
+
+describe("when the yearly allowance is spent", () => {
+  const spent = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      editionSlug: `e${i}`,
+      name: `E${i}`,
+      startDate: midnight(-(i + 1) * 5),
+      status: "played",
+    }));
+
+  it("offers no options either: an event the child cannot be entered in is not one", () => {
+    const context = contextOf([edition("x", 30), edition("y", 60)], { cap: 2, entries: spent(2) });
+    const result = baselineRecommend(context, NOW);
+    assert.equal(result.items.length, 0);
+    assert.match(result.notes.join(" "), /allowance/);
+  });
+
+  it("holds the model to the same rule", () => {
+    const context = contextOf([edition("x", 30), edition("y", 60)], { cap: 2, entries: spent(2) });
+    const result = validateModelOutput(
+      {
+        summary: "Nothing is left to recommend.",
+        picks: [{ slug: "x", tier: "recommended", reason: "Championship Series in Sonipat." }],
+      },
+      context,
+      NOW
+    );
+    assert.equal(result.items.length, 0);
   });
 });

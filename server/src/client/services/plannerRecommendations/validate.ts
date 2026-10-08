@@ -1,5 +1,6 @@
-import { clearDaysBetween, dayNumber } from "@powermysport/shared-types";
+import { JUNIOR_LADDER, clearDaysBetween, dayNumber } from "@powermysport/shared-types";
 import { z } from "zod";
+import { INDIAN_STATE_NAMES } from "../../../constants/indianStates";
 import { conflictBetween, notesFor, reasonFor, summaryFor } from "./baseline";
 import {
   MAX_CONSIDER,
@@ -160,8 +161,87 @@ function allowedNumbers(candidate: Candidate, context: RecommendationContext): S
   return allowed;
 }
 
+// ─── Names ────────────────────────────────────────────────────────────────────
+//
+// A number check cannot catch "in Delhi" written about an event in Jaipur: there is no
+// digit and no banned word in it. So the places and levels a reason names are held to the
+// event it is about. This is a check against the data we hold, not a gazetteer: it knows
+// the 36 states and every city and level that appears in the offered events, and it flags
+// one of those named where it does not belong. A place outside everything we hold cannot
+// be recognised, which is why the prompt still forbids adding any.
+
+const escapeRegex = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const phrase = (name: string): RegExp => new RegExp(`\\b${escapeRegex(name)}\\b`, "gi");
+
+const LEVEL_NAMES: string[] = JUNIOR_LADDER.map((rung) => rung.name);
+
+/** The cities an event's name carries in brackets: "AITA CS7 (Sonipat)". */
+const citiesInName = (name: string): string[] =>
+  [...name.matchAll(/\(([^)]+)\)/g)].map((match) => match[1]!.trim()).filter(Boolean);
+
+/** Every place and level the data holds, each of which a reason could wrongly name. */
+function namedUniverse(context: RecommendationContext): string[] {
+  const names = new Set<string>([...INDIAN_STATE_NAMES, ...LEVEL_NAMES]);
+  for (const candidate of context.candidates) {
+    if (candidate.city) names.add(candidate.city);
+    if (candidate.state) names.add(candidate.state);
+    for (const city of citiesInName(candidate.name)) names.add(city);
+  }
+  for (const planned of context.committed) {
+    for (const city of citiesInName(planned.name)) names.add(city);
+  }
+  if (context.child.state) names.add(context.child.state);
+  return [...names];
+}
+
+/** The places and levels a reason about THIS event may truthfully name. */
+function namesAllowedFor(candidate: Candidate, context: RecommendationContext): string[] {
+  return [
+    candidate.city,
+    candidate.state,
+    candidate.ladder,
+    // "above Championship Series" is how the prompt asks a higher level to be explained.
+    "Championship Series",
+    context.child.state,
+    ...citiesInName(candidate.name),
+    // An event already planned may be named as the thing this one fits around.
+    ...context.committed.flatMap((planned) => citiesInName(planned.name)),
+  ].filter((name): name is string => Boolean(name));
+}
+
+/**
+ * The first place or level the text names that is not in `allowed`, or null. Allowed
+ * phrases are blanked first, so "New Delhi" is not mistaken for "Delhi".
+ */
+export function foreignName(text: string, allowed: string[], universe: string[]): string | null {
+  let rest = text;
+  // Longest first, so a longer allowed name is consumed before its own substring.
+  for (const name of [...allowed].sort((a, b) => b.length - a.length)) {
+    rest = rest.replace(phrase(name), " # ");
+  }
+  const allowedKeys = new Set(allowed.map((name) => name.toLowerCase()));
+  for (const name of [...universe].sort((a, b) => b.length - a.length)) {
+    if (allowedKeys.has(name.toLowerCase())) continue;
+    if (phrase(name).test(rest)) return name;
+  }
+  return null;
+}
+
 const isGrounded = (text: string, allowed: Set<number>): boolean =>
   !UNGROUNDED.test(text) && numbersIn(text).every((value) => allowed.has(value));
+
+/**
+ * Whether a reason about one event passes the checks every reason must pass. Exported so
+ * the evaluation harness can hold the rules-only answer and the model's answer to the same
+ * test, instead of trusting that each was checked on the way in.
+ */
+export const reasonIsGrounded = (
+  text: string,
+  candidate: Candidate,
+  context: RecommendationContext
+): boolean =>
+  isGrounded(tidy(text), allowedNumbers(candidate, context)) &&
+  foreignName(tidy(text), namesAllowedFor(candidate, context), namedUniverse(context)) === null;
 
 const byStart = (a: Candidate, b: Candidate): number =>
   new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
@@ -184,6 +264,8 @@ export interface ValidationStats {
   demoted: number;
   /** Reasons that failed the checks and were replaced by the rule-based one. */
   reasonsReplaced: number;
+  /** Of those, how many named a place or level that belongs to a different event. */
+  foreignNames: number;
   summaryReplaced: boolean;
   /** True when the answer was not the agreed shape at all. */
   malformed: boolean;
@@ -208,6 +290,7 @@ export function inspectModelOutput(
     dropped: 0,
     demoted: 0,
     reasonsReplaced: 0,
+    foreignNames: 0,
     summaryReplaced: false,
     malformed: false,
   };
@@ -216,6 +299,7 @@ export function inspectModelOutput(
   stats.picks = parsed.data.picks.length;
 
   const bySlug = new Map(context.candidates.map((candidate) => [candidate.slug, candidate]));
+  const universe = namedUniverse(context);
   const room = Math.min(MAX_RECOMMENDED, context.allowanceLeft ?? MAX_RECOMMENDED);
 
   const recommended: Array<{ candidate: Candidate; reason: string }> = [];
@@ -232,8 +316,11 @@ export function inspectModelOutput(
     seen.add(candidate.slug);
 
     const cleaned = tidy(pick.reason);
-    const grounded = isGrounded(cleaned, allowedNumbers(candidate, context));
+    const numbersOk = isGrounded(cleaned, allowedNumbers(candidate, context));
+    const foreign = foreignName(cleaned, namesAllowedFor(candidate, context), universe);
+    const grounded = numbersOk && foreign === null;
     if (!grounded) stats.reasonsReplaced += 1;
+    if (numbersOk && foreign !== null) stats.foreignNames += 1;
     const reason = grounded ? cleaned : reasonFor(candidate, context.effectiveGoal, context);
 
     const onTopOfPlan = context.committed.some(
@@ -245,7 +332,7 @@ export function inspectModelOutput(
 
     if (pick.tier === "recommended" && recommended.length < room && fits) {
       recommended.push({ candidate, reason });
-    } else if (!onTopOfPlan && consider.length < MAX_CONSIDER) {
+    } else if (room > 0 && !onTopOfPlan && consider.length < MAX_CONSIDER) {
       // Over the allowance, or too close to something chosen: still an option,
       // just not one to book alongside the rest.
       if (pick.tier === "recommended") stats.demoted += 1;
@@ -274,7 +361,14 @@ export function inspectModelOutput(
     consider.length,
   ]);
   const summary = tidy(parsed.data.summary);
-  stats.summaryReplaced = !isGrounded(summary, everything);
+  // A summary speaks about the whole season, so it may name any place on offer, but not
+  // one that is nowhere in the data.
+  const everyName = [
+    ...context.candidates.flatMap((candidate) => namesAllowedFor(candidate, context)),
+    ...LEVEL_NAMES,
+  ];
+  stats.summaryReplaced =
+    !isGrounded(summary, everything) || foreignName(summary, everyName, universe) !== null;
 
   return {
     result: {

@@ -83,6 +83,9 @@ export function pickSchedule(
   context: Pick<RecommendationContext, "committed" | "allowanceLeft">
 ): { recommended: Candidate[]; consider: Candidate[] } {
   const room = Math.min(MAX_RECOMMENDED, context.allowanceLeft ?? MAX_RECOMMENDED);
+  // No entry left this year: nothing can be recommended and nothing is an option either.
+  // An "option" the child cannot be entered in is not one (found by the evaluation harness).
+  if (room === 0) return { recommended: [], consider: [] };
   const recommended: Candidate[] = [];
 
   for (const candidate of ordered) {

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
+import { RecommendationService } from "../services/plannerRecommendations/RecommendationService";
 import { SeasonPlanService } from "../services/SeasonPlanService";
 
 /**
@@ -28,12 +29,17 @@ export const getSeasonPlan = asyncHandler(async (req: Request, res: Response): P
 /** POST /api/season-plans/:dependentId/entries  { editionSlug, note? } */
 export const addSeasonPlanEntry = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
+    const userId = requireUser(req);
+    const dependentId = String(req.params.dependentId ?? "");
+    const editionSlug = String(req.body?.editionSlug ?? "");
     const plan = await SeasonPlanService.addEntry({
-      userId: requireUser(req),
-      dependentId: String(req.params.dependentId ?? ""),
-      editionSlug: String(req.body?.editionSlug ?? ""),
+      userId,
+      dependentId,
+      editionSlug,
       note: asOptionalString(req.body?.note),
     });
+    // Counts whether this was a suggested event. Not awaited, and cannot fail the add.
+    void RecommendationService.noteAdded(userId, dependentId, editionSlug);
     res.status(201).json({ success: true, data: plan });
   }
 );

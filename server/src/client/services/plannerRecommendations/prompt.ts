@@ -29,7 +29,7 @@ Rules you must follow:
 - Each reason is ONE sentence of at most 25 words. It must state a concrete fact from the data about that event: its rung, its state, its dates, its entry deadline, or how it sits against another event or the blocked dates. No filler such as "a good fit" or "a great opportunity". Do not repeat the same sentence shape for every event.
 - If the goal is match experience and an event is above Championship Series, say plainly that its draw is cut by ranking, so a place is earned.
 - Write dates the way a parent would say them, like "11 Oct", never as 2026-10-11.
-- Refer to the child by first name or as "they". Never use he, she, his, her or him: the child's gender is not in the data.
+- Refer to the child only as "they". You are given no name, and the child's gender is not in the data, so never use he, she, his, her or him.
 - Do not state any number that is not a date, a rank or an age list in the data.
 - Do not mention prices, costs or budgets. Do not promise entry or results: say "open to enter", never "will get in". Do not say one event has a stronger or easier field than another.
 - If an entry deadline is null, it has not been published. Do not guess one.
@@ -44,7 +44,8 @@ export function buildUserPrompt(context: RecommendationContext): string {
   const data = {
     today: context.today,
     child: {
-      firstName: context.child.firstName,
+      // No name: it adds nothing to the choice, and a child's name is not ours to send
+      // to a model provider. Reasons say "they".
       list: context.child.list,
       rank: context.child.rank,
       registeredState: context.child.state,

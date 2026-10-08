@@ -6,6 +6,7 @@ import { PlannerService, type PlannerOverview } from "../PlannerService";
 import { baselineRecommend } from "./baseline";
 import { buildContext } from "./candidates";
 import { callPlannerModel, type PlannerModel } from "./gemini";
+import { noMetrics, redisMetrics, type PlannerMetrics } from "./metrics";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
 import {
   DAILY_AI_CAP,
@@ -63,6 +64,8 @@ export interface RecommendationDeps {
   now: () => Date;
   /** Loads the planner's verdicts. A seam so a test need not seed a database. */
   loadOverview: (userId: string, dependentId: string) => Promise<PlannerOverview>;
+  /** Daily counters. Optional: a test that does not care need not pass one. */
+  metrics?: PlannerMetrics;
 }
 
 // ─── Defaults: Redis, failing open like every other Redis feature here ────────
@@ -144,6 +147,7 @@ export function inputHashOf(context: RecommendationContext): string {
 }
 
 export function createRecommendationService(deps: RecommendationDeps) {
+  const metrics = deps.metrics ?? noMetrics;
   /** Drop suggestions that are no longer candidates, so a stale answer cannot name a closed event. */
   const stillValid = (
     result: RecommendationResult,
@@ -196,6 +200,8 @@ export function createRecommendationService(deps: RecommendationDeps) {
       if (!context) {
         throw new AppError("Link a ranking first, so there is a list to plan against.", 409);
       }
+      void metrics.increment("asked");
+      if (options.force) void metrics.increment("forced");
 
       const key = cacheKey(userId, dependentId);
       const inputHash = inputHashOf(context);
@@ -206,6 +212,7 @@ export function createRecommendationService(deps: RecommendationDeps) {
 
       const cached = await deps.store.get(key);
       if (cached && cached.inputHash === inputHash && !options.force) {
+        void metrics.increment("cache_hit");
         return {
           ready: true,
           recommendations: { ...cached.result, stale: false },
@@ -215,6 +222,7 @@ export function createRecommendationService(deps: RecommendationDeps) {
 
       // Nothing to choose from: the rules can say so without a model call.
       if (context.candidates.length === 0) {
+        void metrics.increment("no_candidates");
         const result = await save(baselineRecommend(context, now));
         return {
           ready: true,
@@ -226,6 +234,7 @@ export function createRecommendationService(deps: RecommendationDeps) {
       const used = await deps.counter.increment(userId);
       if (used > DAILY_AI_CAP) {
         await deps.counter.decrement(userId);
+        void metrics.increment("daily_limit");
         // Not cached: tomorrow's allowance should be able to replace it.
         const result = baselineRecommend(context, now, "daily-limit");
         return {
@@ -239,12 +248,20 @@ export function createRecommendationService(deps: RecommendationDeps) {
       let fallback: "ai-unavailable" | "invalid-output" = "ai-unavailable";
       let repairs = "";
       const startedAt = Date.now();
+      void metrics.increment("model_called");
       try {
-        const raw = await deps.model(SYSTEM_PROMPT, buildUserPrompt(context));
+        const raw = await deps.model(SYSTEM_PROMPT, buildUserPrompt(context), {
+          slugs: context.candidates.map((candidate) => candidate.slug),
+        });
         const inspected = inspectModelOutput(raw, context, now);
         result = inspected.result;
         const stats = inspected.stats;
-        repairs = `picks=${stats.picks} dropped=${stats.dropped} demoted=${stats.demoted} reasonsReplaced=${stats.reasonsReplaced} summaryReplaced=${stats.summaryReplaced}`;
+        void metrics.increment("model_picks", stats.picks);
+        void metrics.increment("model_dropped", stats.dropped);
+        void metrics.increment("model_demoted", stats.demoted);
+        void metrics.increment("model_reasons_replaced", stats.reasonsReplaced);
+        void metrics.increment("model_foreign_names", stats.foreignNames);
+        repairs = `picks=${stats.picks} dropped=${stats.dropped} demoted=${stats.demoted} reasonsReplaced=${stats.reasonsReplaced} foreignNames=${stats.foreignNames} summaryReplaced=${stats.summaryReplaced}`;
         if (!result) fallback = "invalid-output";
       } catch (error) {
         log.warn("Planner model call failed", error instanceof Error ? error.message : error);
@@ -257,6 +274,9 @@ export function createRecommendationService(deps: RecommendationDeps) {
       );
 
       if (!result) {
+        void metrics.increment(
+          fallback === "invalid-output" ? "fallback_invalid-output" : "fallback_ai-unavailable"
+        );
         // Our failure, not the parent's: give the answer back.
         await deps.counter.decrement(userId);
         const rules = baselineRecommend(context, now, fallback);
@@ -267,12 +287,28 @@ export function createRecommendationService(deps: RecommendationDeps) {
         };
       }
 
+      void metrics.increment("answered_by_model");
       await save(result);
       return {
         ready: true,
         recommendations: { ...result, stale: false },
         usage: await usageFor(userId),
       };
+    },
+
+    /**
+     * A parent added an event to a plan: was it one we had suggested? Counted, not
+     * recorded, so it says nothing about who. Reads the saved answer whether or not it
+     * is still current: a parent who adds from a slightly stale list still acted on it.
+     */
+    async noteAdded(userId: string, dependentId: string, slug: string): Promise<void> {
+      try {
+        const stored = await deps.store.get(cacheKey(userId, dependentId));
+        const suggested = stored?.result.items.some((item) => item.slug === slug) ?? false;
+        await metrics.increment(suggested ? "added_from_suggestion" : "added_other");
+      } catch {
+        // Counting must never get in the way of adding.
+      }
     },
 
     /**
@@ -298,5 +334,6 @@ export const RecommendationService = createRecommendationService({
   store: redisStore,
   counter: redisCounter(defaultNow),
   now: defaultNow,
+  metrics: redisMetrics(defaultNow),
   loadOverview: (userId, dependentId) => PlannerService.forDependent(userId, dependentId),
 });
