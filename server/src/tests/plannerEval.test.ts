@@ -28,13 +28,13 @@ const calendar = loadCalendar();
 const child = (id: string) => EVAL_CHILDREN.find((profile: { id: string }) => profile.id === id)!;
 
 /** A rules answer for a child, edited into the break being tested. */
-const answerFor = (id: string) => {
-  const context = contextFor(child(id), calendar);
+const answerFor = async (id: string) => {
+  const context = await contextFor(child(id), calendar);
   return { context, result: baselineRecommend(context, nowFor(calendar)) };
 };
 
 describe("the frozen calendar", () => {
-  it("holds the whole upcoming junior calendar, with the fields the rules read", () => {
+  it("holds the whole upcoming junior calendar, with the fields the rules read", async () => {
     assert.ok(calendar.editions.length >= 50);
     assert.match(calendar.frozenOn, /^\d{4}-\d{2}-\d{2}$/);
     for (const edition of calendar.editions) {
@@ -50,9 +50,9 @@ describe("the frozen calendar", () => {
     );
   });
 
-  it("is a calendar the profiles can be judged against: every profile has something to choose from, or a reason it has not", () => {
+  it("is a calendar the profiles can be judged against: every profile has something to choose from, or a reason it has not", async () => {
     for (const profile of EVAL_CHILDREN) {
-      const context = contextFor(profile, calendar);
+      const context = await contextFor(profile, calendar);
       if (profile.id === "u14-none-left") {
         assert.equal(context.allowanceLeft, 0);
       } else {
@@ -63,13 +63,13 @@ describe("the frozen calendar", () => {
 });
 
 describe("the synthetic children", () => {
-  it("have unique ids and a reason each", () => {
+  it("have unique ids and a reason each", async () => {
     const ids = EVAL_CHILDREN.map((profile: { id: string }) => profile.id);
     assert.equal(new Set(ids).size, ids.length);
     for (const profile of EVAL_CHILDREN) assert.ok(profile.why.length > 10, profile.id);
   });
 
-  it("cover every age group, every goal, and the edges the rules turn on", () => {
+  it("cover every age group, every goal, and the edges the rules turn on", async () => {
     const groups = new Set(EVAL_CHILDREN.map((p: { ageGroup: string }) => p.ageGroup));
     const goals = new Set(EVAL_CHILDREN.map((p: { goal: string }) => p.goal));
     assert.deepEqual([...groups].sort(), ["U-12", "U-14", "U-16", "U-18"]);
@@ -87,9 +87,9 @@ describe("the synthetic children", () => {
 });
 
 describe("the rules-only recommender, across every child", () => {
-  it("breaks no rule for any of them", () => {
+  it("breaks no rule for any of them", async () => {
     for (const profile of EVAL_CHILDREN) {
-      const run = runRules(profile, calendar);
+      const run = await runRules(profile, calendar);
       assert.equal(
         run.score.violationTotal,
         0,
@@ -100,30 +100,30 @@ describe("the rules-only recommender, across every child", () => {
 });
 
 describe("catching a rule break", () => {
-  const withItems = (
+  const withItems = async (
     id: string,
     edit: (items: Array<{ slug: string; tier: string; reason: string }>, context: any) => void
   ) => {
-    const { context, result } = answerFor(id);
+    const { context, result } = await answerFor(id);
     const items = result.items.map((item: object) => ({ ...item })) as any[];
     edit(items, context);
     return scoreResult(context, { ...result, items });
   };
 
-  it("an event that was never offered", () => {
-    const score = withItems("u14-mid-points", (items) =>
+  it("an event that was never offered", async () => {
+    const score = await withItems("u14-mid-points", (items) =>
       items.push({ slug: "ghost", tier: "consider", reason: "Invented." })
     );
     assert.equal(score.violations.notOffered, 1);
   });
 
-  it("the same event twice", () => {
-    const score = withItems("u14-mid-points", (items) => items.push({ ...items[0]! }));
+  it("the same event twice", async () => {
+    const score = await withItems("u14-mid-points", (items) => items.push({ ...items[0]! }));
     assert.equal(score.violations.duplicate, 1);
   });
 
-  it("two recommended events on the same days", () => {
-    const score = withItems("u14-mid-points", (items, context) => {
+  it("two recommended events on the same days", async () => {
+    const score = await withItems("u14-mid-points", (items, context) => {
       const first = context.candidates.find((c: { slug: string }) => c.slug === items[0]!.slug);
       const span = (c: { startDate: string; endDate?: string }): [number, number] => [
         Date.parse(c.startDate),
@@ -145,8 +145,8 @@ describe("catching a rule break", () => {
     assert.ok(score.violations.overlap >= 1);
   });
 
-  it("an event inside the parent's blocked dates", () => {
-    const { context, result } = answerFor("u14-exam-month");
+  it("an event inside the parent's blocked dates", async () => {
+    const { context, result } = await answerFor("u14-exam-month");
     const blocked = calendar.editions.find(
       (e: { startDate: string; slug?: string }) =>
         e.startDate.startsWith("2026-11") &&
@@ -179,15 +179,15 @@ describe("catching a rule break", () => {
     assert.ok(score.violations.insideBlocked >= 1);
   });
 
-  it("more recommended events than yearly entries left", () => {
-    const { context, result } = answerFor("u14-3-left");
+  it("more recommended events than yearly entries left", async () => {
+    const { context, result } = await answerFor("u14-3-left");
     const crowded = { ...context, allowanceLeft: 1 };
     const score = scoreResult(crowded, result);
     assert.equal(score.violations.overAllowance, 1);
   });
 
-  it("options offered when no entry is left", () => {
-    const { context, result } = answerFor("u14-none-left");
+  it("options offered when no entry is left", async () => {
+    const { context, result } = await answerFor("u14-none-left");
     const score = scoreResult(context, {
       ...result,
       items: [
@@ -197,15 +197,15 @@ describe("catching a rule break", () => {
     assert.equal(score.violations.suggestedWithNoAllowance, 1);
   });
 
-  it("a reason that promises a place", () => {
-    const score = withItems("u14-mid-points", (items) => {
+  it("a reason that promises a place", async () => {
+    const score = await withItems("u14-mid-points", (items) => {
       items[0]!.reason = "Guaranteed to get in.";
     });
     assert.equal(score.violations.ungroundedReason, 1);
   });
 
-  it("a reason that names another event's city", () => {
-    const score = withItems("u14-mid-points", (items, context) => {
+  it("a reason that names another event's city", async () => {
+    const score = await withItems("u14-mid-points", (items, context) => {
       const own = context.candidates.find((c: { slug: string }) => c.slug === items[0]!.slug);
       const other = context.candidates.find(
         (c: { city?: string }) => c.city && c.city !== own.city
@@ -215,21 +215,84 @@ describe("catching a rule break", () => {
     assert.equal(score.violations.ungroundedReason, 1);
   });
 
-  it("nothing recommended when something fitted", () => {
-    const { context, result } = answerFor("u14-mid-points");
+  it("nothing recommended when something fitted", async () => {
+    const { context, result } = await answerFor("u14-mid-points");
     const score = scoreResult(context, { ...result, items: [] });
     assert.equal(score.violations.emptyWithRoom, 1);
   });
 
-  it("but not when the allowance is genuinely spent", () => {
-    const { context, result } = answerFor("u14-none-left");
+  it("but not when the allowance is genuinely spent", async () => {
+    const { context, result } = await answerFor("u14-none-left");
     assert.equal(scoreResult(context, result).violations.emptyWithRoom, 0);
   });
 });
 
+describe("judging a pick by what past draws showed", () => {
+  it("counts a recommended event whose past draws would not have taken this rank", async () => {
+    const { context, result } = await answerFor("u14-mid-points");
+    const first = result.items.find((item: { tier: string }) => item.tier === "recommended");
+    const candidate = context.candidates.find((c: { slug: string }) => c.slug === first.slug);
+    const doubtful = {
+      ...context,
+      candidates: context.candidates.map((c: { slug: string }) =>
+        c.slug === candidate.slug ? { ...c, reach: "qualifying" } : c
+      ),
+    };
+    assert.equal(scoreResult(doubtful, result).violations.recommendedUnrealistic, 1);
+  });
+
+  it("counts a recommended level cut by ranking that has no history at all", async () => {
+    const { context, result } = await answerFor("u14-mid-points");
+    const first = result.items.find((item: { tier: string }) => item.tier === "recommended");
+    const blind = {
+      ...context,
+      candidates: context.candidates.map((c: { slug: string }) =>
+        c.slug === first.slug ? { ...c, ladder: "Super Series", reach: undefined } : c
+      ),
+    };
+    assert.equal(scoreResult(blind, result).violations.recommendedUnrealistic, 1);
+  });
+
+  it("does not count an option or a stretch, which are not picks", async () => {
+    const { context, result } = await answerFor("u14-mid-points");
+    const asOptions = {
+      ...result,
+      items: result.items.map((item: object) => ({ ...item, tier: "consider" })),
+    };
+    const doubtful = {
+      ...context,
+      candidates: context.candidates.map((c: object) => ({ ...c, reach: "qualifying" })),
+    };
+    assert.equal(scoreResult(doubtful, asOptions).violations.recommendedUnrealistic, 0);
+  });
+
+  it("measures how much of what was recommended the evidence backs", async () => {
+    const { context, result } = await answerFor("u14-mid-points");
+    const score = scoreResult(context, result);
+    assert.ok(score.diagnostics.evidencedShare >= 0 && score.diagnostics.evidencedShare <= 1);
+  });
+
+  it("scores an earlier answer by today's evidence, so before and after can be compared", async () => {
+    const { rescoreRun } = require("../evals/plannerRecommendations/harness");
+    const earlier = await runRules(child("u14-mid-points"), calendar);
+    // A pick of the kind the first recommender made: the highest level, whatever the evidence.
+    const result = {
+      ...earlier.result,
+      items: [
+        { slug: "does-not-matter", tier: "recommended", reason: "x" },
+        ...earlier.result.items,
+      ],
+    };
+    const again = await rescoreRun({ ...earlier, result }, EVAL_CHILDREN, calendar);
+    assert.equal(again.childId, "u14-mid-points");
+    assert.ok(again.score.violations.notOffered >= 1);
+    assert.equal(await rescoreRun({ ...earlier, childId: "gone" }, EVAL_CHILDREN, calendar), null);
+  });
+});
+
 describe("describing an answer", () => {
-  it("counts the events above Championship Series as out of reach", () => {
-    const { context, result } = answerFor("u16-mid");
+  it("counts the events above Championship Series as out of reach", async () => {
+    const { context, result } = await answerFor("u16-mid");
     const score = scoreResult(context, result);
     const recommended = result.items.filter(
       (item: { tier: string }) => item.tier === "recommended"
@@ -242,8 +305,8 @@ describe("describing an answer", () => {
     assert.equal(score.diagnostics.recommended, recommended.length);
   });
 
-  it("sees a repeated template as low variety", () => {
-    const { context } = answerFor("u14-mid-points");
+  it("sees a repeated template as low variety", async () => {
+    const { context } = await answerFor("u14-mid-points");
     const slugs = context.candidates.slice(0, 3).map((c: { slug: string }) => c.slug);
     const same = slugs.map((slug: string) => ({
       slug,
@@ -261,9 +324,9 @@ describe("describing an answer", () => {
     assert.equal(score.diagnostics.reasonVariety, 1 / 3);
   });
 
-  it("measures how far apart the model's repeat answers are", () => {
+  it("measures how far apart the model's repeat answers are", async () => {
     const profile = child("u14-mid-points");
-    const first = runRules(profile, calendar);
+    const first = await runRules(profile, calendar);
     const second = { ...first, result: { ...first.result, items: first.result.items.slice(0, 2) } };
     const model = [first, second].map((run) => ({
       ...run,
@@ -279,8 +342,8 @@ describe("running the model path", () => {
   const profile = child("u14-mid-points");
   const usage = { model: "fake", promptTokens: 100, outputTokens: 50 };
 
-  it("tells the model which events it may name, and scores a clean answer", async () => {
-    const context = contextFor(profile, calendar);
+  it("tells the model only the events in the season, and scores a clean answer", async () => {
+    const context = await contextFor(profile, calendar);
     let offered: string[] | undefined;
     const run = await runModel(
       profile,
@@ -302,9 +365,12 @@ describe("running the model path", () => {
     assert.equal(run.source, "ai");
     assert.equal(run.score.violationTotal, 0);
     assert.equal(run.model.usage.promptTokens, 100);
+    // The model is told which events are in the season, which is the code's season.
     assert.deepEqual(
       [...(offered ?? [])].sort(),
-      context.candidates.map((c: { slug: string }) => c.slug).sort()
+      baselineRecommend(context, nowFor(calendar))
+        .items.map((item: { slug: string }) => item.slug)
+        .sort()
     );
   });
 
@@ -330,7 +396,7 @@ describe("running the model path", () => {
 describe("hand labels", () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "labels-")), "labels.csv");
 
-  it("reads Y and N, ignores blanks, and tolerates a missing file", () => {
+  it("reads Y and N, ignores blanks, and tolerates a missing file", async () => {
     fs.writeFileSync(file, "child_id,event_slug,realistic\nkid,a,Y\nkid,b,N\nkid,c,\n,d,Y\n");
     const labels = loadLabels(file);
     assert.equal(labels.get(labelKey("kid", "a")), true);
@@ -339,8 +405,8 @@ describe("hand labels", () => {
     assert.equal(loadLabels(path.join(os.tmpdir(), "does-not-exist.csv")).size, 0);
   });
 
-  it("turns labels into a realism figure for what was recommended", () => {
-    const run = runRules(child("u14-mid-points"), calendar);
+  it("turns labels into a realism figure for what was recommended", async () => {
+    const run = await runRules(child("u14-mid-points"), calendar);
     const labels = new Map();
     const recommended = run.result.items.filter(
       (item: { tier: string }) => item.tier === "recommended"
@@ -354,8 +420,10 @@ describe("hand labels", () => {
 });
 
 describe("the report", () => {
-  it("separates rule breaks from description, and says when realism is unmeasured", () => {
-    const runs = EVAL_CHILDREN.map((profile: object) => runRules(profile, calendar));
+  it("separates rule breaks from description, and says when realism is unmeasured", async () => {
+    const runs = await Promise.all(
+      EVAL_CHILDREN.map((profile: object) => runRules(profile, calendar))
+    );
     const text = renderMarkdown({
       label: "test",
       frozenOn: calendar.frozenOn,

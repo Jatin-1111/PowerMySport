@@ -20,6 +20,8 @@ export interface EvalChild {
   why: string;
   /** "U-12" to "U-18". */
   ageGroup: "U-12" | "U-14" | "U-16" | "U-18";
+  /** The list they are on. Acceptance history is kept per gender. Defaults to Boys. */
+  gender?: "Boys" | "Girls";
   /** Null is a child who has played up but has no rank in their own list yet. */
   rank: number | null;
   /** Their registered state, or null where the list does not record one. */
@@ -163,6 +165,24 @@ export const EVAL_CHILDREN: EvalChild[] = [
     goal: "points",
   },
   {
+    id: "g14-mid",
+    why: "A girl in the middle of the U-14 list: the girls' draws are often not full",
+    ageGroup: "U-14",
+    gender: "Girls",
+    rank: 260,
+    state: "Karnataka",
+    goal: "points",
+  },
+  {
+    id: "g16-low",
+    why: "A girl deep in the U-16 list",
+    ageGroup: "U-16",
+    gender: "Girls",
+    rank: 900,
+    state: "West Bengal",
+    goal: "experience",
+  },
+  {
     id: "u16-mid",
     why: "Ordinary U-16 in the south",
     ageGroup: "U-16",
@@ -177,6 +197,14 @@ export const EVAL_CHILDREN: EvalChild[] = [
     rank: 500,
     state: "Assam",
     goal: "home",
+  },
+  {
+    id: "u14-rank-1500",
+    why: "Near the bottom of the biggest list: the rank where even a Championship Series may close",
+    ageGroup: "U-14",
+    rank: 1500,
+    state: "Haryana",
+    goal: "points",
   },
   {
     id: "u18-mid",

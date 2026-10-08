@@ -3,8 +3,8 @@ import redis from "../../../config/redis";
 import { AppError } from "../../../utils/AppError";
 import { log as __rootLog } from "../../../utils/logger";
 import { PlannerService, type PlannerOverview } from "../PlannerService";
-import { baselineRecommend } from "./baseline";
-import { buildContext } from "./candidates";
+import { buildSeason } from "./builder";
+import { buildContext, withCosts } from "./candidates";
 import { callPlannerModel, type PlannerModel } from "./gemini";
 import { noMetrics, redisMetrics, type PlannerMetrics } from "./metrics";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
@@ -15,7 +15,7 @@ import {
   type RecommendationUsage,
   type RecommendationView,
 } from "./types";
-import { inspectModelOutput } from "./validate";
+import { hasWordableItems, inspectModelOutput } from "./validate";
 const log = __rootLog.child("plannerRecommendations");
 
 /**
@@ -66,6 +66,16 @@ export interface RecommendationDeps {
   loadOverview: (userId: string, dependentId: string) => Promise<PlannerOverview>;
   /** Daily counters. Optional: a test that does not care need not pass one. */
   metrics?: PlannerMetrics;
+  /**
+   * Estimated travel and stay for events, by slug, in rupees. Used only to keep a season
+   * inside the parent's budget and to rank by cost for the home goal, and only asked for
+   * when one of those applies. Optional: without it the season is chosen without costs.
+   */
+  loadCosts?: (
+    userId: string,
+    dependentId: string,
+    slugs: string[]
+  ) => Promise<Record<string, { low: number; high: number }>>;
 }
 
 // ─── Defaults: Redis, failing open like every other Redis feature here ────────
@@ -139,8 +149,16 @@ export function inputHashOf(context: RecommendationContext): string {
     rank: context.child.rank,
     list: context.child.list,
     allowanceLeft: context.allowanceLeft,
+    budget: context.budget,
     blockedRanges: context.blockedRanges,
-    candidates: context.candidates.map((c) => [c.slug, c.startDate, c.deadline, c.inHomeState]),
+    candidates: context.candidates.map((c) => [
+      c.slug,
+      c.startDate,
+      c.deadline,
+      c.inHomeState,
+      c.reach ?? null,
+    ]),
+    older: context.olderCandidates.map((c) => c.slug),
     committed: context.committed.map((c) => [c.slug, c.startDate]),
   };
   return createHash("sha1").update(JSON.stringify(fingerprint)).digest("hex");
@@ -148,13 +166,43 @@ export function inputHashOf(context: RecommendationContext): string {
 
 export function createRecommendationService(deps: RecommendationDeps) {
   const metrics = deps.metrics ?? noMetrics;
+  /** Count and move on: a counter that fails must not fail, or even slow, a request. */
+  const count = (name: Parameters<PlannerMetrics["increment"]>[0], by?: number): void => {
+    Promise.resolve()
+      .then(() => metrics.increment(name, by))
+      .catch(() => undefined);
+  };
   /** Drop suggestions that are no longer candidates, so a stale answer cannot name a closed event. */
   const stillValid = (
     result: RecommendationResult,
     context: RecommendationContext
   ): RecommendationResult => {
-    const live = new Set(context.candidates.map((candidate) => candidate.slug));
+    const live = new Set(
+      [...context.candidates, ...context.olderCandidates].map((candidate) => candidate.slug)
+    );
     return { ...result, items: result.items.filter((item) => live.has(item.slug)) };
+  };
+
+  /**
+   * The context with estimated travel and stay filled in, but only when something will use
+   * them: a budget to keep within, or "close to home" to rank by. Asking costs a model call
+   * on a route nobody has priced, so it is not done for a parent who has set neither. A
+   * failure leaves the season chosen without costs, which the notes say.
+   */
+  const priced = async (
+    userId: string,
+    dependentId: string,
+    context: RecommendationContext
+  ): Promise<RecommendationContext> => {
+    if (!deps.loadCosts) return context;
+    if (context.budget === null && context.effectiveGoal !== "home") return context;
+    const slugs = [...context.candidates, ...context.committed].map((event) => event.slug);
+    try {
+      return withCosts(context, await deps.loadCosts(userId, dependentId, slugs));
+    } catch (error) {
+      log.warn("Could not price the season", error instanceof Error ? error.message : error);
+      return context;
+    }
   };
 
   const usageFor = async (userId: string): Promise<RecommendationUsage> => ({
@@ -200,8 +248,8 @@ export function createRecommendationService(deps: RecommendationDeps) {
       if (!context) {
         throw new AppError("Link a ranking first, so there is a list to plan against.", 409);
       }
-      void metrics.increment("asked");
-      if (options.force) void metrics.increment("forced");
+      count("asked");
+      if (options.force) count("forced");
 
       const key = cacheKey(userId, dependentId);
       const inputHash = inputHashOf(context);
@@ -211,19 +259,35 @@ export function createRecommendationService(deps: RecommendationDeps) {
       };
 
       const cached = await deps.store.get(key);
-      if (cached && cached.inputHash === inputHash && !options.force) {
-        void metrics.increment("cache_hit");
+      if (cached && cached.inputHash === inputHash) {
+        if (!options.force) {
+          count("cache_hit");
+        } else {
+          // Asked again with nothing changed. The season is chosen by code, so a fresh
+          // answer would be the same events in different words: not worth an allowance.
+          count("unchanged");
+        }
         return {
           ready: true,
-          recommendations: { ...cached.result, stale: false },
+          recommendations: {
+            ...cached.result,
+            stale: false,
+            ...(options.force ? { unchanged: true } : {}),
+          },
           usage: await usageFor(userId),
         };
       }
 
-      // Nothing to choose from: the rules can say so without a model call.
-      if (context.candidates.length === 0) {
-        void metrics.increment("no_candidates");
-        const result = await save(baselineRecommend(context, now));
+      // The season is built from the context with costs, if any are wanted. The cache key
+      // is not: a re-estimate must not make a saved answer look stale.
+      const costed = await priced(userId, dependentId, context);
+      const season = buildSeason(costed, now);
+
+      // Nothing to choose from, or nothing for a model to say: the code can answer
+      // without a model call, and without spending an allowance.
+      if (!hasWordableItems(season.items, costed)) {
+        count("no_candidates");
+        const result = await save(season);
         return {
           ready: true,
           recommendations: { ...result, stale: false },
@@ -234,9 +298,9 @@ export function createRecommendationService(deps: RecommendationDeps) {
       const used = await deps.counter.increment(userId);
       if (used > DAILY_AI_CAP) {
         await deps.counter.decrement(userId);
-        void metrics.increment("daily_limit");
+        count("daily_limit");
         // Not cached: tomorrow's allowance should be able to replace it.
-        const result = baselineRecommend(context, now, "daily-limit");
+        const result = buildSeason(costed, now, "daily-limit");
         return {
           ready: true,
           recommendations: { ...result, stale: false },
@@ -248,20 +312,20 @@ export function createRecommendationService(deps: RecommendationDeps) {
       let fallback: "ai-unavailable" | "invalid-output" = "ai-unavailable";
       let repairs = "";
       const startedAt = Date.now();
-      void metrics.increment("model_called");
+      count("model_called");
       try {
-        const raw = await deps.model(SYSTEM_PROMPT, buildUserPrompt(context), {
-          slugs: context.candidates.map((candidate) => candidate.slug),
+        const raw = await deps.model(SYSTEM_PROMPT, buildUserPrompt(costed, now), {
+          slugs: season.items.map((item) => item.slug),
         });
-        const inspected = inspectModelOutput(raw, context, now);
+        const inspected = inspectModelOutput(raw, costed, now);
         result = inspected.result;
         const stats = inspected.stats;
-        void metrics.increment("model_picks", stats.picks);
-        void metrics.increment("model_dropped", stats.dropped);
-        void metrics.increment("model_demoted", stats.demoted);
-        void metrics.increment("model_reasons_replaced", stats.reasonsReplaced);
-        void metrics.increment("model_foreign_names", stats.foreignNames);
-        repairs = `picks=${stats.picks} dropped=${stats.dropped} demoted=${stats.demoted} reasonsReplaced=${stats.reasonsReplaced} foreignNames=${stats.foreignNames} summaryReplaced=${stats.summaryReplaced}`;
+        count("model_picks", stats.picks);
+        count("model_dropped", stats.dropped);
+        count("model_reasons_missing", stats.reasonsMissing);
+        count("model_reasons_replaced", stats.reasonsReplaced);
+        count("model_foreign_names", stats.foreignNames);
+        repairs = `picks=${stats.picks} dropped=${stats.dropped} reasonsMissing=${stats.reasonsMissing} reasonsReplaced=${stats.reasonsReplaced} foreignNames=${stats.foreignNames} summaryReplaced=${stats.summaryReplaced}`;
         if (!result) fallback = "invalid-output";
       } catch (error) {
         log.warn("Planner model call failed", error instanceof Error ? error.message : error);
@@ -274,12 +338,12 @@ export function createRecommendationService(deps: RecommendationDeps) {
       );
 
       if (!result) {
-        void metrics.increment(
+        count(
           fallback === "invalid-output" ? "fallback_invalid-output" : "fallback_ai-unavailable"
         );
         // Our failure, not the parent's: give the answer back.
         await deps.counter.decrement(userId);
-        const rules = baselineRecommend(context, now, fallback);
+        const rules = buildSeason(costed, now, fallback);
         return {
           ready: true,
           recommendations: { ...rules, stale: false },
@@ -287,7 +351,7 @@ export function createRecommendationService(deps: RecommendationDeps) {
         };
       }
 
-      void metrics.increment("answered_by_model");
+      count("answered_by_model");
       await save(result);
       return {
         ready: true,
@@ -308,6 +372,15 @@ export function createRecommendationService(deps: RecommendationDeps) {
         await metrics.increment(suggested ? "added_from_suggestion" : "added_other");
       } catch {
         // Counting must never get in the way of adding.
+      }
+    },
+
+    /** The parent marked a suggested event "not for us". Counted, not recorded. */
+    async noteDismissed(): Promise<void> {
+      try {
+        await metrics.increment("dismissed");
+      } catch {
+        // Counting must never get in the way of the dismissal.
       }
     },
 
@@ -336,4 +409,15 @@ export const RecommendationService = createRecommendationService({
   now: defaultNow,
   metrics: redisMetrics(defaultNow),
   loadOverview: (userId, dependentId) => PlannerService.forDependent(userId, dependentId),
+  loadCosts: async (userId, dependentId, slugs) => {
+    // Imported here: the cost service shares this file's daily counter, so importing it
+    // at the top would make the two files import each other.
+    const { CostService } = await import("../plannerCosts/CostService");
+    const { events } = await CostService.estimate(userId, dependentId, slugs.slice(0, 40));
+    return Object.fromEntries(
+      Object.entries(events).flatMap(([slug, view]) =>
+        view.total ? [[slug, { low: view.total.low, high: view.total.high }]] : []
+      )
+    );
+  },
 });

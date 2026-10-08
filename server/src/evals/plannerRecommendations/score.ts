@@ -1,5 +1,6 @@
 import { MIN_REST_DAYS, dayNumber } from "@powermysport/shared-types";
 import { AITA_LADDER_ORDER } from "../../shared/services/aita/editionSeries";
+import { realismOf } from "../../client/services/plannerRecommendations/builder";
 import { reasonIsGrounded } from "../../client/services/plannerRecommendations/validate";
 import {
   MAX_CONSIDER,
@@ -49,6 +50,12 @@ export interface Violations {
   tooManyConsider: number;
   /** Events offered as options although no yearly entry is left to enter them with. */
   suggestedWithNoAllowance: number;
+  /**
+   * A recommended event that past draws, or the lack of them, do not support: the rank
+   * would mostly have meant the qualifying, was outside both, or the level is cut by
+   * ranking and there is no history to say. Such an event may be an option, never a pick.
+   */
+  recommendedUnrealistic: number;
   /** A reason that fails the same checks every reason must pass. */
   ungroundedReason: number;
   /** Nothing recommended although there was room and something to choose from. */
@@ -61,6 +68,10 @@ export interface Diagnostics {
   /** Recommended events above Championship Series: draws cut by ranking. */
   reachCount: number;
   reachShare: number;
+  /** Share of recommended events that past draws say this rank would have got into. */
+  evidencedShare: number;
+  /** Events shown apart as a stretch, because past draws closed above this rank. */
+  stretchCount: number;
   distinctStates: number;
   distinctRungs: number;
   monthsSpanned: number;
@@ -143,6 +154,7 @@ export function scoreResult(context: RecommendationContext, result: Recommendati
     tooManyRecommended: 0,
     tooManyConsider: 0,
     suggestedWithNoAllowance: 0,
+    recommendedUnrealistic: 0,
     ungroundedReason: 0,
     emptyWithRoom: 0,
   };
@@ -163,6 +175,9 @@ export function scoreResult(context: RecommendationContext, result: Recommendati
     }
     seen.add(item.slug);
     (item.tier === "recommended" ? recommended : consider).push(candidate);
+    if (item.tier === "recommended" && realismOf(candidate) !== "realistic") {
+      violations.recommendedUnrealistic += 1;
+    }
 
     if (!reasonIsGrounded(item.reason, candidate, context)) violations.ungroundedReason += 1;
 
@@ -230,6 +245,10 @@ export function scoreResult(context: RecommendationContext, result: Recommendati
     consider: consider.length,
     reachCount,
     reachShare: recommended.length ? reachCount / recommended.length : 0,
+    evidencedShare: recommended.length
+      ? recommended.filter((candidate) => candidate.reach === "likely").length / recommended.length
+      : 0,
+    stretchCount: result.items.filter((item) => item.tier === "reach").length,
     distinctStates: new Set(recommended.map((c) => c.state).filter(Boolean)).size,
     distinctRungs: new Set(recommended.map((c) => c.ladder).filter(Boolean)).size,
     monthsSpanned: new Set(recommended.map((c) => new Date(c.startDate).toISOString().slice(0, 7)))

@@ -1,33 +1,27 @@
 import { JUNIOR_LADDER, clearDaysBetween, dayNumber } from "@powermysport/shared-types";
 import { z } from "zod";
 import { INDIAN_STATE_NAMES } from "../../../constants/indianStates";
-import { conflictBetween, notesFor, reasonFor, summaryFor } from "./baseline";
-import {
-  MAX_CONSIDER,
-  MAX_RECOMMENDED,
-  type Candidate,
-  type RecommendationContext,
-  type RecommendationItem,
-  type RecommendationResult,
-} from "./types";
+import { buildSeason, realismOf, summaryFor } from "./builder";
+import { type Candidate, type RecommendationContext, type RecommendationResult } from "./types";
 
 /**
  * Everything the model returns is checked here before a parent sees any of it.
  *
- * The prompt asks the model to behave; this file makes it so. A model that
- * invents an event, double-books a weekend or promises a place gets the invented
- * part dropped and the rest kept, and a response that cannot be used at all falls
- * back to the rule-based answer. Nothing the model writes reaches the page
- * unchecked.
+ * ── What the model is for now ───────────────────────────────────────────────
+ * Code builds the season (`builder.ts`): which events, in which tier. The model is shown
+ * that season and writes a sentence for each event and a line on its shape. So there is
+ * nothing here to repair about WHICH events: a pick the season does not contain is
+ * ignored, and a sentence for a pick the model left out is the code's own. What can still
+ * go wrong is the wording, and that is what is checked.
  *
  * ── What can and cannot be checked ──────────────────────────────────────────
- * Which events were chosen, and whether they fit together, is checked exactly.
- * The free-text reasons cannot be: no code can prove a sentence true. So the
- * reasons are held to two cheap tests that catch the failures that matter, a
- * number that appears nowhere in the data (a made-up rank, date or count) and
- * language that promises or prices something the planner has no basis for. A
- * reason that fails is replaced by the deterministic one, so the pick survives
- * and only the unverified sentence is lost.
+ * No code can prove a free-text sentence true. So each is held to cheap tests that catch
+ * the failures that matter: a number that appears nowhere in the data (a made-up rank,
+ * date or count), a place or level that belongs to a different event, and language that
+ * promises or prices something the planner has no basis for. A sentence that fails is
+ * replaced by the code's own, so the event survives and only the unverified words are
+ * lost. The sentences for stretch events and for qualifying-only options are never the
+ * model's: they say what past draws showed, and are not softened.
  */
 
 const outputSchema = z.object({
@@ -36,11 +30,10 @@ const outputSchema = z.object({
     .array(
       z.object({
         slug: z.string().min(1),
-        tier: z.enum(["recommended", "consider"]),
         reason: z.string().max(300),
       })
     )
-    .max(20),
+    .max(30),
 });
 
 /**
@@ -138,6 +131,9 @@ function allowedNumbers(candidate: Candidate, context: RecommendationContext): S
     ...(context.allowanceLeft === null ? [] : [context.allowanceLeft]),
     context.committed.length,
     ...numbersIn(candidate.name),
+    // What past events showed, in the words that report it.
+    ...numbersIn(candidate.reachText ?? ""),
+    ...(candidate.daysToDeadline === null ? [] : [candidate.daysToDeadline]),
   ]);
 
   const others = [
@@ -243,29 +239,22 @@ export const reasonIsGrounded = (
   isGrounded(tidy(text), allowedNumbers(candidate, context)) &&
   foreignName(tidy(text), namesAllowedFor(candidate, context), namedUniverse(context)) === null;
 
-const byStart = (a: Candidate, b: Candidate): number =>
-  new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-
-/**
- * The model's answer, made safe. Null when nothing usable is left, which the
- * caller treats as "use the rules".
- */
 /**
  * What validation had to change, counted. Quality drift in the model shows up here
- * first: a model that starts inventing events, or writing reasons that fail the
- * checks, is visible as these numbers rising long before a parent notices.
+ * first: a model that starts writing sentences that fail the checks is visible as these
+ * numbers rising long before a parent notices.
  */
 export interface ValidationStats {
-  /** Picks the model returned, before any were dropped. */
+  /** Sentences the model returned, before any were ignored. */
   picks: number;
-  /** Picks naming an event that was never offered, or naming one twice. */
+  /** Sentences for an event not in the season, or for the same event twice. */
   dropped: number;
-  /** Recommended picks moved to "consider" (a clash, or over the allowance). */
-  demoted: number;
-  /** Reasons that failed the checks and were replaced by the rule-based one. */
+  /** Sentences that failed the checks and were replaced by the code's own. */
   reasonsReplaced: number;
   /** Of those, how many named a place or level that belongs to a different event. */
   foreignNames: number;
+  /** Events in the season the model wrote nothing for. */
+  reasonsMissing: number;
   summaryReplaced: boolean;
   /** True when the answer was not the agreed shape at all. */
   malformed: boolean;
@@ -279,6 +268,34 @@ export function validateModelOutput(
   return inspectModelOutput(raw, context, now).result;
 }
 
+/** Sentences that report what past draws showed are never the model's. */
+const keepsOwnWords = (candidate: Candidate, tier: string): boolean =>
+  tier === "reach" ||
+  candidate.older === true ||
+  candidate.reach === "qualifying" ||
+  realismOf(candidate) === "uncertain";
+
+/**
+ * Whether the season has any sentence for the model to write. A season made only of stretch
+ * events and qualifying-only options is worded entirely by code, and asking the model
+ * would spend an allowance for nothing.
+ */
+export function hasWordableItems(
+  items: Array<{ slug: string; tier: string }>,
+  context: RecommendationContext
+): boolean {
+  const known = new Map(
+    [...context.candidates, ...context.olderCandidates].map((candidate) => [
+      candidate.slug,
+      candidate,
+    ])
+  );
+  return items.some((item) => {
+    const candidate = known.get(item.slug);
+    return candidate !== undefined && !keepsOwnWords(candidate, item.tier);
+  });
+}
+
 /** As {@link validateModelOutput}, with a count of what it had to repair. */
 export function inspectModelOutput(
   raw: unknown,
@@ -288,9 +305,9 @@ export function inspectModelOutput(
   const stats: ValidationStats = {
     picks: 0,
     dropped: 0,
-    demoted: 0,
     reasonsReplaced: 0,
     foreignNames: 0,
+    reasonsMissing: 0,
     summaryReplaced: false,
     malformed: false,
   };
@@ -298,71 +315,56 @@ export function inspectModelOutput(
   if (!parsed.success) return { result: null, stats: { ...stats, malformed: true } };
   stats.picks = parsed.data.picks.length;
 
-  const bySlug = new Map(context.candidates.map((candidate) => [candidate.slug, candidate]));
+  // The season, as code builds it. The model words this and changes none of it.
+  const season = buildSeason(context, now);
+  const known = new Map(
+    [...context.candidates, ...context.olderCandidates].map((candidate) => [
+      candidate.slug,
+      candidate,
+    ])
+  );
+  const inSeason = new Set(season.items.map((item) => item.slug));
   const universe = namedUniverse(context);
-  const room = Math.min(MAX_RECOMMENDED, context.allowanceLeft ?? MAX_RECOMMENDED);
 
-  const recommended: Array<{ candidate: Candidate; reason: string }> = [];
-  const consider: Array<{ candidate: Candidate; reason: string }> = [];
-  const seen = new Set<string>();
-
+  const said = new Map<string, string>();
   for (const pick of parsed.data.picks) {
-    const candidate = bySlug.get(pick.slug);
-    // An event the rules did not allow, or one made up: gone.
-    if (!candidate || seen.has(candidate.slug)) {
-      stats.dropped += 1;
-      continue;
-    }
-    seen.add(candidate.slug);
-
-    const cleaned = tidy(pick.reason);
-    const numbersOk = isGrounded(cleaned, allowedNumbers(candidate, context));
-    const foreign = foreignName(cleaned, namesAllowedFor(candidate, context), universe);
-    const grounded = numbersOk && foreign === null;
-    if (!grounded) stats.reasonsReplaced += 1;
-    if (numbersOk && foreign !== null) stats.foreignNames += 1;
-    const reason = grounded ? cleaned : reasonFor(candidate, context.effectiveGoal, context);
-
-    const onTopOfPlan = context.committed.some(
-      (other) => conflictBetween(candidate, other) === "overlap"
-    );
-    const fits =
-      !context.committed.some((other) => conflictBetween(candidate, other)) &&
-      !recommended.some((other) => conflictBetween(candidate, other.candidate));
-
-    if (pick.tier === "recommended" && recommended.length < room && fits) {
-      recommended.push({ candidate, reason });
-    } else if (room > 0 && !onTopOfPlan && consider.length < MAX_CONSIDER) {
-      // Over the allowance, or too close to something chosen: still an option,
-      // just not one to book alongside the rest.
-      if (pick.tier === "recommended") stats.demoted += 1;
-      consider.push({ candidate, reason });
-    } else {
-      stats.dropped += 1;
-    }
+    if (!inSeason.has(pick.slug) || said.has(pick.slug)) stats.dropped += 1;
+    else said.set(pick.slug, pick.reason);
   }
 
-  // A season with nothing recommended is not an answer, unless the allowance is
-  // genuinely spent.
-  if (recommended.length === 0 && room > 0) return { result: null, stats };
+  let used = 0;
+  const items = season.items.map((item) => {
+    const candidate = known.get(item.slug)!;
+    if (keepsOwnWords(candidate, item.tier)) return item;
+    const sentence = said.get(item.slug);
+    if (sentence === undefined) {
+      stats.reasonsMissing += 1;
+      return item;
+    }
+    const cleaned = tidy(sentence);
+    const numbersOk = isGrounded(cleaned, allowedNumbers(candidate, context));
+    const foreign = foreignName(cleaned, namesAllowedFor(candidate, context), universe);
+    if (numbersOk && foreign === null) {
+      used += 1;
+      return { ...item, reason: cleaned };
+    }
+    stats.reasonsReplaced += 1;
+    if (numbersOk) stats.foreignNames += 1;
+    return item;
+  });
 
-  const items: RecommendationItem[] = [
-    ...recommended.sort((a, b) => byStart(a.candidate, b.candidate)),
-    ...consider.sort((a, b) => byStart(a.candidate, b.candidate)),
-  ].map((entry, index) => ({
-    slug: entry.candidate.slug,
-    tier: index < recommended.length ? ("recommended" as const) : ("consider" as const),
-    reason: entry.reason,
-  }));
+  // An answer in which the model said nothing usable is not the model's answer.
+  const wordable = items.filter((item) => !keepsOwnWords(known.get(item.slug)!, item.tier));
+  if (wordable.length > 0 && used === 0) return { result: null, stats };
 
+  const count = (tier: string) => items.filter((item) => item.tier === tier).length;
   const everything = new Set<number>([
     ...context.candidates.flatMap((candidate) => [...allowedNumbers(candidate, context)]),
-    recommended.length,
-    consider.length,
+    count("recommended"),
+    count("consider"),
+    count("reach"),
   ]);
   const summary = tidy(parsed.data.summary);
-  // A summary speaks about the whole season, so it may name any place on offer, but not
-  // one that is nowhere in the data.
   const everyName = [
     ...context.candidates.flatMap((candidate) => namesAllowedFor(candidate, context)),
     ...LEVEL_NAMES,
@@ -372,12 +374,12 @@ export function inspectModelOutput(
 
   return {
     result: {
+      ...season,
       source: "ai",
-      generatedAt: now.toISOString(),
-      goal: context.goal,
-      summary: stats.summaryReplaced ? summaryFor(context, recommended.length) : summary,
+      summary: stats.summaryReplaced
+        ? summaryFor(context, { recommended: count("recommended"), reach: count("reach") })
+        : summary,
       items,
-      notes: notesFor(context),
     },
     stats,
   };

@@ -11,6 +11,8 @@
  *   --only <child-id>     Run one profile.
  *   --out <dir>           Where reports go (default docs/planner-eval in the repo root).
  *   --review-sheet        Also write review-sheet.csv, for hand labelling realism.
+ *   --rescore <file>      Judge the answers in an earlier report (its .json) by today's rules
+ *                         and evidence, instead of running anything. For before/after.
  *
  * Without --model nothing leaves this machine: no database, no network. With --model the
  * only thing sent is the synthetic profiles and the public calendar, never anyone's data.
@@ -21,7 +23,7 @@ import fs = require("fs");
 import path = require("path");
 import { callPlannerModelDetailed } from "../../client/services/plannerRecommendations/gemini";
 import { EVAL_CHILDREN } from "./children";
-import { loadCalendar, runModel, runRules, type RunRecord } from "./harness";
+import { loadCalendar, rescoreRun, runModel, runRules, type RunRecord } from "./harness";
 import { loadLabels } from "./labels";
 import { renderMarkdown, summarize } from "./report";
 
@@ -55,10 +57,27 @@ async function main(): Promise<void> {
   if (children.length === 0) throw new Error(`No profile called ${only}`);
   const labels = loadLabels();
 
-  const rules: RunRecord[] = children.map((child) => runRules(child, calendar));
+  let rules: RunRecord[] = [];
   const model: RunRecord[] = [];
+  const rescoreFile = value("--rescore");
 
-  if (withModel) {
+  if (rescoreFile) {
+    const earlier = JSON.parse(fs.readFileSync(path.resolve(rescoreFile), "utf8")) as {
+      runs: RunRecord[];
+    };
+    for (const run of earlier.runs) {
+      const again = await rescoreRun(run, children, calendar);
+      if (!again) continue;
+      (again.system === "model" ? model : rules).push(again);
+    }
+    console.log(
+      `Rescored ${rules.length} rules answers and ${model.length} model answers from ${rescoreFile}.`
+    );
+  } else {
+    rules = await Promise.all(children.map((child) => runRules(child, calendar)));
+  }
+
+  if (withModel && !rescoreFile) {
     console.log(
       `Running the model: ${children.length} children x ${runsPerChild} runs, ${delay} ms apart.`
     );
@@ -81,7 +100,7 @@ async function main(): Promise<void> {
 
   const summaries = [
     summarize("rules", rules, labels),
-    ...(withModel ? [summarize("model", model, labels)] : []),
+    ...(model.length > 0 ? [summarize("model", model, labels)] : []),
   ];
   const notes = [
     `Run: ${new Date().toISOString()}`,

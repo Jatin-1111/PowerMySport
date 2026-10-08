@@ -2,12 +2,16 @@ import {
   annualEntryCap,
   buildShortlist,
   placeInAgeGroup,
+  type ReachVerdict,
   type PlannerEdition,
   type PlannerOfficialDetails,
   type Shortlist,
 } from "@powermysport/shared-types";
 import { TournamentEdition } from "../../shared/models/TournamentEdition";
 import { Player } from "../models/Player";
+import { samplesFor } from "../../shared/services/aita/acceptanceStore";
+import { expectedEvents, type ExpectedEvent } from "./plannerExpected";
+import { genderOf, reachFor } from "./plannerReach";
 import { RankingClaimService } from "./RankingClaimService";
 import { SeasonPlanService } from "./SeasonPlanService";
 
@@ -64,6 +68,17 @@ export interface PlannerOverview {
   annualEntryCap: number | null;
   /** Null until there is a standing to judge against. */
   shortlist: Shortlist | null;
+  /**
+   * Whether each open event in the child's own age group would have taken their rank,
+   * judged by who got in before, keyed by event slug. Empty when there is nothing to
+   * judge by; an event with no entry has no verdict.
+   */
+  reach?: Record<string, ReachVerdict>;
+  /**
+   * Events that ran about a year ago and are not on the published calendar, for the
+   * months it has not reached. Expected, not scheduled: the month, never a day.
+   */
+  expected?: ExpectedEvent[];
   plan: Awaited<ReturnType<typeof SeasonPlanService.get>>;
   /** How many editions were judged, so "nothing open" can be told from "nothing published". */
   editionsConsidered: number;
@@ -185,6 +200,24 @@ const loadUpcoming = async (sportSlug: string): Promise<PlannerEdition[]> => {
   return rows.map(toPlannerEdition);
 };
 
+/** Finished events from about fourteen months back, to say what the next months may hold. */
+const loadPast = async (sportSlug: string): Promise<PlannerEdition[]> => {
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  const from = new Date(startOfToday.getTime() - 430 * 24 * 60 * 60 * 1000);
+  const rows = await TournamentEdition.find({
+    sportSlug,
+    startDate: { $gte: from, $lt: startOfToday },
+    status: { $ne: "cancelled" },
+    mergedInto: { $in: [null, undefined] },
+  })
+    .select(EDITION_FIELDS)
+    .sort({ startDate: 1 })
+    .limit(400)
+    .lean<EditionRow[]>();
+  return rows.map(toPlannerEdition);
+};
+
 export const PlannerService = {
   /**
    * Throws exactly as `SeasonPlanService.get` does when the child is not this
@@ -235,6 +268,28 @@ export const PlannerService = {
     const rank = own?.rank ?? null;
 
     const editions = await loadUpcoming(sportSlug);
+    const shortlist = buildShortlist(editions, { bracket: ageGroup, rank });
+    const gender = genderOf(source.category);
+    const reach = gender
+      ? await reachFor({
+          entries: shortlist.ownGroup,
+          ageGroup,
+          gender,
+          rank,
+          load: (ladder, group, sex) => samplesFor(ladder, group, sex),
+        })
+      : {};
+    // What last year suggests for the months beyond the calendar. A failure leaves it out.
+    const expected = await loadPast(sportSlug)
+      .then((past) =>
+        expectedEvents({
+          past,
+          upcoming: editions,
+          today: new Date().toISOString().slice(0, 10),
+          ageGroup,
+        })
+      )
+      .catch(() => [] as ExpectedEvent[]);
     return {
       ...base,
       linkState: "ready",
@@ -251,7 +306,9 @@ export const PlannerService = {
         asOnDate: source.asOnDate,
       },
       annualEntryCap: annualEntryCap(ageGroup),
-      shortlist: buildShortlist(editions, { bracket: ageGroup, rank }),
+      shortlist,
+      reach,
+      expected,
       editionsConsidered: editions.length,
     };
   },

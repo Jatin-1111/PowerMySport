@@ -80,6 +80,33 @@ export const setSeasonPlanPreferences = asyncHandler(
       goal: req.body?.goal,
       blockedRanges: req.body?.blockedRanges,
       budget: req.body?.budget,
+      includeOlderGroup: req.body?.includeOlderGroup,
+    });
+    res.json({ success: true, data: plan });
+  }
+);
+
+/** POST /api/season-plans/:dependentId/dismissed  { editionSlug }: "not for us" */
+export const dismissSeasonPlanEvent = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = requireUser(req);
+    const plan = await SeasonPlanService.dismiss({
+      userId,
+      dependentId: String(req.params.dependentId ?? ""),
+      editionSlug: req.body?.editionSlug,
+    });
+    void RecommendationService.noteDismissed();
+    res.json({ success: true, data: plan });
+  }
+);
+
+/** DELETE /api/season-plans/:dependentId/dismissed/:editionSlug: undo "not for us" */
+export const restoreSeasonPlanEvent = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const plan = await SeasonPlanService.restore({
+      userId: requireUser(req),
+      dependentId: String(req.params.dependentId ?? ""),
+      editionSlug: req.params.editionSlug,
     });
     res.json({ success: true, data: plan });
   }

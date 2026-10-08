@@ -1,8 +1,10 @@
 import { Router } from "express";
 import {
   addSeasonPlanEntry,
+  dismissSeasonPlanEvent,
   getSeasonPlan,
   removeSeasonPlanEntry,
+  restoreSeasonPlanEvent,
   setSeasonPlanPreferences,
   updateSeasonPlanEntry,
 } from "../controllers/seasonPlanController";
@@ -21,6 +23,13 @@ seasonPlanRouter.delete(
   "/:dependentId/entries/:editionSlug",
   authMiddleware,
   removeSeasonPlanEntry
+);
+
+seasonPlanRouter.post("/:dependentId/dismissed", authMiddleware, dismissSeasonPlanEvent);
+seasonPlanRouter.delete(
+  "/:dependentId/dismissed/:editionSlug",
+  authMiddleware,
+  restoreSeasonPlanEvent
 );
 
 export default seasonPlanRouter;

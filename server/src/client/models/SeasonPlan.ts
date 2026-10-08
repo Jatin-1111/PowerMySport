@@ -88,7 +88,16 @@ export interface SeasonPlanPreferences {
   blockedRanges: BlockedRange[];
   /** What they want the season to stay within, in rupees. Absent means no ceiling. */
   budget?: number;
+  /**
+   * Also offer events in an older age group, as options and never as picks. Playing up
+   * spends the same yearly allowance and is a decision for a parent, so it is off until
+   * they ask for it.
+   */
+  includeOlderGroup?: boolean;
 }
+
+/** Events a parent has said are not for them. A season does not need more than this. */
+export const MAX_DISMISSED = 60;
 
 /** Five ranges is a season's worth of exams and holidays; more is a calendar. */
 export const MAX_BLOCKED_RANGES = 5;
@@ -106,6 +115,12 @@ export interface SeasonPlanDocument extends Document {
    * (with its own index) would cost more than the data it holds.
    */
   preferences?: SeasonPlanPreferences;
+  /**
+   * Slugs of suggested events the parent marked "not for us". They are left out of every
+   * later suggestion. Short slugs on the plan, for the same reason as the preferences: no
+   * second collection for something this small.
+   */
+  dismissed?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -155,6 +170,7 @@ const preferencesSchema = new Schema<SeasonPlanPreferences>(
     goal: { type: String, enum: SEASON_GOALS, default: DEFAULT_SEASON_GOAL },
     blockedRanges: { type: [blockedRangeSchema], default: [] },
     budget: { type: Number, min: 0, max: MAX_BUDGET_INR },
+    includeOlderGroup: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -166,6 +182,10 @@ const seasonPlanSchema = new Schema<SeasonPlanDocument>(
     sportSlug: { type: String, required: true, lowercase: true, trim: true, default: "tennis" },
     entries: { type: [seasonPlanEntrySchema], default: [] },
     preferences: { type: preferencesSchema },
+    dismissed: {
+      type: [{ type: String, lowercase: true, trim: true, maxlength: 200 }],
+      default: [],
+    },
   },
   { timestamps: true }
 );

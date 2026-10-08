@@ -74,11 +74,10 @@ export function responseSchemaFor(slugs: string[] | undefined): Schema {
               slugs && slugs.length > 0
                 ? { type: Type.STRING, enum: slugs }
                 : { type: Type.STRING },
-            tier: { type: Type.STRING, enum: ["recommended", "consider"] },
             reason: { type: Type.STRING },
           },
-          required: ["slug", "tier", "reason"],
-          propertyOrdering: ["slug", "tier", "reason"],
+          required: ["slug", "reason"],
+          propertyOrdering: ["slug", "reason"],
         },
       },
     },

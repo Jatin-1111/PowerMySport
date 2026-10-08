@@ -36,9 +36,13 @@ export type MetricName =
   /** What validation repaired, summed over answers. */
   | "model_picks"
   | "model_dropped"
-  | "model_demoted"
+  | "model_reasons_missing"
   | "model_reasons_replaced"
   | "model_foreign_names"
+  /** The parent marked a suggested event "not for us". */
+  | "dismissed"
+  /** "Suggest again" with nothing changed: answered from the saved one, free. */
+  | "unchanged"
   /** A parent added an event to a plan, and whether it was one we had suggested. */
   | "added_from_suggestion"
   | "added_other";

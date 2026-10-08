@@ -27,6 +27,8 @@ export interface SystemSummary {
     consider: number;
     reachShare: number;
     reachCount: number;
+    evidencedShare: number;
+    stretchCount: number;
     distinctStates: number;
     distinctRungs: number;
     monthsSpanned: number;
@@ -43,7 +45,7 @@ export interface SystemSummary {
     fallbackReasons: Record<string, number>;
     picks: number;
     dropped: number;
-    demoted: number;
+    reasonsMissing: number;
     reasonsReplaced: number;
     reasonsReplacedShare: number;
     foreignNames: number;
@@ -71,6 +73,7 @@ const VIOLATION_KEYS: Array<keyof Violations> = [
   "tooManyRecommended",
   "tooManyConsider",
   "suggestedWithNoAllowance",
+  "recommendedUnrealistic",
   "ungroundedReason",
   "emptyWithRoom",
 ];
@@ -115,6 +118,8 @@ export function summarize(
       consider: mean(diag((d) => d.consider)),
       reachShare: mean(diag((d) => d.reachShare)),
       reachCount: mean(diag((d) => d.reachCount)),
+      evidencedShare: mean(diag((d) => d.evidencedShare)),
+      stretchCount: mean(diag((d) => d.stretchCount)),
       distinctStates: mean(diag((d) => d.distinctStates)),
       distinctRungs: mean(diag((d) => d.distinctRungs)),
       monthsSpanned: mean(diag((d) => d.monthsSpanned)),
@@ -165,7 +170,7 @@ export function summarize(
       fallbackReasons,
       picks,
       dropped: sum((s) => s.dropped),
-      demoted: sum((s) => s.demoted),
+      reasonsMissing: sum((s) => s.reasonsMissing),
       reasonsReplaced: sum((s) => s.reasonsReplaced),
       reasonsReplacedShare: picks ? sum((s) => s.reasonsReplaced) / picks : 0,
       foreignNames: sum((s) => s.foreignNames),
@@ -226,6 +231,10 @@ export function renderMarkdown(params: {
   d("consider", (s) => fixed(s.diagnostics.consider, 1));
   d("recommended above Championship Series (reach)", (s) => fixed(s.diagnostics.reachCount, 2));
   d("reach share of recommended", (s) => percent(s.diagnostics.reachShare));
+  d("recommended that past draws say would have got in", (s) =>
+    percent(s.diagnostics.evidencedShare)
+  );
+  d("shown apart as a stretch", (s) => fixed(s.diagnostics.stretchCount, 2));
   d("distinct states", (s) => fixed(s.diagnostics.distinctStates, 1));
   d("distinct levels", (s) => fixed(s.diagnostics.distinctRungs, 1));
   d("months spanned", (s) => fixed(s.diagnostics.monthsSpanned, 1));
@@ -254,8 +263,8 @@ export function renderMarkdown(params: {
       row(["fell back to the rules", `${model.fellBack} ${JSON.stringify(model.fallbackReasons)}`])
     );
     lines.push(row(["model picks returned", model.picks]));
-    lines.push(row(["dropped (invented or duplicate)", model.dropped]));
-    lines.push(row(["demoted (clash or over allowance)", model.demoted]));
+    lines.push(row(["sentences ignored (not in the season, or twice)", model.dropped]));
+    lines.push(row(["events the model wrote nothing for", model.reasonsMissing]));
     lines.push(
       row([
         "reasons replaced by the validator",

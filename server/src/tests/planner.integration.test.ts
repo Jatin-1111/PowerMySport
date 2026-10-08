@@ -377,7 +377,13 @@ describe("planning preferences", () => {
   it("defaults to the points goal with nothing blocked", async () => {
     const { userId, dependentId } = await setup();
     const plan = await SeasonPlanService.get(userId, dependentId);
-    assert.deepEqual(plan.preferences, { goal: "points", blockedRanges: [], budget: null });
+    assert.deepEqual(plan.preferences, {
+      goal: "points",
+      blockedRanges: [],
+      budget: null,
+      includeOlderGroup: false,
+    });
+    assert.deepEqual(plan.dismissed, []);
   });
 
   it("saves the goal and blocked dates, creating the plan if there is none", async () => {

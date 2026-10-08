@@ -6,6 +6,7 @@ import {
   DEFAULT_SEASON_GOAL,
   MAX_BUDGET_INR,
   MAX_COST_INR,
+  MAX_DISMISSED,
   MAX_BLOCKED_LABEL_LENGTH,
   MAX_BLOCKED_RANGES,
   MAX_NOTE_LENGTH,
@@ -56,6 +57,8 @@ export interface PlanPreferencesView {
   blockedRanges: BlockedRangeView[];
   /** Rupees. Null when the parent has set no ceiling. */
   budget: number | null;
+  /** Whether older-age-group events are offered as options. */
+  includeOlderGroup: boolean;
 }
 
 const toDay = (date: Date): string => date.toISOString().slice(0, 10);
@@ -66,11 +69,13 @@ const presentPreferences = (
         goal?: SeasonGoal | undefined;
         blockedRanges?: BlockedRange[] | undefined;
         budget?: number | undefined;
+        includeOlderGroup?: boolean | undefined;
       }
     | undefined
 ): PlanPreferencesView => ({
   goal: preferences?.goal ?? DEFAULT_SEASON_GOAL,
   budget: typeof preferences?.budget === "number" ? preferences.budget : null,
+  includeOlderGroup: preferences?.includeOlderGroup === true,
   blockedRanges: (preferences?.blockedRanges ?? []).map((range) => ({
     from: toDay(range.from),
     to: toDay(range.to),
@@ -113,12 +118,14 @@ const presentPlan = (
     sportSlug?: string | undefined;
     entries?: SeasonPlanEntry[] | undefined;
     preferences?: Parameters<typeof presentPreferences>[0];
+    dismissed?: string[] | undefined;
   } | null
 ) => ({
   dependentId,
   sportSlug: plan?.sportSlug ?? "tennis",
   entries: (plan?.entries ?? []).map(presentEntry).sort(byDate),
   preferences: presentPreferences(plan?.preferences),
+  dismissed: [...(plan?.dismissed ?? [])],
 });
 
 const COST_PARTS = ["travel", "stay", "entryFee"] as const;
@@ -244,6 +251,10 @@ export const SeasonPlanService = {
       throw new AppError("That tournament is in a different sport from this plan.", 400);
     }
 
+    // Planning an event the parent had said was not for them changes their mind.
+    if (plan.dismissed?.includes(slug)) {
+      plan.dismissed = plan.dismissed.filter((dismissed) => dismissed !== slug);
+    }
     plan.entries.push({
       editionSlug: slug,
       name: edition.name,
@@ -339,6 +350,7 @@ export const SeasonPlanService = {
     blockedRanges?: unknown;
     /** Rupees, or null / absent for no ceiling. */
     budget?: unknown;
+    includeOlderGroup?: unknown;
   }) {
     await assertOwnedDependent(params.userId, params.dependentId);
 
@@ -391,11 +403,56 @@ export const SeasonPlanService = {
         dependentId: params.dependentId,
         sportSlug: "tennis",
       });
+    if (params.includeOlderGroup !== undefined && typeof params.includeOlderGroup !== "boolean") {
+      throw new AppError("includeOlderGroup must be true or false.", 400);
+    }
     plan.preferences = {
       goal: params.goal as SeasonGoal,
       blockedRanges,
       ...(budget !== undefined ? { budget } : {}),
+      includeOlderGroup: params.includeOlderGroup === true,
     };
+    await plan.save();
+    return presentPlan(params.dependentId, plan);
+  },
+
+  /**
+   * "Not for us": leave this event out of every later suggestion. Idempotent, and the
+   * newest ones are kept if the list is ever full, since an old dismissal is the one
+   * a parent has most likely forgotten.
+   */
+  async dismiss(params: { userId: string; dependentId: string; editionSlug: unknown }) {
+    await assertOwnedDependent(params.userId, params.dependentId);
+    const slug = String(params.editionSlug ?? "")
+      .trim()
+      .toLowerCase();
+    if (!slug || slug.length > 200) throw new AppError("A tournament is required.", 400);
+
+    const plan =
+      (await SeasonPlan.findOne({ userId: params.userId, dependentId: params.dependentId })) ??
+      new SeasonPlan({
+        userId: params.userId,
+        dependentId: params.dependentId,
+        sportSlug: "tennis",
+      });
+    const kept = (plan.dismissed ?? []).filter((existing) => existing !== slug);
+    plan.dismissed = [...kept, slug].slice(-MAX_DISMISSED);
+    await plan.save();
+    return presentPlan(params.dependentId, plan);
+  },
+
+  /** Undo "not for us". Safe to call for an event that was never dismissed. */
+  async restore(params: { userId: string; dependentId: string; editionSlug: unknown }) {
+    await assertOwnedDependent(params.userId, params.dependentId);
+    const slug = String(params.editionSlug ?? "")
+      .trim()
+      .toLowerCase();
+    const plan = await SeasonPlan.findOne({
+      userId: params.userId,
+      dependentId: params.dependentId,
+    });
+    if (!plan) return presentPlan(params.dependentId, null);
+    plan.dismissed = (plan.dismissed ?? []).filter((existing) => existing !== slug);
     await plan.save();
     return presentPlan(params.dependentId, plan);
   },

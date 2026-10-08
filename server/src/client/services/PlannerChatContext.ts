@@ -64,7 +64,11 @@ export interface PlannerChatSummary {
     madeBy: "an AI model, checked against the entry rules" | "the planner's rules";
     goal: string;
     summary: string;
-    picks: Array<{ name: string; advice: "recommended" | "worth considering"; why: string }>;
+    picks: Array<{
+      name: string;
+      advice: "recommended" | "worth considering" | "a stretch, not a pick";
+      why: string;
+    }>;
   };
 }
 
@@ -152,7 +156,11 @@ function toSuggestedSeason(
       .map((item) => ({
         name: names.get(item.slug)!,
         advice:
-          item.tier === "recommended" ? ("recommended" as const) : ("worth considering" as const),
+          item.tier === "recommended"
+            ? ("recommended" as const)
+            : item.tier === "reach"
+              ? ("a stretch, not a pick" as const)
+              : ("worth considering" as const),
         why: item.reason,
       })),
   };
@@ -170,6 +178,7 @@ export const PLANNER_CHAT_RULES = [
   "Dates can change. Mention the list date (listAsOn) when you quote a rank or a verdict.",
   "The rank is their rank in the age group in `list`. If rank is null they are not ranked in that list yet (a child who has only played up): say so, never invent a rank. alsoRanked holds their ranks in older lists.",
   "Playing up uses the same yearly entry allowance as the child's own age group.",
+  'An advice of "a stretch, not a pick" means past draws of that event closed above the child\'s rank. Say so plainly and never recommend it. An option with no past draws is uncertain: say a place is not certain, not that it is out of reach.',
   "Do not state what a tournament costs: no entry fees, travel or hotel prices. Entry fees are not published, and the planner page at /planner shows travel and stay as labelled estimates with the assumptions behind them. Point the parent there for costs.",
   "If a child has suggestedSeason, that is the season the parent was already shown at /planner. Quote it and do not make up a different one. If it is absent, do not invent a season plan: describe what is open to enter and point the parent to /planner for suggestions.",
   "The parent can see all of this, with calendar links, on the planner page at /planner.",
