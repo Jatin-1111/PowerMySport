@@ -235,7 +235,7 @@ describe("the budget bar", () => {
 
   it("points to the preference when no budget is set, and draws no bar", () => {
     render(<BudgetBar season={season()} />);
-    expect(screen.getByText(/Set a season budget in Planning preferences/)).toBeTruthy();
+    expect(screen.getByText(/Set a season budget in your season setup/)).toBeTruthy();
     expect(screen.queryByRole("img")).toBeNull();
   });
 

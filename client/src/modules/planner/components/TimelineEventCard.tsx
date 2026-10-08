@@ -79,7 +79,7 @@ export function TimelineEventCard({
             variant="outline"
             className="border-slate-200 bg-slate-50 text-[11px] text-slate-600"
           >
-            Playing up
+            Older age group
           </Badge>
         )}
       </div>

@@ -41,7 +41,7 @@ export function LinkRankingPrompt({
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
               The planner shows which tournaments {dependentName} can enter, and the entry rules
-              depend on their age list and their rank. Linking their ranking gives it both. You
+              depend on their age group and their rank. Linking their ranking gives it both. You
               confirm it with their date of birth, which is checked and not stored.
             </p>
             <Button className="mt-4" onClick={() => setOpen(true)}>

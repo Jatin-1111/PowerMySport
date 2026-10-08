@@ -2,7 +2,6 @@
 
 import { CostLine } from "@/modules/planner/components/CostLine";
 import { EventActions } from "@/modules/planner/components/EventActions";
-import { PreferencesPanel } from "@/modules/planner/components/PreferencesPanel";
 import { useRecommendations } from "@/modules/planner/hooks/useRecommendations";
 import type {
   EventCost,
@@ -191,7 +190,6 @@ function Suggestions({
 
 export function RecommendationsSection({
   dependentId,
-  homeState,
   costs,
   costsLoading,
   calendar,
@@ -200,7 +198,6 @@ export function RecommendationsSection({
   onAdd,
 }: {
   dependentId: string;
-  homeState: string | null;
   /** Estimates by event, once priced. */
   costs: Record<string, EventCost> | undefined;
   costsLoading: boolean;
@@ -216,8 +213,6 @@ export function RecommendationsSection({
 
   return (
     <div className="space-y-5">
-      <PreferencesPanel dependentId={dependentId} homeState={homeState} />
-
       {isLoading ? (
         <Skeleton className="h-24 w-full" />
       ) : isError ? (
@@ -226,7 +221,7 @@ export function RecommendationsSection({
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <p className="max-w-2xl text-sm leading-relaxed text-slate-700">
             Get a suggested season built from the events this child can enter, their plan so far,
-            and the preferences above. An AI model chooses and explains the picks, and every one is
+            and your season setup. An AI model chooses and explains the picks, and every one is
             checked against the entry rules before you see it.
           </p>
           <Button

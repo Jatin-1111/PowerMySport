@@ -58,7 +58,7 @@ export function PlannerApp() {
       <div className="rounded-lg border border-slate-200 bg-white p-6">
         <h2 className="font-title text-lg font-extrabold text-slate-900">Add a player first</h2>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
-          The planner works from a child&apos;s age list and ranking, so it needs a player profile
+          The planner works from a child&apos;s age group and ranking, so it needs a player profile
           to start from.
         </p>
         <Link

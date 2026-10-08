@@ -267,7 +267,7 @@ function PreferencesForm({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" size="sm" disabled={!canSave || saving}>
-          {saving ? "Saving..." : "Save preferences"}
+          {saving ? "Saving..." : "Save setup"}
         </Button>
         {!changed && <span className="text-xs text-slate-500">Nothing changed yet.</span>}
       </div>
@@ -278,21 +278,24 @@ function PreferencesForm({
 export function PreferencesPanel({
   dependentId,
   homeState,
+  defaultOpen = false,
 }: {
   dependentId: string;
   homeState: string | null;
+  /** Open on arrival, for a parent who has not set anything yet. */
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const { preferences, savePreferences } = useSeasonPlan(dependentId);
   const saved = preferences ?? DEFAULT_PREFERENCES;
 
   const blocked = saved.blockedRanges.length;
   const summary = `${GOAL_LABEL[saved.goal]}${
-    blocked > 0 ? `, ${blocked} blocked date range${blocked === 1 ? "" : "s"}` : ""
+    blocked > 0 ? `, ${blocked} set${blocked === 1 ? "" : "s"} of dates off` : ""
   }${saved.budget !== null ? `, budget ${formatInr(saved.budget)}` : ""}`;
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50">
+    <div data-tour="setup" className="rounded-lg border border-slate-200 bg-slate-50">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -300,7 +303,7 @@ export function PreferencesPanel({
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
       >
         <span className="text-sm">
-          <span className="font-semibold text-slate-900">Planning preferences</span>
+          <span className="font-semibold text-slate-900">Your season setup</span>
           <span className="ml-2 text-slate-600">{summary}</span>
         </span>
         <ChevronDown
@@ -316,7 +319,7 @@ export function PreferencesPanel({
             saved={saved}
             homeState={homeState}
             saving={savePreferences.isPending}
-            onSave={(next) => savePreferences.mutate(next)}
+            onSave={(next) => savePreferences.mutate(next, { onSuccess: () => setOpen(false) })}
           />
         </div>
       )}

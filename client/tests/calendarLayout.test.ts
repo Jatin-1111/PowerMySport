@@ -566,39 +566,51 @@ describe("a busy week", () => {
   const week = (items: CalendarItem[], extra = {}) =>
     layout(items, [], extra).weeks.find((w) => w.key === "2026-10-12")!;
 
-  it("gives the plan and the suggestions the top rows, however they are ordered", () => {
+  it("draws only the plan and the suggestions as bars, and puts what is open in a cell", () => {
     const items = [
       item("open1", 7, 13, { kind: "available" }),
       item("open2", 7, 13, { kind: "available" }),
       item("suggested", 7, 13, { kind: "suggested" }),
       item("planned", 7, 13, { kind: "planned", status: "shortlisted" }),
     ];
-    const lane = Object.fromEntries(week(items).bars.map((bar) => [bar.item.slug, bar.lane]));
-    expect(lane.planned).toBe(0);
-    expect(lane.suggested).toBe(1);
-    expect(lane.open1).toBeGreaterThan(1);
-    expect(lane.open2).toBeGreaterThan(1);
+    const result = week(items);
+    const lane = Object.fromEntries(result.bars.map((bar) => [bar.item.slug, bar.lane]));
+
+    expect(lane).toEqual({ planned: 0, suggested: 1 });
+    // What is merely open is a chip on the day it starts: Monday 12 October.
+    const monday = result.days[0]!;
+    expect(monday.iso).toBe("2026-10-12");
+    expect(monday.chips.map((chip) => chip.slug)).toEqual(["open1", "open2"]);
   });
 
-  it("draws every event when no limit is set", () => {
+  it("puts every open event in its start day's cell when no limit is set", () => {
     const result = week(
       crowd(["available", "available", "available", "available", "available", "available"])
     );
-    expect(result.bars).toHaveLength(6);
+    expect(result.bars).toHaveLength(0);
+    expect(result.days[0]!.chips).toHaveLength(6);
     expect(result.hidden).toEqual([]);
   });
 
-  it("folds what is open beyond the limit into a count, and says which events they are", () => {
+  it("puts an open event on the day it starts, not on the days it runs through", () => {
+    const result = week([item("sat", 12, 18, { kind: "available" })]);
+    const withChips = result.days.filter((day) => day.chips.length > 0);
+    expect(withChips.map((day) => day.iso)).toEqual(["2026-10-17"]);
+  });
+
+  it("folds the open events a cell cannot hold into a count, and says which they are", () => {
     const result = week(
       crowd(["planned", "available", "available", "available", "available", "available"]),
-      { maxLanes: 3 }
+      { maxChips: 3 }
     );
-    expect(result.bars).toHaveLength(3);
-    expect(result.laneCount).toBe(3);
-    expect(result.hidden).toHaveLength(3);
+    const monday = result.days[0]!;
+    expect(result.bars).toHaveLength(1);
+    expect(monday.chips).toHaveLength(3);
+    expect(monday.moreChips).toHaveLength(2);
+    expect(result.hidden).toHaveLength(2);
     expect(result.hidden.every((hidden) => hidden.kind === "available")).toBe(true);
     // Nothing is lost: what is drawn and what is folded are the whole week.
-    expect(result.bars.length + result.hidden.length).toBe(6);
+    expect(result.bars.length + monday.chips.length + result.hidden.length).toBe(6);
   });
 
   it("never folds away the plan or a suggestion, even when they alone exceed the limit", () => {
@@ -622,8 +634,9 @@ describe("a busy week", () => {
       "available",
       "available",
     ]);
-    const result = week(items, { maxLanes: 3, expandedWeeks: new Set(["2026-10-12"]) });
-    expect(result.bars).toHaveLength(6);
+    const result = week(items, { maxChips: 3, expandedWeeks: new Set(["2026-10-12"]) });
+    expect(result.bars).toHaveLength(1);
+    expect(result.days[0]!.chips).toHaveLength(5);
     expect(result.hidden).toEqual([]);
   });
 

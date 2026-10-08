@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildShortlist, homeStanding, judgeEdition } from "@powermysport/shared-types";
+import { buildShortlist, judgeEdition, placeInAgeGroup } from "@powermysport/shared-types";
 import type { PlannerEdition } from "@powermysport/shared-types";
 
 /**
@@ -167,17 +167,80 @@ describe("the shortlist", () => {
   });
 });
 
-describe("homeStanding", () => {
-  it("picks the youngest junior list, because that is the age group the child belongs to", () => {
-    const standings = [
-      { subcategory: "U-16", rank: 12 },
-      { subcategory: "U-14", rank: 140 },
-    ];
-    expect(homeStanding(standings)).toBe(standings[1]);
+describe("placeInAgeGroup", () => {
+  const listed = (subcategory: string, rank: number, birthYear: number | null) => ({
+    subcategory,
+    rank,
+    birthYear,
+    asOnDate: "2026-09-21T00:00:00.000Z",
+  });
+
+  it("reads the age group from the birth year and keeps the other list to show", () => {
+    // Born 2011, ranked 341 in U-16 and 431 in U-18.
+    const u16 = listed("U-16", 341, 2011);
+    const u18 = listed("U-18", 431, 2011);
+
+    const placement = placeInAgeGroup([u18, u16])!;
+
+    expect(placement.ageGroup).toBe("U-16");
+    expect(placement.own).toBe(u16);
+    expect(placement.alsoRanked).toEqual([u18]);
+    expect(placement.basis).toBe("birth-year");
+  });
+
+  it("has no own standing for a child who has only played up, and still names their age group", () => {
+    // Born 2014 is an Under-12, ranked only in U-14 and U-16.
+    const placement = placeInAgeGroup([listed("U-16", 834, 2014), listed("U-14", 671, 2014)])!;
+
+    expect(placement.ageGroup).toBe("U-12");
+    expect(placement.own).toBeNull();
+    expect(placement.alsoRanked.map((entry) => entry.subcategory)).toEqual(["U-14", "U-16"]);
+  });
+
+  it("draws the cohort lines where AITA does, for the year of the lists", () => {
+    const groupFor = (birthYear: number) =>
+      placeInAgeGroup([listed("U-18", 1, birthYear)])!.ageGroup;
+
+    expect(groupFor(2014)).toBe("U-12");
+    expect(groupFor(2013)).toBe("U-14");
+    expect(groupFor(2012)).toBe("U-14");
+    expect(groupFor(2011)).toBe("U-16");
+    expect(groupFor(2010)).toBe("U-16");
+    expect(groupFor(2009)).toBe("U-18");
+    expect(groupFor(2008)).toBe("U-18");
+  });
+
+  it("moves a child up a group when the list year turns over", () => {
+    const next = { ...listed("U-16", 5, 2012), asOnDate: "2027-01-04T00:00:00.000Z" };
+    expect(placeInAgeGroup([next])!.ageGroup).toBe("U-16");
+  });
+
+  it("falls back to the youngest list when no birth year is printed", () => {
+    const u14 = listed("U-14", 90, null);
+    const placement = placeInAgeGroup([listed("U-16", 12, null), u14])!;
+
+    expect(placement.ageGroup).toBe("U-14");
+    expect(placement.own).toBe(u14);
+    expect(placement.basis).toBe("youngest-list");
+  });
+
+  it("falls back too when the birth year is outside every junior group", () => {
+    expect(placeInAgeGroup([listed("U-18", 3, 2001)])!.basis).toBe("youngest-list");
+    expect(placeInAgeGroup([listed("U-18", 3, 2031)])!.basis).toBe("youngest-list");
   });
 
   it("ignores open-age lists, which carry none of the junior rules", () => {
-    expect(homeStanding([{ subcategory: "Men", rank: 3 }])).toBeNull();
-    expect(homeStanding([])).toBeNull();
+    expect(placeInAgeGroup([{ subcategory: "Men", rank: 3 }])).toBeNull();
+    expect(placeInAgeGroup([])).toBeNull();
+  });
+});
+
+describe("a child with no rank in their own age group", () => {
+  it("is not barred from the entry level by a rank that is not theirs here", () => {
+    const talent = edition({ ladder: "Talent Series", ageGroups: ["Under-12"] });
+    const result = judgeEdition(talent, { bracket: "U-12", rank: null })!;
+
+    expect(result.status).toBe("open");
+    expect(result.reason).not.toMatch(/at this rank/);
   });
 });

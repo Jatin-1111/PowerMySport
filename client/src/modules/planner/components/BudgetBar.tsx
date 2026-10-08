@@ -20,7 +20,7 @@ const STATUS_LINE: Record<SeasonCost["status"], (season: SeasonCost) => string> 
   "may-exceed": (season) =>
     `The plan may go over your budget: it could reach ${formatInr(season.total!.high)} against ${formatInr(season.budget!)}.`,
   over: () => "The plan is over your budget even at the low end of the estimates.",
-  none: () => "Set a season budget in Planning preferences to compare the plan with it.",
+  none: () => "Set a season budget in your season setup to compare the plan with it.",
 };
 
 export function BudgetBar({ season }: { season: SeasonCost }) {

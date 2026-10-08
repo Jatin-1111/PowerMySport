@@ -92,6 +92,8 @@ export const queryKeys = {
 
   /** The server-judged planner for one child: verdicts and plan together. */
   planner: {
+    /** Whether this parent has been through the planner's tour. Not per child. */
+    tour: ["planner-tour"] as const,
     forDependent: (dependentId: string) => ["planner", dependentId] as const,
     recommendations: (dependentId: string) => ["planner", dependentId, "recommendations"] as const,
     /** Prefix for every cost query of one child, whatever slugs it was asked about. */

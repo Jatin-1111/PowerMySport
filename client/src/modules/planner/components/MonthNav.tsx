@@ -33,7 +33,11 @@ export function MonthNav({
   return (
     <div className="mb-3">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-slate-200">
-        <div role="group" aria-label="Choose a month" className="flex gap-1 overflow-x-auto">
+        <div
+          role="group"
+          aria-label="Choose a month"
+          className="flex gap-1 overflow-x-auto overflow-y-hidden"
+        >
           {months.map((choice) => {
             const selected = choice.key === month.key;
             return (
@@ -44,7 +48,7 @@ export function MonthNav({
                 aria-label={`${choice.label}, ${choice.count} event${choice.count === 1 ? "" : "s"}`}
                 onClick={() => onChange(choice.key)}
                 className={cn(
-                  "-mb-px inline-flex min-h-10 shrink-0 items-center gap-1.5 border-b-2 px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
+                  "inline-flex min-h-10 shrink-0 items-center gap-1.5 border-b-2 px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
                   selected
                     ? "border-orange-600 text-slate-900"
                     : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-900"

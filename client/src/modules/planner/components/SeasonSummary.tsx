@@ -37,22 +37,33 @@ function headline(item: NextUpItem): string {
 
 function NextUpTile({
   items,
+  childName,
   openCount,
   onOpen,
+  onSuggest,
+  suggesting,
+  onBrowse,
 }: {
   items: NextUpItem[];
+  childName: string;
   /** Events open to the child, for the empty state. */
   openCount: number;
   onOpen: (slug: string) => void;
+  /** The empty state's main action: make a suggested season. */
+  onSuggest: () => void;
+  suggesting: boolean;
+  /** The empty state's other action: look through everything open. */
+  onBrowse: () => void;
 }) {
   const [first, ...rest] = items;
   return (
     <section
       aria-labelledby="next-up"
-      className="rounded-lg border border-slate-900 bg-slate-900 p-4 text-white lg:col-span-5"
+      data-tour="next"
+      className="rounded-lg border border-slate-900 bg-slate-900 p-4 text-white"
     >
       <h2 id="next-up" className={`${LABEL} text-slate-300`}>
-        Next up
+        {first ? "Do this next" : "Next step"}
       </h2>
 
       {first ? (
@@ -109,67 +120,35 @@ function NextUpTile({
         </div>
       ) : (
         <div className="mt-2">
-          <p className="font-title text-xl font-extrabold leading-snug">Nothing planned yet</p>
+          <p className="font-title text-xl font-extrabold leading-snug">
+            Pick tournaments for {childName}
+          </p>
           <p className="mt-1 text-sm leading-relaxed text-slate-200">
             {openCount > 0
-              ? `${openCount} event${openCount === 1 ? " is" : "s are"} open to enter. Ask for a suggested season, or pick events from the calendar.`
-              : "Nothing is open to enter on the calendar right now. AITA publishes about ten weeks ahead, so this fills in."}
+              ? `${openCount} tournament${openCount === 1 ? " is" : "s are"} open to ${childName}. Ask for a suggested season, or look through them all.`
+              : "Nothing is open to enter right now. AITA publishes about ten weeks ahead, so this fills in."}
           </p>
+          {openCount > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={suggesting}
+                onClick={onSuggest}
+                className="inline-flex min-h-10 items-center rounded-lg bg-white px-4 text-sm font-semibold text-slate-900 hover:bg-slate-100 disabled:opacity-70"
+              >
+                {suggesting ? "Working on it..." : "Suggest my season"}
+              </button>
+              <button
+                type="button"
+                onClick={onBrowse}
+                className="inline-flex min-h-10 items-center rounded-lg border border-slate-500 px-4 text-sm font-semibold text-white hover:border-white hover:bg-slate-800"
+              >
+                Browse all {openCount}
+              </button>
+            </div>
+          )}
         </div>
       )}
-    </section>
-  );
-}
-
-function SeasonTile({
-  entries,
-  annualCap,
-  bracket,
-}: {
-  entries: SeasonPlanEntry[];
-  annualCap: number | null;
-  bracket: string;
-}) {
-  const count = (status: SeasonPlanEntry["status"]) =>
-    entries.filter((entry) => entry.status === status).length;
-  const thisYear = new Date().getUTCFullYear();
-  const countedThisYear = entries.filter(
-    (entry) => new Date(entry.startDate).getUTCFullYear() === thisYear
-  ).length;
-
-  return (
-    <section
-      aria-labelledby="season-tile"
-      className="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-3"
-    >
-      <h2 id="season-tile" className={`${LABEL} text-slate-500`}>
-        The plan
-      </h2>
-      <p className="font-title mt-2 text-3xl font-extrabold leading-none text-slate-900">
-        {entries.length}
-        <span className="ml-2 text-sm font-semibold text-slate-500">
-          event{entries.length === 1 ? "" : "s"}
-        </span>
-      </p>
-      <dl className="mt-3 space-y-1 text-sm text-slate-700">
-        <div className="flex justify-between gap-3">
-          <dt>Still to enter</dt>
-          <dd className="font-semibold text-slate-900">{count("shortlisted")}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt>Entered</dt>
-          <dd className="font-semibold text-slate-900">{count("entered")}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt>Played</dt>
-          <dd className="font-semibold text-slate-900">{count("played")}</dd>
-        </div>
-      </dl>
-      <p className="mt-3 border-t border-slate-100 pt-2 text-xs leading-relaxed text-slate-600">
-        {annualCap
-          ? `${countedThisYear} of ${annualCap} yearly entries in ${bracket} are on this plan. Playing up uses the same allowance.`
-          : `${countedThisYear} event${countedThisYear === 1 ? "" : "s"} on this plan for ${thisYear}.`}
-      </p>
     </section>
   );
 }
@@ -188,7 +167,7 @@ function BudgetTile({
   return (
     <section
       aria-labelledby="budget-tile"
-      className="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-4"
+      className="rounded-lg border border-slate-200 bg-white p-4"
     >
       <h2 id="budget-tile" className={`${LABEL} text-slate-500`}>
         What it may cost
@@ -223,39 +202,59 @@ function BudgetTile({
 export function SeasonSummary({
   entries,
   calendar,
+  childName,
   openCount,
-  annualCap,
-  bracket,
   costs,
   costsLoading,
   costsFailed,
   saveHomeCity,
   onOpenEvent,
+  onSuggest,
+  suggesting,
+  onBrowse,
 }: {
   entries: SeasonPlanEntry[];
   calendar: Map<string, PlannerEdition>;
+  childName: string;
   openCount: number;
-  annualCap: number | null;
-  bracket: string;
   costs: CostResponse | null;
   costsLoading: boolean;
   costsFailed: boolean;
   saveHomeCity: { saving: boolean; save: (city: string) => void };
   onOpenEvent: (slug: string) => void;
+  onSuggest: () => void;
+  suggesting: boolean;
+  onBrowse: () => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const items = nextUp({ entries, calendar, today });
 
+  // What a season may cost means nothing until there is a season. An empty plan gets
+  // one box with one job instead of a box about money beside it.
+  const planned = entries.length > 0;
+
   return (
-    <div aria-label="Season at a glance" className="grid gap-4 lg:grid-cols-12">
-      <NextUpTile items={items} openCount={openCount} onOpen={onOpenEvent} />
-      <SeasonTile entries={entries} annualCap={annualCap} bracket={bracket} />
-      <BudgetTile
-        costs={costs}
-        costsLoading={costsLoading}
-        costsFailed={costsFailed}
-        saveHomeCity={saveHomeCity}
+    <div
+      aria-label="What to do next"
+      className="space-y-4 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto"
+    >
+      <NextUpTile
+        items={items}
+        childName={childName}
+        openCount={openCount}
+        onOpen={onOpenEvent}
+        onSuggest={onSuggest}
+        suggesting={suggesting}
+        onBrowse={onBrowse}
       />
+      {planned && (
+        <BudgetTile
+          costs={costs}
+          costsLoading={costsLoading}
+          costsFailed={costsFailed}
+          saveHomeCity={saveHomeCity}
+        />
+      )}
     </div>
   );
 }

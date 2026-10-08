@@ -10,7 +10,7 @@ import { Badge } from "@/modules/shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import { buildShortlist, homeStanding, type PlannerEntry } from "@powermysport/shared-types";
+import { buildShortlist, placeInAgeGroup, type PlannerEntry } from "@powermysport/shared-types";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Info, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
@@ -110,7 +110,7 @@ function FixtureRow({
             variant="outline"
             className="border-slate-200 bg-slate-50 text-[11px] text-slate-600 hover:bg-slate-50"
           >
-            Playing up
+            Older age group
           </Badge>
         )}
       </div>
@@ -152,7 +152,14 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
   });
 
   const claim = claims?.find((entry) => entry.dependentId === dependentId) ?? null;
-  const standing = claim ? homeStanding(claim.standings) : null;
+  const placement = claim ? placeInAgeGroup(claim.standings) : null;
+  const standing = placement
+    ? {
+        ageGroup: placement.ageGroup,
+        rank: placement.own?.rank ?? null,
+        category: (placement.own ?? placement.alsoRanked[0]!).category,
+      }
+    : null;
 
   const { data: editions, isPending } = useQuery({
     queryKey: queryKeys.tournamentEditions.upcoming(claim?.sportSlug ?? "tennis"),
@@ -165,7 +172,7 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
   if (!claim || !standing) return null;
 
   const shortlist = editions
-    ? buildShortlist(editions, { bracket: standing.subcategory, rank: standing.rank })
+    ? buildShortlist(editions, { bracket: standing.ageGroup, rank: standing.rank })
     : null;
 
   return (
@@ -173,7 +180,7 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
       <ProfileSectionHeader
         icon={CalendarDays}
         title="What they can enter next"
-        description={`Upcoming events judged against ${standing.category} ${standing.subcategory}, rank ${standing.rank}.`}
+        description={`Upcoming events judged against ${standing.category} ${standing.ageGroup}${standing.rank === null ? `, where they are not ranked yet` : `, rank ${standing.rank}`}.`}
       />
       <CardContent className="p-6">
         {isPending || !shortlist ? (
@@ -203,8 +210,8 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
               </ul>
             ) : (
               <p className="text-sm leading-relaxed text-slate-600">
-                Nothing in {standing.subcategory} on the current calendar is open to enter at this
-                rank.
+                Nothing in {standing.ageGroup} on the current calendar is open to enter
+                {standing.rank === null ? "" : " at this rank"}.
               </p>
             )}
 

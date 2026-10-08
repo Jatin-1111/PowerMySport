@@ -121,7 +121,7 @@ export function EventDetail({
         )}
         {item.verdict?.playingUp && (
           <Badge variant="outline" className="border-slate-200 bg-white text-[11px] text-slate-700">
-            Playing up
+            Older age group
           </Badge>
         )}
       </div>

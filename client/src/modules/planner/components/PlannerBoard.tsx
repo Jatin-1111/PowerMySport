@@ -1,20 +1,25 @@
 "use client";
 
+import { Collapsible } from "@/modules/planner/components/Collapsible";
 import { LinkRankingPrompt } from "@/modules/planner/components/LinkRankingPrompt";
+import { PlannerTour } from "@/modules/planner/components/PlannerTour";
+import { PreferencesPanel } from "@/modules/planner/components/PreferencesPanel";
 import { SeasonSummary } from "@/modules/planner/components/SeasonSummary";
-import { SeasonWorkspace } from "@/modules/planner/components/SeasonWorkspace";
+import { SeasonWorkspace, type WorkspaceTab } from "@/modules/planner/components/SeasonWorkspace";
 import { Timeline } from "@/modules/planner/components/Timeline";
 import { useCosts } from "@/modules/planner/hooks/useCosts";
 import { useRecommendations } from "@/modules/planner/hooks/useRecommendations";
 import { usePlanner } from "@/modules/planner/hooks/usePlanner";
+import { usePlannerTour } from "@/modules/planner/hooks/usePlannerTour";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import { formatLongDate } from "@/modules/planner/utils/eventFormat";
+import { rankClause, standingSentence } from "@/modules/planner/utils/standingText";
 import { rankedSportFor } from "@/modules/player/services/rankingClaim";
 import { Button } from "@/modules/shared/ui/Button";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { PlannerEdition } from "@powermysport/shared-types";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, CircleHelp } from "lucide-react";
 import Link from "next/link";
 
 /**
@@ -23,49 +28,9 @@ import Link from "next/link";
  *
  *   - loading
  *   - no ranking linked: ask for it, here
- *   - linked, but on no junior list: say so, and why that means no verdicts
+ *   - linked, but on no junior ranking: say so, and why that means no verdicts
  *   - ready: the standing, the plan, and the calendar
  */
-
-/**
- * The full list of what the child can enter, closed until it is wanted. It is the
- * reference the calendar and the suggestions are drawn from, and it also says which
- * events the child cannot enter and why, so it stays available but no longer sits
- * between the parent and their plan.
- */
-function Collapsible({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white">
-      <h2 className="font-title text-lg font-extrabold text-slate-900">
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((value) => !value)}
-          className="flex min-h-14 w-full items-center justify-between gap-4 rounded-lg px-5 py-3 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-6"
-        >
-          <span>
-            {title}
-            <span className="mt-0.5 block text-sm font-normal text-slate-600">{description}</span>
-          </span>
-          <ChevronDown
-            className={`h-5 w-5 shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
-            aria-hidden
-          />
-        </button>
-      </h2>
-      {open && <div className="border-t border-slate-100 p-5 sm:p-6">{children}</div>}
-    </section>
-  );
-}
 
 export function PlannerBoard({
   dependentId,
@@ -78,14 +43,26 @@ export function PlannerBoard({
   sport: string | null;
 }) {
   const { data, isPending, isError, refetch } = usePlanner(dependentId);
-  const { entries, preferences, plannedSlugs, add } = useSeasonPlan(dependentId);
+  const {
+    entries,
+    preferences,
+    plannedSlugs,
+    add,
+    isLoading: planLoading,
+  } = useSeasonPlan(dependentId);
+  const tour = usePlannerTour();
+  // The panel on show. A plan to look at if there is one; otherwise the suggestions,
+  // which are what a parent with an empty plan has come for.
+  const [tab, setTab] = useState<WorkspaceTab | null>(null);
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const browseRef = useRef<HTMLDivElement>(null);
   // The event open on the calendar. It lives here because opening one asks for its
   // estimate, and the estimates are fetched here.
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   // The suggestions on screen are priced alongside the plan. These hooks sit above
   // the early returns below so they run on every render.
-  const { recommendations } = useRecommendations(dependentId);
+  const { recommendations, suggest } = useRecommendations(dependentId);
   const suggestedSlugs = recommendations?.items.map((item) => item.slug) ?? [];
   const pricedSlugs = selectedSlug ? [...suggestedSlugs, selectedSlug] : suggestedSlugs;
   const {
@@ -145,10 +122,10 @@ export function PlannerBoard({
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-6">
         <h2 className="font-title text-lg font-extrabold text-slate-900">
-          {dependentName} is not on a junior list right now
+          {dependentName} is not on a junior ranking right now
         </h2>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
-          Their ranking is linked, but they do not appear on a current Under-12 to Under-18 list.
+          Their ranking is linked, but they do not appear on a current Under-12 to Under-18 ranking.
           Juniors often drop off between age categories. The entry rules the planner uses are
           written for those lists, so there is nothing to judge against until they are published
           again.
@@ -172,62 +149,116 @@ export function PlannerBoard({
   }
 
   const openCount = shortlist.ownGroup.length;
+  const activeTab: WorkspaceTab = tab ?? (entries.length > 0 ? "plan" : "suggested");
+
+  // A parent who has set nothing and planned nothing has not started: open the setup
+  // for them. Anyone else finds it closed, summarised in one line.
+  const untouched =
+    entries.length === 0 &&
+    (!preferences ||
+      (preferences.goal === "points" &&
+        preferences.blockedRanges.length === 0 &&
+        preferences.budget === null));
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <p className="text-sm text-slate-700">
-          <span className="font-semibold text-slate-900">
-            {standing.category} {standing.subcategory}, rank {standing.rank}
-          </span>
-          <span className="text-slate-500"> as on {formatLongDate(standing.asOnDate)}</span>
-        </p>
-        <p className="text-xs text-slate-500">
-          Events are judged against this list. It updates when a new one is published.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+        <div>
+          <h2 className="font-title text-xl font-extrabold text-slate-900">
+            {dependentName}&apos;s season
+          </h2>
+          <p className="mt-0.5 text-sm text-slate-600">
+            {standingSentence(standing, formatLongDate(standing.asOnDate))}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={tour.start}
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:border-slate-300"
+        >
+          <CircleHelp className="h-4 w-4" aria-hidden />
+          How this works
+        </button>
       </header>
 
-      <SeasonSummary
-        entries={entries}
-        calendar={calendar}
-        openCount={openCount}
-        annualCap={data.annualEntryCap}
-        bracket={standing.subcategory}
-        costs={costs}
-        costsLoading={costsLoading}
-        costsFailed={costsFailed}
-        saveHomeCity={{ saving: saveHomeCity.isPending, save: (city) => saveHomeCity.mutate(city) }}
-        onOpenEvent={setSelectedSlug}
-      />
+      {/* The rail on the right (what to do next, and the budget) stays in view while the
+          main column scrolls. On a phone the same order stacks: setup, next step, then
+          the plan. */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        {!planLoading && (
+          <PreferencesPanel
+            dependentId={dependentId}
+            homeState={standing.state ?? null}
+            defaultOpen={untouched}
+          />
+        )}
 
-      <SeasonWorkspace
-        dependentId={dependentId}
-        homeState={standing.state ?? null}
-        shortlist={shortlist}
-        planEntries={entries}
-        preferences={preferences}
-        recommendations={recommendations}
-        calendar={calendar}
-        costs={costs}
-        costsLoading={costsLoading}
-        plannedSlugs={plannedSlugs}
-        isAdding={add.isPending}
-        onAdd={(slug) => add.mutate(slug)}
-        selectedSlug={selectedSlug}
-        onSelect={setSelectedSlug}
-      />
-
-      <Collapsible
-        title="Every event they can enter"
-        description={`Upcoming events judged against ${standing.category} ${standing.subcategory}, rank ${standing.rank}, including the ones they cannot enter and why.`}
-      >
-        <Timeline
-          shortlist={shortlist}
-          plannedSlugs={plannedSlugs}
-          isAdding={add.isPending}
-          onAdd={(slug) => add.mutate(slug)}
+        <SeasonSummary
+          entries={entries}
+          calendar={calendar}
+          childName={dependentName}
+          openCount={openCount}
+          costs={costs}
+          costsLoading={costsLoading}
+          costsFailed={costsFailed}
+          saveHomeCity={{
+            saving: saveHomeCity.isPending,
+            save: (city) => saveHomeCity.mutate(city),
+          }}
+          onOpenEvent={setSelectedSlug}
+          onSuggest={() => {
+            setTab("suggested");
+            suggest.mutate(false);
+          }}
+          suggesting={suggest.isPending}
+          onBrowse={() => {
+            setBrowseOpen(true);
+            // The full list is at the foot of the page, so bring it up.
+            requestAnimationFrame(() =>
+              browseRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" })
+            );
+          }}
         />
-      </Collapsible>
+
+        <div className="space-y-6 lg:col-start-1 lg:row-start-2">
+          <SeasonWorkspace
+            dependentId={dependentId}
+            yearlyLimit={{ cap: data.annualEntryCap, ageGroup: standing.subcategory }}
+            tab={activeTab}
+            onTabChange={setTab}
+            shortlist={shortlist}
+            planEntries={entries}
+            preferences={preferences}
+            recommendations={recommendations}
+            calendar={calendar}
+            costs={costs}
+            costsLoading={costsLoading}
+            plannedSlugs={plannedSlugs}
+            isAdding={add.isPending}
+            onAdd={(slug) => add.mutate(slug)}
+            selectedSlug={selectedSlug}
+            onSelect={setSelectedSlug}
+          />
+
+          <div ref={browseRef}>
+            <Collapsible
+              title="Every event they can enter"
+              description={`Upcoming events matched to ${standing.category} ${standing.subcategory}, ${rankClause(standing)}, including the ones they cannot enter and why.`}
+              open={browseOpen}
+              onOpenChange={setBrowseOpen}
+            >
+              <Timeline
+                shortlist={shortlist}
+                plannedSlugs={plannedSlugs}
+                isAdding={add.isPending}
+                onAdd={(slug) => add.mutate(slug)}
+              />
+            </Collapsible>
+          </div>
+        </div>
+      </div>
+
+      {tour.open && <PlannerTour onFinish={tour.finish} />}
     </div>
   );
 }

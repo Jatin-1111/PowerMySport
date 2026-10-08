@@ -73,7 +73,7 @@ export function OfficialDetails({
     rows.push(["Main draw starts", formatLongDate(official.mainDrawStart)]);
   if (fee) rows.push(["Entry fee", fee]);
   if (typeof official.dailyAllowance === "number") {
-    rows.push(["Daily allowance", `${formatInr(official.dailyAllowance)} (main draw)`]);
+    rows.push(["Daily allowance", `${formatInr(official.dailyAllowance)} (main round)`]);
   }
   if (official.surface) rows.push(["Surface", official.surface]);
 

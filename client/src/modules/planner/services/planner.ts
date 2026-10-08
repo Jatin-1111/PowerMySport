@@ -16,9 +16,13 @@ export type PlannerLinkState = "ready" | "not-linked" | "no-junior-standing";
 
 export interface PlannerStanding {
   category: string;
+  /** The age group they play in, worked out from their birth year. */
   subcategory: string;
-  rank: number;
-  totalPoints: number;
+  /** Their rank in that age group's own list. Null if they are not ranked there yet. */
+  rank: number | null;
+  totalPoints: number | null;
+  /** The other junior lists they are ranked in (a child who plays up), youngest first. */
+  alsoRanked: Array<{ subcategory: string; rank: number }>;
   /** Where the player is registered, when the list records it. */
   state: string | null;
   asOnDate: string;
@@ -161,6 +165,18 @@ export const plannerApi = {
       params: slugs.length > 0 ? { slugs: slugs.join(",") } : {},
     });
     return data?.data;
+  },
+
+  /** Whether this parent has already been through the planner's tour. */
+  async getTourSeen(): Promise<boolean> {
+    const { data } = await axiosInstance.get("/planner/tour");
+    return data?.data?.seen === true;
+  },
+
+  /** Records the tour as seen, or as not seen to play it again. */
+  async setTourSeen(seen: boolean): Promise<boolean> {
+    const { data } = await axiosInstance.put("/planner/tour", { seen });
+    return data?.data?.seen === true;
   },
 
   /** Saves the city on the parent's profile, where the estimates start from. */

@@ -47,19 +47,23 @@ import { useState } from "react";
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 /**
- * Saturday. AITA's events run Saturday to Friday (qualifying on the Saturday, the main
- * draw from the Monday), so a week that starts on Saturday draws each one as a single
- * bar. Monday-first cut every event in two, a short piece and a long one, and doubled
- * the bars on the page.
+ * Monday, as every wall calendar in India starts. The planner once started weeks on
+ * Saturday so that AITA's Saturday-to-Friday events were single bars, but that made a
+ * month look like a stack of week-long strips and not like a calendar. Open events are
+ * chips on the day they start now, so where the week begins no longer cuts anything in
+ * two. Only the parent's own plan and suggestions are bars, and a bar that crosses
+ * Sunday simply carries on in the next row, as it does on any calendar.
  */
-const WEEK_STARTS_ON = 5;
+const WEEK_STARTS_ON = 0;
 const HEADERS = [...WEEKDAYS.slice(WEEK_STARTS_ON), ...WEEKDAYS.slice(0, WEEK_STARTS_ON)];
 
 /** 28px: WCAG 2.2 asks for touch targets of at least 24px, and a thumb is not exact. */
 const LANE_HEIGHT = 28;
-const ROW_MIN_HEIGHT = 72;
+const ROW_MIN_HEIGHT = 96;
 /** Rows of events a week draws before the quiet ones fold into "N more". */
 const MAX_LANES = 4;
+/** Open-event chips one day's cell draws before "N more". */
+const MAX_CHIPS = 3;
 
 // The same colours as the plan list and the detail panel (utils/statusStyle.ts): dark
 // slate is on the plan, green is entered, orange and dashed is a suggestion. What is
@@ -135,6 +139,35 @@ function EventBar({
   );
 }
 
+/** An event that is merely open: a small chip in the cell of the day it starts. */
+function EventChip({
+  item,
+  selected,
+  onSelect,
+}: {
+  item: CalendarItem;
+  selected: boolean;
+  onSelect: (slug: string) => void;
+}) {
+  const { place } = shortEventLabel(item);
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(item.slug)}
+      aria-label={itemLabel(item)}
+      aria-pressed={selected}
+      title={item.name}
+      className={cn(
+        "flex h-6 w-full min-w-0 items-center rounded px-1.5 text-left text-[11px] font-medium leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
+        "bg-slate-100 text-slate-700 hover:bg-slate-200",
+        selected && "ring-2 ring-orange-500"
+      )}
+    >
+      <span className="truncate">{place}</span>
+    </button>
+  );
+}
+
 function DayNumber({ day, column }: { day: DayCell; column: number }) {
   // A day of the month before or after is left blank: its number would only compete
   // with the days that are being looked at.
@@ -193,19 +226,22 @@ function WeekView({
   expanded: boolean;
   onToggle: (key: string) => void;
 }) {
-  const showMore = foldable && !expanded && week.hidden.length > 0;
   const showFewer = foldable && expanded;
-  const footer = showMore || showFewer;
+  const footer = showFewer;
+  const hasChips = week.days.some((day) => day.chips.length > 0 || day.moreChips.length > 0);
+  const chipRow = week.laneCount + 2;
+  const weekOf = week.label.replace(/^Week of /, "");
   return (
     <li aria-label={week.label} className="relative border-t border-slate-200 first:border-t-0">
-      {/* Shading for the days that mean something (today, dates the child cannot play,
-          the edges of the month) sits behind everything, so a bar always reads on top
-          of it. There are no lines between days: the rows are enough. */}
+      {/* The cells themselves: a line between days, and shading for the days that mean
+          something (today, dates the child cannot play, the edges of the month). It sits
+          behind everything so a bar always reads on top of it. */}
       <div aria-hidden className="absolute inset-0 grid grid-cols-7">
         {week.days.map((day) => (
           <div
             key={day.iso}
             className={cn(
+              "border-l border-slate-200 first:border-l-0",
               day.outside && "bg-slate-50",
               day.blocked && "bg-slate-200",
               day.isToday && !day.blocked && "bg-orange-50/70"
@@ -217,7 +253,7 @@ function WeekView({
       <div
         className="relative grid grid-cols-7 pb-1.5"
         style={{
-          gridTemplateRows: `auto repeat(${Math.max(week.laneCount, 1)}, ${LANE_HEIGHT}px)${footer ? " auto" : ""}`,
+          gridTemplateRows: `auto${week.laneCount > 0 ? ` repeat(${week.laneCount}, ${LANE_HEIGHT}px)` : ""}${hasChips ? " auto" : ""}${footer ? " auto" : ""}`,
           rowGap: 3,
           minHeight: ROW_MIN_HEIGHT,
         }}
@@ -233,30 +269,45 @@ function WeekView({
             onSelect={onSelect}
           />
         ))}
+        {hasChips &&
+          week.days.map((day, index) => (
+            <div
+              key={`chips-${day.iso}`}
+              style={{ gridColumn: index + 1, gridRow: chipRow }}
+              className="relative z-10 flex min-w-0 flex-col gap-1 px-1 pb-1"
+            >
+              {day.chips.map((item) => (
+                <EventChip
+                  key={item.slug}
+                  item={item}
+                  selected={item.slug === selectedSlug}
+                  onSelect={onSelect}
+                />
+              ))}
+              {day.moreChips.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onToggle(week.key)}
+                  aria-label={`${day.moreChips.length} more ${day.moreChips.length === 1 ? "event" : "events"} in the week of ${weekOf}`}
+                  className="inline-flex h-6 items-center gap-0.5 rounded px-1 text-left text-[11px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                >
+                  <ChevronDown className="h-3 w-3" aria-hidden />
+                  {day.moreChips.length} more
+                </button>
+              )}
+            </div>
+          ))}
         {footer && (
           <button
             type="button"
             onClick={() => onToggle(week.key)}
             aria-expanded={expanded}
-            aria-label={
-              expanded
-                ? "Show fewer"
-                : `${week.hidden.length} more ${week.hidden.length === 1 ? "event" : "events"} in the week of ${week.label.replace(/^Week of /, "")}`
-            }
-            style={{ gridColumn: "1 / 8", gridRow: Math.max(week.laneCount, 1) + 2 }}
+            aria-label="Show fewer"
+            style={{ gridColumn: "1 / 8", gridRow: chipRow + (hasChips ? 1 : 0) }}
             className="relative z-10 mx-0.5 inline-flex items-center gap-1 justify-self-start rounded-md px-2 py-1 text-[12px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
           >
-            {expanded ? (
-              <>
-                <ChevronUp className="h-3.5 w-3.5" aria-hidden />
-                Show fewer
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                {week.hidden.length} more {week.hidden.length === 1 ? "event" : "events"}
-              </>
-            )}
+            <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+            Show fewer
           </button>
         )}
       </div>
@@ -270,6 +321,7 @@ function Legend({ weeks, items }: { weeks: WeekRow[]; items: CalendarItem[] }) {
   for (const week of weeks) {
     for (const bar of week.bars) drawn.add(bar.item);
     for (const item of week.hidden) drawn.add(item);
+    for (const day of week.days) for (const item of day.chips) drawn.add(item);
   }
   const has = (test: (item: CalendarItem) => boolean) => [...drawn].some(test);
   const days = weeks.flatMap((week) => week.days);
@@ -377,6 +429,7 @@ export function SeasonCalendar({
       today,
       range,
       maxLanes: MAX_LANES,
+      maxChips: MAX_CHIPS,
       weekStartsOn: WEEK_STARTS_ON,
       ...(expandedWeeks ? { expandedWeeks } : {}),
     });

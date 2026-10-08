@@ -30,6 +30,7 @@ export function PlanPanel({
   calendar,
   costs,
   costsLoading,
+  yearlyLimit,
 }: {
   dependentId: string;
   /** Every event the page knows about, to enrich plan entries by slug. */
@@ -37,6 +38,8 @@ export function PlanPanel({
   /** Travel and stay for the plan, once the server has priced it. */
   costs: CostResponse | null;
   costsLoading: boolean;
+  /** How many events AITA lets this age group play in a year, where it says. */
+  yearlyLimit: { cap: number | null; ageGroup: string };
 }) {
   const { entries, isLoading, setStatus, remove, setCosts } = useSeasonPlan(dependentId);
 
@@ -91,8 +94,19 @@ export function PlanPanel({
 
   const upcoming = merged.filter(({ entry }) => entry.status !== "played");
 
+  const thisYear = new Date().getUTCFullYear();
+  const countedThisYear = entries.filter(
+    (entry) => new Date(entry.startDate).getUTCFullYear() === thisYear
+  ).length;
+  const { cap, ageGroup } = yearlyLimit;
+
   return (
     <div>
+      <p className="mb-3 text-xs leading-relaxed text-slate-600">
+        {cap
+          ? `AITA lets a player in ${ageGroup} play up to ${cap} events a year. ${countedThisYear} ${countedThisYear === 1 ? "is" : "are"} on this plan. Events in an older age group count towards this too.`
+          : `${countedThisYear} event${countedThisYear === 1 ? "" : "s"} on this plan for ${thisYear}.`}
+      </p>
       <ul>
         {merged.map(({ entry, endDate, location, calendarEvent }) => (
           <PlanEntryRow

@@ -1,5 +1,6 @@
 "use client";
 
+import { Collapsible } from "@/modules/planner/components/Collapsible";
 import { EventDetail } from "@/modules/planner/components/EventDetail";
 import { PlanPanel } from "@/modules/planner/components/PlanPanel";
 import { RecommendationsSection } from "@/modules/planner/components/RecommendationsSection";
@@ -23,35 +24,30 @@ import { CalendarDays, List } from "lucide-react";
 import { useState } from "react";
 
 /**
- * The calendar and the panel that works on it.
+ * Choosing tournaments, the plan they become, and the calendar they sit on.
  *
- * ── Why they sit together ───────────────────────────────────────────────────
- * The plan, the suggestions and one event's details are three views of the same
- * events, and a parent moves between them constantly: look at an event, add it, see
- * the plan change, ask what else fits. As three full-width sections stacked down the
- * page that meant a long scroll between each step. Beside the calendar they are one
- * click apart and the calendar is still in view while they are used.
+ * ── One column, one job at a time ───────────────────────────────────────────
+ * The plan and the suggestions are two tabs of one panel, because a parent is doing
+ * one or the other, and the panel is the page's centre. The calendar is below it and
+ * closed: it is for checking clashes and seeing the season by month, and a parent can
+ * plan without it. An earlier layout put the calendar first with the panel beside it
+ * and the event details in a third tab; a parent's first screen was a wall of bars.
  *
- * ── The panel ───────────────────────────────────────────────────────────────
- * Plan and Suggested are tabs. Selecting an event on the calendar adds a third, the
- * event itself, and closing it returns to where they were. On a narrow screen the
- * event opens in a dialog instead, and what the calendar draws becomes a list,
- * because seven narrow columns cannot hold a readable event name.
- *
- * In the document the panel comes first and the calendar second. On a phone that is
- * also the order on the screen, which is the order a parent wants (their plan, then
- * the season), and on a wide screen the grid places the calendar on the left.
+ * An event's details always open in a dialog, from the calendar, the list or the
+ * "do this next" box, so there is one way to look at an event, not two.
  *
  * Which event is open belongs to the board, not to this component, because the board
  * prices it: an event nobody has planned or been suggested has no estimate until
  * someone looks at it, and looking at it is what asks for one.
  */
 
-type Tab = "plan" | "suggested";
+export type WorkspaceTab = "plan" | "suggested";
 
 export function SeasonWorkspace({
   dependentId,
-  homeState,
+  yearlyLimit,
+  tab,
+  onTabChange,
   shortlist,
   planEntries,
   preferences,
@@ -66,7 +62,9 @@ export function SeasonWorkspace({
   onSelect,
 }: {
   dependentId: string;
-  homeState: string | null;
+  yearlyLimit: { cap: number | null; ageGroup: string };
+  tab: WorkspaceTab;
+  onTabChange: (tab: WorkspaceTab) => void;
   shortlist: Shortlist;
   planEntries: SeasonPlanEntry[];
   preferences: PlanPreferences | undefined;
@@ -83,9 +81,6 @@ export function SeasonWorkspace({
   const isWide = useIsWide();
   const [showAvailable, setShowAvailable] = useState(true);
   const [view, setView] = useState<"calendar" | "list">("calendar");
-  // A plan to look at if there is one; otherwise the suggestions, which are what a
-  // parent with an empty plan has come for.
-  const [tab, setTab] = useState<Tab>(() => (planEntries.length > 0 ? "plan" : "suggested"));
 
   const items = buildCalendarItems({
     shortlist,
@@ -127,13 +122,11 @@ export function SeasonWorkspace({
       dependentId={dependentId}
       cost={eventCosts?.[selected.slug]}
       costsLoading={costsLoading}
-      heading={isWide}
+      heading={false}
       onClose={() => onSelect(null)}
     />
   );
 
-  // On a wide screen an open event takes the panel. Choosing another tab closes it.
-  const active: Tab | "event" = isWide && selected ? "event" : tab;
   const planCount = planEntries.length;
   const suggestedCount = recommendations?.items.length ?? 0;
 
@@ -141,31 +134,25 @@ export function SeasonWorkspace({
     "min-h-11 rounded-none border-b-2 border-transparent px-3 py-2.5 text-sm font-semibold text-slate-600 shadow-none data-[state=active]:border-orange-600 data-[state=active]:bg-transparent data-[state=active]:text-slate-900 data-[state=active]:shadow-none";
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+    <div className="space-y-6">
       <section
-        aria-label="Plan, suggestions and event details"
-        className="rounded-lg border border-slate-200 bg-white lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto"
+        aria-label="Your plan and suggestions"
+        data-tour="pick"
+        className="rounded-lg border border-slate-200 bg-white"
       >
         <Tabs
-          value={active}
+          value={tab}
           onValueChange={(value) => {
-            if (value === "event") return;
-            setTab(value as Tab);
-            if (selected) onSelect(null);
+            onTabChange(value as WorkspaceTab);
           }}
         >
           <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b border-slate-200 bg-transparent p-0 px-2">
             <TabsTrigger value="plan" className={trigger}>
-              Plan{planCount > 0 ? ` (${planCount})` : ""}
+              Your plan{planCount > 0 ? ` (${planCount})` : ""}
             </TabsTrigger>
             <TabsTrigger value="suggested" className={trigger}>
               Suggested{suggestedCount > 0 ? ` (${suggestedCount})` : ""}
             </TabsTrigger>
-            {isWide && selected && (
-              <TabsTrigger value="event" className={trigger}>
-                Event
-              </TabsTrigger>
-            )}
           </TabsList>
 
           {/* Both stay mounted and the inactive one is hidden, so a figure half
@@ -176,6 +163,7 @@ export function SeasonWorkspace({
               calendar={calendar}
               costs={costs}
               costsLoading={costsLoading}
+              yearlyLimit={yearlyLimit}
             />
           </TabsContent>
           <TabsContent
@@ -185,7 +173,6 @@ export function SeasonWorkspace({
           >
             <RecommendationsSection
               dependentId={dependentId}
-              homeState={homeState}
               costs={eventCosts}
               costsLoading={costsLoading}
               calendar={calendar}
@@ -194,94 +181,85 @@ export function SeasonWorkspace({
               onAdd={onAdd}
             />
           </TabsContent>
-          {isWide && selected && (
-            <TabsContent value="event" className="mt-0 p-4">
-              {detail}
-            </TabsContent>
-          )}
         </Tabs>
       </section>
 
-      <section
-        aria-labelledby="season-calendar"
-        className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6 lg:col-start-1 lg:row-start-1"
+      <Collapsible
+        tour="calendar"
+        title="Season calendar"
+        description="See your tournaments month by month and spot clashes."
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="season-calendar" className="font-title text-lg font-extrabold text-slate-900">
-            Season calendar
-          </h2>
-          {isWide && (
-            <div role="group" aria-label="How to show the season" className="flex gap-1">
-              {(
-                [
-                  ["calendar", "Calendar", CalendarDays],
-                  ["list", "List", List],
-                ] as const
-              ).map(([value, label, Icon]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={view === value}
-                  onClick={() => setView(value)}
-                  className={cn(
-                    "inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold",
-                    view === value
-                      ? "border-slate-900 bg-slate-900 text-white"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                  )}
-                >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {isWide && (
+          <div
+            role="group"
+            aria-label="How to show the season"
+            className="mb-4 flex justify-end gap-1"
+          >
+            {(
+              [
+                ["calendar", "Calendar", CalendarDays],
+                ["list", "List", List],
+              ] as const
+            ).map(([value, label, Icon]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={view === value}
+                onClick={() => setView(value)}
+                className={cn(
+                  "inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold",
+                  view === value
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                )}
+              >
+                <Icon className="h-4 w-4" aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
-        <div className="mt-4">
-          {showGrid ? (
-            <SeasonCalendar
+        {showGrid ? (
+          <SeasonCalendar
+            items={items}
+            blocked={preferences?.blockedRanges ?? []}
+            today={today}
+            month={month}
+            months={months}
+            onMonthChange={setChosenMonth}
+            selectedSlug={selectedSlug}
+            onSelect={(slug) => onSelect(slug === selectedSlug ? null : slug)}
+            showAvailable={showAvailable}
+            onToggleAvailable={setShowAvailable}
+          />
+        ) : (
+          <div>
+            <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={showAvailable}
+                onChange={(event) => setShowAvailable(event.target.checked)}
+              />
+              Show every event they can enter
+            </label>
+            <SeasonAgenda
               items={items}
-              blocked={preferences?.blockedRanges ?? []}
-              today={today}
-              month={month}
-              months={months}
-              onMonthChange={setChosenMonth}
               selectedSlug={selectedSlug}
               onSelect={(slug) => onSelect(slug === selectedSlug ? null : slug)}
-              showAvailable={showAvailable}
-              onToggleAvailable={setShowAvailable}
             />
-          ) : (
-            <div>
-              <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={showAvailable}
-                  onChange={(event) => setShowAvailable(event.target.checked)}
-                />
-                Show every event they can enter
-              </label>
-              <SeasonAgenda
-                items={items}
-                selectedSlug={selectedSlug}
-                onSelect={(slug) => onSelect(slug === selectedSlug ? null : slug)}
-              />
-            </div>
-          )}
-        </div>
-      </section>
+          </div>
+        )}
+      </Collapsible>
 
-      {!isWide && (
-        <Modal
-          isOpen={Boolean(selected)}
-          onClose={() => onSelect(null)}
-          title={selected?.name}
-          size="md"
-        >
-          {detail}
-        </Modal>
-      )}
+      <Modal
+        isOpen={Boolean(selected)}
+        onClose={() => onSelect(null)}
+        title={selected?.name}
+        size="md"
+      >
+        {detail}
+      </Modal>
     </div>
   );
 }

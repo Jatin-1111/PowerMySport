@@ -141,7 +141,7 @@ export function describeMonth(choice: MonthChoice, items: CalendarItem[]): strin
   const planned = inMonth.filter((item) => item.kind === "planned");
   const parts: Array<[number, string]> = [
     [planned.filter((item) => item.status === "entered").length, "entered"],
-    [planned.filter((item) => item.status === "shortlisted").length, "still to enter"],
+    [planned.filter((item) => item.status === "shortlisted").length, "not entered yet"],
     [planned.filter((item) => item.status === "played").length, "played"],
     [inMonth.filter((item) => item.kind === "suggested").length, "suggested"],
     [inMonth.filter((item) => item.kind === "available").length, "open to enter"],

@@ -14,7 +14,7 @@ const POINTS = [
   {
     icon: ShieldCheck,
     title: "Only events your child can enter",
-    body: "Every upcoming junior event is checked against AITA's published entry rules for their age list and rank. Events that are closed to them are shown with the reason, not hidden.",
+    body: "Every upcoming junior event is checked against AITA's published entry rules for their age group and rank. Events that are closed to them are shown with the reason, not hidden.",
   },
   {
     icon: ListChecks,

@@ -97,9 +97,9 @@ export function useSeasonPlan(dependentId: string) {
       seasonPlanApi.setPreferences(dependentId, preferences),
     onSuccess: (plan) => {
       apply(plan);
-      toast.success("Preferences saved.");
+      toast.success("Setup saved.");
     },
-    onError: failed("Could not save those preferences."),
+    onError: failed("Could not save your setup."),
   });
 
   const entries = query.data?.entries ?? [];

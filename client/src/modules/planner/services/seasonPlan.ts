@@ -115,7 +115,7 @@ export const seasonPlanApi = {
 
 /** How a status reads to the parent who set it. */
 export const STATUS_LABEL: Record<SeasonPlanEntryStatus, string> = {
-  shortlisted: "Shortlisted",
+  shortlisted: "Not entered yet",
   entered: "Entered",
   played: "Played",
 };

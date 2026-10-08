@@ -49,6 +49,14 @@ export interface DayCell {
   /** Planned or suggested events whose entries close on this day. */
   deadlines: CalendarItem[];
   /**
+   * Events that are merely open, which start on this day. They are chips in the day's
+   * own cell, not bars: an open event runs a whole week, and fifteen of them drawn as
+   * week-long bars is a list that happens to sit on a grid, not a calendar.
+   */
+  chips: CalendarItem[];
+  /** Open events starting this day that were left out of `chips` to keep the cell short. */
+  moreChips: CalendarItem[];
+  /**
    * True for a day that belongs to the week drawn but not to the month asked for: the
    * end of the month before in the first row, the start of the next in the last.
    */
@@ -75,8 +83,8 @@ export interface WeekRow {
   bars: Bar[];
   laneCount: number;
   /**
-   * Events in this week left out of `bars` to keep a busy week readable, soonest first.
-   * Never a planned or suggested event: those are placed first and are never hidden.
+   * Open events in this week left out of its cells to keep a busy day readable, soonest
+   * first. Never a planned or suggested event: those are bars, placed first, never hidden.
    */
   hidden: CalendarItem[];
 }
@@ -131,6 +139,8 @@ export function buildCalendar(params: {
    * A week with a plan and suggestions always draws as many as they need.
    */
   maxLanes?: number;
+  /** The most open-event chips one day's cell draws before "N more". */
+  maxChips?: number;
   /** The weekday each row starts on: Monday is 0 (the default) and Saturday is 5. */
   weekStartsOn?: number;
   /** Weeks, by `key`, drawn in full whatever `maxLanes` says. */
@@ -142,6 +152,7 @@ export function buildCalendar(params: {
   const minWeeks = params.minWeeks ?? MIN_WEEKS;
   const maxWeeks = params.maxWeeks ?? MAX_WEEKS;
   const maxLanes = params.maxLanes ?? Infinity;
+  const maxChips = params.maxChips ?? Infinity;
   const weekStartsOn = params.weekStartsOn ?? 0;
 
   const today = dayNumber(params.today);
@@ -179,10 +190,20 @@ export function buildCalendar(params: {
     return day >= today ? day : null;
   };
 
+  // What is merely open is a chip on the day it starts. An event that began before the
+  // month shown sits on the month's first day, so it is still found there.
+  const chipDayOf = (entry: { start: number }): number => Math.max(entry.start, windowFrom);
+  const openEntries = visible
+    .filter((entry) => entry.item.kind === "available")
+    .sort(
+      (a, b) => a.item.name.localeCompare(b.item.name) || a.item.slug.localeCompare(b.item.slug)
+    );
+
   const weeks: WeekRow[] = [];
   for (let w = 0; w < weekCount; w += 1) {
     const startDay = firstDay + w * 7;
     const endDay = startDay + 6;
+    const weekExpanded = Boolean(params.expandedWeeks?.has(isoOf(startDay)));
 
     const days: DayCell[] = [];
     for (let col = 0; col < 7; col += 1) {
@@ -202,12 +223,20 @@ export function buildCalendar(params: {
         deadlines: visible
           .filter((entry) => deadlineDay(entry.item) === day)
           .map((entry) => entry.item),
+        chips: [],
+        moreChips: [],
       });
+      const cell = days[days.length - 1]!;
+      const starting = openEntries.filter((entry) => chipDayOf(entry) === day).map((e) => e.item);
+      const cap = weekExpanded ? Infinity : maxChips;
+      cell.chips = starting.slice(0, cap);
+      cell.moreChips = starting.slice(cap);
     }
 
     // Longer bars first, so a long event takes the top lane and short ones fill in
     // beneath it, which reads better than the reverse.
     const inWeek = visible
+      .filter((entry) => entry.item.kind !== "available")
       .filter((entry) => entry.start <= endDay && entry.end >= startDay)
       .map((entry) => ({
         ...entry,
@@ -264,11 +293,14 @@ export function buildCalendar(params: {
         continuesAfter: entry.end > endDay,
       }))
       .sort((a, b) => a.startCol - b.startCol || a.lane - b.lane);
-    const hidden = placed
-      .filter(({ lane }) => lane >= cap)
-      .map(({ entry }) => entry)
-      .sort((a, b) => a.startCol - b.startCol || a.item.slug.localeCompare(b.item.slug))
-      .map((entry) => entry.item);
+    const hidden = [
+      ...placed
+        .filter(({ lane }) => lane >= cap)
+        .map(({ entry }) => entry)
+        .sort((a, b) => a.startCol - b.startCol || a.item.slug.localeCompare(b.item.slug))
+        .map((entry) => entry.item),
+      ...days.flatMap((day) => day.moreChips),
+    ];
     const laneCount = shown.reduce((most, { lane }) => Math.max(most, lane + 1), 0);
 
     weeks.push({

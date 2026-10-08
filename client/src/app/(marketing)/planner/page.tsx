@@ -41,7 +41,7 @@ export default function PlannerPage() {
           breadcrumbs={[{ label: "Season planner" }]}
           eyebrow="Tennis"
           title="Season planner"
-          description="Plan your child's season around the tournaments they can actually enter. Events are checked against the federation's published entry rules for their age list and rank."
+          description="Plan your child's season around the tournaments they can actually enter. Events are checked against the federation's published entry rules for their age group and rank."
           width="7xl"
         />
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
