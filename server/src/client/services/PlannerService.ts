@@ -1,7 +1,7 @@
 import {
   annualEntryCap,
   buildShortlist,
-  homeStanding,
+  placeInAgeGroup,
   type PlannerEdition,
   type PlannerOfficialDetails,
   type Shortlist,
@@ -42,9 +42,13 @@ export type PlannerLinkState =
 
 export interface PlannerStanding {
   category: string;
+  /** The age group they play in, from their birth year. */
   subcategory: string;
-  rank: number;
-  totalPoints: number;
+  /** Their rank in that age group's own list. Null if they are not ranked there yet. */
+  rank: number | null;
+  totalPoints: number | null;
+  /** The other junior lists they are ranked in (a child who plays up), youngest first. */
+  alsoRanked: Array<{ subcategory: string; rank: number }>;
   /** The state the player is registered in, when the list records one. */
   state: string | null;
   asOnDate: Date;
@@ -212,8 +216,8 @@ export const PlannerService = {
       };
     }
 
-    const home = homeStanding(claim.standings);
-    if (!home) {
+    const placement = placeInAgeGroup(claim.standings);
+    if (!placement) {
       return {
         ...base,
         linkState: "no-junior-standing",
@@ -224,20 +228,30 @@ export const PlannerService = {
       };
     }
 
+    // Category, home state and list date come from their own list where they are on it,
+    // and from the youngest list they are on where they are not.
+    const { own, ageGroup, alsoRanked } = placement;
+    const source = own ?? alsoRanked[0]!;
+    const rank = own?.rank ?? null;
+
     const editions = await loadUpcoming(sportSlug);
     return {
       ...base,
       linkState: "ready",
       standing: {
-        category: home.category,
-        subcategory: home.subcategory,
-        rank: home.rank,
-        totalPoints: home.totalPoints,
-        state: home.state,
-        asOnDate: home.asOnDate,
+        category: source.category,
+        subcategory: ageGroup,
+        rank,
+        totalPoints: own?.totalPoints ?? null,
+        alsoRanked: alsoRanked.map((other) => ({
+          subcategory: other.subcategory,
+          rank: other.rank,
+        })),
+        state: source.state,
+        asOnDate: source.asOnDate,
       },
-      annualEntryCap: annualEntryCap(home.subcategory),
-      shortlist: buildShortlist(editions, { bracket: home.subcategory, rank: home.rank }),
+      annualEntryCap: annualEntryCap(ageGroup),
+      shortlist: buildShortlist(editions, { bracket: ageGroup, rank }),
       editionsConsidered: editions.length,
     };
   },

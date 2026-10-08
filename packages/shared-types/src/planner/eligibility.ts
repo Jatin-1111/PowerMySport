@@ -77,9 +77,14 @@ export interface PlannerEdition {
 }
 
 export interface PlannerPlayer {
-  /** The list they are ranked in, e.g. "U-14". */
+  /** The age group they play in, e.g. "U-14". */
   bracket: string;
-  rank: number;
+  /**
+   * Their rank in that age group's own list. Null when they are not ranked there,
+   * which is true of a child who has only played up so far: no rank means no
+   * ranking-based bar, because nothing about their standing can bar them.
+   */
+  rank: number | null;
 }
 
 export type EligibilityStatus = "open" | "closed" | "unknown";
@@ -184,7 +189,7 @@ export function judgeEdition(edition: PlannerEdition, player: PlannerPlayer): Pl
 
   // The reverse gate: doing well closes the entry level. Read from the same
   // function the ranking page uses, so the two can never disagree about it.
-  const status = entryStatus(player.rank, player.bracket);
+  const status = player.rank === null ? null : entryStatus(player.rank, player.bracket);
   if (edition.ladder && status?.closed.includes(edition.ladder)) {
     return {
       edition,
@@ -211,8 +216,8 @@ export function judgeEdition(edition: PlannerEdition, player: PlannerPlayer): Pl
     edition,
     status: "open",
     reason: edition.ladder
-      ? `${edition.ladder} is open to enter at this rank.`
-      : "Open to enter at this rank.",
+      ? `${edition.ladder} is open to enter${player.rank === null ? "" : " at this rank"}.`
+      : `Open to enter${player.rank === null ? "" : " at this rank"}.`,
     playingUp: age.playingUp,
     notes,
   };
@@ -263,20 +268,85 @@ export function buildShortlist(editions: PlannerEdition[], player: PlannerPlayer
 }
 
 /**
- * The list a child belongs to, rather than one they are visiting.
+ * Where a child belongs: the age group they play in, and the lists they are ranked in.
  *
- * A player ranked in both U-14 and U-16 is a U-14 who plays up; judging their
- * entries against U-16 would let them "enter" events below their own age group.
+ * ── Age group comes from the birth year, not from the lists ─────────────────
+ * AITA's age groups are two-year cohorts of the birth year (in 2026: U-12 is 2014
+ * and later, U-14 is 2012-13, U-16 is 2010-11, U-18 is 2008-09), and a child may play
+ * up, so being ranked in a list says what they have entered, not how old they are.
+ * Measured on the 2026-09-21 lists, "the youngest list they appear in" gave the right
+ * age group for 5,624 of 5,678 players. The 47 it got wrong were children who had
+ * played up and had no rank in their own list yet: a 2014-born child ranked only in
+ * U-14 and U-16 was judged as a U-14, and every U-12 event was "closed, below U-14".
+ *
+ * So the age group is read from the birth year, and the lists then say what rank they
+ * hold there. The youngest list is only the fallback, for a player whose birth year
+ * the list does not print.
+ *
+ * ── Several lists are the normal case ───────────────────────────────────────
+ * 3,143 of those 5,678 players are in two or more lists. A child ranked in U-16 and
+ * U-18 is a U-16 who plays up: their age group is U-16, their rank for the rules is
+ * their U-16 rank, and their U-18 rank is kept as `alsoRanked` so it can be shown.
+ *
  * Only junior lists count: an open-age list carries none of these rules.
  *
- * Generic over the standing so the client's and the server's shapes both fit,
- * and returns the caller's own object rather than a copy.
+ * Generic over the standing so the client's and the server's shapes both fit, and
+ * returns the caller's own objects rather than copies.
  */
-export function homeStanding<T extends { subcategory: string }>(standings: readonly T[]): T | null {
-  const ageOf = (standing: T): number => Number(/\d+/.exec(standing.subcategory)?.[0] ?? 99);
-  return (
-    [...standings]
-      .filter((standing) => /^U-\d+$/i.test(standing.subcategory))
-      .sort((a, b) => ageOf(a) - ageOf(b))[0] ?? null
-  );
+export interface AgeGroupPlacement<T> {
+  /** The age group they play in, e.g. "U-16". */
+  ageGroup: string;
+  /** Their standing in that group's own list. Null if they are not ranked there. */
+  own: T | null;
+  /** Every other junior list they are ranked in, youngest first. */
+  alsoRanked: T[];
+  /** What the age group was read from. */
+  basis: "birth-year" | "youngest-list";
+}
+
+const JUNIOR_AGE_GROUPS = [12, 14, 16, 18] as const;
+
+const listAge = (standing: { subcategory: string }): number =>
+  Number(/\d+/.exec(standing.subcategory)?.[0] ?? 99);
+
+/** The age group a birth year falls in for a list year, or null if it falls in none. */
+function cohortOf(birthYear: number, year: number): number | null {
+  if (!Number.isInteger(birthYear) || birthYear > year) return null;
+  return JUNIOR_AGE_GROUPS.find((age) => birthYear >= year - age) ?? null;
+}
+
+export function placeInAgeGroup<
+  T extends { subcategory: string; birthYear?: number | null; asOnDate?: string | Date },
+>(standings: readonly T[]): AgeGroupPlacement<T> | null {
+  const junior = standings
+    .filter((standing) => /^U-\d+$/i.test(standing.subcategory))
+    .sort((a, b) => listAge(a) - listAge(b));
+  if (junior.length === 0) return null;
+
+  // The year the lists are for, which is what the age cohorts are counted from.
+  const listed = junior
+    .map((standing) => (standing.asOnDate ? new Date(standing.asOnDate).getUTCFullYear() : NaN))
+    .filter((year) => Number.isFinite(year));
+  const year = listed.length > 0 ? Math.max(...listed) : new Date().getUTCFullYear();
+
+  const birthYear = junior.find((standing) => typeof standing.birthYear === "number")?.birthYear;
+  const cohort = typeof birthYear === "number" ? cohortOf(birthYear, year) : null;
+
+  if (cohort === null) {
+    const [youngest, ...rest] = junior;
+    return {
+      ageGroup: `U-${listAge(youngest!)}`,
+      own: youngest!,
+      alsoRanked: rest,
+      basis: "youngest-list",
+    };
+  }
+
+  const own = junior.find((standing) => listAge(standing) === cohort) ?? null;
+  return {
+    ageGroup: `U-${cohort}`,
+    own,
+    alsoRanked: junior.filter((standing) => standing !== own),
+    basis: "birth-year",
+  };
 }

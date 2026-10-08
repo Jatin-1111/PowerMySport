@@ -15,6 +15,8 @@ export interface UserDocument extends Document {
   photoUrl?: string;
   photoS3Key?: string;
   city?: string;
+  /** True once the parent has finished or skipped the season planner's tour. */
+  plannerTourSeen?: boolean;
   lastActiveAt?: Date;
   dob?: Date;
   // Parent-only profile fields — previously lived on the (now-removed)
@@ -120,6 +122,7 @@ const userSchema = new Schema<UserDocument>(
     photoUrl: { type: String },
     photoS3Key: { type: String },
     city: { type: String, trim: true },
+    plannerTourSeen: { type: Boolean, default: false },
     lastActiveAt: { type: Date, default: Date.now, index: true },
     dob: { type: Date },
     bio: { type: String, maxlength: 300 },

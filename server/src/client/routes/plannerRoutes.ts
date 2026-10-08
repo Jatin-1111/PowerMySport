@@ -5,7 +5,9 @@ import {
   getCosts,
   getPlanner,
   getRecommendations,
+  getTour,
   putHomeCity,
+  putTour,
 } from "../controllers/plannerController";
 import { authMiddleware } from "../../middleware/auth";
 import { createRedisRateLimitStore } from "../../middleware/rateLimit";
@@ -35,6 +37,9 @@ const suggestLimiter = rateLimit({
 // A planner is always about a profile this account owns: authenticated, and the
 // service re-checks ownership rather than trusting the id in the path.
 plannerRouter.put("/home-city", authMiddleware, putHomeCity);
+// Both before "/:dependentId", which would otherwise read "tour" as a child's id.
+plannerRouter.get("/tour", authMiddleware, getTour);
+plannerRouter.put("/tour", authMiddleware, putTour);
 plannerRouter.get("/:dependentId", authMiddleware, getPlanner);
 plannerRouter.get("/:dependentId/costs", authMiddleware, getCosts);
 plannerRouter.get("/:dependentId/recommendations", authMiddleware, getRecommendations);

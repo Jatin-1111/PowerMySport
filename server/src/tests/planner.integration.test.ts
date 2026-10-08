@@ -43,7 +43,7 @@ const seedChild = (parentId: unknown, name = "Aarav") =>
 
 const seedStanding = (
   regNo: string,
-  options: { rank: number; subcategory?: string; category?: string }
+  options: { rank: number; subcategory?: string; category?: string; birthYear?: number | null }
 ) =>
   RankingEntry.create({
     snapshot: new mongoose.Types.ObjectId(),
@@ -59,8 +59,8 @@ const seedStanding = (
     familyName: "Khandelwal",
     fullName: "Aarav Khandelwal",
     nameSearch: "aarav khandelwal",
-    dob: new Date(Date.UTC(2012, 4, 17)),
-    birthYear: 2012,
+    dob: new Date(Date.UTC(options.birthYear ?? 2012, 4, 17)),
+    birthYear: options.birthYear === undefined ? 2012 : options.birthYear,
     state: "Maharashtra",
     stateCode: "MH",
     totalPoints: 148,
@@ -137,6 +137,99 @@ describe("a child with no ranking link", () => {
     assert.equal(overview.shortlist, null);
     assert.equal(overview.standing, null);
     assert.equal(overview.dependentName, "Aarav");
+  });
+});
+
+describe("a child ranked in more than one list", () => {
+  it("plays in the age group their birth year gives, and keeps the other list to show", async () => {
+    // A real case from the 2026-09-21 lists: born 2011, U-16 rank 341 and U-18 rank 431.
+    const parent = await seedParent("Rahul Vikrant");
+    const child = await seedChild(parent._id, "Vikrant");
+    await seedStanding("447854", { rank: 341, subcategory: "U-16", birthYear: 2011 });
+    await seedStanding("447854", { rank: 431, subcategory: "U-18", birthYear: 2011 });
+    await link(parent._id, child._id, "447854");
+    await seedEdition({ name: "AITA U16 event", ageGroups: ["Under-16"] });
+    await seedEdition({ name: "AITA U18 event", ageGroups: ["Under-18"] });
+
+    const overview = await PlannerService.forDependent(String(parent._id), String(child._id));
+
+    assert.equal(overview.standing.subcategory, "U-16");
+    assert.equal(overview.standing.rank, 341);
+    assert.deepEqual(overview.standing.alsoRanked, [{ subcategory: "U-18", rank: 431 }]);
+    assert.equal(overview.annualEntryCap, 30);
+    assert.deepEqual(
+      overview.shortlist.ownGroup.map((entry: { edition: { name: string } }) => entry.edition.name),
+      ["AITA U16 event"]
+    );
+    assert.deepEqual(
+      overview.shortlist.playingUp.map(
+        (entry: { edition: { name: string } }) => entry.edition.name
+      ),
+      ["AITA U18 event"]
+    );
+  });
+
+  it("is judged in their own age group even when they are not ranked there yet", async () => {
+    // Born 2014 (an Under-12), ranked only in U-14 and U-16 because they have played up.
+    // Judged as a U-14 they would be told every U-12 event is closed to them.
+    const parent = await seedParent("Rahul Playup");
+    const child = await seedChild(parent._id, "Ira");
+    await seedStanding("447900", { rank: 671, subcategory: "U-14", birthYear: 2014 });
+    await seedStanding("447900", { rank: 834, subcategory: "U-16", birthYear: 2014 });
+    await link(parent._id, child._id, "447900");
+    await seedEdition({ name: "AITA U12 event", ageGroups: ["Under-12"] });
+    await seedEdition({ name: "AITA U14 event", ageGroups: ["Under-14"] });
+
+    const overview = await PlannerService.forDependent(String(parent._id), String(child._id));
+
+    assert.equal(overview.linkState, "ready");
+    assert.equal(overview.standing.subcategory, "U-12");
+    assert.equal(overview.standing.rank, null);
+    assert.equal(overview.standing.totalPoints, null);
+    assert.deepEqual(overview.standing.alsoRanked, [
+      { subcategory: "U-14", rank: 671 },
+      { subcategory: "U-16", rank: 834 },
+    ]);
+    assert.equal(overview.annualEntryCap, 18);
+    assert.equal(overview.shortlist.closed.length, 0);
+    assert.deepEqual(
+      overview.shortlist.ownGroup.map((entry: { edition: { name: string } }) => entry.edition.name),
+      ["AITA U12 event"]
+    );
+    assert.equal(overview.shortlist.playingUp.length, 1);
+  });
+
+  it("applies no ranking bar to a child who has no rank in their own list", async () => {
+    const parent = await seedParent("Rahul Unranked");
+    const child = await seedChild(parent._id, "Zoya");
+    await seedStanding("447901", { rank: 30, subcategory: "U-16", birthYear: 2014 });
+    await link(parent._id, child._id, "447901");
+    await seedEdition({
+      name: "AITA U12 TS",
+      ladder: "Talent Series",
+      grade: 1,
+      ageGroups: ["Under-12"],
+    });
+
+    const overview = await PlannerService.forDependent(String(parent._id), String(child._id));
+
+    // Rank 30 in U-16 is not a U-12 rank: it must not close a U-12 Talent Series.
+    assert.equal(overview.shortlist.closed.length, 0);
+    assert.equal(overview.shortlist.ownGroup.length, 1);
+  });
+
+  it("falls back to the youngest list when the list does not print a birth year", async () => {
+    const parent = await seedParent("Rahul Nobirth");
+    const child = await seedChild(parent._id, "Kian");
+    await seedStanding("447902", { rank: 90, subcategory: "U-14", birthYear: null });
+    await seedStanding("447902", { rank: 120, subcategory: "U-16", birthYear: null });
+    await link(parent._id, child._id, "447902");
+
+    const overview = await PlannerService.forDependent(String(parent._id), String(child._id));
+
+    assert.equal(overview.standing.subcategory, "U-14");
+    assert.equal(overview.standing.rank, 90);
+    assert.deepEqual(overview.standing.alsoRanked, [{ subcategory: "U-16", rank: 120 }]);
   });
 });
 

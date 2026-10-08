@@ -80,7 +80,7 @@ export interface CommittedEvent {
 export interface RecommendationContext {
   /** `YYYY-MM-DD`, UTC. Passed in so a run is reproducible. */
   today: string;
-  child: { firstName: string; list: string; rank: number; state: string | null };
+  child: { firstName: string; list: string; rank: number | null; state: string | null };
   goal: SeasonGoal;
   /** The goal actually applied: "home" falls back when no home state is known. */
   effectiveGoal: SeasonGoal;

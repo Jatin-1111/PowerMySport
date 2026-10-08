@@ -132,7 +132,7 @@ function allowedNumbers(candidate: Candidate, context: RecommendationContext): S
     ...dateNumbers(candidate.endDate),
     ...dateNumbers(candidate.deadline),
     ...(typeof candidate.grade === "number" ? [candidate.grade] : []),
-    context.child.rank,
+    ...(context.child.rank === null ? [] : [context.child.rank]),
     ...numbersIn(context.child.list),
     ...(context.allowanceLeft === null ? [] : [context.allowanceLeft]),
     context.committed.length,

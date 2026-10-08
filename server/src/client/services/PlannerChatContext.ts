@@ -44,7 +44,10 @@ export interface PlannerChatEvent {
 export interface PlannerChatSummary {
   child: string;
   list: string;
-  rank: number;
+  /** Null when the child is not ranked in this age group's list yet. */
+  rank: number | null;
+  /** Other junior lists they are ranked in, as "U-18 rank 431". */
+  alsoRanked: string[];
   listAsOn: string;
   yearlyEntryAllowance: number | null;
   openToEnter: PlannerChatEvent[];
@@ -107,6 +110,7 @@ export function summarizePlanner(
     child: overview.dependentName.split(/\s+/)[0] || "Your child",
     list: `${standing.category} ${standing.subcategory}`,
     rank: standing.rank,
+    alsoRanked: standing.alsoRanked.map((other) => `${other.subcategory} rank ${other.rank}`),
     listAsOn: fmt(standing.asOnDate.toISOString()),
     yearlyEntryAllowance: overview.annualEntryCap,
     openToEnter: shortlist.ownGroup.slice(0, MAX_OPEN).map(toEvent),
@@ -164,6 +168,7 @@ export const PLANNER_CHAT_RULES = [
   'Say "open to enter", never "they will get in": above Championship Series a draw is cut by ranking and a place is earned.',
   'If an entry deadline says "not published", say the deadline is not published and point to the event\'s fact sheet. Do not guess one.',
   "Dates can change. Mention the list date (listAsOn) when you quote a rank or a verdict.",
+  "The rank is their rank in the age group in `list`. If rank is null they are not ranked in that list yet (a child who has only played up): say so, never invent a rank. alsoRanked holds their ranks in older lists.",
   "Playing up uses the same yearly entry allowance as the child's own age group.",
   "Do not state what a tournament costs: no entry fees, travel or hotel prices. Entry fees are not published, and the planner page at /planner shows travel and stay as labelled estimates with the assumptions behind them. Point the parent there for costs.",
   "If a child has suggestedSeason, that is the season the parent was already shown at /planner. Quote it and do not make up a different one. If it is absent, do not invent a season plan: describe what is open to enter and point the parent to /planner for suggestions.",
