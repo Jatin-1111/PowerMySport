@@ -1,5 +1,6 @@
 "use client";
 
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
@@ -28,6 +29,7 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import {
   NavDropdownDivider,
+  NavDropdownFooter,
   NavDropdownHeading,
   NavDropdownItem,
   NavDropdownPanel,
@@ -117,6 +119,16 @@ const exploreItems = [
   },
 ];
 
+/** The same items, one column per group, for the side-by-side desktop menu. */
+const exploreGroups = exploreItems.reduce<
+  Array<{ group: string; items: (typeof exploreItems)[number][] }>
+>((groups, item) => {
+  const last = groups[groups.length - 1];
+  if (last?.group === item.group) last.items.push(item);
+  else groups.push({ group: item.group, items: [item] });
+  return groups;
+}, []);
+
 /**
  * Global Navigation Bar for marketing pages
  */
@@ -156,8 +168,20 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
       }
     };
 
+    // Escape closes whichever menu is open, as keyboard users expect.
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setExploreDropdownOpen(false);
+      setServicesDropdownOpen(false);
+      setUserDropdownOpen(false);
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const navigationLinksRight = [
@@ -222,6 +246,8 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
             {/* Explore Dropdown (Roadmap + Guidance) */}
             <div className="relative" ref={exploreDropdownRef}>
               <button
+                aria-expanded={exploreDropdownOpen}
+                aria-haspopup="true"
                 onClick={() => setExploreDropdownOpen(!exploreDropdownOpen)}
                 onMouseEnter={() => {
                   setExploreDropdownOpen(true);
@@ -244,24 +270,33 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
               </button>
 
               <NavDropdownPanel
+                wide
                 open={exploreDropdownOpen}
                 onMouseLeave={() => setExploreDropdownOpen(false)}
               >
-                {exploreItems.map((item, index) => (
-                  <Fragment key={item.href}>
-                    {item.group !== exploreItems[index - 1]?.group && (
-                      <NavDropdownHeading first={index === 0}>{item.group}</NavDropdownHeading>
-                    )}
-                    <NavDropdownItem
-                      href={item.href}
-                      icon={item.icon}
-                      label={item.label}
-                      description={item.description}
-                      active={pathname === item.href}
-                      onNavigate={() => setExploreDropdownOpen(false)}
-                    />
-                  </Fragment>
-                ))}
+                <div className="grid grid-cols-3 divide-x divide-slate-100">
+                  {exploreGroups.map(({ group, items }) => (
+                    <div key={group} className="pb-1">
+                      <NavDropdownHeading first>{group}</NavDropdownHeading>
+                      {items.map((item) => (
+                        <NavDropdownItem
+                          key={item.href}
+                          href={item.href}
+                          icon={item.icon}
+                          label={item.label}
+                          description={item.description}
+                          active={pathname === item.href}
+                          onNavigate={() => setExploreDropdownOpen(false)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <NavDropdownFooter
+                  href={buildWhatsAppUrl("Hi! I'm not sure where to start with my child's sport.")}
+                  prompt="Not sure where to start?"
+                  label="Get guidance on WhatsApp"
+                />
               </NavDropdownPanel>
             </div>
 

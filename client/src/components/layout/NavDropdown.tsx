@@ -2,6 +2,7 @@
 
 import { cn } from "@/utils/cn";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
+import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import { ArrowRight, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { createContext, useContext, type ReactNode } from "react";
@@ -37,10 +38,13 @@ function itemVariants(reduce: boolean): Variants {
 export function NavDropdownPanel({
   open,
   onMouseLeave,
+  wide = false,
   children,
 }: {
   open: boolean;
   onMouseLeave: () => void;
+  /** Lays groups out side by side; the caller wraps each group in a column. */
+  wide?: boolean;
   children: ReactNode;
 }) {
   const reduce = useReducedMotion() ?? false;
@@ -83,14 +87,21 @@ export function NavDropdownPanel({
             animate="show"
             exit="exit"
             onMouseLeave={onMouseLeave}
-            style={{ transformOrigin: "top center" }}
-            className="absolute left-1/2 mt-3 w-80 -translate-x-1/2 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl"
+            style={{ transformOrigin: wide ? "top left" : "top center" }}
+            className={cn(
+              "absolute mt-3 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl",
+              // The wide menu hangs from the button's left edge: centred, it
+              // would run off the left of the screen next to the logo.
+              wide
+                ? "w-[min(46rem,calc(100vw-2rem))] md:-left-44 lg:left-0"
+                : "left-1/2 w-80 -translate-x-1/2"
+            )}
           >
             <motion.div
               variants={accent}
               className="from-power-orange/60 via-power-orange to-power-orange/60 h-0.5 w-full bg-gradient-to-r"
             />
-            <div className="py-1.5">{children}</div>
+            <div className={wide ? undefined : "py-1.5"}>{children}</div>
           </motion.div>
         </ReducedMotionContext.Provider>
       )}
@@ -182,6 +193,40 @@ export function NavDropdownItem({
           className="text-power-orange h-4 w-4 shrink-0 -translate-x-1.5 opacity-0 transition duration-200 group-hover:translate-x-0 group-hover:opacity-100 motion-reduce:transition-none"
         />
       </Link>
+    </motion.div>
+  );
+}
+
+/**
+ * A strip along the bottom of a menu for the one thing to do when no row fits:
+ * ask a person. It opens in a new tab, so it takes an external href.
+ */
+export function NavDropdownFooter({
+  href,
+  prompt,
+  label,
+}: {
+  href: string;
+  prompt: string;
+  label: string;
+}) {
+  const variants = itemVariants(useContext(ReducedMotionContext));
+  return (
+    <motion.div
+      variants={variants}
+      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-slate-100 bg-slate-50 px-4 py-3"
+    >
+      <p className="text-sm text-slate-600">{prompt}</p>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-green-800 hover:text-green-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700"
+      >
+        <WhatsAppIcon className="h-4 w-4 shrink-0" />
+        {label}
+        <ArrowRight aria-hidden className="h-4 w-4" />
+      </a>
     </motion.div>
   );
 }
