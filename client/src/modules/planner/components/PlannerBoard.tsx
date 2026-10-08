@@ -181,46 +181,48 @@ export function PlannerBoard({
         </button>
       </header>
 
-      {/* The rail on the right (what to do next, and the budget) stays in view while the
-          main column scrolls. On a phone the same order stacks: setup, next step, then
-          the plan. */}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        {!planLoading && (
-          <PreferencesPanel
-            dependentId={dependentId}
-            homeState={standing.state ?? null}
-            defaultOpen={untouched}
+      {/* Two columns. The rail holds what the parent acts on and sets: the next step, the
+          budget once there is a plan, and the season setup. It is always full, so the space
+          beside the plan is never a blank column. On a phone it stacks above the plan in
+          the same order. */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <div className="space-y-4 lg:col-start-2 lg:row-start-1">
+          <SeasonSummary
+            entries={entries}
+            calendar={calendar}
+            childName={dependentName}
+            openCount={openCount}
+            costs={costs}
+            costsLoading={costsLoading}
+            costsFailed={costsFailed}
+            saveHomeCity={{
+              saving: saveHomeCity.isPending,
+              save: (city) => saveHomeCity.mutate(city),
+            }}
+            onOpenEvent={setSelectedSlug}
+            onSuggest={() => {
+              setTab("suggested");
+              suggest.mutate(false);
+            }}
+            suggesting={suggest.isPending}
+            onBrowse={() => {
+              setBrowseOpen(true);
+              // The full list is at the foot of the page, so bring it up.
+              requestAnimationFrame(() =>
+                browseRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" })
+              );
+            }}
           />
-        )}
+          {!planLoading && (
+            <PreferencesPanel
+              dependentId={dependentId}
+              homeState={standing.state ?? null}
+              defaultOpen={untouched}
+            />
+          )}
+        </div>
 
-        <SeasonSummary
-          entries={entries}
-          calendar={calendar}
-          childName={dependentName}
-          openCount={openCount}
-          costs={costs}
-          costsLoading={costsLoading}
-          costsFailed={costsFailed}
-          saveHomeCity={{
-            saving: saveHomeCity.isPending,
-            save: (city) => saveHomeCity.mutate(city),
-          }}
-          onOpenEvent={setSelectedSlug}
-          onSuggest={() => {
-            setTab("suggested");
-            suggest.mutate(false);
-          }}
-          suggesting={suggest.isPending}
-          onBrowse={() => {
-            setBrowseOpen(true);
-            // The full list is at the foot of the page, so bring it up.
-            requestAnimationFrame(() =>
-              browseRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" })
-            );
-          }}
-        />
-
-        <div className="space-y-6 lg:col-start-1 lg:row-start-2">
+        <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
           <SeasonWorkspace
             dependentId={dependentId}
             yearlyLimit={{ cap: data.annualEntryCap, ageGroup: standing.subcategory }}

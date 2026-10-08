@@ -121,7 +121,7 @@ function PreferencesForm({
     >
       <fieldset>
         <legend className="text-sm font-semibold text-slate-900">What is this season for?</legend>
-        <div className="mt-2 grid gap-2 sm:grid-cols-3">
+        <div className="mt-2 grid gap-2">
           {GOALS.map((option) => {
             const unavailable = option.value === "home" && !homeState;
             return (

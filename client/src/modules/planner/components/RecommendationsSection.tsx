@@ -2,6 +2,7 @@
 
 import { CostLine } from "@/modules/planner/components/CostLine";
 import { EventActions } from "@/modules/planner/components/EventActions";
+import { TimelineEventCard } from "@/modules/planner/components/TimelineEventCard";
 import { useRecommendations } from "@/modules/planner/hooks/useRecommendations";
 import type {
   EventCost,
@@ -13,7 +14,7 @@ import { eventLocation } from "@/modules/planner/utils/calendarLinks";
 import { formatEventWindow, formatLongDate } from "@/modules/planner/utils/eventFormat";
 import { Button } from "@/modules/shared/ui/Button";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import type { PlannerEdition } from "@powermysport/shared-types";
+import type { PlannerEdition, PlannerEntry } from "@powermysport/shared-types";
 import { Info, MapPin, RefreshCw, Sparkles } from "lucide-react";
 import Link from "next/link";
 
@@ -196,6 +197,8 @@ export function RecommendationsSection({
   plannedSlugs,
   isAdding,
   onAdd,
+  upcoming,
+  openCount,
 }: {
   dependentId: string;
   /** Estimates by event, once priced. */
@@ -206,6 +209,10 @@ export function RecommendationsSection({
   plannedSlugs: Set<string>;
   isAdding: boolean;
   onAdd: (slug: string) => void;
+  /** The next few events open to the child, shown while there are no suggestions yet. */
+  upcoming: PlannerEntry[];
+  /** How many events are open to the child in all. */
+  openCount: number;
 }) {
   const { recommendations, usage, isLoading, isError, suggest } = useRecommendations(dependentId);
   const cap = usage?.cap ?? 10;
@@ -218,21 +225,42 @@ export function RecommendationsSection({
       ) : isError ? (
         <p className="text-sm text-slate-700">We could not load the suggestions just now.</p>
       ) : !recommendations ? (
-        <div className="rounded-lg border border-slate-200 bg-white p-5">
-          <p className="max-w-2xl text-sm leading-relaxed text-slate-700">
-            Get a suggested season built from the events this child can enter, their plan so far,
-            and your season setup. An AI model chooses and explains the picks, and every one is
-            checked against the entry rules before you see it.
-          </p>
-          <Button
-            className="mt-4"
-            disabled={suggest.isPending}
-            onClick={() => suggest.mutate(false)}
-          >
-            <Sparkles className="mr-2 h-4 w-4" aria-hidden />
-            {suggest.isPending ? "Working on it..." : "Suggest my season"}
-          </Button>
-        </div>
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="max-w-xl text-sm leading-relaxed text-slate-700">
+              Want a short list picked for you? An AI model chooses from the events this child can
+              enter, using your season setup, and every pick is checked against the entry rules.
+            </p>
+            <Button disabled={suggest.isPending} onClick={() => suggest.mutate(false)}>
+              <Sparkles className="mr-2 h-4 w-4" aria-hidden />
+              {suggest.isPending ? "Working on it..." : "Suggest my season"}
+            </Button>
+          </div>
+
+          {upcoming.length > 0 && (
+            <section aria-labelledby="upcoming-heading">
+              <h3
+                id="upcoming-heading"
+                className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-500"
+              >
+                Open to enter soon
+                {openCount > upcoming.length ? ` (${upcoming.length} of ${openCount})` : ""}
+              </h3>
+              <ul className="space-y-3">
+                {upcoming.map((entry) => (
+                  <TimelineEventCard
+                    key={entry.edition.slug ?? entry.edition.name}
+                    entry={entry}
+                    mode="open"
+                    isPlanned={entry.edition.slug ? plannedSlugs.has(entry.edition.slug) : false}
+                    isAdding={isAdding}
+                    onAdd={() => entry.edition.slug && onAdd(entry.edition.slug)}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       ) : (
         <>
           {recommendations.stale && (

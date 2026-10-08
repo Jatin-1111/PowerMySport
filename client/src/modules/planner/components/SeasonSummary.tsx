@@ -234,10 +234,7 @@ export function SeasonSummary({
   const planned = entries.length > 0;
 
   return (
-    <div
-      aria-label="What to do next"
-      className="space-y-4 lg:sticky lg:top-24 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto"
-    >
+    <div aria-label="What to do next" className="space-y-4">
       <NextUpTile
         items={items}
         childName={childName}

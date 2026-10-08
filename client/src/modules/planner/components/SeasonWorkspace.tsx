@@ -179,6 +179,8 @@ export function SeasonWorkspace({
               plannedSlugs={plannedSlugs}
               isAdding={isAdding}
               onAdd={onAdd}
+              upcoming={shortlist.ownGroup.slice(0, 4)}
+              openCount={shortlist.ownGroup.length}
             />
           </TabsContent>
         </Tabs>
