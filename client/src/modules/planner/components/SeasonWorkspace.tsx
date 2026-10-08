@@ -19,7 +19,7 @@ import {
 import { Modal } from "@/modules/shared/ui/Modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/modules/shared/ui/Tabs";
 import { cn } from "@/utils/cn";
-import type { PlannerEdition, Shortlist } from "@powermysport/shared-types";
+import type { PlannerEdition, ReachVerdict, Shortlist } from "@powermysport/shared-types";
 import { CalendarDays, List } from "lucide-react";
 import { useState } from "react";
 
@@ -60,6 +60,7 @@ export function SeasonWorkspace({
   onAdd,
   selectedSlug,
   onSelect,
+  reach,
 }: {
   dependentId: string;
   yearlyLimit: { cap: number | null; ageGroup: string };
@@ -77,6 +78,8 @@ export function SeasonWorkspace({
   onAdd: (slug: string) => void;
   selectedSlug: string | null;
   onSelect: (slug: string | null) => void;
+  /** What past draws showed for each open event, by slug. */
+  reach: Record<string, ReachVerdict>;
 }) {
   const isWide = useIsWide();
   const [showAvailable, setShowAvailable] = useState(true);
@@ -123,6 +126,7 @@ export function SeasonWorkspace({
       cost={eventCosts?.[selected.slug]}
       costsLoading={costsLoading}
       heading={false}
+      reach={reach[selected.slug]}
       onClose={() => onSelect(null)}
     />
   );
@@ -181,6 +185,7 @@ export function SeasonWorkspace({
               onAdd={onAdd}
               upcoming={shortlist.ownGroup.slice(0, 4)}
               openCount={shortlist.ownGroup.length}
+              reach={reach}
             />
           </TabsContent>
         </Tabs>

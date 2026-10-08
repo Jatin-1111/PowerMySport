@@ -3,7 +3,7 @@
 import { TimelineEventCard } from "@/modules/planner/components/TimelineEventCard";
 import { formatLongDate } from "@/modules/planner/utils/eventFormat";
 import { deadlineState, groupByMonth, type DeadlineState } from "@/modules/planner/utils/timeline";
-import type { PlannerEntry, Shortlist } from "@powermysport/shared-types";
+import type { PlannerEntry, ReachVerdict, Shortlist } from "@powermysport/shared-types";
 import { ChevronDown, Clock } from "lucide-react";
 import { useState } from "react";
 
@@ -26,6 +26,8 @@ interface Props {
   plannedSlugs: Set<string>;
   isAdding: boolean;
   onAdd: (slug: string) => void;
+  /** What past draws showed for each open event, by slug. */
+  reach?: Record<string, ReachVerdict>;
 }
 
 type SoonState = Extract<DeadlineState, { kind: "soon" }>;
@@ -59,7 +61,7 @@ function Disclosure({
   );
 }
 
-export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd }: Props) {
+export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} }: Props) {
   const renderCard = (entry: PlannerEntry, mode: "open" | "closed") => (
     <TimelineEventCard
       key={entry.edition.slug ?? entry.edition.name}
@@ -68,6 +70,7 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd }: Props) {
       isPlanned={entry.edition.slug ? plannedSlugs.has(entry.edition.slug) : false}
       isAdding={isAdding}
       onAdd={() => entry.edition.slug && onAdd(entry.edition.slug)}
+      verdict={entry.edition.slug ? reach[entry.edition.slug] : undefined}
     />
   );
 

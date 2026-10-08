@@ -2,6 +2,7 @@
 
 import { Collapsible } from "@/modules/planner/components/Collapsible";
 import { LinkRankingPrompt } from "@/modules/planner/components/LinkRankingPrompt";
+import { ExpectedLater } from "@/modules/planner/components/ExpectedLater";
 import { PlannerTour } from "@/modules/planner/components/PlannerTour";
 import { PreferencesPanel } from "@/modules/planner/components/PreferencesPanel";
 import { SeasonSummary } from "@/modules/planner/components/SeasonSummary";
@@ -240,7 +241,17 @@ export function PlannerBoard({
             onAdd={(slug) => add.mutate(slug)}
             selectedSlug={selectedSlug}
             onSelect={setSelectedSlug}
+            reach={data.reach ?? {}}
           />
+
+          {data.expected && data.expected.length > 0 && (
+            <Collapsible
+              title="Likely later, from last year"
+              description="Events that ran about this time last year and are not on the calendar yet."
+            >
+              <ExpectedLater events={data.expected} />
+            </Collapsible>
+          )}
 
           <div ref={browseRef}>
             <Collapsible
@@ -254,6 +265,7 @@ export function PlannerBoard({
                 plannedSlugs={plannedSlugs}
                 isAdding={add.isPending}
                 onAdd={(slug) => add.mutate(slug)}
+                reach={data.reach ?? {}}
               />
             </Collapsible>
           </div>

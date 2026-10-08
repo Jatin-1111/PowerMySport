@@ -92,6 +92,24 @@ export function useSeasonPlan(dependentId: string) {
     onError: failed("Could not save those figures."),
   });
 
+  const dismiss = useMutation({
+    mutationFn: (editionSlug: string) => seasonPlanApi.dismiss(dependentId, editionSlug),
+    onSuccess: (plan) => {
+      apply(plan);
+      toast.success("Left out of your suggestions.");
+    },
+    onError: failed("Could not do that just now."),
+  });
+
+  const restore = useMutation({
+    mutationFn: (editionSlug: string) => seasonPlanApi.restore(dependentId, editionSlug),
+    onSuccess: (plan) => {
+      apply(plan);
+      toast.success("Back in your suggestions.");
+    },
+    onError: failed("Could not do that just now."),
+  });
+
   const savePreferences = useMutation({
     mutationFn: (preferences: PlanPreferences) =>
       seasonPlanApi.setPreferences(dependentId, preferences),
@@ -111,6 +129,10 @@ export function useSeasonPlan(dependentId: string) {
     isLoading: query.isPending && hydrated && Boolean(token),
     /** Slugs already on the plan, so a list can mark what is already chosen. */
     plannedSlugs: new Set(entries.map((entry) => entry.editionSlug)),
+    /** Suggested events the parent marked "not for us". */
+    dismissed: query.data?.dismissed ?? [],
+    dismiss,
+    restore,
     add,
     setStatus,
     remove,

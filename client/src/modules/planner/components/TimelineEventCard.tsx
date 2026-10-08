@@ -4,8 +4,9 @@ import { deadlineState } from "@/modules/planner/utils/timeline";
 import { EventActions } from "@/modules/planner/components/EventActions";
 import { DeadlineLine } from "@/modules/planner/components/DeadlineLine";
 import { formatEventWindow } from "@/modules/planner/utils/eventFormat";
+import { ReachNote } from "@/modules/planner/components/ReachNote";
 import { Badge } from "@/modules/shared/ui/Badge";
-import type { PlannerEntry } from "@powermysport/shared-types";
+import type { PlannerEntry, ReachVerdict } from "@powermysport/shared-types";
 import { Info, MapPin } from "lucide-react";
 import Link from "next/link";
 
@@ -23,12 +24,15 @@ export function TimelineEventCard({
   isPlanned,
   isAdding,
   onAdd,
+  verdict,
 }: {
   entry: PlannerEntry;
   mode: "open" | "closed";
   isPlanned: boolean;
   isAdding: boolean;
   onAdd: () => void;
+  /** What past draws showed for this event, when they showed anything. */
+  verdict?: ReachVerdict | undefined;
 }) {
   const { edition } = entry;
   // An event whose entries have already closed cannot be entered, so offering to
@@ -86,6 +90,11 @@ export function TimelineEventCard({
 
       {mode === "open" ? (
         <>
+          {verdict && (
+            <div className="mt-2">
+              <ReachNote verdict={verdict} />
+            </div>
+          )}
           <p className="mt-2 text-xs">
             <DeadlineLine deadline={edition.registrationDeadlineDate} />
           </p>

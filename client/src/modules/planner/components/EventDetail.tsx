@@ -4,6 +4,8 @@ import { CostLine } from "@/modules/planner/components/CostLine";
 import { DeadlineLine } from "@/modules/planner/components/DeadlineLine";
 import { EventActions } from "@/modules/planner/components/EventActions";
 import { OfficialDetails } from "@/modules/planner/components/OfficialDetails";
+import { ReachNote } from "@/modules/planner/components/ReachNote";
+import type { ReachVerdict } from "@powermysport/shared-types";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import type { EventCost } from "@/modules/planner/services/planner";
 import { nextStatus, STATUS_LABEL } from "@/modules/planner/services/seasonPlan";
@@ -65,6 +67,7 @@ export function EventDetail({
   cost,
   costsLoading,
   heading = true,
+  reach,
   onClose,
 }: {
   item: CalendarItem;
@@ -73,6 +76,8 @@ export function EventDetail({
   costsLoading: boolean;
   /** False inside a dialog, which already shows the name as its title. */
   heading?: boolean;
+  /** What past draws showed for this event, when they showed anything. */
+  reach?: ReachVerdict | undefined;
   onClose?: () => void;
 }) {
   const { add, setStatus, remove, setCosts, plannedSlugs } = useSeasonPlan(dependentId);
@@ -201,6 +206,20 @@ export function EventDetail({
               <span>{item.verdict.notes.join(" ")}</span>
             </p>
           )}
+        </div>
+      )}
+
+      {reach && (
+        <div>
+          <SubHeading
+            level={subLevel}
+            className="text-xs font-bold uppercase tracking-wider text-slate-500"
+          >
+            Who got in before
+          </SubHeading>
+          <div className="mt-1">
+            <ReachNote verdict={reach} detail />
+          </div>
         </div>
       )}
 

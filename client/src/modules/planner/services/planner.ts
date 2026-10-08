@@ -1,5 +1,5 @@
 import axiosInstance from "@/lib/api/axios";
-import type { PlannerEntry, Shortlist } from "@powermysport/shared-types";
+import type { PlannerEntry, ReachVerdict, Shortlist } from "@powermysport/shared-types";
 import type { SeasonGoal, SeasonPlanData } from "@/modules/planner/services/seasonPlan";
 
 /**
@@ -28,6 +28,23 @@ export interface PlannerStanding {
   asOnDate: string;
 }
 
+/**
+ * An event that ran about a year ago and is not on the published calendar. Expected, never
+ * scheduled: it carries a month and no day, because the date a year on is a guess.
+ */
+export interface ExpectedEvent {
+  name: string;
+  city?: string;
+  state?: string;
+  ladder?: string;
+  /** "March 2027". */
+  expectedMonth: string;
+  /** `YYYY-MM`, for grouping. */
+  month: string;
+  /** When last year's event started, `YYYY-MM-DD`. */
+  lastYearStart: string;
+}
+
 export interface PlannerOverview {
   dependentId: string;
   dependentName: string;
@@ -37,13 +54,22 @@ export interface PlannerOverview {
   /** Yearly entry allowance for the bracket. Null where AITA states none. */
   annualEntryCap: number | null;
   shortlist: Shortlist | null;
+  /** What past draws say about each open event in the child's own age group, by slug. */
+  reach?: Record<string, ReachVerdict>;
+  /** Events expected in the months beyond the calendar, from last year. */
+  expected?: ExpectedEvent[];
   plan: SeasonPlanData;
   editionsConsidered: number;
 }
 
 export type { PlannerEntry };
 
-export type RecommendationTier = "recommended" | "consider";
+/**
+ * - recommended: realistic for this child, and fits the plan
+ * - consider:    a good option, not to book alongside the picks
+ * - reach:       past draws closed above this rank: a stretch, shown apart
+ */
+export type RecommendationTier = "recommended" | "consider" | "reach";
 export type RecommendationSource = "ai" | "rules";
 export type FallbackReason = "ai-unavailable" | "invalid-output" | "daily-limit";
 
@@ -51,6 +77,8 @@ export interface RecommendationItem {
   slug: string;
   tier: RecommendationTier;
   reason: string;
+  /** Entries close within a week. */
+  urgent?: boolean;
 }
 
 export interface Recommendations {
@@ -64,6 +92,8 @@ export interface Recommendations {
   notes: string[];
   /** The child's list, plan or preferences changed after this was made. */
   stale: boolean;
+  /** Asked for again with nothing changed: this is the saved answer, and it was free. */
+  unchanged?: boolean;
 }
 
 export interface RecommendationUsage {

@@ -97,7 +97,24 @@ interface Entry {
 
 const world = {
   plan: [] as Entry[],
-  prefs: { goal: "points", blockedRanges: [] as unknown[], budget: null as number | null },
+  prefs: {
+    goal: "points",
+    blockedRanges: [],
+    budget: null,
+    includeOlderGroup: false,
+  } as {
+    goal: string;
+    blockedRanges: unknown[];
+    budget: number | null;
+    includeOlderGroup?: boolean;
+  },
+  dismissed: [] as string[],
+  reach: {} as Record<string, Record<string, unknown>>,
+  expected: [] as Array<Record<string, unknown>>,
+  /** The next ask for a fresh suggestion finds nothing has changed. */
+  unchanged: false,
+  /** Replaces what the suggestion contains, to show a tier or a flag. */
+  items: null as null | Array<Record<string, unknown>>,
   recs: null as null | { savedKey: string; value: Record<string, unknown> },
   used: 0,
   aiDown: false,
@@ -111,7 +128,12 @@ const world = {
 
 const reset = () => {
   world.plan = [];
-  world.prefs = { goal: "points", blockedRanges: [], budget: null };
+  world.prefs = { goal: "points", blockedRanges: [], budget: null, includeOlderGroup: false };
+  world.dismissed = [];
+  world.reach = {};
+  world.expected = [];
+  world.unchanged = false;
+  world.items = null;
   world.recs = null;
   world.used = 0;
   world.aiDown = false;
@@ -129,7 +151,8 @@ const planData = (id: string) => ({
   entries: world.plan
     .map((entry) => ({ ...entry, ...(entry.costs ? { costs: { ...entry.costs } } : {}) }))
     .sort((a, b) => a.startDate.localeCompare(b.startDate)),
-  preferences: { ...world.prefs },
+  preferences: { ...world.prefs, includeOlderGroup: world.prefs.includeOlderGroup ?? false },
+  dismissed: [...world.dismissed],
 });
 
 const overview = (id: string) => {
@@ -165,6 +188,8 @@ const overview = (id: string) => {
       bracket: "U-14",
       rank: world.unranked ? null : 312,
     }),
+    reach: world.reach,
+    expected: world.expected,
     plan: planData(id),
     editionsConsidered: EDITIONS.length,
   };
@@ -184,13 +209,13 @@ const suggestionFor = () => {
       reason: "Talent Series in Rajasthan, 20 days later.",
     },
     { slug: "ss-delhi", tier: "consider", reason: "Super Series, a national-level event." },
-  ].filter((item) => !onPlan.has(item.slug));
+  ].filter((item) => !onPlan.has(item.slug) && !world.dismissed.includes(item.slug));
   return {
     source: "ai",
     generatedAt: day(0),
     goal: world.prefs.goal,
     summary: "Three events across the weeks ahead.",
-    items,
+    items: world.items ?? items,
     notes: ["1 event has already closed entries."],
   };
 };
@@ -288,13 +313,28 @@ vi.mock("@/modules/planner/services/planner", async (importOriginal) => ({
     get: async (id: string) => overview(id),
     getRecommendations: async () => ({
       ready: true,
+      // As the server does: an answer that has gone stale no longer names an event the
+      // parent has since left out.
       recommendations: world.recs
-        ? { ...world.recs.value, stale: world.recs.savedKey !== inputKey() }
+        ? {
+            ...world.recs.value,
+            stale: world.recs.savedKey !== inputKey(),
+            items: (world.recs.value.items as Array<{ slug: string }>).filter(
+              (item) => !world.dismissed.includes(item.slug)
+            ),
+          }
         : null,
       usage: { used: world.used, cap: 10 },
     }),
     suggest: async (_id: string, force: boolean) => {
       suggestCalls.push(force);
+      if (force && world.unchanged && world.recs) {
+        return {
+          ready: true,
+          recommendations: { ...world.recs.value, stale: false, unchanged: true },
+          usage: { used: world.used, cap: 10 },
+        };
+      }
       if (world.aiDown) {
         const value = { ...suggestionFor(), source: "rules", fallbackReason: "ai-unavailable" };
         world.recs = { savedKey: inputKey(), value };
@@ -362,6 +402,14 @@ vi.mock("@/modules/planner/services/seasonPlan", async (importOriginal) => ({
         else next[key] = value;
       }
       entry.costs = Object.keys(next).length ? next : undefined;
+      return planData(id);
+    },
+    dismiss: async (id: string, slug: string) => {
+      if (!world.dismissed.includes(slug)) world.dismissed.push(slug);
+      return planData(id);
+    },
+    restore: async (id: string, slug: string) => {
+      world.dismissed = world.dismissed.filter((existing) => existing !== slug);
       return planData(id);
     },
     setPreferences: async (id: string, prefs: typeof world.prefs) => {
@@ -570,6 +618,234 @@ describe("a child ranked in more than one list", () => {
   });
 });
 
+// ─── What past draws, "not for us" and last year add ──────────────────────────
+
+/** The planner with its season calendar open. */
+const openCal = async () => {
+  renderPlanner();
+  await waitFor(() => section("Season calendar"));
+};
+
+describe("what past draws showed", () => {
+  const likely = {
+    kind: "likely",
+    events: 3,
+    mainDraw: 3,
+    qualifying: 0,
+    mainCutoffs: [400],
+    text: "The main draw closed around rank 400 in the last 3 Boys U-14 Championship Series events. This rank would have had a main-draw place in 3 of them. That describes past events, not this one.",
+  };
+
+  it("says beside a suggestion that past draws took this rank", async () => {
+    world.reach = { "cs7-sonipat": likely };
+    renderPlanner();
+    const el = await waitFor(() => section("Suggested season"));
+    fireEvent.click(await within(el).findByRole("button", { name: /Suggest my season/ }));
+    const card = (await within(el).findByText("AITA cs7-sonipat")).closest("li") as HTMLElement;
+    expect(within(card).getByText("Past draws took this rank")).toBeTruthy();
+  });
+
+  it("shows an event whose past draws closed above the rank apart, as a stretch and not a pick", async () => {
+    world.items = [
+      { slug: "cs7-sonipat", tier: "recommended", reason: "Championship Series in Haryana." },
+      {
+        slug: "ss-delhi",
+        tier: "reach",
+        reason: "The main draw closed around rank 118. That describes past events, not this one.",
+      },
+    ];
+    renderPlanner();
+    const el = await waitFor(() => section("Suggested season"));
+    fireEvent.click(await within(el).findByRole("button", { name: /Suggest my season/ }));
+
+    const stretch = (await within(el).findByRole("heading", { name: "A stretch" })).closest(
+      "section"
+    ) as HTMLElement;
+    expect(within(stretch).getByText(/closed above this rank/)).toBeTruthy();
+    expect(within(stretch).getByText("AITA ss-delhi")).toBeTruthy();
+    expect(within(stretch).getByText(/closed around rank 118/)).toBeTruthy();
+    // And not among the picks.
+    const suggested = within(el).getByRole("heading", { name: "Suggested" }).closest("section")!;
+    expect(within(suggested as HTMLElement).queryByText("AITA ss-delhi")).toBeNull();
+  });
+
+  it("flags an event whose entries close within a week", async () => {
+    world.items = [
+      { slug: "cs7-sonipat", tier: "recommended", reason: "Championship Series.", urgent: true },
+    ];
+    renderPlanner();
+    const el = await waitFor(() => section("Suggested season"));
+    fireEvent.click(await within(el).findByRole("button", { name: /Suggest my season/ }));
+    expect(await within(el).findByText("Closes soon")).toBeTruthy();
+  });
+
+  it("gives the whole sentence, with where the draws closed, in the event's details", async () => {
+    world.reach = { "cs7-sonipat": likely };
+    await openCal();
+    fireEvent.click(bar(/AITA cs7-sonipat/));
+    const dialog = await screen.findByRole("dialog", { name: /AITA cs7-sonipat/ });
+    expect(within(dialog).getByText("Who got in before")).toBeTruthy();
+    expect(within(dialog).getByText(/closed around rank 400/)).toBeTruthy();
+    expect(within(dialog).getByText(/not this one/)).toBeTruthy();
+  });
+
+  it("says nothing about reach in the details of an event with no verdict", async () => {
+    await openCal();
+    fireEvent.click(bar(/AITA cs7-sonipat/));
+    const dialog = await screen.findByRole("dialog", { name: /AITA cs7-sonipat/ });
+    expect(within(dialog).queryByText("Who got in before")).toBeNull();
+  });
+
+  it("marks an open event in the full list with what past draws showed", async () => {
+    world.reach = { "cs7-sonipat": likely };
+    renderPlanner();
+    const enter = await waitFor(() => section("Every event they can enter"));
+    const card = (await within(enter).findByText("AITA cs7-sonipat")).closest("li") as HTMLElement;
+    expect(within(card).getByText("Past draws took this rank")).toBeTruthy();
+  });
+
+  it("says nothing on a card when there is no history, which would only be noise", async () => {
+    world.reach = {
+      "cs7-sonipat": {
+        kind: "no-evidence",
+        events: 0,
+        mainDraw: 0,
+        qualifying: 0,
+        mainCutoffs: [],
+        text: "We hold no past events.",
+      },
+    };
+    renderPlanner();
+    const enter = await waitFor(() => section("Every event they can enter"));
+    const card = (await within(enter).findByText("AITA cs7-sonipat")).closest("li") as HTMLElement;
+    expect(within(card).queryByText(/Past draws/)).toBeNull();
+    expect(within(card).queryByText(/We hold no past events/)).toBeNull();
+  });
+});
+
+describe("marking a suggestion as not for us", () => {
+  const suggestNow = async () => {
+    renderPlanner();
+    const el = await waitFor(() => section("Suggested season"));
+    fireEvent.click(await within(el).findByRole("button", { name: /Suggest my season/ }));
+    await within(el).findByText(/Three events across the weeks ahead/);
+    return el;
+  };
+
+  it("leaves the event out, and says how many were left out", async () => {
+    const el = await suggestNow();
+    fireEvent.click(within(el).getByRole("button", { name: "AITA cs7-sonipat is not for us" }));
+
+    await waitFor(() => expect(world.dismissed).toEqual(["cs7-sonipat"]));
+    expect(await within(el).findByText(/1 left out as not for us/)).toBeTruthy();
+    await waitFor(() => expect(within(el).queryByText("AITA cs7-sonipat")).toBeNull());
+  });
+
+  it("brings it back when the parent changes their mind", async () => {
+    world.dismissed = ["cs7-sonipat"];
+    const el = await suggestNow();
+    fireEvent.click(await within(el).findByRole("button", { name: /1 left out as not for us/ }));
+    fireEvent.click(within(el).getByRole("button", { name: "Show AITA cs7-sonipat again" }));
+    await waitFor(() => expect(world.dismissed).toEqual([]));
+  });
+
+  it("offers nothing to undo when nothing has been left out", async () => {
+    const el = await suggestNow();
+    expect(within(el).queryByText(/left out as not for us/)).toBeNull();
+  });
+});
+
+describe("asking again with nothing changed", () => {
+  it("says so, and that no fresh suggestion was used", async () => {
+    renderPlanner();
+    const el = await waitFor(() => section("Suggested season"));
+    fireEvent.click(await within(el).findByRole("button", { name: /Suggest my season/ }));
+    await within(el).findByText(/Three events across the weeks ahead/);
+
+    world.unchanged = true;
+    fireEvent.click(within(el).getByRole("button", { name: /Suggest again/ }));
+    expect(await within(el).findByText(/Nothing has changed since these were made/)).toBeTruthy();
+    expect(within(el).getByText(/no fresh suggestion was used/)).toBeTruthy();
+    expect(suggestCalls).toEqual([false, true]);
+  });
+});
+
+describe("offering events in an older age group", () => {
+  it("is off to begin with, and saved with the rest of the setup when switched on", async () => {
+    renderPlanner();
+    const setup = await openSetup();
+    const box = within(setup).getByRole("checkbox", {
+      name: /Also show events in an older age group/,
+    });
+    expect((box as HTMLInputElement).checked).toBe(false);
+
+    fireEvent.click(box);
+    fireEvent.click(within(setup).getByRole("button", { name: "Save setup" }));
+
+    await waitFor(() => expect(savedPrefs.length).toBe(1));
+    expect(savedPrefs[0]).toMatchObject({ includeOlderGroup: true });
+  });
+
+  it("says in the closed setup that it is on", async () => {
+    world.prefs = { ...world.prefs, includeOlderGroup: true };
+    renderPlanner();
+    expect(await screen.findByText(/older age groups on/)).toBeTruthy();
+  });
+});
+
+describe("what last year suggests", () => {
+  const expected = (over: Record<string, unknown> = {}) => ({
+    name: "AITA CS7 (Pune)",
+    city: "Pune",
+    state: "Maharashtra",
+    ladder: "Championship Series",
+    expectedMonth: "March 2027",
+    month: "2027-03",
+    lastYearStart: "2026-03-14",
+    ...over,
+  });
+
+  it("is a section of its own, closed until it is asked for, when there is something to say", async () => {
+    world.expected = [expected()];
+    renderPlanner();
+    const toggle = await screen.findByRole("button", { name: /^Likely later, from last year/ });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Expected around March 2027")).toBeNull();
+  });
+
+  it("names each event with its month, its place, and what it is based on, and promises nothing", async () => {
+    world.expected = [
+      expected(),
+      expected({
+        name: "AITA TS (Jaipur)",
+        city: "Jaipur",
+        state: "Rajasthan",
+        ladder: "Talent Series",
+        expectedMonth: "April 2027",
+        month: "2027-04",
+        lastYearStart: "2026-04-11",
+      }),
+    ];
+    renderPlanner();
+    fireEvent.click(await screen.findByRole("button", { name: /^Likely later, from last year/ }));
+
+    expect(await screen.findByText("Expected around March 2027")).toBeTruthy();
+    expect(screen.getByText("Expected around April 2027")).toBeTruthy();
+    expect(screen.getByText("AITA CS7 (Pune)")).toBeTruthy();
+    expect(screen.getByText(/Last year it began 14 Mar 2026/)).toBeTruthy();
+    expect(screen.getAllByText(/not on the calendar/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Nothing is confirmed/)).toBeTruthy();
+    // An event that is not on the calendar cannot be added to a plan.
+    expect(screen.queryByRole("button", { name: /Add AITA CS7 \(Pune\)/ })).toBeNull();
+  });
+
+  it("is left out entirely when there is nothing to expect", async () => {
+    renderPlanner();
+    await screen.findByRole("button", { name: /^Every event they can enter/ });
+    expect(screen.queryByRole("button", { name: /Likely later/ })).toBeNull();
+  });
+});
+
 // ─── The timeline ─────────────────────────────────────────────────────────────
 
 describe("what a child can enter", () => {
@@ -620,7 +896,7 @@ describe("the suggested season", () => {
     const el = await waitFor(() => section("Suggested season"));
 
     expect(await within(el).findByRole("button", { name: /Suggest my season/ })).toBeTruthy();
-    expect(within(el).getByText(/checked against the entry rules/)).toBeTruthy();
+    expect(within(el).getByText(/fits around your plan, the rest days/)).toBeTruthy();
     expect(suggestCalls).toEqual([]);
   });
 
@@ -630,7 +906,7 @@ describe("the suggested season", () => {
 
     expect(within(el).getByText(/Championship Series in Haryana/)).toBeTruthy();
     expect(within(el).getByText("Worth considering")).toBeTruthy();
-    expect(within(el).getByText(/Chosen by an AI model/)).toBeTruthy();
+    expect(within(el).getByText(/An AI model wrote the explanations/)).toBeTruthy();
     expect(within(el).getByText(/1 of 10 fresh suggestions used today/)).toBeTruthy();
     expect(within(el).getByText(/1 event has already closed entries/)).toBeTruthy();
   });
@@ -674,7 +950,7 @@ describe("the suggested season", () => {
 
     expect(await within(el).findByText(/AI model could not be reached/)).toBeTruthy();
     expect(within(el).getByText(/Chosen by the planner's own rules/)).toBeTruthy();
-    expect(within(el).queryByText(/Chosen by an AI model/)).toBeNull();
+    expect(within(el).queryByText(/An AI model wrote the explanations/)).toBeNull();
   });
 
   it("asks for a fresh answer, and spends one, only when told to", async () => {
@@ -719,6 +995,7 @@ describe("planning preferences", () => {
       goal: "experience",
       budget: 60000,
       blockedRanges: [{ from: "2026-11-20", to: "2026-11-25" }],
+      includeOlderGroup: false,
     });
   });
 

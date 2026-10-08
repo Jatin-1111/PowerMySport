@@ -50,6 +50,8 @@ export interface PlanPreferences {
   blockedRanges: BlockedRange[];
   /** Rupees the season should stay within. Null means no ceiling. */
   budget: number | null;
+  /** Also offer events in an older age group, as options and never as picks. */
+  includeOlderGroup: boolean;
 }
 
 /** The most blocked ranges a plan holds. The server enforces the same number. */
@@ -60,6 +62,8 @@ export interface SeasonPlanData {
   sportSlug: string;
   entries: SeasonPlanEntry[];
   preferences: PlanPreferences;
+  /** Slugs of suggested events the parent marked "not for us". */
+  dismissed: string[];
 }
 
 const base = (dependentId: string) => `/season-plans/${dependentId}`;
@@ -101,6 +105,20 @@ export const seasonPlanApi = {
     const { data } = await axiosInstance.patch(
       `${base(dependentId)}/entries/${encodeURIComponent(editionSlug)}`,
       { costs }
+    );
+    return data?.data;
+  },
+
+  /** "Not for us": leave this event out of every later suggestion. */
+  async dismiss(dependentId: string, editionSlug: string): Promise<SeasonPlanData> {
+    const { data } = await axiosInstance.post(`${base(dependentId)}/dismissed`, { editionSlug });
+    return data?.data;
+  },
+
+  /** Undo "not for us". */
+  async restore(dependentId: string, editionSlug: string): Promise<SeasonPlanData> {
+    const { data } = await axiosInstance.delete(
+      `${base(dependentId)}/dismissed/${encodeURIComponent(editionSlug)}`
     );
     return data?.data;
   },

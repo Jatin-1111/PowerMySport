@@ -52,7 +52,12 @@ const GOAL_LABEL: Record<SeasonGoal, string> = {
   home: "Stay close to home",
 };
 
-const DEFAULT_PREFERENCES: PlanPreferences = { goal: "points", blockedRanges: [], budget: null };
+const DEFAULT_PREFERENCES: PlanPreferences = {
+  goal: "points",
+  blockedRanges: [],
+  budget: null,
+  includeOlderGroup: false,
+};
 
 const INPUT =
   "min-h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange-solid";
@@ -81,6 +86,7 @@ function PreferencesForm({
   const [budgetText, setBudgetText] = useState<string>(
     saved.budget === null ? "" : String(saved.budget)
   );
+  const [includeOlder, setIncludeOlder] = useState<boolean>(saved.includeOlderGroup);
 
   // Blank means no ceiling. Anything else must be a plain whole-rupee amount.
   const parsedBudget = parseRupees(budgetText);
@@ -95,6 +101,7 @@ function PreferencesForm({
   const changed =
     goal !== saved.goal ||
     budget !== saved.budget ||
+    includeOlder !== saved.includeOlderGroup ||
     JSON.stringify(usable) !== JSON.stringify(saved.blockedRanges);
   const canSave = changed && !budgetProblem && problems.every((problem) => problem === null);
 
@@ -109,6 +116,7 @@ function PreferencesForm({
           onSave({
             goal,
             budget,
+            includeOlderGroup: includeOlder,
             blockedRanges: usable.map(({ from, to, label }) => ({
               from,
               to,
@@ -265,6 +273,24 @@ function PreferencesForm({
         )}
       </div>
 
+      <label className="flex cursor-pointer gap-2.5 text-sm">
+        <input
+          type="checkbox"
+          checked={includeOlder}
+          onChange={(event) => setIncludeOlder(event.target.checked)}
+          className="mt-1"
+        />
+        <span>
+          <span className="block font-semibold text-slate-900">
+            Also show events in an older age group
+          </span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-slate-600">
+            They use the same yearly entries as their own age group, so they are only ever options,
+            never picks.
+          </span>
+        </span>
+      </label>
+
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" size="sm" disabled={!canSave || saving}>
           {saving ? "Saving..." : "Save setup"}
@@ -292,7 +318,9 @@ export function PreferencesPanel({
   const blocked = saved.blockedRanges.length;
   const summary = `${GOAL_LABEL[saved.goal]}${
     blocked > 0 ? `, ${blocked} set${blocked === 1 ? "" : "s"} of dates off` : ""
-  }${saved.budget !== null ? `, budget ${formatInr(saved.budget)}` : ""}`;
+  }${saved.budget !== null ? `, budget ${formatInr(saved.budget)}` : ""}${
+    saved.includeOlderGroup ? ", older age groups on" : ""
+  }`;
 
   return (
     <div data-tour="setup" className="rounded-lg border border-slate-200 bg-slate-50">

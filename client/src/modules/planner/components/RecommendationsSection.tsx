@@ -3,7 +3,9 @@
 import { CostLine } from "@/modules/planner/components/CostLine";
 import { EventActions } from "@/modules/planner/components/EventActions";
 import { TimelineEventCard } from "@/modules/planner/components/TimelineEventCard";
+import { ReachNote } from "@/modules/planner/components/ReachNote";
 import { useRecommendations } from "@/modules/planner/hooks/useRecommendations";
+import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import type {
   EventCost,
   FallbackReason,
@@ -14,9 +16,10 @@ import { eventLocation } from "@/modules/planner/utils/calendarLinks";
 import { formatEventWindow, formatLongDate } from "@/modules/planner/utils/eventFormat";
 import { Button } from "@/modules/shared/ui/Button";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import type { PlannerEdition, PlannerEntry } from "@powermysport/shared-types";
+import type { PlannerEdition, PlannerEntry, ReachVerdict } from "@powermysport/shared-types";
 import { Info, MapPin, RefreshCw, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 /**
  * The suggested season: which of the events this child can enter to put on the
@@ -50,6 +53,9 @@ function SuggestionCard({
   isPlanned,
   isAdding,
   onAdd,
+  verdict,
+  onDismiss,
+  dismissing,
 }: {
   item: RecommendationItem;
   edition: PlannerEdition;
@@ -58,6 +64,10 @@ function SuggestionCard({
   isPlanned: boolean;
   isAdding: boolean;
   onAdd: () => void;
+  /** What past draws showed for this event, when they showed anything. */
+  verdict: ReachVerdict | undefined;
+  onDismiss: () => void;
+  dismissing: boolean;
 }) {
   const location = eventLocation({ ...edition, venue: undefined });
   return (
@@ -86,12 +96,34 @@ function SuggestionCard({
         <EventActions edition={edition} isPlanned={isPlanned} isAdding={isAdding} onAdd={onAdd} />
       </div>
       <p className="mt-2 text-sm leading-relaxed text-slate-700">{item.reason}</p>
+      {/* A stretch already says what past draws showed, as its reason. */}
+      {item.tier !== "reach" && (
+        <div className="mt-1">
+          <ReachNote verdict={verdict} />
+        </div>
+      )}
       <CostLine cost={cost} loading={costsLoading} />
       {edition.registrationDeadlineDate && (
-        <p className="mt-1 text-xs text-slate-600">
-          Entries close {formatLongDate(edition.registrationDeadlineDate)}
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-slate-600">
+          <span>Entries close {formatLongDate(edition.registrationDeadlineDate)}</span>
+          {item.urgent && (
+            <span className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-900">
+              Closes soon
+            </span>
+          )}
         </p>
       )}
+      <div className="mt-2 text-right">
+        <button
+          type="button"
+          onClick={onDismiss}
+          disabled={dismissing}
+          aria-label={`${edition.name} is not for us`}
+          className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline disabled:opacity-60"
+        >
+          Not for us
+        </button>
+      </div>
     </li>
   );
 }
@@ -104,6 +136,9 @@ function Suggestions({
   plannedSlugs,
   isAdding,
   onAdd,
+  reach,
+  onDismiss,
+  dismissing,
 }: {
   recommendations: Recommendations;
   costs: Record<string, EventCost> | undefined;
@@ -112,6 +147,9 @@ function Suggestions({
   plannedSlugs: Set<string>;
   isAdding: boolean;
   onAdd: (slug: string) => void;
+  reach: Record<string, ReachVerdict>;
+  onDismiss: (slug: string) => void;
+  dismissing: boolean;
 }) {
   // An item whose event has left the calendar cannot be shown, and is dropped
   // rather than drawn half-empty.
@@ -135,6 +173,9 @@ function Suggestions({
           isPlanned={plannedSlugs.has(item.slug)}
           isAdding={isAdding}
           onAdd={() => onAdd(item.slug)}
+          verdict={reach[item.slug]}
+          onDismiss={() => onDismiss(item.slug)}
+          dismissing={dismissing}
         />
       ))}
     </ul>
@@ -142,6 +183,7 @@ function Suggestions({
 
   const recommended = group("recommended");
   const consider = group("consider");
+  const stretch = group("reach");
 
   return (
     <div className="space-y-5">
@@ -171,6 +213,22 @@ function Suggestions({
         </section>
       )}
 
+      {stretch.length > 0 && (
+        <section aria-labelledby="stretch-heading">
+          <h3
+            id="stretch-heading"
+            className="mb-1 text-[12px] font-bold uppercase tracking-wider text-slate-500"
+          >
+            A stretch
+          </h3>
+          <p className="mb-3 text-xs leading-relaxed text-slate-600">
+            Past draws of these closed above this rank. They are here so you know about them, not as
+            picks.
+          </p>
+          {render(stretch)}
+        </section>
+      )}
+
       {shown.length === 0 && (
         <p className="text-sm text-slate-600">No open event fits right now.</p>
       )}
@@ -189,6 +247,54 @@ function Suggestions({
   );
 }
 
+/** Events the parent said were not for them, each one tap from coming back. */
+function HiddenSuggestions({
+  slugs,
+  calendar,
+  onRestore,
+  restoring,
+}: {
+  slugs: string[];
+  calendar: Map<string, PlannerEdition>;
+  onRestore: (slug: string) => void;
+  restoring: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  if (slugs.length === 0) return null;
+  return (
+    <div className="border-t border-slate-100 pt-3">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+      >
+        {slugs.length} left out as not for us {open ? "(hide)" : "(show)"}
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1.5">
+          {slugs.map((slug) => (
+            <li key={slug} className="flex items-center justify-between gap-3 text-xs">
+              <span className="min-w-0 truncate text-slate-700">
+                {calendar.get(slug)?.name ?? slug}
+              </span>
+              <button
+                type="button"
+                disabled={restoring}
+                onClick={() => onRestore(slug)}
+                aria-label={`Show ${calendar.get(slug)?.name ?? slug} again`}
+                className="shrink-0 font-semibold text-orange-700 hover:underline disabled:opacity-60"
+              >
+                Show again
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function RecommendationsSection({
   dependentId,
   costs,
@@ -199,6 +305,7 @@ export function RecommendationsSection({
   onAdd,
   upcoming,
   openCount,
+  reach,
 }: {
   dependentId: string;
   /** Estimates by event, once priced. */
@@ -213,8 +320,11 @@ export function RecommendationsSection({
   upcoming: PlannerEntry[];
   /** How many events are open to the child in all. */
   openCount: number;
+  /** What past draws showed for each open event, by slug. */
+  reach: Record<string, ReachVerdict>;
 }) {
   const { recommendations, usage, isLoading, isError, suggest } = useRecommendations(dependentId);
+  const { dismissed, dismiss, restore } = useSeasonPlan(dependentId);
   const cap = usage?.cap ?? 10;
   const outOfSuggestions = Boolean(usage && usage.used >= usage.cap);
 
@@ -228,8 +338,9 @@ export function RecommendationsSection({
         <>
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <p className="max-w-xl text-sm leading-relaxed text-slate-700">
-              Want a short list picked for you? An AI model chooses from the events this child can
-              enter, using your season setup, and every pick is checked against the entry rules.
+              Want a short list built for you? It fits around your plan, the rest days between
+              events, the yearly entries left and your budget, and leaves out events whose past
+              draws closed above this rank. An AI model then writes why each one suits them.
             </p>
             <Button disabled={suggest.isPending} onClick={() => suggest.mutate(false)}>
               <Sparkles className="mr-2 h-4 w-4" aria-hidden />
@@ -255,6 +366,7 @@ export function RecommendationsSection({
                     isPlanned={entry.edition.slug ? plannedSlugs.has(entry.edition.slug) : false}
                     isAdding={isAdding}
                     onAdd={() => entry.edition.slug && onAdd(entry.edition.slug)}
+                    verdict={entry.edition.slug ? reach[entry.edition.slug] : undefined}
                   />
                 ))}
               </ul>
@@ -282,6 +394,16 @@ export function RecommendationsSection({
             </div>
           )}
 
+          {recommendations.unchanged && (
+            <p
+              role="note"
+              className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700"
+            >
+              Nothing has changed since these were made, so they are the same, and no fresh
+              suggestion was used. Change your setup or your plan and ask again.
+            </p>
+          )}
+
           {recommendations.fallbackReason && (
             <p
               role="note"
@@ -299,12 +421,22 @@ export function RecommendationsSection({
             plannedSlugs={plannedSlugs}
             isAdding={isAdding}
             onAdd={onAdd}
+            reach={reach}
+            onDismiss={(slug) => dismiss.mutate(slug)}
+            dismissing={dismiss.isPending}
+          />
+
+          <HiddenSuggestions
+            slugs={dismissed}
+            calendar={calendar}
+            onRestore={(slug) => restore.mutate(slug)}
+            restoring={restore.isPending}
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
             <p className="max-w-xl text-xs leading-relaxed text-slate-500">
               {recommendations.source === "ai"
-                ? "Chosen by an AI model from the events this child can enter, then checked against the entry rules."
+                ? "The events were chosen by the planner's rules from what this child can enter. An AI model wrote the explanations, and each was checked against the data."
                 : "Chosen by the planner's own rules from the events this child can enter."}{" "}
               Made {formatLongDate(recommendations.generatedAt)}.
               {usage && ` ${usage.used} of ${usage.cap} fresh suggestions used today.`}
