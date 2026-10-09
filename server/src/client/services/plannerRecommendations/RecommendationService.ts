@@ -375,12 +375,38 @@ export function createRecommendationService(deps: RecommendationDeps) {
       }
     },
 
-    /** The parent marked a suggested event "not for us". Counted, not recorded. */
-    async noteDismissed(): Promise<void> {
+    /**
+     * The parent marked a suggested event "not for us". Counted, not recorded. When the
+     * saved answer is named, it is re-saved without that event and against the new
+     * candidates: leaving it would make the parent's own choice read as "your situation
+     * has changed" and invite an update they do not need.
+     */
+    async noteDismissed(userId?: string, dependentId?: string, slug?: string): Promise<void> {
       try {
         await metrics.increment("dismissed");
       } catch {
         // Counting must never get in the way of the dismissal.
+      }
+      if (!userId || !dependentId || !slug) return;
+      try {
+        const key = cacheKey(userId, dependentId);
+        const stored = await deps.store.get(key);
+        if (!stored) return;
+        const context = buildContext(await deps.loadOverview(userId, dependentId), deps.now());
+        if (!context) return;
+        await deps.store.set(
+          key,
+          {
+            inputHash: inputHashOf(context),
+            result: {
+              ...stored.result,
+              items: stored.result.items.filter((item) => item.slug !== slug),
+            },
+          },
+          CACHE_TTL_SECONDS
+        );
+      } catch {
+        // The worst case is the old banner, which is harmless.
       }
     },
 

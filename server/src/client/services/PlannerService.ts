@@ -11,7 +11,7 @@ import { TournamentEdition } from "../../shared/models/TournamentEdition";
 import { Player } from "../models/Player";
 import { samplesFor } from "../../shared/services/aita/acceptanceStore";
 import { expectedEvents, type ExpectedEvent } from "./plannerExpected";
-import { genderOf, reachFor } from "./plannerReach";
+import { genderOf, reachFor, reachForPlayingUp } from "./plannerReach";
 import { RankingClaimService } from "./RankingClaimService";
 import { SeasonPlanService } from "./SeasonPlanService";
 
@@ -270,14 +270,19 @@ export const PlannerService = {
     const editions = await loadUpcoming(sportSlug);
     const shortlist = buildShortlist(editions, { bracket: ageGroup, rank });
     const gender = genderOf(source.category);
+    const load = (ladder: string, group: string, sex: "Boys" | "Girls") =>
+      samplesFor(ladder, group, sex);
     const reach = gender
-      ? await reachFor({
-          entries: shortlist.ownGroup,
-          ageGroup,
-          gender,
-          rank,
-          load: (ladder, group, sex) => samplesFor(ladder, group, sex),
-        })
+      ? {
+          ...(await reachForPlayingUp({
+            entries: shortlist.playingUp,
+            ownAgeGroup: ageGroup,
+            gender,
+            alsoRanked,
+            load,
+          })),
+          ...(await reachFor({ entries: shortlist.ownGroup, ageGroup, gender, rank, load })),
+        }
       : {};
     // What last year suggests for the months beyond the calendar. A failure leaves it out.
     const expected = await loadPast(sportSlug)

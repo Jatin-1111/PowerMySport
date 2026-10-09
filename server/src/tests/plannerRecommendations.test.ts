@@ -1206,6 +1206,18 @@ describe("the recommendation service", () => {
     }
   });
 
+  it("does not call the answer stale after the parent's own dismissal of one of its events", async () => {
+    const { state, service } = harness();
+    const first = await service.generate("u1", "d1");
+    const suggested = slugsOf(first.recommendations);
+    assert.ok(suggested.length > 0);
+    state.overview = overviewOf(events, { reach, dismissed: [suggested[0]!] });
+    await service.noteDismissed("u1", "d1", suggested[0]!);
+    const read = await service.get("u1", "d1");
+    assert.equal(read.recommendations.stale, false);
+    assert.ok(!slugsOf(read.recommendations).includes(suggested[0]!));
+  });
+
   it("marks the answer stale when what past draws say about an event changes", async () => {
     const { state, service } = harness();
     await service.generate("u1", "d1");

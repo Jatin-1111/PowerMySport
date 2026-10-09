@@ -58,6 +58,51 @@ export async function reachFor(params: {
   return verdicts;
 }
 
+/**
+ * The same judgement for events in an older age group than the child's own.
+ *
+ * The draw a child would play is the youngest group of the event that is at or above their
+ * own, and the rank that counts there is their rank in THAT list: kept as `alsoRanked` when
+ * they are on it, and unranked when they are not, which is what AITA's draws treat them as.
+ * An event whose groups cannot be read gets no verdict.
+ */
+export async function reachForPlayingUp(params: {
+  entries: PlannerEntry[];
+  ownAgeGroup: string;
+  gender: "Boys" | "Girls";
+  alsoRanked: Array<{ subcategory: string; rank: number }>;
+  load: ReachLoader;
+}): Promise<Record<string, ReachVerdict>> {
+  const { entries, ownAgeGroup, gender, alsoRanked, load } = params;
+  const ageOf = (value: string): number | null => {
+    const match = /(\d{1,2})/.exec(value ?? "");
+    return match ? Number(match[1]) : null;
+  };
+  const own = ageOf(ownAgeGroup);
+  if (own === null) return {};
+
+  const byGroup = new Map<string, PlannerEntry[]>();
+  for (const entry of entries) {
+    const usable = (entry.edition.ageGroups ?? [])
+      .map(ageOf)
+      .filter((age): age is number => age !== null && age >= own);
+    if (usable.length === 0) continue;
+    const group = `U-${Math.min(...usable)}`;
+    byGroup.set(group, [...(byGroup.get(group) ?? []), entry]);
+  }
+
+  const verdicts: Record<string, ReachVerdict> = {};
+  for (const [group, groupEntries] of byGroup) {
+    const rank =
+      alsoRanked.find((other) => ageOf(other.subcategory) === ageOf(group))?.rank ?? null;
+    Object.assign(
+      verdicts,
+      await reachFor({ entries: groupEntries, ageGroup: group, gender, rank, load })
+    );
+  }
+  return verdicts;
+}
+
 /** "Boys" and "Girls" are the only categories the junior lists have. */
 export const genderOf = (category: string | null | undefined): "Boys" | "Girls" | null =>
   /^girls$/i.test(category ?? "") ? "Girls" : /^boys$/i.test(category ?? "") ? "Boys" : null;

@@ -90,12 +90,13 @@ export const setSeasonPlanPreferences = asyncHandler(
 export const dismissSeasonPlanEvent = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const userId = requireUser(req);
+    const dependentId = String(req.params.dependentId ?? "");
     const plan = await SeasonPlanService.dismiss({
       userId,
-      dependentId: String(req.params.dependentId ?? ""),
+      dependentId,
       editionSlug: req.body?.editionSlug,
     });
-    void RecommendationService.noteDismissed();
+    void RecommendationService.noteDismissed(userId, dependentId, String(req.body?.editionSlug));
     res.json({ success: true, data: plan });
   }
 );
