@@ -19,6 +19,7 @@ import { startOutboxWorker } from "./shared/services/OutboxService";
 import { initializeScraperScheduler } from "./utils/scraperScheduler";
 import { initializeAitaRankingScheduler } from "./utils/aitaRankingScheduler";
 import { initializeAitaCalendarScheduler } from "./utils/aitaCalendarScheduler";
+import { initializeAitaAcceptanceScheduler } from "./utils/aitaAcceptanceScheduler";
 import { initializeRankingDigestScheduler } from "./utils/rankingDigestScheduler";
 import { initializeOpportunityWatchScheduler } from "./utils/opportunityWatchScheduler";
 import { initializeOpportunityDiscoveryScheduler } from "./utils/opportunityDiscoveryScheduler";
@@ -185,6 +186,10 @@ const startServer = async () => {
           // deployed server only (NODE_ENV=production), or locally when
           // AITA_CALENDAR_CRON=on, because it writes to the one database.
           initializeAitaCalendarScheduler();
+
+          // Wednesday and Saturday capture of who got into finished events (ranks
+          // and sizes only). Deployed server only, or AITA_ACCEPTANCE_CRON=on.
+          initializeAitaAcceptanceScheduler();
 
           // Daily check for a published list nobody has been told about yet,
           // for parents who have linked a child's ranking.
