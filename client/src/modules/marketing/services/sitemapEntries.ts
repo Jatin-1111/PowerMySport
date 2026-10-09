@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { SITE_URL as siteUrl } from "@/lib/seo";
 import { RANKING_SPORTS, comboHref, rankingSportHref } from "@/modules/rankings/config/rankings";
-import { PATHWAY_SPORTS } from "@/modules/pathway/data/sports";
+import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
 import { SPORT_LABEL } from "@/modules/pathway/config/tournamentDisplay";
 
 // Extracted from app/sitemap.ts — moved as-is, no behavior change, to keep
@@ -113,31 +113,40 @@ const fetchOpportunitySlugs = (track: "admission" | "scholarship") =>
 export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [federations, editions, sportFacets, products, experts, admissions, scholarships] =
-    await Promise.all([
-      fetchSlugs("/federations"),
-      fetchSlugs("/tournament-editions"),
-      fetchSportFacets(),
-      SHOP_IS_LIVE
-        ? fetchIds("/v1/products?page=1&limit=500", (body) => {
-            const data = (body as { ok?: boolean; data?: { products?: IdRecord[] } })?.data;
-            return Array.isArray(data?.products) ? data.products : [];
-          })
-        : Promise.resolve([]),
-      EXPERTS_IS_LIVE
-        ? fetchIds("/experts?limit=200", (body) => {
-            const envelope = body as {
-              success?: boolean;
-              data?: IdRecord[] | { experts?: IdRecord[] };
-            };
-            if (!envelope?.success) return [];
-            if (Array.isArray(envelope.data)) return envelope.data;
-            return Array.isArray(envelope.data?.experts) ? envelope.data.experts : [];
-          })
-        : Promise.resolve([]),
-      fetchOpportunitySlugs("admission"),
-      fetchOpportunitySlugs("scholarship"),
-    ]);
+  const [
+    federations,
+    editions,
+    sportFacets,
+    pathways,
+    products,
+    experts,
+    admissions,
+    scholarships,
+  ] = await Promise.all([
+    fetchSlugs("/federations"),
+    fetchSlugs("/tournament-editions"),
+    fetchSportFacets(),
+    fetchPublishedPathways(),
+    SHOP_IS_LIVE
+      ? fetchIds("/v1/products?page=1&limit=500", (body) => {
+          const data = (body as { ok?: boolean; data?: { products?: IdRecord[] } })?.data;
+          return Array.isArray(data?.products) ? data.products : [];
+        })
+      : Promise.resolve([]),
+    EXPERTS_IS_LIVE
+      ? fetchIds("/experts?limit=200", (body) => {
+          const envelope = body as {
+            success?: boolean;
+            data?: IdRecord[] | { experts?: IdRecord[] };
+          };
+          if (!envelope?.success) return [];
+          if (Array.isArray(envelope.data)) return envelope.data;
+          return Array.isArray(envelope.data?.experts) ? envelope.data.experts : [];
+        })
+      : Promise.resolve([]),
+    fetchOpportunitySlugs("admission"),
+    fetchOpportunitySlugs("scholarship"),
+  ]);
 
   // Index and detail pages together, and only for a track with something
   // published: the index is noindexed while empty, so listing it would ask
@@ -420,14 +429,18 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     // ── Sport pathways (/roadmap/[sport]) ──
     // The deepest evergreen content on the site: every stage of a sport, with
     // the questions, signals, decisions and next steps a parent faces there.
-    // Listed from the static sport config rather than the API so a sitemap
-    // build never depends on the API being up.
-    ...PATHWAY_SPORTS.map((sport) => ({
-      url: `${siteUrl}/roadmap/${sport.slug}`,
-      lastModified: now,
-      changeFrequency: "monthly" as const,
-      priority: 0.8,
-    })),
+    // Listed from the published guides, not from the sport config: a sport with
+    // no published guide answers 200 with a noindex not-found page (the route
+    // streams, so the status is already sent), and listing it asked Google to
+    // crawl a soft 404. When the API is down this fails soft to no entries.
+    ...pathways
+      .filter((pathway) => (pathway.stages?.length ?? 0) > 0)
+      .map((pathway) => ({
+        url: `${siteUrl}/roadmap/${pathway.sportSlug}`,
+        lastModified: now,
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+      })),
 
     ...opportunityEntries,
     {
