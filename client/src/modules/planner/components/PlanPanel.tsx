@@ -4,16 +4,11 @@ import { CostLine } from "@/modules/planner/components/CostLine";
 import { PlanEntryRow } from "@/modules/planner/components/PlanEntryRow";
 import type { CostResponse } from "@/modules/planner/services/planner";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
-import {
-  downloadIcs,
-  eventLocation,
-  googleCalendarUrl,
-} from "@/modules/planner/utils/calendarLinks";
+import { eventLocation, googleCalendarUrl } from "@/modules/planner/utils/calendarLinks";
 import { planWarnings } from "@/modules/planner/utils/timeline";
-import { Button } from "@/modules/shared/ui/Button";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import type { PlannerEdition } from "@powermysport/shared-types";
-import { CalendarPlus, Download } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 
 /**
  * The decisions the parent has made, with the calendar and the clashes.
@@ -92,8 +87,6 @@ export function PlanPanel({
     ).map((warning) => [warning.slug, warning.message])
   );
 
-  const upcoming = merged.filter(({ entry }) => entry.status !== "played");
-
   const thisYear = new Date().getUTCFullYear();
   const countedThisYear = entries.filter(
     (entry) => new Date(entry.startDate).getUTCFullYear() === thisYear
@@ -148,18 +141,6 @@ export function PlanPanel({
           />
         ))}
       </ul>
-
-      <div className="mt-4 border-t border-slate-100 pt-4">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={upcoming.length === 0}
-          onClick={() => downloadIcs(upcoming.map((item) => item.calendarEvent))}
-        >
-          <Download className="mr-1.5 h-4 w-4" aria-hidden />
-          Download calendar file
-        </Button>
-      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import redis from "../../../config/redis";
+import redis, { REDIS_ENABLED } from "../../../config/redis";
 import { AppError } from "../../../utils/AppError";
 import { log as __rootLog } from "../../../utils/logger";
 import { PlannerService, type PlannerOverview } from "../PlannerService";
@@ -83,16 +83,40 @@ export interface RecommendationDeps {
 const istDateKey = (now: Date): string =>
   new Date(now.getTime() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
+/**
+ * Where Redis is switched off (local development) or briefly unreachable, saved answers are
+ * kept in this process instead. Without it the page showed a season, then lost it on the
+ * next read (adding an event re-reads the saved answer) and offered "Suggest my season" as
+ * if none had been made. Per process and lost on restart, which is all a fallback needs.
+ */
+const localAnswers = new Map<string, { value: StoredRecommendation; expires: number }>();
+const MAX_LOCAL_ANSWERS = 500;
+
 export const redisStore: RecommendationStore = {
   async get(key) {
-    try {
-      const raw = await redis.get(key);
-      return raw ? (JSON.parse(raw) as StoredRecommendation) : null;
-    } catch {
+    if (REDIS_ENABLED) {
+      try {
+        const raw = await redis.get(key);
+        if (raw) return JSON.parse(raw) as StoredRecommendation;
+      } catch {
+        // Fall through to the local copy.
+      }
+    }
+    const local = localAnswers.get(key);
+    if (!local) return null;
+    if (local.expires < Date.now()) {
+      localAnswers.delete(key);
       return null;
     }
+    return local.value;
   },
   async set(key, value, ttlSeconds) {
+    if (localAnswers.size >= MAX_LOCAL_ANSWERS) {
+      const oldest = localAnswers.keys().next().value;
+      if (oldest !== undefined) localAnswers.delete(oldest);
+    }
+    localAnswers.set(key, { value, expires: Date.now() + ttlSeconds * 1000 });
+    if (!REDIS_ENABLED) return;
     try {
       await redis.set(key, JSON.stringify(value), "EX", ttlSeconds);
     } catch {
