@@ -6,7 +6,7 @@ const log = __rootLog.child("plannerAi");
  * The one place the planner talks to Gemini.
  *
  * ── Model order ─────────────────────────────────────────────────────────────
- * Tried in turn, moving on when a model is missing (404) or out of quota (429),
+ * Tried in turn, moving on when a model is missing (404), out of quota (429) or busy (503),
  * the same way the guidance feature does. Names are real ones in use elsewhere in
  * this codebase: a bare "gemini-2.5" is a 404. `gemini-2.5-flash-lite` was dropped from the list on 2026-10-09: the API answers 404 "no longer available to new users", so it only added a failed call to every fallback. `PLANNER_GEMINI_MODEL` pins one
  * first without a deploy.
@@ -44,7 +44,10 @@ const candidates = (): string[] =>
  * stray unquoted key. A parse failure is the model's lapse, not ours, so it moves
  * on to the next model rather than giving up on the first.
  */
-const isRetryable = (message: string): boolean =>
+const BUSY = ["503", "unavailable", "high demand", "overloaded"];
+const BUSY_PAUSE_MS = 2500;
+
+export const isRetryable = (message: string): boolean =>
   message.includes("json") ||
   message.includes("empty response") ||
   message.includes("404") ||
@@ -52,7 +55,11 @@ const isRetryable = (message: string): boolean =>
   message.includes("429") ||
   message.includes("quota") ||
   message.includes("rate limit") ||
-  message.includes("too many requests");
+  message.includes("too many requests") ||
+  message.includes("503") ||
+  message.includes("unavailable") ||
+  message.includes("high demand") ||
+  message.includes("overloaded");
 
 /**
  * The shape the model must answer in, enforced by the API and not only asked for in the
@@ -123,36 +130,45 @@ export async function callPlannerModelDetailed(
   const client = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  for (const model of candidates()) {
-    try {
-      const response = await client.models.generateContent({
-        model,
-        contents: userPrompt,
-        config: {
-          systemInstruction: systemPrompt,
-          responseMimeType: "application/json",
-          responseSchema: responseSchemaFor(options.slugs),
-          temperature: TEMPERATURE,
-        },
-      });
-      const text = (response.text ?? "").trim();
-      if (!text) throw new Error("The model returned an empty response");
-      return {
-        value: parseModelJson(text),
-        usage: {
+  for (let pass = 0; pass < 2; pass += 1) {
+    if (pass === 1) {
+      // Every model said it was busy: demand spikes pass in seconds, so one more try after a pause
+      // is cheaper than showing the code's sentences. Quota and missing models are not retried.
+      const message = lastError instanceof Error ? lastError.message.toLowerCase() : "";
+      if (!BUSY.some((word) => message.includes(word))) break;
+      await new Promise((resolve) => setTimeout(resolve, BUSY_PAUSE_MS));
+    }
+    for (const model of candidates()) {
+      try {
+        const response = await client.models.generateContent({
           model,
-          promptTokens: response.usageMetadata?.promptTokenCount ?? null,
-          outputTokens: response.usageMetadata?.candidatesTokenCount ?? null,
-        },
-      };
-    } catch (error) {
-      lastError = error;
-      const message = error instanceof Error ? error.message.toLowerCase() : "";
-      if (isRetryable(message)) {
-        log.warn(`Planner model ${model} unavailable, trying the next: ${message.slice(0, 160)}`);
-        continue;
+          contents: userPrompt,
+          config: {
+            systemInstruction: systemPrompt,
+            responseMimeType: "application/json",
+            responseSchema: responseSchemaFor(options.slugs),
+            temperature: TEMPERATURE,
+          },
+        });
+        const text = (response.text ?? "").trim();
+        if (!text) throw new Error("The model returned an empty response");
+        return {
+          value: parseModelJson(text),
+          usage: {
+            model,
+            promptTokens: response.usageMetadata?.promptTokenCount ?? null,
+            outputTokens: response.usageMetadata?.candidatesTokenCount ?? null,
+          },
+        };
+      } catch (error) {
+        lastError = error;
+        const message = error instanceof Error ? error.message.toLowerCase() : "";
+        if (isRetryable(message)) {
+          log.warn(`Planner model ${model} unavailable, trying the next: ${message.slice(0, 160)}`);
+          continue;
+        }
+        throw error;
       }
-      throw error;
     }
   }
   throw lastError instanceof Error ? lastError : new Error("No planner model was available");
