@@ -20,7 +20,12 @@ import {
   type OpportunityForm,
 } from "@/modules/admin/components/opportunity/opportunityForm";
 import { ErrorList } from "@/modules/admin/components/pathway/fields";
-import { opportunityAdminApi, type AdminOpportunity } from "@/modules/admin/services/opportunities";
+import { PublishCheckPanel } from "@/modules/admin/components/opportunity/PublishCheckPanel";
+import {
+  opportunityAdminApi,
+  type AdminOpportunity,
+  type PublishCheck,
+} from "@/modules/admin/services/opportunities";
 import { Card } from "@/modules/shared/ui/Card";
 import {
   ArrowLeft,
@@ -28,6 +33,7 @@ import {
   Eye,
   EyeOff,
   FileSearch,
+  ListChecks,
   Loader2,
   Save,
   Trash2,
@@ -49,9 +55,11 @@ export default function AdminOpportunityEditPage() {
   const [doc, setDoc] = useState<AdminOpportunity | null>(null);
   const [form, setForm] = useState<OpportunityForm | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<"save" | "verify" | "status" | "delete" | null>(null);
+  const [busy, setBusy] = useState<"save" | "verify" | "status" | "check" | "delete" | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [checking, setChecking] = useState(Boolean(checkUrl));
+  const [showCheck, setShowCheck] = useState(false);
+  const [checkResult, setCheckResult] = useState<PublishCheck | null>(null);
 
   const adopt = useCallback((next: AdminOpportunity) => {
     setDoc(next);
@@ -124,6 +132,15 @@ export default function AdminOpportunityEditPage() {
     });
   };
 
+  const runCheck = () =>
+    run("check", async () => {
+      // Save first, so the check reads what is on screen.
+      if (form) await opportunityAdminApi.update(id, payloadFromForm(form));
+      const res = await opportunityAdminApi.check(id);
+      setCheckResult(res.data ?? null);
+      setShowCheck(true);
+    });
+
   const toggleStatus = () =>
     run("status", async () => {
       if (!doc) return;
@@ -131,6 +148,13 @@ export default function AdminOpportunityEditPage() {
       if (next === "published" && form) await opportunityAdminApi.update(id, payloadFromForm(form));
       const res = await opportunityAdminApi.setStatus(id, next);
       toast.success(res.message ?? "Status changed.");
+      // The check's findings come back with a publish; show what it let through.
+      const findings = res.data?.findings ?? [];
+      if (next === "published" && findings.some((f) => f.severity !== "note")) {
+        setCheckResult({ findings, links: [] });
+        setShowCheck(true);
+        toast.warning("Published, with things worth a look. See the check below.");
+      }
       await load();
     });
 
@@ -225,6 +249,15 @@ export default function AdminOpportunityEditPage() {
         </button>
         <button
           type="button"
+          onClick={() => setShowCheck((v) => !v)}
+          disabled={busy !== null}
+          className={`${buttonClass} border border-slate-300 text-slate-700 hover:bg-slate-50`}
+        >
+          <ListChecks className="h-4 w-4" />
+          Check before publishing
+        </button>
+        <button
+          type="button"
           onClick={() => void toggleStatus()}
           disabled={busy !== null}
           className={`${buttonClass} ${
@@ -262,6 +295,15 @@ export default function AdminOpportunityEditPage() {
             />
           </div>
         </Card>
+      )}
+
+      {showCheck && (
+        <PublishCheckPanel
+          result={checkResult}
+          running={busy === "check"}
+          onRun={() => void runCheck()}
+          onClose={() => setShowCheck(false)}
+        />
       )}
 
       <ErrorList errors={errors} />

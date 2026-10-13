@@ -74,6 +74,31 @@ export type OpportunityPayload = Omit<
   "_id" | "status" | "publishedAt" | "updatedAt" | "lastVerifiedOn"
 >;
 
+/**
+ * What the pre-publish check makes of an entry. A "problem" cannot be right and
+ * should be fixed (the server refuses to publish past only a future verification
+ * date); a "warning" is worth a look; a "note" is information.
+ */
+export interface PublishFinding {
+  severity: "problem" | "warning" | "note";
+  /** Where in the entry to look. */
+  area: string;
+  message: string;
+}
+
+export interface PublishCheckLink {
+  url: string;
+  label: string;
+  /** "unchecked" means our server was turned away, not that the link is broken. */
+  status: "ok" | "gone" | "moved" | "unchecked";
+  note?: string;
+}
+
+export interface PublishCheck {
+  findings: PublishFinding[];
+  links: PublishCheckLink[];
+}
+
 export interface OpportunityQueueSummary {
   sources: number;
   /** Readable watched sources that changed. */
@@ -109,8 +134,13 @@ export const opportunityAdminApi = {
   setStatus: async (
     id: string,
     status: "draft" | "published"
-  ): Promise<ApiResponse<{ status: string; publishedAt: string | null }>> =>
-    (await axiosInstance.post(`/admin/opportunities/${id}/status`, { status })).data,
+  ): Promise<
+    ApiResponse<{ status: string; publishedAt: string | null; findings?: PublishFinding[] }>
+  > => (await axiosInstance.post(`/admin/opportunities/${id}/status`, { status })).data,
+
+  /** The pre-publish check on the saved entry. Opens its links, so it takes a few seconds. */
+  check: async (id: string): Promise<ApiResponse<PublishCheck>> =>
+    (await axiosInstance.post(`/admin/opportunities/${id}/check`)).data,
 
   remove: async (id: string): Promise<ApiResponse<null>> =>
     (await axiosInstance.delete(`/admin/opportunities/${id}`)).data,
