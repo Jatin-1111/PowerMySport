@@ -8,6 +8,23 @@ import mongoose, { Document, Schema } from "mongoose";
  */
 export type OpportunityLeadStatus = "new" | "read" | "dismissed";
 
+export const LEAD_FITS = ["high", "medium", "low", "none"] as const;
+export type LeadFit = (typeof LEAD_FITS)[number];
+
+export interface LeadTriage {
+  /** How well it fits what parents of junior athletes here can act on. */
+  fit?: LeadFit;
+  /** One short sentence behind the fit, or behind a rule-based dismissal. */
+  reason?: string;
+  /** An entry we already have that this looks like. A suggestion; never dismisses. */
+  possibleDuplicateOf?: { slug: string; title: string };
+  /** For an aggregator lead: the official page, taken from real search results only. */
+  officialUrl?: string;
+  /** "rules" for the checks that need no AI, "ai" when a model judged the fit. */
+  by: "rules" | "ai";
+  at: Date;
+}
+
 export interface OpportunityLeadDocument extends Document {
   name: string;
   owner?: string;
@@ -26,6 +43,12 @@ export interface OpportunityLeadDocument extends Document {
   /** The source submission it was read into, once someone did. */
   submissionId?: mongoose.Types.ObjectId;
   dismissReason?: string;
+  /** Set when triage dismissed it, not a person. Shown apart and restorable. */
+  autoDismissed?: boolean;
+  /** Set when a person restores an auto-dismissed lead: triage never dismisses it again. */
+  triageLocked?: boolean;
+  /** What triage made of it (opportunityLeadTriage.ts). Advice for a person, never a decision. */
+  triage?: LeadTriage;
   firstFoundAt: Date;
   lastFoundAt: Date;
   timesFound: number;
@@ -47,6 +70,25 @@ const opportunityLeadSchema = new Schema<OpportunityLeadDocument>(
     status: { type: String, enum: ["new", "read", "dismissed"], default: "new", index: true },
     submissionId: { type: Schema.Types.ObjectId, ref: "DataSourceSubmission" },
     dismissReason: { type: String, trim: true, maxlength: 300 },
+    autoDismissed: { type: Boolean, default: undefined },
+    triageLocked: { type: Boolean, default: undefined },
+    triage: {
+      type: new Schema(
+        {
+          fit: { type: String, enum: LEAD_FITS },
+          reason: { type: String, trim: true, maxlength: 300 },
+          possibleDuplicateOf: {
+            type: new Schema({ slug: String, title: String }, { _id: false }),
+            default: undefined,
+          },
+          officialUrl: { type: String, trim: true },
+          by: { type: String, enum: ["rules", "ai"], required: true },
+          at: { type: Date, required: true },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
     firstFoundAt: { type: Date, required: true },
     lastFoundAt: { type: Date, required: true },
     timesFound: { type: Number, default: 1 },

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 
 import { OpportunityLead } from "../../shared/models/OpportunityLead";
 import { isDiscoveryRunning, runOpportunityDiscovery } from "../services/opportunityDiscovery";
+import { isTriageRunning, runLeadTriage } from "../services/opportunityLeadTriage";
 import { recordAuditLog } from "../services/AuditLogService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -19,11 +20,19 @@ export const listOpportunityLeads = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const status = typeof req.query.status === "string" ? req.query.status : "new";
     if (!["new", "read", "dismissed"].includes(status)) throw new AppError("Unknown status.", 400);
-    const leads = await OpportunityLead.find({ status })
+    // `autoDismissed=true` lists only what triage dismissed, so it can be reviewed.
+    const autoOnly = status === "dismissed" && req.query.autoDismissed === "true";
+    const leads = await OpportunityLead.find({
+      status,
+      ...(autoOnly ? { autoDismissed: true } : {}),
+    })
       .sort({ lastFoundAt: -1 })
       .limit(200)
       .lean();
-    res.json({ success: true, data: { leads, running: isDiscoveryRunning() } });
+    res.json({
+      success: true,
+      data: { leads, running: isDiscoveryRunning(), triaging: isTriageRunning() },
+    });
   }
 );
 
@@ -46,6 +55,62 @@ export const runOpportunityDiscoveryNow = asyncHandler(
       success: true,
       message: "Searching for new leads. They appear here in a few minutes.",
     });
+  }
+);
+
+// POST /api/admin/opportunity-leads/triage
+// Sorts the leads not yet looked at. Answers at once: it makes several AI calls.
+// An admin pressing the button is an explicit request, so it ignores the
+// OPPORTUNITY_LEAD_TRIAGE switch that gates the unattended run.
+export const triageOpportunityLeadsNow = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (isTriageRunning()) throw new AppError("Triage is already running.", 409);
+    void runLeadTriage().catch((error) => log.error("Manual lead triage failed:", error));
+    if (req.user?.id) {
+      void recordAuditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email || "",
+        action: "opportunity-leads.triage",
+        targetType: "OpportunityLead",
+        targetId: "all",
+      });
+    }
+    res.status(202).json({
+      success: true,
+      message: "Sorting the leads. Results appear here in a minute or two.",
+    });
+  }
+);
+
+// POST /api/admin/opportunity-leads/:id/restore
+// Undo an automatic dismissal. The lead is locked so triage never dismisses it again.
+export const restoreOpportunityLead = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+      throw new AppError("Invalid id.", 400);
+    }
+    const lead = await OpportunityLead.findOneAndUpdate(
+      { _id: id, status: "dismissed", autoDismissed: true },
+      {
+        $set: { status: "new", triageLocked: true },
+        $unset: { autoDismissed: "", dismissReason: "" },
+      },
+      { new: true }
+    ).lean();
+    if (!lead)
+      throw new AppError("Only a lead that was dismissed automatically can be restored.", 404);
+    if (req.user?.id) {
+      void recordAuditLog({
+        adminId: req.user.id,
+        adminEmail: req.user.email || "",
+        action: "opportunity-leads.restore",
+        targetType: "OpportunityLead",
+        targetId: id,
+        metadata: { url: lead.url },
+      });
+    }
+    res.json({ success: true, message: "Restored. Triage will leave it alone." });
   }
 );
 

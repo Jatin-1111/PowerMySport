@@ -2,6 +2,7 @@ import { Opportunity } from "../../shared/models/Opportunity";
 import { OpportunityLead } from "../../shared/models/OpportunityLead";
 import { SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
 import { getClient } from "./dataSourceExtraction/gemini";
+import { leadTriageEnabled, runLeadTriage } from "./opportunityLeadTriage";
 import { log as __rootLog } from "../../utils/logger";
 
 const log = __rootLog.child("opportunity-discovery");
@@ -181,9 +182,11 @@ export interface DiscoveryDeps {
   search?: (query: string) => Promise<SearchOutcome | null>;
   format?: (prompt: string) => Promise<unknown>;
   resolveRedirect?: (uri: string) => Promise<string | null>;
+  /** Replaces the sort of new leads afterwards (tests), or null to skip it. */
+  triage?: (() => Promise<unknown>) | null;
 }
 
-async function geminiSearch(query: string): Promise<SearchOutcome | null> {
+export async function geminiSearch(query: string): Promise<SearchOutcome | null> {
   const genAI = getClient();
   if (!genAI) return null;
   for (const model of MODEL_CANDIDATES) {
@@ -213,7 +216,7 @@ async function geminiSearch(query: string): Promise<SearchOutcome | null> {
   return null;
 }
 
-async function geminiFormat(prompt: string): Promise<unknown> {
+export async function geminiFormat(prompt: string): Promise<unknown> {
   const genAI = getClient();
   if (!genAI) return null;
   for (const model of MODEL_CANDIDATES) {
@@ -241,7 +244,7 @@ async function geminiFormat(prompt: string): Promise<unknown> {
  * The real address is in the redirect's Location header; the page itself is
  * not fetched here.
  */
-async function resolveGroundingRedirect(uri: string): Promise<string | null> {
+export async function resolveGroundingRedirect(uri: string): Promise<string | null> {
   if (!/grounding-api-redirect/.test(uri)) return uri;
   try {
     const res = await fetch(uri, { redirect: "manual", signal: AbortSignal.timeout(10_000) });
@@ -368,6 +371,18 @@ export async function runOpportunityDiscovery(deps: DiscoveryDeps = {}): Promise
         });
         knownUrls.add(candidate.url);
         newLeads += 1;
+      }
+    }
+
+    // Sort what was found so a person reads the good leads first. A failure
+    // here must never fail the search: the leads are already stored.
+    const triage =
+      deps.triage !== undefined ? deps.triage : leadTriageEnabled() ? runLeadTriage : null;
+    if (triage && newLeads > 0) {
+      try {
+        await triage();
+      } catch (error) {
+        log.error("Triage of new leads failed:", error);
       }
     }
 
