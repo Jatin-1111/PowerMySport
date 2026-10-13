@@ -52,6 +52,7 @@ export async function runOpportunityExtraction(
   submission.status = result.status;
   submission.extractedData = result.extractedData;
   submission.citations = result.citations;
+  submission.citationChecks = result.citationChecks;
   submission.extractionError = result.extractionError;
   submission.extractionWarnings = result.extractionWarnings;
   submission.extractionModel = result.extractionModel;

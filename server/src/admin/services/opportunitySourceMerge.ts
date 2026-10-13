@@ -12,6 +12,8 @@
 // facts, key dates) and the amount are compared whole: half a list of steps is
 // not a smaller correct list.
 
+import type { CitationChecks, FigureStatus, QuoteStatus } from "./dataSourceExtraction/quoteCheck";
+
 /** Nested objects whose keys are compared and applied one at a time. */
 const NESTED = ["owner", "geography", "eligibility", "benefit", "cycle"] as const;
 
@@ -35,6 +37,12 @@ export interface ProposedChange {
   proposed: unknown;
   /** The quote the model gave for this path's top-level field, if any. */
   citation?: string;
+  /** Whether that quote is on the page. Absent when it could not be checked (a PDF, a browsed page). */
+  quoteCheck?: QuoteStatus;
+  /** Whether this path's number or date is in its quote. Absent for text fields. */
+  figureCheck?: FigureStatus;
+  /** How many fields were given this same quote, when it is several: one quote cannot support them all. */
+  sharedQuote?: number;
 }
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
@@ -80,7 +88,8 @@ const getPath = (record: Record<string, unknown>, path: string): unknown => {
 export function proposedChanges(
   current: Record<string, unknown> | null,
   extracted: Record<string, unknown>,
-  citations: Record<string, string> = {}
+  citations: Record<string, string> = {},
+  checks?: Partial<CitationChecks> | null
 ): ProposedChange[] {
   const base = current ?? {};
   const changes: ProposedChange[] = [];
@@ -89,11 +98,17 @@ export function proposedChanges(
     const existing = getPath(base, path);
     if (same(existing, proposed)) continue;
     const top = path.split(".")[0]!;
+    const quoteCheck = citations[top] ? checks?.quotes?.[top] : undefined;
+    const figureCheck = checks?.figures?.[path];
+    const sharedQuote = citations[top] ? checks?.shared?.[top] : undefined;
     changes.push({
       path,
       current: existing ?? null,
       proposed,
       ...(citations[top] ? { citation: citations[top] } : {}),
+      ...(quoteCheck ? { quoteCheck } : {}),
+      ...(figureCheck ? { figureCheck } : {}),
+      ...(sharedQuote ? { sharedQuote } : {}),
     });
   }
   return changes;

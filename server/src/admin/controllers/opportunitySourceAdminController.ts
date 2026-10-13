@@ -14,6 +14,7 @@ import {
 } from "../../shared/validation/opportunityFormat";
 import { s3Service } from "../../shared/services/S3Service";
 import { cleanOpportunityExtraction } from "../services/dataSourceExtraction/opportunity";
+import type { CitationChecks } from "../services/dataSourceExtraction/quoteCheck";
 import { runOpportunityExtraction } from "../services/opportunitySourceSubmission";
 import { applyChanges, proposedChanges, withSource } from "../services/opportunitySourceMerge";
 import { recordAuditLog } from "../services/AuditLogService";
@@ -218,7 +219,8 @@ export const getOpportunitySource = asyncHandler(
     const changes = proposedChanges(
       entry ? plain(entry) : null,
       plain(submission.extractedData),
-      (submission.citations ?? {}) as Record<string, string>
+      (submission.citations ?? {}) as Record<string, string>,
+      submission.citationChecks as Partial<CitationChecks> | undefined
     );
     res.json({
       success: true,

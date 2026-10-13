@@ -14,6 +14,7 @@ import {
   type ExtractionOutcome,
 } from "./gemini";
 import { fetchPageText, fetchPdfFromUrl, MAX_INLINE_PDF_BYTES } from "./http";
+import { checkExtraction, type CitationChecks } from "./quoteCheck";
 
 // ─── Reading an admission or scholarship out of a document ──────────────────
 //
@@ -243,6 +244,8 @@ export interface OpportunityExtractionResult {
   status: "PENDING_REVIEW" | "EXTRACTION_FAILED";
   extractedData?: OpportunityExtraction["fields"] & { sourcePublishedOn?: string };
   citations?: Record<string, string>;
+  /** Whether each quote is on the page and each figure is in its quote (quoteCheck.ts). */
+  citationChecks?: CitationChecks;
   extractionError?: string;
   extractionWarnings?: string[];
   extractionModel?: string;
@@ -279,6 +282,10 @@ export async function extractOpportunityForSubmission(
   const rules = promptRules(track);
 
   let outcome: ExtractionOutcome;
+  // The text the model was shown, when we have it to compare its quotes with. A
+  // PDF is sent whole and a browsed page is read by the model alone, so for
+  // those there is none.
+  let pageText: string | null = null;
   if (submission.sourceKind === "PDF") {
     if (!submission.s3Key) {
       return {
@@ -331,6 +338,8 @@ export async function extractOpportunityForSubmission(
           `${intro} Below is the text of ${url}.\n\n${rules}\n\nPage text:\n"""\n${text}\n"""`,
           "object"
         );
+        // The model read exactly this text, so its quotes can be checked against it.
+        if (outcome.data) pageText = text;
       }
       if (!outcome.data) {
         // Bot-gated or built in the browser: let the model open it itself.
@@ -372,6 +381,7 @@ export async function extractOpportunityForSubmission(
       ...(cleaned.sourcePublishedOn ? { sourcePublishedOn: cleaned.sourcePublishedOn } : {}),
     },
     citations: cleaned.citations,
+    citationChecks: checkExtraction(cleaned.fields, cleaned.citations, pageText),
     ...(cleaned.warnings.length ? { extractionWarnings: cleaned.warnings } : {}),
     ...(outcome.model ? { extractionModel: outcome.model } : {}),
   };

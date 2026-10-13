@@ -55,6 +55,8 @@ export interface DataSourceSubmissionDocument extends Document {
   extractedData?: unknown;
   /** field name -> short quote/paraphrase from the source supporting that field (FEDERATION/CURATED_TOURNAMENT only) */
   citations?: Record<string, string>;
+  /** OPPORTUNITY only: the quote and figure checks made at extraction. */
+  citationChecks?: unknown;
   extractionError?: string;
   /** Non-fatal validation notes on a successful extraction (e.g. "149 of 151 entries were dropped: …") */
   extractionWarnings?: string[];
@@ -101,6 +103,9 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
     },
     extractedData: { type: Schema.Types.Mixed },
     citations: { type: Schema.Types.Mixed },
+    // OPPORTUNITY only: whether each quote is on the page and each figure is in
+    // its quote (dataSourceExtraction/quoteCheck.ts). Advice for the reviewer.
+    citationChecks: { type: Schema.Types.Mixed },
     extractionError: { type: String },
     extractionWarnings: { type: [String], default: undefined },
     extractionModel: { type: String },
