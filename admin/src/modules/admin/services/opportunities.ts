@@ -172,17 +172,34 @@ export interface OpportunitySourceRow {
 export interface OpportunitySource extends OpportunitySourceRow {
   extractedData?: Record<string, unknown>;
   citations?: Record<string, string>;
+  citationChecks?: CitationChecks;
   extractionWarnings?: string[];
   extractionModel?: string;
   reviewNotes?: string;
   fileName?: string;
 }
 
+export type QuoteStatus = "found" | "partial" | "missing";
+
 export interface ProposedChange {
   path: string;
   current: unknown;
   proposed: unknown;
   citation?: string;
+  /** Whether the quote is on the page. Absent when it could not be checked (a PDF, a page read by the model alone). */
+  quoteCheck?: QuoteStatus;
+  /** Whether this row's number or date is in its quote. Absent for text. */
+  figureCheck?: "ok" | "mismatch";
+  /** How many fields were given this same quote, when it is several. */
+  sharedQuote?: number;
+}
+
+/** What was checked when the source was read; see server dataSourceExtraction/quoteCheck.ts. */
+export interface CitationChecks {
+  against: "page-text" | "none";
+  quotes: Record<string, QuoteStatus>;
+  figures: Record<string, "ok" | "mismatch">;
+  shared: Record<string, number>;
 }
 
 export interface OpportunitySourceDetail {

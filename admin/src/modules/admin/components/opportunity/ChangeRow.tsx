@@ -1,4 +1,5 @@
 import type { ProposedChange } from "@/modules/admin/services/opportunities";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
 /** Plain names for the change paths, in the order the public page reads. */
 export const PATH_LABELS: Record<string, string> = {
@@ -67,6 +68,56 @@ export function ChangeValue({ value, muted }: { value: unknown; muted?: boolean 
   return <span className={`whitespace-pre-line text-sm ${tone}`}>{String(value)}</span>;
 }
 
+/**
+ * Evidence against a row, found by comparing text rather than by asking a model:
+ * a quote that is not on the page, or a figure that is not in its own quote. A
+ * row with either starts unticked, so keeping it is a decision.
+ */
+export const hasEvidenceAgainst = (change: ProposedChange): boolean =>
+  change.quoteCheck === "missing" || change.figureCheck === "mismatch";
+
+/** What the mechanical checks found about a row's quote. Says nothing when all is well. */
+function QuoteFlags({ change }: { change: ProposedChange }) {
+  return (
+    <div className="space-y-1">
+      {change.quoteCheck === "missing" && (
+        <p className="flex items-start gap-1.5 text-xs font-semibold text-red-700">
+          <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          This quote is not on the page. The reading may have made it up, so check the source before
+          keeping this.
+        </p>
+      )}
+      {change.quoteCheck === "partial" && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          This quote only partly matches the page. Compare it with the source.
+        </p>
+      )}
+      {change.figureCheck === "mismatch" && (
+        <p className="flex items-start gap-1.5 text-xs font-semibold text-red-700">
+          <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          The number or date here is not in the quote given for it. Check it in the source.
+        </p>
+      )}
+      {change.sharedQuote !== undefined && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          The same quote was given for {change.sharedQuote} fields. One sentence cannot support them
+          all, so look for what backs this one.
+        </p>
+      )}
+      {change.quoteCheck === "found" &&
+        change.figureCheck !== "mismatch" &&
+        change.sharedQuote === undefined && (
+          <p className="flex items-center gap-1.5 text-xs text-emerald-700">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            Quote found on the page.
+          </p>
+        )}
+    </div>
+  );
+}
+
 export function ChangeRow({
   change,
   kept,
@@ -114,6 +165,7 @@ export function ChangeRow({
               No quote was given for this. Check it in the source before keeping it.
             </p>
           )}
+          <QuoteFlags change={change} />
         </div>
       </label>
     </li>

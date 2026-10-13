@@ -11,7 +11,11 @@
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { readApiErrors } from "@/modules/admin/components/opportunity/apiErrors";
-import { byPageOrder, ChangeRow } from "@/modules/admin/components/opportunity/ChangeRow";
+import {
+  byPageOrder,
+  ChangeRow,
+  hasEvidenceAgainst,
+} from "@/modules/admin/components/opportunity/ChangeRow";
 import { CATEGORY_OPTIONS } from "@/modules/admin/components/opportunity/opportunityForm";
 import { ErrorList, Field, TextInput } from "@/modules/admin/components/pathway/fields";
 import {
@@ -46,13 +50,19 @@ export default function OpportunitySourceReviewPage() {
   const [fixCategory, setFixCategory] = useState("");
 
   /**
-   * Every row starts kept only if it has a quote: an unquoted row has to be
-   * checked in the source and ticked on purpose. `alsoKeep` is for values the
-   * reviewer typed themselves, which need no quote.
+   * Every row starts kept only if it has a quote and nothing found against it:
+   * an unquoted row, a quote that is not on the page, or a figure that is not in
+   * its quote has to be checked in the source and ticked on purpose. `alsoKeep`
+   * is for values the reviewer typed themselves, which need no quote.
    */
   const adopt = useCallback((next: OpportunitySourceDetail, alsoKeep: string[] = []) => {
     setDetail(next);
-    setKeep(new Set([...next.changes.filter((c) => c.citation).map((c) => c.path), ...alsoKeep]));
+    setKeep(
+      new Set([
+        ...next.changes.filter((c) => c.citation && !hasEvidenceAgainst(c)).map((c) => c.path),
+        ...alsoKeep,
+      ])
+    );
   }, []);
 
   useEffect(() => {
@@ -199,6 +209,19 @@ export default function OpportunitySourceReviewPage() {
         {submission.reviewNotes && (
           <p className="text-sm text-slate-600">{submission.reviewNotes}</p>
         )}
+        {reviewable &&
+          submission.citationChecks &&
+          (submission.citationChecks.against !== "page-text" ||
+            Object.keys(submission.citationChecks.quotes).length > 0) && (
+            <p className="text-xs text-slate-500">
+              {submission.citationChecks.against === "page-text"
+                ? `${
+                    Object.values(submission.citationChecks.quotes).filter((q) => q === "found")
+                      .length
+                  } of ${Object.keys(submission.citationChecks.quotes).length} quotes were found on the page.`
+                : "The quotes could not be compared with the source, because it is a PDF or a page our server could not read itself. Check each one."}
+            </p>
+          )}
         {(submission.extractionWarnings?.length ?? 0) > 0 && (
           <details className="text-xs text-slate-500">
             <summary className="cursor-pointer font-semibold">
