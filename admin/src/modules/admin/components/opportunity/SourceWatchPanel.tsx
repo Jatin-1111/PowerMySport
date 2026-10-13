@@ -15,7 +15,7 @@ import {
   type SourceWatchStatus,
 } from "@/modules/admin/services/opportunities";
 import { Card } from "@/modules/shared/ui/Card";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -92,6 +92,7 @@ export function SourceWatchPanel() {
   const [running, setRunning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [showUnreadable, setShowUnreadable] = useState(false);
 
   const load = async () => {
     const res = await opportunityWatchApi.list();
@@ -136,7 +137,10 @@ export function SourceWatchPanel() {
     }
   };
 
-  const attention = watches.filter((w) => w.needsAttention);
+  // A readable source that changed is news. One that cannot be read at all is a
+  // standing condition, and listed with the changes it would bury them.
+  const changed = watches.filter((w) => w.needsAttention && w.status === "ok");
+  const unreadable = watches.filter((w) => w.needsAttention && w.status !== "ok");
   const readable = watches.filter((w) => w.status === "ok").length;
   const lastRun = watches.reduce<string | undefined>(
     (latest, w) => (!latest || w.lastCheckedAt > latest ? w.lastCheckedAt : latest),
@@ -175,23 +179,62 @@ export function SourceWatchPanel() {
         </div>
       </div>
 
-      {loading ? null : attention.length > 0 ? (
+      {loading ? null : (
         <>
-          <h3 className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-500">
-            Needs a look ({attention.length})
-          </h3>
-          <ul className="divide-y divide-slate-100">
-            {attention.map((watch) => (
-              <WatchRow key={watch._id} watch={watch} onDismiss={() => void dismiss(watch._id)} />
-            ))}
-          </ul>
+          {changed.length > 0 ? (
+            <>
+              <h3 className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+                Changed ({changed.length})
+              </h3>
+              <ul className="divide-y divide-slate-100">
+                {changed.map((watch) => (
+                  <WatchRow
+                    key={watch._id}
+                    watch={watch}
+                    onDismiss={() => void dismiss(watch._id)}
+                  />
+                ))}
+              </ul>
+            </>
+          ) : (
+            watches.length > 0 && (
+              <p className="mt-3 text-sm text-slate-600">
+                No readable source has changed since it was last looked at.
+              </p>
+            )
+          )}
+
+          {unreadable.length > 0 && (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              <button
+                type="button"
+                onClick={() => setShowUnreadable((v) => !v)}
+                aria-expanded={showUnreadable}
+                className="flex w-full items-center justify-between gap-2 text-left text-xs font-bold uppercase tracking-wide text-slate-500"
+              >
+                Our server cannot read ({unreadable.length})
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${showUnreadable ? "rotate-180" : ""}`}
+                />
+              </button>
+              <p className="mt-1 text-xs text-slate-500">
+                These sites turn automated visitors away, so we cannot tell whether they changed.
+                Look at them yourself now and then; a link you submit by hand is still read.
+              </p>
+              {showUnreadable && (
+                <ul className="divide-y divide-slate-100">
+                  {unreadable.map((watch) => (
+                    <WatchRow
+                      key={watch._id}
+                      watch={watch}
+                      onDismiss={() => void dismiss(watch._id)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </>
-      ) : (
-        watches.length > 0 && (
-          <p className="mt-3 text-sm text-slate-600">
-            Nothing has changed since it was last looked at.
-          </p>
-        )
       )}
 
       {watches.length > 0 && (

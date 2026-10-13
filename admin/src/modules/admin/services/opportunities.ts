@@ -62,6 +62,8 @@ export interface AdminOpportunityRow {
   status: "draft" | "published";
   lastVerifiedOn?: string;
   cycleState: OpportunityCycleState;
+  /** The window's own dates, "YYYY-MM-DD", when the entry has them. */
+  cycle?: { opensOn?: string; closesOn?: string };
   stale: boolean;
   updatedAt: string;
 }
@@ -72,9 +74,23 @@ export type OpportunityPayload = Omit<
   "_id" | "status" | "publishedAt" | "updatedAt" | "lastVerifiedOn"
 >;
 
+export interface OpportunityQueueSummary {
+  sources: number;
+  /** Readable watched sources that changed. */
+  changes: number;
+  /** Watched sources our server cannot read, not yet looked at. */
+  unreadable: number;
+  leads: number;
+  lastCheckedAt: string | null;
+}
+
 export const opportunityAdminApi = {
   list: async (): Promise<ApiResponse<AdminOpportunityRow[]>> =>
     (await axiosInstance.get("/admin/opportunities")).data,
+
+  /** Counts for the three queue tiles; the lists load when a drawer opens. */
+  queueSummary: async (): Promise<ApiResponse<OpportunityQueueSummary>> =>
+    (await axiosInstance.get("/admin/opportunities/queue-summary")).data,
 
   get: async (id: string): Promise<ApiResponse<AdminOpportunity>> =>
     (await axiosInstance.get(`/admin/opportunities/${id}`)).data,
@@ -118,6 +134,9 @@ export interface OpportunitySourceRow {
   extractionError?: string;
   createdAt: string;
   reviewedAt?: string;
+  /** Raised by the weekly source check when a watched source changed. */
+  autoDetected?: boolean;
+  detectedChange?: "documents" | "text" | "file";
 }
 
 export interface OpportunitySource extends OpportunitySourceRow {
@@ -175,11 +194,18 @@ export const opportunitySourceApi = {
 
   list: async (
     params: {
-      status?: OpportunitySourceStatus;
+      status?: OpportunitySourceStatus | OpportunitySourceStatus[];
       opportunitySlug?: string;
     } = {}
   ): Promise<ApiResponse<OpportunitySourceRow[]>> =>
-    (await axiosInstance.get("/admin/opportunity-sources", { params })).data,
+    (
+      await axiosInstance.get("/admin/opportunity-sources", {
+        params: {
+          ...params,
+          status: Array.isArray(params.status) ? params.status.join(",") : params.status,
+        },
+      })
+    ).data,
 
   get: async (id: string): Promise<ApiResponse<OpportunitySourceDetail>> =>
     (await axiosInstance.get(`/admin/opportunity-sources/${id}`)).data,
@@ -250,16 +276,42 @@ export interface OpportunityLeadRow {
   firstFoundAt: string;
   lastFoundAt: string;
   timesFound: number;
+  /** Set when triage dismissed it rather than a person. */
+  autoDismissed?: boolean;
+  dismissReason?: string;
+  /** What triage made of it: advice for a person, never a decision. */
+  triage?: {
+    fit?: LeadFit;
+    reason?: string;
+    possibleDuplicateOf?: { slug: string; title: string };
+    officialUrl?: string;
+    by: "rules" | "ai";
+  };
 }
+
+export type LeadFit = "high" | "medium" | "low" | "none";
 
 export const opportunityLeadApi = {
   list: async (
-    status: "new" | "read" | "dismissed" = "new"
-  ): Promise<ApiResponse<{ leads: OpportunityLeadRow[]; running: boolean }>> =>
-    (await axiosInstance.get("/admin/opportunity-leads", { params: { status } })).data,
+    status: "new" | "read" | "dismissed" = "new",
+    options: { autoDismissed?: boolean } = {}
+  ): Promise<ApiResponse<{ leads: OpportunityLeadRow[]; running: boolean; triaging: boolean }>> =>
+    (
+      await axiosInstance.get("/admin/opportunity-leads", {
+        params: { status, ...(options.autoDismissed ? { autoDismissed: true } : {}) },
+      })
+    ).data,
 
   run: async (): Promise<ApiResponse<null>> =>
     (await axiosInstance.post("/admin/opportunity-leads/run")).data,
+
+  /** Sort the leads not yet looked at. Answers at once; the work takes a minute or two. */
+  triage: async (): Promise<ApiResponse<null>> =>
+    (await axiosInstance.post("/admin/opportunity-leads/triage")).data,
+
+  /** Undo an automatic dismissal. */
+  restore: async (id: string): Promise<ApiResponse<null>> =>
+    (await axiosInstance.post(`/admin/opportunity-leads/${id}/restore`)).data,
 
   dismiss: async (id: string, reason?: string): Promise<ApiResponse<null>> =>
     (await axiosInstance.post(`/admin/opportunity-leads/${id}/dismiss`, { reason })).data,
