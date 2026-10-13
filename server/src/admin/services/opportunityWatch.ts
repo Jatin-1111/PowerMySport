@@ -247,14 +247,45 @@ export function evaluate(
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * A robots.txt reader that fetches each site's file once. A site with no
+ * reachable robots.txt asks nothing of us. Shared by the weekly watch and the
+ * pre-publish link check, so both are equally polite.
+ */
+export function createRobotsLookup(
+  fetchImpl: FetchLike
+): (origin: string) => Promise<string | null> {
+  const cache = new Map<string, string | null>();
+  return async (origin) => {
+    if (cache.has(origin)) return cache.get(origin)!;
+    let text: string | null = null;
+    try {
+      const res = await fetchImpl(`${origin}/robots.txt`, {
+        headers: { "User-Agent": USER_AGENT },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok && /text\/plain/i.test(res.headers.get("content-type") ?? "text/plain")) {
+        text = await res.text();
+      }
+    } catch {
+      text = null; // No robots.txt reachable: nothing asks us not to.
+    }
+    cache.set(origin, text);
+    return text;
+  };
+}
+
 export async function checkUrl(
   url: string,
   deps: {
     fetchImpl: FetchLike;
     resolveUrl: (raw: string) => Promise<string | null>;
     robotsFor: (origin: string) => Promise<string | null>;
+    /** Shorter than the weekly run's when a person is waiting on the answer. */
+    timeoutMs?: number;
   }
 ): Promise<CheckResult> {
+  const timeoutMs = deps.timeoutMs ?? FETCH_TIMEOUT_MS;
   const safe = await deps.resolveUrl(url);
   if (!safe) {
     return {
@@ -274,7 +305,7 @@ export async function checkUrl(
     const res = await deps.fetchImpl(safe, {
       redirect: "follow",
       headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/pdf,*/*" },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const declared = Number(res.headers.get("content-length") ?? "0");
     const body = declared > MAX_BODY_BYTES ? Buffer.alloc(0) : Buffer.from(await res.arrayBuffer());
@@ -290,7 +321,7 @@ export async function checkUrl(
     return {
       status: "error",
       note: /timeout|aborted/i.test(message)
-        ? "The site did not answer within 25 seconds."
+        ? `The site did not answer within ${Math.round(timeoutMs / 1000)} seconds.`
         : "The request failed before the site answered.",
     };
   }
@@ -365,24 +396,7 @@ export async function runOpportunityWatch(
     const resolveUrl = deps.resolveUrl ?? resolveSafeHttpUrl;
     const pauseMs = deps.pauseMs ?? PAUSE_BETWEEN_REQUESTS_MS;
 
-    const robotsCache = new Map<string, string | null>();
-    const robotsFor = async (origin: string) => {
-      if (robotsCache.has(origin)) return robotsCache.get(origin)!;
-      let text: string | null = null;
-      try {
-        const res = await fetchImpl(`${origin}/robots.txt`, {
-          headers: { "User-Agent": USER_AGENT },
-          signal: AbortSignal.timeout(10_000),
-        });
-        if (res.ok && /text\/plain/i.test(res.headers.get("content-type") ?? "text/plain")) {
-          text = await res.text();
-        }
-      } catch {
-        text = null; // No robots.txt reachable: nothing asks us not to.
-      }
-      robotsCache.set(origin, text);
-      return text;
-    };
+    const robotsFor = createRobotsLookup(fetchImpl);
 
     const targets = await collectWatchTargets();
     const firstRun = (await SourceWatch.estimatedDocumentCount()) === 0;

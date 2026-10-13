@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  checkAdminOpportunity,
   createAdminOpportunity,
   deleteAdminOpportunity,
   getAdminOpportunity,
@@ -29,6 +30,7 @@ router.get("/:id", canView, getAdminOpportunity);
 router.put("/:id", canManage, updateAdminOpportunity);
 router.delete("/:id", canManage, deleteAdminOpportunity);
 router.post("/:id/status", canManage, setAdminOpportunityStatus);
+router.post("/:id/check", canManage, checkAdminOpportunity);
 router.post("/:id/verify", canManage, verifyAdminOpportunity);
 
 export default router;

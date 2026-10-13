@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import type mongoose from "mongoose";
 
 import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { Opportunity } from "../../shared/models/Opportunity";
@@ -11,6 +12,13 @@ import {
   parseOpportunityDraft,
   todayInIndia,
 } from "../../shared/validation/opportunityFormat";
+import {
+  checkOpportunityLinks,
+  checkOpportunityOffline,
+  sortFindings,
+  type CheckableEntry,
+  type Finding,
+} from "../services/opportunityPublishCheck";
 import { recordAuditLog } from "../services/AuditLogService";
 import { revalidateOpportunities } from "../services/ClientCacheRevalidationService";
 import { asyncHandler } from "../../middleware/asyncHandler";
@@ -64,6 +72,12 @@ const editable = (doc: Record<string, unknown>) => {
   } = doc;
   return rest;
 };
+
+/** The other entries' slugs and titles, for the duplicate-title check. */
+const otherEntries = (exceptId: mongoose.Types.ObjectId) =>
+  Opportunity.find({ _id: { $ne: exceptId } })
+    .select("slug title")
+    .lean();
 
 const assertSlugFree = async (slug: string, exceptId?: string): Promise<void> => {
   const clash = await Opportunity.exists({
@@ -228,6 +242,7 @@ export const setAdminOpportunityStatus = asyncHandler(
     const publish = req.body?.status !== "draft";
     const doc = await Opportunity.findById(req.params.id);
     if (!doc) throw new AppError("No entry with that id.", 404);
+    let findings: Finding[] = [];
 
     if (publish) {
       // Round-tripped so Mongoose's subdocument wrappers become the plain
@@ -236,6 +251,21 @@ export const setAdminOpportunityStatus = asyncHandler(
       const check = parseOpportunity(editable(plain));
       if (!check.ok) {
         return badRequest(res, "This entry isn't ready to publish yet.", check.errors);
+      }
+      // The plausibility check (opportunityPublishCheck.ts). Only a problem, a
+      // record that cannot be right, stops the publish; the rest is passed back.
+      findings = checkOpportunityOffline(
+        plain as CheckableEntry,
+        todayInIndia(),
+        await otherEntries(doc._id)
+      );
+      const problems = findings.filter((f) => f.severity === "problem");
+      if (problems.length > 0) {
+        return badRequest(
+          res,
+          "This entry isn't ready to publish yet.",
+          problems.map((f) => f.message)
+        );
       }
     }
 
@@ -252,7 +282,31 @@ export const setAdminOpportunityStatus = asyncHandler(
       message: publish
         ? "Published. It is live now."
         : "Unpublished. Parents can no longer see it.",
-      data: { status: doc.status, publishedAt: doc.publishedAt },
+      data: {
+        status: doc.status,
+        publishedAt: doc.publishedAt,
+        // What the plausibility check found and let through, worst first.
+        findings: sortFindings(findings),
+      },
+    });
+  }
+);
+
+// ─── POST /api/admin/opportunities/:id/check ─────────────────────────────────
+// The full pre-publish check on the saved entry: the plausibility rules, and
+// whether each cited page and the apply link still open. Opens pages, so it takes
+// a few seconds and is asked for, not run on every publish.
+export const checkAdminOpportunity = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const doc = await Opportunity.findById(req.params.id).lean();
+    if (!doc) throw new AppError("No entry with that id.", 404);
+    const entry = JSON.parse(JSON.stringify(doc)) as CheckableEntry;
+
+    const offline = checkOpportunityOffline(entry, todayInIndia(), await otherEntries(doc._id));
+    const { findings: linkFindings, links } = await checkOpportunityLinks(entry);
+    res.json({
+      success: true,
+      data: { findings: sortFindings([...offline, ...linkFindings]), links },
     });
   }
 );
