@@ -11,6 +11,7 @@ import {
 } from "../utils/permissions";
 import { ADMIN_ROLES } from "../constants/adminPermissions";
 import Admin from "../admin/models/Admin";
+import { cacheAdminAuth, getCachedAdminAuth, type AdminAuthRecord } from "../utils/adminAuthCache";
 import redis from "../config/redis";
 import { log as __rootLog } from "../utils/logger";
 const log = __rootLog.child("auth");
@@ -22,6 +23,28 @@ declare global {
     }
   }
 }
+
+/**
+ * The admin's role, permissions and active flag for permission checks. Served
+ * from a short in-process cache (utils/adminAuthCache.ts) so a page that fires
+ * several admin calls at once does one Mongo read, not one per call. A missing
+ * admin is never cached.
+ */
+const loadAdminAuth = async (adminId: string): Promise<AdminAuthRecord | null> => {
+  const cached = getCachedAdminAuth(adminId);
+  if (cached) return cached;
+
+  const admin = await Admin.findById(adminId).select("role permissions isActive").lean();
+  if (!admin) return null;
+
+  const record: AdminAuthRecord = {
+    role: admin.role,
+    permissions: [...admin.permissions],
+    isActive: admin.isActive,
+  };
+  cacheAdminAuth(adminId, record);
+  return record;
+};
 
 const AUTH_ACTIVITY_WRITE_THROTTLE_MS = 60 * 1000;
 const touchAuthActivity = (userId: string): void => {
@@ -510,7 +533,7 @@ export const requirePermission = (requiredPermission: string) => {
       }
 
       // Fetch admin with permissions
-      const admin = await Admin.findById(req.user.id).select("role permissions isActive");
+      const admin = await loadAdminAuth(req.user.id);
 
       if (!admin || !admin.isActive) {
         res.status(403).json({
@@ -554,7 +577,7 @@ export const requireAnyPermission = (requiredPermissions: string[]) => {
         return;
       }
 
-      const admin = await Admin.findById(req.user.id).select("role permissions isActive");
+      const admin = await loadAdminAuth(req.user.id);
 
       if (!admin || !admin.isActive) {
         res.status(403).json({
@@ -597,7 +620,7 @@ export const requireAllPermissions = (requiredPermissions: string[]) => {
         return;
       }
 
-      const admin = await Admin.findById(req.user.id).select("role permissions isActive");
+      const admin = await loadAdminAuth(req.user.id);
 
       if (!admin || !admin.isActive) {
         res.status(403).json({

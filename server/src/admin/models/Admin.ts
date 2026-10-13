@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 import { ALL_PERMISSIONS, ADMIN_ROLES } from "../../constants/adminPermissions";
+import { invalidateAdminAuth } from "../../utils/adminAuthCache";
 
 export interface IAdmin extends Document {
   name: string;
@@ -92,5 +93,16 @@ AdminSchema.methods.comparePassword = async function (password: string): Promise
 
 // Index for faster queries
 AdminSchema.index({ isActive: 1 });
+
+// A change to an admin's role, permissions or active flag must not wait out the
+// in-process auth cache (utils/adminAuthCache.ts). Query writes carry no single
+// id, and admin writes are rare, so any of them clears the whole cache.
+AdminSchema.post("save", () => invalidateAdminAuth());
+AdminSchema.post("findOneAndUpdate", () => invalidateAdminAuth());
+AdminSchema.post("findOneAndDelete", () => invalidateAdminAuth());
+AdminSchema.post("updateOne", () => invalidateAdminAuth());
+AdminSchema.post("updateMany", () => invalidateAdminAuth());
+AdminSchema.post("deleteOne", { document: true, query: true }, () => invalidateAdminAuth());
+AdminSchema.post("deleteMany", () => invalidateAdminAuth());
 
 export default mongoose.model<IAdmin>("Admin", AdminSchema);
