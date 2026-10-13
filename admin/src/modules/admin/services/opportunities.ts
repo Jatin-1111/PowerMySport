@@ -163,6 +163,7 @@ export interface OpportunitySourceRow {
   originUrl?: string;
   extractionError?: string;
   createdAt: string;
+  updatedAt?: string;
   reviewedAt?: string;
   /** Raised by the weekly source check when a watched source changed. */
   autoDetected?: boolean;
@@ -173,6 +174,9 @@ export interface OpportunitySource extends OpportunitySourceRow {
   extractedData?: Record<string, unknown>;
   citations?: Record<string, string>;
   citationChecks?: CitationChecks;
+  /** Set when the page's documents were read too: every source and what became of it. */
+  documents?: SourceDocumentRecord[];
+  followDocuments?: boolean;
   extractionWarnings?: string[];
   extractionModel?: string;
   reviewNotes?: string;
@@ -192,6 +196,10 @@ export interface ProposedChange {
   figureCheck?: "ok" | "mismatch";
   /** How many fields were given this same quote, when it is several. */
   sharedQuote?: number;
+  /** Which document this value was read from, when several were read. */
+  from?: { url: string; label: string };
+  /** What the other documents say about it, where they differ. */
+  conflicts?: Array<{ url: string; label: string; value: unknown; quote?: string }>;
 }
 
 /** What was checked when the source was read; see server dataSourceExtraction/quoteCheck.ts. */
@@ -221,6 +229,18 @@ export interface CreateOpportunitySourcePayload {
   originUrl?: string;
   /** A lead being read; the server marks it read. */
   leadId?: string;
+  /** For a link to a page: also read the PDFs it links to, up to three. */
+  followDocuments?: boolean;
+}
+
+/** One source read for a submission, and what became of it. */
+export interface SourceDocumentRecord {
+  url: string;
+  label: string;
+  kind: "page" | "document";
+  status: "read" | "unreadable";
+  sourcePublishedOn?: string;
+  error?: string;
 }
 
 export const opportunitySourceApi = {

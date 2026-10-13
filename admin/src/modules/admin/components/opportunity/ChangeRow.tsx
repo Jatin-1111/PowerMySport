@@ -74,12 +74,39 @@ export function ChangeValue({ value, muted }: { value: unknown; muted?: boolean 
  * row with either starts unticked, so keeping it is a decision.
  */
 export const hasEvidenceAgainst = (change: ProposedChange): boolean =>
-  change.quoteCheck === "missing" || change.figureCheck === "mismatch";
+  change.quoteCheck === "missing" ||
+  change.figureCheck === "mismatch" ||
+  // Two official documents that disagree: the one figure most worth checking by hand.
+  (change.conflicts?.length ?? 0) > 0;
 
 /** What the mechanical checks found about a row's quote. Says nothing when all is well. */
 function QuoteFlags({ change }: { change: ProposedChange }) {
   return (
     <div className="space-y-1">
+      {change.conflicts && change.conflicts.length > 0 && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">
+          <p className="flex items-start gap-1.5 font-semibold">
+            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            The documents disagree about this. Check which one applies before keeping it.
+          </p>
+          <ul className="mt-1.5 space-y-1 pl-5">
+            {change.conflicts.map((other) => (
+              <li key={other.url}>
+                <a
+                  href={other.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline"
+                >
+                  {other.label}
+                </a>{" "}
+                says: <ChangeValue value={other.value} />
+                {other.quote && <span className="italic"> &ldquo;{other.quote}&rdquo;</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {change.quoteCheck === "missing" && (
         <p className="flex items-start gap-1.5 text-xs font-semibold text-red-700">
           <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -141,6 +168,20 @@ export function ChangeRow({
         <div className="min-w-0 flex-1 space-y-2">
           <p className="text-sm font-bold text-slate-900">
             {PATH_LABELS[change.path] ?? change.path}
+            {change.from && (
+              <span className="ml-2 text-xs font-normal text-slate-500">
+                from{" "}
+                <a
+                  href={change.from.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-slate-700 underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {change.from.label}
+                </a>
+              </span>
+            )}
           </p>
           <div className={`grid gap-3 ${isNew ? "" : "sm:grid-cols-2"}`}>
             {!isNew && (

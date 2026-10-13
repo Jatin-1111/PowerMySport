@@ -44,6 +44,7 @@ export function SourceSubmitForm({
   const [track, setTrack] = useState<OpportunityTrack>(defaultTrack);
   const [sportSlug, setSportSlug] = useState("tennis");
   const [kind, setKind] = useState<"LINK" | "PDF">("LINK");
+  const [followDocuments, setFollowDocuments] = useState(false);
   const [url, setUrl] = useState(defaultUrl);
   const [file, setFile] = useState<File | null>(null);
   const [originUrl, setOriginUrl] = useState("");
@@ -70,13 +71,15 @@ export function SourceSubmitForm({
         sourceLabel: label.trim(),
         sourceKind: kind,
         ...(kind === "LINK"
-          ? { sourceUrl: url.trim() }
+          ? { sourceUrl: url.trim(), ...(followDocuments ? { followDocuments: true } : {}) }
           : { ...upload!, originUrl: originUrl.trim() }),
       });
       const id = res.data?._id;
       if (!id) throw new Error(res.message || "The source was not saved.");
       if (res.data?.status === "EXTRACTION_FAILED") {
         toast.error("It could not be read. The reason is on the next page.");
+      } else if (res.data?.status === "PENDING_EXTRACTION") {
+        toast.info("Reading the page and its documents. This takes a few minutes.");
       } else {
         toast.success("Read. Review the proposed changes.");
       }
@@ -148,9 +151,26 @@ export function SourceSubmitForm({
       </div>
 
       {kind === "LINK" ? (
-        <Field label="Link">
-          <TextInput value={url} onChange={setUrl} placeholder="https://" />
-        </Field>
+        <div className="space-y-2">
+          <Field label="Link">
+            <TextInput value={url} onChange={setUrl} placeholder="https://" />
+          </Field>
+          <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={followDocuments}
+              onChange={(e) => setFollowDocuments(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              Also read the PDFs this page links to
+              <span className="block text-xs text-slate-500">
+                For a page that lists circulars and guidelines. Up to three, the ones that look most
+                relevant. Slower, and where two documents disagree you will be shown both.
+              </span>
+            </span>
+          </label>
+        </div>
       ) : (
         <div className="space-y-3">
           <input
@@ -186,7 +206,11 @@ export function SourceSubmitForm({
           className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {submitting ? "Reading… (up to a minute)" : "Read it"}
+          {submitting
+            ? followDocuments && kind === "LINK"
+              ? "Reading… (a few minutes)"
+              : "Reading… (up to a minute)"
+            : "Read it"}
         </button>
       </div>
     </div>

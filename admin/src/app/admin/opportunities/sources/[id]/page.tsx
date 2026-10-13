@@ -87,6 +87,26 @@ export default function OpportunitySourceReviewPage() {
     if (res.data) adopt(res.data, alsoKeep);
   };
 
+  // A reading that follows documents takes minutes and runs in the background:
+  // look again every few seconds until it has finished.
+  const pending = detail?.submission.status === "PENDING_EXTRACTION";
+  // Updated by the timer below, so "taking too long" is judged without reading the
+  // clock during render.
+  const [clock, setClock] = useState(0);
+  useEffect(() => {
+    if (!pending) return;
+    const timer = setInterval(() => {
+      setClock(Date.now());
+      opportunitySourceApi
+        .get(id)
+        .then((res) => {
+          if (res.data) adopt(res.data);
+        })
+        .catch(() => undefined);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [pending, id, adopt]);
+
   const run = async (kind: NonNullable<typeof busy>, action: () => Promise<void>) => {
     setBusy(kind);
     setErrors([]);
@@ -313,6 +333,75 @@ export default function OpportunitySourceReviewPage() {
         </div>
       )}
 
+      {submission.status === "PENDING_EXTRACTION" && (
+        <Card variant="elevated" className="space-y-2">
+          <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Reading the page{submission.followDocuments ? " and its documents" : ""}…
+          </p>
+          <p className="text-xs text-slate-500">
+            {submission.followDocuments
+              ? "This takes a few minutes. You can leave this page: it will be under Sources to review when it is done, and the editors are emailed."
+              : "This takes about a minute."}{" "}
+            This page updates by itself.
+          </p>
+          {clock > 0 &&
+            clock - new Date(submission.updatedAt ?? submission.createdAt).getTime() >
+              10 * 60 * 1000 && (
+              <button
+                type="button"
+                onClick={() => void reread()}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Taking too long? Read it again
+              </button>
+            )}
+        </Card>
+      )}
+
+      {(submission.documents?.length ?? 0) > 1 && (
+        <Card variant="elevated" className="space-y-2">
+          <p className="text-sm font-semibold text-slate-900">
+            Read {submission.documents!.filter((d) => d.status === "read").length} of{" "}
+            {submission.documents!.length} sources
+          </p>
+          <ul className="space-y-1.5">
+            {submission.documents!.map((d) => (
+              <li key={d.url} className="flex flex-wrap items-baseline gap-x-2 text-xs">
+                <span
+                  className={`rounded-md px-1.5 py-0.5 font-bold ${
+                    d.status === "read"
+                      ? "bg-emerald-50 text-emerald-800"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {d.status === "read" ? "Read" : "Not read"}
+                </span>
+                <a
+                  href={d.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-slate-800 hover:underline"
+                >
+                  {d.label}
+                </a>
+                <span className="text-slate-500">
+                  {d.kind === "page" ? "the page" : "PDF"}
+                  {d.sourcePublishedOn ? ` · issued ${d.sourcePublishedOn}` : ""}
+                  {d.error ? ` · ${d.error}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-slate-500">
+            Where documents disagree, each row shows the one it came from and what the others say,
+            and starts unticked. Quotes from a PDF cannot be compared with its text.
+          </p>
+        </Card>
+      )}
+
       {submission.status === "EXTRACTION_FAILED" && (
         <button
           type="button"
@@ -338,7 +427,8 @@ export default function OpportunitySourceReviewPage() {
           ))}
         </ul>
       ) : (
-        submission.status !== "EXTRACTION_FAILED" && (
+        submission.status !== "EXTRACTION_FAILED" &&
+        submission.status !== "PENDING_EXTRACTION" && (
           <Card variant="elevated">
             <p className="text-sm text-slate-600">
               {isNew
