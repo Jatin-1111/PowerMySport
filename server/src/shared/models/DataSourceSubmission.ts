@@ -57,6 +57,12 @@ export interface DataSourceSubmissionDocument extends Document {
   citations?: Record<string, string>;
   /** OPPORTUNITY only: the quote and figure checks made at extraction. */
   citationChecks?: unknown;
+  /** OPPORTUNITY only: read the documents the page links to as well. */
+  followDocuments?: boolean;
+  /** OPPORTUNITY only: every source read for this submission, when documents were followed. */
+  documents?: unknown;
+  fieldSources?: unknown;
+  conflicts?: unknown;
   extractionError?: string;
   /** Non-fatal validation notes on a successful extraction (e.g. "149 of 151 entries were dropped: …") */
   extractionWarnings?: string[];
@@ -106,6 +112,14 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
     // OPPORTUNITY only: whether each quote is on the page and each figure is in
     // its quote (dataSourceExtraction/quoteCheck.ts). Advice for the reviewer.
     citationChecks: { type: Schema.Types.Mixed },
+    // OPPORTUNITY only: also read the PDFs a page links to (extraction/multiDocument.ts),
+    // and what came of it. `documents` lists every source with whether it was read;
+    // `fieldSources` says which document each field came from; `conflicts` holds what
+    // the other documents say where they differ. All absent for a single-source reading.
+    followDocuments: { type: Boolean, default: undefined },
+    documents: { type: Schema.Types.Mixed },
+    fieldSources: { type: Schema.Types.Mixed },
+    conflicts: { type: Schema.Types.Mixed },
     extractionError: { type: String },
     extractionWarnings: { type: [String], default: undefined },
     extractionModel: { type: String },

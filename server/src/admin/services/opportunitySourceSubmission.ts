@@ -37,6 +37,28 @@ async function notifyEditors(submission: { _id: unknown; sportSlug: string }): P
 }
 
 /**
+ * Read it in the background and return at once. For a reading that follows a
+ * page's documents, which takes minutes: far longer than a request can be held
+ * (the load balancer drops an idle connection after a minute), and the reviewer
+ * is told it will appear when it is done. A reading that dies is recorded as
+ * failed rather than left "being read" for ever.
+ */
+export function startOpportunityExtraction(
+  submission: InstanceType<typeof DataSourceSubmission>
+): void {
+  void runOpportunityExtraction(submission).catch(async (error) => {
+    log.error("Background reading of a source failed:", error);
+    try {
+      submission.status = "EXTRACTION_FAILED";
+      submission.extractionError = "Reading it failed unexpectedly. Try reading it again.";
+      await submission.save();
+    } catch (saveError) {
+      log.error("Could not record the failed reading:", saveError);
+    }
+  });
+}
+
+/**
  * Read the submission's source, store what came out, and (unless `notify` is
  * false) tell the editors it is ready. The watch passes `notify: false`: its own
  * digest already tells them, and one email per changed source would be noise.
@@ -46,13 +68,20 @@ export async function runOpportunityExtraction(
   options: { notify?: boolean } = {}
 ): Promise<void> {
   const entry = submission.opportunitySlug
-    ? await Opportunity.findOne({ slug: submission.opportunitySlug }).select("title").lean()
+    ? await Opportunity.findOne({ slug: submission.opportunitySlug }).select("title owner").lean()
     : null;
-  const result = await extractOpportunityForSubmission(submission, entry?.title);
+  const result = await extractOpportunityForSubmission(submission, entry?.title, {
+    ownerName: entry?.owner?.name,
+  });
   submission.status = result.status;
   submission.extractedData = result.extractedData;
   submission.citations = result.citations;
   submission.citationChecks = result.citationChecks;
+  // Cleared when absent, so reading a submission again without documents does not
+  // keep what an earlier reading with them found.
+  submission.documents = result.documents;
+  submission.fieldSources = result.fieldSources;
+  submission.conflicts = result.conflicts;
   submission.extractionError = result.extractionError;
   submission.extractionWarnings = result.extractionWarnings;
   submission.extractionModel = result.extractionModel;

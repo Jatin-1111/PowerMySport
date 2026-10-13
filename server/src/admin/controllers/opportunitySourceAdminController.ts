@@ -14,9 +14,18 @@ import {
 } from "../../shared/validation/opportunityFormat";
 import { s3Service } from "../../shared/services/S3Service";
 import { cleanOpportunityExtraction } from "../services/dataSourceExtraction/opportunity";
+import { sourcesToCite, type DocumentRecord } from "../services/dataSourceExtraction/multiDocument";
 import type { CitationChecks } from "../services/dataSourceExtraction/quoteCheck";
-import { runOpportunityExtraction } from "../services/opportunitySourceSubmission";
-import { applyChanges, proposedChanges, withSource } from "../services/opportunitySourceMerge";
+import {
+  runOpportunityExtraction,
+  startOpportunityExtraction,
+} from "../services/opportunitySourceSubmission";
+import {
+  applyChanges,
+  proposedChanges,
+  withSource,
+  type MultiDocumentInfo,
+} from "../services/opportunitySourceMerge";
 import { recordAuditLog } from "../services/AuditLogService";
 import { revalidateOpportunities } from "../services/ClientCacheRevalidationService";
 import { acknowledgeWatchUrls } from "../services/opportunityWatch";
@@ -114,6 +123,8 @@ export const createOpportunitySource = asyncHandler(
       sourceLabel?: string;
       /** A lead from the monthly search being read; marked read once submitted. */
       leadId?: string;
+      /** For a link to a page: also read the PDFs it links to (up to three). */
+      followDocuments?: boolean;
     };
 
     const entry = body.opportunitySlug
@@ -165,7 +176,10 @@ export const createOpportunitySource = asyncHandler(
       sourceLabel,
       sourceKind: body.sourceKind,
       ...(body.sourceKind === "LINK"
-        ? { sourceUrl: body.sourceUrl!.trim() }
+        ? {
+            sourceUrl: body.sourceUrl!.trim(),
+            ...(body.followDocuments === true ? { followDocuments: true } : {}),
+          }
         : { s3Key: body.s3Key, fileName: body.fileName, originUrl: body.originUrl!.trim() }),
       status: "PENDING_EXTRACTION",
       submittedBy: req.user.id,
@@ -178,6 +192,18 @@ export const createOpportunitySource = asyncHandler(
       );
     }
 
+    // Following a page's documents takes minutes, so it is read in the background
+    // and the reviewer is sent to a page that waits for it.
+    if (submission.followDocuments) {
+      startOpportunityExtraction(submission);
+      res.status(201).json({
+        success: true,
+        message:
+          "Reading the page and its documents. It will be under Sources to review when done.",
+        data: submission.toObject(),
+      });
+      return;
+    }
     await runOpportunityExtraction(submission);
     res.status(201).json({ success: true, message: "Source read.", data: submission.toObject() });
   }
@@ -220,7 +246,12 @@ export const getOpportunitySource = asyncHandler(
       entry ? plain(entry) : null,
       plain(submission.extractedData),
       (submission.citations ?? {}) as Record<string, string>,
-      submission.citationChecks as Partial<CitationChecks> | undefined
+      submission.citationChecks as Partial<CitationChecks> | undefined,
+      {
+        fieldSources: submission.fieldSources as Record<string, string> | undefined,
+        conflicts: submission.conflicts as MultiDocumentInfo["conflicts"],
+        documents: submission.documents as MultiDocumentInfo["documents"],
+      }
     );
     res.json({
       success: true,
@@ -282,6 +313,15 @@ export const reExtractOpportunitySource = asyncHandler(
     }
     submission.status = "PENDING_EXTRACTION";
     await submission.save();
+    if (submission.followDocuments) {
+      startOpportunityExtraction(submission);
+      res.json({
+        success: true,
+        message: "Reading it again in the background.",
+        data: submission.toObject(),
+      });
+      return;
+    }
     await runOpportunityExtraction(submission);
     res.json({ success: true, message: "Read again.", data: submission.toObject() });
   }
@@ -340,14 +380,27 @@ export const approveOpportunitySource = asyncHandler(
     if (!sourceUrl) throw new AppError("This source has no public link to cite.", 400);
     const publishedOn =
       typeof extracted.sourcePublishedOn === "string" ? extracted.sourcePublishedOn : undefined;
-    merged.sources = withSource(
-      merged.sources as Array<{ label: string; url: string; publishedOn?: string }> | undefined,
+    // Cite what the kept fields came from. A single-source reading cites its one
+    // source; one that read several cites each document that supplied a kept field.
+    const records = (submission.documents as DocumentRecord[] | undefined) ?? [];
+    // With several sources the merged date is the newest document's, which says
+    // nothing about the page; the page's own date, if it printed one, is in its record.
+    const ownRecord = records.find((r) => r.url === sourceUrl);
+    const citeAs = sourcesToCite(
+      records,
+      (submission.fieldSources as Record<string, string> | undefined) ?? {},
+      keep,
       {
         label: submission.sourceLabel || "Official source",
         url: sourceUrl,
-        ...(publishedOn ? { publishedOn } : {}),
+        publishedOn: ownRecord ? ownRecord.sourcePublishedOn : publishedOn,
       }
     );
+    let citedSources = merged.sources as
+      Array<{ label: string; url: string; publishedOn?: string }> | undefined;
+    // Oldest first, so the newest ends up at the top, as one source does.
+    for (const source of [...citeAs].reverse()) citedSources = withSource(citedSources, source);
+    merged.sources = citedSources;
     // Approval counts as verification: the reviewer checked each kept field
     // against its quote, and confirmed the rest did not change.
     merged.lastVerifiedOn = todayInIndia();

@@ -286,14 +286,29 @@ export async function fetchPdfFromUrl(
   }
 }
 
+/**
+ * A page as the reader needs it: its text, and its HTML and final address for
+ * finding the documents it links to. One fetch for both.
+ */
+export async function fetchPageForReading(
+  url: string,
+  { stripChrome = false }: { stripChrome?: boolean } = {}
+): Promise<{ text: string; html: string; finalUrl: string } | null> {
+  const page = await fetchPageHtml(url);
+  if (!page) return null;
+  const text = htmlToText(stripChrome ? stripSiteChrome(page.html) : page.html, page.finalUrl);
+  return {
+    text: text.length > MAX_PAGE_TEXT_CHARS ? text.slice(0, MAX_PAGE_TEXT_CHARS) : text,
+    html: page.html,
+    finalUrl: page.finalUrl,
+  };
+}
+
 export async function fetchPageText(
   url: string,
   { stripChrome = false }: { stripChrome?: boolean } = {}
 ): Promise<string | null> {
-  const page = await fetchPageHtml(url);
-  if (!page) return null;
-  const text = htmlToText(stripChrome ? stripSiteChrome(page.html) : page.html, page.finalUrl);
-  return text.length > MAX_PAGE_TEXT_CHARS ? text.slice(0, MAX_PAGE_TEXT_CHARS) : text;
+  return (await fetchPageForReading(url, { stripChrome }))?.text ?? null;
 }
 
 /** Runs `worker` over `items` with a fixed number of workers in flight. */

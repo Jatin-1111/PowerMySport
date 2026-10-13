@@ -43,6 +43,23 @@ export interface ProposedChange {
   figureCheck?: FigureStatus;
   /** How many fields were given this same quote, when it is several: one quote cannot support them all. */
   sharedQuote?: number;
+  /** Which document this value was read from, when several were read. */
+  from?: { url: string; label: string };
+  /** What the other documents say about this field, where they differ from the one it came from. */
+  conflicts?: Array<{ url: string; label: string; value: unknown; quote?: string }>;
+}
+
+/** What reading several documents recorded, passed through to each change. */
+export interface MultiDocumentInfo {
+  fieldSources?: Record<string, string> | null | undefined;
+  conflicts?:
+    | Record<
+        string,
+        Array<{ url: string; label: string; value: unknown; quote?: string | undefined }>
+      >
+    | null
+    | undefined;
+  documents?: Array<{ url: string; label: string }> | null | undefined;
 }
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
@@ -89,7 +106,8 @@ export function proposedChanges(
   current: Record<string, unknown> | null,
   extracted: Record<string, unknown>,
   citations: Record<string, string> = {},
-  checks?: Partial<CitationChecks> | null
+  checks?: Partial<CitationChecks> | null,
+  multi?: MultiDocumentInfo | null
 ): ProposedChange[] {
   const base = current ?? {};
   const changes: ProposedChange[] = [];
@@ -101,6 +119,11 @@ export function proposedChanges(
     const quoteCheck = citations[top] ? checks?.quotes?.[top] : undefined;
     const figureCheck = checks?.figures?.[path];
     const sharedQuote = citations[top] ? checks?.shared?.[top] : undefined;
+    const fromUrl = multi?.fieldSources?.[top];
+    const from = fromUrl
+      ? { url: fromUrl, label: multi?.documents?.find((d) => d.url === fromUrl)?.label ?? fromUrl }
+      : undefined;
+    const conflicts = multi?.conflicts?.[top];
     changes.push({
       path,
       current: existing ?? null,
@@ -109,6 +132,17 @@ export function proposedChanges(
       ...(quoteCheck ? { quoteCheck } : {}),
       ...(figureCheck ? { figureCheck } : {}),
       ...(sharedQuote ? { sharedQuote } : {}),
+      ...(from ? { from } : {}),
+      ...(conflicts?.length
+        ? {
+            conflicts: conflicts.map((c) => ({
+              url: c.url,
+              label: c.label,
+              value: c.value,
+              ...(c.quote ? { quote: c.quote } : {}),
+            })),
+          }
+        : {}),
     });
   }
   return changes;

@@ -13,7 +13,17 @@ import {
   urlContextExtraction,
   type ExtractionOutcome,
 } from "./gemini";
-import { fetchPageText, fetchPdfFromUrl, MAX_INLINE_PDF_BYTES } from "./http";
+import { fetchPageForReading, fetchPdfFromUrl, MAX_INLINE_PDF_BYTES } from "./http";
+import {
+  documentLinksWithText,
+  mergeExtractions,
+  rankDocuments,
+  readDocuments,
+  type DocumentLink,
+  type DocumentRecord,
+  type FieldConflict,
+  type ReadSource,
+} from "./multiDocument";
 import { checkExtraction, type CitationChecks } from "./quoteCheck";
 
 // ─── Reading an admission or scholarship out of a document ──────────────────
@@ -246,10 +256,28 @@ export interface OpportunityExtractionResult {
   citations?: Record<string, string>;
   /** Whether each quote is on the page and each figure is in its quote (quoteCheck.ts). */
   citationChecks?: CitationChecks;
+  /** Set when documents the page links to were read too (multiDocument.ts): every source and what became of it. */
+  documents?: DocumentRecord[];
+  /** Top-level field → the address of the document its value came from. */
+  fieldSources?: Record<string, string>;
+  /** Top-level field → what the other documents say, where they differ. */
+  conflicts?: Record<string, FieldConflict[]>;
   extractionError?: string;
   extractionWarnings?: string[];
   extractionModel?: string;
 }
+
+/**
+ * A link's text comes from another site's HTML and goes into the prompt as the
+ * document's name. It is flattened to one short line without quotes, so it can
+ * name the document but not close the sentence it sits in and add instructions.
+ * Anything the model returns is cleaned and reviewed by a person regardless.
+ */
+const promptSafe = (text: string): string =>
+  text
+    .replace(/["\r\n]+/g, " ")
+    .trim()
+    .slice(0, 160);
 
 const pdfContents = (prompt: string, buffer: Buffer) => [
   {
@@ -261,6 +289,17 @@ const pdfContents = (prompt: string, buffer: Buffer) => [
   },
 ];
 
+/** What the reading needs to know, and the network and model it uses, replaceable so it can be tested without either. */
+export interface ExtractionOptions {
+  /** Who runs the entry being checked, so its name is not mistaken for the scheme's when choosing documents. */
+  ownerName?: string | undefined;
+  client?: ReturnType<typeof getClient>;
+  call?: typeof jsonExtractionCall;
+  browse?: typeof urlContextExtraction;
+  fetchPage?: typeof fetchPageForReading;
+  fetchPdf?: typeof fetchPdfFromUrl;
+}
+
 /**
  * Reads the submission's source: an uploaded PDF, a link that is a PDF, or a
  * web page (fetched directly first, then browsed by the model if the site
@@ -268,9 +307,14 @@ const pdfContents = (prompt: string, buffer: Buffer) => [
  */
 export async function extractOpportunityForSubmission(
   submission: DataSourceSubmissionDocument,
-  focusTitle?: string
+  focusTitle?: string,
+  options: ExtractionOptions = {}
 ): Promise<OpportunityExtractionResult> {
-  const genAI = getClient();
+  const genAI = options.client !== undefined ? options.client : getClient();
+  const call = options.call ?? jsonExtractionCall;
+  const browse = options.browse ?? urlContextExtraction;
+  const fetchPage = options.fetchPage ?? fetchPageForReading;
+  const fetchPdf = options.fetchPdf ?? fetchPdfFromUrl;
   if (!genAI) {
     return {
       status: "EXTRACTION_FAILED",
@@ -286,6 +330,10 @@ export async function extractOpportunityForSubmission(
   // PDF is sent whole and a browsed page is read by the model alone, so for
   // those there is none.
   let pageText: string | null = null;
+  // Whether the main source is a web page (which may link to documents) and, if
+  // it was read and asked for, the PDFs it links to.
+  let primaryIsPage = false;
+  let linkedDocuments: DocumentLink[] = [];
   if (submission.sourceKind === "PDF") {
     if (!submission.s3Key) {
       return {
@@ -309,31 +357,33 @@ export async function extractOpportunityForSubmission(
           "That PDF is too large to read in one go (over 18MB). Upload only the relevant pages.",
       };
     }
-    outcome = await jsonExtractionCall(
-      genAI,
-      pdfContents(`${intro}\n\n${rules}`, buffer),
-      "object"
-    );
+    outcome = await call(genAI, pdfContents(`${intro}\n\n${rules}`, buffer), "object");
   } else {
     const url = submission.sourceUrl;
     if (!url)
       return { status: "EXTRACTION_FAILED", extractionError: "No source URL on this submission." };
 
-    const pdf = await fetchPdfFromUrl(url);
+    const pdf = await fetchPdf(url);
     if (pdf && "error" in pdf) {
       return { status: "EXTRACTION_FAILED", extractionError: pdf.error };
     }
     if (pdf) {
-      outcome = await jsonExtractionCall(
+      outcome = await call(
         genAI,
         pdfContents(`${intro} The attached PDF is from ${url}.\n\n${rules}`, pdf.buffer),
         "object"
       );
     } else {
-      const text = await fetchPageText(url, { stripChrome: true });
+      const page = await fetchPage(url, { stripChrome: true });
+      const text = page?.text ?? null;
+      primaryIsPage = true;
+      // The page's own PDF links, only when asked: reading them costs a model call each.
+      if (submission.followDocuments && page) {
+        linkedDocuments = documentLinksWithText(page.html, page.finalUrl);
+      }
       outcome = { data: null };
       if (text && text.length >= 200) {
-        outcome = await jsonExtractionCall(
+        outcome = await call(
           genAI,
           `${intro} Below is the text of ${url}.\n\n${rules}\n\nPage text:\n"""\n${text}\n"""`,
           "object"
@@ -343,7 +393,7 @@ export async function extractOpportunityForSubmission(
       }
       if (!outcome.data) {
         // Bot-gated or built in the browser: let the model open it itself.
-        const fallback = await urlContextExtraction(
+        const fallback = await browse(
           genAI,
           url,
           (findings) =>
@@ -356,33 +406,120 @@ export async function extractOpportunityForSubmission(
     }
   }
 
+  // The main source, cleaned, or why it yielded nothing. A page that yields
+  // nothing is not the end when it links to documents: an index of circulars
+  // describes no scheme itself, and its documents do.
+  const ownUrl = submission.originUrl || submission.sourceUrl || "";
+  const ownLabel = submission.sourceLabel || "Source";
+  let primary: ReadSource | null = null;
+  let primaryFailure: string | null = null;
   if (!outcome.data) {
-    return {
-      status: "EXTRACTION_FAILED",
-      extractionError: outcome.error || "Nothing usable could be read from this source.",
-    };
+    primaryFailure = outcome.error || "Nothing usable could be read from this source.";
+  } else {
+    const cleaned = cleanOpportunityExtraction(outcome.data, track);
+    if (Object.keys(cleaned.fields).length === 0) {
+      primaryFailure =
+        cleaned.warnings.join(" ") ||
+        "The source was read but described no admission or scholarship.";
+    } else {
+      primary = {
+        url: ownUrl,
+        label: ownLabel,
+        kind: primaryIsPage ? "page" : "document",
+        fields: cleaned.fields,
+        citations: cleaned.citations,
+        checks: checkExtraction(cleaned.fields, cleaned.citations, pageText),
+        warnings: cleaned.warnings,
+        sourcePublishedOn: cleaned.sourcePublishedOn,
+      };
+    }
   }
 
-  const cleaned = cleanOpportunityExtraction(outcome.data, track);
-  if (Object.keys(cleaned.fields).length === 0) {
+  // The documents the page links to, when asked for.
+  const toRead = rankDocuments(linkedDocuments, {
+    title: focusTitle ?? (primary?.fields.title as string | undefined),
+    owner: options.ownerName ?? (primary?.fields.owner as { name?: string } | undefined)?.name,
+    year: new Date().getFullYear(),
+    exclude: [ownUrl],
+  });
+  const documents =
+    toRead.length > 0
+      ? await readDocuments(toRead, {
+          download: async (documentUrl) => {
+            const pdf = await fetchPdf(documentUrl);
+            if (!pdf) return null;
+            return "error" in pdf ? { error: pdf.error } : pdf.buffer;
+          },
+          extract: async (buffer, document) => {
+            const read = await call(
+              genAI,
+              pdfContents(
+                `${intro} The attached PDF is "${promptSafe(document.label)}" from ${document.url}.\n\n${rules}`,
+                buffer
+              ),
+              "object"
+            );
+            return { data: read.data, error: read.error };
+          },
+          clean: (raw) => cleanOpportunityExtraction(raw, track),
+        })
+      : { sources: [], records: [] };
+
+  const sources = [...(primary ? [primary] : []), ...documents.sources];
+  if (sources.length === 0) {
+    const why = documents.records.map((r) => `${r.label}: ${r.error}`);
     return {
       status: "EXTRACTION_FAILED",
       extractionError:
-        cleaned.warnings.join(" ") ||
-        "The source was read but described no admission or scholarship.",
+        [primaryFailure, ...why].filter(Boolean).join(" ") ||
+        "Nothing usable could be read from this source.",
       ...(outcome.model ? { extractionModel: outcome.model } : {}),
     };
   }
 
+  // One source and no documents attempted: exactly as it was before documents.
+  if (primary && documents.records.length === 0) {
+    return {
+      status: "PENDING_REVIEW",
+      extractedData: {
+        ...primary.fields,
+        ...(primary.sourcePublishedOn ? { sourcePublishedOn: primary.sourcePublishedOn } : {}),
+      },
+      citations: primary.citations,
+      citationChecks: primary.checks,
+      ...(primary.warnings.length ? { extractionWarnings: primary.warnings } : {}),
+      ...(outcome.model ? { extractionModel: outcome.model } : {}),
+    };
+  }
+
+  const merged = mergeExtractions(sources);
+  const mainRecord: DocumentRecord = primary
+    ? {
+        url: ownUrl,
+        label: ownLabel,
+        kind: primary.kind,
+        status: "read",
+        ...(primary.sourcePublishedOn ? { sourcePublishedOn: primary.sourcePublishedOn } : {}),
+      }
+    : {
+        url: ownUrl,
+        label: ownLabel,
+        kind: "page",
+        status: "unreadable",
+        error: primaryFailure ?? "It described no scheme itself.",
+      };
   return {
     status: "PENDING_REVIEW",
     extractedData: {
-      ...cleaned.fields,
-      ...(cleaned.sourcePublishedOn ? { sourcePublishedOn: cleaned.sourcePublishedOn } : {}),
+      ...merged.fields,
+      ...(merged.sourcePublishedOn ? { sourcePublishedOn: merged.sourcePublishedOn } : {}),
     },
-    citations: cleaned.citations,
-    citationChecks: checkExtraction(cleaned.fields, cleaned.citations, pageText),
-    ...(cleaned.warnings.length ? { extractionWarnings: cleaned.warnings } : {}),
+    citations: merged.citations,
+    citationChecks: merged.checks,
+    documents: [mainRecord, ...documents.records],
+    fieldSources: merged.fieldSources,
+    ...(Object.keys(merged.conflicts).length ? { conflicts: merged.conflicts } : {}),
+    ...(merged.warnings.length ? { extractionWarnings: merged.warnings } : {}),
     ...(outcome.model ? { extractionModel: outcome.model } : {}),
   };
 }

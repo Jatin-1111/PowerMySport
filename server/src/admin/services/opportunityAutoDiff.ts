@@ -126,6 +126,10 @@ export async function createAutoDiffs(
         status: "PENDING_EXTRACTION",
         autoDetected: true,
         detectedChange: source.changeKind,
+        // The watch saw the page's documents change, and the change is in them: a
+        // new circular is a PDF the page links to, not text on the page. Read them,
+        // not just the page, which is what this used to miss.
+        ...(source.changeKind === "documents" ? { followDocuments: true } : {}),
       });
 
       try {
