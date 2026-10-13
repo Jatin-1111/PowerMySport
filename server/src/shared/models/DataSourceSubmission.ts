@@ -64,7 +64,10 @@ export interface DataSourceSubmissionDocument extends Document {
   reviewNotes?: string;
   reviewedBy?: mongoose.Types.ObjectId;
   reviewedAt?: Date;
-  submittedBy: mongoose.Types.ObjectId;
+  /** Absent when `autoDetected`: the weekly watch raised it, not a person. */
+  submittedBy?: mongoose.Types.ObjectId;
+  autoDetected?: boolean;
+  detectedChange?: "documents" | "text" | "file";
 
   createdAt: Date;
   updatedAt: Date;
@@ -106,7 +109,17 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
     reviewNotes: { type: String },
     reviewedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
     reviewedAt: { type: Date },
-    submittedBy: { type: Schema.Types.ObjectId, ref: "Admin", required: true },
+    // Raised by the weekly source watch rather than by a person, so there is no
+    // submitting admin. `detectedChange` is the watch's own words for what moved.
+    autoDetected: { type: Boolean, default: undefined },
+    detectedChange: { type: String, enum: ["documents", "text", "file"] },
+    submittedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "Admin",
+      required: function (this: { autoDetected?: boolean }) {
+        return !this.autoDetected;
+      },
+    },
   },
   { timestamps: true }
 );

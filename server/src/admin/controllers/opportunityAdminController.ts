@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 
+import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { Opportunity } from "../../shared/models/Opportunity";
+import { OpportunityLead } from "../../shared/models/OpportunityLead";
+import { SourceWatch, needsAttention } from "../../shared/models/SourceWatch";
 import {
   cycleStateOf,
   isStale,
@@ -87,6 +90,43 @@ export const listAdminOpportunities = asyncHandler(
         cycleState: cycleStateOf(doc.cycle ?? undefined, today),
         stale: isStale(doc.lastVerifiedOn, today),
       })),
+    });
+  }
+);
+
+// ─── GET /api/admin/opportunities/queue-summary ──────────────────────────────
+// Just the numbers behind the three tiles at the top of the page: sources
+// waiting on a person, watched sources that changed or cannot be read, and new
+// leads. The page used to fetch the full source, watch and lead lists on load
+// (about 40 KB) only to count them; each list is now fetched when its drawer
+// opens.
+export const getOpportunityQueueSummary = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
+    const [sources, watches, leads] = await Promise.all([
+      DataSourceSubmission.countDocuments({
+        targetType: "OPPORTUNITY",
+        status: { $in: ["PENDING_REVIEW", "EXTRACTION_FAILED"] },
+      }),
+      SourceWatch.find({})
+        .select("status statusSince lastChangedAt acknowledgedAt lastCheckedAt")
+        .lean(),
+      OpportunityLead.countDocuments({ status: "new" }),
+    ]);
+    const lastCheckedAt = watches.reduce<Date | undefined>(
+      (latest, w) => (!latest || w.lastCheckedAt > latest ? w.lastCheckedAt : latest),
+      undefined
+    );
+    res.json({
+      success: true,
+      data: {
+        sources,
+        // A readable source that changed is news. One our server cannot read is
+        // a standing condition, counted apart so it does not drown the changes.
+        changes: watches.filter((w) => w.status === "ok" && needsAttention(w)).length,
+        unreadable: watches.filter((w) => w.status !== "ok" && needsAttention(w)).length,
+        leads,
+        lastCheckedAt: lastCheckedAt ?? null,
+      },
     });
   }
 );

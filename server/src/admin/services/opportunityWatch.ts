@@ -9,6 +9,12 @@ import {
 } from "../../shared/models/SourceWatch";
 import { htmlToText, resolveSafeHttpUrl, stripSiteChrome } from "./dataSourceExtraction/http";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "./AdminService";
+import {
+  autoDiffEnabled,
+  createAutoDiffs,
+  type AutoDiffSummary,
+  type ChangedSource,
+} from "./opportunityAutoDiff";
 import { sendOpportunityWatchDigestEmail } from "../../utils/email";
 import { log as __rootLog } from "../../utils/logger";
 
@@ -17,10 +23,12 @@ const log = __rootLog.child("opportunity-watch");
 // ─── The weekly source watch ────────────────────────────────────────────────
 //
 // Every URL an admission or scholarship entry cites, plus the pages where its
-// next circular will appear, fetched once a week. No AI and no page storage:
-// each URL is reduced to a status and two fingerprints (its readable text, and
-// the list of documents it links to), compared with last week's, and anything
-// that changed or cannot be read is flagged for a person and emailed once.
+// next circular will appear, fetched once a week. The check itself uses no AI
+// and stores no pages: each URL is reduced to a status and two fingerprints (its
+// readable text, and the list of documents it links to), compared with last
+// week's, and anything that changed or cannot be read is flagged for a person
+// and emailed once. Afterwards, sources that changed are read once for review
+// (opportunityAutoDiff.ts); that read proposes, and a person still decides.
 //
 // A fetch that fails is never read as "nothing changed". Blocked, moved and
 // gone are their own statuses with their own advice, because the server's own
@@ -155,6 +163,16 @@ export function classifyResponse(input: {
       ...base,
       status: "blocked",
       note: "The site refused our server. Download the document and upload it by hand.",
+    };
+  }
+  if (httpStatus >= 300 && httpStatus < 400) {
+    // Redirects are followed, so a 3xx that is still the answer is one with no
+    // usable destination: a gateway turning crawlers away (Khelo India answers
+    // this way with no Location header at all) or a loop.
+    return {
+      ...base,
+      status: "blocked",
+      note: "The site answered with a redirect that goes nowhere, which is how some government gateways turn crawlers away. Upload the document by hand.",
     };
   }
   if (httpStatus < 200 || httpStatus >= 300) {
@@ -309,6 +327,8 @@ export interface WatchRunSummary {
   unreadable: number;
   firstRun: boolean;
   emailed: number;
+  /** Present when changed sources were read for review. */
+  autoDiffs?: AutoDiffSummary;
 }
 
 export interface DigestItem {
@@ -334,6 +354,8 @@ export async function runOpportunityWatch(
     resolveUrl?: (raw: string) => Promise<string | null>;
     pauseMs?: number;
     notify?: boolean;
+    /** Replaces the Gemini-backed read of changed sources (tests, or to switch it off). */
+    autoDiff?: ((changed: ChangedSource[]) => Promise<AutoDiffSummary>) | null;
   } = {}
 ): Promise<WatchRunSummary> {
   if (running) throw new Error("A source check is already running.");
@@ -369,6 +391,7 @@ export async function runOpportunityWatch(
     let ok = 0;
     let changed = 0;
     let unreadable = 0;
+    const changedSources: ChangedSource[] = [];
 
     for (const [index, target] of targets.entries()) {
       if (index > 0 && pauseMs > 0) await sleep(pauseMs);
@@ -400,6 +423,13 @@ export async function runOpportunityWatch(
       if (verdict.changed) {
         update.lastChangedAt = now;
         update.changeKind = verdict.changeKind;
+        if (verdict.changeKind) {
+          changedSources.push({
+            url: target.url,
+            changeKind: verdict.changeKind,
+            entries: target.entries.map((e) => ({ slug: e.slug })),
+          });
+        }
       }
       await SourceWatch.updateOne(
         { url: target.url },
@@ -432,7 +462,29 @@ export async function runOpportunityWatch(
       });
     }
 
-    const summary = { checked: targets.length, ok, changed, unreadable, firstRun, emailed };
+    // Read what changed, so a person opens a finished change list. A failure
+    // here must never fail the check itself: the changes are already recorded
+    // and flagged, and this is only a head start on reviewing them.
+    let autoDiffs: AutoDiffSummary | undefined;
+    const autoDiff =
+      deps.autoDiff !== undefined ? deps.autoDiff : autoDiffEnabled() ? createAutoDiffs : null;
+    if (autoDiff && changedSources.length > 0) {
+      try {
+        autoDiffs = await autoDiff(changedSources);
+      } catch (error) {
+        log.error("Auto-diff of changed sources failed:", error);
+      }
+    }
+
+    const summary = {
+      checked: targets.length,
+      ok,
+      changed,
+      unreadable,
+      firstRun,
+      emailed,
+      ...(autoDiffs ? { autoDiffs } : {}),
+    };
     log.info("Source check finished", summary);
     return summary;
   } finally {

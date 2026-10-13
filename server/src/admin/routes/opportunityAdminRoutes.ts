@@ -4,6 +4,7 @@ import {
   createAdminOpportunity,
   deleteAdminOpportunity,
   getAdminOpportunity,
+  getOpportunityQueueSummary,
   listAdminOpportunities,
   setAdminOpportunityStatus,
   updateAdminOpportunity,
@@ -22,6 +23,8 @@ const canManage = requirePermission("opportunities:manage");
 
 router.get("/", canView, listAdminOpportunities);
 router.post("/", canManage, createAdminOpportunity);
+// Before "/:id", or "queue-summary" would be read as an id.
+router.get("/queue-summary", canView, getOpportunityQueueSummary);
 router.get("/:id", canView, getAdminOpportunity);
 router.put("/:id", canManage, updateAdminOpportunity);
 router.delete("/:id", canManage, deleteAdminOpportunity);

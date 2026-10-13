@@ -13,21 +13,14 @@ import {
   type OpportunityTrack,
 } from "../../shared/validation/opportunityFormat";
 import { s3Service } from "../../shared/services/S3Service";
-import {
-  cleanOpportunityExtraction,
-  extractOpportunityForSubmission,
-} from "../services/dataSourceExtraction/opportunity";
+import { cleanOpportunityExtraction } from "../services/dataSourceExtraction/opportunity";
+import { runOpportunityExtraction } from "../services/opportunitySourceSubmission";
 import { applyChanges, proposedChanges, withSource } from "../services/opportunitySourceMerge";
 import { recordAuditLog } from "../services/AuditLogService";
-import { getAdminsWithPermission, resolveAdminAppUrl } from "../services/AdminService";
 import { revalidateOpportunities } from "../services/ClientCacheRevalidationService";
 import { acknowledgeWatchUrls } from "../services/opportunityWatch";
-import { sendDataSourceReadyForReviewEmail } from "../../utils/email";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
-import { log as __rootLog } from "../../utils/logger";
-
-const log = __rootLog.child("opportunity-sources");
 
 // ─── Admissions & scholarships from a link or PDF ───────────────────────────
 //
@@ -87,42 +80,6 @@ async function liveEntry(submission: { opportunitySlug?: string }) {
 
 const plain = (value: unknown): Record<string, unknown> =>
   JSON.parse(JSON.stringify(value ?? {})) as Record<string, unknown>;
-
-async function notifyEditors(submission: { _id: unknown; sportSlug: string }): Promise<void> {
-  try {
-    const editors = await getAdminsWithPermission("opportunities:manage");
-    const reviewUrl = `${resolveAdminAppUrl()}/admin/opportunities/sources/${String(submission._id)}`;
-    await Promise.all(
-      editors.map((admin) =>
-        sendDataSourceReadyForReviewEmail({
-          to: admin.email,
-          name: admin.name,
-          sportSlug: submission.sportSlug,
-          targetType: TARGET,
-          reviewUrl,
-        })
-      )
-    );
-  } catch (error) {
-    log.error("Failed to notify admissions & scholarships editors:", error);
-  }
-}
-
-async function runExtraction(submission: InstanceType<typeof DataSourceSubmission>) {
-  const entry = submission.opportunitySlug
-    ? await Opportunity.findOne({ slug: submission.opportunitySlug }).select("title").lean()
-    : null;
-  const result = await extractOpportunityForSubmission(submission, entry?.title);
-  submission.status = result.status;
-  submission.extractedData = result.extractedData;
-  submission.citations = result.citations;
-  submission.extractionError = result.extractionError;
-  submission.extractionWarnings = result.extractionWarnings;
-  submission.extractionModel = result.extractionModel;
-  submission.extractedAt = new Date();
-  await submission.save();
-  if (result.status === "PENDING_REVIEW") void notifyEditors(submission);
-}
 
 // ─── POST /api/admin/opportunity-sources/upload-url ─────────────────────────
 export const getOpportunitySourceUploadUrl = asyncHandler(
@@ -220,7 +177,7 @@ export const createOpportunitySource = asyncHandler(
       );
     }
 
-    await runExtraction(submission);
+    await runOpportunityExtraction(submission);
     res.status(201).json({ success: true, message: "Source read.", data: submission.toObject() });
   }
 );
@@ -229,14 +186,19 @@ export const createOpportunitySource = asyncHandler(
 export const listOpportunitySources = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const filter: Record<string, unknown> = { targetType: TARGET };
-    if (typeof req.query.status === "string") filter.status = req.query.status;
+    // One status, or several comma-separated ("PENDING_REVIEW,EXTRACTION_FAILED").
+    if (typeof req.query.status === "string") {
+      const statuses = req.query.status.split(",").filter(Boolean);
+      if (statuses.length > 1) filter.status = { $in: statuses };
+      else if (statuses.length === 1) filter.status = statuses[0];
+    }
     if (typeof req.query.opportunitySlug === "string") {
       filter.opportunitySlug = req.query.opportunitySlug.toLowerCase();
     }
     const docs = await DataSourceSubmission.find(filter)
       .select(
         "status opportunitySlug opportunityTrack sourceLabel sourceKind sourceUrl originUrl " +
-          "extractionError createdAt reviewedAt"
+          "extractionError createdAt reviewedAt autoDetected detectedChange"
       )
       .sort({ createdAt: -1 })
       .limit(100)
@@ -318,7 +280,7 @@ export const reExtractOpportunitySource = asyncHandler(
     }
     submission.status = "PENDING_EXTRACTION";
     await submission.save();
-    await runExtraction(submission);
+    await runOpportunityExtraction(submission);
     res.json({ success: true, message: "Read again.", data: submission.toObject() });
   }
 );
