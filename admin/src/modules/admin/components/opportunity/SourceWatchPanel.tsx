@@ -10,6 +10,7 @@
 
 import { toast } from "@/lib/toast";
 import {
+  MANUAL_CHECK_EVERY_DAYS,
   opportunityWatchApi,
   type SourceWatchRow,
   type SourceWatchStatus,
@@ -41,9 +42,41 @@ const day = (iso?: string) =>
     ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
     : "never";
 
-function WatchRow({ watch, onDismiss }: { watch: SourceWatchRow; onDismiss?: () => void }) {
+const addDays = (iso: string, days: number) =>
+  new Date(new Date(iso).getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+
+/** When a source our server cannot read was last looked at, and when it is due again. */
+function LookedAt({ watch }: { watch: SourceWatchRow }) {
+  if (!watch.lastLookedAt) {
+    return <p className="text-xs font-semibold text-amber-800">Nobody has looked at this yet.</p>;
+  }
+  return (
+    <p
+      className={`text-xs ${watch.needsAttention ? "font-semibold text-amber-800" : "text-slate-500"}`}
+    >
+      Last looked at {day(watch.lastLookedAt)}
+      {watch.lastManualCheckNote ? `: ${watch.lastManualCheckNote}` : "."}{" "}
+      {watch.needsAttention
+        ? "Due a look again."
+        : `Next look due ${day(addDays(watch.lastLookedAt, MANUAL_CHECK_EVERY_DAYS))}.`}
+    </p>
+  );
+}
+
+function WatchRow({
+  watch,
+  onDismiss,
+  onManualCheck,
+}: {
+  watch: SourceWatchRow;
+  onDismiss?: () => void;
+  /** For a source our server cannot read: "I opened it myself", with an optional note. */
+  onManualCheck?: (note?: string) => void;
+}) {
   const status = STATUS[watch.status];
   const changed = watch.status === "ok" && watch.needsAttention;
+  const [noting, setNoting] = useState(false);
+  const [note, setNote] = useState("");
   return (
     <li className="space-y-1.5 py-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -63,6 +96,37 @@ function WatchRow({ watch, onDismiss }: { watch: SourceWatchRow; onDismiss?: () 
         {changed ? (CHANGE[watch.changeKind ?? ""] ?? "Changed") : watch.note}
         {watch.status === "ok" && !changed && ` Checked ${day(watch.lastCheckedAt)}.`}
       </p>
+      {onManualCheck && <LookedAt watch={watch} />}
+      {onManualCheck && noting && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-3">
+          <input
+            type="text"
+            value={note}
+            maxLength={300}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onManualCheck(note.trim() || undefined);
+            }}
+            placeholder="What you found (optional), e.g. no new circular"
+            aria-label={`Note on checking ${watch.url}`}
+            className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => onManualCheck(note.trim() || undefined)}
+            className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white"
+          >
+            Record
+          </button>
+          <button
+            type="button"
+            onClick={() => setNoting(false)}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-900"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-xs">
         {watch.entries.map((entry) => (
           <Link
@@ -73,6 +137,15 @@ function WatchRow({ watch, onDismiss }: { watch: SourceWatchRow; onDismiss?: () 
             {changed ? "Check" : "Open"} {entry.title}
           </Link>
         ))}
+        {onManualCheck && (
+          <button
+            type="button"
+            onClick={() => setNoting((v) => !v)}
+            className="ml-auto rounded-md border border-slate-300 px-2.5 py-1 font-semibold text-slate-700 hover:border-slate-400"
+          >
+            I checked it
+          </button>
+        )}
         {onDismiss && (
           <button
             type="button"
@@ -137,10 +210,28 @@ export function SourceWatchPanel() {
     }
   };
 
+  const manualCheck = async (id: string, note?: string) => {
+    try {
+      const res = await opportunityWatchApi.manualCheck(id, note);
+      toast.success(res.message ?? "Recorded.");
+      await load();
+    } catch (error) {
+      toast.error(readApiErrors(error)[0] ?? "Could not record that.");
+    }
+  };
+
   // A readable source that changed is news. One that cannot be read at all is a
-  // standing condition, and listed with the changes it would bury them.
+  // standing condition, listed apart so it does not bury the changes, with every
+  // such source shown (due ones first) so a quiet one is still visibly checked.
   const changed = watches.filter((w) => w.needsAttention && w.status === "ok");
-  const unreadable = watches.filter((w) => w.needsAttention && w.status !== "ok");
+  const unreadable = watches
+    .filter((w) => w.status !== "ok")
+    .sort(
+      (a, b) =>
+        Number(b.needsAttention) - Number(a.needsAttention) ||
+        (a.lastLookedAt ?? "").localeCompare(b.lastLookedAt ?? "")
+    );
+  const dueByHand = unreadable.filter((w) => w.needsAttention).length;
   const readable = watches.filter((w) => w.status === "ok").length;
   const lastRun = watches.reduce<string | undefined>(
     (latest, w) => (!latest || w.lastCheckedAt > latest ? w.lastCheckedAt : latest),
@@ -212,14 +303,16 @@ export function SourceWatchPanel() {
                 aria-expanded={showUnreadable}
                 className="flex w-full items-center justify-between gap-2 text-left text-xs font-bold uppercase tracking-wide text-slate-500"
               >
-                Our server cannot read ({unreadable.length})
+                Check by hand ({dueByHand} due of {unreadable.length})
                 <ChevronDown
                   className={`h-4 w-4 transition-transform ${showUnreadable ? "rotate-180" : ""}`}
                 />
               </button>
               <p className="mt-1 text-xs text-slate-500">
                 These sites turn automated visitors away, so we cannot tell whether they changed.
-                Look at them yourself now and then; a link you submit by hand is still read.
+                Open each one yourself and press &ldquo;I checked it&rdquo;. A source you have
+                checked stays quiet for {MANUAL_CHECK_EVERY_DAYS} days. A link you submit by hand is
+                still read.
               </p>
               {showUnreadable && (
                 <ul className="divide-y divide-slate-100">
@@ -227,7 +320,7 @@ export function SourceWatchPanel() {
                     <WatchRow
                       key={watch._id}
                       watch={watch}
-                      onDismiss={() => void dismiss(watch._id)}
+                      onManualCheck={(note) => void manualCheck(watch._id, note)}
                     />
                   ))}
                 </ul>

@@ -185,7 +185,7 @@ function changesHint(summary: OpportunityQueueSummary): string {
   const checked = summary.lastCheckedAt
     ? `Checked ${shortDay(summary.lastCheckedAt)}`
     : "Checked every Monday";
-  return summary.unreadable > 0 ? `${checked} · ${summary.unreadable} unreadable` : checked;
+  return summary.unreadable > 0 ? `${checked} · ${summary.unreadable} to check by hand` : checked;
 }
 
 // The web search runs on the 1st of each month.

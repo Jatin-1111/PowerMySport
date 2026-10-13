@@ -103,7 +103,7 @@ export interface OpportunityQueueSummary {
   sources: number;
   /** Readable watched sources that changed. */
   changes: number;
-  /** Watched sources our server cannot read, not yet looked at. */
+  /** Watched sources our server cannot read that are due a hand check. */
   unreadable: number;
   leads: number;
   lastCheckedAt: string | null;
@@ -290,9 +290,18 @@ export interface SourceWatchRow {
   lastCheckedAt: string;
   lastChangedAt?: string;
   statusSince: string;
+  /** A change if the source can be read; if it cannot, whether it is due a hand check. */
   needsAttention: boolean;
+  /** The last time anyone looked at it: a hand check, a dismissal, or a review of it. */
+  lastLookedAt?: string | null;
+  /** The last time a person opened it themselves, for a source our server cannot read. */
+  lastManualCheckAt?: string;
+  lastManualCheckNote?: string;
   entries: Array<{ id: string; slug: string; title: string; status: string }>;
 }
+
+/** An unreadable source is due a look again this long after anyone last looked (server MANUAL_CHECK_EVERY_DAYS). */
+export const MANUAL_CHECK_EVERY_DAYS = 30;
 
 export const opportunityWatchApi = {
   list: async (): Promise<ApiResponse<{ watches: SourceWatchRow[]; running: boolean }>> =>
@@ -303,6 +312,13 @@ export const opportunityWatchApi = {
 
   dismiss: async (id: string): Promise<ApiResponse<null>> =>
     (await axiosInstance.post(`/admin/opportunity-watch/${id}/dismiss`)).data,
+
+  /** "I opened this source myself", for one our server cannot read. */
+  manualCheck: async (
+    id: string,
+    note?: string
+  ): Promise<ApiResponse<{ lastManualCheckAt: string }>> =>
+    (await axiosInstance.post(`/admin/opportunity-watch/${id}/manual-check`, { note })).data,
 };
 
 // ─── Leads from the monthly web search ───────────────────────────────────────
