@@ -11,4 +11,5 @@ export * from "./email/social";
 export * from "./email/provider";
 export * from "./email/dataSource";
 export * from "./email/opportunityWatch";
+export * from "./email/opportunityDeadlines";
 export * from "./email/shop";
