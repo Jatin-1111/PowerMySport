@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { Opportunity } from "../../shared/models/Opportunity";
 import {
   SourceWatch,
-  needsAttention,
+  lastLookedAt,
+  watchNeedsAttention,
   type SourceWatchDocument,
   type SourceWatchStatus,
 } from "../../shared/models/SourceWatch";
@@ -538,12 +539,49 @@ export async function listWatches() {
     collectWatchTargets(),
   ]);
   const entriesByUrl = new Map(targets.map((t) => [t.url, t.entries]));
+  const now = new Date();
   return watches.map((watch) => ({
     ...watch,
     _id: String(watch._id),
     entries: entriesByUrl.get(watch.url) ?? [],
-    needsAttention: needsAttention(watch),
+    // A change if the source can be read, a hand check if it cannot.
+    needsAttention: watchNeedsAttention(watch, now),
+    lastLookedAt: lastLookedAt(watch),
   }));
+}
+
+/**
+ * A person opened this source themselves and records it, with an optional note
+ * ("nothing new", "new circular, entry updated"). It counts as having looked, so
+ * it quiets the source exactly as dismissing does, and the source comes due again
+ * MANUAL_CHECK_EVERY_DAYS later. Returns null when there is no source that can
+ * take one: none with that id, or one our server can read, whose changes are
+ * flagged on their own and which a hand check would only hide.
+ */
+export async function recordManualCheck(
+  id: string,
+  adminId: string | undefined,
+  note: string | undefined
+): Promise<{ url: string; lastManualCheckAt: Date } | null> {
+  const now = new Date();
+  const trimmed = note?.trim().slice(0, 300);
+  const watch = await SourceWatch.findOneAndUpdate(
+    { _id: id, status: { $ne: "ok" } },
+    {
+      $set: {
+        lastManualCheckAt: now,
+        acknowledgedAt: now,
+        ...(adminId ? { lastManualCheckBy: adminId } : {}),
+        ...(trimmed ? { lastManualCheckNote: trimmed } : {}),
+      },
+      // A new check without a note must not keep showing the last one's.
+      ...(trimmed ? {} : { $unset: { lastManualCheckNote: "" } }),
+    },
+    { new: true }
+  )
+    .select("url lastManualCheckAt")
+    .lean();
+  return watch ? { url: watch.url, lastManualCheckAt: now } : null;
 }
 
 /** A person has looked: quiet this URL until it changes again. */

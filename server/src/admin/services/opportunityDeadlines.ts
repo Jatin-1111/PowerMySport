@@ -1,6 +1,7 @@
 import { Opportunity } from "../../shared/models/Opportunity";
 import { STALE_AFTER_DAYS, todayInIndia } from "../../shared/validation/opportunityFormat";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "./AdminService";
+import { listWatches } from "./opportunityWatch";
 import { sendOpportunityDeadlinesDigestEmail } from "../../utils/email";
 import { log as __rootLog } from "../../utils/logger";
 
@@ -70,6 +71,19 @@ export interface DeadlineReport {
   /** Live entries that will pass a year in the next CHECK_DUE_WITHIN_DAYS. */
   checkDueSoon: DueItem[];
   neverVerifiedDrafts: number;
+  /**
+   * Sources our server cannot read that are due a look from a person. Filled in
+   * by the run, which has the watch records; the pure builder leaves it empty.
+   */
+  manualChecks: ManualCheckItem[];
+}
+
+/** A source a person has to open themselves, and the entries that depend on it. */
+export interface ManualCheckItem {
+  url: string;
+  entries: string[];
+  /** When anyone last looked, as "YYYY-MM-DD", or null if nobody has. */
+  lastLooked: string | null;
 }
 
 export const reportIsEmpty = (r: DeadlineReport): boolean =>
@@ -78,7 +92,8 @@ export const reportIsEmpty = (r: DeadlineReport): boolean =>
   r.keyDates.length === 0 &&
   r.closedButLive.length === 0 &&
   r.checkOverdue.length === 0 &&
-  r.checkDueSoon.length === 0;
+  r.checkDueSoon.length === 0 &&
+  r.manualChecks.length === 0;
 
 /** Pure: entries and today's date in, the week's report out. */
 export function buildDeadlineReport(entries: DeadlineEntry[], today: string): DeadlineReport {
@@ -90,6 +105,7 @@ export function buildDeadlineReport(entries: DeadlineEntry[], today: string): De
     checkOverdue: [],
     checkDueSoon: [],
     neverVerifiedDrafts: 0,
+    manualChecks: [],
   };
   const byDate = (a: DueItem, b: DueItem) => a.days - b.days || a.title.localeCompare(b.title);
 
@@ -167,9 +183,32 @@ export interface DeadlineDigestSummary {
   report: DeadlineReport;
 }
 
+/**
+ * Unreadable sources due a look, with the entries that cite them. A failure to
+ * load them must not cost the week's dates, so it yields none and says so.
+ */
+async function manualChecksDue(
+  load: () => Promise<Awaited<ReturnType<typeof listWatches>>> = listWatches
+): Promise<ManualCheckItem[]> {
+  try {
+    return (await load())
+      .filter((w) => w.status !== "ok" && w.needsAttention && w.entries.length > 0)
+      .map((w) => ({
+        url: w.url,
+        entries: w.entries.map((e) => e.title),
+        lastLooked: w.lastLookedAt ? w.lastLookedAt.toISOString().slice(0, 10) : null,
+      }));
+  } catch (error) {
+    log.error("Deadline digest: could not load the sources due a hand check:", error);
+    return [];
+  }
+}
+
 export async function runDeadlineDigest(
   deps: {
     today?: string;
+    /** The watch records, for the hand-check section. Replaced in tests. */
+    watches?: () => Promise<Awaited<ReturnType<typeof listWatches>>>;
     recipients?: () => Promise<Array<{ email: string; name: string }>>;
     send?: typeof sendOpportunityDeadlinesDigestEmail;
   } = {}
@@ -179,6 +218,7 @@ export async function runDeadlineDigest(
     .select("slug title status lastVerifiedOn cycle")
     .lean<DeadlineEntry[]>();
   const report = buildDeadlineReport(entries, today);
+  report.manualChecks = await manualChecksDue(deps.watches);
 
   if (reportIsEmpty(report)) {
     log.info("Deadline digest: nothing to report this week");

@@ -4,7 +4,7 @@ import type mongoose from "mongoose";
 import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { Opportunity } from "../../shared/models/Opportunity";
 import { OpportunityLead } from "../../shared/models/OpportunityLead";
-import { SourceWatch, needsAttention } from "../../shared/models/SourceWatch";
+import { SourceWatch, watchNeedsAttention } from "../../shared/models/SourceWatch";
 import {
   cycleStateOf,
   isStale,
@@ -122,7 +122,7 @@ export const getOpportunityQueueSummary = asyncHandler(
         status: { $in: ["PENDING_REVIEW", "EXTRACTION_FAILED"] },
       }),
       SourceWatch.find({})
-        .select("status statusSince lastChangedAt acknowledgedAt lastCheckedAt")
+        .select("status statusSince lastChangedAt acknowledgedAt lastManualCheckAt lastCheckedAt")
         .lean(),
       OpportunityLead.countDocuments({ status: "new" }),
     ]);
@@ -135,9 +135,10 @@ export const getOpportunityQueueSummary = asyncHandler(
       data: {
         sources,
         // A readable source that changed is news. One our server cannot read is
-        // a standing condition, counted apart so it does not drown the changes.
-        changes: watches.filter((w) => w.status === "ok" && needsAttention(w)).length,
-        unreadable: watches.filter((w) => w.status !== "ok" && needsAttention(w)).length,
+        // a standing condition, counted apart so it does not drown the changes,
+        // and only while it is due a look from a person (see manualCheckDue).
+        changes: watches.filter((w) => w.status === "ok" && watchNeedsAttention(w)).length,
+        unreadable: watches.filter((w) => w.status !== "ok" && watchNeedsAttention(w)).length,
         leads,
         lastCheckedAt: lastCheckedAt ?? null,
       },

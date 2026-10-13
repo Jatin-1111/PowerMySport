@@ -45,6 +45,10 @@ export interface SourceWatchDocument extends Document {
   lastChangedAt?: Date;
   /** Set when a person has looked at the latest change or problem. */
   acknowledgedAt?: Date;
+  /** A person opened this source themselves, because our server cannot read it. The latest only; the audit log keeps each. */
+  lastManualCheckAt?: Date;
+  lastManualCheckBy?: mongoose.Types.ObjectId;
+  lastManualCheckNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,6 +75,9 @@ const sourceWatchSchema = new Schema<SourceWatchDocument>(
     lastOkAt: { type: Date },
     lastChangedAt: { type: Date },
     acknowledgedAt: { type: Date },
+    lastManualCheckAt: { type: Date },
+    lastManualCheckBy: { type: Schema.Types.ObjectId, ref: "Admin" },
+    lastManualCheckNote: { type: String, trim: true, maxlength: 300 },
   },
   { timestamps: true }
 );
@@ -90,4 +97,62 @@ export function needsAttention(watch: {
   const acknowledged = watch.acknowledgedAt?.getTime() ?? 0;
   if (watch.status !== "ok") return watch.statusSince.getTime() > acknowledged;
   return Boolean(watch.lastChangedAt && watch.lastChangedAt.getTime() > acknowledged);
+}
+
+// ─── Sources our server cannot read ─────────────────────────────────────────
+//
+// Half the government sites we cite turn automated visitors away, so for them
+// the weekly check can say nothing about whether the page changed. The only
+// honest answer is a person opening it. These record that a person did, and say
+// when it is due again, so "we cannot read it" never quietly becomes "nobody has
+// looked at it for a year".
+
+/** How long after anyone last looked at an unreadable source it is due a look again. */
+export const MANUAL_CHECK_EVERY_DAYS = 30;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The last time a person is known to have looked at this source: a hand check, or
+ * anything that acknowledges it (dismissing it, approving or rejecting a reading
+ * of it).
+ */
+export function lastLookedAt(watch: {
+  acknowledgedAt?: Date | null;
+  lastManualCheckAt?: Date | null;
+}): Date | null {
+  const times = [watch.acknowledgedAt, watch.lastManualCheckAt]
+    .filter((t): t is Date => Boolean(t))
+    .map((t) => t.getTime());
+  return times.length ? new Date(Math.max(...times)) : null;
+}
+
+/**
+ * Whether an unreadable source is due a look from a person: nobody has looked,
+ * or its problem is newer than the last look, or the last look is more than
+ * MANUAL_CHECK_EVERY_DAYS ago. A source that can be read is never due this way;
+ * a change to it is flagged by `needsAttention`.
+ */
+export function manualCheckDue(
+  watch: {
+    status: SourceWatchStatus;
+    statusSince: Date;
+    acknowledgedAt?: Date | null;
+    lastManualCheckAt?: Date | null;
+  },
+  now: Date = new Date()
+): boolean {
+  if (watch.status === "ok") return false;
+  const looked = lastLookedAt(watch);
+  if (!looked) return true;
+  if (watch.statusSince.getTime() > looked.getTime()) return true;
+  return now.getTime() - looked.getTime() > MANUAL_CHECK_EVERY_DAYS * DAY_MS;
+}
+
+/** What puts a source in front of a person: a change if it can be read, a hand check if it cannot. */
+export function watchNeedsAttention(
+  watch: Parameters<typeof manualCheckDue>[0] & Parameters<typeof needsAttention>[0],
+  now: Date = new Date()
+): boolean {
+  return watch.status === "ok" ? needsAttention(watch) : manualCheckDue(watch, now);
 }

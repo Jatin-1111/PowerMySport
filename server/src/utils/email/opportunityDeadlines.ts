@@ -16,7 +16,11 @@ interface DeadlineReport {
   checkOverdue: DueItem[];
   checkDueSoon: DueItem[];
   neverVerifiedDrafts: number;
+  manualChecks: Array<{ url: string; entries: string[]; lastLooked: string | null }>;
 }
+
+/** The most hand-check sources listed; the rest are counted, and all are in admin. */
+const MAX_MANUAL_CHECKS_LISTED = 10;
 
 interface OpportunityDeadlinesDigestOptions {
   to: string;
@@ -40,6 +44,29 @@ const when = (days: number): string => {
   const n = Math.abs(days);
   const unit = n === 1 ? "day" : "days";
   return days > 0 ? `in ${n} ${unit}` : `${n} ${unit} ago`;
+};
+
+/** Sources our server cannot read, which only a person opening them can check. */
+const manualChecksSection = (items: DeadlineReport["manualChecks"], reviewUrl: string): string => {
+  if (items.length === 0) return "";
+  const shown = items.slice(0, MAX_MANUAL_CHECKS_LISTED);
+  const more = items.length - shown.length;
+  return `<h3 style="margin-bottom: 4px;">Check by hand (${items.length})</h3>
+    <p style="margin-top: 0; color: #555;">Our server cannot read these, so it cannot tell whether they changed. Open each one, then press "I checked it" in admin.</p>
+    <ul>${shown
+      .map(
+        (item) =>
+          `<li style="margin-bottom: 8px;"><a href="${escapeHtml(item.url)}">${escapeHtml(item.url)}</a><br/><span style="color: #555;">Used by: ${escapeHtml(item.entries.join(", "))} &middot; ${
+            item.lastLooked
+              ? `last looked at ${escapeHtml(formatDate(item.lastLooked))}`
+              : "never looked at"
+          }</span></li>`
+      )
+      .join("")}</ul>${
+      more > 0
+        ? `<p style="color: #555;">And ${more} more, listed in <a href="${escapeHtml(reviewUrl)}">admin</a>.</p>`
+        : ""
+    }`;
 };
 
 /**
@@ -75,6 +102,7 @@ export const sendOpportunityDeadlinesDigestEmail = async (
     report.closedButLive.length && `${report.closedButLive.length} closed but live`,
     report.checkOverdue.length + report.checkDueSoon.length &&
       `${report.checkOverdue.length + report.checkDueSoon.length} due a check`,
+    report.manualChecks.length && `${report.manualChecks.length} to check by hand`,
   ].filter(Boolean);
 
   const html = `
@@ -120,6 +148,7 @@ export const sendOpportunityDeadlinesDigestEmail = async (
     report.checkDueSoon,
     (i) => `Last verified ${formatDate(i.date)}; a year is up ${when(i.days)}`
   )}
+  ${manualChecksSection(report.manualChecks, options.reviewUrl)}
   ${
     report.neverVerifiedDrafts
       ? `<p style="color: #555;">${report.neverVerifiedDrafts} draft${
