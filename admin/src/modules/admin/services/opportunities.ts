@@ -167,6 +167,9 @@ export interface OpportunitySourceRow {
   createdAt: string;
   updatedAt?: string;
   reviewedAt?: string;
+  /** Set when the reading became a draft entry on its own ("Draft it" on a lead). */
+  autoDraft?: boolean;
+  draftedSlug?: string;
   /** Raised by the weekly source check when a watched source changed. */
   autoDetected?: boolean;
   detectedChange?: "documents" | "text" | "file";
@@ -220,6 +223,8 @@ export interface OpportunitySourceDetail {
   submission: OpportunitySource;
   entry: AdminOpportunity | null;
   entryMissing: boolean;
+  /** True for an entry drafted automatically: `entry` is the draft and `changes` is what was read. */
+  drafted?: boolean;
   changes: ProposedChange[];
 }
 
@@ -404,4 +409,12 @@ export const opportunityLeadApi = {
 
   dismiss: async (id: string, reason?: string): Promise<ApiResponse<null>> =>
     (await axiosInstance.post(`/admin/opportunity-leads/${id}/dismiss`, { reason })).data,
+
+  /**
+   * Read the lead and write what it says into a new draft entry. Answers at once;
+   * the draft appears in the entry list when the reading is done. `force` goes on
+   * past a lead that looks like an entry we already have.
+   */
+  draft: async (id: string, force = false): Promise<ApiResponse<{ submissionId: string }>> =>
+    (await axiosInstance.post(`/admin/opportunity-leads/${id}/draft`, { force })).data,
 };

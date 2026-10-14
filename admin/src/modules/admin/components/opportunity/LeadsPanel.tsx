@@ -21,6 +21,7 @@ import {
 } from "@/modules/admin/services/opportunities";
 import { Card } from "@/modules/shared/ui/Card";
 import { AlertTriangle, ChevronDown, Copy, ExternalLink, Loader2 } from "lucide-react";
+import axios from "axios";
 import { useEffect, useState } from "react";
 
 import { readApiErrors } from "./apiErrors";
@@ -50,10 +51,13 @@ function FitChip({ fit }: { fit?: LeadFit | undefined }) {
 function LeadRow({
   lead,
   onDismiss,
+  onDraft,
 }: {
   lead: OpportunityLeadRow;
   onDismiss: (reason?: string) => void;
+  onDraft: () => Promise<void>;
 }) {
+  const [drafting, setDrafting] = useState(false);
   const [reading, setReading] = useState(false);
   const [dismissing, setDismissing] = useState(false);
   const [reason, setReason] = useState("");
@@ -73,8 +77,21 @@ function LeadRow({
         <div className="flex shrink-0 gap-2 text-xs">
           <button
             type="button"
+            onClick={() => {
+              setDrafting(true);
+              void onDraft().finally(() => setDrafting(false));
+            }}
+            aria-busy={drafting}
+            title="Reads the page and its documents and writes what it says into a new draft entry"
+            className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2.5 py-1 font-semibold text-white"
+          >
+            {drafting && <Loader2 className="h-3 w-3 animate-spin" />}
+            Draft it
+          </button>
+          <button
+            type="button"
             onClick={() => setReading((v) => !v)}
-            className="rounded-md bg-slate-900 px-2.5 py-1 font-semibold text-white"
+            className="rounded-md border border-slate-300 px-2.5 py-1 font-semibold text-slate-700"
           >
             {reading ? "Close" : "Read it"}
           </button>
@@ -250,6 +267,26 @@ export function LeadsPanel() {
     }
   };
 
+  const draft = async (lead: OpportunityLeadRow, force = false): Promise<void> => {
+    try {
+      const res = await opportunityLeadApi.draft(lead._id, force);
+      toast.success(res.message ?? "Reading it. The draft will appear in the list.");
+      await load();
+    } catch (error) {
+      const message = readApiErrors(error)[0] ?? "Could not start that.";
+      // A lead that looks like an entry we have is the editor's call: say so, and
+      // go on only if they confirm.
+      if (axios.isAxiosError(error) && error.response?.status === 409 && !force) {
+        if (/already have/.test(message) && window.confirm(`${message}\n\nDraft it anyway?`)) {
+          return draft(lead, true);
+        }
+        if (!/already have/.test(message)) toast.error(message);
+        return;
+      }
+      toast.error(message);
+    }
+  };
+
   const dismiss = async (lead: OpportunityLeadRow, reason?: string) => {
     try {
       await opportunityLeadApi.dismiss(lead._id, reason);
@@ -299,6 +336,7 @@ export function LeadsPanel() {
               key={lead._id}
               lead={lead}
               onDismiss={(reason) => void dismiss(lead, reason)}
+              onDraft={() => draft(lead)}
             />
           ))}
         </ul>

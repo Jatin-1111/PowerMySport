@@ -139,6 +139,7 @@ export default function OpportunitySourceReviewPage() {
   }
 
   const { submission, entry } = detail;
+  const drafted = Boolean(detail.drafted);
   const isNew = !submission.opportunitySlug;
   const reviewable = submission.status === "PENDING_REVIEW";
   const track = submission.opportunityTrack ?? entry?.track ?? "scholarship";
@@ -196,11 +197,21 @@ export default function OpportunitySourceReviewPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge={isNew ? "New entry from a source" : "Checking an entry"}
+        badge={
+          drafted
+            ? "Drafted automatically"
+            : isNew
+              ? "New entry from a source"
+              : "Checking an entry"
+        }
         title={submission.sourceLabel || "Source"}
-        subtitle={`${STATUS_TEXT[submission.status] ?? submission.status}${
-          entry ? ` · for "${entry.title}"` : ""
-        }`}
+        subtitle={
+          drafted
+            ? `Not yet checked by a person${entry ? ` · draft "${entry.title}"` : ""}`
+            : `${STATUS_TEXT[submission.status] ?? submission.status}${
+                entry ? ` · for "${entry.title}"` : ""
+              }`
+        }
         action={
           <Link
             href={entry ? `/admin/opportunities/${entry._id}` : "/admin/opportunities"}
@@ -211,6 +222,22 @@ export default function OpportunitySourceReviewPage() {
           </Link>
         }
       />
+
+      {drafted && entry && (
+        <Card variant="elevated" className="space-y-2">
+          <p className="text-sm text-slate-700">
+            This entry was drafted automatically from this source. Nobody has checked it, and it is
+            not verified or published. Below is everything that was read, with the quote each value
+            came from. Check them, correct the draft, then press Mark verified.
+          </p>
+          <Link
+            href={`/admin/opportunities/${entry._id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+          >
+            Open the draft
+          </Link>
+        </Card>
+      )}
 
       <Card variant="elevated" className="space-y-2">
         {link && (
@@ -424,7 +451,7 @@ export default function OpportunitySourceReviewPage() {
             <ChangeRow
               key={change.path}
               change={change}
-              kept={keep.has(change.path)}
+              kept={drafted || keep.has(change.path)}
               onToggle={() => reviewable && toggle(change.path)}
               isNew={isNew}
             />
