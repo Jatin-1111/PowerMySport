@@ -24,3 +24,5 @@ migration-reports/
 
 # local DB dump (contains production data)
 pms-dump.gz
+
+claude outputs
