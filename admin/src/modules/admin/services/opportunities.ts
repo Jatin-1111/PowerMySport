@@ -170,6 +170,8 @@ export interface OpportunitySourceRow {
   /** Set when the reading became a draft entry on its own ("Draft it" on a lead). */
   autoDraft?: boolean;
   draftedSlug?: string;
+  /** What the AI approver made of this reading and did about it, when it looked. */
+  autoApproval?: AutoApprovalRecord;
   /** Raised by the weekly source check when a watched source changed. */
   autoDetected?: boolean;
   detectedChange?: "documents" | "text" | "file";
@@ -219,12 +221,60 @@ export interface CitationChecks {
   shared: Record<string, number>;
 }
 
+/** One approval rule and whether a reading satisfies it (server opportunityApprovalAssessment.ts). */
+export interface ApprovalRuleResult {
+  id: string;
+  group: string;
+  label: string;
+  ok: boolean;
+  detail?: string;
+}
+
+export interface ApprovalAssessment {
+  pass: boolean;
+  failed: string[];
+  rules: ApprovalRuleResult[];
+  kind: "update" | "new";
+  /** An update the source merely confirms: approving it only re-verifies. */
+  unchanged: boolean;
+  rows: number;
+  evaluatedAt: string;
+}
+
+/** What the AI approver did with a reading, as recorded on it (server opportunityAutoApprover.ts). */
+export interface AutoApprovalRecord {
+  assessedAt: string;
+  pass: boolean;
+  failed: string[];
+  action: "held" | "off" | "capped" | "approved" | "reverified" | "published" | "failed";
+  actedAt?: string;
+  entryId?: string;
+  reason?: string;
+  revertedAt?: string;
+}
+
+/** Whether the AI approver is on, what it has done today, and the rules it answers to. */
+export interface AutoApprovalStatus {
+  enabled: boolean;
+  dailyCap: number;
+  actedToday: number;
+  rules: Array<{ id: string; group: string; label: string }>;
+  thresholds: {
+    maxRowsPerUpdate: number;
+    maxAmountFactor: number;
+    maxAgeShiftYears: number;
+    maxDateShiftDays: number;
+  };
+}
+
 export interface OpportunitySourceDetail {
   submission: OpportunitySource;
   entry: AdminOpportunity | null;
   entryMissing: boolean;
   /** True for an entry drafted automatically: `entry` is the draft and `changes` is what was read. */
   drafted?: boolean;
+  /** What the approval rules make of this reading, when it is in a state to judge. */
+  verdict?: ApprovalAssessment | null;
   changes: ProposedChange[];
 }
 
@@ -255,6 +305,14 @@ export interface SourceDocumentRecord {
 }
 
 export const opportunitySourceApi = {
+  /** Whether the AI approver is on, and the rules it answers to. */
+  autoApprovalStatus: async (): Promise<ApiResponse<AutoApprovalStatus>> =>
+    (await axiosInstance.get("/admin/opportunity-sources/auto-approval")).data,
+
+  /** Undo what the AI approver did with this reading and hand it to a person. */
+  revertAuto: async (id: string): Promise<ApiResponse<null>> =>
+    (await axiosInstance.post(`/admin/opportunity-sources/${id}/revert-auto`)).data,
+
   uploadUrl: async (
     fileName: string
   ): Promise<ApiResponse<{ uploadUrl: string; key: string; fileName: string }>> =>

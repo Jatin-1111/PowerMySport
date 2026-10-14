@@ -34,6 +34,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { AutoApprovalPanel } from "@/modules/admin/components/opportunity/AutoApprovalPanel";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -548,6 +549,8 @@ export default function AdminOpportunitiesPage() {
           {open === "leads" && <LeadsPanel />}
         </Drawer>
       )}
+
+      <AutoApprovalPanel />
 
       <Card variant="elevated">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">

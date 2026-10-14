@@ -10,6 +10,7 @@
 
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { ApprovalVerdictCard } from "@/modules/admin/components/opportunity/ApprovalVerdictCard";
 import { readApiErrors } from "@/modules/admin/components/opportunity/apiErrors";
 import {
   byPageOrder,
@@ -23,10 +24,17 @@ import {
   type OpportunitySourceDetail,
 } from "@/modules/admin/services/opportunities";
 import { Card } from "@/modules/shared/ui/Card";
-import { ArrowLeft, Check, ExternalLink, Loader2, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, Loader2, RefreshCw, Undo2, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+/** What the AI approver did, in the words an editor needs to decide whether to revert it. */
+const AUTO_ACTION_TEXT: Record<string, string> = {
+  published: "It published a new entry.",
+  approved: "It applied a change to the entry.",
+  reverified: "It confirmed the entry is still right and moved its verified date.",
+};
 
 const STATUS_TEXT: Record<string, string> = {
   PENDING_EXTRACTION: "Being read",
@@ -44,7 +52,7 @@ export default function OpportunitySourceReviewPage() {
   const [detail, setDetail] = useState<OpportunitySourceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [keep, setKeep] = useState<Set<string>>(new Set());
-  const [busy, setBusy] = useState<"approve" | "reject" | "reread" | "fix" | null>(null);
+  const [busy, setBusy] = useState<"approve" | "reject" | "reread" | "fix" | "revert" | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [fixTitle, setFixTitle] = useState("");
   const [fixCategory, setFixCategory] = useState("");
@@ -140,6 +148,11 @@ export default function OpportunitySourceReviewPage() {
 
   const { submission, entry } = detail;
   const drafted = Boolean(detail.drafted);
+  const auto = submission.autoApproval;
+  const autoActed =
+    Boolean(auto) &&
+    ["approved", "reverified", "published"].includes(auto?.action ?? "") &&
+    !auto?.revertedAt;
   const isNew = !submission.opportunitySlug;
   const reviewable = submission.status === "PENDING_REVIEW";
   const track = submission.opportunityTrack ?? entry?.track ?? "scholarship";
@@ -162,6 +175,14 @@ export default function OpportunitySourceReviewPage() {
       const res = await opportunitySourceApi.approve(id, [...keep]);
       toast.success(res.message ?? "Approved.");
       if (res.data?.opportunityId) router.push(`/admin/opportunities/${res.data.opportunityId}`);
+    });
+
+  const revertAuto = () =>
+    run("revert", async () => {
+      if (!window.confirm("Revert what the AI approver did and take this over yourself?")) return;
+      const res = await opportunitySourceApi.revertAuto(id);
+      toast.success(res.message ?? "Reverted.");
+      await reload();
     });
 
   const reject = () => {
@@ -222,6 +243,42 @@ export default function OpportunitySourceReviewPage() {
           </Link>
         }
       />
+
+      {autoActed && auto && (
+        <Card variant="elevated" className="space-y-2">
+          <p className="text-sm font-bold text-slate-900">
+            Approved automatically on{" "}
+            {new Date(auto.actedAt ?? auto.assessedAt).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </p>
+          <p className="text-sm text-slate-700">
+            {AUTO_ACTION_TEXT[auto.action] ?? "The AI approver acted on this."} It satisfied every
+            approval rule, and no person looked at it. If it is wrong, revert it: the entry goes
+            back exactly as it was, and this reading returns to the review queue for a person.
+          </p>
+          <button
+            type="button"
+            onClick={() => void revertAuto()}
+            disabled={busy !== null}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
+          >
+            <Undo2 className="h-4 w-4" />
+            Revert this
+          </button>
+        </Card>
+      )}
+      {auto?.revertedAt && (
+        <Card variant="elevated">
+          <p className="text-sm text-slate-700">
+            The automatic approval was reverted. The AI approver will not act on this reading again.
+          </p>
+        </Card>
+      )}
+
+      {detail.verdict && <ApprovalVerdictCard verdict={detail.verdict} />}
 
       {drafted && entry && (
         <Card variant="elevated" className="space-y-2">
