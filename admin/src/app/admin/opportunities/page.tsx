@@ -570,7 +570,7 @@ export default function AdminOpportunitiesPage() {
               );
             })}
           </div>
-          <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:flex-none">
+          <div className="flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
             <input
               type="search"
               value={query}
