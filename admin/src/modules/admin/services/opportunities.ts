@@ -12,6 +12,8 @@ export type OpportunityCycleState = "open" | "upcoming" | "closed" | "rolling";
 
 export interface AdminOpportunity {
   _id: string;
+  /** For an entry drafted automatically from a lead: the reading it came from. */
+  draftedFrom?: { submissionId: string; label: string } | null;
   slug: string;
   track: OpportunityTrack;
   category: string;
@@ -57,6 +59,8 @@ export interface AdminOpportunity {
 
 export interface AdminOpportunityRow {
   _id: string;
+  /** A draft made automatically that nobody has checked yet. */
+  autoDrafted?: boolean;
   slug: string;
   track: OpportunityTrack;
   category: string;

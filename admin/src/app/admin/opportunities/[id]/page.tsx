@@ -211,6 +211,22 @@ export default function AdminOpportunityEditPage() {
         }
       />
 
+      {doc.draftedFrom && (
+        <Card variant="elevated" className="space-y-2">
+          <p className="text-sm text-slate-700">
+            This entry was drafted automatically from &ldquo;{doc.draftedFrom.label}&rdquo;. Nobody
+            has checked it. The reading shows every value with the quote it came from, and which
+            approval rules it met.
+          </p>
+          <Link
+            href={`/admin/opportunities/sources/${doc.draftedFrom.submissionId}`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+          >
+            See what it relied on
+          </Link>
+        </Card>
+      )}
+
       <div className="sticky top-0 z-10 flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white/95 p-3 backdrop-blur">
         <button
           type="button"

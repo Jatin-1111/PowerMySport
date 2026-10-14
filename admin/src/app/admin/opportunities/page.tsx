@@ -131,9 +131,17 @@ function LastChecked({ row }: { row: AdminOpportunityRow }) {
 // One status per row: where the entry is, with the live-but-overdue case called out.
 function StatusTag({ row }: { row: AdminOpportunityRow }) {
   const live = row.status === "published";
-  const label = !live ? "Draft" : row.stale ? "Live, check due" : "Live";
+  const label = !live
+    ? row.autoDrafted
+      ? "Auto-drafted"
+      : "Draft"
+    : row.stale
+      ? "Live, check due"
+      : "Live";
   const tone = !live
-    ? "bg-slate-100 text-slate-600"
+    ? row.autoDrafted
+      ? "bg-sky-50 text-sky-800"
+      : "bg-slate-100 text-slate-600"
     : row.stale
       ? "bg-amber-50 text-amber-800"
       : "bg-emerald-50 text-emerald-800";
