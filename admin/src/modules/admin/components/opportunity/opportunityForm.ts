@@ -78,6 +78,7 @@ export interface OpportunityForm {
   state: string;
   ageMin: string;
   ageMax: string;
+  whoSummary: string;
   ageNote: string;
   gender: string;
   level: string;
@@ -89,6 +90,10 @@ export interface OpportunityForm {
   amountCurrency: string;
   amountPeriod: string;
   amountNote: string;
+  costKind: string;
+  costAmount: string;
+  costCurrency: string;
+  costNote: string;
   cycleLabel: string;
   opensOn: string;
   closesOn: string;
@@ -117,6 +122,7 @@ export function formFromDoc(doc: AdminOpportunity): OpportunityForm {
     state: doc.geography?.state ?? "",
     ageMin: doc.eligibility?.ageMin?.toString() ?? "",
     ageMax: doc.eligibility?.ageMax?.toString() ?? "",
+    whoSummary: doc.eligibility?.summary ?? "",
     ageNote: doc.eligibility?.ageNote ?? "",
     gender: doc.eligibility?.gender ?? "any",
     level: doc.eligibility?.level ?? "",
@@ -128,6 +134,10 @@ export function formFromDoc(doc: AdminOpportunity): OpportunityForm {
     amountCurrency: amount?.currency ?? "INR",
     amountPeriod: amount?.period ?? "year",
     amountNote: amount?.note ?? "",
+    costKind: doc.cost?.kind ?? "",
+    costAmount: doc.cost?.amount?.toString() ?? "",
+    costCurrency: doc.cost?.currency ?? "INR",
+    costNote: doc.cost?.note ?? "",
     cycleLabel: doc.cycle?.label ?? "",
     opensOn: doc.cycle?.opensOn ?? "",
     closesOn: doc.cycle?.closesOn ?? "",
@@ -159,6 +169,7 @@ const compact = <T extends Record<string, unknown>>(value: T): T =>
 
 export function payloadFromForm(form: OpportunityForm): OpportunityPayload {
   const amountValue = int(form.amountValue);
+  const costAmount = int(form.costAmount);
   const ownerName = text(form.ownerName);
   const benefitSummary = text(form.benefitSummary);
 
@@ -175,6 +186,7 @@ export function payloadFromForm(form: OpportunityForm): OpportunityPayload {
       ? compact({ scope: form.scope, state: form.scope === "state" ? text(form.state) : undefined })
       : undefined,
     eligibility: compact({
+      summary: text(form.whoSummary),
       ageMin: int(form.ageMin),
       ageMax: int(form.ageMax),
       ageNote: text(form.ageNote),
@@ -196,6 +208,17 @@ export function payloadFromForm(form: OpportunityForm): OpportunityPayload {
                   note: text(form.amountNote),
                 })
               : undefined,
+        })
+      : undefined,
+    // Only a fee carries a figure; the rest say what they need in the note. An
+    // untouched kind sends no cost at all, which means "not stated", not "free".
+    cost: form.costKind
+      ? compact({
+          kind: form.costKind,
+          amount: form.costKind === "fee" ? costAmount : undefined,
+          currency:
+            form.costKind === "fee" && costAmount !== undefined ? form.costCurrency : undefined,
+          note: text(form.costNote),
         })
       : undefined,
     cycle: compact({

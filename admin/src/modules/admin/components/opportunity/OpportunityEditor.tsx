@@ -201,6 +201,16 @@ export function OpportunityEditor({
             />
           </Field>
         </div>
+        <Field
+          label="Who can apply, in one line"
+          hint="Shown first on the page, so a parent knows at once. The rules below stay as they are."
+        >
+          <TextInput
+            value={form.whoSummary}
+            onChange={(v) => set("whoSummary", v)}
+            placeholder="Grades 7 to 12, state level or above"
+          />
+        </Field>
         <Field label="Age rule" hint="How ages are counted, if the source says.">
           <TextInput value={form.ageNote} onChange={(v) => set("ageNote", v)} />
         </Field>
@@ -265,6 +275,44 @@ export function OpportunityEditor({
               value={form.amountNote}
               onChange={(v) => set("amountNote", v)}
               placeholder="Up to"
+            />
+          </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-4">
+          <Field label="What it costs" hint="Leave blank if the source does not say">
+            <Select
+              value={form.costKind}
+              onChange={(v) => set("costKind", v)}
+              options={[
+                { value: "free", label: "Free" },
+                { value: "fee", label: "A fee" },
+                { value: "varies", label: "Varies" },
+              ]}
+              placeholder="Not stated"
+            />
+          </Field>
+          {form.costKind === "fee" && (
+            <>
+              <Field label="Fee">
+                <TextInput value={form.costAmount} onChange={(v) => set("costAmount", v)} />
+              </Field>
+              <Field label="Currency">
+                <Select
+                  value={form.costCurrency}
+                  onChange={(v) => set("costCurrency", v)}
+                  options={[
+                    { value: "INR", label: "₹ INR" },
+                    { value: "USD", label: "$ USD" },
+                  ]}
+                />
+              </Field>
+            </>
+          )}
+          <Field label="Cost note" hint="Who pays what, in a line.">
+            <TextInput
+              value={form.costNote}
+              onChange={(v) => set("costNote", v)}
+              placeholder="City round; free for girls"
             />
           </Field>
         </div>

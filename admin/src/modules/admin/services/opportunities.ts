@@ -22,6 +22,7 @@ export interface AdminOpportunity {
   allSports?: boolean;
   geography?: { scope: string; state?: string };
   eligibility?: {
+    summary?: string;
     ageMin?: number;
     ageMax?: number;
     ageNote?: string;
@@ -35,6 +36,7 @@ export interface AdminOpportunity {
     summary: string;
     amount?: { value: number; currency: string; period: string; note?: string };
   };
+  cost?: { kind: string; amount?: number; currency?: string; note?: string };
   cycle?: {
     label?: string;
     opensOn?: string;
