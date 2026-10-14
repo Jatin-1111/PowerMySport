@@ -25,6 +25,7 @@ import {
   type FieldConflict,
   type ReadSource,
 } from "./multiDocument";
+import { completeCitations } from "./missingQuotes";
 import { extractPdfText } from "./pdfText";
 import { staleCycleReason, stripCostWording } from "./opportunityChecks";
 import { checkExtraction, type CitationChecks } from "./quoteCheck";
@@ -480,13 +481,21 @@ export async function extractOpportunityForSubmission(
         cleaned.warnings.join(" ") ||
         "The source was read but described no admission or scholarship.";
     } else {
+      // Quotes the model left out are asked for once more, against the text it read.
+      const completed = await completeCitations({
+        client: genAI,
+        call,
+        fields: cleaned.fields,
+        citations: cleaned.citations,
+        sourceText: pageText,
+      });
       primary = {
         url: ownUrl,
         label: ownLabel,
         kind: primaryIsPage ? "page" : "document",
         fields: cleaned.fields,
-        citations: cleaned.citations,
-        checks: checkExtraction(cleaned.fields, cleaned.citations, pageText, textKind),
+        citations: completed.citations,
+        checks: checkExtraction(cleaned.fields, completed.citations, pageText, textKind),
         warnings: cleaned.warnings,
         sourcePublishedOn: cleaned.sourcePublishedOn,
       };
@@ -521,6 +530,9 @@ export async function extractOpportunityForSubmission(
           },
           clean: (raw) => cleanOpportunityExtraction(raw, track),
           pdfText: textOf,
+          completeQuotes: async (fields, citations, text) =>
+            (await completeCitations({ client: genAI, call, fields, citations, sourceText: text }))
+              .citations,
         })
       : { sources: [], records: [] };
 

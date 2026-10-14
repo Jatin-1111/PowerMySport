@@ -226,6 +226,15 @@ export interface ReadDeps {
   clean: (raw: unknown) => OpportunityExtraction;
   /** The PDF's own text, to check the model's quotes against; null when it has none (a scan). */
   pdfText?: (buffer: Buffer) => Promise<string | null>;
+  /**
+   * Asks for the quotes the reading left out, against the document's text. Returns the
+   * citations with any it got added. Not asked when the document has no text.
+   */
+  completeQuotes?: (
+    fields: Record<string, unknown>,
+    citations: Record<string, string>,
+    text: string
+  ) => Promise<Record<string, string>>;
 }
 
 /** Read each document in turn, one at a time so the model's quota is not hit in a burst. */
@@ -266,12 +275,16 @@ export async function readDocuments(
         unreadable("It does not describe this entry.");
         continue;
       }
+      const citations =
+        deps.completeQuotes && text
+          ? await deps.completeQuotes(cleaned.fields, cleaned.citations, text)
+          : cleaned.citations;
       sources.push({
         ...base,
         fields: cleaned.fields,
-        citations: cleaned.citations,
+        citations,
         // Quotes are checked against the PDF's text layer when it has one; figures always are.
-        checks: checkExtraction(cleaned.fields, cleaned.citations, text, "pdf"),
+        checks: checkExtraction(cleaned.fields, citations, text, "pdf"),
         warnings: cleaned.warnings,
         sourcePublishedOn: cleaned.sourcePublishedOn,
       });

@@ -97,6 +97,16 @@ export const listAdminOpportunities = asyncHandler(
       .sort({ track: 1, title: 1 })
       .lean();
     const today = todayInIndia();
+    // Entries drafted automatically from a lead (opportunityAutoDraft.ts). One that is
+    // still a draft with no verification is one nobody has checked, which the list says.
+    const drafted = await DataSourceSubmission.find({
+      targetType: "OPPORTUNITY",
+      autoDraft: true,
+      draftedSlug: { $in: docs.map((doc) => doc.slug) },
+    })
+      .select("draftedSlug")
+      .lean();
+    const draftedSlugs = new Set(drafted.map((submission) => submission.draftedSlug));
     res.json({
       success: true,
       data: docs.map((doc) => ({
@@ -104,6 +114,8 @@ export const listAdminOpportunities = asyncHandler(
         _id: String(doc._id),
         cycleState: cycleStateOf(doc.cycle ?? undefined, today),
         stale: isStale(doc.lastVerifiedOn, today),
+        autoDrafted:
+          draftedSlugs.has(doc.slug) && doc.status !== "published" && !doc.lastVerifiedOn,
       })),
     });
   }
@@ -152,7 +164,23 @@ export const getAdminOpportunity = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const doc = await Opportunity.findById(req.params.id).lean();
     if (!doc) throw new AppError("No entry with that id.", 404);
-    res.json({ success: true, data: doc });
+    // Where an automatic draft came from, so an editor can see what it relied on.
+    const from = await DataSourceSubmission.findOne({
+      targetType: "OPPORTUNITY",
+      autoDraft: true,
+      draftedSlug: doc.slug,
+    })
+      .select("sourceLabel")
+      .lean();
+    res.json({
+      success: true,
+      data: {
+        ...doc,
+        draftedFrom: from
+          ? { submissionId: String(from._id), label: from.sourceLabel ?? "its source" }
+          : null,
+      },
+    });
   }
 );
 
