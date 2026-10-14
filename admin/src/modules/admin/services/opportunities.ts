@@ -183,7 +183,11 @@ export interface OpportunitySource extends OpportunitySourceRow {
   fileName?: string;
 }
 
-export type QuoteStatus = "found" | "partial" | "missing";
+/**
+ * "scattered" and "unmatched" only come from a PDF's text, which reads tables
+ * out of order: they ask for a look, and never count as evidence against a row.
+ */
+export type QuoteStatus = "found" | "partial" | "missing" | "scattered" | "unmatched";
 
 export interface ProposedChange {
   path: string;
@@ -204,7 +208,7 @@ export interface ProposedChange {
 
 /** What was checked when the source was read; see server dataSourceExtraction/quoteCheck.ts. */
 export interface CitationChecks {
-  against: "page-text" | "none";
+  against: "page-text" | "pdf-text" | "none";
   quotes: Record<string, QuoteStatus>;
   figures: Record<string, "ok" | "mismatch">;
   shared: Record<string, number>;

@@ -120,6 +120,20 @@ function QuoteFlags({ change }: { change: ProposedChange }) {
           This quote only partly matches the page. Compare it with the source.
         </p>
       )}
+      {change.quoteCheck === "scattered" && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          The words of this quote are in the document, but not together. That is normal for a table,
+          so compare it with the document.
+        </p>
+      )}
+      {change.quoteCheck === "unmatched" && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          This quote could not be matched in the document&apos;s text. A scan or a table can cause
+          that, so look at the document before keeping this.
+        </p>
+      )}
       {change.figureCheck === "mismatch" && (
         <p className="flex items-start gap-1.5 text-xs font-semibold text-red-700">
           <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -138,7 +152,7 @@ function QuoteFlags({ change }: { change: ProposedChange }) {
         change.sharedQuote === undefined && (
           <p className="flex items-center gap-1.5 text-xs text-emerald-700">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-            Quote found on the page.
+            Quote found in the source.
           </p>
         )}
     </div>

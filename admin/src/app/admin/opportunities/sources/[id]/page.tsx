@@ -231,15 +231,19 @@ export default function OpportunitySourceReviewPage() {
         )}
         {reviewable &&
           submission.citationChecks &&
-          (submission.citationChecks.against !== "page-text" ||
+          (submission.citationChecks.against === "none" ||
             Object.keys(submission.citationChecks.quotes).length > 0) && (
             <p className="text-xs text-slate-500">
-              {submission.citationChecks.against === "page-text"
-                ? `${
+              {submission.citationChecks.against === "none"
+                ? "The quotes could not be compared with the source, because it is a page our server could not read itself, or a PDF with no text in it (a scan). Check each one."
+                : `${
                     Object.values(submission.citationChecks.quotes).filter((q) => q === "found")
                       .length
-                  } of ${Object.keys(submission.citationChecks.quotes).length} quotes were found on the page.`
-                : "The quotes could not be compared with the source, because it is a PDF or a page our server could not read itself. Check each one."}
+                  } of ${Object.keys(submission.citationChecks.quotes).length} quotes were found ${
+                    submission.citationChecks.against === "pdf-text"
+                      ? "in the PDF's text. A PDF table can read out of order, so the rest need a look rather than a rejection."
+                      : "on the page."
+                  }`}
             </p>
           )}
         {(submission.extractionWarnings?.length ?? 0) > 0 && (
