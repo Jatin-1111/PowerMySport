@@ -1,6 +1,6 @@
 import { SELECTION_LABELS } from "../config/tracks";
 import type { Opportunity } from "../services/opportunities";
-import { cycleLine, eligibilityChips, formatAmount } from "./format";
+import { costLine, cycleLine, eligibilityChips, formatAmount } from "./format";
 
 // ─── The short answers at the top of an entry's page ────────────────────────
 //
@@ -18,7 +18,7 @@ export interface GlanceRow {
 
 type GlanceInput = Pick<
   Opportunity,
-  "benefit" | "eligibility" | "cycle" | "cycleState" | "selection"
+  "benefit" | "cost" | "eligibility" | "cycle" | "cycleState" | "selection"
 >;
 
 export function glanceRows(opportunity: GlanceInput): GlanceRow[] {
@@ -28,7 +28,15 @@ export function glanceRows(opportunity: GlanceInput): GlanceRow[] {
   const gets = [opportunity.benefit?.summary, amount].filter(Boolean).join(" ");
   if (gets) rows.push({ label: "You get", value: gets });
 
-  const who = eligibilityChips(opportunity.eligibility);
+  // Said once, and only when the entry states it: a missing cost is not "free".
+  const cost = costLine(opportunity.cost);
+  if (cost) rows.push({ label: "Cost", value: cost });
+
+  // The editor's one line comes first. Without it, the age and gender rules are
+  // the next best thing, and without those the rules below are the answer.
+  const who = opportunity.eligibility?.summary?.trim()
+    ? [opportunity.eligibility.summary.trim()]
+    : eligibilityChips(opportunity.eligibility);
   rows.push({
     label: "Who can apply",
     value: who.length > 0 ? who.join(" · ") : "See the rules below",

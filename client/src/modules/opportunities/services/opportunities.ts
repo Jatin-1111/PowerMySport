@@ -24,6 +24,8 @@ export interface Opportunity {
   allSports: boolean;
   geography?: { scope: string; state?: string };
   eligibility?: {
+    /** One line saying who can apply. The rows built from the fields below are the rules. */
+    summary?: string;
     ageMin?: number;
     ageMax?: number;
     ageNote?: string;
@@ -36,6 +38,13 @@ export interface Opportunity {
   benefit?: {
     summary: string;
     amount?: { value: number; currency: "INR" | "USD"; period: string; note?: string };
+  };
+  /** What a parent pays. Absent when the entry does not say, which is not the same as free. */
+  cost?: {
+    kind: "free" | "fee" | "varies";
+    amount?: number;
+    currency?: "INR" | "USD";
+    note?: string;
   };
   cycle?: {
     label?: string;

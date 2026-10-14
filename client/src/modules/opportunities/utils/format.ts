@@ -32,6 +32,30 @@ export function formatAmount(amount: NonNullable<Opportunity["benefit"]>["amount
   return `${amount.note ? `${amount.note}: ` : ""}${money}${PERIOD[amount.period] ?? ""}`;
 }
 
+/**
+ * What it costs, in a line: "Free. Girls and underprivileged children", "₹125.
+ * City round", "Varies. By city". Null when the entry does not say, so the page
+ * leaves the row out rather than implying it is free.
+ */
+export function costLine(cost: Opportunity["cost"]): string | null {
+  if (!cost) return null;
+  const note = cost.note?.trim();
+  let head: string;
+  if (cost.kind === "free") head = "Free";
+  else if (cost.kind === "fee" && cost.amount !== undefined && cost.currency) {
+    head = new Intl.NumberFormat(cost.currency === "INR" ? "en-IN" : "en-US", {
+      style: "currency",
+      currency: cost.currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(cost.amount);
+  } else head = "Varies";
+  // A "varies" with nothing to say what it varies on says only that, and the
+  // official page is the answer.
+  if (!note) return head === "Varies" ? "Varies. Check the official page." : head;
+  return `${head}. ${note}`;
+}
+
 /** "All sports", or the named sports. */
 export function sportsLabel(opportunity: Pick<Opportunity, "allSports" | "sports">): string {
   if (opportunity.allSports) return "All sports";

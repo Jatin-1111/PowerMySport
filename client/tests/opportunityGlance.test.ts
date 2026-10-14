@@ -50,6 +50,25 @@ describe("glanceRows", () => {
     expect(value(glanceRows({ ...rolling, benefit: undefined }), "You get")).toBeUndefined();
   });
 
+  it("puts the editor's one line first, ahead of the age rule", () => {
+    const rows = glanceRows({
+      ...rolling,
+      eligibility: { summary: "Aspiring footballers of any age", ageMin: 8, ageMax: 14 },
+    });
+    expect(value(rows, "Who can apply")).toBe("Aspiring footballers of any age");
+  });
+
+  it("shows a cost only when the entry states one, and never reads a missing cost as free", () => {
+    expect(value(glanceRows(rolling), "Cost")).toBeUndefined();
+    const free = glanceRows({ ...rolling, cost: { kind: "free", note: "Girls play free" } });
+    expect(value(free, "Cost")).toBe("Free. Girls play free");
+    const fee = glanceRows({
+      ...rolling,
+      cost: { kind: "fee", amount: 125, currency: "INR", note: "City round" },
+    });
+    expect(value(fee, "Cost")).toBe("₹125. City round");
+  });
+
   it("sends the parent to the rules when no age or gender rule is stated", () => {
     expect(value(glanceRows({ ...rolling, eligibility: undefined }), "Who can apply")).toBe(
       "See the rules below"
