@@ -7,11 +7,11 @@ import {
   type NotificationChannelPreferences,
   type NotificationPreferences,
 } from "@/lib/api/notification";
-import { getCommunityAppUrl } from "@/lib/community/url";
 import {
   getConfig,
   getNotificationIcon,
 } from "@/modules/notifications/config/notificationCategories";
+import { getNotificationAction } from "@/modules/notifications/utils/notificationAction";
 import { cn } from "@/utils/cn";
 import { formatDistanceToNow } from "@/utils/date";
 import {
@@ -71,41 +71,6 @@ const preferenceKeys: Array<{
   { key: "admin", label: "Admin Updates" },
   { key: "marketing", label: "Marketing" },
 ];
-
-const getNotificationAction = (notification: Notification) => {
-  const data = (notification.data || {}) as Record<string, unknown>;
-  if (notification.category === "BOOKING")
-    return { label: "View Booking", href: "/dashboard/my-bookings" };
-  if (notification.category === "SOCIAL")
-    return { label: "View Friends", href: "/dashboard/friends" };
-  if (notification.category === "PAYMENT") {
-    if (typeof data.orderId === "string" && data.orderId)
-      return { label: "View Order", href: `/dashboard/orders/${data.orderId}` };
-    if (typeof data.bookingId === "string" && data.bookingId)
-      return {
-        label: "View Booking",
-        href: `/dashboard/my-bookings?id=${data.bookingId}`,
-      };
-    return { label: "View Payments", href: "/dashboard/my-bookings" };
-  }
-  if (notification.category === "REVIEW")
-    return { label: "View Review", href: "/dashboard/my-bookings" };
-  if (notification.category === "PLAN") {
-    const checkInId = typeof data.checkInId === "string" ? data.checkInId : "";
-    return checkInId
-      ? { label: "Open Check-in", href: `/check-in/${checkInId}` }
-      : { label: "Open Dashboard", href: "/dashboard" };
-  }
-  if (notification.category === "COMMUNITY") {
-    const postId = typeof data.postId === "string" ? data.postId : "";
-    return {
-      label: "Open Community",
-      href: getCommunityAppUrl({ path: postId ? `q/${postId}` : "q" }),
-      external: false,
-    };
-  }
-  return { label: "Open Dashboard", href: "/dashboard" };
-};
 
 const getPaginationRange = (currentPage: number, totalPages: number) => {
   const delta = 1;

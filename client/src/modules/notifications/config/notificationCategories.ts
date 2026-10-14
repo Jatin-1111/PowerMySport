@@ -2,6 +2,7 @@ import {
   Bell,
   Calendar,
   ClipboardCheck,
+  GraduationCap,
   CreditCard,
   MessageCircle,
   Settings,
@@ -25,6 +26,7 @@ export const getNotificationIcon = (category: string) => {
     ADMIN: Settings,
     COMMUNITY: MessageCircle,
     PLAN: ClipboardCheck,
+    OPPORTUNITY: GraduationCap,
   };
   return iconMap[category] || Bell;
 };
@@ -95,6 +97,14 @@ const categoryConfig: Record<
     dot: "bg-teal-500",
     accent: "border-l-teal-400",
     unreadBg: "bg-teal-50/30",
+  },
+  OPPORTUNITY: {
+    iconWrap: "bg-violet-100",
+    iconColor: "text-violet-600",
+    badge: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
+    dot: "bg-violet-500",
+    accent: "border-l-violet-400",
+    unreadBg: "bg-violet-50/30",
   },
 };
 

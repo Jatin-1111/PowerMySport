@@ -54,6 +54,12 @@ function getNotificationLink(notification: Notification): string {
       }
       return getCommunityAppUrl({ path: "chats" });
     }
+    case "OPPORTUNITY_ALERT": {
+      // The first entry the alert is about.
+      const items = Array.isArray(data.items) ? (data.items as Array<{ path?: unknown }>) : [];
+      const path = items[0]?.path;
+      return typeof path === "string" && path.startsWith("/") ? path : "/notifications";
+    }
     case "PLAN_CHECKIN": {
       // The same page the nudge email links to.
       const checkInId = data.checkInId as string | undefined;

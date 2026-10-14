@@ -6,6 +6,7 @@ import { OWNER_TYPE_LABELS, SELECTION_LABELS, TRACKS } from "../config/tracks";
 import type { Opportunity } from "../services/opportunities";
 import { cycleLine, formatAmount, formatDay, sportsLabel, whereLabel } from "../utils/format";
 import { EligibilityChecklist } from "./EligibilityChecklist";
+import { FollowButton } from "./FollowButton";
 
 // ─── One admission route or scholarship ─────────────────────────────────────
 //
@@ -91,6 +92,7 @@ export function OpportunityDetail({ opportunity }: { opportunity: Opportunity })
               <ExternalLink aria-hidden className="h-4 w-4" />
             </a>
           )}
+          <FollowButton slug={opportunity.slug} />
         </div>
 
         {opportunity.summary && (

@@ -84,6 +84,11 @@ export const queryKeys = {
     upcoming: (sportSlug: string) => ["tournament-editions", "upcoming", sportSlug] as const,
   },
 
+  /** The admission and scholarship entries this parent follows. One list per account. */
+  opportunityFollows: {
+    all: ["opportunity-follows"] as const,
+  },
+
   /** One child's tournament plan. Keyed per child, because that is how it is
    * read and written — there is no view of every plan at once. */
   seasonPlan: {
