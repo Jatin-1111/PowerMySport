@@ -102,7 +102,34 @@ export const OpportunityBenefitSchema = z.object({
   amount: OpportunityAmountSchema.optional(),
 });
 
+/**
+ * What a parent pays to take part. Kept flat (not an amount object inside it) so
+ * the review screen can show and keep it as one row: half a cost, a fee with no
+ * figure or a figure with no kind, is not a smaller correct cost.
+ *
+ *   free     nothing to pay; `note` says who or what, "Free for girls"
+ *   fee      a stated amount; `amount` and `currency` are both required
+ *   varies   it depends (by city, by level); `note` says on what
+ *
+ * An entry that does not state a cost has no `cost` at all. That is different
+ * from "free", and the page never turns one into the other.
+ */
+export const OPPORTUNITY_COST_KINDS = ["free", "fee", "varies"] as const;
+
+export const OpportunityCostSchema = z.object({
+  kind: z.enum(OPPORTUNITY_COST_KINDS),
+  amount: z.number().positive().max(100_000_000).optional(),
+  currency: z.enum(["INR", "USD"]).optional(),
+  note: optionalText(300),
+});
+
 export const OpportunityEligibilitySchema = z.object({
+  /**
+   * Who can apply, in one line a parent reads before anything else: "Grades 7 to
+   * 12, state level or above". A summary of the rules below, not a replacement
+   * for them: the age, level, academic and income rules stay as their own rows.
+   */
+  summary: optionalText(160),
   ageMin: z.number().int().min(3).max(40).optional(),
   ageMax: z.number().int().min(3).max(40).optional(),
   /** The rule the ages are measured by, e.g. "Age on 1 January of the admission year". */
@@ -151,6 +178,7 @@ const baseShape = {
   eligibility: OpportunityEligibilitySchema.default({ gender: "any" }),
   selection: z.enum(SELECTION_MODES),
   benefit: OpportunityBenefitSchema,
+  cost: OpportunityCostSchema.optional(),
   cycle: OpportunityCycleSchema.default({ keyDates: [] }),
   /** What a parent does, in order. For `scouted`, how a player gets noticed. */
   steps: z.array(trimmed(500)).max(12).default([]),
@@ -178,9 +206,34 @@ const crossCheck = (
     geography?: { scope: string; state?: string | undefined } | undefined;
     eligibility?: { ageMin?: number | undefined; ageMax?: number | undefined } | undefined;
     cycle?: { opensOn?: string | undefined; closesOn?: string | undefined } | undefined;
+    cost?:
+      | {
+          kind?: string | undefined;
+          amount?: number | undefined;
+          currency?: string | undefined;
+        }
+      | undefined;
   },
   ctx: z.RefinementCtx
 ) => {
+  if (value.cost) {
+    const { kind, amount, currency } = value.cost;
+    if (kind === "fee" && (amount === undefined || !currency)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cost", "amount"],
+        message:
+          'A fee needs an amount and a currency. Use "varies" when there is no single figure.',
+      });
+    }
+    if (kind !== "fee" && (amount !== undefined || currency)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cost", "amount"],
+        message: "Only a fee has an amount. Say the rest in the note.",
+      });
+    }
+  }
   if (value.track && value.category) {
     const allowed = OPPORTUNITY_CATEGORIES[value.track] as readonly string[];
     if (!allowed.includes(value.category)) {

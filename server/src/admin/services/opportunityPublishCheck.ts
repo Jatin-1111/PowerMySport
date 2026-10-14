@@ -47,7 +47,9 @@ export interface CheckableEntry {
   steps?: string[] | null;
   keyFacts?: string[] | null;
   benefit?: { summary?: string | null } | null;
+  cost?: { note?: string | null } | null;
   eligibility?: {
+    summary?: string | null;
     ageNote?: string | null;
     level?: string | null;
     academic?: string | null;
@@ -198,6 +200,8 @@ export function checkOpportunityOffline(
     ["the title", entry.title],
     ["the summary", entry.summary],
     ["the benefit", entry.benefit?.summary],
+    ["the who-can-apply line", entry.eligibility?.summary],
+    ["the cost note", entry.cost?.note],
     ["the age note", entry.eligibility?.ageNote],
     ["the level", entry.eligibility?.level],
     ["the academic bar", entry.eligibility?.academic],

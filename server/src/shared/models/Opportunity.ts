@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 import {
+  OPPORTUNITY_COST_KINDS,
   OPPORTUNITY_TRACKS,
   OWNER_TYPES,
   SELECTION_MODES,
@@ -31,6 +32,8 @@ export interface OpportunityDocument extends Document {
   allSports: boolean;
   geography?: { scope: string; state?: string };
   eligibility?: {
+    /** One line: who can apply. The rows below it are the rules. */
+    summary?: string;
     ageMin?: number;
     ageMax?: number;
     ageNote?: string;
@@ -43,6 +46,13 @@ export interface OpportunityDocument extends Document {
   benefit?: {
     summary: string;
     amount?: { value: number; currency: string; period: string; note?: string };
+  };
+  /** What a parent pays. Absent when the source does not say, which is not the same as free. */
+  cost?: {
+    kind: (typeof OPPORTUNITY_COST_KINDS)[number];
+    amount?: number;
+    currency?: "INR" | "USD";
+    note?: string;
   };
   cycle?: {
     label?: string;
@@ -85,6 +95,7 @@ const opportunitySchema = new Schema<OpportunityDocument>(
     },
     eligibility: {
       _id: false,
+      summary: { type: String },
       ageMin: { type: Number },
       ageMax: { type: Number },
       ageNote: { type: String },
@@ -104,6 +115,13 @@ const opportunitySchema = new Schema<OpportunityDocument>(
         period: { type: String },
         note: { type: String },
       },
+    },
+    cost: {
+      _id: false,
+      kind: { type: String, enum: OPPORTUNITY_COST_KINDS },
+      amount: { type: Number },
+      currency: { type: String, enum: ["INR", "USD"] },
+      note: { type: String },
     },
     cycle: {
       _id: false,

@@ -298,6 +298,14 @@ export function checkFigures(
     out["benefit.amount"] = anyForm(amountForms(amount.value), benefitQuote) ? "ok" : "mismatch";
   }
 
+  // A fee's figure must be in the cost's own quote. The cost is one row on the
+  // review screen, so its figure is checked under the whole path, "cost".
+  const cost = isRecord(fields.cost) ? fields.cost : null;
+  const costQuote = quoteFor("cost");
+  if (cost && costQuote && typeof cost.amount === "number") {
+    out.cost = anyForm(amountForms(cost.amount), costQuote) ? "ok" : "mismatch";
+  }
+
   const cycle = isRecord(fields.cycle) ? fields.cycle : null;
   const cycleQuote = quoteFor("cycle");
   if (cycle && cycleQuote) {

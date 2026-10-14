@@ -2,6 +2,7 @@ import type { DataSourceSubmissionDocument } from "../../../shared/models/DataSo
 import { SUPPORTED_SPORTS } from "../../../shared/constants/supportedSports";
 import {
   OPPORTUNITY_CATEGORIES,
+  OPPORTUNITY_COST_KINDS,
   OWNER_TYPES,
   SELECTION_MODES,
   type OpportunityTrack,
@@ -62,9 +63,10 @@ function promptRules(track: OpportunityTrack): string {
 - "allSports": true if it is open to athletes of any sport.
 - "sports": array of sport slugs it is limited to, from: ${SPORT_SLUGS.join(", ")}. Empty if allSports.
 - "geography": {"scope": one of india | state | international | abroad, "state": string or null}.
-- "eligibility": {"ageMin": integer, "ageMax": integer, "ageNote": how age is counted, "gender": any | female | male, "level": the sporting achievement required, in plain words, "academic": any academic requirement, "income": any income limit}.
+- "eligibility": {"summary": ONE line under 150 characters saying who can apply, in plain words a parent reads first, "ageMin": integer, "ageMax": integer, "ageNote": how age is counted, "gender": any | female | male, "level": the sporting achievement required, in plain words, "academic": any academic requirement, "income": any income limit}.
 - "selection": one of ${SELECTION_MODES.join(" | ")}. Use "nominated" or "scouted" when there is NO application form.
 - "benefit": {"summary": what the athlete gets, one line, "amount": {"value": number, "currency": "INR" | "USD", "period": one-time | month | year | total, "note": string} or null}.
+- "cost": {"kind": free | fee | varies, "amount": number (a fee only), "currency": "INR" | "USD" (a fee only), "note": who pays what, one line}. Use "free" ONLY when the source says it is free. Use "fee" only when it states one amount. Use "varies" when the cost depends on something, and say on what in "note". Leave "cost" out when the source does not say what it costs.
 - "cycle": {"label": the year the rules are for, e.g. "2026-27", "opensOn": "YYYY-MM-DD", "closesOn": "YYYY-MM-DD", "keyDates": [{"label": string, "date": "YYYY-MM-DD"}]}.
 - "steps": array of what an applicant does, in order.
 - "keyFacts": array of short facts a parent should know (seat counts, weightage, amounts per level).
@@ -170,6 +172,7 @@ export function cleanOpportunityExtraction(
     ? compact({
         ageMin: int(eligRaw.ageMin, 3, 40),
         ageMax: int(eligRaw.ageMax, 3, 40),
+        summary: str(eligRaw.summary, 160),
         ageNote: str(eligRaw.ageNote, 300),
         gender: oneOf(eligRaw.gender, ["any", "female", "male"] as const),
         level: str(eligRaw.level, 600),
@@ -197,6 +200,28 @@ export function cleanOpportunityExtraction(
   const usableAmount = amount?.value && amount.currency && amount.period ? amount : undefined;
   if (amount && !usableAmount) dropped("benefit.amount", amountRaw);
   const benefitSummary = str(benefitRaw?.summary, 300);
+
+  const costRaw = obj(r.cost);
+  const costKind = oneOf(costRaw?.kind, OPPORTUNITY_COST_KINDS);
+  if (costRaw && !costKind) dropped("cost.kind", costRaw.kind);
+  const costAmount =
+    typeof costRaw?.amount === "number" && costRaw.amount > 0 ? costRaw.amount : undefined;
+  const costCurrency = oneOf(costRaw?.currency, ["INR", "USD"] as const);
+  // A fee is only usable whole, as with the benefit amount: a figure with no
+  // currency would print as a number with no meaning. A fee that cannot be had
+  // whole is kept as "varies" rather than dropped, so the cost is not lost.
+  const usableFee = costAmount !== undefined && costCurrency ? costAmount : undefined;
+  const cost = costKind
+    ? costKind === "fee" && usableFee === undefined
+      ? compact({ kind: "varies" as const, note: str(costRaw?.note, 300) })
+      : compact({
+          kind: costKind,
+          amount: costKind === "fee" ? usableFee : undefined,
+          currency: costKind === "fee" ? costCurrency : undefined,
+          note: str(costRaw?.note, 300),
+        })
+    : undefined;
+  if (costKind === "fee" && usableFee === undefined) dropped("cost.amount", costRaw?.amount);
 
   const cycleRaw = obj(r.cycle);
   const keyDates = Array.isArray(cycleRaw?.keyDates)
@@ -232,6 +257,7 @@ export function cleanOpportunityExtraction(
       benefit: benefitSummary
         ? compact({ summary: benefitSummary, amount: usableAmount })
         : undefined,
+      cost,
       cycle,
       steps: strList(r.steps, 500, 12),
       keyFacts: strList(r.keyFacts, 400, 12),
