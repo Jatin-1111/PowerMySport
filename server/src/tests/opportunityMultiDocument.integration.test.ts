@@ -671,6 +671,8 @@ describe("extractOpportunityForSubmission following documents", () => {
         return { data: null, error: "unexpected prompt" };
       },
       browse: async () => ({ data: null, error: "no browsing in tests" }),
+      // These buffers are fake bytes, not PDFs: no text layer, and no worker to start.
+      pdfText: async () => null,
     };
     return { deps, log };
   };

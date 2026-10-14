@@ -23,13 +23,24 @@
 // differ in (case, punctuation, spacing, thousands separators, an elided middle
 // marked with an ellipsis) and strict about words and numbers.
 
-export type QuoteStatus = "found" | "partial" | "missing";
+/**
+ * Where a quote stands against its source's text.
+ * - found, partial, missing: against a web page, whose text comes out in reading
+ *   order, so a quote that is not there is not there.
+ * - found, partial, scattered, unmatched: against a PDF's text layer, which a table
+ *   or a two-column page can scramble. "scattered" is a quote whose words and
+ *   numbers are all in the PDF but not in this order, which is what a table row
+ *   looks like; "unmatched" is one with words or numbers the PDF's text does not
+ *   have at all. Neither is ever grounds to untick a row: the text layer can miss
+ *   a scanned page or a figure in an image.
+ */
+export type QuoteStatus = "found" | "partial" | "missing" | "scattered" | "unmatched";
 export type FigureStatus = "ok" | "mismatch";
 
 export interface CitationChecks {
   /** What the quotes were compared with. "none": nothing to compare, so no quote verdicts. */
-  against: "page-text" | "none";
-  /** Top-level field → whether its quote is on the page. Empty when `against` is "none". */
+  against: "page-text" | "pdf-text" | "none";
+  /** Top-level field → whether its quote is in the source's text. Empty when `against` is "none". */
   quotes: Record<string, QuoteStatus>;
   /** Field path ("eligibility.ageMin", "benefit.amount") → whether its figure is in its quote. */
   figures: Record<string, FigureStatus>;
@@ -316,7 +327,8 @@ export function checkFigures(
 export function checkExtraction(
   fields: Record<string, unknown>,
   citations: Record<string, string>,
-  pageText: string | null
+  pageText: string | null,
+  kind: "page" | "pdf" = "page"
 ): CitationChecks {
   const figures = checkFigures(fields, citations);
   const shared = sharedQuotes(citations);
@@ -325,9 +337,36 @@ export function checkExtraction(
   const page = indexPage(normaliseForMatch(pageText));
   const quotes: Record<string, QuoteStatus> = {};
   for (const [field, quote] of Object.entries(citations)) {
-    quotes[field] = checkQuoteAgainstPage(quote, page);
+    quotes[field] =
+      kind === "pdf" ? checkQuoteAgainstPdf(quote, page) : checkQuoteAgainstPage(quote, page);
   }
-  return { against: "page-text", quotes, figures, shared };
+  return { against: kind === "pdf" ? "pdf-text" : "page-text", quotes, figures, shared };
+}
+
+/** A word that carries content: any number, and any word of five letters or more. */
+const isContentToken = (token: string): boolean => /\d/.test(token) || token.length >= 5;
+
+/** At least this share of a quote's content words must be in the PDF to call it scattered. */
+const SCATTERED_COVERAGE = 0.9;
+
+/**
+ * A quote against a PDF's text layer. First as a web page is checked; and when
+ * that fails, whether the quote's words and numbers are all in the PDF anyway,
+ * which is how a table row reads once its columns have been pulled apart. Every
+ * number must be present; a word may be missing (a hyphenated line break, a
+ * ligature) so long as most are there.
+ */
+export function checkQuoteAgainstPdf(quote: string, source: string | PageIndex): QuoteStatus {
+  const page = typeof source === "string" ? indexPage(source) : source;
+  const exact = checkQuoteAgainstPage(quote, page);
+  if (exact === "found" || exact === "partial") return exact;
+
+  const present = new Set(page.words);
+  const content = [...new Set(wordsOf(normaliseForMatch(quote)))].filter(isContentToken);
+  if (content.length === 0) return "unmatched";
+  const missingNumber = content.some((t) => /\d/.test(t) && !present.has(t));
+  const found = content.filter((t) => present.has(t)).length;
+  return !missingNumber && found / content.length >= SCATTERED_COVERAGE ? "scattered" : "unmatched";
 }
 
 /** Fields that were all given the same quote, when that is SHARED_QUOTE_FIELDS or more. */

@@ -224,6 +224,8 @@ export interface ReadDeps {
   ) => Promise<{ data: unknown; error?: string | undefined }>;
   /** Cleans the model's JSON into fields, quotes and warnings. */
   clean: (raw: unknown) => OpportunityExtraction;
+  /** The PDF's own text, to check the model's quotes against; null when it has none (a scan). */
+  pdfText?: (buffer: Buffer) => Promise<string | null>;
 }
 
 /** Read each document in turn, one at a time so the model's quota is not hit in a burst. */
@@ -249,7 +251,12 @@ export async function readDocuments(
         unreadable(downloaded.error);
         continue;
       }
-      const outcome = await deps.extract(downloaded, document);
+      // The model reads the PDF while its text layer is read beside it, so the quotes
+      // it gives can be checked against what the PDF actually says.
+      const [outcome, text] = await Promise.all([
+        deps.extract(downloaded, document),
+        deps.pdfText ? deps.pdfText(downloaded) : Promise.resolve(null),
+      ]);
       if (!outcome.data) {
         unreadable(outcome.error || "Nothing could be read from it.");
         continue;
@@ -263,8 +270,8 @@ export async function readDocuments(
         ...base,
         fields: cleaned.fields,
         citations: cleaned.citations,
-        // A PDF's text is not available to compare quotes with; its figures still are.
-        checks: checkExtraction(cleaned.fields, cleaned.citations, null),
+        // Quotes are checked against the PDF's text layer when it has one; figures always are.
+        checks: checkExtraction(cleaned.fields, cleaned.citations, text, "pdf"),
         warnings: cleaned.warnings,
         sourcePublishedOn: cleaned.sourcePublishedOn,
       });
@@ -381,7 +388,9 @@ export function mergeExtractions(sources: ReadSource[]): MergedExtraction {
     // own text (if it had any), its figures against its own quote.
     if (supplier.checks.quotes[key]) {
       checks.quotes[key] = supplier.checks.quotes[key]!;
-      checks.against = "page-text";
+      // A web page's text is the stronger comparison, so it names the merged source
+      // when both kinds are present.
+      if (checks.against !== "page-text") checks.against = supplier.checks.against;
     }
     if (supplier.checks.shared[key]) checks.shared[key] = supplier.checks.shared[key]!;
     for (const [path, status] of Object.entries(supplier.checks.figures)) {

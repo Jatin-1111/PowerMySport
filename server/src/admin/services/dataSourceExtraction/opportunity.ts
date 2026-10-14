@@ -24,6 +24,7 @@ import {
   type FieldConflict,
   type ReadSource,
 } from "./multiDocument";
+import { extractPdfText } from "./pdfText";
 import { checkExtraction, type CitationChecks } from "./quoteCheck";
 
 // ─── Reading an admission or scholarship out of a document ──────────────────
@@ -298,6 +299,8 @@ export interface ExtractionOptions {
   browse?: typeof urlContextExtraction;
   fetchPage?: typeof fetchPageForReading;
   fetchPdf?: typeof fetchPdfFromUrl;
+  /** The text layer of a PDF, to check the model's quotes against. */
+  pdfText?: typeof extractPdfText;
 }
 
 /**
@@ -315,6 +318,10 @@ export async function extractOpportunityForSubmission(
   const browse = options.browse ?? urlContextExtraction;
   const fetchPage = options.fetchPage ?? fetchPageForReading;
   const fetchPdf = options.fetchPdf ?? fetchPdfFromUrl;
+  const readPdfText = options.pdfText ?? extractPdfText;
+  /** The text of a PDF, or null when it has none worth using (a scan, or it could not be read). */
+  const textOf = async (buffer: Buffer): Promise<string | null> =>
+    (await readPdfText(buffer))?.text ?? null;
   if (!genAI) {
     return {
       status: "EXTRACTION_FAILED",
@@ -330,6 +337,9 @@ export async function extractOpportunityForSubmission(
   // PDF is sent whole and a browsed page is read by the model alone, so for
   // those there is none.
   let pageText: string | null = null;
+  // Whether that text is a web page's or a PDF's: a PDF's text layer can scramble a
+  // table, so its verdicts are weaker (see quoteCheck.ts).
+  let textKind: "page" | "pdf" = "page";
   // Whether the main source is a web page (which may link to documents) and, if
   // it was read and asked for, the PDFs it links to.
   let primaryIsPage = false;
@@ -357,7 +367,14 @@ export async function extractOpportunityForSubmission(
           "That PDF is too large to read in one go (over 18MB). Upload only the relevant pages.",
       };
     }
-    outcome = await call(genAI, pdfContents(`${intro}\n\n${rules}`, buffer), "object");
+    // The model reads the PDF while its text layer is read beside it.
+    const [read, text] = await Promise.all([
+      call(genAI, pdfContents(`${intro}\n\n${rules}`, buffer), "object"),
+      textOf(buffer),
+    ]);
+    outcome = read;
+    pageText = text;
+    textKind = "pdf";
   } else {
     const url = submission.sourceUrl;
     if (!url)
@@ -368,11 +385,17 @@ export async function extractOpportunityForSubmission(
       return { status: "EXTRACTION_FAILED", extractionError: pdf.error };
     }
     if (pdf) {
-      outcome = await call(
-        genAI,
-        pdfContents(`${intro} The attached PDF is from ${url}.\n\n${rules}`, pdf.buffer),
-        "object"
-      );
+      const [read, text] = await Promise.all([
+        call(
+          genAI,
+          pdfContents(`${intro} The attached PDF is from ${url}.\n\n${rules}`, pdf.buffer),
+          "object"
+        ),
+        textOf(pdf.buffer),
+      ]);
+      outcome = read;
+      pageText = text;
+      textKind = "pdf";
     } else {
       const page = await fetchPage(url, { stripChrome: true });
       const text = page?.text ?? null;
@@ -428,7 +451,7 @@ export async function extractOpportunityForSubmission(
         kind: primaryIsPage ? "page" : "document",
         fields: cleaned.fields,
         citations: cleaned.citations,
-        checks: checkExtraction(cleaned.fields, cleaned.citations, pageText),
+        checks: checkExtraction(cleaned.fields, cleaned.citations, pageText, textKind),
         warnings: cleaned.warnings,
         sourcePublishedOn: cleaned.sourcePublishedOn,
       };
@@ -462,6 +485,7 @@ export async function extractOpportunityForSubmission(
             return { data: read.data, error: read.error };
           },
           clean: (raw) => cleanOpportunityExtraction(raw, track),
+          pdfText: textOf,
         })
       : { sources: [], records: [] };
 
