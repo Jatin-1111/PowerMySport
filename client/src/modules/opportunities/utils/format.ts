@@ -55,7 +55,7 @@ export function whereLabel(geography: Opportunity["geography"]): string | null {
 }
 
 /** One line on where this cycle's window stands. */
-export function cycleLine(opportunity: Opportunity): string | null {
+export function cycleLine(opportunity: Pick<Opportunity, "cycle" | "cycleState">): string | null {
   const { cycle, cycleState } = opportunity;
   const label = cycle?.label ? `${cycle.label} ` : "";
   switch (cycleState) {

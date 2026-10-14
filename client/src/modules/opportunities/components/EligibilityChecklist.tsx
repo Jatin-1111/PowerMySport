@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, CircleHelp, CircleX, Minus } from "lucide-react";
+import { ChevronDown, CircleCheck, CircleHelp, CircleX, Minus } from "lucide-react";
 
 import { useOpportunityProfile } from "../hooks/useOpportunityProfile";
 import type { Opportunity } from "../services/opportunities";
@@ -82,13 +82,30 @@ export function EligibilityChecklist({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <p className="mb-3 text-sm font-semibold text-slate-800">
-          Check your child against these rules
-        </p>
-        <ProfileFields sports={opportunity.allSports ? [] : opportunity.sports} />
-        <p className="mt-2 text-xs text-slate-600">Kept on this device only.</p>
-      </div>
+      {/*
+        The rules are the answer; the form only sharpens it. It stays closed for a
+        first visit so the rules come first, and opens by itself for a parent who
+        has already given details, whose verdict below it depends on them.
+      */}
+      <details
+        className="group rounded-lg border border-slate-200 bg-slate-50"
+        open={hasProfile(profile) || undefined}
+      >
+        <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-4 py-2 text-sm font-semibold text-slate-800">
+          Check my child against these rules
+          <ChevronDown
+            aria-hidden
+            className="h-4 w-4 shrink-0 text-slate-500 transition group-open:rotate-180"
+          />
+        </summary>
+        <div className="border-t border-slate-200 p-4">
+          <ProfileFields
+            sports={opportunity.allSports ? [] : opportunity.sports}
+            className="grid gap-3 sm:grid-cols-2"
+          />
+          <p className="mt-2 text-xs text-slate-600">Kept on this device only.</p>
+        </div>
+      </details>
 
       {verdict && hasProfile(profile) && (
         <p role="status" className={`rounded-lg border p-3 text-sm ${VERDICT_BANNER[verdict]}`}>

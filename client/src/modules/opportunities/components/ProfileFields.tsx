@@ -19,13 +19,20 @@ const fieldClass =
  *
  * `sports` are the slugs worth offering. With none given, every sport we name.
  */
-export function ProfileFields({ sports }: { sports: string[] }) {
+export function ProfileFields({
+  sports,
+  className = "grid gap-3 sm:grid-cols-2 lg:grid-cols-4",
+}: {
+  sports: string[];
+  /** The grid classes. The default is four across on a wide page. */
+  className?: string;
+}) {
   const { profile, setField } = useOpportunityProfile();
   const ids = { age: useId(), sport: useId(), gender: useId(), state: useId() };
   const sportOptions = sports.length > 0 ? sports : Object.keys(SPORT_LABEL);
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className={className}>
       <div>
         <label htmlFor={ids.age} className="mb-1 block text-xs font-semibold text-slate-600">
           Child&apos;s age
