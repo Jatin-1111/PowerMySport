@@ -23,6 +23,7 @@ import { initializeAitaAcceptanceScheduler } from "./utils/aitaAcceptanceSchedul
 import { initializeRankingDigestScheduler } from "./utils/rankingDigestScheduler";
 import { initializeOpportunityWatchScheduler } from "./utils/opportunityWatchScheduler";
 import { initializeOpportunityDigestScheduler } from "./utils/opportunityDigestScheduler";
+import { initializeOpportunityAlertScheduler } from "./utils/opportunityAlertScheduler";
 import { initializeOpportunityDiscoveryScheduler } from "./utils/opportunityDiscoveryScheduler";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
 import { startLogDigest, stopLogDigest } from "./utils/logDigest";
@@ -206,6 +207,10 @@ const startServer = async () => {
           // Weekly email of windows opening or closing and entries due a check.
           // Deployed server only, or OPPORTUNITY_DIGEST_CRON=on.
           initializeOpportunityDigestScheduler();
+
+          // Daily alerts to parents about windows they follow opening or closing.
+          // Deployed server only, or OPPORTUNITY_ALERTS_CRON=on.
+          initializeOpportunityAlertScheduler();
 
           // Everything above has registered its boot facts; print the block.
           bootReady();

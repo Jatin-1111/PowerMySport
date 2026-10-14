@@ -37,7 +37,8 @@ export type NotificationType =
   | "MESSAGE_RECEIVED"
   | "PLAN_CHECKIN"
   | "EXPERIENCE_NUDGE"
-  | "RANKING_DIGEST";
+  | "RANKING_DIGEST"
+  | "OPPORTUNITY_ALERT";
 
 /**
  * "RANKING" is its own category rather than being folded into an existing one.
@@ -50,7 +51,15 @@ export type NotificationType =
  * that has nothing to do with a booking.
  */
 export type NotificationCategory =
-  "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "RANKING" | "PLAN";
+  | "SOCIAL"
+  | "BOOKING"
+  | "Admin"
+  | "REVIEW"
+  | "PAYMENT"
+  | "COMMUNITY"
+  | "RANKING"
+  | "PLAN"
+  | "OPPORTUNITY";
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
@@ -117,12 +126,23 @@ const notificationSchema = new Schema<INotification, {}, {}, NotificationQueryHe
         "PLAN_CHECKIN",
         "EXPERIENCE_NUDGE",
         "RANKING_DIGEST",
+        "OPPORTUNITY_ALERT",
       ],
       required: true,
     },
     category: {
       type: String,
-      enum: ["SOCIAL", "BOOKING", "Admin", "REVIEW", "PAYMENT", "COMMUNITY", "RANKING", "PLAN"],
+      enum: [
+        "SOCIAL",
+        "BOOKING",
+        "Admin",
+        "REVIEW",
+        "PAYMENT",
+        "COMMUNITY",
+        "RANKING",
+        "PLAN",
+        "OPPORTUNITY",
+      ],
       required: true,
       index: true,
     },

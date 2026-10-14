@@ -68,6 +68,7 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   PLAN_CHECKIN: "PLAN",
   EXPERIENCE_NUDGE: "COMMUNITY",
   RANKING_DIGEST: "RANKING",
+  OPPORTUNITY_ALERT: "OPPORTUNITY",
 };
 
 // Notification type to preference key mapping
@@ -121,6 +122,9 @@ const TYPE_TO_PREFERENCE_KEY: Record<
   PLAN_CHECKIN: "friendRequests", // Reuse for community
   EXPERIENCE_NUDGE: "bookingReminders",
   RANKING_DIGEST: "rankingUpdates", // Closest existing key — no dedicated preference yet
+  // No preference of its own: following an entry is the opt-in and unfollowing is
+  // the off switch. Reminders is the closest key, as for EXPERIENCE_NUDGE.
+  OPPORTUNITY_ALERT: "bookingReminders",
 };
 
 let socketInstance: Server | null = null;

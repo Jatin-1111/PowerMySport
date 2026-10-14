@@ -10,6 +10,7 @@ import {
   sendBookingReminderEmail,
   sendPlanCheckInEmail,
   sendRankingDigestEmail,
+  sendOpportunityAlertEmail,
 } from "../../utils/email";
 import mongoose from "mongoose";
 import { PlanCheckIn } from "../../shared/models/PlanCheckIn";
@@ -249,17 +250,21 @@ export class ScheduledNotificationService {
                 ? ("EXPERIENCE_NUDGE" as const)
                 : reminder.type === "RANKING_DIGEST"
                   ? ("RANKING_DIGEST" as const)
-                  : reminder.type === "PLAN_CHECKIN"
-                    ? ("PLAN_CHECKIN" as const)
-                    : ("BOOKING_REMINDER" as const);
+                  : reminder.type === "OPPORTUNITY_ALERT"
+                    ? ("OPPORTUNITY_ALERT" as const)
+                    : reminder.type === "PLAN_CHECKIN"
+                      ? ("PLAN_CHECKIN" as const)
+                      : ("BOOKING_REMINDER" as const);
             const inAppCategory =
               inAppType === "EXPERIENCE_NUDGE"
                 ? ("COMMUNITY" as const)
                 : inAppType === "RANKING_DIGEST"
                   ? ("RANKING" as const)
-                  : inAppType === "PLAN_CHECKIN"
-                    ? ("PLAN" as const)
-                    : ("BOOKING" as const);
+                  : inAppType === "OPPORTUNITY_ALERT"
+                    ? ("OPPORTUNITY" as const)
+                    : inAppType === "PLAN_CHECKIN"
+                      ? ("PLAN" as const)
+                      : ("BOOKING" as const);
             sendPromises.push(
               NotificationService.create({
                 userId: reminder.userId._id.toString(),
@@ -319,6 +324,18 @@ export class ScheduledNotificationService {
                   players: Array.isArray(data.players) ? data.players : [],
                 }).catch((err) => {
                   log.error("Failed to send ranking digest email:", err);
+                  return Promise.reject(err);
+                })
+              );
+            } else if (reminder.type === "OPPORTUNITY_ALERT") {
+              const data = (reminder.data || {}) as Record<string, any>;
+              sendPromises.push(
+                sendOpportunityAlertEmail({
+                  email: user.email,
+                  name: user.name,
+                  items: Array.isArray(data.items) ? data.items : [],
+                }).catch((err) => {
+                  log.error("Failed to send opportunity alert email:", err);
                   return Promise.reject(err);
                 })
               );

@@ -14,7 +14,10 @@ export type ReminderType =
   // Like EXPERIENCE_NUDGE it is post-event rather than pre-event, so `interval`
   // is always CUSTOM: there is nothing to count down to. Unlike it, it does send
   // an email, so the sweep has a branch for it.
-  | "RANKING_DIGEST";
+  | "RANKING_DIGEST"
+  // A window a parent follows has opened or is about to close. Event-driven like
+  // RANKING_DIGEST, so `interval` is always CUSTOM. See opportunityAlerts.ts.
+  | "OPPORTUNITY_ALERT";
 // "CUSTOM" is for reminders whose timing isn't "X before an event" (e.g. a
 // plan check-in due N weeks out) — scheduledFor is the only date that matters.
 export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS" | "CUSTOM";
@@ -68,6 +71,7 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
         "PLAN_CHECKIN",
         "EXPERIENCE_NUDGE",
         "RANKING_DIGEST",
+        "OPPORTUNITY_ALERT",
       ],
       required: true,
       default: "BOOKING_REMINDER",

@@ -173,6 +173,11 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
       async () =>
         (await import("../../../client/models/SeasonPlan")).SeasonPlan.deleteMany({ userId }),
     ],
+    [
+      "OpportunityFollow",
+      async () =>
+        (await import("../../models/OpportunityFollow")).OpportunityFollow.deleteMany({ userId }),
+    ],
     // Before Player: a link is meaningless once its profile is gone, and a row
     // pointing at a deleted child would hold the unique index on that
     // registration number against a future legitimate claim.

@@ -12,4 +12,5 @@ export * from "./email/provider";
 export * from "./email/dataSource";
 export * from "./email/opportunityWatch";
 export * from "./email/opportunityDeadlines";
+export * from "./email/opportunityAlerts";
 export * from "./email/shop";
