@@ -72,7 +72,12 @@ export async function runOpportunityExtraction(
     ? await Opportunity.findOne({ slug: submission.opportunitySlug }).select("title owner").lean()
     : null;
   const extract = options.extract ?? extractOpportunityForSubmission;
-  const result = await extract(submission, entry?.title, {
+  // A reading for an existing entry is about that entry. One made from a lead is
+  // about the lead: without a name to look for, a page that lists or links several
+  // schemes yields whichever the model reads first (a foundation's page for one
+  // scholarship returned a different, older one).
+  const focus = entry?.title ?? (submission.autoDraft ? submission.sourceLabel : undefined);
+  const result = await extract(submission, focus, {
     ownerName: entry?.owner?.name,
   });
   submission.status = result.status;

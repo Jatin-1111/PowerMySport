@@ -6,6 +6,7 @@ import Admin from "../models/Admin";
 import { parseOpportunityDraft } from "../../shared/validation/opportunityFormat";
 import { log as __rootLog } from "../../utils/logger";
 import { sourcesToCite, type DocumentRecord } from "./dataSourceExtraction/multiDocument";
+import { staleCycleReason, titleMatchesLead } from "./dataSourceExtraction/opportunityChecks";
 import { recordAuditLog } from "./AuditLogService";
 import { applyChanges, proposedChanges, withSource } from "./opportunitySourceMerge";
 import { uniqueSlug } from "./opportunitySlug";
@@ -60,6 +61,24 @@ export async function createDraftFromSubmission(
 
   const sourceUrl = submission.originUrl || submission.sourceUrl;
   if (!sourceUrl) return { ok: false, reason: "The source has no public link to cite." };
+
+  // Is this the scheme the lead was about? The lead's name is what the editor chose
+  // to draft; a reading that came back as something else is not that.
+  if (submission.sourceLabel && !titleMatchesLead(submission.sourceLabel, title)) {
+    return {
+      ok: false,
+      reason: `The source describes "${title}", which does not match the lead "${submission.sourceLabel}".`,
+    };
+  }
+
+  // Rules for a year that is over, from a document years old, are not a draft to
+  // hand an editor as if it were current.
+  const cycle = merged.cycle as { label?: string } | undefined;
+  const stale = staleCycleReason(
+    cycle?.label,
+    typeof extracted.sourcePublishedOn === "string" ? extracted.sourcePublishedOn : undefined
+  );
+  if (stale) return { ok: false, reason: stale };
 
   // The same title as an entry we already have is a duplicate, not a new entry.
   const existing = await Opportunity.find({}).select("title").lean();

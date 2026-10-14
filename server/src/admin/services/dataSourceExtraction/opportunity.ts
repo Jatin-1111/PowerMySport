@@ -26,6 +26,7 @@ import {
   type ReadSource,
 } from "./multiDocument";
 import { extractPdfText } from "./pdfText";
+import { staleCycleReason, stripCostWording } from "./opportunityChecks";
 import { checkExtraction, type CitationChecks } from "./quoteCheck";
 
 // ─── Reading an admission or scholarship out of a document ──────────────────
@@ -172,7 +173,8 @@ export function cleanOpportunityExtraction(
     ? compact({
         ageMin: int(eligRaw.ageMin, 3, 40),
         ageMax: int(eligRaw.ageMax, 3, 40),
-        summary: str(eligRaw.summary, 160),
+        // The cost has its own field; see stripCostWording for why this is not left to the prompt.
+        summary: stripCostWording(str(eligRaw.summary, 160)),
         ageNote: str(eligRaw.ageNote, 300),
         gender: oneOf(eligRaw.gender, ["any", "female", "male"] as const),
         level: str(eligRaw.level, 600),
@@ -272,6 +274,13 @@ export function cleanOpportunityExtraction(
   }
 
   const sourcePublishedOn = date(r.sourcePublishedOn);
+  // An out-of-date source reads as fluently as a current one. Say so on the review
+  // screen, and (for a draft made without a person) it stops the draft.
+  const stale = staleCycleReason(
+    typeof cycle?.label === "string" ? cycle.label : undefined,
+    sourcePublishedOn
+  );
+  if (stale) warnings.push(stale);
   return { fields, citations, warnings, ...(sourcePublishedOn ? { sourcePublishedOn } : {}) };
 }
 

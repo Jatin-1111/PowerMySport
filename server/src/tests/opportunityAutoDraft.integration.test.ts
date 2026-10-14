@@ -343,3 +343,107 @@ describe("the review page for a drafted entry", () => {
     assert.ok(paths.includes("cost"), "the cost is shown as read");
   });
 });
+
+describe("guards on what a reading came back as", () => {
+  it("makes no draft when the source describes a different scheme from the lead", async () => {
+    const submission = await seedSubmission({
+      sourceLabel: "Murugappa Raising Talent Sports Scholarship (MRTSS)",
+      extractedData: { ...EXTRACTED, title: "AMM Murugappa Chettiar Centenary Scholarship" },
+    });
+    const made = await createDraftFromSubmission(submission);
+    assert.equal(made.ok, false);
+    assert.match(made.reason, /does not match the lead/);
+    assert.equal(await Opportunity.countDocuments({}), 0);
+  });
+
+  it("makes no draft from rules for a year that is over", async () => {
+    const submission = await seedSubmission({
+      extractedData: { ...EXTRACTED, cycle: { label: "2021-22" } },
+    });
+    const made = await createDraftFromSubmission(submission);
+    assert.equal(made.ok, false);
+    assert.match(made.reason, /2021-22.*out of date/);
+    assert.equal(await Opportunity.countDocuments({}), 0);
+  });
+
+  it("makes no draft from a document years old", async () => {
+    const submission = await seedSubmission({
+      extractedData: { ...EXTRACTED, sourcePublishedOn: "2021-12-03" },
+    });
+    const made = await createDraftFromSubmission(submission);
+    assert.equal(made.ok, false);
+    assert.match(made.reason, /from 2021/);
+  });
+
+  it("still drafts a current reading that matches its lead", async () => {
+    const year = new Date().getUTCFullYear();
+    const submission = await seedSubmission({
+      extractedData: { ...EXTRACTED, cycle: { label: `${year}-${String(year + 1).slice(2)}` } },
+    });
+    const made = await createDraftFromSubmission(submission);
+    assert.equal(made.ok, true);
+  });
+
+  it("leaves a refused reading in the review queue, with why, and tells the editors", async () => {
+    const submission = await seedSubmission({
+      status: "PENDING_EXTRACTION",
+      extractedData: undefined,
+      sourceLabel: "Murugappa Raising Talent Sports Scholarship",
+    });
+    await runOpportunityExtraction(submission, {
+      extract: async () => ({
+        status: "PENDING_REVIEW",
+        extractedData: { ...EXTRACTED, title: "AMM Murugappa Chettiar Centenary Scholarship" },
+        citations: {},
+        extractionModel: "test",
+      }),
+    });
+    const after = await DataSourceSubmission.findById(submission._id).lean();
+    assert.equal(after.status, "PENDING_REVIEW");
+    assert.match(after.reviewNotes, /Could not draft this automatically.*does not match/);
+  });
+});
+
+describe("what the reading is told to look for", () => {
+  const seen = async (over: Record<string, unknown>) => {
+    const submission = await seedSubmission({
+      status: "PENDING_EXTRACTION",
+      extractedData: undefined,
+      ...over,
+    });
+    let focus: unknown = "unset";
+    await runOpportunityExtraction(submission, {
+      notify: false,
+      extract: async (_submission: unknown, title: unknown) => {
+        focus = title;
+        return { status: "EXTRACTION_FAILED", extractionError: "stop here" };
+      },
+    });
+    return focus;
+  };
+
+  it("is the lead's name, for a reading made from a lead", async () => {
+    assert.equal(
+      await seen({ sourceLabel: "Murugappa Raising Talent Sports Scholarship" }),
+      "Murugappa Raising Talent Sports Scholarship"
+    );
+  });
+
+  it("is the entry, for a reading that checks an existing entry", async () => {
+    await Opportunity.create({
+      slug: "ikf",
+      track: "admission",
+      category: "academy",
+      title: "India Khelo Football",
+      status: "published",
+    });
+    assert.equal(
+      await seen({ opportunitySlug: "ikf", autoDraft: undefined }),
+      "India Khelo Football"
+    );
+  });
+
+  it("is nothing for an ordinary reading of a new entry, as before", async () => {
+    assert.equal(await seen({ autoDraft: undefined }), undefined);
+  });
+});
