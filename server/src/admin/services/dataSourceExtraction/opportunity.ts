@@ -397,7 +397,7 @@ export async function extractOpportunityForSubmission(
       pageText = text;
       textKind = "pdf";
     } else {
-      const page = await fetchPage(url, { stripChrome: true });
+      const page = await fetchPage(url, { stripChrome: true, identify: true });
       const text = page?.text ?? null;
       primaryIsPage = true;
       // The page's own PDF links, only when asked: reading them costs a model call each.

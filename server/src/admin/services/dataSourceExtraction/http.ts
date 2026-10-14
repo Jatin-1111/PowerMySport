@@ -189,6 +189,27 @@ export function stripSiteChrome(html: string): string {
 }
 
 /**
+ * What the server calls itself when it reads an admissions or scholarships link.
+ *
+ * Honest, and the same identity the weekly source check uses
+ * (opportunityWatch.ts): the sites an editor points us at are told who is
+ * asking and where to complain, rather than being shown a browser we are not.
+ * The cost is that a site which turns away unrecognised agents will now turn
+ * this away too; the reader then falls back to Gemini reading the link itself,
+ * and an editor can still paste or upload the document.
+ */
+export const READER_USER_AGENT =
+  "Mozilla/5.0 (compatible; PowerMySportSourceReader/1.0; +https://powermysport.com) reading a link an editor submitted";
+
+/**
+ * The older, browser-shaped agent, still used by the tournament readers
+ * (submission.ts, detailEnrichment.ts), where some federation sites 403 an
+ * unrecognised agent. Not used for admissions or scholarships.
+ */
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+
+/**
  * Fetches the page ourselves and returns its text.
  *
  * Preferred over Gemini's urlContext tool for LINK sources, because that tool
@@ -202,7 +223,8 @@ export function stripSiteChrome(html: string): string {
  * urlContext for genuinely bot-gated or JS-rendered sources.
  */
 export async function fetchPageHtml(
-  url: string
+  url: string,
+  userAgent: string = BROWSER_USER_AGENT
 ): Promise<{ html: string; finalUrl: string } | null> {
   const safeUrl = await resolveSafeHttpUrl(url);
   if (!safeUrl) {
@@ -213,9 +235,7 @@ export async function fetchPageHtml(
     const res = await fetch(safeUrl, {
       redirect: "follow",
       headers: {
-        // Some federation sites 403 an unrecognised agent.
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+        "User-Agent": userAgent,
         Accept: "text/html,application/xhtml+xml,*/*",
       },
       signal: AbortSignal.timeout(25_000),
@@ -262,8 +282,7 @@ export async function fetchPdfFromUrl(
     const res = await fetch(safeUrl, {
       redirect: "follow",
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+        "User-Agent": READER_USER_AGENT,
         Accept: "application/pdf,*/*",
       },
       signal: AbortSignal.timeout(40_000),
@@ -292,9 +311,16 @@ export async function fetchPdfFromUrl(
  */
 export async function fetchPageForReading(
   url: string,
-  { stripChrome = false }: { stripChrome?: boolean } = {}
+  {
+    stripChrome = false,
+    identify = false,
+  }: {
+    stripChrome?: boolean;
+    /** Say who is asking, rather than presenting as a browser. See READER_USER_AGENT. */
+    identify?: boolean;
+  } = {}
 ): Promise<{ text: string; html: string; finalUrl: string } | null> {
-  const page = await fetchPageHtml(url);
+  const page = await fetchPageHtml(url, identify ? READER_USER_AGENT : BROWSER_USER_AGENT);
   if (!page) return null;
   const text = htmlToText(stripChrome ? stripSiteChrome(page.html) : page.html, page.finalUrl);
   return {
