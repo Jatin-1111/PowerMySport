@@ -7,29 +7,32 @@ import { OpportunityLead } from "../../shared/models/OpportunityLead";
 import { isSupportedSport, toSupportedSlug } from "../../shared/constants/supportedSports";
 import {
   OPPORTUNITY_TRACKS,
-  parseOpportunity,
-  parseOpportunityDraft,
-  todayInIndia,
   type OpportunityTrack,
 } from "../../shared/validation/opportunityFormat";
 import { s3Service } from "../../shared/services/S3Service";
 import { cleanOpportunityExtraction } from "../services/dataSourceExtraction/opportunity";
-import { sourcesToCite, type DocumentRecord } from "../services/dataSourceExtraction/multiDocument";
 import type { CitationChecks } from "../services/dataSourceExtraction/quoteCheck";
 import {
   runOpportunityExtraction,
   startOpportunityExtraction,
 } from "../services/opportunitySourceSubmission";
-import {
-  applyChanges,
-  proposedChanges,
-  withSource,
-  type MultiDocumentInfo,
-} from "../services/opportunitySourceMerge";
+import { proposedChanges, type MultiDocumentInfo } from "../services/opportunitySourceMerge";
 import { recordAuditLog } from "../services/AuditLogService";
-import { uniqueSlug } from "../services/opportunitySlug";
-import { revalidateOpportunities } from "../services/ClientCacheRevalidationService";
-import { acknowledgeWatchUrls } from "../services/opportunityWatch";
+import { assessSubmission } from "../services/opportunityApprovalAssessment";
+import { approveSubmission } from "../services/opportunitySourceApproval";
+import {
+  actedToday,
+  autoApproveEnabled,
+  dailyCap,
+  revertAutoApproval,
+} from "../services/opportunityAutoApprover";
+import {
+  APPROVAL_RULES,
+  MAX_AGE_SHIFT_YEARS,
+  MAX_AMOUNT_FACTOR,
+  MAX_DATE_SHIFT_DAYS,
+  MAX_ROWS_PER_UPDATE,
+} from "../services/opportunityApprovalPolicy";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
 
@@ -63,14 +66,6 @@ async function loadSubmission(id: string) {
   const submission = await DataSourceSubmission.findOne({ _id: id, targetType: TARGET });
   if (!submission) throw new AppError("Source not found.", 404);
   return submission;
-}
-
-/** The entry a submission updates, as a plain object, or null for a new one. */
-async function liveEntry(submission: { opportunitySlug?: string }) {
-  if (!submission.opportunitySlug) return null;
-  const doc = await Opportunity.findOne({ slug: submission.opportunitySlug });
-  if (!doc) throw new AppError("The entry this source was for no longer exists.", 404);
-  return doc;
 }
 
 const plain = (value: unknown): Record<string, unknown> =>
@@ -252,6 +247,9 @@ export const getOpportunitySource = asyncHandler(
         entry,
         entryMissing: Boolean(submission.opportunitySlug && !entry),
         drafted,
+        // What the approval rules make of this reading. Advice for the screen: it never
+        // blocks or approves anything, and a failure to compute it must not hide the review.
+        verdict: await assessSubmission(submission).catch(() => null),
         changes,
       },
     });
@@ -352,136 +350,72 @@ export const approveOpportunitySource = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) throw new AppError("Unauthorized", 401);
     const submission = await loadSubmission(requireId(req));
-    if (submission.status !== "PENDING_REVIEW") {
-      throw new AppError(
-        `This source is ${submission.status.toLowerCase()}, not waiting for review.`,
-        400
-      );
-    }
-
-    const doc = await liveEntry(submission);
-    const current = doc ? plain(doc.toObject()) : null;
-    const extracted = plain(submission.extractedData);
-    const changes = proposedChanges(current, extracted);
     const requested = Array.isArray(req.body?.keep)
       ? (req.body.keep as unknown[]).filter((p): p is string => typeof p === "string")
       : [];
-    const keep = new Set(requested.filter((path) => changes.some((c) => c.path === path)));
 
-    const merged = applyChanges(current, changes, keep);
-    const sourceUrl = submission.originUrl || submission.sourceUrl;
-    if (!sourceUrl) throw new AppError("This source has no public link to cite.", 400);
-    const publishedOn =
-      typeof extracted.sourcePublishedOn === "string" ? extracted.sourcePublishedOn : undefined;
-    // Cite what the kept fields came from. A single-source reading cites its one
-    // source; one that read several cites each document that supplied a kept field.
-    const records = (submission.documents as DocumentRecord[] | undefined) ?? [];
-    // With several sources the merged date is the newest document's, which says
-    // nothing about the page; the page's own date, if it printed one, is in its record.
-    const ownRecord = records.find((r) => r.url === sourceUrl);
-    const citeAs = sourcesToCite(
-      records,
-      (submission.fieldSources as Record<string, string> | undefined) ?? {},
-      keep,
-      {
-        label: submission.sourceLabel || "Official source",
-        url: sourceUrl,
-        publishedOn: ownRecord ? ownRecord.sourcePublishedOn : publishedOn,
-      }
-    );
-    let citedSources = merged.sources as
-      Array<{ label: string; url: string; publishedOn?: string }> | undefined;
-    // Oldest first, so the newest ends up at the top, as one source does.
-    for (const source of [...citeAs].reverse()) citedSources = withSource(citedSources, source);
-    merged.sources = citedSources;
-    // Approval counts as verification: the reviewer checked each kept field
-    // against its quote, and confirmed the rest did not change.
-    merged.lastVerifiedOn = todayInIndia();
-
-    if (!doc) {
-      if (typeof merged.title !== "string" || !merged.category) {
-        throw new AppError(
-          "Keep a title and a section (or set them) before approving a new entry.",
-          400
-        );
-      }
-      merged.track = submission.opportunityTrack ?? "scholarship";
-      merged.slug = await uniqueSlug(merged.title);
-    }
-
-    const isPublished = doc?.status === "published";
-    const {
-      _id: _ignoredId,
-      status: _ignoredStatus,
-      publishedAt: _ignoredPublishedAt,
-      createdAt: _ignoredCreatedAt,
-      updatedAt: _ignoredUpdatedAt,
-      updatedBy: _ignoredUpdatedBy,
-      __v: _ignoredVersion,
-      ...fields
-    } = merged;
-    const parsed = isPublished ? parseOpportunity(fields) : parseOpportunityDraft(fields);
-    if (!parsed.ok) {
-      res.status(400).json({
-        success: false,
-        message: isPublished
-          ? "The live entry would no longer be complete with these changes."
-          : "The entry would not be valid with these changes.",
-        errors: parsed.errors,
-      });
-      return;
-    }
-
-    let savedId: string;
-    if (doc) {
-      doc.overwrite({
-        ...parsed.value,
-        status: doc.status,
-        publishedAt: doc.publishedAt ?? null,
-        createdAt: doc.createdAt,
-        updatedBy: req.user.id,
-      } as never);
-      await doc.save();
-      savedId = String(doc._id);
-    } else {
-      const created = await Opportunity.create({
-        ...parsed.value,
-        status: "draft",
-        updatedBy: req.user.id,
-      } as Record<string, unknown>);
-      savedId = String(created._id);
-    }
-
-    // Reviewing this entry against a source answers whatever the weekly watch
-    // flagged on its links, so those flags are cleared with the approval.
-    const saved = await Opportunity.findById(savedId).select("sources.url watchUrls").lean();
-    await acknowledgeWatchUrls([
-      ...(saved?.sources ?? []).map((s) => s.url),
-      ...(saved?.watchUrls ?? []),
-    ]);
-
-    submission.status = "APPROVED";
-    submission.reviewedBy = req.user.id as unknown as mongoose.Types.ObjectId;
-    submission.reviewedAt = new Date();
-    submission.reviewNotes = `Kept ${keep.size} of ${changes.length} proposed change(s).`;
-    await submission.save();
-
-    void recordAuditLog({
-      adminId: req.user.id,
-      adminEmail: req.user.email || "",
-      action: "opportunity-source.approve",
-      targetType: "Opportunity",
-      targetId: savedId,
-      metadata: { submissionId: String(submission._id), kept: [...keep], proposed: changes.length },
+    const result = await approveSubmission(submission, requested, {
+      id: req.user.id,
+      email: req.user.email || "",
+      automatic: false,
     });
-    if (isPublished) revalidateOpportunities();
+    if (!result.ok) {
+      // A reading that would not make a valid entry reports every reason; the rest are one.
+      if (result.errors) {
+        res.status(result.status).json({
+          success: false,
+          message: result.message,
+          errors: result.errors,
+        });
+        return;
+      }
+      throw new AppError(result.message, result.status);
+    }
 
     res.json({
       success: true,
-      message: doc
-        ? `Applied ${keep.size} change(s) and marked it verified today.`
+      message: result.wasLive
+        ? `Applied ${result.kept} change(s) and marked it verified today.`
         : "Created a verified draft. Publish it from its page when ready.",
-      data: { opportunityId: savedId },
+      data: { opportunityId: result.savedId },
+    });
+  }
+);
+
+// ─── POST /api/admin/opportunity-sources/:id/revert-auto ────────────────────
+// Undo what the AI approver did with this reading, and hand it to a person.
+export const revertAutoApprovedSource = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) throw new AppError("Unauthorized", 401);
+    const submission = await loadSubmission(requireId(req));
+    const result = await revertAutoApproval(submission, {
+      id: req.user.id,
+      email: req.user.email || "",
+    });
+    if (!result.ok) throw new AppError(result.message, result.status);
+    res.json({ success: true, message: result.message });
+  }
+);
+
+// ─── GET /api/admin/opportunity-sources/auto-approval ───────────────────────
+// Whether the AI approver is on, how much it has done today, and the rules it
+// answers to, so an editor can see what it is allowed to do without reading code.
+export const getAutoApprovalStatus = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
+    res.json({
+      success: true,
+      data: {
+        enabled: autoApproveEnabled(),
+        dailyCap: dailyCap(),
+        actedToday: await actedToday(),
+        rules: APPROVAL_RULES,
+        thresholds: {
+          maxRowsPerUpdate: MAX_ROWS_PER_UPDATE,
+          maxAmountFactor: MAX_AMOUNT_FACTOR,
+          maxAgeShiftYears: MAX_AGE_SHIFT_YEARS,
+          maxDateShiftDays: MAX_DATE_SHIFT_DAYS,
+        },
+      },
     });
   }
 );

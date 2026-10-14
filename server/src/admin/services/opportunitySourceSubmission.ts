@@ -2,6 +2,7 @@ import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { Opportunity } from "../../shared/models/Opportunity";
 import { extractOpportunityForSubmission } from "./dataSourceExtraction/opportunity";
 import { createDraftFromSubmission } from "./opportunityAutoDraft";
+import { considerAutoApproval } from "./opportunityAutoApprover";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "./AdminService";
 import { sendDataSourceReadyForReviewEmail } from "../../utils/email";
 import { log as __rootLog } from "../../utils/logger";
@@ -107,7 +108,17 @@ export async function runOpportunityExtraction(
       await submission.save();
     }
   }
-  if (result.status === "PENDING_REVIEW" && options.notify !== false && !drafted) {
+
+  // Then the approval rules: a reading that satisfies every one is approved without
+  // anyone looking, when automatic approval is on. Whatever it decides is recorded.
+  if (result.status === "PENDING_REVIEW" || drafted) {
+    await considerAutoApproval(submission).catch((error) =>
+      log.error("The approval rules could not be applied:", error)
+    );
+  }
+
+  // Editors are told about what is left for them to review, not what was settled.
+  if (submission.status === "PENDING_REVIEW" && options.notify !== false) {
     void notifyEditors(submission);
   }
 }

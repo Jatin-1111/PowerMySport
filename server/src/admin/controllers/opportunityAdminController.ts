@@ -20,6 +20,7 @@ import {
   type Finding,
 } from "../services/opportunityPublishCheck";
 import { recordAuditLog } from "../services/AuditLogService";
+import { checkPublishable } from "../services/opportunityPublishing";
 import { revalidateOpportunities } from "../services/ClientCacheRevalidationService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -246,28 +247,12 @@ export const setAdminOpportunityStatus = asyncHandler(
     let findings: Finding[] = [];
 
     if (publish) {
-      // Round-tripped so Mongoose's subdocument wrappers become the plain
-      // objects the schema expects.
-      const plain = JSON.parse(JSON.stringify(doc.toObject())) as Record<string, unknown>;
-      const check = parseOpportunity(editable(plain));
-      if (!check.ok) {
-        return badRequest(res, "This entry isn't ready to publish yet.", check.errors);
+      // One gate for a person and for the AI approver: opportunityPublishing.ts.
+      const gate = await checkPublishable(doc);
+      if (!gate.ok) {
+        return badRequest(res, "This entry isn't ready to publish yet.", gate.errors);
       }
-      // The plausibility check (opportunityPublishCheck.ts). Only a problem, a
-      // record that cannot be right, stops the publish; the rest is passed back.
-      findings = checkOpportunityOffline(
-        plain as CheckableEntry,
-        todayInIndia(),
-        await otherEntries(doc._id)
-      );
-      const problems = findings.filter((f) => f.severity === "problem");
-      if (problems.length > 0) {
-        return badRequest(
-          res,
-          "This entry isn't ready to publish yet.",
-          problems.map((f) => f.message)
-        );
-      }
+      findings = gate.findings;
     }
 
     doc.status = publish ? "published" : "draft";

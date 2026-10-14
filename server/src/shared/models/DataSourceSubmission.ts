@@ -65,6 +65,11 @@ export interface DataSourceSubmissionDocument extends Document {
    */
   autoDraft?: boolean;
   draftedSlug?: string;
+  /**
+   * OPPORTUNITY only: what the AI approver made of this reading and did about it
+   * (opportunityAutoApprover.ts). Recorded for every reading, acted on or not.
+   */
+  autoApproval?: unknown;
   /** OPPORTUNITY only: every source read for this submission, when documents were followed. */
   documents?: unknown;
   fieldSources?: unknown;
@@ -125,6 +130,7 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
     followDocuments: { type: Boolean, default: undefined },
     autoDraft: { type: Boolean, default: undefined },
     draftedSlug: { type: String },
+    autoApproval: { type: Schema.Types.Mixed },
     documents: { type: Schema.Types.Mixed },
     fieldSources: { type: Schema.Types.Mixed },
     conflicts: { type: Schema.Types.Mixed },
@@ -153,6 +159,8 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
 
 dataSourceSubmissionSchema.index({ targetType: 1, sportSlug: 1 });
 dataSourceSubmissionSchema.index({ status: 1, createdAt: -1 });
+// The AI approver counts what it did today, and the digest lists what it did this week.
+dataSourceSubmissionSchema.index({ "autoApproval.actedAt": 1 }, { sparse: true });
 
 export const DataSourceSubmission =
   mongoose.models.DataSourceSubmission ||

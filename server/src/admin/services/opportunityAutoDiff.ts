@@ -139,7 +139,12 @@ export async function createAutoDiffs(
         submission.status = "EXTRACTION_FAILED";
       }
 
-      if (submission.status === "PENDING_REVIEW") {
+      const settled =
+        submission.status === "APPROVED" &&
+        Boolean((submission.get("autoApproval") as { actedAt?: unknown } | undefined)?.actedAt);
+      if (submission.status === "PENDING_REVIEW" || settled) {
+        // A reading the AI approver settled is kept: it is the record of what changed,
+        // the snapshot a revert needs, and what the weekly digest reports.
         summary.created += 1;
       } else {
         // A read that came to nothing is not worth a person's attention: the

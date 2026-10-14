@@ -1,3 +1,4 @@
+import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { Opportunity } from "../../shared/models/Opportunity";
 import { STALE_AFTER_DAYS, todayInIndia } from "../../shared/validation/opportunityFormat";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "./AdminService";
@@ -76,6 +77,19 @@ export interface DeadlineReport {
    * by the run, which has the watch records; the pure builder leaves it empty.
    */
   manualChecks: ManualCheckItem[];
+  /**
+   * What the AI approver did in the last week and nobody has reverted. Filled in by
+   * the run, which reads the readings it settled; the pure builder leaves it empty.
+   */
+  autoApprovals?: AutoApprovalItem[];
+}
+
+/** One thing the AI approver did, for the weekly digest. */
+export interface AutoApprovalItem {
+  title: string;
+  action: "approved" | "reverified" | "published";
+  /** The reading it was decided on, where it can be reverted. */
+  submissionId: string;
 }
 
 /** A source a person has to open themselves, and the entries that depend on it. */
@@ -93,7 +107,8 @@ export const reportIsEmpty = (r: DeadlineReport): boolean =>
   r.closedButLive.length === 0 &&
   r.checkOverdue.length === 0 &&
   r.checkDueSoon.length === 0 &&
-  r.manualChecks.length === 0;
+  r.manualChecks.length === 0 &&
+  (r.autoApprovals?.length ?? 0) === 0;
 
 /** Pure: entries and today's date in, the week's report out. */
 export function buildDeadlineReport(entries: DeadlineEntry[], today: string): DeadlineReport {
@@ -204,11 +219,54 @@ async function manualChecksDue(
   }
 }
 
+/**
+ * What the AI approver did in the last seven days and was not reverted, newest
+ * first. A failure to load it must not cost the week's dates.
+ */
+async function autoApprovalsThisWeek(
+  load?: () => Promise<AutoApprovalItem[]>
+): Promise<AutoApprovalItem[]> {
+  try {
+    if (load) return await load();
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const settled = await DataSourceSubmission.find({
+      "autoApproval.actedAt": { $gte: since },
+      "autoApproval.revertedAt": { $exists: false },
+    })
+      .sort({ "autoApproval.actedAt": -1 })
+      .select("autoApproval")
+      .lean();
+    const ids = settled
+      .map((s) => (s.autoApproval as { entryId?: string } | undefined)?.entryId)
+      .filter((id): id is string => Boolean(id));
+    const titles = new Map(
+      (
+        await Opportunity.find({ _id: { $in: ids } })
+          .select("title")
+          .lean()
+      ).map((e) => [String(e._id), e.title])
+    );
+    return settled.map((s) => {
+      const record = s.autoApproval as { entryId?: string; action: AutoApprovalItem["action"] };
+      return {
+        title: titles.get(record.entryId ?? "") ?? "An entry",
+        action: record.action,
+        submissionId: String(s._id),
+      };
+    });
+  } catch (error) {
+    log.error("Deadline digest: could not load what the AI approver did:", error);
+    return [];
+  }
+}
+
 export async function runDeadlineDigest(
   deps: {
     today?: string;
     /** The watch records, for the hand-check section. Replaced in tests. */
     watches?: () => Promise<Awaited<ReturnType<typeof listWatches>>>;
+    /** What the AI approver settled this week. Replaced in tests. */
+    autoApprovals?: () => Promise<AutoApprovalItem[]>;
     recipients?: () => Promise<Array<{ email: string; name: string }>>;
     send?: typeof sendOpportunityDeadlinesDigestEmail;
   } = {}
@@ -219,6 +277,7 @@ export async function runDeadlineDigest(
     .lean<DeadlineEntry[]>();
   const report = buildDeadlineReport(entries, today);
   report.manualChecks = await manualChecksDue(deps.watches);
+  report.autoApprovals = await autoApprovalsThisWeek(deps.autoApprovals);
 
   if (reportIsEmpty(report)) {
     log.info("Deadline digest: nothing to report this week");
@@ -233,7 +292,14 @@ export async function runDeadlineDigest(
   let delivered = 0;
   for (const admin of recipients) {
     try {
-      await send({ to: admin.email, name: admin.name, report, reviewUrl, today });
+      await send({
+        to: admin.email,
+        name: admin.name,
+        report,
+        reviewUrl,
+        today,
+        adminUrl: resolveAdminAppUrl(),
+      });
       delivered += 1;
     } catch (error) {
       log.error(`Could not email the deadline digest to ${admin.email}:`, error);

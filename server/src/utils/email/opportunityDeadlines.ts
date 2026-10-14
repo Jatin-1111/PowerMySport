@@ -17,6 +17,11 @@ interface DeadlineReport {
   checkDueSoon: DueItem[];
   neverVerifiedDrafts: number;
   manualChecks: Array<{ url: string; entries: string[]; lastLooked: string | null }>;
+  autoApprovals?: Array<{
+    title: string;
+    action: "approved" | "reverified" | "published";
+    submissionId: string;
+  }>;
 }
 
 /** The most hand-check sources listed; the rest are counted, and all are in admin. */
@@ -28,6 +33,8 @@ interface OpportunityDeadlinesDigestOptions {
   report: DeadlineReport;
   reviewUrl: string;
   today: string;
+  /** The admin app's address, for the links to each reading. */
+  adminUrl?: string;
 }
 
 const formatDate = (iso: string): string =>
@@ -44,6 +51,35 @@ const when = (days: number): string => {
   const n = Math.abs(days);
   const unit = n === 1 ? "day" : "days";
   return days > 0 ? `in ${n} ${unit}` : `${n} ${unit} ago`;
+};
+
+const AUTO_ACTION_TEXT = {
+  published: "Published a new entry",
+  approved: "Applied a change",
+  reverified: "Confirmed it is still right",
+} as const;
+
+/**
+ * What the AI approver did this week. Each links to the reading, where what it
+ * relied on is shown and where it can be reverted: an editor who disagrees with
+ * any of these can undo it in one press.
+ */
+const autoApprovalsSection = (
+  items: NonNullable<DeadlineReport["autoApprovals"]>,
+  adminUrl: string | undefined
+): string => {
+  if (items.length === 0) return "";
+  return `<h3 style="margin-bottom: 4px;">Approved by the AI this week (${items.length})</h3>
+    <p style="margin-top: 0; color: #555;">Each one passed every approval rule. Open any you want to check; you can revert it there.</p>
+    <ul>${items
+      .map((item) => {
+        const link = adminUrl
+          ? `${adminUrl}/admin/opportunities/sources/${encodeURIComponent(item.submissionId)}`
+          : "";
+        const label = `${escapeHtml(item.title)}`;
+        return `<li style="margin-bottom: 6px;">${link ? `<a href="${escapeHtml(link)}">${label}</a>` : label}<br/><span style="color: #555;">${AUTO_ACTION_TEXT[item.action]}</span></li>`;
+      })
+      .join("")}</ul>`;
 };
 
 /** Sources our server cannot read, which only a person opening them can check. */
@@ -103,6 +139,7 @@ export const sendOpportunityDeadlinesDigestEmail = async (
     report.checkOverdue.length + report.checkDueSoon.length &&
       `${report.checkOverdue.length + report.checkDueSoon.length} due a check`,
     report.manualChecks.length && `${report.manualChecks.length} to check by hand`,
+    (report.autoApprovals?.length ?? 0) && `${report.autoApprovals?.length} approved by the AI`,
   ].filter(Boolean);
 
   const html = `
@@ -149,6 +186,7 @@ export const sendOpportunityDeadlinesDigestEmail = async (
     (i) => `Last verified ${formatDate(i.date)}; a year is up ${when(i.days)}`
   )}
   ${manualChecksSection(report.manualChecks, options.reviewUrl)}
+  ${autoApprovalsSection(report.autoApprovals ?? [], options.adminUrl)}
   ${
     report.neverVerifiedDrafts
       ? `<p style="color: #555;">${report.neverVerifiedDrafts} draft${
