@@ -1,6 +1,7 @@
 import { DataSourceSubmission } from "../../shared/models/DataSourceSubmission";
 import { Opportunity } from "../../shared/models/Opportunity";
 import { extractOpportunityForSubmission } from "./dataSourceExtraction/opportunity";
+import { createDraftFromSubmission } from "./opportunityAutoDraft";
 import { getAdminsWithPermission, resolveAdminAppUrl } from "./AdminService";
 import { sendDataSourceReadyForReviewEmail } from "../../utils/email";
 import { log as __rootLog } from "../../utils/logger";
@@ -65,12 +66,13 @@ export function startOpportunityExtraction(
  */
 export async function runOpportunityExtraction(
   submission: InstanceType<typeof DataSourceSubmission>,
-  options: { notify?: boolean } = {}
+  options: { notify?: boolean; extract?: typeof extractOpportunityForSubmission } = {}
 ): Promise<void> {
   const entry = submission.opportunitySlug
     ? await Opportunity.findOne({ slug: submission.opportunitySlug }).select("title owner").lean()
     : null;
-  const result = await extractOpportunityForSubmission(submission, entry?.title, {
+  const extract = options.extract ?? extractOpportunityForSubmission;
+  const result = await extract(submission, entry?.title, {
     ownerName: entry?.owner?.name,
   });
   submission.status = result.status;
@@ -87,7 +89,20 @@ export async function runOpportunityExtraction(
   submission.extractionModel = result.extractionModel;
   submission.extractedAt = new Date();
   await submission.save();
-  if (result.status === "PENDING_REVIEW" && options.notify !== false) {
+
+  // A reading asked to become a draft entry does so as soon as it is read. When it
+  // cannot (nothing usable, a duplicate), it stays in the review queue with the
+  // reason, and the editors are told as for any other reading.
+  let drafted = false;
+  if (submission.autoDraft && result.status === "PENDING_REVIEW") {
+    const made = await createDraftFromSubmission(submission);
+    drafted = made.ok;
+    if (!made.ok) {
+      submission.reviewNotes = `Could not draft this automatically: ${made.reason}`;
+      await submission.save();
+    }
+  }
+  if (result.status === "PENDING_REVIEW" && options.notify !== false && !drafted) {
     void notifyEditors(submission);
   }
 }

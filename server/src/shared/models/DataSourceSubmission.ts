@@ -59,6 +59,12 @@ export interface DataSourceSubmissionDocument extends Document {
   citationChecks?: unknown;
   /** OPPORTUNITY only: read the documents the page links to as well. */
   followDocuments?: boolean;
+  /**
+   * OPPORTUNITY only: once read, write what it said straight into a new DRAFT entry
+   * (opportunityAutoDraft.ts). `draftedSlug` is that entry, set when it was made.
+   */
+  autoDraft?: boolean;
+  draftedSlug?: string;
   /** OPPORTUNITY only: every source read for this submission, when documents were followed. */
   documents?: unknown;
   fieldSources?: unknown;
@@ -117,6 +123,8 @@ const dataSourceSubmissionSchema = new Schema<DataSourceSubmissionDocument>(
     // `fieldSources` says which document each field came from; `conflicts` holds what
     // the other documents say where they differ. All absent for a single-source reading.
     followDocuments: { type: Boolean, default: undefined },
+    autoDraft: { type: Boolean, default: undefined },
+    draftedSlug: { type: String },
     documents: { type: Schema.Types.Mixed },
     fieldSources: { type: Schema.Types.Mixed },
     conflicts: { type: Schema.Types.Mixed },

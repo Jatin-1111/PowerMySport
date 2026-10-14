@@ -27,6 +27,7 @@ import {
   type MultiDocumentInfo,
 } from "../services/opportunitySourceMerge";
 import { recordAuditLog } from "../services/AuditLogService";
+import { uniqueSlug } from "../services/opportunitySlug";
 import { revalidateOpportunities } from "../services/ClientCacheRevalidationService";
 import { acknowledgeWatchUrls } from "../services/opportunityWatch";
 import { asyncHandler } from "../../middleware/asyncHandler";
@@ -49,22 +50,6 @@ import { AppError } from "../../utils/AppError";
 
 const TARGET = "OPPORTUNITY" as const;
 const DEFAULT_SPORT = "tennis";
-
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 72);
-
-async function uniqueSlug(title: string): Promise<string> {
-  const base = slugify(title) || "entry";
-  for (let n = 1; n < 50; n += 1) {
-    const candidate = n === 1 ? base : `${base}-${n}`;
-    if (!(await Opportunity.exists({ slug: candidate }))) return candidate;
-  }
-  throw new AppError("Could not find a free slug for this title.", 400);
-}
 
 const requireId = (req: Request): string => {
   const { id } = req.params;
@@ -239,11 +224,18 @@ export const listOpportunitySources = asyncHandler(
 export const getOpportunitySource = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const submission = await loadSubmission(requireId(req));
+    // An entry drafted automatically is not "the entry this would change": the draft
+    // already holds everything read. Its review page shows what was read, with each
+    // quote, as the evidence for an editor checking the draft, so the comparison is
+    // against nothing.
+    const drafted = Boolean(submission.autoDraft && submission.draftedSlug);
     const entry = submission.opportunitySlug
       ? await Opportunity.findOne({ slug: submission.opportunitySlug }).lean()
-      : null;
+      : drafted
+        ? await Opportunity.findOne({ slug: submission.draftedSlug }).lean()
+        : null;
     const changes = proposedChanges(
-      entry ? plain(entry) : null,
+      entry && !drafted ? plain(entry) : null,
       plain(submission.extractedData),
       (submission.citations ?? {}) as Record<string, string>,
       submission.citationChecks as Partial<CitationChecks> | undefined,
@@ -259,6 +251,7 @@ export const getOpportunitySource = asyncHandler(
         submission: submission.toObject(),
         entry,
         entryMissing: Boolean(submission.opportunitySlug && !entry),
+        drafted,
         changes,
       },
     });

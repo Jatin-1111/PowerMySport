@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { OpportunityLead } from "../../shared/models/OpportunityLead";
 import { isDiscoveryRunning, runOpportunityDiscovery } from "../services/opportunityDiscovery";
 import { isTriageRunning, runLeadTriage } from "../services/opportunityLeadTriage";
+import { draftFromLead } from "../services/opportunityLeadDraft";
 import { recordAuditLog } from "../services/AuditLogService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -111,6 +112,25 @@ export const restoreOpportunityLead = asyncHandler(
       });
     }
     res.json({ success: true, message: "Restored. Triage will leave it alone." });
+  }
+);
+
+// POST /api/admin/opportunity-leads/:id/draft  { force? }
+// Read the lead and write what it says into a new draft entry. Answers at once;
+// the reading runs in the background and the draft appears in the list when done.
+export const draftOpportunityLead = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    if (!id || typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+      throw new AppError("Invalid id.", 400);
+    }
+    if (!req.user?.id) throw new AppError("Unauthorized", 401);
+    const submission = await draftFromLead(id, req.user.id, { force: req.body?.force === true });
+    res.status(202).json({
+      success: true,
+      message: "Reading it. The draft will appear in the list in a few minutes.",
+      data: { submissionId: String(submission._id) },
+    });
   }
 );
 
