@@ -37,9 +37,47 @@ const PATH_ORDER = Object.keys(PATH_LABELS);
 export const byPageOrder = (a: ProposedChange, b: ProposedChange) =>
   (PATH_ORDER.indexOf(a.path) + 1 || 999) - (PATH_ORDER.indexOf(b.path) + 1 || 999);
 
+/**
+ * A cost as a parent will read it: "Free. Girls play free", "₹125. City round",
+ * "Varies. By city". Null for anything that is not a cost, so the caller falls
+ * back to the generic rendering.
+ */
+export function describeCost(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const { kind, amount, currency, note } = value as Record<string, unknown>;
+  if (kind !== "free" && kind !== "fee" && kind !== "varies") return null;
+  let head: string;
+  if (kind === "free") head = "Free";
+  else if (
+    kind === "fee" &&
+    typeof amount === "number" &&
+    (currency === "INR" || currency === "USD")
+  ) {
+    head = new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } else head = kind === "fee" ? "A fee" : "Varies";
+  const text = typeof note === "string" ? note.trim() : "";
+  return text ? `${head}. ${text}` : head;
+}
+
 /** Any stored value, readably: lists as lists, objects as "key: value" lines. */
-export function ChangeValue({ value, muted }: { value: unknown; muted?: boolean }) {
+export function ChangeValue({
+  value,
+  muted,
+  path,
+}: {
+  value: unknown;
+  muted?: boolean;
+  /** The field the value belongs to, for the few that read better than "key: value". */
+  path?: string;
+}) {
   const tone = muted ? "text-slate-500" : "text-slate-900";
+  const cost = path === "cost" ? describeCost(value) : null;
+  if (cost) return <span className={`text-sm ${tone}`}>{cost}</span>;
   if (value === null || value === undefined || value === "") {
     return <span className="text-xs italic text-slate-400">(empty)</span>;
   }
@@ -102,7 +140,7 @@ function QuoteFlags({ change }: { change: ProposedChange }) {
                 >
                   {other.label}
                 </a>{" "}
-                says: <ChangeValue value={other.value} />
+                says: <ChangeValue value={other.value} path={change.path} />
                 {other.quote && <span className="italic"> &ldquo;{other.quote}&rdquo;</span>}
               </li>
             ))}
@@ -203,14 +241,14 @@ export function ChangeRow({
             {!isNew && (
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Now</p>
-                <ChangeValue value={change.current} muted />
+                <ChangeValue value={change.current} muted path={change.path} />
               </div>
             )}
             <div>
               <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">
                 {isNew ? "Read from the source" : "Source says"}
               </p>
-              <ChangeValue value={change.proposed} />
+              <ChangeValue value={change.proposed} path={change.path} />
             </div>
           </div>
           {change.citation ? (
