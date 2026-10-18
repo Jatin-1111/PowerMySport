@@ -2,10 +2,9 @@
 
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
-import { Badge } from "@/modules/shared/ui/Badge";
 import { Input } from "@/modules/shared/ui/Input";
+import { SportChips } from "./SportChips";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
-import { Trophy } from "lucide-react";
 
 export interface PlayerProfileForm {
   yearsPlaying: number | undefined;
@@ -31,14 +30,14 @@ export function PlayerProfileEditForm({
   setPlayerProfileForm: (updater: (f: PlayerProfileForm) => PlayerProfileForm) => void;
 }) {
   return (
-    <div className="space-y-6">
+    <div>
       {isParent ? (
         <ProfileEditPanel
-          title="About You"
+          title="About you"
           description="Your sports background as a parent, helps the AI understand your perspective."
         >
           <ProfileEditField
-            label="About You"
+            label="About you"
             htmlFor="parent-bio"
             hint={`${playerProfileForm.bio.length}/300, your background as a sports parent`}
           >
@@ -49,12 +48,12 @@ export function PlayerProfileEditForm({
               value={playerProfileForm.bio}
               onChange={(e) => setPlayerProfileForm((f) => ({ ...f, bio: e.target.value }))}
               placeholder="e.g., Former club cricketer, now focused on my daughter's tennis journey."
-              className="focus:border-power-orange focus:ring-power-orange/20 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2"
+              className="border-hairline text-ink placeholder:text-ink-ash focus:border-ink focus:ring-ink/15 w-full resize-none rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2"
             />
           </ProfileEditField>
 
           <ProfileEditField
-            label="Sports You Follow or Have Played"
+            label="Sports you follow or have played"
             hint="Helps the AI understand your perspective when asking about your child's sport"
           >
             <SportsMultiSelect
@@ -64,7 +63,7 @@ export function PlayerProfileEditForm({
           </ProfileEditField>
 
           <ProfileEditField
-            label="Years Involved in Sport"
+            label="Years involved in sport"
             htmlFor="parent-involvement-years"
             hint="How long you've been involved or interested in sport"
           >
@@ -87,7 +86,7 @@ export function PlayerProfileEditForm({
                 }
                 className="w-28"
               />
-              <span className="text-sm text-slate-500">years</span>
+              <span className="text-ink-muted text-sm">years</span>
             </div>
           </ProfileEditField>
         </ProfileEditPanel>
@@ -101,7 +100,7 @@ export function PlayerProfileEditForm({
           </ProfileEditField>
 
           <ProfileEditField
-            label="Experience (Years)"
+            label="Experience (years)"
             htmlFor="self-years-playing"
             hint="Leave blank if you haven't started playing yet"
           >
@@ -122,28 +121,14 @@ export function PlayerProfileEditForm({
           </ProfileEditField>
 
           {selectedSports.length > 0 ? (
-            <div className="mt-4 rounded-lg border border-orange-100 bg-white/80 p-3">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Selected
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {selectedSports.map((sport) => (
-                  <Badge
-                    key={sport}
-                    className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                  >
-                    {sport}
-                  </Badge>
-                ))}
-              </div>
+            <div>
+              <p className="text-ink-muted mb-2 text-sm">Selected</p>
+              <SportChips sports={selectedSports} />
             </div>
           ) : (
-            <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center">
-              <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
-              <p className="text-sm text-slate-500">
-                No sports selected yet. Search above to add some.
-              </p>
-            </div>
+            <p className="text-ink-muted text-sm">
+              No sports selected yet. Search above to add some.
+            </p>
           )}
         </ProfileEditPanel>
       )}

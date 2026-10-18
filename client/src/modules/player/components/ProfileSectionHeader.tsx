@@ -1,4 +1,3 @@
-import { Badge } from "../../shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
 import { LucideIcon, Pencil, X } from "lucide-react";
@@ -19,8 +18,14 @@ type ProfileSectionHeaderProps = {
   className?: string;
   /** 0-100. When provided, wraps the icon in a profile-completion ring. */
   completionPercent?: number;
+  /** Id of the heading, so the section can be labelled by it. */
+  headingId?: string;
 };
 
+/**
+ * The heading row of a profile section: a serif title with a one-line
+ * description, and the section's edit controls on the right.
+ */
 export function ProfileSectionHeader({
   icon: Icon,
   title,
@@ -30,53 +35,47 @@ export function ProfileSectionHeader({
   onCancel,
   onSave,
   saving = false,
-  saveLabel = "Save Changes",
+  saveLabel = "Save changes",
   action,
   className,
   completionPercent,
+  headingId,
 }: ProfileSectionHeaderProps) {
-  const iconBox = (
+  // Inside a completion ring the tile is a circle that clears the ring's stroke.
+  const icon = (
     <div
       className={cn(
-        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-        isEditing ? "bg-power-orange-solid text-white" : "bg-power-orange/10 text-power-orange"
+        "bg-paper-deep text-ink flex shrink-0 items-center justify-center",
+        completionPercent !== undefined ? "h-9 w-9 rounded-full" : "h-10 w-10 rounded-lg"
       )}
     >
-      <Icon className="h-5 w-5" />
+      <Icon className="h-5 w-5" aria-hidden="true" />
     </div>
   );
   return (
     <div
-      className={cn(
-        "flex flex-col gap-4 border-b px-6 py-5 sm:flex-row sm:items-start sm:justify-between",
-        isEditing ? "border-power-orange/20 bg-orange-50/40" : "border-slate-200/60",
-        className
-      )}
+      className={cn("flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between", className)}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-4">
         {completionPercent !== undefined ? (
           <ProfileCompletionRing percent={completionPercent} size={48} strokeWidth={3}>
-            {iconBox}
+            {icon}
           </ProfileCompletionRing>
         ) : (
-          iconBox
+          icon
         )}
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold text-slate-900 sm:text-lg">{title}</h2>
-            {isEditing && (
-              <Badge className="border-orange-200 bg-white text-orange-700 hover:bg-white">
-                Editing
-              </Badge>
-            )}
-            {!isEditing && completionPercent !== undefined && completionPercent < 100 && (
-              <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
-                {completionPercent}% complete
-              </Badge>
-            )}
-          </div>
-          <p className="mt-0.5 text-sm text-slate-500">
+          <h2
+            id={headingId}
+            className="font-editorial text-ink text-2xl font-light tracking-tight sm:text-3xl"
+          >
+            {title}
+          </h2>
+          <p className="text-ink-muted mt-1 text-pretty text-sm">
             {isEditing ? "Make your changes below, then save or cancel." : description}
+            {!isEditing && completionPercent !== undefined && completionPercent < 100 && (
+              <span className="text-ink tabular-nums"> {completionPercent}% complete.</span>
+            )}
           </p>
         </div>
       </div>

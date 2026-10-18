@@ -3,13 +3,15 @@
 import { ProfileInfoField } from "@/modules/player/components/ProfileInfoField";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
-import { Badge } from "@/modules/shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { User } from "@/types";
-import { cn } from "@/utils/cn";
 import { Trophy } from "lucide-react";
+import { SportChips } from "./SportChips";
 import { PlayerProfileEditForm, type PlayerProfileForm } from "./PlayerProfileEditForm";
+
+const years = (n: number) => `${n} year${n === 1 ? "" : "s"}`;
+
+const NOT_PROVIDED = <span className="text-ink-muted text-sm">Not provided</span>;
 
 export function PlayerProfileCard({
   user,
@@ -36,27 +38,26 @@ export function PlayerProfileCard({
   onCancel: () => void;
   onSave: () => void;
 }) {
+  const parentInterests = user.parentProfile?.sportInterests ?? [];
+  const playerSports = user.playerProfile?.sportsFocus ?? [];
+
   return (
-    <Card
-      className={cn(
-        "shop-surface premium-shadow overflow-hidden p-0 transition-shadow",
-        isEditingSports && "ring-power-orange/20 ring-2"
-      )}
-    >
+    <section aria-labelledby="player-profile" className="border-hairline border-t pt-10">
       <ProfileSectionHeader
+        headingId="player-profile"
         icon={Trophy}
-        title={isParent ? "Parent Profile" : "Player Profile"}
+        title={isParent ? "Parent profile" : "Player profile"}
         description={isParent ? "Your background as a sports parent." : "The sports you play."}
         isEditing={isEditingSports}
         onEdit={onEdit}
         onCancel={onCancel}
         onSave={onSave}
         saving={isSavingSports}
-        saveLabel="Save Profile"
+        saveLabel="Save profile"
         completionPercent={calculateProfileCompletion(user).percent}
       />
 
-      <CardContent className="px-6 py-6">
+      <div className="mt-8">
         {isEditingSports ? (
           <PlayerProfileEditForm
             isParent={isParent}
@@ -65,89 +66,58 @@ export function PlayerProfileCard({
             playerProfileForm={playerProfileForm}
             setPlayerProfileForm={setPlayerProfileForm}
           />
+        ) : isParent ? (
+          <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+            <ProfileInfoField label="Background" className="sm:col-span-2">
+              {user.parentProfile?.bio ? (
+                <p className="text-ink-body max-w-prose text-pretty text-base leading-relaxed">
+                  {user.parentProfile.bio}
+                </p>
+              ) : (
+                NOT_PROVIDED
+              )}
+            </ProfileInfoField>
+            <ProfileInfoField label="Years involved in sport">
+              {user.parentProfile?.involvementYears !== undefined ? (
+                <span className="tabular-nums">{years(user.parentProfile.involvementYears)}</span>
+              ) : (
+                NOT_PROVIDED
+              )}
+            </ProfileInfoField>
+            <ProfileInfoField label="Sports followed">
+              {parentInterests.length > 0 ? <SportChips sports={parentInterests} /> : NOT_PROVIDED}
+            </ProfileInfoField>
+          </dl>
         ) : (
-          <div className="space-y-8">
-            {isParent ? (
+          <div className="space-y-6">
+            {playerSports.length > 0 ? (
               <div>
-                <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  About You
-                </h4>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <ProfileInfoField label="Background">
-                    {user.parentProfile?.bio ? (
-                      <p className="text-sm leading-relaxed text-slate-700">
-                        {user.parentProfile.bio}
-                      </p>
-                    ) : (
-                      <span className="text-sm italic text-slate-400">Not provided</span>
-                    )}
-                  </ProfileInfoField>
-                  <ProfileInfoField label="Years Involved in Sport">
-                    {user.parentProfile?.involvementYears !== undefined ? (
-                      `${user.parentProfile.involvementYears} year${user.parentProfile.involvementYears === 1 ? "" : "s"}`
-                    ) : (
-                      <span className="text-sm italic text-slate-400">Not provided</span>
-                    )}
-                  </ProfileInfoField>
-                  <ProfileInfoField label="Sports Followed">
-                    {user.parentProfile?.sportInterests &&
-                    user.parentProfile.sportInterests.length > 0 ? (
-                      <div className="mt-1 flex flex-wrap gap-1.5">
-                        {user.parentProfile.sportInterests.map((sport) => (
-                          <Badge
-                            key={sport}
-                            className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                          >
-                            {sport}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-sm italic text-slate-400">Not provided</span>
-                    )}
-                  </ProfileInfoField>
-                </div>
+                <h3 className="text-ink mb-3 font-medium">My sports</h3>
+                <SportChips sports={playerSports} />
               </div>
             ) : (
-              <div>
-                <h4 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  My Sports
-                </h4>
-                {user.playerProfile?.sportsFocus && user.playerProfile.sportsFocus.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {user.playerProfile.sportsFocus.map((sport: string) => (
-                      <Badge
-                        key={sport}
-                        className="border-orange-200 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700 hover:bg-orange-50"
-                      >
-                        {sport}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="max-w-lg rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center">
-                    <Trophy className="mx-auto mb-2 h-6 w-6 text-slate-400" />
-                    <p className="text-sm font-medium text-slate-700">No sports added yet</p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Add the sports you play to get better recommendations.
-                    </p>
-                    <Button variant="outline" size="sm" className="mt-3" onClick={onEdit}>
-                      Add Sports
-                    </Button>
-                  </div>
-                )}
-                <div className="mt-4">
-                  <ProfileInfoField label="Experience">
-                    {user.playerProfile?.yearsPlaying !== undefined
-                      ? `${user.playerProfile.yearsPlaying} year${user.playerProfile.yearsPlaying === 1 ? "" : "s"}`
-                      : "Not started yet"}
-                  </ProfileInfoField>
-                </div>
+              <div className="border-hairline max-w-lg rounded-xl border border-dashed px-5 py-6">
+                <p className="text-ink font-medium">No sports added yet</p>
+                <p className="text-ink-muted mt-1 text-pretty text-sm">
+                  Add the sports you play to get better recommendations.
+                </p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={onEdit}>
+                  Add sports
+                </Button>
               </div>
             )}
+            <dl className="max-w-xs">
+              <ProfileInfoField label="Experience">
+                {user.playerProfile?.yearsPlaying !== undefined ? (
+                  <span className="tabular-nums">{years(user.playerProfile.yearsPlaying)}</span>
+                ) : (
+                  "Not started yet"
+                )}
+              </ProfileInfoField>
+            </dl>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

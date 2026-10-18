@@ -26,7 +26,6 @@ import {
   FOCUS_LABELS,
   GENDER_LABELS,
   HEIGHT_LABELS,
-  MATCH_RANK_META,
   PRESSURE_LABELS,
   REPETITION_LABELS,
   TEAM_INDIVIDUAL_LABELS,
@@ -39,29 +38,13 @@ import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
 import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import { roadmapHref } from "@/modules/pathway/data/sports";
-import { Avatar, AvatarFallback } from "@/modules/shared/ui/Avatar";
-import { Badge } from "@/modules/shared/ui/Badge";
 import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Input } from "@/modules/shared/ui/Input";
 import { Modal } from "@/modules/shared/ui/Modal";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { User } from "@/types";
-import {
-  ArrowRight,
-  Compass,
-  Edit2,
-  GraduationCap,
-  Info,
-  Mail,
-  Phone,
-  ShieldAlert,
-  Trash2,
-  Trophy,
-  UserRound,
-} from "lucide-react";
+import { ArrowRight, Compass, Edit2, GraduationCap, Info, Mail, Phone, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -87,31 +70,23 @@ const getInitials = (name: string) =>
 
 const formatGender = (gender?: string) => wizardChip(gender, GENDER_LABELS);
 
-const CHIP_GROUPS = [
-  { border: "border-blue-100", bg: "bg-blue-50", text: "text-blue-700" },
-  { border: "border-indigo-100", bg: "bg-indigo-50", text: "text-indigo-700" },
-  { border: "border-teal-100", bg: "bg-teal-50", text: "text-teal-700" },
-  { border: "border-amber-100", bg: "bg-amber-50", text: "text-amber-700" },
-];
-
-function ChipRow({ label, chips, group }: { label: string; chips: string[]; group: number }) {
+function ChipRow({ label, chips }: { label: string; chips: string[] }) {
   if (chips.length === 0) return null;
-  const c = CHIP_GROUPS[group];
   return (
     <div>
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-        {label}
-      </p>
-      <div className="flex flex-wrap gap-1.5">
-        {chips.map((chip) => (
-          <span
-            key={chip}
-            className={`rounded-full border ${c.border} ${c.bg} px-2.5 py-1 text-[11px] font-medium ${c.text}`}
-          >
-            {chip}
-          </span>
-        ))}
-      </div>
+      <dt className="text-ink-muted mb-2 text-sm">{label}</dt>
+      <dd>
+        <ul className="flex flex-wrap gap-2">
+          {chips.map((chip) => (
+            <li
+              key={chip}
+              className="border-hairline text-ink rounded-md border bg-white px-3 py-1 text-sm"
+            >
+              {chip}
+            </li>
+          ))}
+        </ul>
+      </dd>
     </div>
   );
 }
@@ -120,7 +95,7 @@ function DependentDetailSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-4 w-48" />
-      <Skeleton className="h-36 w-full rounded-2xl" />
+      <Skeleton className="h-14 w-72 max-w-full" />
       <Skeleton className="h-48 w-full rounded-xl" />
       <Skeleton className="h-64 w-full rounded-xl" />
     </div>
@@ -168,7 +143,7 @@ export default function DependentDetailPage() {
         <Breadcrumbs
           items={[
             { label: "Dashboard", href: "/dashboard" },
-            { label: "My Profile", href: "/dashboard/my-profile" },
+            { label: "My profile", href: "/dashboard/my-profile" },
             { label: "…" },
           ]}
         />
@@ -185,17 +160,23 @@ export default function DependentDetailPage() {
         <Breadcrumbs
           items={[
             { label: "Dashboard", href: "/dashboard" },
-            { label: "My Profile", href: "/dashboard/my-profile" },
+            { label: "My profile", href: "/dashboard/my-profile" },
             { label: "Not found" },
           ]}
         />
-        <EmptyState
-          icon={UserRound}
-          title="Dependent not found"
-          description="This profile doesn't exist, or isn't linked to your account."
-          actionLabel="Back to My Profile"
-          onAction={() => router.push("/dashboard/my-profile")}
-        />
+        <div className="py-16">
+          <p className="font-editorial text-ink text-3xl font-light">Dependent not found</p>
+          <p className="text-ink-body mt-2 max-w-md text-pretty">
+            This profile doesn&apos;t exist, or isn&apos;t linked to your account.
+          </p>
+          <Button
+            variant="outline"
+            className="mt-6"
+            onClick={() => router.push("/dashboard/my-profile")}
+          >
+            Back to my profile
+          </Button>
+        </div>
       </div>
     );
   }
@@ -315,219 +296,179 @@ export default function DependentDetailPage() {
     }
   };
 
+  const assessedOn = dependent.sport?.wizardCompletedAt
+    ? new Date(dependent.sport.wizardCompletedAt).toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+  const discoverHref = `/assessment/discover?dependentId=${encodeURIComponent(dependent._id ?? "")}`;
+  const overviewMeta = [
+    dependent.relation ? formatDependentRelation(dependent.relation) : null,
+    genderLabel,
+    age !== null ? `${age} yrs` : null,
+    dependent.dob
+      ? `Born ${new Date(dependent.dob).toLocaleDateString(undefined, {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })}`
+      : null,
+  ].filter(Boolean);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <Breadcrumbs
         items={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "My Profile", href: "/dashboard/my-profile" },
+          { label: "My profile", href: "/dashboard/my-profile" },
           { label: dependent.name },
         ]}
       />
 
       <PlayerPageHeader
         title={dependent.name}
-        subtitle={[
-          dependent.relation ? formatDependentRelation(dependent.relation) : null,
-          age !== null ? `${age} yrs` : null,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
         action={
           <Button
             onClick={() => setShowEditModal(true)}
             variant="outline"
             icon={<Edit2 size={16} />}
           >
-            Edit Profile
+            Edit profile
           </Button>
         }
       />
 
       {/* ── Overview ── */}
-      <Card className="shop-surface premium-shadow p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+      <section aria-label="Overview" className="border-hairline border-t pt-10">
+        <div className="flex items-center gap-5">
           <ProfileCompletionRing
             percent={completion.percent}
-            size={64}
+            size={72}
             strokeWidth={3}
             title={`${dependent.name}'s profile is ${completion.percent}% complete`}
           >
-            <Avatar className="h-16 w-16 border border-white shadow-sm">
-              <AvatarFallback className="bg-power-orange/10 text-power-orange text-lg font-bold">
-                {getInitials(dependent.name)}
-              </AvatarFallback>
-            </Avatar>
-          </ProfileCompletionRing>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap gap-2">
-              {dependent.relation && (
-                <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
-                  {formatDependentRelation(dependent.relation)}
-                </Badge>
-              )}
-              {genderLabel && (
-                <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
-                  {genderLabel}
-                </Badge>
-              )}
-              {age !== null && (
-                <Badge className="border-slate-200 bg-white text-slate-700 hover:bg-white">
-                  {age} yrs
-                </Badge>
-              )}
-              {completion.percent < 100 && (
-                <Badge className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50">
-                  {completion.percent}% complete
-                </Badge>
-              )}
+            <div className="bg-paper-deep text-ink flex h-16 w-16 items-center justify-center rounded-full text-lg font-semibold">
+              {getInitials(dependent.name)}
             </div>
-
-            {dependent.dob && (
-              <p className="mt-2 text-sm text-slate-500">
-                Born{" "}
-                {new Date(dependent.dob).toLocaleDateString(undefined, {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
+          </ProfileCompletionRing>
+          <div className="min-w-0">
+            {overviewMeta.length > 0 && (
+              <p className="text-ink-body text-pretty">{overviewMeta.join(" · ")}</p>
+            )}
+            {completion.percent < 100 && (
+              <p className="text-ink-muted mt-1 text-sm tabular-nums">
+                Profile {completion.percent}% complete
               </p>
             )}
           </div>
         </div>
 
-        {/* Sport / roadmap CTA */}
         {effectiveSport ? (
-          <div className="mt-5 flex flex-col gap-3 rounded-xl border border-orange-100 bg-orange-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="border-hairline mt-8 flex flex-col gap-4 border-t pt-8 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-600">
-                Playing
-              </p>
-              <p className="text-lg font-bold text-slate-900">{effectiveSport}</p>
+              <p className="text-ink-muted text-sm">Playing</p>
+              <p className="font-editorial text-ink mt-1 text-3xl font-light">{effectiveSport}</p>
             </div>
             <Link href={roadmapHref(effectiveSport)}>
               <Button variant="outline" icon={<ArrowRight size={16} />}>
-                View Roadmap
+                View roadmap
               </Button>
             </Link>
           </div>
         ) : (
-          <div className="mt-5 flex flex-col items-start gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="border-hairline mt-8 flex flex-col items-start gap-4 rounded-xl border border-dashed px-5 py-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-slate-800">No sport chosen yet</p>
-              <p className="text-sm text-slate-500">
+              <p className="text-ink font-medium">No sport chosen yet</p>
+              <p className="text-ink-muted mt-1 text-pretty text-sm">
                 Take the assessment to find {dependent.name}&apos;s best-fit sport.
               </p>
             </div>
-            <Link
-              href={`/assessment/discover?dependentId=${encodeURIComponent(dependent._id ?? "")}`}
-            >
+            <Link href={discoverHref}>
               <Button size="sm" icon={<Compass size={16} />}>
-                Find a Sport
+                Find a sport
               </Button>
             </Link>
           </div>
         )}
-      </Card>
+      </section>
 
       {/* ── Assessment results ── */}
       {(dependent.sport?.sportMatches?.length ?? 0) > 0 && (
-        <Card className="shop-surface premium-shadow overflow-hidden p-0">
-          <ProfileSectionHeader
-            icon={Trophy}
-            title="Assessment Results"
-            description={
-              dependent.sport?.wizardCompletedAt
-                ? `Assessed on ${new Date(dependent.sport.wizardCompletedAt).toLocaleDateString(
-                    undefined,
-                    { day: "numeric", month: "short", year: "numeric" }
-                  )}`
-                : "Sport fit results from the assessment."
-            }
-            action={
-              <Link
-                href={`/assessment/discover?dependentId=${encodeURIComponent(dependent._id ?? "")}`}
+        <section aria-labelledby="assessment-results" className="border-hairline border-t pt-10">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2
+                id="assessment-results"
+                className="font-editorial text-ink text-2xl font-light tracking-tight sm:text-3xl"
               >
-                <Button variant="outline" size="sm">
-                  Retake Assessment
-                </Button>
-              </Link>
-            }
-          />
-          <CardContent className="space-y-1.5 p-6">
-            {dependent.sport!.sportMatches!.map((m, i) => {
-              const meta = MATCH_RANK_META[i] ?? MATCH_RANK_META[2];
-              const RankIcon = meta.icon;
-              return (
-                <div
-                  key={m.sport}
-                  className={`flex items-center justify-between rounded-lg border ${meta.ring} bg-white px-3 py-2`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${meta.badge}`}
-                    >
-                      <RankIcon className="h-3 w-3" />
-                    </span>
-                    <span className="text-sm font-semibold text-slate-800">{m.sport}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-500">{m.fitLabel}</span>
-                    <span className="text-[11px] tabular-nums text-slate-300">{m.score}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+                Assessment results
+              </h2>
+              <p className="text-ink-muted mt-1 text-sm">
+                {assessedOn
+                  ? `Assessed on ${assessedOn}`
+                  : "Sport fit results from the assessment."}
+              </p>
+            </div>
+            <Link href={discoverHref}>
+              <Button variant="outline" size="sm">
+                Retake assessment
+              </Button>
+            </Link>
+          </div>
+          <ol className="divide-hairline border-hairline mt-8 divide-y border-y">
+            {dependent.sport!.sportMatches!.map((m, i) => (
+              <li key={m.sport} className="flex items-center gap-4 py-4">
+                <span className="text-ink-muted w-5 text-sm tabular-nums">{i + 1}</span>
+                <span className="text-ink flex-1 font-medium">{m.sport}</span>
+                <span className="text-ink-body text-sm">{m.fitLabel}</span>
+                <span className="text-ink-muted w-8 text-right text-sm tabular-nums">
+                  {m.score}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
       )}
 
       {/* ── Profile details ── */}
-      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+      <section aria-labelledby="profile-details" className="border-hairline border-t pt-10">
         <ProfileSectionHeader
+          headingId="profile-details"
           icon={Info}
-          title="Profile Details"
-          description="Physical, personality, and practical traits from the assessment."
+          title="Profile details"
+          description="Physical, personality and practical traits from the assessment."
           completionPercent={completion.percent}
           onEdit={() => setShowEditModal(true)}
         />
-        <CardContent className="p-6">
+        <div className="mt-8">
           {hasTraitChips || (dependent.medicalConditions?.length ?? 0) > 0 ? (
-            <div className="space-y-4">
-              <ChipRow label="Physical profile" chips={physicalChips} group={0} />
-              <ChipRow label="Personality & play style" chips={personalityChips} group={1} />
-              <ChipRow label="Comfort & environment" chips={comfortChips} group={2} />
-              <ChipRow label="Practical" chips={practicalChips} group={3} />
-              {(dependent.medicalConditions?.length ?? 0) > 0 && (
-                <div>
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    Medical conditions
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {dependent.medicalConditions!.map((cond) => (
-                      <Badge
-                        key={cond}
-                        className="border-amber-200 bg-amber-50 text-[11px] text-amber-700 hover:bg-amber-50"
-                      >
-                        {cond}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <dl className="space-y-6">
+              <ChipRow label="Physical profile" chips={physicalChips} />
+              <ChipRow label="Personality and play style" chips={personalityChips} />
+              <ChipRow label="Comfort and environment" chips={comfortChips} />
+              <ChipRow label="Practical" chips={practicalChips} />
+              <ChipRow label="Medical conditions" chips={dependent.medicalConditions ?? []} />
+            </dl>
           ) : (
-            <EmptyState
-              icon={Info}
-              title="No profile details yet"
-              description="Fill in physical, personality, and practical details to get a fuller picture."
-              actionLabel="Edit Profile"
-              onAction={() => setShowEditModal(true)}
-            />
+            <div className="border-hairline max-w-lg rounded-xl border border-dashed px-5 py-6">
+              <p className="text-ink font-medium">No profile details yet</p>
+              <p className="text-ink-muted mt-1 text-pretty text-sm">
+                Fill in physical, personality and practical details to get a fuller picture.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => setShowEditModal(true)}
+              >
+                Edit profile
+              </Button>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* ── Federation ranking ── Renders nothing unless this child plays a sport
           whose ranking list we mirror, or already has a link. */}
@@ -544,56 +485,53 @@ export default function DependentDetailPage() {
 
       {/* ── Account actions ── */}
       {isParent && (
-        <Card className="shop-surface premium-shadow p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="bg-power-orange/10 text-power-orange flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
-                <GraduationCap className="h-5 w-5" />
-              </div>
+        <section aria-labelledby="account-actions" className="border-hairline border-t pt-10">
+          <h2
+            id="account-actions"
+            className="font-editorial text-ink text-2xl font-light tracking-tight sm:text-3xl"
+          >
+            Account
+          </h2>
+          <ul className="divide-hairline border-hairline mt-8 divide-y border-y">
+            <li className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Graduate to independent account
-                </h3>
-                <p className="mt-0.5 text-sm text-slate-500">
+                <h3 className="text-ink font-medium">Graduate to independent account</h3>
+                <p className="text-ink-muted mt-1 max-w-xl text-pretty text-sm">
                   {isEligibleToGraduate
                     ? `${dependent.name} can sign in and book independently.`
                     : `Eligible once ${dependent.name} turns 18 (currently ${age ?? "?"} yrs).`}
                 </p>
               </div>
-            </div>
-            <Button
-              onClick={() => setShowGraduationModal(true)}
-              disabled={!isEligibleToGraduate}
-              variant={isEligibleToGraduate ? "primary" : "secondary"}
-              icon={<GraduationCap size={16} />}
-              className="w-full sm:w-auto"
-            >
-              Graduate
-            </Button>
-          </div>
-
-          <div className="mt-5 flex items-start gap-3 border-t border-slate-200/70 pt-5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
-              <ShieldAlert className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-slate-900">Delete this profile</h3>
-              <p className="mt-0.5 text-sm text-slate-500">
-                Permanently removes {dependent.name}&apos;s profile, assessment results, and booking
-                history. This cannot be undone.
-              </p>
-            </div>
-            <Button
-              onClick={() => setShowDeleteModal(true)}
-              variant="ghost"
-              size="sm"
-              className="border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-              icon={<Trash2 size={14} />}
-            >
-              Delete
-            </Button>
-          </div>
-        </Card>
+              <Button
+                onClick={() => setShowGraduationModal(true)}
+                disabled={!isEligibleToGraduate}
+                variant={isEligibleToGraduate ? "primary" : "secondary"}
+                icon={<GraduationCap size={16} />}
+                className="w-full sm:w-auto"
+              >
+                Graduate
+              </Button>
+            </li>
+            <li className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-ink font-medium">Delete this profile</h3>
+                <p className="text-ink-muted mt-1 max-w-xl text-pretty text-sm">
+                  Permanently removes {dependent.name}&apos;s profile, assessment results, and
+                  booking history. This cannot be undone.
+                </p>
+              </div>
+              <Button
+                onClick={() => setShowDeleteModal(true)}
+                variant="ghost"
+                size="sm"
+                className="text-red-700 hover:bg-red-50 hover:text-red-800"
+                icon={<Trash2 size={14} />}
+              >
+                Delete
+              </Button>
+            </li>
+          </ul>
+        </section>
       )}
 
       <DependentManagementModal
@@ -628,17 +566,17 @@ export default function DependentDetailPage() {
           </div>
         }
       >
-        <p className="text-sm text-slate-600">
+        <p className="text-ink-body text-sm">
           Are you sure you want to delete
-          <span className="font-semibold text-slate-900"> {dependent.name}</span>? This action
-          cannot be undone.
+          <span className="text-ink font-semibold"> {dependent.name}</span>? This action cannot be
+          undone.
         </p>
       </Modal>
 
       <Modal
         isOpen={showGraduationModal}
         onClose={closeGraduationModal}
-        title="Graduate to Independent Account"
+        title="Graduate to independent account"
         footer={
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button

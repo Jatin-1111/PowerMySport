@@ -1,5 +1,4 @@
 import { cn } from "@/utils/cn";
-import { PencilLine } from "lucide-react";
 import { ReactNode } from "react";
 
 type ProfileEditPanelProps = {
@@ -9,29 +8,24 @@ type ProfileEditPanelProps = {
   className?: string;
 };
 
+/** The surface an edit form sits on: a plain white panel with a short lead-in. */
 export function ProfileEditPanel({
-  title = "Editing",
+  title,
   description,
   children,
   className,
 }: ProfileEditPanelProps) {
   return (
-    <div
-      className={cn(
-        "border-power-orange/20 ring-power-orange/10 rounded-xl border bg-orange-50/80 p-4 ring-1 sm:p-5",
-        className
+    <div className={cn("border-hairline rounded-xl border bg-white p-4 sm:p-6", className)}>
+      {(title || description) && (
+        <div className="mb-5">
+          {title && <p className="text-ink font-medium">{title}</p>}
+          {description && (
+            <p className="text-ink-muted mt-0.5 text-pretty text-sm">{description}</p>
+          )}
+        </div>
       )}
-    >
-      <div className="mb-4 flex items-start gap-2">
-        <div className="bg-power-orange/10 text-power-orange flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-          <PencilLine className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-slate-900">{title}</p>
-          {description && <p className="mt-0.5 text-xs text-slate-600">{description}</p>}
-        </div>
-      </div>
-      {children}
+      <div className="space-y-5">{children}</div>
     </div>
   );
 }

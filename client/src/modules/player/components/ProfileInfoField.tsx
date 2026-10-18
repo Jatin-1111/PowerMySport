@@ -7,13 +7,12 @@ type ProfileInfoFieldProps = {
   className?: string;
 };
 
+/** One label and value pair, read as a definition list entry. */
 export function ProfileInfoField({ label, children, className }: ProfileInfoFieldProps) {
   return (
-    <div
-      className={cn("rounded-xl border border-slate-200/70 bg-slate-50/70 px-4 py-3", className)}
-    >
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <div className="mt-1 text-sm font-medium text-slate-900 sm:text-base">{children}</div>
+    <div className={cn("border-hairline min-w-0 border-t pt-3", className)}>
+      <dt className="text-ink-muted text-sm">{label}</dt>
+      <dd className="text-ink mt-1 break-words text-base">{children}</dd>
     </div>
   );
 }

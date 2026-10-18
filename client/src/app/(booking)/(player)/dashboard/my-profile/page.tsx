@@ -4,13 +4,10 @@ import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
 import QuickAddDependentModal from "@/modules/player/components/QuickAddDependentModal";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
-import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Modal } from "@/modules/shared/ui/Modal";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
-import { UserRound } from "lucide-react";
 import { Suspense } from "react";
 import { AccountDetailsCard } from "./components/AccountDetailsCard";
 import { PlayerProfileCard } from "./components/PlayerProfileCard";
@@ -21,7 +18,7 @@ function ProfilePageSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-4 w-48" />
-      <Skeleton className="h-36 w-full rounded-2xl" />
+      <Skeleton className="h-14 w-72 max-w-full" />
       <Skeleton className="h-64 w-full rounded-xl" />
       <Skeleton className="h-48 w-full rounded-xl" />
       <Skeleton className="h-56 w-full rounded-xl" />
@@ -72,7 +69,7 @@ function ProfilePageContent() {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Profile" }]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My profile" }]}
         />
         <ProfilePageSkeleton />
       </div>
@@ -83,50 +80,32 @@ function ProfilePageContent() {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Profile" }]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My profile" }]}
         />
-        <Card className="shop-surface premium-shadow">
-          <EmptyState
-            icon={UserRound}
-            title="Unable to load profile"
-            description="We couldn't fetch your profile details. Please refresh the page or try again later."
-          />
-        </Card>
+        <div className="py-16">
+          <p className="font-editorial text-ink text-3xl font-light">
+            We couldn&apos;t load your profile
+          </p>
+          <p className="text-ink-body mt-2 max-w-md text-pretty">
+            Refresh the page to try again. If it keeps failing, contact support.
+          </p>
+        </div>
       </div>
     );
   }
 
   const isParent = user.role === "Parent";
-  const sportsCount = user.playerProfile?.sportsFocus?.length ?? 0;
-  const dependentsCount = user.dependents?.length ?? 0;
   const userAge = user.dob ? getDependentAge(user.dob) : null;
 
   return (
-    <div className="space-y-6">
-      <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Profile" }]} />
+    <div className="space-y-10">
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My profile" }]} />
 
       <PlayerPageHeader
         badge={isParent ? "Parent" : "Player"}
-        title="My Profile"
-        subtitle="Manage your account details, sports preferences, and family dependents in one place."
+        title="My profile"
+        subtitle="Your account details, sports and family dependents."
       />
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sports</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{sportsCount}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Dependents</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{dependentsCount}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Account</p>
-          <p className="mt-1 text-lg font-bold capitalize text-slate-900">
-            {user.role.toLowerCase().replace("_", " ")}
-          </p>
-        </div>
-      </div>
 
       <AccountDetailsCard
         user={user}

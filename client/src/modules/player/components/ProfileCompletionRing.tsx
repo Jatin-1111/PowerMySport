@@ -16,11 +16,9 @@ interface ProfileCompletionRingProps {
   title?: string;
 }
 
-function ringColor(percent: number): string {
-  if (percent >= 100) return "#22C55E"; // emerald-500 — complete
-  if (percent >= 50) return "#E97316"; // power-orange — good progress
-  return "#F59E0B"; // amber-500 — needs attention
-}
+// One ink arc on a hairline track: progress, not a traffic light.
+const RING_COLOR = "#1c1b1a";
+const TRACK_COLOR = "#e1dcd3";
 
 export function ProfileCompletionRing({
   percent,
@@ -35,7 +33,7 @@ export function ProfileCompletionRing({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (clamped / 100) * circumference;
-  const color = ringColor(clamped);
+  const color = RING_COLOR;
 
   return (
     <div
@@ -49,7 +47,7 @@ export function ProfileCompletionRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#E2E8F0"
+          stroke={TRACK_COLOR}
           strokeWidth={strokeWidth}
         />
         <circle
