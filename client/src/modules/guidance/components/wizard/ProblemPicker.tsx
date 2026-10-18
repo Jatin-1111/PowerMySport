@@ -4,86 +4,68 @@ import {
   WIZARD_STEPS,
   estimateMinutes,
 } from "@/modules/guidance/config/wizard/wizardConfig";
-import { motion } from "framer-motion";
-import { BrainCircuit } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
+/**
+ * The first screen of the guidance flow: pick the challenge. Problems are a
+ * hairline-ruled list in one ink-on-paper style; the per-problem colours the
+ * config still carries are deliberately not used here.
+ */
 export function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 py-16">
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="bg-paper absolute inset-0" />
-        <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-indigo-200/15 blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-3xl">
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="mb-10 text-center"
-        >
-          <div className="text-power-orange mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest">
-            <BrainCircuit className="h-3 w-3" />
-            Expert Help
-          </div>
-          <h1 className="font-editorial mb-3 text-3xl font-light text-slate-900 sm:text-4xl">
-            What do you need help with?
+    <div className="bg-paper min-h-screen px-4 pb-24 pt-16 sm:pt-24">
+      <div className="mx-auto w-full max-w-4xl">
+        <header className="max-w-2xl">
+          <p className="text-ink-muted text-sm">Expert help</p>
+          <h1 className="font-editorial text-ink mt-3 text-balance text-4xl font-light leading-tight tracking-tight sm:text-6xl">
+            What do you need <span className="italic">help with?</span>
           </h1>
-          <p className="mx-auto max-w-md text-base leading-relaxed text-slate-500">
-            Pick the challenge you&apos;re facing, we&apos;ll ask a few targeted questions and
+          <p className="text-ink-body mt-5 max-w-xl text-pretty text-lg leading-relaxed">
+            Pick the challenge you&apos;re facing. We&apos;ll ask a few targeted questions and
             return an actionable plan.
           </p>
-        </motion.div>
+        </header>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {PROBLEM_TYPES.map((pt, i) => {
-            const Icon = pt.Icon;
-            return (
-              <motion.button
-                key={pt.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.08 * i + 0.1, duration: 0.35, ease: "easeOut" }}
+        <ul className="divide-hairline border-hairline mt-14 grid divide-y border-y sm:grid-cols-2 sm:divide-y-0">
+          {PROBLEM_TYPES.map((pt, i) => (
+            <li
+              key={pt.id}
+              className={
+                "border-hairline " +
+                (i >= 2 ? "sm:border-t" : "") +
+                (i % 2 === 1 ? "sm:border-l" : "")
+              }
+            >
+              <button
+                type="button"
                 onClick={() => onSelect(pt.id)}
-                className={`group rounded-3xl border-2 border-slate-200 bg-white p-6 text-left shadow-sm ${pt.hoverBorder} transition-all duration-200 hover:shadow-md active:scale-[0.99]`}
+                className="hover:bg-paper-deep/60 focus-visible:ring-ink group flex h-full w-full flex-col px-1 py-7 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 sm:px-7"
               >
-                <div
-                  className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${pt.color} transition-transform duration-300 group-hover:scale-110`}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-                <p
-                  className={`text-[11px] font-bold uppercase tracking-wider ${pt.accentText} mb-0.5`}
-                >
-                  {pt.tagline}
+                <p className="text-ink-muted text-sm">{pt.tagline}</p>
+                <h2 className="font-editorial text-ink mt-1.5 text-2xl font-light tracking-tight">
+                  {pt.label}
+                </h2>
+                <p className="text-ink-body mt-2 flex-1 text-pretty text-sm leading-relaxed">
+                  {pt.description}
                 </p>
-                <h2 className="font-title mb-1.5 text-lg font-bold text-slate-900">{pt.label}</h2>
-                <p className="mb-4 text-sm leading-relaxed text-slate-500">{pt.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-400">
+                <div className="mt-5 flex items-center justify-between gap-4">
+                  <span className="text-ink-muted text-sm tabular-nums">
                     {estimateMinutes(WIZARD_STEPS[pt.id])}
                   </span>
-                  <span
-                    className={`text-sm font-bold ${pt.accentText} inline-flex transition-transform duration-200 group-hover:translate-x-1`}
-                  >
-                    Get started →
+                  <span className="text-ink inline-flex items-center gap-1.5 text-sm font-medium group-hover:underline group-hover:underline-offset-4">
+                    Get started
+                    <ArrowRight
+                      className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    />
                   </span>
                 </div>
-              </motion.button>
-            );
-          })}
-        </div>
+              </button>
+            </li>
+          ))}
+        </ul>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.4 }}
-          className="mt-6 text-center text-xs text-slate-400"
-        >
-          Free to use · AI-powered · No commitment
-        </motion.p>
+        <p className="text-ink-muted mt-6 text-sm">Free to use. AI-powered. No commitment.</p>
       </div>
     </div>
   );

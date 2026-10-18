@@ -234,7 +234,6 @@ export function ProblemWizardInner({
       <div className="relative flex min-h-screen items-center justify-center px-4">
         <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="bg-paper absolute inset-0" />
-          <div className="bg-power-orange/8 absolute -left-32 top-10 h-96 w-96 rounded-full blur-3xl" />
         </div>
         <div className="w-full max-w-sm">
           <button
@@ -289,8 +288,6 @@ export function ProblemWizardInner({
     <div className="relative min-h-screen">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="bg-paper absolute inset-0" />
-        <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
       </div>
 
       {/* Transition card */}

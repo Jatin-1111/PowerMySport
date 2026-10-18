@@ -490,8 +490,6 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="bg-paper absolute inset-0" />
-        <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
       </div>
 
       {/* Transition card */}
@@ -562,7 +560,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
               initial={{ opacity: 0, x: dir * 28 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.2)] ring-1 ring-slate-900/[0.03] sm:p-7"
+              className="border-hairline rounded-2xl border bg-white p-6 sm:p-8"
             >
               {matchedDep && (
                 <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
@@ -675,7 +673,7 @@ function NavigateResultsScreen({
     },
     {
       icon: Users,
-      title: "Ask in the Parent Community",
+      title: "Ask in the parent community",
       description: "Post your question and hear from parents who've been through this.",
       onClick: () => router.push(getCommunityAppUrl({ path: "questions" })),
     },

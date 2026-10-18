@@ -157,8 +157,8 @@ export default async function FederationsIndexPage() {
       <CTA
         title="Not sure what any of this means for your child?"
         description="The sport pathways explain where your child is today, what comes next, and which of these rules actually apply at their stage."
-        primaryCTA={{ label: "Explore Sport Pathways", href: "/roadmap" }}
-        secondaryCTA={{ label: "Join Parent Community", href: communityUrl }}
+        primaryCTA={{ label: "Explore sport pathways", href: "/roadmap" }}
+        secondaryCTA={{ label: "Join parent community", href: communityUrl }}
       />
     </main>
   );

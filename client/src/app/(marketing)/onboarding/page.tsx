@@ -50,12 +50,6 @@ export default function PublicOnboardingPage() {
     <div className="relative min-h-screen">
       <div className="bg-paper pointer-events-none fixed inset-0 -z-10" />
 
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="bg-power-orange/20 absolute -left-20 -top-16 h-72 w-72 rounded-full blur-3xl" />
-        <div className="absolute -right-20 top-1/3 h-80 w-80 rounded-full bg-emerald-200/30 blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 h-64 w-64 rounded-full bg-slate-200/40 blur-3xl" />
-      </div>
-
       <div className="relative z-10 pb-8">
         <OnboardingContainer />
       </div>

@@ -349,7 +349,7 @@ export default async function PathwaysIndexPage() {
       <CTA
         title="You are not the first parent doing this"
         description="Thousands of Indian sports parents comparing academies, coaches, costs and competitions. Ask the question you have not found an answer to yet."
-        primaryCTA={{ label: "Join Parent Community", href: communityUrl }}
+        primaryCTA={{ label: "Join parent community", href: communityUrl }}
         secondaryCTA={{ label: "Get Guidance", href: "/guidance" }}
       />
     </main>

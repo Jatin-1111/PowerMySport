@@ -1,4 +1,4 @@
-import { Compass, Home } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
@@ -7,38 +7,32 @@ export const metadata = {
 
 export default function NotFound() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-white via-orange-50/40 to-white px-6 py-20 text-center">
-      {/* soft brand glows */}
-      <div className="bg-power-orange/10 pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl" />
-      <div className="bg-turf-green/10 pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full blur-3xl" />
+    <main className="bg-paper flex min-h-screen flex-col justify-center px-6 py-20">
+      <div className="mx-auto w-full max-w-3xl">
+        <p className="text-ink-muted text-sm tabular-nums">Error 404</p>
+        <h1 className="font-editorial text-ink mt-3 text-balance text-5xl font-light leading-tight tracking-tight sm:text-7xl">
+          This page has <span className="italic">left the field</span>
+        </h1>
+        <p className="text-ink-body mt-6 max-w-xl text-pretty text-lg leading-relaxed">
+          The page you&apos;re looking for doesn&apos;t exist or may have been moved. Head back to
+          the home page, or look for a venue, coach or academy.
+        </p>
 
-      <p className="text-power-orange relative mb-2 text-sm font-semibold uppercase tracking-[0.2em]">
-        Error 404
-      </p>
-      <h1 className="font-editorial text-ink relative text-7xl font-light leading-none sm:text-8xl">
-        404
-      </h1>
-      <h2 className="font-title relative mt-4 text-2xl font-bold text-slate-900 sm:text-3xl">
-        This page has left the field
-      </h2>
-      <p className="relative mt-3 max-w-md text-base text-slate-600">
-        The page you&apos;re looking for doesn&apos;t exist or may have been moved. Let&apos;s get
-        you back in the game.
-      </p>
-
-      <div className="relative mt-8 flex flex-col gap-3 sm:flex-row">
-        <Link
-          href="/"
-          className="bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-lg px-8 py-3 text-base font-semibold text-white transition-colors hover:bg-orange-600"
-        >
-          <Home className="h-5 w-5" /> Back to home
-        </Link>
-        <Link
-          href="/booking"
-          className="border-power-orange text-power-orange hover:bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-lg border-2 px-8 py-3 text-base font-semibold transition-colors hover:text-white"
-        >
-          <Compass className="h-5 w-5" /> Explore venues &amp; coaches
-        </Link>
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+          <Link
+            href="/"
+            className="bg-power-orange-solid focus-visible:ring-ink inline-flex items-center justify-center rounded-md px-6 py-3 text-base font-medium text-white transition-colors hover:bg-orange-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          >
+            Back to home
+          </Link>
+          <Link
+            href="/booking"
+            className="text-ink focus-visible:ring-ink inline-flex items-center gap-1.5 rounded-sm font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
+          >
+            Explore venues and coaches
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
     </main>
   );

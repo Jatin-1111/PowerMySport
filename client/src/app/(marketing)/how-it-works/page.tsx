@@ -74,9 +74,7 @@ function AssetFrame({
         {/* Step chip */}
         {step !== undefined && (
           <div className="absolute left-5 top-5 rounded-sm bg-slate-950/70 px-3.5 py-1.5">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/90">
-              Step 0{step}
-            </p>
+            <p className="text-sm font-medium tabular-nums text-white/90">Step 0{step}</p>
           </div>
         )}
 
@@ -184,7 +182,7 @@ export default function HowItWorksPage() {
     {
       step: 1,
       stepColor: "text-power-orange-solid",
-      title: "Roadmap: See the Whole Road",
+      title: "Roadmap: see the whole road",
       description:
         "Every sport we cover has a pathway guide, stage by stage and by age: what matters now, what parents usually ask, the decisions coming up, and what to actually do next.",
       checkItems: [
@@ -213,7 +211,7 @@ export default function HowItWorksPage() {
     {
       step: 2,
       stepColor: "text-power-orange-solid",
-      title: "Community: Ask Parents Who Have Done It",
+      title: "Community: ask parents who have done it",
       description:
         "Some questions only another parent can answer. Ask yours in the community, read the experiences families have written, and message parents directly.",
       checkItems: [
@@ -242,7 +240,7 @@ export default function HowItWorksPage() {
     {
       step: 3,
       stepColor: "text-power-orange-solid",
-      title: "Execution Support: Help Doing It",
+      title: "Execution support: help doing it",
       description:
         "A plan only helps once it is carried out. Connect with an expert who has taken a child down this road, find the tournaments on your child's calendar, and understand where they stand.",
       checkItems: [
@@ -335,7 +333,7 @@ export default function HowItWorksPage() {
           {/* Section header */}
           <div className="reveal-on-scroll mb-12 text-center lg:mb-28">
             <div className="mb-5 flex justify-center">
-              <SectionLabel label="What We Do Today" color="orange" />
+              <SectionLabel label="What we do today" color="orange" />
             </div>
             <h2 className="font-editorial mx-auto max-w-2xl text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
               Roadmap, Community and{" "}
@@ -364,10 +362,10 @@ export default function HowItWorksPage() {
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-14 text-center">
             <div className="mb-5 flex justify-center">
-              <SectionLabel label="What You Walk Away With" color="orange" />
+              <SectionLabel label="What you walk away with" color="orange" />
             </div>
             <h2 className="font-editorial mx-auto max-w-xl text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
-              Not Vague Advice. A Real Plan.
+              Not vague advice. A real plan.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
               Here&apos;s what you&apos;ll actually have in hand, for your child&apos;s age and
@@ -388,10 +386,10 @@ export default function HowItWorksPage() {
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-14 text-center">
             <div className="mb-5 flex justify-center">
-              <SectionLabel label="The Difference" color="orange" />
+              <SectionLabel label="The difference" color="orange" />
             </div>
             <h2 className="font-editorial mx-auto max-w-xl text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
-              Guesswork Out. Clarity In.
+              Guesswork out. Clarity in.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
               Most parents piece it together from contradicting advice. Here&apos;s what changes
@@ -402,10 +400,10 @@ export default function HowItWorksPage() {
           <div className="reveal-on-scroll mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Old way */}
             <div className="relative overflow-hidden rounded-xl border border-slate-200/60 bg-slate-50/80 p-7 sm:p-8">
-              <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-                Without a plan
-              </p>
-              <h3 className="mb-6 text-xl font-bold text-slate-700">Figuring it out alone</h3>
+              <p className="text-ink-muted mb-1 text-sm">Without a plan</p>
+              <h3 className="font-editorial text-ink-body mb-6 text-2xl font-light">
+                Figuring it out alone
+              </h3>
               <ul className="space-y-4">
                 {[
                   "Advice from WhatsApp groups that contradicts itself",
@@ -424,11 +422,9 @@ export default function HowItWorksPage() {
             </div>
 
             {/* With PowerMySport */}
-            <div className="relative overflow-hidden rounded-xl border border-orange-200/70 bg-white p-7 shadow-xl shadow-orange-100/60 sm:p-8">
-              <p className="text-power-orange-solid mb-1 text-xs font-bold uppercase tracking-[0.16em]">
-                With PowerMySport
-              </p>
-              <h3 className="mb-6 text-xl font-bold text-slate-900">
+            <div className="border-ink relative overflow-hidden rounded-xl border bg-white p-7 sm:p-8">
+              <p className="text-ink-muted mb-1 text-sm">With PowerMySport</p>
+              <h3 className="font-editorial text-ink mb-6 text-2xl font-light">
                 One clear plan, from day one
               </h3>
               <ul className="space-y-4">
@@ -465,10 +461,10 @@ export default function HowItWorksPage() {
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-12 text-center">
             <div className="mb-5 flex justify-center">
-              <SectionLabel label="Common Questions" color="slate" />
+              <SectionLabel label="Common questions" color="slate" />
             </div>
             <h2 className="font-editorial text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
-              Frequently Asked Questions
+              Frequently asked questions
             </h2>
           </div>
 
@@ -482,10 +478,10 @@ export default function HowItWorksPage() {
 
       {/* ── Final CTA ── */}
       <CTA
-        title="Ready to Build Your Child's Plan?"
+        title="Ready to build your child's plan?"
         description="It takes a few minutes and it's completely free. Get a clear roadmap and expert guidance for your child today."
         primaryCTA={{
-          label: "Build a Sports Plan",
+          label: "Build a sports plan",
           href: "/roadmap",
         }}
         secondaryCTA={{

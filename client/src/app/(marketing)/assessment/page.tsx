@@ -1,120 +1,70 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { CheckCircle2, HelpCircle, Sparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+
+const PATHS = [
+  {
+    href: "/assessment/discover",
+    kicker: "Not sure yet?",
+    title: "Help me find a sport",
+    body: "Answer a few questions about your child's personality, physical traits and goals. We'll recommend the best sport match.",
+    time: "About 5 minutes",
+    cta: "Find the sport",
+  },
+  {
+    href: "/sport-profile",
+    kicker: "Already know it?",
+    title: "Build the profile",
+    body: "Tell us your child's sport and we'll build their profile, so the roadmap and guidance fit exactly where they are.",
+    time: "About 5 minutes, more questions",
+    cta: "Build the profile",
+  },
+] as const;
 
 export default function AssessmentPage() {
-  const router = useRouter();
-
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 py-16">
-      {/* Ambient background */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="bg-paper absolute inset-0" />
-        <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
-        <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-slate-300/15 blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-3xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="mb-10 text-center"
-        >
-          <div className="text-power-orange mb-4 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest">
-            <Sparkles className="h-3 w-3" />
-            Get Started
-          </div>
-          <h1 className="font-editorial mb-3 text-3xl font-light text-slate-900 sm:text-4xl">
-            How can we help you today?
+    <div className="bg-paper flex-1 px-4 pb-24 pt-16 sm:pt-24">
+      <div className="mx-auto w-full max-w-4xl">
+        <header className="max-w-2xl">
+          <p className="text-ink-muted text-sm">Get started</p>
+          <h1 className="font-editorial text-ink mt-3 text-balance text-4xl font-light leading-tight tracking-tight sm:text-6xl">
+            How can we help you <span className="italic">today?</span>
           </h1>
-          <p className="mx-auto max-w-md text-base leading-relaxed text-slate-500">
+          <p className="text-ink-body mt-5 max-w-xl text-pretty text-lg leading-relaxed">
             Whether you already know the sport or not, we&apos;ll build the right plan for your
             child.
           </p>
-        </motion.div>
+        </header>
 
-        {/* Choice cards */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:items-stretch">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.4, ease: "easeOut" }}
-            className="h-full"
-          >
-            <button
-              type="button"
-              onClick={() => router.push("/assessment/discover")}
-              className="hover:border-power-orange group flex h-full w-full flex-col rounded-3xl border-2 border-slate-200 bg-white p-7 text-left shadow-sm transition-all duration-200 hover:shadow-md active:scale-[0.99]"
-            >
-              <div className="text-power-orange mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 transition-transform duration-300 group-hover:scale-110">
-                <HelpCircle className="h-6 w-6" />
-              </div>
-              <p className="text-power-orange mb-1 text-[11px] font-bold uppercase tracking-wider">
-                Not sure yet?
-              </p>
-              <h2 className="font-editorial mb-2 text-xl font-normal text-slate-900">
-                Help me find a sport
-              </h2>
-              <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-500">
-                Answer a few quick questions about your child&apos;s personality, physical traits,
-                and goals. We&apos;ll recommend the best sport match.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400">~5 minutes</span>
-                <span className="text-power-orange inline-flex text-sm font-bold transition-transform duration-200 group-hover:translate-x-1">
-                  Find the sport →
-                </span>
-              </div>
-            </button>
-          </motion.div>
+        <ul className="border-hairline sm:divide-hairline mt-14 grid border-y sm:grid-cols-2 sm:divide-x">
+          {PATHS.map((path) => (
+            <li key={path.href} className="border-hairline border-b last:border-b-0 sm:border-b-0">
+              <Link
+                href={path.href}
+                className="focus-visible:ring-ink hover:bg-paper-deep/60 group flex h-full flex-col px-1 py-8 transition-colors focus-visible:outline-none focus-visible:ring-2 sm:px-8 sm:first:pl-1 sm:last:pr-1"
+              >
+                <p className="text-ink-muted text-sm">{path.kicker}</p>
+                <h2 className="font-editorial text-ink mt-2 text-3xl font-light tracking-tight">
+                  {path.title}
+                </h2>
+                <p className="text-ink-body mt-3 flex-1 text-pretty leading-relaxed">{path.body}</p>
+                <div className="mt-8 flex items-center justify-between gap-4">
+                  <span className="text-ink-muted text-sm">{path.time}</span>
+                  <span className="text-ink inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 group-hover:underline">
+                    {path.cta}
+                    <ArrowRight
+                      className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    />
+                  </span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
-            className="h-full"
-          >
-            <button
-              type="button"
-              onClick={() => router.push("/sport-profile")}
-              className="group flex h-full w-full flex-col rounded-3xl border-2 border-slate-200 bg-white p-7 text-left shadow-sm transition-all duration-200 hover:border-emerald-400 hover:shadow-md active:scale-[0.99]"
-            >
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition-transform duration-300 group-hover:scale-110">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-emerald-600">
-                Already know it?
-              </p>
-              <h2 className="font-editorial mb-2 text-xl font-normal text-slate-900">
-                Build the profile
-              </h2>
-              <p className="mb-5 flex-1 text-sm leading-relaxed text-slate-500">
-                Tell us your child&apos;s sport and we&apos;ll build their profile, so we can
-                personalise the roadmap and guidance for exactly where they are.
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-400">~5 min · more questions</span>
-                <span className="inline-flex text-sm font-bold text-emerald-600 transition-transform duration-200 group-hover:translate-x-1">
-                  Build profile →
-                </span>
-              </div>
-            </button>
-          </motion.div>
-        </div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-          className="mt-6 text-center text-xs text-slate-400"
-        >
-          Free to use · No account required to explore
-        </motion.p>
+        <p className="text-ink-muted mt-6 text-sm">Free to use. No account needed to explore.</p>
       </div>
     </div>
   );

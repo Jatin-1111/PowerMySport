@@ -24,19 +24,19 @@ const STAT_CARDS = [
   {
     icon: <Zap className="h-6 w-6" />,
     value: "6 stages",
-    label: "From First Racket to What Comes After",
+    label: "From first racket to what comes after",
     color: "bg-orange-100 text-power-orange",
   },
   {
     icon: <TrendingUp className="h-6 w-6" />,
     value: "5 questions",
-    label: "Answered the Same Way at Every Stage",
+    label: "Answered the same way at every stage",
     color: "bg-indigo-100 text-indigo-600",
   },
   {
     icon: <MapPin className="h-6 w-6" />,
     value: "Built with coaches",
-    label: "Written with Experts and Sports Parents",
+    label: "Written with experts and sports parents",
     color: "bg-amber-100 text-amber-600",
   },
   {
@@ -93,7 +93,7 @@ export function PathwayHelpSection() {
           className="mb-14 text-center"
         >
           <motion.div variants={fadeUp} className="mb-4 flex justify-center">
-            <SectionLabel label="We Support You at Every Step" color="green" />
+            <SectionLabel label="We support you at every step" color="green" />
           </motion.div>
           <motion.h2
             variants={fadeUp}

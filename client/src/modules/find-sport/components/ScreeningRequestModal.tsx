@@ -64,7 +64,7 @@ export function ScreeningRequestModal({
         <div className="flex items-center justify-between border-b border-slate-100 px-6 pb-4 pt-5">
           <div>
             <h2 className="font-title text-base font-bold text-slate-900">
-              Book Physical Screening
+              Book physical screening
             </h2>
             <p className="mt-0.5 text-xs text-slate-400">
               {childName}

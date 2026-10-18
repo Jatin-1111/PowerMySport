@@ -55,7 +55,7 @@ export async function AboutPageContent() {
         title="Start with the plan"
         description="Tell us about your child and see the roadmap. It takes a few minutes and costs nothing."
         primaryCTA={{
-          label: "Build a Sports Plan",
+          label: "Build a sports plan",
           href: "/roadmap",
         }}
         secondaryCTA={{

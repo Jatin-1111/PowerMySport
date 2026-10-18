@@ -162,7 +162,7 @@ export function ResultsView({
             </div>
             <div>
               <h3 className="font-title text-lg font-bold leading-tight text-slate-900">
-                Your Path Forward
+                Your path forward
               </h3>
               <p className="mt-0.5 text-xs text-slate-500">Step-by-step from today to the goal</p>
             </div>
@@ -178,7 +178,7 @@ export function ResultsView({
       {/* Investment Estimate — before action list so parents know the cost context */}
       {r.costBreakdown && <CostBreakdownCard c={r.costBreakdown} />}
 
-      {/* Do This Next */}
+      {/* Do this next */}
       <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm sm:p-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
@@ -186,7 +186,7 @@ export function ResultsView({
           </div>
           <div>
             <h3 className="font-title text-lg font-bold leading-tight text-slate-900">
-              Do This Next
+              Do this next
             </h3>
             <p className="mt-0.5 text-xs text-slate-500">Immediate actions on PowerMySport</p>
           </div>
@@ -310,7 +310,7 @@ export function ResultsView({
             </div>
             <div>
               <h3 className="font-title text-lg font-bold leading-tight text-slate-900">
-                Top Recommended Sports
+                Top recommended sports
               </h3>
               <p className="mt-0.5 text-xs text-slate-500">Based on your child's profile</p>
             </div>

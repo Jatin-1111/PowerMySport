@@ -19,7 +19,7 @@ export function HomeClosing({
   title: string;
   description: string;
   primaryCTA: { label: string; href: string };
-  secondaryCTA: { label: string; href: string };
+  secondaryCTA?: { label: string; href: string };
 }) {
   const isWhatsApp = primaryCTA.href.includes("wa.me");
 
@@ -42,17 +42,19 @@ export function HomeClosing({
               {isWhatsApp && <WhatsAppIcon className="h-5 w-5 shrink-0" />}
               {primaryCTA.label}
             </Link>
-            <Link
-              href={secondaryCTA.href}
-              className="decoration-paper/50 hover:decoration-paper focus-visible:ring-paper focus-visible:ring-offset-power-orange-solid group inline-flex items-center gap-1.5 rounded text-base font-medium underline underline-offset-[6px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-            >
-              {secondaryCTA.label}
-              <ArrowRight
-                aria-hidden
-                strokeWidth={1.5}
-                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
-              />
-            </Link>
+            {secondaryCTA && (
+              <Link
+                href={secondaryCTA.href}
+                className="decoration-paper/50 hover:decoration-paper focus-visible:ring-paper focus-visible:ring-offset-power-orange-solid group inline-flex items-center gap-1.5 rounded text-base font-medium underline underline-offset-[6px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              >
+                {secondaryCTA.label}
+                <ArrowRight
+                  aria-hidden
+                  strokeWidth={1.5}
+                  className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                />
+              </Link>
+            )}
           </div>
         </div>
       </div>

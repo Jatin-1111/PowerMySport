@@ -2,6 +2,7 @@
 
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
+import { HomeClosing } from "@/modules/marketing/components/marketing/HomeClosing";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
@@ -23,7 +24,6 @@ import {
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ interface InfoCardProps {
 function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
   return (
     <div
-      className="flex items-start gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      className="border-hairline flex items-start gap-5 rounded-lg border bg-white p-6"
       style={{
         boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
       }}
@@ -68,7 +68,7 @@ function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
         <Icon className="h-5 w-5" strokeWidth={2} />
       </div>
       <div>
-        <h3 className="mb-1 text-base font-bold text-slate-900">{title}</h3>
+        <h3 className="text-ink mb-1 text-base font-medium">{title}</h3>
         {children}
       </div>
     </div>
@@ -428,43 +428,18 @@ export default function ContactPage() {
         width="7xl"
       />
       {/* ── Main Contact Section ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white py-16 sm:py-24 lg:py-32">
+      <section className="bg-paper relative overflow-hidden py-16 sm:py-24 lg:py-32">
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px] lg:gap-16 xl:grid-cols-[1fr_460px]">
             {/* ── LEFT COLUMN: Form ─────────────────────────────────────────── */}
             <div className="relative z-10">
-              <div
-                className="relative rounded-xl border border-slate-200 bg-white px-5 py-8 shadow-sm sm:px-10 sm:py-12"
-                style={{
-                  boxShadow:
-                    "0 4px 40px rgba(0,0,0,0.07), 0 1px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9)",
-                }}
-              >
-                {/* Pill label */}
+              <div className="border-hairline relative rounded-xl border bg-white px-5 py-8 sm:px-10 sm:py-12">
                 <div className="mb-4 inline-block">
                   <SectionLabel label="Send a message" color="orange" />
                 </div>
 
-                <h2 className="mb-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-                  How can we{" "}
-                  <span className="relative inline-block">
-                    help?
-                    {/* Underline squiggle */}
-                    <svg
-                      aria-hidden="true"
-                      className="absolute -bottom-1.5 left-0 w-full"
-                      viewBox="0 0 100 8"
-                      preserveAspectRatio="none"
-                    >
-                      <path
-                        d="M0,5 Q25,0 50,5 Q75,10 100,5"
-                        fill="none"
-                        stroke="#f97316"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </span>
+                <h2 className="font-editorial text-ink mb-3 text-4xl font-light tracking-tight sm:text-5xl">
+                  How can we <span className="italic">help?</span>
                 </h2>
 
                 <p className="mb-8 text-base leading-relaxed text-slate-500">
@@ -625,7 +600,7 @@ export default function ContactPage() {
               {/* Section header */}
               <div>
                 <SectionLabel label="Reach us directly" color="slate" />
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                <h2 className="font-editorial text-ink mt-2 text-3xl font-light tracking-tight sm:text-4xl">
                   Other ways to reach us
                 </h2>
               </div>
@@ -690,12 +665,12 @@ export default function ContactPage() {
 
               {/* Social */}
               <div
-                className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+                className="border-hairline rounded-lg border bg-white p-6"
                 style={{
                   boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
                 }}
               >
-                <h3 className="mb-4 text-base font-bold text-slate-900">Follow Us</h3>
+                <h3 className="text-ink mb-4 text-base font-medium">Follow us</h3>
                 <div className="flex gap-3">
                   {SOCIALS.map(({ Icon, label, href }) => (
                     <a
@@ -714,64 +689,12 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* ── CTA Section ──────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-slate-950 py-16 sm:py-24">
-        <div className="relative mx-auto max-w-4xl px-6 text-center">
-          <div className="reveal-on-scroll">
-            <div className="mb-4 inline-flex">
-              <span className="border-power-orange/40 bg-power-orange/10 rounded-sm border px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-400">
-                Ready to play?
-              </span>
-            </div>
-
-            <h2 className="font-editorial mb-5 text-3xl font-light text-white sm:text-4xl lg:text-5xl">
-              We&apos;re here to help
-            </h2>
-
-            <p className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg">
-              Whether you&apos;re a parent planning your child&apos;s sports journey, a venue owner
-              listing your facility, or a coach expanding your practice, we&apos;re just a message
-              away. Our team typically responds within 24 hours.
-            </p>
-
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              {/* Hover used to lighten this to orange-400, under AA with white
-                  text, on top of a lift, a scale and a growing glow. */}
-              <Button
-                asChild
-                variant="primary"
-                size="lg"
-                className="group px-8 py-4 text-base font-bold focus-visible:ring-offset-slate-950"
-              >
-                <Link href="/register">
-                  Get Started
-                  <svg
-                    viewBox="0 0 16 16"
-                    className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M3 8h10M9 4l4 4-4 4" />
-                  </svg>
-                </Link>
-              </Button>
-
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white hover:border-white/40 hover:bg-white/10 focus-visible:ring-white focus-visible:ring-offset-slate-950"
-              >
-                <Link href="/faq">Browse FAQs</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HomeClosing
+        title="We're here to help"
+        description="Whether you're a parent planning your child's sports journey, a venue owner listing your facility, or a coach expanding your practice, we're a message away. Our team usually replies within 24 hours."
+        primaryCTA={{ label: "Get started", href: "/register" }}
+        secondaryCTA={{ label: "Browse the FAQ", href: "/faq" }}
+      />
     </main>
   );
 }
