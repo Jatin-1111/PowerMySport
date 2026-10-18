@@ -5,7 +5,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { friendService } from "@/modules/shared/services/friend";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
 interface NotificationCounts {
@@ -93,4 +93,20 @@ export function useNotifications(pollingInterval: number = 0) {
     error: results.find((r) => r.error) ? "Failed to fetch notifications" : null,
     refresh,
   };
+}
+
+/**
+ * Just the unread count, for the nav badge of consoles that have no use for the
+ * friend-request and invitation counts. It shares the cache key with
+ * `useNotifications`, so a mark-as-read anywhere updates both.
+ */
+export function useUnreadNotificationCount(): number {
+  const hydrated = useAuthStore((state) => state.hydrated);
+  const token = useAuthStore((state) => state.token);
+  const { data } = useQuery({
+    queryKey: queryKeys.notifications.unreadCount,
+    queryFn: () => notificationApi.getUnreadCount(),
+    enabled: hydrated && Boolean(token),
+  });
+  return data?.count ?? 0;
 }

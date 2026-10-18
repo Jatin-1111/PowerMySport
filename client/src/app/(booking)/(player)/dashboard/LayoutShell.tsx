@@ -98,7 +98,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       section: "Community",
     },
     {
-      href: "/notifications",
+      href: "/dashboard/notifications",
       label: "Notifications",
       icon: Bell,
       badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,
@@ -206,7 +206,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       icon: User,
     },
     {
-      href: "/notifications",
+      href: "/dashboard/notifications",
       label: "Alerts",
       icon: Bell,
       badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,

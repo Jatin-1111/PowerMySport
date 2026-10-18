@@ -7,6 +7,7 @@ import {
   postLoginFor,
   postSignupFor,
   resolveAccess,
+  notificationsHomeFor,
   settingsHomeFor,
   type SessionState,
 } from "./policy";
@@ -127,6 +128,21 @@ describe("resolveAccess — the access matrix", () => {
       }
     }
     expect([...kinds].sort()).toEqual(["allow", "redirect", "wait"]);
+  });
+});
+
+describe("notifications home", () => {
+  it("sends every console role to a page its own policy allows", () => {
+    for (const role of ALL_ROLES.filter((r) => r !== "Admin")) {
+      const href = notificationsHomeFor(role);
+      expect(href, role).toMatch(/\/notifications$/);
+      expect(resolveAccess(href, as(role)).kind, role).toBe("allow");
+    }
+  });
+
+  it("uses the standalone page when there is no console", () => {
+    expect(notificationsHomeFor("Admin")).toBe("/notifications");
+    expect(notificationsHomeFor(null)).toBe("/notifications");
   });
 });
 

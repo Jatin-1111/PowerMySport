@@ -1,7 +1,9 @@
 "use client";
 
+import { notificationsHomeFor } from "@/flow/policy";
 import { notificationApi, type Notification } from "@/lib/api/notification";
 import { getCommunityAppUrl } from "@/lib/community/url";
+import { useAuthStore } from "@/modules/auth/store/authStore";
 import { cn } from "@/utils/cn";
 import { formatDistanceToNow } from "@/utils/date";
 import { AnimatePresence, motion } from "framer-motion";
@@ -98,6 +100,7 @@ function getNotificationLink(notification: Notification): string {
 
 export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ className }) => {
   const router = useRouter();
+  const role = useAuthStore((state) => state.user?.role);
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -436,7 +439,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ clas
             {notifications.length > 0 && (
               <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
                 <Link
-                  href="/notifications"
+                  href={notificationsHomeFor(role)}
                   onClick={() => setIsOpen(false)}
                   className="text-power-orange-solid block text-center text-sm font-semibold hover:underline"
                 >

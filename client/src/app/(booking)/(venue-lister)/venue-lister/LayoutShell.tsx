@@ -2,6 +2,7 @@
 
 import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
+import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
   DashboardShell,
@@ -22,6 +23,7 @@ import {
   Star,
   TrendingUp,
   User,
+  Bell,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
@@ -30,6 +32,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const unreadNotifications = useUnreadNotificationCount();
   // undefined = loading, null = no method, object = has method
   const [venuePayoutMethod, setVenuePayoutMethod] = useState<IPayoutMethod | null | undefined>(
     undefined
@@ -109,6 +112,12 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
       href: "/venue-lister/profile",
       label: "Profile",
       icon: User,
+    },
+    {
+      href: "/venue-lister/notifications",
+      label: "Notifications",
+      icon: Bell,
+      badge: unreadNotifications > 0 ? unreadNotifications : undefined,
     },
     {
       href: "/venue-lister/settings",

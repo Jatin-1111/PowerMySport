@@ -28,7 +28,7 @@ describe("getNotificationAction", () => {
   });
 
   it("falls back to the dashboard when the alert carries no usable path", () => {
-    const dashboard = { label: "Open Dashboard", href: "/dashboard" };
+    const dashboard = { label: "Open dashboard", href: "/dashboard" };
     expect(getNotificationAction(notification({}))).toEqual(dashboard);
     expect(getNotificationAction(notification({ data: { items: [] } }))).toEqual(dashboard);
     // A path that leaves the site is never followed.

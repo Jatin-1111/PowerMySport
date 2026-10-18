@@ -3,13 +3,21 @@
 import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
 import { expertApi } from "@/modules/expert/services/expert";
+import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
   DashboardShell,
   type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
-import { BadgeIndianRupee, CalendarCheck, LayoutDashboard, Settings, UserCog } from "lucide-react";
+import {
+  BadgeIndianRupee,
+  CalendarCheck,
+  LayoutDashboard,
+  Settings,
+  UserCog,
+  Bell,
+} from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect } from "react";
 
@@ -17,6 +25,7 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const unreadNotifications = useUnreadNotificationCount();
 
   const guard = useRoleGuard();
 
@@ -67,6 +76,12 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
         { href: "/expert/profile", label: "Profile & Availability", icon: UserCog },
         // "Verify Pathways" pointed at /expert/pathways, which does not exist.
         { href: "/expert/payouts", label: "Payouts", icon: BadgeIndianRupee },
+        {
+          href: "/expert/notifications",
+          label: "Notifications",
+          icon: Bell,
+          badge: unreadNotifications > 0 ? unreadNotifications : undefined,
+        },
         { href: "/expert/settings", label: "Settings", icon: Settings },
       ];
 

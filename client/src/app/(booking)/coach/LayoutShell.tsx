@@ -4,6 +4,7 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
 import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
+import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { coachApi } from "@/modules/coach/services/coach";
 import { isCoachVerificationFlowComplete } from "@/modules/coach/utils/verification";
@@ -28,6 +29,7 @@ import {
   Star,
   User,
   Users,
+  Bell,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -41,6 +43,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const unreadNotifications = useUnreadNotificationCount();
 
   // Who may be here at all. The verification gate below is a separate,
   // narrower question — what a coach who IS allowed here may yet do.
@@ -202,6 +205,12 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       href: "/coach/my-bookings",
       label: "My Bookings",
       icon: Calendar,
+    },
+    {
+      href: "/coach/notifications",
+      label: "Notifications",
+      icon: Bell,
+      badge: unreadNotifications > 0 ? unreadNotifications : undefined,
     },
     { href: "/coach/settings", label: "Settings", icon: Settings },
     {

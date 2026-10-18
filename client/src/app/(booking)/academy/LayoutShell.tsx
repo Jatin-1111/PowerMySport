@@ -2,19 +2,29 @@
 
 import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
+import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import {
   DashboardShell,
   type DashboardNavItem,
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
-import { BarChart2, Building2, LayoutDashboard, Settings, Star, TrendingUp } from "lucide-react";
+import {
+  BarChart2,
+  Building2,
+  LayoutDashboard,
+  Settings,
+  Star,
+  TrendingUp,
+  Bell,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
 
 export default function AcademyLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const unreadNotifications = useUnreadNotificationCount();
 
   // Who may be here — and the /academy/onboarding exemption — is declared in
   // src/flow/policy.ts, not repeated here.
@@ -65,6 +75,12 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
       href: "/academy/analytics",
       label: "Analytics",
       icon: BarChart2,
+    },
+    {
+      href: "/academy/notifications",
+      label: "Notifications",
+      icon: Bell,
+      badge: unreadNotifications > 0 ? unreadNotifications : undefined,
     },
     {
       href: "/academy/settings",

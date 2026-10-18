@@ -204,6 +204,20 @@ const SETTINGS_HOME: Record<UserRole, string> = {
   VENUE_ONBOARDING: "/onboarding",
 };
 
+/**
+ * Each console hosts its own notifications view so the list opens inside the
+ * shell the user is already in. Roles without a console (Admin, mid-onboarding)
+ * are absent and use the standalone `/notifications` page.
+ */
+const NOTIFICATIONS_HOME: Partial<Record<UserRole, string>> = {
+  Player: "/dashboard/notifications",
+  Parent: "/dashboard/notifications",
+  VenueLister: "/venue-lister/notifications",
+  Coach: "/coach/notifications",
+  Academy: "/academy/notifications",
+  EXPERT: "/expert/notifications",
+};
+
 const FALLBACK_ROUTE = "/dashboard";
 
 /** The console home for `role`. */
@@ -221,6 +235,10 @@ export const postSignupFor = (role?: UserRole | null): string =>
 /** The settings page for `role`. */
 export const settingsHomeFor = (role?: UserRole | null): string =>
   (role && SETTINGS_HOME[role]) || SETTINGS_HOME.Player;
+
+/** The notifications page for `role`, or the standalone one when it has no console. */
+export const notificationsHomeFor = (role?: UserRole | null): string =>
+  (role && NOTIFICATIONS_HOME[role]) || "/notifications";
 
 // ─── Return paths ─────────────────────────────────────────────────────────────
 
