@@ -14,7 +14,6 @@ import {
   LogOut,
   ListOrdered,
   Map,
-  Menu,
   Settings,
   ShoppingBag,
   Star,
@@ -22,7 +21,6 @@ import {
   GraduationCap,
   HandCoins,
   User,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -221,13 +219,18 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
   return (
     <nav
       className={cn(
-        "border-b border-slate-200/80 bg-white/90 text-slate-900 backdrop-blur-xl transition-all duration-300",
-        sticky && "fixed inset-x-0 top-0 z-50 w-full shadow-sm",
-        variant === "dark" && "bg-white/90 text-slate-900"
+        "text-slate-900",
+        sticky && "pointer-events-none fixed inset-x-0 top-0 z-50 w-full px-3 pt-3 sm:px-6"
       )}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+      {/* A floating glass pill, detached from the top edge. */}
+      <div
+        className={cn(
+          "pointer-events-auto mx-auto max-w-7xl rounded-full border border-white/70 bg-white/75 px-4 shadow-[0_8px_32px_-12px_rgba(15,23,42,0.12)] ring-1 ring-slate-900/[0.05] backdrop-blur-xl sm:px-6",
+          variant === "dark" && "bg-white/85"
+        )}
+      >
+        <div className="flex h-14 items-center justify-between">
           {/* Logo */}
           <div className="relative z-50 h-full shrink-0">
             {/* The wordmark alone. A tagline sat under it at 9px in slate-400
@@ -242,7 +245,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden items-center space-x-8 md:flex">
+          <div className="hidden items-center space-x-2 md:flex lg:space-x-4">
             {/* Explore Dropdown (Roadmap + Guidance) */}
             <div className="relative" ref={exploreDropdownRef}>
               <button
@@ -464,10 +467,10 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
               </>
             ) : (
               <>
-                <Button asChild variant="ghost" size="sm">
+                <Button asChild variant="ghost" size="sm" className="rounded-full px-4">
                   <Link href="/login">Login</Link>
                 </Button>
-                <Button asChild variant="primary" size="sm">
+                <Button asChild variant="primary" size="sm" className="rounded-full px-5">
                   <Link href="/register">Get Started</Link>
                 </Button>
               </>
@@ -478,10 +481,29 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="hover:text-power-orange-solid focus:ring-power-orange rounded-md p-2 text-slate-800 focus:outline-none focus:ring-2"
+              className="hover:text-power-orange-solid focus:ring-power-orange rounded-full p-2 text-slate-800 transition-colors focus:outline-none focus:ring-2"
               aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              <span aria-hidden className="relative block h-5 w-5">
+                <span
+                  className={cn(
+                    "absolute left-0 top-1/2 h-px w-5 bg-current transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    mobileMenuOpen ? "rotate-45" : "-translate-y-[5px]"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 top-1/2 h-px w-5 bg-current transition-opacity duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    mobileMenuOpen && "opacity-0"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "absolute left-0 top-1/2 h-px w-5 bg-current transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                    mobileMenuOpen ? "-rotate-45" : "translate-y-[5px]"
+                  )}
+                />
+              </span>
             </button>
           </div>
         </div>
@@ -491,13 +513,13 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="overflow-hidden border-t border-slate-200 bg-white/95 md:hidden"
+            initial={{ opacity: 0, y: -16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.98 }}
+            transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+            className="pointer-events-auto mx-auto mt-2 max-h-[calc(100dvh-6rem)] max-w-7xl overflow-y-auto rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_24px_64px_-24px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.05] backdrop-blur-xl md:hidden"
           >
-            <div className="space-y-1 px-2 pb-3 pt-2">
+            <div className="menu-stagger space-y-1 p-3">
               {/* Mobile Explore Accordion (Roadmap + Guidance) */}
               <div>
                 <button
@@ -506,7 +528,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                     "flex w-full items-center justify-between rounded-md px-3 py-2 text-base font-medium transition-colors",
                     isExploreActive
                       ? "text-power-orange-solid bg-orange-50"
-                      : "text-slate-700 hover:bg-indigo-50"
+                      : "text-slate-700 hover:bg-slate-100"
                   )}
                 >
                   Explore
@@ -561,7 +583,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
               <Link
                 href="/community"
                 className={cn(
-                  "block rounded-md px-3 py-2 transition-colors hover:bg-indigo-50",
+                  "block rounded-md px-3 py-2 transition-colors hover:bg-slate-100",
                   isActive("/community") ? "bg-orange-50" : ""
                 )}
                 onClick={() => setMobileMenuOpen(false)}
@@ -582,7 +604,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                   onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-3 py-2 transition-colors",
-                    isServicesActive ? "bg-orange-50" : "hover:bg-indigo-50"
+                    isServicesActive ? "bg-orange-50" : "hover:bg-slate-100"
                   )}
                 >
                   <span
@@ -669,7 +691,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "block rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-indigo-50",
+                    "block rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-slate-100",
                     isActive(link.href) ? "text-power-orange-solid bg-orange-50" : "text-slate-700"
                   )}
                   onClick={() => setMobileMenuOpen(false)}

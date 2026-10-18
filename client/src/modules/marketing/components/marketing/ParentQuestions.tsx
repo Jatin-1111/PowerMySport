@@ -1,6 +1,7 @@
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { ArrowRight } from "lucide-react";
-import { SectionLabel } from "./SectionLabel";
+import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
+import { Bezel } from "./Bezel";
+import { HomeEyebrow } from "./HomeEyebrow";
 
 /**
  * Real questions parents ask. Each opens WhatsApp with the question already
@@ -17,38 +18,46 @@ const QUESTIONS = [
 
 export function ParentQuestions() {
   return (
-    <section className="py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="reveal-on-scroll mx-auto max-w-2xl text-center">
-          <div className="mb-4 flex justify-center">
-            <SectionLabel label="Ask PowerMySport" color="green" />
-          </div>
-          <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+    <section className="bg-slate-50 py-24 sm:py-32 lg:py-40">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[5fr_7fr] lg:gap-24 lg:px-8">
+        <div className="reveal-on-scroll lg:sticky lg:top-32 lg:self-start">
+          <HomeEyebrow label="Ask PowerMySport" tone="green" className="mb-6" />
+          <h2 className="font-title mb-6 text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-slate-900 sm:text-5xl">
             Ask anything about your child&apos;s sporting journey
           </h2>
-          <p className="text-lg text-slate-600">
+          <p className="max-w-md text-base leading-relaxed text-slate-600 sm:text-lg">
             Tap a question to ask it on WhatsApp, or write your own.
           </p>
         </div>
 
-        <ul className="reveal-on-scroll mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {QUESTIONS.map((question) => (
-            <li key={question}>
-              <a
-                href={buildWhatsAppUrl(question)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="focus-visible:ring-power-orange-solid group flex h-full items-center justify-between gap-3 rounded-lg border border-slate-200/60 bg-white p-5 text-left text-sm font-medium leading-snug text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-green-700/40 hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2"
+        <Bezel className="reveal-on-scroll" innerClassName="p-2 sm:p-3">
+          <ul>
+            {QUESTIONS.map((question) => (
+              <li
+                key={question}
+                className="[&:not(:last-child)]:border-b [&:not(:last-child)]:border-slate-900/[0.06]"
               >
-                {question}
-                <ArrowRight
-                  aria-hidden
-                  className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none"
-                />
-              </a>
-            </li>
-          ))}
-        </ul>
+                <a
+                  href={buildWhatsAppUrl(question)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="focus-visible:ring-power-orange-solid group flex items-center justify-between gap-6 rounded-[1.25rem] px-4 py-5 text-left text-base leading-snug text-slate-900 transition-colors duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 sm:px-5 sm:text-lg"
+                >
+                  {question}
+                  <span
+                    aria-hidden
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900/[0.04] transition-[transform,background-color] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105 group-hover:bg-orange-50"
+                  >
+                    <ArrowUpRight
+                      weight="light"
+                      className="group-hover:text-power-orange-solid h-4 w-4 text-slate-600 transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-y-px group-hover:translate-x-0.5 motion-reduce:transition-none"
+                    />
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Bezel>
       </div>
     </section>
   );
