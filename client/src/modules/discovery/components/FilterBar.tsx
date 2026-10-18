@@ -84,7 +84,7 @@ export function FilterBar({
 
             {/* Active Filter Badges */}
             {hasFilters && (
-              <div className="no-scrollbar flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
+              <div className="hide-scrollbar flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
                 <span className="text-ink-muted mr-1 text-sm">Active filters</span>
 
                 {activeFilters.map((filter) => (

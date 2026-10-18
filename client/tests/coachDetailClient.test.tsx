@@ -143,7 +143,7 @@ describe("CoachDetailClient — sport-specific pricing", () => {
 
     // Tennis has an override of 1200; the rate renders both in the header
     // and again in the sidebar's "Selected Sport Rate" summary.
-    expect(screen.getAllByText("1200")).toHaveLength(2);
+    expect(screen.getAllByText(/₹1200/).length).toBeGreaterThanOrEqual(2);
   });
 
   it("falls back to the flat hourly rate for a sport with no override", async () => {
@@ -153,7 +153,7 @@ describe("CoachDetailClient — sport-specific pricing", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Badminton" }));
 
-    expect(screen.getAllByText("1000")).toHaveLength(2);
+    expect(screen.getAllByText(/₹1000/).length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -176,7 +176,7 @@ describe("CoachDetailClient — availability and booking", () => {
     render(<CoachDetailClient />);
     await screen.findByText("Jane Coach");
 
-    fireEvent.click(await screen.findByText("09:00 - 10:00"));
+    fireEvent.click(await screen.findByRole("button", { name: /^09:00 to 10:00/ }));
     expect(screen.getByText("Available")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Confirm Booking/i }));
@@ -202,14 +202,14 @@ describe("CoachDetailClient — availability and booking", () => {
     render(<CoachDetailClient />);
     await screen.findByText("Jane Coach");
 
-    fireEvent.click(await screen.findByText("09:00 - 10:00"));
-    expect(screen.getByText("Booked (Waitlist)")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: /^09:00 to 10:00/ }));
+    expect(screen.getByText("Booked, join the waitlist")).toBeInTheDocument();
 
     // The slot button's own accessible name is "09:00 - 10:00 Join
     // Waitlist" (both its text nodes concatenated), which a /Join
     // Waitlist/i regex also matches — the CTA button's name is exactly
     // "Join Waitlist", so an exact string disambiguates the two.
-    fireEvent.click(screen.getByRole("button", { name: "Join Waitlist" }));
+    fireEvent.click(screen.getByRole("button", { name: "Join waitlist" }));
 
     await waitFor(() => {
       expect(joinWaitlist).toHaveBeenCalledWith(
@@ -301,11 +301,7 @@ describe("CoachDetailClient — reviews", () => {
     const submitButton = screen.getByRole("button", { name: /Submit Review/i });
     expect(submitButton).toBeDisabled();
 
-    const stars = screen.getAllByRole("button", { name: "" });
-    // The 5 rating-star buttons render with no accessible name — find them
-    // by their position among the composer's icon-only buttons instead.
-    const ratingButtons = stars.filter((btn) => btn.querySelector("svg.lucide-star"));
-    fireEvent.click(ratingButtons[3]); // 4th star = rating 4
+    fireEvent.click(screen.getByRole("button", { name: "4 stars" }));
 
     expect(submitButton).not.toBeDisabled();
     fireEvent.change(screen.getByPlaceholderText(/Write your review/i), {

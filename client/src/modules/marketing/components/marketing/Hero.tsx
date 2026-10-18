@@ -46,11 +46,11 @@ export const Hero: React.FC<HeroProps> = ({
   return (
     <section className="bg-paper">
       <div className="mx-auto max-w-7xl px-4 pb-8 pt-14 sm:px-6 sm:pt-20 lg:px-8 lg:pt-28">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,32rem)_minmax(0,28rem)] lg:items-center lg:justify-center lg:gap-16">
+        <div className="grid gap-8 sm:gap-10 lg:grid-cols-[minmax(0,32rem)_minmax(0,28rem)] lg:items-center lg:justify-center lg:gap-16">
           {/* Heavy grotesk for the statement, an italic serif for the phrase that
               matters: the two voices are the point, so the serif is larger to
               match the grotesk's visual weight. */}
-          <h1 className="font-title text-ink text-balance text-[2.1rem] font-semibold leading-[1.04] tracking-[-0.04em] sm:text-5xl lg:text-[3.9rem]">
+          <h1 className="font-title text-ink text-balance text-[2.6rem] font-semibold leading-[1.02] tracking-[-0.04em] max-[374px]:text-[2.2rem] sm:text-5xl lg:text-[3.9rem]">
             {before}
             {hlIndex >= 0 && (
               <em className="font-editorial text-[1.22em] font-light italic tracking-[-0.02em]">
@@ -62,20 +62,20 @@ export const Hero: React.FC<HeroProps> = ({
 
           <div className="flex flex-col items-start">
             {description && (
-              <p className="text-ink-body mb-8 max-w-[44ch] text-pretty text-lg leading-relaxed">
+              <p className="text-ink-body mb-7 max-w-[44ch] text-pretty text-base leading-relaxed sm:mb-8 sm:text-lg">
                 {description}
               </p>
             )}
 
-            {ctaPrompt && <p className="text-ink mb-3 text-sm font-medium">{ctaPrompt}</p>}
+            {ctaPrompt && <p className="text-ink-muted mb-3 text-sm font-medium">{ctaPrompt}</p>}
 
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+            <div className="flex w-full flex-col gap-y-5 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-4">
               {primaryCTA && (
                 <Button
                   asChild
                   variant="primary"
                   size="lg"
-                  className="h-auto px-7 py-3.5 text-base"
+                  className="h-auto w-full px-7 py-3.5 text-base sm:w-auto"
                 >
                   <Link
                     href={primaryCTA.href}

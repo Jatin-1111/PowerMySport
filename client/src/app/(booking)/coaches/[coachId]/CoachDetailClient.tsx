@@ -10,22 +10,12 @@ import ParentExperiencesBand from "@/modules/community/components/ParentExperien
 import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { reviewApi } from "@/modules/review/services/review";
+import { SlotGrid } from "@/modules/booking/components/SlotGrid";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { Availability, Coach, ReviewItem, ReviewSummary } from "@/types";
 import { getOwnVenueLocationDisplay } from "@/utils/location";
-import {
-  ArrowLeft,
-  Award,
-  Calendar,
-  Check,
-  ImageIcon,
-  IndianRupee,
-  Info,
-  MapPin,
-  Star,
-  User,
-} from "lucide-react";
+import { ArrowLeft, Award, Check, ImageIcon, Star } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -427,8 +417,25 @@ export function CoachDetailClient() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2"></div>
+      <div className="bg-paper min-h-screen" aria-busy="true" aria-label="Loading coach">
+        <div className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+          <Skeleton className="mb-10 h-5 w-28" />
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-16">
+            <div>
+              <div className="flex flex-col gap-8 sm:flex-row sm:items-end">
+                <Skeleton className="aspect-[4/5] w-36 rounded-2xl sm:w-44" />
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-12 w-64" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              </div>
+              <Skeleton className="mt-10 h-20 w-full" />
+              <Skeleton className="mt-8 h-40 w-full" />
+            </div>
+            <Skeleton className="h-[28rem] w-full rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -453,651 +460,575 @@ export function CoachDetailClient() {
   const highlightedSports = coach.sports.slice(0, 6);
   const additionalSportsCount = Math.max(coach.sports.length - 6, 0);
 
+  const facts = [
+    {
+      label: "Format",
+      value: String(coach.serviceMode || "")
+        .replace(/_/g, " ")
+        .toLowerCase(),
+    },
+    { label: "Rate", value: `₹${selectedSportRate} per hour` },
+    {
+      label: "Reviews",
+      value: `${coach.reviewCount} ${coach.reviewCount === 1 ? "review" : "reviews"}`,
+    },
+  ].filter((f) => f.value.trim().length > 0);
+
+  const badge = getVerificationBadge(coach);
+  const certificationCount = getCertificationCount(coach);
+
+  const sectionHeading = "font-editorial text-ink mb-4 text-2xl font-normal sm:text-3xl";
+  const fieldLabel = "text-ink mb-2.5 block text-sm font-medium";
+  const choice = (active: boolean) =>
+    `focus-visible:ring-ink rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${
+      active
+        ? "border-ink bg-paper-deep text-ink"
+        : "border-hairline text-ink-body hover:border-ink/40 bg-white"
+    }`;
+
   return (
     <div className="bg-paper min-h-screen">
-      <div className="bg-white/72 border-b border-white/60 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mb-3"></div>
-
-          <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white p-6 text-slate-900 shadow-sm sm:p-8">
-            <div className="relative z-10">
-              <Link
-                href="/booking?tab=coaches"
-                className="mb-4 inline-flex items-center gap-2 text-slate-600 transition-colors hover:text-slate-900"
-              >
-                <ArrowLeft size={20} />
-                <span className="text-sm font-medium">Back to All Coaches</span>
-              </Link>
-
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
-                <div className="min-w-0">
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-wide text-slate-600">
-                      Coach Profile
-                    </span>
-                    <span className="border-turf-green/30 bg-turf-green/15 text-turf-green inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold tracking-wide">
-                      {coach.serviceMode}
-                    </span>
-                    {(() => {
-                      const badge = getVerificationBadge(coach);
-                      return (
-                        <span
-                          className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide ${badge.className}`}
-                        >
-                          {badge.label}
-                        </span>
-                      );
-                    })()}
-                    {additionalSportsCount > 0 && (
-                      <span className="inline-flex items-center rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-wide text-slate-600">
-                        +{additionalSportsCount} sports
-                      </span>
-                    )}
-                  </div>
-
-                  <h1 className="font-editorial wrap-break-word mb-2 max-w-5xl text-2xl font-light leading-tight sm:text-4xl">
-                    {coachDisplayName}
-                  </h1>
-
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {highlightedSports.map((sport, index) => (
-                      <span
-                        key={`${sport}-${index}`}
-                        className="inline-flex max-w-full items-center rounded-md border border-white/70 bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700"
-                        title={sport}
-                      >
-                        <span className="wrap-break-word line-clamp-1">{sport}</span>
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                    <div className="flex items-center gap-2">
-                      <Star size={20} className="fill-yellow-400 text-yellow-400" />
-                      <span className="text-lg font-bold">{coach.rating.toFixed(1)}</span>
-                      <span className="text-sm text-slate-600">({coach.reviewCount} reviews)</span>
-                    </div>
-                    <div className="hidden h-4 w-px bg-slate-600 sm:block"></div>
-                    <div className="flex items-center gap-1">
-                      <IndianRupee size={20} className="text-turf-green" />
-                      <span className="text-turf-green text-xl font-bold">{selectedSportRate}</span>
-                      <span className="text-sm text-slate-600">/hour</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-fit rounded-2xl border border-white/70 bg-white/80 p-2 backdrop-blur-md">
-                  <div className="h-24 w-24 overflow-hidden rounded-xl border border-white/70 bg-white/80">
-                    <CoachImageWithFallback
-                      sources={coachImageCandidates}
-                      alt={`${coach.sports[0]} coach`}
-                      className="h-full w-full object-cover"
-                      iconClassName="flex h-full w-full items-center justify-center text-white/70"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-turf-green/20 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
-            <div className="bg-power-orange/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            {/* About */}
-            <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                  <Info size={24} className="text-turf-green" />
-                  About the Coach
-                </h2>
-              </div>
-              <div className="p-6">
-                <p className="text-base leading-relaxed text-slate-700">
-                  {coach.bio ||
-                    "Expert coach offering professional training sessions to help you improve your skills."}
-                </p>
-              </div>
-            </Card>
-
-            <CommunityInsightsCard
-              title="Ask players about this coach"
-              description="Check community recommendations on coaching style, progression quality, and best-fit sessions."
-              q={communityIntent.q}
-              sport={communityIntent.sport}
-              ctaUrl={communityUrl}
-              ctaTracking={{
-                eventName: "community_cta_click",
-                entityType: "Coach",
-                entityId: coachId,
-                metadata: {
-                  ...communityIntent.analyticsMetadata,
-                  page: "coach_detail",
-                },
-              }}
-              enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
+      <div className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+        <nav aria-label="Coach pages" className="mb-10 text-sm">
+          <Link
+            href="/booking?tab=coaches"
+            className="text-ink-body hover:text-ink focus-visible:ring-ink group inline-flex items-center gap-1.5 rounded font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2"
+          >
+            <ArrowLeft
+              aria-hidden
+              strokeWidth={1.5}
+              className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5 motion-reduce:transition-none"
             />
+            All coaches
+          </Link>
+        </nav>
 
-            {/* Subscription Packages */}
-            <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
-                <h2 className="text-xl font-bold text-slate-900">Subscription Packages</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Monthly, quarterly, and yearly packages published by this coach.
-                </p>
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-16">
+          {/* Profile */}
+          <div className="min-w-0">
+            <header className="flex flex-col gap-8 sm:flex-row sm:items-end">
+              <div className="bg-paper-deep aspect-[4/5] w-36 shrink-0 overflow-hidden rounded-2xl sm:w-44">
+                <CoachImageWithFallback
+                  sources={coachImageCandidates}
+                  alt={`${coachDisplayName}`}
+                  className="h-full w-full object-cover"
+                  iconClassName="text-ink-muted flex h-full w-full items-center justify-center"
+                />
               </div>
-              <div className="p-6">
-                {packagesLoading ? (
-                  <div className="flex items-center justify-center py-8 text-sm text-slate-500">
-                    Loading packages...
-                  </div>
-                ) : subscriptionPackages.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    This coach has not published any subscription packages yet.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {subscriptionPackages.map((pkg) => {
-                      const packageId = String(pkg?._id || pkg?.id || "");
-                      const isBusy = subscribingPackageId === packageId;
-                      const frequencyLabel =
-                        pkg?.frequency === "YEARLY"
-                          ? "Yearly"
-                          : pkg?.frequency === "QUARTERLY"
-                            ? "Quarterly"
-                            : "Monthly";
-                      return (
-                        <div
-                          key={packageId || pkg?.name || "package"}
-                          className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-base font-semibold text-slate-900">
-                                {pkg?.name || "Subscription package"}
-                              </p>
-                              <p className="text-turf-green mt-1 text-sm font-semibold">
-                                {formatInr(pkg?.price)}
-                                <span className="text-slate-500">
-                                  / {frequencyLabel.toLowerCase()}
-                                </span>
-                              </p>
-                            </div>
-                            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                              Active
-                            </span>
-                          </div>
-                          {pkg?.description && (
-                            <p className="mt-3 text-sm leading-6 text-slate-600">
-                              {pkg.description}
+              <div className="min-w-0">
+                <p className="text-ink-muted mb-3 flex items-center gap-1.5 text-sm font-medium">
+                  <Check aria-hidden strokeWidth={2} className="text-ink h-4 w-4" />
+                  {badge.label} coach
+                </p>
+                <h1 className="font-editorial text-ink wrap-break-word text-balance text-4xl font-light leading-[1.05] sm:text-5xl lg:text-6xl">
+                  {coachDisplayName}
+                </h1>
+                <p className="text-ink-body mt-4 flex items-center gap-2 text-sm">
+                  {coach.reviewCount > 0 ? (
+                    <>
+                      <Star
+                        aria-hidden
+                        strokeWidth={1.5}
+                        className="h-4 w-4 fill-amber-400 text-amber-400"
+                      />
+                      <span className="text-ink font-semibold tabular-nums">
+                        {coach.rating.toFixed(1)}
+                      </span>
+                      <span className="text-ink-muted">({coach.reviewCount} reviews)</span>
+                    </>
+                  ) : (
+                    <span className="text-ink-muted">No reviews yet</span>
+                  )}
+                </p>
+                <Button asChild size="md" className="mt-6 lg:hidden">
+                  <a href="#book">Book a session · ₹{selectedSportRate}/hr</a>
+                </Button>
+              </div>
+            </header>
+
+            <dl className="border-hairline mt-10 grid grid-cols-2 gap-x-8 gap-y-6 border-y py-6 sm:grid-cols-3">
+              {facts.map((f) => (
+                <div key={f.label}>
+                  <dt className="text-ink-muted text-sm">{f.label}</dt>
+                  <dd className="text-ink mt-1 text-pretty font-medium capitalize">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+
+            {coach.sports.length > 0 && (
+              <dl className="mt-6 grid gap-1 sm:grid-cols-[8rem_1fr] sm:gap-6">
+                <dt className="text-ink-muted text-sm">Sports</dt>
+                <dd className="text-ink text-pretty">
+                  {highlightedSports.join(", ")}
+                  {additionalSportsCount > 0 ? ` and ${additionalSportsCount} more` : ""}
+                </dd>
+              </dl>
+            )}
+
+            <section className="mt-16" aria-labelledby="about-heading">
+              <h2 id="about-heading" className={sectionHeading}>
+                About
+              </h2>
+              <p className="text-ink-body max-w-[65ch] text-base leading-relaxed sm:text-lg">
+                {coach.bio ||
+                  "Expert coach offering professional training sessions to help you improve your skills."}
+              </p>
+            </section>
+
+            <div className="mt-14">
+              <CommunityInsightsCard
+                title="Ask players about this coach"
+                description="Check community recommendations on coaching style, progression quality, and best-fit sessions."
+                q={communityIntent.q}
+                sport={communityIntent.sport}
+                ctaUrl={communityUrl}
+                ctaTracking={{
+                  eventName: "community_cta_click",
+                  entityType: "Coach",
+                  entityId: coachId,
+                  metadata: {
+                    ...communityIntent.analyticsMetadata,
+                    page: "coach_detail",
+                  },
+                }}
+                enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
+              />
+            </div>
+
+            {/* Subscription packages */}
+            <section className="mt-14" aria-labelledby="packages-heading">
+              <h2 id="packages-heading" className={sectionHeading}>
+                Subscription packages
+              </h2>
+              <p className="text-ink-body mb-6 max-w-[60ch] text-pretty">
+                Monthly, quarterly and yearly packages published by this coach.
+              </p>
+              {packagesLoading ? (
+                <p className="text-ink-muted text-sm">Loading packages…</p>
+              ) : subscriptionPackages.length === 0 ? (
+                <p className="text-ink-body max-w-[52ch] text-pretty">
+                  This coach has not published any subscription packages yet.
+                </p>
+              ) : (
+                <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {subscriptionPackages.map((pkg) => {
+                    const packageId = String(pkg?._id || pkg?.id || "");
+                    const isBusy = subscribingPackageId === packageId;
+                    const frequencyLabel =
+                      pkg?.frequency === "YEARLY"
+                        ? "year"
+                        : pkg?.frequency === "QUARTERLY"
+                          ? "quarter"
+                          : "month";
+                    return (
+                      <li
+                        key={packageId || pkg?.name || "package"}
+                        className="border-hairline flex h-full flex-col rounded-2xl border bg-white p-6"
+                      >
+                        <p className="text-ink font-semibold">
+                          {pkg?.name || "Subscription package"}
+                        </p>
+                        <p className="mt-2 flex items-baseline gap-2">
+                          <span className="font-editorial text-ink text-4xl font-light tabular-nums">
+                            {formatInr(pkg?.price)}
+                          </span>
+                          <span className="text-ink-muted text-sm">per {frequencyLabel}</span>
+                        </p>
+                        {pkg?.description && (
+                          <p className="text-ink-body mt-3 text-sm leading-relaxed">
+                            {pkg.description}
+                          </p>
+                        )}
+                        <div className="mt-4">
+                          {(pkg?.features || []).length > 0 ? (
+                            <ul className="text-ink-body space-y-1.5 text-sm">
+                              {pkg.features.map((feature: string, index: number) => (
+                                <li key={`${feature}-${index}`} className="flex gap-2">
+                                  <Check
+                                    aria-hidden
+                                    strokeWidth={2}
+                                    className="text-ink mt-0.5 h-4 w-4 shrink-0"
+                                  />
+                                  <span>{feature}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-ink-muted text-sm">
+                              Coach has not listed package features yet.
                             </p>
                           )}
-                          <div className="mt-4 space-y-2">
-                            {(pkg?.features || []).length > 0 ? (
-                              <ul className="space-y-1 text-sm text-slate-700">
-                                {pkg.features.map((feature: string, index: number) => (
-                                  <li key={`${feature}-${index}`} className="flex gap-2">
-                                    <Check size={16} className="text-turf-green mt-0.5 shrink-0" />
-                                    <span>{feature}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="text-sm text-slate-500">
-                                Coach has not listed package features yet.
-                              </p>
-                            )}
-                          </div>
-                          <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
-                            {typeof pkg?.maxStudents === "number" ? (
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                Up to {pkg.maxStudents} students
-                              </span>
-                            ) : (
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                Student limit flexible
-                              </span>
-                            )}
-                            {typeof pkg?.maxSessions === "number" ? (
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                {pkg.maxSessions} sessions
-                              </span>
-                            ) : (
-                              <span className="rounded-full bg-slate-100 px-3 py-1">
-                                Session limit flexible
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-5">
-                            {user ? (
-                              user.role === "Player" ? (
-                                <Button
-                                  variant="primary"
-                                  className="bg-turf-green w-full hover:bg-emerald-700"
-                                  onClick={() => handleSubscribeToPackage(packageId)}
-                                  disabled={!packageId || isBusy}
-                                >
-                                  {isBusy ? "Activating..." : "Subscribe now"}
-                                </Button>
-                              ) : (
-                                <p className="text-sm text-slate-500">
-                                  Subscription packages are available for player accounts.
-                                </p>
-                              )
-                            ) : (
-                              <Link href={`/login?redirect=/coaches/${coachId}`}>
-                                <Button variant="secondary" className="w-full">
-                                  Sign in to subscribe
-                                </Button>
-                              </Link>
-                            )}
-                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </Card>
+                        <p className="text-ink-muted mt-4 text-sm">
+                          {typeof pkg?.maxStudents === "number"
+                            ? `Up to ${pkg.maxStudents} students`
+                            : "Student limit flexible"}
+                          {" · "}
+                          {typeof pkg?.maxSessions === "number"
+                            ? `${pkg.maxSessions} sessions`
+                            : "Session limit flexible"}
+                        </p>
+                        <div className="mt-auto pt-5">
+                          {user ? (
+                            user.role === "Player" ? (
+                              <Button
+                                variant="primary"
+                                className="w-full"
+                                onClick={() => handleSubscribeToPackage(packageId)}
+                                disabled={!packageId || isBusy}
+                              >
+                                {isBusy ? "Activating…" : "Subscribe now"}
+                              </Button>
+                            ) : (
+                              <p className="text-ink-muted text-sm">
+                                Subscription packages are available for player accounts.
+                              </p>
+                            )
+                          ) : (
+                            <Link href={`/login?redirect=/coaches/${coachId}`}>
+                              <Button variant="outline" className="w-full">
+                                Sign in to subscribe
+                              </Button>
+                            </Link>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
 
-            {/* Venue Images */}
+            {/* Venue photos */}
             {venueImages.length > 0 && (
-              <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-                <div className="bg-turf-green/5 border-b border-slate-100 p-6">
-                  <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                    <ImageIcon size={24} className="text-turf-green" />
-                    Venue Images
-                  </h2>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {venueImages.map((imageUrl, index) => (
-                      <div
-                        key={`${imageUrl}-${index}`}
-                        className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
-                      >
-                        <img
-                          src={imageUrl}
-                          alt={`Venue image ${index + 1}`}
-                          className="h-44 w-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
+              <section className="mt-14" aria-labelledby="venue-images-heading">
+                <h2 id="venue-images-heading" className={sectionHeading}>
+                  Venue photos
+                </h2>
+                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {venueImages.map((imageUrl, index) => (
+                    <li
+                      key={`${imageUrl}-${index}`}
+                      className="bg-paper-deep overflow-hidden rounded-2xl"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imageUrl}
+                        alt={`Venue photo ${index + 1}`}
+                        loading="lazy"
+                        className="h-48 w-full object-cover"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
 
             {coach.serviceMode === "OWN_VENUE" && coach.ownVenueDetails && (
-              <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-                <div className="bg-turf-green/5 border-b border-slate-100 p-6">
-                  <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                    <MapPin size={24} className="text-turf-green" />
-                    Venue Location
-                  </h2>
-                </div>
-                <div className="p-6">
-                  {(() => {
-                    const venueLocation = getOwnVenueLocationDisplay(coach.ownVenueDetails);
-                    if (!venueLocation) return null;
-                    return (
-                      <div className="space-y-3 text-sm text-slate-700">
-                        <div className="space-y-1">
-                          <p className="font-semibold text-slate-900">{venueLocation.title}</p>
-                          <p>{venueLocation.description}</p>
-                        </div>
-                        {venueLocation.mapsUrl && (
-                          <a
-                            href={venueLocation.mapsUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-power-orange inline-flex text-xs font-semibold hover:underline"
-                          >
-                            Open in Maps
-                          </a>
-                        )}
-                        {coach.ownVenueDetails.description && (
-                          <p className="pt-2 text-slate-600">{coach.ownVenueDetails.description}</p>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </Card>
-            )}
-
-            {/* Certifications */}
-            <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
-                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                  <Award size={24} className="text-turf-green" />
-                  Certification & Verification
+              <section className="mt-14" aria-labelledby="venue-location-heading">
+                <h2 id="venue-location-heading" className={sectionHeading}>
+                  Venue location
                 </h2>
-              </div>
-              <div className="p-6">
                 {(() => {
-                  const badge = getVerificationBadge(coach);
-                  const certificationCount = getCertificationCount(coach);
+                  const venueLocation = getOwnVenueLocationDisplay(coach.ownVenueDetails);
+                  if (!venueLocation) return null;
                   return (
-                    <div className="space-y-4">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}
+                    <div className="text-ink-body max-w-[65ch] space-y-3 text-base">
+                      <div>
+                        <p className="text-ink font-semibold">{venueLocation.title}</p>
+                        <p>{venueLocation.description}</p>
+                      </div>
+                      {venueLocation.mapsUrl && (
+                        <a
+                          href={venueLocation.mapsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-ink decoration-ink/30 hover:decoration-ink inline-flex text-sm font-medium underline underline-offset-4"
                         >
-                          {badge.label}
-                        </span>
-                        <span className="text-sm text-slate-700">
-                          {certificationCount > 0
-                            ? `${certificationCount} credential${certificationCount !== 1 ? "s" : ""} on file`
-                            : "No public credential details"}
-                        </span>
-                      </div>
-                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-sm text-slate-700">
-                          For privacy and security, individual certificate files are not displayed
-                          on public profiles.
-                        </p>
-                        <p className="mt-2 text-sm text-slate-600">
-                          This section shows verification trust signals only.
-                        </p>
-                      </div>
-                      <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
-                        <li>Verification status reflects platform review state.</li>
-                        <li>Credential documents are retained for internal checks.</li>
-                        <li>Sensitive documents are never exposed publicly.</li>
-                      </ul>
+                          Open in Maps
+                        </a>
+                      )}
+                      {coach.ownVenueDetails.description && (
+                        <p className="text-ink-body">{coach.ownVenueDetails.description}</p>
+                      )}
                     </div>
                   );
                 })()}
-              </div>
-            </Card>
+              </section>
+            )}
 
-            {/* Reviews */}
-            <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
-                <h2 className="text-xl font-bold text-slate-900">Coach Reviews</h2>
-                <p className="mt-1 inline-flex items-center gap-1 text-sm text-slate-600">
-                  <Star size={14} className="fill-yellow-500 text-yellow-500" />
-                  {reviewSummary.averageRating.toFixed(1)} average · {reviewSummary.reviewCount}{" "}
-                  reviews
+            {/* Verification */}
+            <section className="mt-14" aria-labelledby="verification-heading">
+              <h2 id="verification-heading" className={sectionHeading}>
+                Verification
+              </h2>
+              <div className="text-ink-body max-w-[65ch] space-y-3">
+                <p className="flex items-center gap-2 text-base">
+                  <Award aria-hidden strokeWidth={1.5} className="text-ink h-5 w-5" />
+                  <span className="text-ink font-medium">{badge.label}</span>
+                  <span className="text-ink-muted">
+                    {certificationCount > 0
+                      ? `${certificationCount} credential${certificationCount !== 1 ? "s" : ""} on file`
+                      : "No public credential details"}
+                  </span>
+                </p>
+                <p className="text-sm leading-relaxed">
+                  For privacy and security, individual certificate files are not shown on public
+                  profiles. This section shows the platform&apos;s review status only; credential
+                  documents are kept for internal checks and are never exposed publicly.
                 </p>
               </div>
-              <div className="p-6">
-                {user && eligibleBookingId && (
-                  <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50/90 p-4">
-                    <p className="mb-3 text-sm font-semibold text-slate-800">
-                      Share your experience
-                    </p>
-                    <div className="mb-3 flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setReviewRating(star)}
-                          className="p-0.5"
-                        >
-                          <Star
-                            size={20}
-                            className={
-                              star <= reviewRating
-                                ? "fill-yellow-500 text-yellow-500"
-                                : "text-slate-300"
-                            }
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <textarea
-                      value={reviewText}
-                      onChange={(e) => setReviewText(e.target.value)}
-                      rows={3}
-                      maxLength={1000}
-                      placeholder="Write your review (optional)"
-                      className="focus:ring-turf-green/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                    />
-                    <div className="mt-3 flex justify-end">
-                      <Button
-                        variant="primary"
-                        className="bg-turf-green hover:bg-emerald-700"
-                        onClick={handleSubmitReview}
-                        disabled={reviewSubmitting || reviewRating === 0}
-                      >
-                        {reviewSubmitting ? "Submitting..." : "Submit Review"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {user && !eligibleBookingId && (
-                  <p className="mb-4 text-sm text-slate-500">
-                    {reviewEligibilityReason ||
-                      "Complete a session with this coach to add a review."}
-                  </p>
-                )}
-                {reviewLoading ? (
-                  <div className="text-sm text-slate-500">Loading reviews...</div>
-                ) : reviews.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    No reviews yet. Be the first to review this coach.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {reviews.map((review) => {
-                      const reviewer =
-                        typeof review.userId === "object" && review.userId !== null
-                          ? review.userId
-                          : null;
-                      return (
-                        <div
-                          key={String(review._id || review.id)}
-                          className="rounded-xl border border-slate-200 bg-white p-4"
-                        >
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-900">
-                              {reviewer?.name || "User"}
-                            </p>
-                            <div className="flex items-center gap-1">
-                              {Array.from({ length: 5 }).map((_, index) => (
-                                <Star
-                                  key={index}
-                                  size={14}
-                                  className={
-                                    index < review.rating
-                                      ? "fill-yellow-500 text-yellow-500"
-                                      : "text-slate-300"
-                                  }
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          {review.review && (
-                            <p className="text-sm text-slate-700">{review.review}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </Card>
+            </section>
 
-            <div className="mt-6">
+            {/* Reviews */}
+            <section className="mt-14" aria-labelledby="reviews-heading">
+              <h2 id="reviews-heading" className={sectionHeading}>
+                Reviews
+              </h2>
+              {reviewSummary.reviewCount > 0 && (
+                <p className="mb-6 flex items-baseline gap-3">
+                  <span className="font-editorial text-ink text-5xl font-light tabular-nums">
+                    {reviewSummary.averageRating.toFixed(1)}
+                  </span>
+                  <span className="text-ink-muted text-sm">
+                    from {reviewSummary.reviewCount}{" "}
+                    {reviewSummary.reviewCount === 1 ? "review" : "reviews"}
+                  </span>
+                </p>
+              )}
+
+              {user && eligibleBookingId && (
+                <div className="border-hairline mb-8 rounded-2xl border bg-white p-5">
+                  <p className="text-ink mb-3 text-sm font-medium">Share your experience</p>
+                  <div className="mb-3 flex items-center gap-1" role="group" aria-label="Rating">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        aria-label={`${star} star${star === 1 ? "" : "s"}`}
+                        aria-pressed={star <= reviewRating}
+                        onClick={() => setReviewRating(star)}
+                        className="focus-visible:ring-ink rounded p-0.5 focus-visible:outline-none focus-visible:ring-2"
+                      >
+                        <Star
+                          aria-hidden
+                          strokeWidth={1.5}
+                          className={`h-6 w-6 ${star <= reviewRating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    rows={3}
+                    maxLength={1000}
+                    aria-label="Your review"
+                    placeholder="Write your review (optional)"
+                    className="border-hairline text-ink placeholder:text-ink-muted focus-visible:ring-ink w-full resize-none rounded-lg border bg-white px-3.5 py-3 text-sm focus-visible:outline-none focus-visible:ring-2"
+                  />
+                  <div className="mt-3 flex justify-end">
+                    <Button
+                      variant="primary"
+                      onClick={handleSubmitReview}
+                      disabled={reviewSubmitting || reviewRating === 0}
+                    >
+                      {reviewSubmitting ? "Submitting…" : "Submit review"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {user && !eligibleBookingId && (
+                <p className="text-ink-muted mb-6 text-sm">
+                  {reviewEligibilityReason || "Complete a session with this coach to add a review."}
+                </p>
+              )}
+
+              {reviewLoading ? (
+                <p className="text-ink-muted text-sm">Loading reviews…</p>
+              ) : reviews.length === 0 ? (
+                <p className="text-ink-body max-w-[52ch] text-pretty">
+                  No reviews yet. Be the first to review this coach.
+                </p>
+              ) : (
+                <ul className="border-hairline border-t">
+                  {reviews.map((review) => {
+                    const reviewer =
+                      typeof review.userId === "object" && review.userId !== null
+                        ? review.userId
+                        : null;
+                    return (
+                      <li
+                        key={String(review._id || review.id)}
+                        className="border-hairline border-b py-6"
+                      >
+                        <div className="flex items-baseline justify-between gap-4">
+                          <p className="text-ink font-semibold">{reviewer?.name || "A parent"}</p>
+                          <span
+                            className="flex items-center gap-0.5"
+                            role="img"
+                            aria-label={`${review.rating} out of 5`}
+                          >
+                            {Array.from({ length: 5 }).map((_, index) => (
+                              <Star
+                                key={index}
+                                aria-hidden
+                                strokeWidth={1.5}
+                                className={`h-3.5 w-3.5 ${index < review.rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
+                              />
+                            ))}
+                          </span>
+                        </div>
+                        {review.review && (
+                          <p className="text-ink-body mt-2 max-w-[65ch] text-pretty leading-relaxed">
+                            {review.review}
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+
+            <div className="mt-16">
               <ParentExperiencesBand kind="COACH" refId={coachId} name={coachDisplayName} />
             </div>
           </div>
 
-          {/* Booking Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="premium-shadow sticky top-24 overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-0 backdrop-blur-sm">
-              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
-                <h2 className="text-xl font-bold text-slate-900">Book a Session</h2>
+          {/* Booking */}
+          <aside
+            id="book"
+            aria-label="Book a session"
+            className="min-w-0 scroll-mt-24 lg:top-24 lg:[@media(min-height:860px)]:sticky"
+          >
+            <div className="border-hairline overflow-hidden rounded-2xl border bg-white">
+              <div className="border-hairline border-b p-6 sm:p-8">
+                <p className="text-ink-muted text-sm">{selectedSport || "Session"} rate</p>
+                <p className="mt-1 flex items-baseline gap-3">
+                  <span className="font-editorial text-ink text-5xl font-light tabular-nums">
+                    ₹{selectedSportRate}
+                  </span>
+                  <span className="text-ink-muted text-sm">per hour</span>
+                </p>
               </div>
-              <div className="p-6">
-                <div className="space-y-5">
-                  <div>
-                    <label className="mb-3 block text-sm font-semibold text-slate-700">
-                      Select Sport
-                    </label>
-                    <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto pr-1">
-                      {coach.sports?.map((sport, index) => (
-                        <button
-                          key={`${sport}-${index}`}
-                          onClick={() => setSelectedSport(sport)}
-                          title={sport}
-                          className={`rounded-lg border-2 px-3 py-2.5 text-left text-sm font-medium transition-all ${selectedSport === sport ? "bg-turf-green border-turf-green text-white shadow-md" : "hover:border-turf-green border-slate-200 bg-white text-slate-700"}`}
-                        >
-                          <span className="wrap-break-word line-clamp-2 block">{sport}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div>
-                    <label className="mb-3 block text-sm font-semibold text-slate-700">
-                      Select Date
-                    </label>
-                    <div className="relative">
-                      <Calendar
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                        size={18}
-                      />
-                      <input
-                        type="date"
-                        value={selectedDate}
-                        min={new Date().toISOString().split("T")[0]}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="focus:ring-turf-green/50 focus:border-turf-green w-full rounded-lg border-2 border-slate-200 py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="mb-3 block text-sm font-semibold text-slate-700">
-                      Select Time Slot
-                    </label>
-                    {availabilityLoading ? (
-                      <div className="flex justify-center py-4">
-                        <div className="border-turf-green h-6 w-6 animate-spin rounded-full border-b-2"></div>
-                      </div>
-                    ) : availability && slotsToDisplay.length > 0 ? (
-                      <div className="custom-scrollbar grid max-h-60 grid-cols-2 gap-2 overflow-y-auto">
-                        {slotsToDisplay.map((slot: string) => {
-                          const startTime = slot.split("-")[0] || slot;
-                          const startHour = parseInt(startTime.split(":")[0] || "0", 10);
-                          const endTime =
-                            slot.split("-")[1] || `${String(startHour + 1).padStart(2, "0")}:00`;
-                          const isSlotAvailable =
-                            availability?.availableSlots?.some(
-                              (availSlot) => (availSlot.split("-")[0] || availSlot) === startTime
-                            ) ?? false;
-                          const isSelected = selectedSlot?.startTime === startTime;
-                          return (
-                            <button
-                              key={slot}
-                              onClick={() => setSelectedSlot({ startTime, endTime })}
-                              className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all ${isSlotAvailable ? (isSelected ? "bg-turf-green border-turf-green text-white shadow-md" : "hover:border-turf-green border-slate-200 bg-white text-slate-700") : isSelected ? "bg-power-orange-solid border-power-orange-solid text-white shadow-md" : "border-dashed border-amber-200 bg-amber-50/50 text-amber-700 hover:border-amber-400 hover:bg-amber-50"}`}
-                            >
-                              <div className="flex flex-col items-center justify-center">
-                                <span
-                                  className={
-                                    !isSlotAvailable && !isSelected
-                                      ? "text-slate-500 line-through"
-                                      : ""
-                                  }
-                                >
-                                  {startTime} - {endTime}
-                                </span>
-                                {!isSlotAvailable && (
-                                  <span
-                                    className={`text-[10px] font-semibold ${isSelected ? "text-white/90" : "text-amber-600"}`}
-                                  >
-                                    Join Waitlist
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ) : availability ? (
-                      <p className="py-4 text-center text-sm text-slate-500">
-                        No slots available for this date.
-                      </p>
-                    ) : (
-                      <p className="py-4 text-center text-sm text-slate-400">
-                        Select a date to view slots
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="border-t-2 border-slate-100 pt-5">
-                    <div className="bg-turf-green/5 mb-4 space-y-2 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-600">
-                          {selectedSport || "Selected Sport"} Rate
-                        </span>
-                        <span className="text-turf-green flex items-center text-2xl font-bold">
-                          <IndianRupee size={20} />
-                          {selectedSportRate}
-                        </span>
-                      </div>
-                      {selectedSlot && (
-                        <div className="border-turf-green/10 flex items-center justify-between border-t pt-2">
-                          <span className="text-sm font-medium text-slate-600">Status</span>
-                          <span
-                            className={`text-sm font-semibold ${isSelectedSlotAvailable ? "text-turf-green" : "text-power-orange"}`}
-                          >
-                            {isSelectedSlotAvailable ? "Available" : "Booked (Waitlist)"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {user ? (
-                      isSelectedSlotAvailable ? (
-                        <Button
-                          variant="primary"
-                          className="bg-turf-green h-12 w-full text-base font-semibold shadow-md hover:bg-emerald-700"
-                          onClick={handleBooking}
-                          disabled={bookingLoading || !selectedSlot}
-                        >
-                          {bookingLoading ? (
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
-                          ) : (
-                            <Check size={20} className="mr-2" />
-                          )}
-                          Confirm Booking
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="primary"
-                          className="bg-power-orange-solid hover:bg-power-orange-solid/90 border-power-orange-solid h-12 w-full text-base font-semibold text-white shadow-lg"
-                          onClick={handleJoinWaitlist}
-                          disabled={bookingLoading || !selectedSlot}
-                        >
-                          {bookingLoading ? (
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
-                          ) : (
-                            <Check size={20} className="mr-2" />
-                          )}
-                          Join Waitlist
-                        </Button>
-                      )
-                    ) : (
-                      <Link href={`/login?redirect=/coaches/${coachId}`}>
-                        <Button variant="secondary" className="h-12 w-full font-semibold">
-                          <User size={20} className="mr-2" />
-                          Sign In to Book
-                        </Button>
-                      </Link>
-                    )}
+              <div className="space-y-7 p-6 sm:p-8">
+                <div role="group" aria-labelledby="sport-label">
+                  <span id="sport-label" className={fieldLabel}>
+                    Sport
+                  </span>
+                  <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto pr-1">
+                    {coach.sports?.map((sport, index) => (
+                      <button
+                        key={`${sport}-${index}`}
+                        type="button"
+                        aria-pressed={selectedSport === sport}
+                        onClick={() => setSelectedSport(sport)}
+                        title={sport}
+                        className={choice(selectedSport === sport)}
+                      >
+                        <span className="wrap-break-word line-clamp-2 block">{sport}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
+
+                <div>
+                  <label htmlFor="coach-date" className={fieldLabel}>
+                    Date
+                  </label>
+                  <input
+                    id="coach-date"
+                    type="date"
+                    value={selectedDate}
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="border-hairline text-ink focus-visible:ring-ink w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2"
+                  />
+                </div>
+
+                <div role="group" aria-labelledby="slot-label">
+                  <span id="slot-label" className={fieldLabel}>
+                    Time
+                  </span>
+                  {availabilityLoading ? (
+                    <div className="grid grid-cols-2 gap-2" aria-busy="true">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="bg-paper-deep h-11 animate-pulse rounded-lg" />
+                      ))}
+                    </div>
+                  ) : availability && slotsToDisplay.length > 0 ? (
+                    <SlotGrid
+                      slots={slotsToDisplay}
+                      availableSlots={availability?.availableSlots ?? []}
+                      selectedStart={selectedSlot?.startTime ?? null}
+                      onSelect={setSelectedSlot}
+                    />
+                  ) : availability ? (
+                    <p className="text-ink-muted py-2 text-sm">No slots available for this date.</p>
+                  ) : (
+                    <p className="text-ink-muted py-2 text-sm">Select a date to view slots.</p>
+                  )}
+                </div>
+
+                <div className="border-hairline border-t pt-6">
+                  {selectedSlot && (
+                    <dl className="text-ink-body mb-5 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <dt>Time</dt>
+                        <dd className="text-ink font-medium tabular-nums">
+                          {selectedSlot.startTime} – {selectedSlot.endTime}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt>Status</dt>
+                        <dd className="text-ink font-medium">
+                          {isSelectedSlotAvailable ? "Available" : "Booked, join the waitlist"}
+                        </dd>
+                      </div>
+                    </dl>
+                  )}
+
+                  {user ? (
+                    !selectedSlot ? (
+                      <Button variant="primary" size="lg" className="w-full" disabled>
+                        Select a time to continue
+                      </Button>
+                    ) : isSelectedSlotAvailable ? (
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full"
+                        onClick={handleBooking}
+                        disabled={bookingLoading || !selectedSlot}
+                        loading={bookingLoading}
+                      >
+                        Confirm booking
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        size="lg"
+                        className="w-full"
+                        onClick={handleJoinWaitlist}
+                        disabled={bookingLoading || !selectedSlot}
+                        loading={bookingLoading}
+                      >
+                        Join waitlist
+                      </Button>
+                    )
+                  ) : (
+                    <Link href={`/login?redirect=/coaches/${coachId}`}>
+                      <Button variant="outline" size="lg" className="w-full">
+                        Sign in to book
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               </div>
-            </Card>
-          </div>
+            </div>
+          </aside>
         </div>
       </div>
     </div>

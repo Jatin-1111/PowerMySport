@@ -1,6 +1,5 @@
 "use client";
 
-import { BackButton } from "@/modules/shared/ui/BackButton";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { queryKeys } from "@/lib/query/keys";
 import { toast } from "@/lib/toast";
@@ -10,21 +9,13 @@ import { CommunityInsightsCard } from "@/modules/community/components/CommunityI
 import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { reviewApi } from "@/modules/review/services/review";
+import { SlotGrid } from "@/modules/booking/components/SlotGrid";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { Availability, ReviewItem, ReviewSummary, Venue } from "@/types";
 import { getVenueImageUrls, getVenueSportImageUrls } from "@/utils/venueImages";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Calendar,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  IndianRupee,
-  MapPin,
-  Star,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Star, X } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -77,7 +68,6 @@ export function VenueDetailClient() {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const venueImages = venue ? getVenueImageUrls(venue) : [];
   const selectedSportImages = venue ? getVenueSportImageUrls(venue, selectedSport) : [];
-  const venuePhotoCount = venueImages.length;
   const sportPhotoCount = selectedSportImages.length;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -363,8 +353,20 @@ export function VenueDetailClient() {
 
   if (loading) {
     return (
-      <div className="bg-paper flex min-h-screen items-center justify-center">
-        <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2"></div>
+      <div className="bg-paper min-h-screen" aria-busy="true" aria-label="Loading venue">
+        <div className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+          <Skeleton className="mb-10 h-5 w-28" />
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-16">
+            <div>
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="mt-4 h-14 w-80 max-w-full" />
+              <Skeleton className="mt-4 h-4 w-64" />
+              <Skeleton className="mt-12 aspect-[16/10] w-full rounded-2xl" />
+              <Skeleton className="mt-10 h-32 w-full" />
+            </div>
+            <Skeleton className="h-[28rem] w-full rounded-2xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -385,182 +387,166 @@ export function VenueDetailClient() {
     );
   }
 
+  const pricePerHour = venue.sportPricing?.[selectedSport] || venue.pricePerHour;
+
+  const sectionHeading = "font-editorial text-ink mb-4 text-2xl font-normal sm:text-3xl";
+  const fieldLabel = "text-ink mb-2.5 block text-sm font-medium";
+  const choice = (active: boolean) =>
+    `focus-visible:ring-ink rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${
+      active
+        ? "border-ink bg-paper-deep text-ink"
+        : "border-hairline text-ink-body hover:border-ink/40 bg-white"
+    }`;
+  const roundButton =
+    "focus-visible:ring-paper absolute top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-paper/90 text-ink transition-colors duration-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2";
+
   return (
     <div className="bg-paper min-h-screen">
-      {/* Header */}
-      <div className="border-b border-white/60 bg-white/70 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 pb-6 pt-4 sm:px-6 lg:px-8">
-          <BackButton label="Back to Venues" />
-          <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/70 bg-white p-6 text-slate-900 shadow-sm sm:p-8">
-            <div className="relative z-10">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex-1">
-                  <h1 className="font-editorial mb-2 text-3xl font-light sm:text-4xl">
-                    {venue.name}
-                  </h1>
-                  {venue.address && (
-                    <p className="flex items-center gap-2 text-sm text-slate-700 sm:text-base">
-                      <MapPin size={18} />
-                      {venue.address}
-                    </p>
-                  )}
-                  <div className="mt-4 flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Star size={18} className="fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{venue.rating?.toFixed(1) || "5.0"}</span>
-                      <span className="text-sm text-slate-600">
-                        ({venue.reviewCount || 0} reviews)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="mb-1 text-xs uppercase tracking-wide text-slate-600">
-                    Starting from
-                  </p>
-                  <div className="text-power-orange flex items-center justify-end gap-1 text-3xl font-bold">
-                    <IndianRupee size={24} />
-                    {venue.pricePerHour}
-                    <span className="text-sm text-slate-600">/hr</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-power-orange/20 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
-            <div className="bg-turf-green/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
-          </div>
-        </div>
-      </div>
+      <div className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+        <nav aria-label="Venue pages" className="mb-10 text-sm">
+          <Link
+            href="/booking?tab=venues"
+            className="text-ink-body hover:text-ink focus-visible:ring-ink group inline-flex items-center gap-1.5 rounded font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2"
+          >
+            <ArrowLeft
+              aria-hidden
+              strokeWidth={1.5}
+              className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5 motion-reduce:transition-none"
+            />
+            All venues
+          </Link>
+        </nav>
 
-      {/* Main Content */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Left Column */}
-          <div className="space-y-6 lg:col-span-2">
-            {/* Images */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-16">
+          {/* Venue */}
+          <div className="min-w-0">
+            <header>
+              <p className="text-ink-muted mb-3 flex items-center gap-1.5 text-sm font-medium">
+                <Check aria-hidden strokeWidth={2} className="text-ink h-4 w-4" />
+                Verified venue
+              </p>
+              <h1 className="font-editorial text-ink wrap-break-word text-balance text-4xl font-light leading-[1.05] sm:text-5xl lg:text-6xl">
+                {venue.name}
+              </h1>
+              {venue.address && (
+                <p className="text-ink-body mt-4 max-w-[60ch] text-pretty text-base sm:text-lg">
+                  {venue.address}
+                </p>
+              )}
+              <p className="text-ink-body mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                <span className="flex items-center gap-2">
+                  <Star
+                    aria-hidden
+                    strokeWidth={1.5}
+                    className="h-4 w-4 fill-amber-400 text-amber-400"
+                  />
+                  <span className="text-ink font-semibold tabular-nums">
+                    {venue.rating?.toFixed(1) || "5.0"}
+                  </span>
+                  <span className="text-ink-muted">({venue.reviewCount || 0} reviews)</span>
+                </span>
+                <span className="text-ink">
+                  <span className="font-semibold tabular-nums">₹{venue.pricePerHour}</span>
+                  <span className="text-ink-muted"> per hour from</span>
+                </span>
+              </p>
+              <Button asChild size="md" className="mt-6 lg:hidden">
+                <a href="#book">Book a slot · ₹{pricePerHour}/hr</a>
+              </Button>
+            </header>
+
+            {/* Gallery */}
             {venueImages.length > 0 && (
-              <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-                <div className="border-b border-slate-200/70 bg-white/80 px-4 py-3 sm:px-5">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-                        Venue Gallery
-                      </p>
-                      <h2 className="text-lg font-bold text-slate-900">
-                        Explore the full venue visual story
-                      </h2>
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                      <span className="rounded-full bg-slate-100 px-3 py-1">
-                        {venuePhotoCount} venue photos
-                      </span>
-                      {sportPhotoCount > 0 && (
-                        <span className="bg-power-orange/10 text-power-orange rounded-full px-3 py-1">
-                          {selectedSportPhotoCountLabel(selectedSport, sportPhotoCount)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+              <section className="mt-12" aria-label="Venue photos">
+                <div
+                  className="bg-paper-deep group relative aspect-[4/3] w-full cursor-zoom-in overflow-hidden rounded-2xl sm:aspect-[16/10]"
+                  onClick={() => openLightbox(selectedImageIndex)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={venueImages[selectedImageIndex]}
+                    alt={`${venue.name}, photo ${selectedImageIndex + 1} of ${venueImages.length}`}
+                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
+                  />
+                  <p className="bg-paper/90 text-ink absolute bottom-3 left-3 rounded-md px-2.5 py-1 text-xs font-medium tabular-nums">
+                    {selectedImageIndex + 1} of {venueImages.length}
+                    {sportPhotoCount > 0
+                      ? ` · ${selectedSportPhotoCountLabel(selectedSport, sportPhotoCount)}`
+                      : ""}
+                  </p>
+                  {venueImages.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showPreviousImage();
+                        }}
+                        className={`${roundButton} left-3`}
+                        aria-label="Previous photo"
+                      >
+                        <ChevronLeft aria-hidden strokeWidth={1.5} size={20} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          showNextImage();
+                        }}
+                        className={`${roundButton} right-3`}
+                        aria-label="Next photo"
+                      >
+                        <ChevronRight aria-hidden strokeWidth={1.5} size={20} />
+                      </button>
+                    </>
+                  )}
                 </div>
 
-                <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_180px]">
-                  <div
-                    className="sm:h-112 group relative h-80 w-full cursor-zoom-in overflow-hidden bg-slate-100"
-                    onClick={() => openLightbox(selectedImageIndex)}
-                  >
-                    <img
-                      src={venueImages[selectedImageIndex]}
-                      alt={venue.name}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
-                    <div className="bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-0 h-36 from-black/70 via-black/35 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white">
-                      <div className="space-y-1">
-                        <p className="text-xs uppercase tracking-wide text-white/75">
-                          Tap to expand
-                        </p>
-                        <p className="text-sm font-semibold sm:text-base">
-                          Photo {selectedImageIndex + 1} of {venueImages.length}
-                        </p>
-                      </div>
-                      <div className="rounded-full border border-white/25 bg-black/30 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
-                        {selectedImageIndex + 1}/{venueImages.length}
-                      </div>
-                    </div>
-                    {venueImages.length > 1 && (
-                      <>
+                {venueImages.length > 1 && (
+                  <ul className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {venueImages.map((image, index) => (
+                      <li key={`${image}-${index}`} className="shrink-0">
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            showPreviousImage();
-                          }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
-                          aria-label="Previous image"
+                          onClick={() => setSelectedImageIndex(index)}
+                          aria-pressed={selectedImageIndex === index}
+                          aria-label={`Show photo ${index + 1}`}
+                          className={`focus-visible:ring-ink relative block h-16 w-24 overflow-hidden rounded-lg border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 ${
+                            selectedImageIndex === index
+                              ? "border-ink"
+                              : "border-hairline hover:border-ink/40 opacity-80 hover:opacity-100"
+                          }`}
                         >
-                          <ChevronLeft size={18} />
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={image}
+                            alt=""
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
                         </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            showNextImage();
-                          }}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-black/35 p-2 text-white backdrop-blur-sm transition hover:bg-black/55"
-                          aria-label="Next image"
-                        >
-                          <ChevronRight size={18} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="border-t border-slate-200/70 bg-white lg:border-l lg:border-t-0">
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-900">Photos</p>
-                      <p className="text-xs text-slate-500">Scroll to browse</p>
-                    </div>
-                    <div className="lg:h-112 overflow-y-auto overflow-x-hidden">
-                      <div className="grid grid-cols-3 gap-2 px-4 pb-4 sm:grid-cols-4 lg:grid-cols-2">
-                        {venueImages.map((image, index) => (
-                          <button
-                            type="button"
-                            key={`${image}-${index}`}
-                            onClick={() => setSelectedImageIndex(index)}
-                            className={`aspect-4/3 group relative overflow-hidden rounded-2xl border transition ${
-                              selectedImageIndex === index
-                                ? "border-power-orange ring-power-orange/40 ring-2"
-                                : "border-slate-200 hover:border-slate-300"
-                            }`}
-                            aria-label={`Show venue image ${index + 1}`}
-                          >
-                            <img
-                              src={image}
-                              alt={`${venue.name} thumbnail ${index + 1}`}
-                              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                            />
-                            <div className="pointer-events-none absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             )}
 
             {lightboxOpen && venueImages.length > 0 && (
               <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Venue photos"
+                className="bg-ink/90 fixed inset-0 z-50 flex items-center justify-center p-4"
                 onClick={() => setLightboxOpen(false)}
               >
                 <button
                   type="button"
                   onClick={() => setLightboxOpen(false)}
-                  className="absolute right-5 top-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
+                  className="bg-paper/90 text-ink absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full hover:bg-white"
                   aria-label="Close gallery"
                 >
-                  <X size={20} />
+                  <X aria-hidden strokeWidth={1.5} size={20} />
                 </button>
                 {venueImages.length > 1 && (
                   <>
@@ -570,10 +556,10 @@ export function VenueDetailClient() {
                         e.stopPropagation();
                         showPreviousImage();
                       }}
-                      className="absolute left-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
-                      aria-label="Previous image"
+                      className="bg-paper/90 text-ink absolute left-5 flex h-10 w-10 items-center justify-center rounded-full hover:bg-white"
+                      aria-label="Previous photo"
                     >
-                      <ChevronLeft size={22} />
+                      <ChevronLeft aria-hidden strokeWidth={1.5} size={22} />
                     </button>
                     <button
                       type="button"
@@ -581,163 +567,156 @@ export function VenueDetailClient() {
                         e.stopPropagation();
                         showNextImage();
                       }}
-                      className="absolute right-5 rounded-full border border-white/30 bg-black/35 p-2 text-white hover:bg-black/55"
-                      aria-label="Next image"
+                      className="bg-paper/90 text-ink absolute right-5 flex h-10 w-10 items-center justify-center rounded-full hover:bg-white"
+                      aria-label="Next photo"
                     >
-                      <ChevronRight size={22} />
+                      <ChevronRight aria-hidden strokeWidth={1.5} size={22} />
                     </button>
                   </>
                 )}
                 <div
-                  className="max-h-[86vh] max-w-5xl overflow-hidden rounded-2xl border border-white/20 bg-black"
+                  className="max-h-[86vh] max-w-5xl overflow-hidden rounded-2xl"
                   onClick={(e) => e.stopPropagation()}
                   onTouchStart={handleLightboxTouchStart}
                   onTouchMove={handleLightboxTouchMove}
                   onTouchEnd={handleLightboxTouchEnd}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={venueImages[selectedImageIndex]}
-                    alt={`${venue.name} photo ${selectedImageIndex + 1}`}
+                    alt={`${venue.name}, photo ${selectedImageIndex + 1}`}
                     className="max-h-[86vh] w-full object-contain"
                   />
                 </div>
               </div>
             )}
 
-            {/* Description */}
-            <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-6 backdrop-blur-sm">
-              <h2 className="mb-4 text-xl font-bold text-slate-900">About this Venue</h2>
-              <p className="leading-relaxed text-slate-600">
+            <section className="mt-16" aria-labelledby="about-heading">
+              <h2 id="about-heading" className={sectionHeading}>
+                About
+              </h2>
+              <p className="text-ink-body max-w-[65ch] text-base leading-relaxed sm:text-lg">
                 {venue.description ||
-                  "Experience world-class sports facilities at this premium venue. Perfect for athletes of all levels looking for quality training and play spaces."}
+                  "A venue for training and play, open for booking by the hour."}
               </p>
-            </Card>
+            </section>
 
-            <CommunityInsightsCard
-              title="Ask the community about this venue"
-              description="Get local feedback on crowd levels, coaching-friendly slots, and match quality before you lock your booking."
-              q={`${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`}
-              sport={selectedSport || venue?.sports?.[0] || ""}
-              ctaUrl={communityUrl}
-              enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
-            />
+            <div className="mt-14">
+              <CommunityInsightsCard
+                title="Ask the community about this venue"
+                description="Get local feedback on crowd levels, coaching-friendly slots, and match quality before you lock your booking."
+                q={`${selectedSport || venue?.sports?.[0] || ""} ${venue?.name || ""}`}
+                sport={selectedSport || venue?.sports?.[0] || ""}
+                ctaUrl={communityUrl}
+                enabled={Boolean(user && (user.role === "Player" || user.role === "Coach"))}
+              />
+            </div>
 
-            {/* Sports Available */}
-            <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-6 backdrop-blur-sm">
-              <h2 className="mb-4 text-lg font-semibold text-slate-900">Sports Available</h2>
-              <div className="flex flex-wrap gap-2">
-                {venue.sports?.map((sport, index) => (
+            {/* Sports */}
+            <section className="mt-14" aria-labelledby="sports-heading">
+              <h2 id="sports-heading" className={sectionHeading}>
+                Sports available
+              </h2>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Choose a sport">
+                {venue.sports?.map((sport) => (
                   <button
                     type="button"
-                    key={index}
+                    key={sport}
+                    aria-pressed={selectedSport === sport}
                     onClick={() => setSelectedSport(sport)}
-                    className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
-                      selectedSport === sport
-                        ? "bg-power-orange-solid border-power-orange-solid text-white shadow-sm"
-                        : "bg-power-orange/10 border-power-orange/20 text-power-orange hover:border-power-orange/40"
-                    }`}
+                    className={choice(selectedSport === sport)}
                   >
                     {sport}
                   </button>
                 ))}
               </div>
-            </Card>
+            </section>
 
             {selectedSport && selectedSportImages.length > 0 && (
-              <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-                <div className="flex items-center justify-between gap-3 border-b border-slate-200/70 bg-slate-50/80 px-5 py-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Sport spotlight
-                    </p>
-                    <h2 className="text-lg font-bold text-slate-900">{selectedSport} Photos</h2>
-                  </div>
-                  <span className="bg-power-orange/10 text-power-orange rounded-full px-3 py-1 text-xs font-semibold">
-                    {selectedSportImages.length} images
-                  </span>
-                </div>
-                <div className="p-4">
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                    {selectedSportImages.map((image, index) => {
-                      const globalIndex = venueImages.findIndex(
-                        (venueImage) => venueImage === image
-                      );
-                      return (
+              <section className="mt-14" aria-labelledby="sport-photos-heading">
+                <h2 id="sport-photos-heading" className={sectionHeading}>
+                  {selectedSport} photos
+                </h2>
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {selectedSportImages.map((image, index) => {
+                    const globalIndex = venueImages.findIndex((venueImage) => venueImage === image);
+                    return (
+                      <li key={`${selectedSport}-${index}-${image}`}>
                         <button
                           type="button"
-                          key={`${selectedSport}-${index}-${image}`}
                           onClick={() => openLightbox(globalIndex >= 0 ? globalIndex : 0)}
-                          className="aspect-4/3 group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                          aria-label={`Open ${selectedSport} image ${index + 1}`}
+                          className="bg-paper-deep focus-visible:ring-ink group relative block aspect-[4/3] w-full overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2"
+                          aria-label={`Open ${selectedSport} photo ${index + 1}`}
                         >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={image}
-                            alt={`${venue.name} ${selectedSport} image ${index + 1}`}
-                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                            alt={`${venue.name}, ${selectedSport} photo ${index + 1}`}
+                            loading="lazy"
+                            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
                           />
-                          <div className="bg-linear-to-t pointer-events-none absolute inset-0 from-black/20 to-transparent opacity-0 transition group-hover:opacity-100" />
-                          <div className="pointer-events-none absolute bottom-2 left-2 rounded-full bg-black/45 px-2 py-0.5 text-[11px] font-semibold text-white opacity-0 backdrop-blur-sm transition group-hover:opacity-100">
-                            {selectedSport} {index + 1}
-                          </div>
                         </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </Card>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
             )}
 
             {/* Amenities */}
             {venue.amenities && venue.amenities.length > 0 && (
-              <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-6 backdrop-blur-sm">
-                <h2 className="mb-4 text-lg font-semibold text-slate-900">
-                  Amenities & Facilities
+              <section className="mt-14" aria-labelledby="amenities-heading">
+                <h2 id="amenities-heading" className={sectionHeading}>
+                  Amenities
                 </h2>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <ul className="border-hairline grid grid-cols-1 gap-x-8 border-t sm:grid-cols-2">
                   {venue.amenities.map((amenity, index) => (
-                    <div
+                    <li
                       key={index}
-                      className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                      className="border-hairline text-ink flex items-center gap-3 border-b py-3.5"
                     >
-                      <Check size={16} className="text-turf-green shrink-0" />
+                      <Check aria-hidden strokeWidth={2} className="text-ink h-4 w-4 shrink-0" />
                       <span>{amenity}</span>
-                    </div>
+                    </li>
                   ))}
-                </div>
-              </Card>
+                </ul>
+              </section>
             )}
 
             {/* Reviews */}
-            <Card className="premium-shadow bg-white/92 rounded-3xl border border-slate-200/70 p-6 backdrop-blur-sm">
-              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">Venue Reviews</h2>
-                  <p className="mt-1 inline-flex items-center gap-1 text-sm text-slate-600">
-                    <Star size={14} className="fill-yellow-500 text-yellow-500" />
-                    {reviewSummary.averageRating.toFixed(1)} average · {reviewSummary.reviewCount}{" "}
-                    reviews
-                  </p>
-                </div>
-              </div>
+            <section className="mt-14" aria-labelledby="reviews-heading">
+              <h2 id="reviews-heading" className={sectionHeading}>
+                Reviews
+              </h2>
+              {reviewSummary.reviewCount > 0 && (
+                <p className="mb-6 flex items-baseline gap-3">
+                  <span className="font-editorial text-ink text-5xl font-light tabular-nums">
+                    {reviewSummary.averageRating.toFixed(1)}
+                  </span>
+                  <span className="text-ink-muted text-sm">
+                    from {reviewSummary.reviewCount}{" "}
+                    {reviewSummary.reviewCount === 1 ? "review" : "reviews"}
+                  </span>
+                </p>
+              )}
 
               {user && eligibleBookingId && (
-                <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="mb-3 text-sm font-semibold text-slate-800">Share your experience</p>
-                  <div className="mb-3 flex items-center gap-1">
+                <div className="border-hairline mb-8 rounded-2xl border bg-white p-5">
+                  <p className="text-ink mb-3 text-sm font-medium">Share your experience</p>
+                  <div className="mb-3 flex items-center gap-1" role="group" aria-label="Rating">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
+                        aria-label={`${star} star${star === 1 ? "" : "s"}`}
+                        aria-pressed={star <= reviewRating}
                         onClick={() => setReviewRating(star)}
-                        className="p-0.5"
+                        className="focus-visible:ring-ink rounded p-0.5 focus-visible:outline-none focus-visible:ring-2"
                       >
                         <Star
-                          size={20}
-                          className={
-                            star <= reviewRating
-                              ? "fill-yellow-500 text-yellow-500"
-                              : "text-slate-300"
-                          }
+                          aria-hidden
+                          strokeWidth={1.5}
+                          className={`h-6 w-6 ${star <= reviewRating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
                         />
                       </button>
                     ))}
@@ -747,8 +726,9 @@ export function VenueDetailClient() {
                     onChange={(e) => setReviewText(e.target.value)}
                     rows={3}
                     maxLength={1000}
+                    aria-label="Your review"
                     placeholder="Write your review (optional)"
-                    className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                    className="border-hairline text-ink placeholder:text-ink-muted focus-visible:ring-ink w-full resize-none rounded-lg border bg-white px-3.5 py-3 text-sm focus-visible:outline-none focus-visible:ring-2"
                   />
                   <div className="mt-3 flex justify-end">
                     <Button
@@ -756,87 +736,100 @@ export function VenueDetailClient() {
                       onClick={handleSubmitReview}
                       disabled={reviewSubmitting || reviewRating === 0}
                     >
-                      {reviewSubmitting ? "Submitting..." : "Submit Review"}
+                      {reviewSubmitting ? "Submitting…" : "Submit review"}
                     </Button>
                   </div>
                 </div>
               )}
 
               {user && !eligibleBookingId && (
-                <p className="mb-4 text-sm text-slate-500">
-                  {reviewEligibilityReason || "Complete a session for this venue to add a review."}
+                <p className="text-ink-muted mb-6 text-sm">
+                  {reviewEligibilityReason || "Complete a session at this venue to add a review."}
                 </p>
               )}
 
               {reviewLoading ? (
-                <div className="text-sm text-slate-500">Loading reviews...</div>
+                <p className="text-ink-muted text-sm">Loading reviews…</p>
               ) : reviews.length === 0 ? (
-                <p className="text-sm text-slate-500">
+                <p className="text-ink-body max-w-[52ch] text-pretty">
                   No reviews yet. Be the first to review this venue.
                 </p>
               ) : (
-                <div className="space-y-4">
+                <ul className="border-hairline border-t">
                   {reviews.map((review) => {
                     const reviewer =
                       typeof review.userId === "object" && review.userId !== null
                         ? review.userId
                         : null;
                     return (
-                      <div
+                      <li
                         key={String(review._id || review.id)}
-                        className="rounded-lg border border-slate-200 p-4"
+                        className="border-hairline border-b py-6"
                       >
-                        <div className="mb-2 flex items-center justify-between">
-                          <p className="text-sm font-semibold text-slate-900">
-                            {reviewer?.name || "User"}
-                          </p>
-                          <div className="flex items-center gap-1">
+                        <div className="flex items-baseline justify-between gap-4">
+                          <p className="text-ink font-semibold">{reviewer?.name || "A parent"}</p>
+                          <span
+                            className="flex items-center gap-0.5"
+                            role="img"
+                            aria-label={`${review.rating} out of 5`}
+                          >
                             {Array.from({ length: 5 }).map((_, index) => (
                               <Star
                                 key={index}
-                                size={14}
-                                className={
-                                  index < review.rating
-                                    ? "fill-yellow-500 text-yellow-500"
-                                    : "text-slate-300"
-                                }
+                                aria-hidden
+                                strokeWidth={1.5}
+                                className={`h-3.5 w-3.5 ${index < review.rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
                               />
                             ))}
-                          </div>
+                          </span>
                         </div>
-                        {review.review && <p className="text-sm text-slate-700">{review.review}</p>}
-                      </div>
+                        {review.review && (
+                          <p className="text-ink-body mt-2 max-w-[65ch] text-pretty leading-relaxed">
+                            {review.review}
+                          </p>
+                        )}
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               )}
-            </Card>
+            </section>
 
-            <div className="mt-6">
+            <div className="mt-16">
               <ParentExperiencesBand kind="VENUE" refId={venueId} name={venue.name} />
             </div>
           </div>
 
-          {/* Right Column - Booking Widget */}
-          <div className="lg:col-span-1">
-            <Card className="premium-shadow sticky top-24 rounded-3xl border border-slate-200/70 bg-white/95 p-6 backdrop-blur-sm">
-              <h2 className="mb-6 text-xl font-bold text-slate-900">Book Your Slot</h2>
-              <div className="space-y-5">
-                {/* Sport Selection */}
-                <div>
-                  <label className="mb-3 block text-sm font-semibold text-slate-700">
-                    Select Sport
-                  </label>
+          {/* Booking */}
+          <aside
+            id="book"
+            aria-label="Book a slot"
+            className="min-w-0 scroll-mt-24 lg:top-24 lg:[@media(min-height:860px)]:sticky"
+          >
+            <div className="border-hairline overflow-hidden rounded-2xl border bg-white">
+              <div className="border-hairline border-b p-6 sm:p-8">
+                <p className="text-ink-muted text-sm">{selectedSport || "Venue"} rate</p>
+                <p className="mt-1 flex items-baseline gap-3">
+                  <span className="font-editorial text-ink text-5xl font-light tabular-nums">
+                    ₹{pricePerHour}
+                  </span>
+                  <span className="text-ink-muted text-sm">per hour</span>
+                </p>
+              </div>
+
+              <div className="space-y-7 p-6 sm:p-8">
+                <div role="group" aria-labelledby="sport-label">
+                  <span id="sport-label" className={fieldLabel}>
+                    Sport
+                  </span>
                   <div className="grid grid-cols-2 gap-2">
                     {venue.sports?.map((sport) => (
                       <button
                         key={sport}
+                        type="button"
+                        aria-pressed={selectedSport === sport}
                         onClick={() => setSelectedSport(sport)}
-                        className={`rounded-lg border-2 px-4 py-3 text-sm font-semibold transition-all ${
-                          selectedSport === sport
-                            ? "bg-power-orange-solid border-power-orange-solid text-white shadow-md"
-                            : "hover:border-power-orange hover:bg-power-orange/5 border-slate-200 bg-white text-slate-700"
-                        }`}
+                        className={choice(selectedSport === sport)}
                       >
                         {sport}
                       </button>
@@ -844,183 +837,109 @@ export function VenueDetailClient() {
                   </div>
                 </div>
 
-                {/* Date Selection */}
                 <div>
-                  <label className="mb-3 block text-sm font-semibold text-slate-700">
-                    Select Date
+                  <label htmlFor="venue-date" className={fieldLabel}>
+                    Date
                   </label>
-                  <div className="relative">
-                    <Calendar
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                      size={18}
-                    />
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      min={getLocalDateString()}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border-2 border-slate-200 bg-white py-3 pl-10 pr-4 font-medium text-slate-900 focus:outline-none focus:ring-2"
-                    />
-                  </div>
+                  <input
+                    id="venue-date"
+                    type="date"
+                    value={selectedDate}
+                    min={getLocalDateString()}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="border-hairline text-ink focus-visible:ring-ink w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2"
+                  />
                 </div>
 
-                {/* Time Slots */}
-                <div>
-                  <label className="mb-3 block text-sm font-semibold text-slate-700">
-                    Select Time Slot
-                  </label>
+                <div role="group" aria-labelledby="slot-label">
+                  <span id="slot-label" className={fieldLabel}>
+                    Time
+                  </span>
                   {!availability ? (
-                    <div className="flex justify-center py-4">
-                      <div className="border-power-orange h-6 w-6 animate-spin rounded-full border-b-2"></div>
+                    <div className="grid grid-cols-2 gap-2" aria-busy="true">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="bg-paper-deep h-11 animate-pulse rounded-lg" />
+                      ))}
                     </div>
                   ) : slotsToDisplay.length > 0 ? (
-                    <div className="custom-scrollbar grid max-h-60 grid-cols-2 gap-2 overflow-y-auto">
-                      {slotsToDisplay.map((slot: any) => {
-                        const startTime = slot.split("-")[0] || slot;
-                        const startHour = parseInt(startTime.split(":")[0] || "0", 10);
-                        const endTime =
-                          slot.split("-")[1] || `${String(startHour + 1).padStart(2, "0")}:00`;
-                        const isSlotAvailable =
-                          availability?.availableSlots?.some(
-                            (availSlot) => (availSlot.split("-")[0] || availSlot) === startTime
-                          ) ?? false;
-                        const isSelected = selectedSlot?.startTime === startTime;
-                        return (
-                          <button
-                            key={slot}
-                            onClick={() => setSelectedSlot({ startTime, endTime })}
-                            className={`rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all ${
-                              isSlotAvailable
-                                ? isSelected
-                                  ? "bg-turf-green border-turf-green text-white shadow-md"
-                                  : "hover:border-turf-green border-slate-200 bg-white text-slate-700"
-                                : isSelected
-                                  ? "bg-power-orange-solid border-power-orange-solid text-white shadow-md"
-                                  : "border-dashed border-amber-200 bg-amber-50/50 text-amber-700 hover:border-amber-400 hover:bg-amber-50"
-                            }`}
-                          >
-                            <div className="flex flex-col items-center justify-center">
-                              <span
-                                className={
-                                  !isSlotAvailable && !isSelected
-                                    ? "text-slate-500 line-through"
-                                    : ""
-                                }
-                              >
-                                {startTime} - {endTime}
-                              </span>
-                              {!isSlotAvailable && (
-                                <span
-                                  className={`text-[10px] font-semibold ${
-                                    isSelected ? "text-white/90" : "text-amber-600"
-                                  }`}
-                                >
-                                  Join Waitlist
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <SlotGrid
+                      slots={slotsToDisplay}
+                      availableSlots={availability?.availableSlots ?? []}
+                      selectedStart={selectedSlot?.startTime ?? null}
+                      onSelect={setSelectedSlot}
+                    />
                   ) : (
-                    <p className="py-4 text-center text-sm text-slate-500">
-                      No slots available for this date.
-                    </p>
+                    <p className="text-ink-muted py-2 text-sm">No slots available for this date.</p>
                   )}
                 </div>
 
-                {/* Summary & CTA */}
-                <div className="border-t-2 border-slate-100 pt-5">
+                <div className="border-hairline border-t pt-6">
                   {selectedSport && selectedSlot && (
-                    <div className="mb-4 space-y-2 rounded-lg bg-slate-50 p-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Sport:</span>
-                        <span className="font-semibold text-slate-900">{selectedSport}</span>
+                    <dl className="text-ink-body mb-5 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <dt>Sport</dt>
+                        <dd className="text-ink font-medium">{selectedSport}</dd>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Time:</span>
-                        <span className="font-semibold text-slate-900">
-                          {selectedSlot.startTime} - {selectedSlot.endTime}
-                        </span>
+                      <div className="flex justify-between">
+                        <dt>Time</dt>
+                        <dd className="text-ink font-medium tabular-nums">
+                          {selectedSlot.startTime} – {selectedSlot.endTime}
+                        </dd>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Status:</span>
-                        <span
-                          className={`font-semibold ${
-                            isSelectedSlotAvailable ? "text-turf-green" : "text-power-orange"
-                          }`}
-                        >
-                          {isSelectedSlotAvailable ? "Available" : "Booked (Waitlist)"}
-                        </span>
+                      <div className="flex justify-between">
+                        <dt>Status</dt>
+                        <dd className="text-ink font-medium">
+                          {isSelectedSlotAvailable ? "Available" : "Booked, join the waitlist"}
+                        </dd>
                       </div>
-                      <div className="flex items-center justify-between border-t border-slate-200 pt-2">
-                        <span className="font-medium text-slate-600">Total:</span>
-                        <span className="flex items-center text-xl font-bold text-slate-900">
-                          {isSelectedSlotAvailable ? (
-                            <>
-                              <IndianRupee size={18} />
-                              {venue.sportPricing?.[selectedSport] || venue.pricePerHour}
-                            </>
-                          ) : (
-                            "Free (Join Waitlist)"
-                          )}
-                        </span>
+                      <div className="border-hairline flex items-baseline justify-between border-t pt-3">
+                        <dt className="text-ink">Total</dt>
+                        <dd className="font-editorial text-ink text-2xl font-light tabular-nums">
+                          {isSelectedSlotAvailable ? `₹${pricePerHour}` : "Free to join"}
+                        </dd>
                       </div>
-                    </div>
+                    </dl>
                   )}
 
                   {user ? (
-                    isSelectedSlotAvailable ? (
+                    !selectedSlot ? (
+                      <Button variant="primary" size="lg" className="w-full" disabled>
+                        Select a time to continue
+                      </Button>
+                    ) : isSelectedSlotAvailable ? (
                       <Button
                         variant="primary"
-                        className="h-12 w-full text-base font-semibold shadow-lg"
+                        size="lg"
+                        className="w-full"
                         onClick={handleBooking}
                         disabled={bookingLoading || !selectedSlot || !selectedSport}
+                        loading={bookingLoading}
                       >
-                        {bookingLoading ? (
-                          <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <Check size={20} className="mr-2" />
-                            Confirm Booking
-                          </>
-                        )}
+                        Confirm booking
                       </Button>
                     ) : (
                       <Button
-                        variant="primary"
-                        className="bg-power-orange-solid hover:bg-power-orange-solid/90 border-power-orange-solid h-12 w-full text-base font-semibold text-white shadow-lg"
+                        variant="secondary"
+                        size="lg"
+                        className="w-full"
                         onClick={handleJoinWaitlist}
                         disabled={bookingLoading || !selectedSlot || !selectedSport}
+                        loading={bookingLoading}
                       >
-                        {bookingLoading ? (
-                          <>
-                            <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white"></div>
-                            Joining Waitlist...
-                          </>
-                        ) : (
-                          <>
-                            <Check size={20} className="mr-2" />
-                            Join Waitlist
-                          </>
-                        )}
+                        Join waitlist
                       </Button>
                     )
                   ) : (
                     <Link href={`/login?redirect=/venues/${venueId}`}>
-                      <Button variant="secondary" className="h-12 w-full text-base font-semibold">
-                        Sign In to Book
+                      <Button variant="outline" size="lg" className="w-full">
+                        Sign in to book
                       </Button>
                     </Link>
                   )}
                 </div>
               </div>
-            </Card>
-          </div>
+            </div>
+          </aside>
         </div>
       </div>
     </div>

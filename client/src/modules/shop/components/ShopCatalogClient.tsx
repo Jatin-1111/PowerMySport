@@ -247,7 +247,7 @@ export function ShopCatalogClient({
 
           <div className="hidden h-6 w-px bg-slate-200 sm:block" />
 
-          <div className="no-scrollbar flex items-center gap-6 overflow-x-auto">
+          <div className="hide-scrollbar flex items-center gap-6 overflow-x-auto">
             {["All Products", "Best Sellers", "New Arrivals"].map((tab) => (
               <button
                 key={tab}

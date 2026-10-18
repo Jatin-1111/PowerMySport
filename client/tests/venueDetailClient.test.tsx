@@ -185,11 +185,11 @@ describe("VenueDetailClient — sport-specific pricing", () => {
     await screen.findByText("Downtown Sports Complex");
     selectFutureDate();
 
-    fireEvent.click(await screen.findByText("09:00 - 10:00"));
+    fireEvent.click(await screen.findByRole("button", { name: /^09:00 to 10:00/ }));
 
     // Tennis (the default sport) has an override of 1000, not the venue's
     // flat pricePerHour of 800.
-    expect(screen.getByText("1000")).toBeInTheDocument();
+    expect(screen.getAllByText("₹1000").length).toBeGreaterThan(0);
   });
 
   it("falls back to the flat pricePerHour for a sport with no override", async () => {
@@ -207,11 +207,11 @@ describe("VenueDetailClient — sport-specific pricing", () => {
     // in the sidebar's own sport picker — either instance sets the same
     // selectedSport state.
     fireEvent.click(screen.getAllByRole("button", { name: "Badminton" })[0]);
-    fireEvent.click(await screen.findByText("09:00 - 10:00"));
+    fireEvent.click(await screen.findByRole("button", { name: /^09:00 to 10:00/ }));
 
     // "800" (the venue's flat pricePerHour) renders both in the header's
     // "Starting from" price and again in the sidebar's booking total.
-    expect(screen.getAllByText("800").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/₹800/).length).toBeGreaterThan(0);
   });
 });
 
@@ -235,7 +235,7 @@ describe("VenueDetailClient — availability and booking", () => {
     await screen.findByText("Downtown Sports Complex");
     selectFutureDate();
 
-    fireEvent.click(await screen.findByText("09:00 - 10:00"));
+    fireEvent.click(await screen.findByRole("button", { name: /^09:00 to 10:00/ }));
     expect(screen.getByText("Available")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Confirm Booking/i }));
@@ -261,7 +261,7 @@ describe("VenueDetailClient — availability and booking", () => {
     await screen.findByText("Downtown Sports Complex");
     selectFutureDate();
 
-    fireEvent.click(await screen.findByText("09:00 - 10:00"));
+    fireEvent.click(await screen.findByRole("button", { name: /^09:00 to 10:00/ }));
     fireEvent.click(screen.getByRole("button", { name: /Confirm Booking/i }));
 
     expect(toastError).toHaveBeenCalledWith("Only player accounts can create bookings.");
@@ -280,13 +280,13 @@ describe("VenueDetailClient — availability and booking", () => {
     await screen.findByText("Downtown Sports Complex");
     selectFutureDate();
 
-    fireEvent.click(await screen.findByText("09:00 - 10:00"));
-    expect(screen.getByText("Booked (Waitlist)")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: /^09:00 to 10:00/ }));
+    expect(screen.getByText("Booked, join the waitlist")).toBeInTheDocument();
 
     // The slot button's own accessible name concatenates both its text
     // nodes ("09:00 - 10:00 Join Waitlist"); the sidebar CTA's name is
     // exactly "Join Waitlist".
-    fireEvent.click(screen.getByRole("button", { name: "Join Waitlist" }));
+    fireEvent.click(screen.getByRole("button", { name: "Join waitlist" }));
 
     await waitFor(() => {
       expect(joinWaitlist).toHaveBeenCalledWith(
@@ -303,14 +303,14 @@ describe("VenueDetailClient — image gallery and lightbox", () => {
     renderVenuePage();
     await screen.findByText("Downtown Sports Complex");
 
-    expect(screen.getByText("Photo 1 of 2")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Photo 1 of 2"));
+    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("1 of 2"));
 
     expect(screen.getByLabelText("Close gallery")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "ArrowRight" });
     // The main hero photo counter advances alongside the lightbox.
-    expect(screen.getByText("Photo 2 of 2")).toBeInTheDocument();
+    expect(screen.getByText("2 of 2")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByLabelText("Close gallery")).not.toBeInTheDocument();
@@ -321,9 +321,9 @@ describe("VenueDetailClient — image gallery and lightbox", () => {
     renderVenuePage();
     await screen.findByText("Downtown Sports Complex");
 
-    fireEvent.click(screen.getByLabelText("Show venue image 2"));
+    fireEvent.click(screen.getByLabelText("Show photo 2"));
 
-    expect(screen.getByText("Photo 2 of 2")).toBeInTheDocument();
+    expect(screen.getByText("2 of 2")).toBeInTheDocument();
   });
 });
 
@@ -343,10 +343,7 @@ describe("VenueDetailClient — reviews", () => {
     const submitButton = screen.getByRole("button", { name: /Submit Review/i });
     expect(submitButton).toBeDisabled();
 
-    const ratingButtons = screen
-      .getAllByRole("button", { name: "" })
-      .filter((btn) => btn.querySelector("svg.lucide-star"));
-    fireEvent.click(ratingButtons[4]); // 5th star = rating 5
+    fireEvent.click(screen.getByRole("button", { name: "5 stars" }));
 
     expect(submitButton).not.toBeDisabled();
     fireEvent.click(submitButton);

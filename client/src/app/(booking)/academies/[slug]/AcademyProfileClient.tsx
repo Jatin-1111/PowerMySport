@@ -4,17 +4,8 @@ import ParentExperiencesBand from "@/modules/community/components/ParentExperien
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import { OnboardingAcademy } from "@/modules/onboarding/types/academy";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
-import {
-  BadgeCheck,
-  CalendarDays,
-  Clock3,
-  IndianRupee,
-  Mail,
-  MapPin,
-  Phone,
-  Users,
-} from "lucide-react";
+import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { BadgeCheck, Mail, MapPin, Phone, Users } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -106,26 +97,35 @@ export function AcademyProfileClient() {
 
   if (loading) {
     return (
-      <div className="bg-paper flex min-h-screen items-center justify-center">
-        <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2" />
+      <div className="bg-paper min-h-screen" aria-busy="true" aria-label="Loading academy">
+        <div className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+          <Skeleton className="mb-10 h-5 w-28" />
+          <div className="flex items-end gap-8">
+            <Skeleton className="h-24 w-24 rounded-2xl sm:h-32 sm:w-32" />
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-12 w-72 max-w-full" />
+            </div>
+          </div>
+          <Skeleton className="mt-12 aspect-[16/7] w-full rounded-2xl" />
+          <Skeleton className="mt-12 h-40 w-full" />
+        </div>
       </div>
     );
   }
 
   if (!academy) {
     return (
-      <div className="bg-paper flex min-h-screen flex-col items-center justify-center">
-        <Card className="w-full max-w-md rounded-2xl border-slate-200 bg-white/90 p-8 text-center">
-          <h1 className="font-editorial text-2xl font-normal text-slate-900">Academy not found</h1>
-          <p className="mt-2 text-sm text-slate-600">
+      <div className="bg-paper flex min-h-screen flex-col items-center justify-center px-4">
+        <div className="max-w-md text-center">
+          <h1 className="font-editorial text-ink text-4xl font-light">Academy not found</h1>
+          <p className="text-ink-body mt-3 text-pretty">
             This academy profile may be unavailable or not publicly visible yet.
           </p>
-          <div className="mt-5">
-            <Link href="/booking?tab=academies">
-              <Button variant="primary">Browse Academies</Button>
-            </Link>
-          </div>
-        </Card>
+          <Link href="/booking?tab=academies" className="mt-6 inline-block">
+            <Button variant="primary">Browse academies</Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -142,452 +142,512 @@ export function AcademyProfileClient() {
     router.push(`/checkout?${checkoutParams.toString()}`);
   };
 
+  const location = [academy.city, academy.state].filter(Boolean).join(", ");
+  const isVerified = Boolean(academy.kycVerified && academy.isApproved);
+  const phone = academy.contactPhone || academy.whatsappNumber;
+
+  const sectionHeading = "font-editorial text-ink mb-4 text-2xl font-normal sm:text-3xl";
+  const emptyNote = "text-ink-body max-w-[52ch] text-pretty";
+
+  const onTabKeyDown = (e: React.KeyboardEvent) => {
+    const index = TABS.findIndex((t) => t.key === activeTab);
+    let next = index;
+    if (e.key === "ArrowRight") next = (index + 1) % TABS.length;
+    else if (e.key === "ArrowLeft") next = (index - 1 + TABS.length) % TABS.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = TABS.length - 1;
+    else return;
+    e.preventDefault();
+    setActiveTab(TABS[next].key);
+    (e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus();
+  };
+
+  // A plain card for a linked coach, venue, plan or package.
+  const tile = "border-hairline rounded-2xl border bg-white p-5";
+
   return (
     <div className="bg-paper min-h-screen">
-      <section className="mx-auto w-full max-w-7xl px-4 pb-8 pt-4 sm:px-6 lg:px-8">
-        <div className="mb-4">
+      <div className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+        <nav aria-label="Academy pages" className="mb-10 text-sm">
           <Link
             href="/booking?tab=academies"
-            className="text-power-orange inline-flex items-center gap-1 text-sm font-semibold hover:text-orange-700"
+            className="text-ink-body hover:text-ink focus-visible:ring-ink group inline-flex items-center gap-1.5 rounded font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2"
           >
-            ← Back to academies
+            <span
+              aria-hidden
+              className="transition-transform duration-200 group-hover:-translate-x-0.5 motion-reduce:transition-none"
+            >
+              ←
+            </span>
+            All academies
           </Link>
-        </div>
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm">
-          <div className="relative h-60 w-full bg-slate-200 sm:h-72 lg:h-80">
-            {coverImage ? (
-              <img src={coverImage} alt={academy.name} className="h-full w-full object-cover" />
+        </nav>
+
+        <header className="grid gap-8 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-end lg:gap-10">
+          <div className="bg-paper-deep aspect-square w-24 shrink-0 overflow-hidden rounded-2xl sm:w-32">
+            {logoImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoImage}
+                alt={`${academy.name} logo`}
+                className="h-full w-full object-cover"
+              />
             ) : (
-              <div className="flex h-full items-center justify-center bg-slate-200 text-slate-600">
-                No cover photo
+              <div
+                aria-hidden
+                className="font-editorial text-ink-muted flex h-full w-full items-center justify-center text-5xl font-light"
+              >
+                {academy.name.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
-
-          <div className="px-5 py-6 sm:px-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="h-16 w-16 overflow-hidden rounded-2xl border border-slate-200 bg-white sm:h-20 sm:w-20">
-                  {logoImage ? (
-                    <img
-                      src={logoImage}
-                      alt={`${academy.name} logo`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-slate-100 text-xs font-semibold text-slate-500">
-                      Logo
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
-                      {academy.name}
-                    </h1>
-                    {academy.kycVerified && academy.isApproved && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                        <BadgeCheck size={14} />
-                        Verified
-                      </span>
-                    )}
-                  </div>
-                  <p className="inline-flex items-center gap-1 text-sm text-slate-600">
-                    <MapPin size={14} />
-                    {[academy.city, academy.state].filter(Boolean).join(", ") ||
-                      "Location unavailable"}
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700">
-                      <IndianRupee size={14} />
-                      {typeof sessionRate === "number" ? `${sessionRate}/hr` : "Price on request"}
-                    </p>
-                    <p className="text-sm font-semibold text-slate-700">
-                      {typeof academy.rating === "number" ? academy.rating.toFixed(1) : "New"}
-                      <span className="ml-1 font-normal text-slate-500">
-                        ({academy.reviewCount || 0} reviews)
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {(academy.sports || []).map((sport) => (
-                  <span
-                    key={sport}
-                    className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700"
-                  >
-                    {sport}
-                  </span>
-                ))}
-              </div>
-            </div>
+          <div className="min-w-0">
+            {isVerified && (
+              <p className="text-ink-muted mb-3 flex items-center gap-1.5 text-sm font-medium">
+                <BadgeCheck aria-hidden strokeWidth={1.75} className="text-ink h-4 w-4" />
+                Verified academy
+              </p>
+            )}
+            <h1 className="font-editorial text-ink wrap-break-word text-balance text-4xl font-light leading-[1.05] sm:text-5xl lg:text-6xl">
+              {academy.name}
+            </h1>
+            <p className="text-ink-body mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span>{location || "Location unavailable"}</span>
+              <span className="text-ink font-semibold tabular-nums">
+                {typeof academy.rating === "number" ? academy.rating.toFixed(1) : "New"}
+                <span className="text-ink-muted ml-1 font-normal">
+                  ({academy.reviewCount || 0} reviews)
+                </span>
+              </span>
+            </p>
+            <Button asChild size="md" className="mt-6 lg:hidden">
+              <a href="#book">
+                Book a session
+                {typeof sessionRate === "number" ? ` · ₹${sessionRate}/hr` : ""}
+              </a>
+            </Button>
           </div>
+        </header>
+
+        <div className="bg-paper-deep mt-12 aspect-[16/9] w-full overflow-hidden rounded-2xl sm:aspect-[16/7]">
+          {coverImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverImage} alt={academy.name} className="h-full w-full object-cover" />
+          ) : (
+            <div className="text-ink-muted flex h-full items-center justify-center text-sm">
+              No cover photo yet
+            </div>
+          )}
         </div>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white/85 p-2">
-          <div className="flex flex-wrap gap-2">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${activeTab === tab.key ? "bg-power-orange-solid text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+        {(academy.sports || []).length > 0 && (
+          <dl className="border-hairline mt-8 grid gap-1 border-y py-5 sm:grid-cols-[8rem_1fr] sm:gap-6">
+            <dt className="text-ink-muted text-sm">Sports</dt>
+            <dd className="text-ink text-pretty">{(academy.sports || []).join(", ")}</dd>
+          </dl>
+        )}
+
+        <div className="mt-12 grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-16">
+          <div className="min-w-0">
+            {/* Tabs */}
+            <div className="border-hairline hide-scrollbar -mx-4 overflow-x-auto border-b px-4 sm:mx-0 sm:px-0">
+              <div
+                role="tablist"
+                aria-label="Academy sections"
+                onKeyDown={onTabKeyDown}
+                className="hide-scrollbar -mb-px flex gap-1 whitespace-nowrap"
               >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-6">
-          {activeTab === "overview" && (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <Card className="rounded-2xl border-slate-200 bg-white/90 lg:col-span-2">
-                <h2 className="text-lg font-bold text-slate-900">About Academy</h2>
-                <p className="mt-3 text-sm leading-relaxed text-slate-700">
-                  {academy.description || "No description provided yet."}
-                </p>
-                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Age Groups
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {(academy.ageGroups || []).length > 0 ? (
-                        (academy.ageGroups || []).map((group) => (
-                          <span
-                            key={group}
-                            className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
-                          >
-                            {formatAgeGroup(group)}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-slate-500">Not provided</span>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Languages
-                    </p>
-                    <p className="mt-2 text-sm text-slate-700">
-                      {(academy.languagesSpoken || []).join(", ") || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Established
-                    </p>
-                    <p className="mt-2 text-sm text-slate-700">
-                      {academy.establishedYear || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Batch Size
-                    </p>
-                    <p className="mt-2 text-sm text-slate-700">
-                      {academy.maxBatchSize ? `${academy.maxBatchSize} students` : "Not provided"}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="rounded-2xl border-slate-200 bg-white/90">
-                <h2 className="text-lg font-bold text-slate-900">Contact & Location</h2>
-                <div className="mt-4 space-y-3 text-sm text-slate-700">
-                  <p className="inline-flex items-center gap-2">
-                    <MapPin size={14} className="text-slate-500" />
-                    {[academy.address, academy.city, academy.state, academy.pincode]
-                      .filter(Boolean)
-                      .join(", ") || "Address unavailable"}
-                  </p>
-                  <p className="inline-flex items-center gap-2">
-                    <Users size={14} className="text-slate-500" />
-                    {academy.contactPersonName || "Contact person not provided"}
-                  </p>
-                  <p className="inline-flex items-center gap-2">
-                    <Mail size={14} className="text-slate-500" />
-                    {academy.contactEmail || "Email unavailable"}
-                  </p>
-                  <p className="inline-flex items-center gap-2">
-                    <Phone size={14} className="text-slate-500" />
-                    {academy.contactPhone || academy.whatsappNumber || "Phone unavailable"}
-                  </p>
-                </div>
-                {academy.placeId && (
-                  <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-                    <iframe
-                      title="Academy map"
-                      src={`https://www.google.com/maps?q=place_id:${academy.placeId}&output=embed`}
-                      loading="lazy"
-                      className="h-56 w-full"
-                    />
-                  </div>
-                )}
-              </Card>
-
-              <Card className="rounded-2xl border-slate-200 bg-white/90 lg:col-span-3">
-                <h2 className="inline-flex items-center gap-2 text-lg font-bold text-slate-900">
-                  <Clock3 size={18} />
-                  Operating Hours
-                </h2>
-                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                  {dayOrder.map((day) => {
-                    const dayConfig = academy.operatingHours?.[day];
-                    const label = day.charAt(0).toUpperCase() + day.slice(1);
-                    return (
-                      <div
-                        key={day}
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
-                      >
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {label}
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-slate-700">
-                          {dayConfig?.isOpen
-                            ? `${dayConfig.openTime || "--:--"} - ${dayConfig.closeTime || "--:--"}`
-                            : "Closed"}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {activeTab === "coaches" && (
-            <Card className="rounded-2xl border-slate-200 bg-white/90">
-              <h2 className="text-lg font-bold text-slate-900">Coaches</h2>
-              {academy.coachIds && academy.coachIds.length > 0 ? (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {academy.coachIds.map((coach, index) => {
-                    const coachObj =
-                      typeof coach === "object"
-                        ? (coach as {
-                            _id?: string;
-                            id?: string;
-                            name?: string;
-                          })
-                        : null;
-                    const key = coachObj?._id || coachObj?.id || `${index}`;
-                    return (
-                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-sm font-semibold text-slate-800">
-                          {coachObj?.name || `Coach ${index + 1}`}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">Assigned to academy</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-slate-600">No coaches linked yet.</p>
-              )}
-            </Card>
-          )}
-
-          {activeTab === "venues" && (
-            <Card className="rounded-2xl border-slate-200 bg-white/90">
-              <h2 className="text-lg font-bold text-slate-900">Venues</h2>
-              {academy.venueIds && academy.venueIds.length > 0 ? (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {academy.venueIds.map((venue, index) => {
-                    const venueObj =
-                      typeof venue === "object"
-                        ? (venue as {
-                            _id?: string;
-                            id?: string;
-                            name?: string;
-                          })
-                        : null;
-                    const key = venueObj?._id || venueObj?.id || `${index}`;
-                    return (
-                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-sm font-semibold text-slate-800">
-                          {venueObj?.name || `Venue ${index + 1}`}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">Managed by academy</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-slate-600">No venues linked yet.</p>
-              )}
-            </Card>
-          )}
-
-          {activeTab === "subscriptions" && (
-            <Card className="rounded-2xl border-slate-200 bg-white/90">
-              <h2 className="text-lg font-bold text-slate-900">Subscription Plans</h2>
-              {academy.subscriptionPlans && academy.subscriptionPlans.length > 0 ? (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {academy.subscriptionPlans.map((plan, index) => {
-                    const planObj =
-                      typeof plan === "object"
-                        ? (plan as {
-                            _id?: string;
-                            id?: string;
-                            name?: string;
-                            price?: number;
-                          })
-                        : null;
-                    const key = planObj?._id || planObj?.id || `${index}`;
-                    const price =
-                      typeof planObj?.price === "number" ? Math.round(planObj.price / 100) : null;
-                    return (
-                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-sm font-semibold text-slate-800">
-                          {planObj?.name || `Plan ${index + 1}`}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-600">
-                          {typeof price === "number" ? `₹${price}` : "Price available on request"}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-slate-600">No subscription plans published yet.</p>
-              )}
-            </Card>
-          )}
-
-          {activeTab === "packages" && (
-            <Card className="rounded-2xl border-slate-200 bg-white/90">
-              <h2 className="text-lg font-bold text-slate-900">Session Packages</h2>
-              {academy.sessionPackages && academy.sessionPackages.length > 0 ? (
-                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {academy.sessionPackages.map((pkg, index) => {
-                    const packageObj =
-                      typeof pkg === "object"
-                        ? (pkg as {
-                            _id?: string;
-                            id?: string;
-                            name?: string;
-                            price?: number;
-                          })
-                        : null;
-                    const key = packageObj?._id || packageObj?.id || `${index}`;
-                    const price =
-                      typeof packageObj?.price === "number"
-                        ? Math.round(packageObj.price / 100)
-                        : null;
-                    return (
-                      <div key={key} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-sm font-semibold text-slate-800">
-                          {packageObj?.name || `Package ${index + 1}`}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-600">
-                          {typeof price === "number" ? `₹${price}` : "Price available on request"}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-slate-600">No session packages published yet.</p>
-              )}
-            </Card>
-          )}
-
-          {activeTab === "gallery" && (
-            <Card className="rounded-2xl border-slate-200 bg-white/90">
-              <h2 className="text-lg font-bold text-slate-900">Gallery</h2>
-              {galleryImages.length > 0 ? (
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {galleryImages.map((image, index) => (
-                    <div
-                      key={`${image}-${index}`}
-                      className="h-56 overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                {TABS.map((tab) => {
+                  const active = activeTab === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      role="tab"
+                      id={`academy-tab-${tab.key}`}
+                      aria-selected={active}
+                      aria-controls="academy-panel"
+                      tabIndex={active ? 0 : -1}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`focus-visible:ring-ink border-b-2 px-3 py-3.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${
+                        active
+                          ? "border-ink text-ink"
+                          : "text-ink-muted hover:text-ink border-transparent"
+                      }`}
                     >
-                      <img
-                        src={image}
-                        alt={`${academy.name} gallery ${index + 1}`}
-                        className="h-full w-full object-cover"
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div
+              role="tabpanel"
+              id="academy-panel"
+              aria-labelledby={`academy-tab-${activeTab}`}
+              className="mt-12"
+            >
+              {activeTab === "overview" && (
+                <div className="space-y-14">
+                  <section aria-labelledby="about-heading">
+                    <h2 id="about-heading" className={sectionHeading}>
+                      About
+                    </h2>
+                    <p className="text-ink-body max-w-[65ch] text-base leading-relaxed sm:text-lg">
+                      {academy.description || "No description provided yet."}
+                    </p>
+                    <dl className="border-hairline mt-8 grid grid-cols-1 gap-x-8 gap-y-6 border-t pt-6 sm:grid-cols-2">
+                      <div>
+                        <dt className="text-ink-muted text-sm">Age groups</dt>
+                        <dd className="text-ink mt-1 font-medium">
+                          {(academy.ageGroups || []).length > 0
+                            ? (academy.ageGroups || []).map(formatAgeGroup).join(", ")
+                            : "Not provided"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-muted text-sm">Languages</dt>
+                        <dd className="text-ink mt-1 font-medium">
+                          {(academy.languagesSpoken || []).join(", ") || "Not provided"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-muted text-sm">Established</dt>
+                        <dd className="text-ink mt-1 font-medium tabular-nums">
+                          {academy.establishedYear || "Not provided"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-muted text-sm">Batch size</dt>
+                        <dd className="text-ink mt-1 font-medium">
+                          {academy.maxBatchSize
+                            ? `${academy.maxBatchSize} students`
+                            : "Not provided"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+
+                  <section aria-labelledby="contact-heading">
+                    <h2 id="contact-heading" className={sectionHeading}>
+                      Contact and location
+                    </h2>
+                    <ul className="border-hairline text-ink border-t">
+                      {[
+                        {
+                          icon: MapPin,
+                          value:
+                            [academy.address, academy.city, academy.state, academy.pincode]
+                              .filter(Boolean)
+                              .join(", ") || "Address unavailable",
+                        },
+                        {
+                          icon: Users,
+                          value: academy.contactPersonName || "Contact person not provided",
+                        },
+                        { icon: Mail, value: academy.contactEmail || "Email unavailable" },
+                        { icon: Phone, value: phone || "Phone unavailable" },
+                      ].map(({ icon: Icon, value }) => (
+                        <li
+                          key={value}
+                          className="border-hairline flex items-start gap-3 border-b py-3.5"
+                        >
+                          <Icon
+                            aria-hidden
+                            strokeWidth={1.5}
+                            className="text-ink-muted mt-0.5 h-4 w-4 shrink-0"
+                          />
+                          <span>{value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {academy.placeId && (
+                      <div className="mt-6 overflow-hidden rounded-2xl">
+                        <iframe
+                          title="Academy map"
+                          src={`https://www.google.com/maps?q=place_id:${academy.placeId}&output=embed`}
+                          loading="lazy"
+                          className="h-64 w-full"
+                        />
+                      </div>
+                    )}
+                  </section>
+
+                  <section aria-labelledby="hours-heading">
+                    <h2 id="hours-heading" className={sectionHeading}>
+                      Operating hours
+                    </h2>
+                    <dl className="border-hairline border-t">
+                      {dayOrder.map((day) => {
+                        const dayConfig = academy.operatingHours?.[day];
+                        const label = day.charAt(0).toUpperCase() + day.slice(1);
+                        return (
+                          <div
+                            key={day}
+                            className="border-hairline flex items-baseline justify-between gap-4 border-b py-3"
+                          >
+                            <dt className="text-ink-body">{label}</dt>
+                            <dd
+                              className={`tabular-nums ${dayConfig?.isOpen ? "text-ink font-medium" : "text-ink-muted"}`}
+                            >
+                              {dayConfig?.isOpen
+                                ? `${dayConfig.openTime || "--:--"} – ${dayConfig.closeTime || "--:--"}`
+                                : "Closed"}
+                            </dd>
+                          </div>
+                        );
+                      })}
+                    </dl>
+                  </section>
+                </div>
+              )}
+
+              {activeTab === "coaches" && (
+                <section aria-labelledby="coaches-heading">
+                  <h2 id="coaches-heading" className={sectionHeading}>
+                    Coaches
+                  </h2>
+                  {academy.coachIds && academy.coachIds.length > 0 ? (
+                    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {academy.coachIds.map((coach, index) => {
+                        const coachObj =
+                          typeof coach === "object"
+                            ? (coach as { _id?: string; id?: string; name?: string })
+                            : null;
+                        const key = coachObj?._id || coachObj?.id || `${index}`;
+                        return (
+                          <li key={key} className={tile}>
+                            <p className="text-ink font-semibold">
+                              {coachObj?.name || `Coach ${index + 1}`}
+                            </p>
+                            <p className="text-ink-muted mt-1 text-sm">Coaches at this academy</p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className={emptyNote}>No coaches linked yet.</p>
+                  )}
+                </section>
+              )}
+
+              {activeTab === "venues" && (
+                <section aria-labelledby="venues-heading">
+                  <h2 id="venues-heading" className={sectionHeading}>
+                    Venues
+                  </h2>
+                  {academy.venueIds && academy.venueIds.length > 0 ? (
+                    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {academy.venueIds.map((venue, index) => {
+                        const venueObj =
+                          typeof venue === "object"
+                            ? (venue as { _id?: string; id?: string; name?: string })
+                            : null;
+                        const key = venueObj?._id || venueObj?.id || `${index}`;
+                        return (
+                          <li key={key} className={tile}>
+                            <p className="text-ink font-semibold">
+                              {venueObj?.name || `Venue ${index + 1}`}
+                            </p>
+                            <p className="text-ink-muted mt-1 text-sm">Run by this academy</p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className={emptyNote}>No venues linked yet.</p>
+                  )}
+                </section>
+              )}
+
+              {activeTab === "subscriptions" && (
+                <section aria-labelledby="plans-heading">
+                  <h2 id="plans-heading" className={sectionHeading}>
+                    Subscription plans
+                  </h2>
+                  {academy.subscriptionPlans && academy.subscriptionPlans.length > 0 ? (
+                    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {academy.subscriptionPlans.map((plan, index) => {
+                        const planObj =
+                          typeof plan === "object"
+                            ? (plan as { _id?: string; id?: string; name?: string; price?: number })
+                            : null;
+                        const key = planObj?._id || planObj?.id || `${index}`;
+                        const price =
+                          typeof planObj?.price === "number"
+                            ? Math.round(planObj.price / 100)
+                            : null;
+                        return (
+                          <li key={key} className={tile}>
+                            <p className="text-ink font-semibold">
+                              {planObj?.name || `Plan ${index + 1}`}
+                            </p>
+                            <p className="font-editorial text-ink mt-2 text-3xl font-light tabular-nums">
+                              {typeof price === "number" ? `₹${price}` : "On request"}
+                            </p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className={emptyNote}>No subscription plans published yet.</p>
+                  )}
+                </section>
+              )}
+
+              {activeTab === "packages" && (
+                <section aria-labelledby="packages-heading">
+                  <h2 id="packages-heading" className={sectionHeading}>
+                    Session packages
+                  </h2>
+                  {academy.sessionPackages && academy.sessionPackages.length > 0 ? (
+                    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {academy.sessionPackages.map((pkg, index) => {
+                        const packageObj =
+                          typeof pkg === "object"
+                            ? (pkg as { _id?: string; id?: string; name?: string; price?: number })
+                            : null;
+                        const key = packageObj?._id || packageObj?.id || `${index}`;
+                        const price =
+                          typeof packageObj?.price === "number"
+                            ? Math.round(packageObj.price / 100)
+                            : null;
+                        return (
+                          <li key={key} className={tile}>
+                            <p className="text-ink font-semibold">
+                              {packageObj?.name || `Package ${index + 1}`}
+                            </p>
+                            <p className="font-editorial text-ink mt-2 text-3xl font-light tabular-nums">
+                              {typeof price === "number" ? `₹${price}` : "On request"}
+                            </p>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className={emptyNote}>No session packages published yet.</p>
+                  )}
+                </section>
+              )}
+
+              {activeTab === "gallery" && (
+                <section aria-labelledby="gallery-heading">
+                  <h2 id="gallery-heading" className={sectionHeading}>
+                    Gallery
+                  </h2>
+                  {galleryImages.length > 0 ? (
+                    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {galleryImages.map((image, index) => (
+                        <li
+                          key={`${image}-${index}`}
+                          className="bg-paper-deep aspect-[4/3] overflow-hidden rounded-2xl"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={image}
+                            alt={`${academy.name}, photo ${index + 1}`}
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={emptyNote}>No gallery photos available.</p>
+                  )}
+                </section>
+              )}
+
+              {activeTab === "reviews" && (
+                <section aria-labelledby="reviews-heading">
+                  <h2 id="reviews-heading" className={sectionHeading}>
+                    Reviews
+                  </h2>
+                  <p className="mb-6 flex items-baseline gap-3">
+                    <span className="font-editorial text-ink text-5xl font-light tabular-nums">
+                      {typeof academy.rating === "number" ? academy.rating.toFixed(1) : "0.0"}
+                    </span>
+                    <span className="text-ink-muted text-sm">
+                      from {academy.reviewCount || 0}{" "}
+                      {(academy.reviewCount || 0) === 1 ? "review" : "reviews"}
+                    </span>
+                  </p>
+                  <p className={emptyNote}>
+                    Individual reviews will appear here once they are connected to this page.
+                  </p>
+                  {academyMongoId && (
+                    <div className="mt-12">
+                      <ParentExperiencesBand
+                        kind="ACADEMY"
+                        refId={academyMongoId}
+                        name={academy.name}
+                        slug={slug}
                       />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-slate-600">No gallery photos available.</p>
+                  )}
+                </section>
               )}
-            </Card>
-          )}
+            </div>
+          </div>
 
-          {activeTab === "reviews" && (
-            <Card className="rounded-2xl border-slate-200 bg-white/90">
-              <h2 className="text-lg font-bold text-slate-900">Reviews</h2>
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Average Rating
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-slate-900">
-                    {typeof academy.rating === "number" ? academy.rating.toFixed(1) : "0.0"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Total Reviews
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-slate-900">
-                    {academy.reviewCount || 0}
-                  </p>
-                </div>
+          {/* Booking */}
+          <aside
+            id="book"
+            aria-label="Book a session"
+            className="min-w-0 scroll-mt-24 lg:top-24 lg:[@media(min-height:860px)]:sticky"
+          >
+            <div className="border-hairline overflow-hidden rounded-2xl border bg-white">
+              <div className="border-hairline border-b p-6 sm:p-8">
+                <p className="text-ink-muted text-sm">Session rate</p>
+                <p className="mt-1 flex items-baseline gap-3">
+                  {typeof sessionRate === "number" ? (
+                    <>
+                      <span className="font-editorial text-ink text-5xl font-light tabular-nums">
+                        ₹{sessionRate}
+                      </span>
+                      <span className="text-ink-muted text-sm">per hour</span>
+                    </>
+                  ) : (
+                    <span className="font-editorial text-ink text-3xl font-light">
+                      Price on request
+                    </span>
+                  )}
+                </p>
               </div>
-              <p className="mt-5 text-sm text-slate-600">
-                Detailed review feed will be connected in the reviews module integration.
-              </p>
-            </Card>
-          )}
-
-          {activeTab === "reviews" && academyMongoId && (
-            <div className="mt-4">
-              <ParentExperiencesBand
-                kind="ACADEMY"
-                refId={academyMongoId}
-                name={academy.name}
-                slug={slug}
-              />
+              <div className="space-y-5 p-6 sm:p-8">
+                <p className="text-ink-body text-sm leading-relaxed">
+                  Book a session directly, or contact the academy to ask about batches, schedules
+                  and trials.
+                </p>
+                <Button variant="primary" size="lg" className="w-full" onClick={handleBookSession}>
+                  Book a session
+                </Button>
+                {(academy.contactPhone || academy.contactEmail) && (
+                  <p className="text-ink flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium">
+                    {academy.contactPhone && (
+                      <a
+                        href={`tel:${academy.contactPhone}`}
+                        className="decoration-ink/30 hover:decoration-ink focus-visible:ring-ink rounded underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
+                      >
+                        Call the academy
+                      </a>
+                    )}
+                    {academy.contactEmail && (
+                      <a
+                        href={`mailto:${academy.contactEmail}`}
+                        className="decoration-ink/30 hover:decoration-ink focus-visible:ring-ink rounded underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
+                      >
+                        Email the academy
+                      </a>
+                    )}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+          </aside>
         </div>
-
-        <section className="mt-8">
-          <Card className="rounded-2xl border-slate-200 bg-white/90">
-            <h2 className="inline-flex items-center gap-2 text-lg font-bold text-slate-900">
-              <CalendarDays size={18} />
-              Ready to train?
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Book a session directly or contact the academy to discuss batches, schedules, and
-              trials.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Button variant="primary" onClick={handleBookSession}>
-                Book a Session
-              </Button>
-              {academy.contactPhone && (
-                <a href={`tel:${academy.contactPhone}`}>
-                  <Button variant="outline">Call Academy</Button>
-                </a>
-              )}
-              {academy.contactEmail && (
-                <a href={`mailto:${academy.contactEmail}`}>
-                  <Button variant="outline">Email Academy</Button>
-                </a>
-              )}
-            </div>
-          </Card>
-        </section>
-      </section>
+      </div>
     </div>
   );
 }

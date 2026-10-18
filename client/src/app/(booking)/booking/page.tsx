@@ -93,7 +93,7 @@ function TabBar({ activeTab, onTabChange }: { activeTab: Tab; onTabChange: (t: T
           role="tablist"
           aria-label="Booking categories"
           onKeyDown={onKeyDown}
-          className="no-scrollbar -mb-px flex gap-1 overflow-x-auto whitespace-nowrap"
+          className="hide-scrollbar -mb-px flex gap-1 overflow-x-auto whitespace-nowrap"
         >
           {TABS.map(({ id, label, icon: Icon, sub }) => {
             const isActive = activeTab === id;

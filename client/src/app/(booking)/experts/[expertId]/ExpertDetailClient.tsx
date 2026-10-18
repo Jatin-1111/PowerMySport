@@ -431,7 +431,7 @@ export function ExpertDetailClient() {
           <aside
             id="book"
             aria-label="Book a session"
-            className="min-w-0 scroll-mt-24 lg:sticky lg:top-24"
+            className="min-w-0 scroll-mt-24 lg:top-24 lg:[@media(min-height:860px)]:sticky"
           >
             <FadeIn delay={0.15}>
               <div className="border-hairline overflow-hidden rounded-2xl border bg-white">
