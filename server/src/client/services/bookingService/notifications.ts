@@ -9,6 +9,11 @@ import { sendBookingLifecycleEmail, sendWaitlistSlotAvailableEmail } from "../..
 import { NotificationService } from "../NotificationService";
 import { ScheduledNotificationService } from "../ScheduledNotificationService";
 import { initiatePhonePeRefund } from "../../../shared/services/PhonePeService";
+import {
+  notifyBookingWhatsApp,
+  normalizeIndianPhone,
+} from "../../../shared/services/WhatsAppNotificationService";
+import { combineDateAndTimeIST } from "../../../utils/openingHours";
 import { log, toPaise } from "./shared";
 
 const getBookingLifecycleRecipients = async (
@@ -104,6 +109,29 @@ export const sendBookingLifecycleEmails = async (
       }
     })
   );
+
+  // ── WhatsApp notification for the player only ──────────────────────────────
+  if (state === "CANCELLED") {
+    const player = recipients.find((r) => r.role === "Player");
+    if (player) {
+      const playerUser = await User.findOne({ email: player.email }).select("phone name").lean();
+      if (playerUser?.phone) {
+        const coachName = recipients.find((r) => r.role === "PROVIDER")?.name;
+        // date is UTC midnight of the booking day; startTime is an IST wall-clock time.
+        const dt = combineDateAndTimeIST(booking.date, booking.startTime);
+        notifyBookingWhatsApp({
+          event: "BOOKING_CANCELLED",
+          playerPhone: normalizeIndianPhone(playerUser.phone),
+          playerName: playerUser.name || player.name,
+          coachName,
+          sport: booking.sport,
+          dateTime: dt.toISOString(),
+          venue: venueName,
+          refundAmount: extra.refundAmount,
+        });
+      }
+    }
+  }
 };
 
 const buildRefundTargets = (
@@ -261,6 +289,33 @@ export const sendBookingPaymentConfirmation = async (bookingId: string): Promise
   }
 
   const venue = await Venue.findById(booking.venueId).select("name");
+
+  // ── WhatsApp notification on payment / confirmation ────────────────────────
+  if (booking.status === "CONFIRMED") {
+    const playerUser = await User.findById(booking.userId).select("phone name").lean();
+    if (playerUser?.phone) {
+      let coachName: string | undefined;
+      if (booking.coachId) {
+        const coach = await Coach.findById(booking.coachId)
+          .populate("userId", "name")
+          .select("userId")
+          .lean();
+        coachName = (coach?.userId as { name?: string } | undefined)?.name;
+      }
+      // date is UTC midnight of the booking day; startTime is an IST wall-clock time.
+      const dt = combineDateAndTimeIST(booking.date, booking.startTime);
+      notifyBookingWhatsApp({
+        event: "BOOKING_CONFIRMED",
+        playerPhone: normalizeIndianPhone(playerUser.phone),
+        playerName: playerUser.name,
+        coachName,
+        sport: booking.sport,
+        dateTime: dt.toISOString(),
+        venue: venue?.name,
+      });
+    }
+  }
+
   NotificationService.send({
     userId: booking.userId.toString(),
     type: "PAYMENT_CONFIRMED",
@@ -432,5 +487,48 @@ export const notifyWaitlistForFreedSlot = async (booking: BookingDocument): Prom
     }
   } catch (error) {
     log.error("Failed to notify waitlist for freed slot:", error);
+  }
+};
+
+/**
+ * Tells the player on WhatsApp that a confirmed session moved. Best-effort like
+ * the other WhatsApp messages: it never throws, and it does nothing when the
+ * player has no phone number or the n8n webhook is not configured.
+ *
+ * `previousStart` is the old start as an instant, captured before the booking's
+ * date and startTime were overwritten.
+ */
+export const notifyBookingRescheduledWhatsApp = async (
+  booking: BookingDocument,
+  previousStart: Date
+): Promise<void> => {
+  try {
+    const player = await User.findById(booking.userId).select("phone name").lean();
+    if (!player?.phone) return;
+
+    let coachName: string | undefined;
+    if (booking.coachId) {
+      const coach = await Coach.findById(booking.coachId)
+        .populate("userId", "name")
+        .select("userId")
+        .lean();
+      coachName = (coach?.userId as { name?: string } | undefined)?.name;
+    }
+    const venue = await Venue.findById(booking.venueId).select("name").lean();
+
+    notifyBookingWhatsApp({
+      event: "BOOKING_RESCHEDULED",
+      playerPhone: normalizeIndianPhone(player.phone),
+      playerName: player.name,
+      coachName,
+      sport: booking.sport,
+      dateTime: previousStart.toISOString(),
+      newDateTime: combineDateAndTimeIST(booking.date, booking.startTime).toISOString(),
+      venue: venue?.name,
+    });
+  } catch (err) {
+    log.warn(
+      `notifyBookingRescheduledWhatsApp failed for booking ${booking._id.toString()}: ${(err as Error).message}`
+    );
   }
 };
