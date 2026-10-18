@@ -1,20 +1,13 @@
 "use client";
 
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import type { Booking, EarningsData, MonthlyEarning, SportEarning, User } from "@/types";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  Calendar,
-  Clock,
-  IndianRupee,
-  Loader2,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowRight, Calendar, Clock, IndianRupee, Loader2, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -58,57 +51,14 @@ interface StatCardProps {
 
 function StatCard({ title, amount, subtitle, icon, accent, trend }: StatCardProps) {
   return (
-    <div
-      className={`flex flex-col gap-3 rounded-2xl border p-5 shadow-sm transition-shadow hover:shadow-md ${
-        accent
-          ? "border-orange-400 bg-orange-500 text-white"
-          : "border-slate-100 bg-white text-slate-800"
-      }`}
-    >
-      <div className="flex items-start justify-between">
-        <div className={`rounded-xl p-2.5 ${accent ? "bg-white/20" : "bg-orange-50"}`}>
-          <span className={accent ? "text-white" : "text-power-orange"}>{icon}</span>
-        </div>
-        {trend !== null && trend !== undefined && (
-          <div
-            className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
-              accent
-                ? "bg-white/20 text-white"
-                : trend.positive
-                  ? "bg-emerald-50 text-emerald-600"
-                  : "bg-red-50 text-red-600"
-            }`}
-          >
-            {trend.positive ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            {Math.abs(trend.value).toFixed(1)}%
-          </div>
-        )}
-      </div>
-      <div>
-        <p
-          className={`mb-1 text-xs font-medium uppercase tracking-wider ${
-            accent ? "text-white/80" : "text-slate-400"
-          }`}
-        >
-          {title}
-        </p>
-        <div className="flex items-baseline gap-0.5">
-          <IndianRupee className={`mb-0.5 h-4 w-4 ${accent ? "text-white" : "text-slate-700"}`} />
-          <span
-            className={`text-2xl font-bold tracking-tight ${
-              accent ? "text-white" : "text-slate-800"
-            }`}
-          >
-            {fmt(amount)}
-          </span>
-        </div>
-        <p className={`mt-1 text-xs ${accent ? "text-white/70" : "text-slate-400"}`}>{subtitle}</p>
-      </div>
-    </div>
+    <StatTile
+      label={title}
+      value={<>&#8377;{fmt(amount)}</>}
+      sub={subtitle}
+      icon={icon}
+      emphasis={accent}
+      trend={trend}
+    />
   );
 }
 

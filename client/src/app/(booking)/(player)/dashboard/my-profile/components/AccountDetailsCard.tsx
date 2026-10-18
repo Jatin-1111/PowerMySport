@@ -50,6 +50,7 @@ export function AccountDetailsCard({
     <section aria-labelledby="account-details" className="border-hairline border-t pt-10">
       <ProfileSectionHeader
         headingId="account-details"
+        variant="flat"
         icon={UserRound}
         title="Account details"
         description="Your profile information and contact details."

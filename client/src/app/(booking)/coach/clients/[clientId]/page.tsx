@@ -1,5 +1,6 @@
 "use client";
 
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
@@ -130,13 +131,7 @@ function StatCard({
   label: string;
   value: string | number;
 }) {
-  return (
-    <div className="flex min-w-[90px] flex-col items-center gap-1 rounded-xl border border-slate-200 bg-white/60 px-4 py-3">
-      <span className="text-slate-400">{icon}</span>
-      <span className="text-xl font-bold text-slate-800">{value}</span>
-      <span className="text-center text-xs leading-tight text-slate-500">{label}</span>
-    </div>
-  );
+  return <StatTile label={label} value={value} icon={icon} className="min-w-[110px]" />;
 }
 
 function NoteTypeBadge({ type }: { type: NoteType }) {

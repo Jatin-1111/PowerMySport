@@ -1,6 +1,5 @@
 "use client";
 
-import { Card, CardContent } from "@/modules/shared/ui/Card";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { Button } from "@/modules/shared/ui/Button";
@@ -47,20 +46,21 @@ export function DashboardSection({
 }) {
   return (
     <SlideUp yOffset={18}>
-      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+      <section className="border-hairline border-t pt-10">
         <ProfileSectionHeader
+          variant="flat"
           icon={icon}
           title={title}
           description={description}
           action={action}
           completionPercent={completionPercent}
         />
-        <CardContent className="px-6 py-5">
+        <div className="mt-8">
           {isLoading ? (
             <Skeleton className={`w-full ${skeletonHeight}`} />
           ) : isError ? (
-            <div className="flex flex-col items-center gap-3 py-4 text-center">
-              <p className="text-sm text-slate-500">This section couldn&apos;t be loaded.</p>
+            <div className="flex flex-col items-start gap-3 py-2">
+              <p className="text-ink-muted text-sm">This section couldn&apos;t be loaded.</p>
               {onRetry && (
                 <Button variant="outline" size="sm" onClick={onRetry}>
                   Try again
@@ -70,8 +70,8 @@ export function DashboardSection({
           ) : (
             children
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </SlideUp>
   );
 }

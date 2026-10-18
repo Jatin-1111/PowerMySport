@@ -1,5 +1,7 @@
 "use client";
 
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import { ExpertSessionsList, formatInr } from "@/modules/expert/components/ExpertSessionsList";
 import { expertApi, type Expert, type ExpertSession } from "@/modules/expert/services/expert";
 import { AlertCircle, ArrowRight, CalendarClock, Clock, Star, Users, Wallet } from "lucide-react";
@@ -95,43 +97,28 @@ export default function ExpertDashboardPage() {
         </div>
       )}
 
-      <div className="bg-ink relative overflow-hidden rounded-2xl p-6 text-white shadow-lg sm:p-8">
-        <div className="bg-power-orange/20 pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full blur-3xl" />
-        <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
-          Expert
-        </span>
-        <h1 className="font-editorial relative mt-3 text-2xl font-light sm:text-3xl">
-          Your dashboard
-        </h1>
-        <p className="relative mt-1 text-sm text-slate-200">
-          Manage your upcoming and past sessions.
-        </p>
-      </div>
+      <PlayerPageHeader title="Your dashboard" subtitle="Manage your upcoming and past sessions." />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Users className="h-4.5 w-4.5" />}
           label="Total sessions"
           value={String(stats.total)}
-          tint="bg-indigo-50 text-indigo-600"
         />
         <StatCard
           icon={<CalendarClock className="h-4.5 w-4.5" />}
           label="Upcoming"
           value={String(stats.upcoming)}
-          tint="bg-orange-50 text-power-orange"
         />
         <StatCard
           icon={<Wallet className="h-4.5 w-4.5" />}
           label="Collected"
           value={formatInr(stats.earnings)}
-          tint="bg-emerald-50 text-emerald-600"
         />
         <StatCard
           icon={<Star className="h-4.5 w-4.5" />}
           label="Avg rating"
           value={stats.reviewCount ? `${stats.avg.toFixed(1)} (${stats.reviewCount})` : "N/A"}
-          tint="bg-amber-50 text-amber-600"
         />
       </div>
 
@@ -164,18 +151,11 @@ function StatCard({
   icon,
   label,
   value,
-  tint,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  tint: string;
+  tint?: string;
 }) {
-  return (
-    <div className="rounded-xl border-0 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-      <div className={`flex h-9 w-9 items-center justify-center rounded-full ${tint}`}>{icon}</div>
-      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
-    </div>
-  );
+  return <StatTile label={label} value={value} icon={icon} />;
 }

@@ -44,6 +44,7 @@ export function DependentsCard({
     <section aria-labelledby="dependents" className="border-hairline border-t pt-10">
       <ProfileSectionHeader
         headingId="dependents"
+        variant="flat"
         icon={Users}
         title="My dependents"
         description="Children or wards whose bookings you manage."

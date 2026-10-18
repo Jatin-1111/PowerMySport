@@ -20,6 +20,11 @@ type ProfileSectionHeaderProps = {
   completionPercent?: number;
   /** Id of the heading, so the section can be labelled by it. */
   headingId?: string;
+  /**
+   * `card` (default) is the header of a bordered card: it carries its own padding
+   * and a rule underneath. `flat` is a bare section heading on the page.
+   */
+  variant?: "card" | "flat";
 };
 
 /**
@@ -40,7 +45,9 @@ export function ProfileSectionHeader({
   className,
   completionPercent,
   headingId,
+  variant = "card",
 }: ProfileSectionHeaderProps) {
+  const flat = variant === "flat";
   // Inside a completion ring the tile is a circle that clears the ring's stroke.
   const icon = (
     <div
@@ -54,7 +61,11 @@ export function ProfileSectionHeader({
   );
   return (
     <div
-      className={cn("flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between", className)}
+      className={cn(
+        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+        !flat && "border-hairline border-b px-6 py-5",
+        className
+      )}
     >
       <div className="flex items-start gap-4">
         {completionPercent !== undefined ? (
@@ -67,7 +78,10 @@ export function ProfileSectionHeader({
         <div>
           <h2
             id={headingId}
-            className="font-editorial text-ink text-2xl font-light tracking-tight sm:text-3xl"
+            className={cn(
+              "font-editorial text-ink font-light tracking-tight",
+              flat ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"
+            )}
           >
             {title}
           </h2>

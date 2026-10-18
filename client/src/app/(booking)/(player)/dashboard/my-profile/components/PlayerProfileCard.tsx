@@ -45,6 +45,7 @@ export function PlayerProfileCard({
     <section aria-labelledby="player-profile" className="border-hairline border-t pt-10">
       <ProfileSectionHeader
         headingId="player-profile"
+        variant="flat"
         icon={Trophy}
         title={isParent ? "Parent profile" : "Player profile"}
         description={isParent ? "Your background as a sports parent." : "The sports you play."}

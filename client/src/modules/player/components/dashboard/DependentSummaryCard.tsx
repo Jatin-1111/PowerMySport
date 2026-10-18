@@ -4,7 +4,6 @@ import type { DependentSummary } from "@/modules/player/hooks/useDependents";
 import { nextStepLabel } from "@/modules/player/config/dependentNextStep";
 import { ProfileCompletionRing } from "@/modules/player/components/ProfileCompletionRing";
 import { Avatar, AvatarFallback } from "@/modules/shared/ui/Avatar";
-import { Badge } from "@/modules/shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
@@ -22,7 +21,7 @@ export function DependentSummaryCard({ summary }: { summary: DependentSummary })
   const isComplete = completionPercent >= 100;
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-slate-200/70 bg-slate-50/40 p-4 transition-colors hover:border-slate-300 hover:bg-white">
+    <div className="bg-paper-deep flex flex-col gap-4 rounded-xl p-5">
       <div className="flex items-start gap-3">
         <ProfileCompletionRing
           percent={completionPercent}
@@ -38,7 +37,7 @@ export function DependentSummaryCard({ summary }: { summary: DependentSummary })
         <div className="min-w-0 flex-1">
           <Link
             href={`/dashboard/dependents/${id}`}
-            className="hover:text-power-orange font-semibold text-slate-900 transition-colors"
+            className="text-ink font-medium underline-offset-4 hover:underline"
           >
             {name}
           </Link>
@@ -48,20 +47,12 @@ export function DependentSummaryCard({ summary }: { summary: DependentSummary })
           </p>
         </div>
 
-        <Badge
-          className={
-            isComplete
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
-              : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-50"
-          }
-        >
-          {completionPercent}%
-        </Badge>
+        <span className="text-ink-muted text-sm tabular-nums">{completionPercent}%</span>
       </div>
 
       {isComplete || !topGap ? (
-        <p className="flex items-center gap-2 text-sm text-emerald-700">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <p className="text-ink-body flex items-center gap-2 text-sm">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-green-700" />
           Profile complete
         </p>
       ) : (

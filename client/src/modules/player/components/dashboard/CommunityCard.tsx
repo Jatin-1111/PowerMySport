@@ -5,6 +5,7 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import { useCommunityReputation } from "@/modules/community/hooks/useCommunityReputation";
 import { useDashboardAudience } from "@/modules/player/hooks/useDashboardAudience";
 import { Button } from "@/modules/shared/ui/Button";
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { ArrowUpRight, MessagesSquare } from "lucide-react";
 
@@ -22,12 +23,7 @@ import { ArrowUpRight, MessagesSquare } from "lucide-react";
  */
 
 function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200/70 bg-slate-50/40 px-4 py-3">
-      <p className="text-2xl font-bold text-slate-900">{value}</p>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-    </div>
-  );
+  return <StatTile label={label} value={value} />;
 }
 
 export function CommunityCard() {
@@ -56,7 +52,7 @@ export function CommunityCard() {
       {isParent && isLoading ? (
         <div className="grid gap-3 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[74px] w-full rounded-xl" />
+            <Skeleton key={i} className="h-[112px] w-full rounded-xl" />
           ))}
         </div>
       ) : data ? (

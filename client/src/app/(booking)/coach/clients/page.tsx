@@ -1,5 +1,6 @@
 "use client";
 
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
 import { Button } from "@/modules/shared/ui/Button";
@@ -80,37 +81,7 @@ interface StatCardProps {
 }
 
 function StatCard({ icon, label, value, sub, accent }: StatCardProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: "easeOut" }}
-      className={`flex items-center gap-4 rounded-2xl border p-5 ${
-        accent
-          ? "bg-power-orange-solid border-power-orange-solid text-white"
-          : "border-slate-200 bg-white text-slate-800"
-      }`}
-    >
-      <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-          accent ? "bg-white/20" : "bg-orange-50"
-        }`}
-      >
-        <span className={accent ? "text-white" : "text-power-orange"}>{icon}</span>
-      </div>
-      <div>
-        <p
-          className={`text-2xl font-bold leading-none ${accent ? "text-white" : "text-slate-900"}`}
-        >
-          {value}
-        </p>
-        <p className={`mt-0.5 text-sm ${accent ? "text-orange-100" : "text-slate-500"}`}>{label}</p>
-        {sub && (
-          <p className={`mt-0.5 text-xs ${accent ? "text-orange-200" : "text-slate-400"}`}>{sub}</p>
-        )}
-      </div>
-    </motion.div>
-  );
+  return <StatTile label={label} value={value} sub={sub} icon={icon} emphasis={accent} />;
 }
 
 // ─── client card ─────────────────────────────────────────────────────────────

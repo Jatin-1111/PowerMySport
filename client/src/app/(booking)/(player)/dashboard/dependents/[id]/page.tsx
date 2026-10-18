@@ -436,6 +436,7 @@ export default function DependentDetailPage() {
       <section aria-labelledby="profile-details" className="border-hairline border-t pt-10">
         <ProfileSectionHeader
           headingId="profile-details"
+          variant="flat"
           icon={Info}
           title="Profile details"
           description="Physical, personality and practical traits from the assessment."

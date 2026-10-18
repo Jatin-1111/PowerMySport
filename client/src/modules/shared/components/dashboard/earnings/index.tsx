@@ -1,7 +1,8 @@
 "use client";
 
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import { motion } from "framer-motion";
-import { CheckCircle, IndianRupee, TrendingDown, TrendingUp } from "lucide-react";
+import { CheckCircle, IndianRupee } from "lucide-react";
 import React from "react";
 
 // ---------------------------------------------------------------------------
@@ -46,74 +47,14 @@ export function EarningsStatCard({
   trend,
 }: EarningsStatCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className={[
-        "flex flex-col gap-3 rounded-2xl border p-5 shadow-sm",
-        accent
-          ? "border-orange-400 bg-orange-500 text-white"
-          : "border-slate-100 bg-white text-slate-800",
-      ].join(" ")}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <span
-          className={["text-sm font-medium", accent ? "text-orange-100" : "text-slate-500"].join(
-            " "
-          )}
-        >
-          {title}
-        </span>
-        <span
-          className={[
-            "flex h-9 w-9 items-center justify-center rounded-xl",
-            accent ? "bg-white/20" : "text-power-orange bg-orange-50",
-          ].join(" ")}
-        >
-          {icon}
-        </span>
-      </div>
-
-      {/* Amount */}
-      <div className="flex items-baseline gap-1">
-        <IndianRupee
-          className={["h-5 w-5", accent ? "text-orange-100" : "text-slate-400"].join(" ")}
-          strokeWidth={2.5}
-        />
-        <span className="text-2xl font-bold tracking-tight">{fmtAmount(amount)}</span>
-      </div>
-
-      {/* Subtitle + Trend */}
-      <div className="flex items-center justify-between gap-2">
-        <span className={["text-xs", accent ? "text-orange-100" : "text-slate-400"].join(" ")}>
-          {subtitle}
-        </span>
-        {trend != null && (
-          <span
-            className={[
-              "flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold",
-              trend.positive
-                ? accent
-                  ? "bg-white/20 text-white"
-                  : "bg-emerald-50 text-emerald-600"
-                : accent
-                  ? "bg-white/20 text-white"
-                  : "bg-red-50 text-red-500",
-            ].join(" ")}
-          >
-            {trend.positive ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            {trend.positive ? "+" : ""}
-            {trend.value}%
-          </span>
-        )}
-      </div>
-    </motion.div>
+    <StatTile
+      label={title}
+      value={<>&#8377;{fmtAmount(amount)}</>}
+      sub={subtitle}
+      icon={icon}
+      emphasis={accent}
+      trend={trend}
+    />
   );
 }
 
