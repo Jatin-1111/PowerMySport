@@ -213,7 +213,7 @@ function NotificationsPageContent() {
   };
 
   return (
-    <div className="bg-paper min-h-screen pb-24 pt-8 sm:pt-12">
+    <div className="bg-paper flex-1 pb-24 pt-8 sm:pt-12">
       <Container>
         <div className="mx-auto max-w-3xl">
           <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
