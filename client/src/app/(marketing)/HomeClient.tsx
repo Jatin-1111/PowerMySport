@@ -1,17 +1,20 @@
 "use client";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { ExploreGrid } from "@/modules/marketing/components/marketing/ExploreGrid";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { JourneySteps } from "@/modules/marketing/components/marketing/JourneySteps";
 import { ParentQuestions } from "@/modules/marketing/components/marketing/ParentQuestions";
-import { HomeClosing } from "@/modules/marketing/components/marketing/HomeClosing";
-import { HomeEyebrow } from "@/modules/marketing/components/marketing/HomeEyebrow";
-import { PillButton } from "@/modules/marketing/components/marketing/PillButton";
+import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { PathwayPreviewCard } from "@/modules/pathway/components/PathwayPreviewCard";
 import { roadmapHref } from "@/modules/pathway/data/sports";
 import type { PathwayGuideSummary, TournamentEdition } from "@/modules/pathway/services/pathway";
 import { NextTournamentsSection } from "@/modules/tournaments/components/NextTournamentsSection";
+import { ArrowRight } from "lucide-react";
+
+import Link from "next/link";
+
 /** "Tennis and Chess", "Tennis, Chess and Golf". */
 function joinNames(names: string[]): string {
   if (names.length <= 1) return names.join("");
@@ -118,12 +121,11 @@ export default function HomeClient({
   // Logged in with no dependents yet: keep the WhatsApp default, greeted by name.
 
   return (
-    <main className="bg-slate-50">
+    <main>
       {/* ── Hero ── */}
       <Hero
         title="Helping Parents Make Confident Sports Decisions"
         titleHighlight="Sports Decisions"
-        eyebrow="Guidance for sports parents"
         description="Choosing a sport, a tournament or the next stage? Tell us about your child and we'll help you work out what to do next."
         ctaNote="A PowerMySport team member replies within 24 hours."
         ctaPrompt={heroCtaPrompt}
@@ -147,20 +149,28 @@ export default function HomeClient({
       <ExploreGrid />
 
       {/* ── A real pathway, stage by stage ── */}
-      <section className="bg-white py-24 sm:py-32 lg:py-40">
+      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className={`grid items-center gap-16 ${pathway ? "lg:grid-cols-2 lg:gap-24" : ""}`}>
+          <div className={`grid items-center gap-12 ${pathway ? "lg:grid-cols-[1fr_1fr]" : ""}`}>
             <div className="reveal-on-scroll">
-              <HomeEyebrow label="Pathway guides" tone="green" className="mb-6" />
-              <h2 className="font-title mb-6 text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-slate-900 sm:text-5xl">
+              <div className="mb-3">
+                <SectionLabel label="Pathway guides" color="green" />
+              </div>
+              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
                 See what each stage asks of your child
               </h2>
-              <p className="mb-10 max-w-md text-base leading-relaxed text-slate-600 sm:text-lg">
+              <p className="mb-8 text-lg text-slate-600">
                 Free to read, no account needed.
                 {coveredSports.length > 0 &&
                   ` Full guides are live for ${joinNames(coveredSports)}. Ask us about any other sport.`}
               </p>
-              <PillButton href="/roadmap">Explore pathways</PillButton>
+              <Link
+                href="/roadmap"
+                className="group inline-flex items-center justify-center gap-1.5 rounded-md bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+              >
+                Explore pathways
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </div>
 
             {/* The product itself is the picture; no pathway data (API down), no card. */}
@@ -181,7 +191,7 @@ export default function HomeClient({
       />
 
       {/* ── Final CTA ── */}
-      <HomeClosing
+      <CTA
         title="Not sure what to do next?"
         description="Tell PowerMySport about your child, what you're trying to achieve, or simply what you're struggling with. We'll help you work out the next step. A team member replies within 24 hours."
         primaryCTA={{ label: "Get guidance on WhatsApp", href: WHATSAPP_HERO_HREF }}

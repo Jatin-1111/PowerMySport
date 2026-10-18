@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@phosphor-icons/react": "^2.1.10",
     "@powermysport/rich-text": "*",
     "@powermysport/shared-tokens": "*",
     "@powermysport/shared-types": "*",

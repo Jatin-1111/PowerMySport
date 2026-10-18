@@ -1,6 +1,4 @@
-import { Bezel } from "@/modules/marketing/components/marketing/Bezel";
-import { PillButton } from "@/modules/marketing/components/marketing/PillButton";
-import { EnvelopeSimple, InstagramLogo, LinkedinLogo } from "@phosphor-icons/react/dist/ssr";
+import { Instagram, Linkedin, Mail } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -75,135 +73,139 @@ const socialLinks = [
   {
     name: "Instagram",
     href: "https://www.instagram.com/powermysport",
-    icon: <InstagramLogo weight="light" className="h-[18px] w-[18px]" />,
+    icon: <Instagram className="h-4 w-4" />,
     external: true,
-    hoverClass: "hover:bg-white/15 hover:text-white",
+    hoverClass: "hover:bg-pink-600 hover:text-white",
   },
   {
     name: "LinkedIn",
     href: "#",
-    icon: <LinkedinLogo weight="light" className="h-[18px] w-[18px]" />,
+    icon: <Linkedin className="h-4 w-4" />,
     external: false,
-    hoverClass: "hover:bg-white/15 hover:text-white",
+    hoverClass: "hover:bg-blue-700 hover:text-white",
   },
 ];
-
-const EASE = "ease-[cubic-bezier(0.32,0.72,0,1)]";
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-50 px-3 pb-3 pt-12 sm:px-6 sm:pb-6">
-      <div className="mx-auto max-w-7xl">
-        <Bezel innerClassName="relative overflow-hidden bg-slate-950 p-8 text-white shadow-none sm:p-12 lg:p-16">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-32 -top-32 h-[480px] w-[480px] bg-[radial-gradient(closest-side,rgba(233,115,22,0.16),transparent)]"
-          />
+    <footer className="bg-slate-950">
+      {/* Top accent line */}
+      <div className="via-power-orange/50 h-px bg-gradient-to-r from-transparent to-transparent" />
 
-          <div className="relative">
-            {/* Lead: wordmark and the one action */}
-            <div className="flex flex-col gap-10 border-b border-white/10 pb-12 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-md">
-                <Link href="/" className="inline-flex items-center">
-                  <span className="font-title text-4xl font-semibold leading-none tracking-[-0.03em]">
-                    <span className="text-white">Power</span>
-                    <span className="text-power-orange">My</span>
-                    <span className="text-white">Sport</span>
-                  </span>
-                </Link>
-                <p className="mt-5 text-sm leading-relaxed text-slate-400">
-                  Helping parents understand, navigate and make confident decisions throughout their
-                  child&apos;s sporting journey.
-                </p>
-              </div>
-              <PillButton
-                href={WA_FOOTER_URL}
-                variant="whatsapp"
-                leading={<WhatsAppIcon />}
-                className="self-start"
-              >
-                Chat on WhatsApp
-              </PillButton>
-            </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Main grid */}
+        <div className="grid grid-cols-1 gap-x-8 gap-y-12 py-16 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+          {/* Brand block — owns its own row until lg, then sits beside the nav */}
+          <div className="sm:col-span-2 md:col-span-4 lg:col-span-2">
+            <Link href="/" className="inline-flex items-center">
+              <span className="font-title text-3xl font-extrabold leading-none tracking-tight">
+                <span className="text-white">Power</span>
+                <span className="text-power-orange">My</span>
+                <span className="text-white">Sport</span>
+              </span>
+            </Link>
 
-            {/* Link columns */}
-            <div className="grid grid-cols-2 gap-x-8 gap-y-12 py-14 md:grid-cols-4">
-              {navColumns.map((col) => (
-                <div key={col.title}>
-                  <h3 className="mb-5 text-[10px] font-medium uppercase tracking-[0.2em] text-slate-500">
-                    {col.title}
-                  </h3>
-                  <ul className="space-y-3">
-                    {col.links.map((link) => (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          className={`text-sm text-slate-300 transition-colors duration-500 ${EASE} hover:text-white`}
-                        >
-                          {link.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
+              Helping parents understand, navigate and make confident decisions throughout their
+              child&apos;s sporting journey.
+            </p>
 
-            {/* Contact and social */}
-            <div className="flex flex-col gap-6 border-t border-white/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
+            {/* Quick contact */}
+            <div className="mt-6 space-y-3">
               <a
                 href="mailto:teams@powermysport.com"
-                className={`flex items-center gap-2.5 text-sm text-slate-300 transition-colors duration-500 ${EASE} hover:text-white`}
+                className="flex items-center gap-2.5 text-sm text-slate-400 transition-colors hover:text-white"
               >
-                <EnvelopeSimple weight="light" className="text-power-orange h-[18px] w-[18px]" />
+                <Mail className="text-power-orange h-4 w-4 shrink-0" />
                 teams@powermysport.com
               </a>
-              <div className="flex gap-2">
-                {socialLinks.map((social) => (
-                  <a
-                    key={social.name}
-                    href={social.href}
-                    aria-label={social.name}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.06] text-slate-300 ring-1 ring-white/10 transition-[background-color,color] duration-500 ${EASE} ${social.hoverClass}`}
-                    {...(social.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  >
-                    {social.icon}
-                  </a>
-                ))}
-              </div>
+              <a
+                href={WA_FOOTER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 text-sm text-slate-400 transition-colors hover:text-[#25D366]"
+              >
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[#25D366]">
+                  <WhatsAppIcon />
+                </span>
+                Chat on WhatsApp
+              </a>
             </div>
 
-            {/* Bottom bar */}
-            <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-              <p>© {currentYear} Powermysport PVT. LTD. All rights reserved.</p>
-              <p className="sm:text-right">
-                PowerMySport is a marketplace. Users assume all risks.{" "}
-                <Link
-                  href="/health-waiver"
-                  className="text-slate-200 underline-offset-2 transition-colors hover:text-white hover:underline"
-                >
-                  Health Waiver
-                </Link>
-                {" · "}
-                <Link
-                  href="/terms"
-                  className="text-slate-200 underline-offset-2 transition-colors hover:text-white hover:underline"
-                >
-                  Terms
-                </Link>
-                {" · "}
+            {/* Social icons */}
+            <div className="mt-6 flex flex-wrap gap-2">
+              {socialLinks.map((social) => (
                 <a
-                  href="mailto:teams@powermysport.com"
-                  className="text-slate-200 underline-offset-2 transition-colors hover:text-white hover:underline"
+                  key={social.name}
+                  href={social.href}
+                  aria-label={social.name}
+                  className={`flex h-9 w-9 items-center justify-center rounded-md bg-white/5 text-slate-400 transition-all duration-200 ${social.hoverClass}`}
+                  {...(social.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 >
-                  Legal Enquiries
+                  {social.icon}
                 </a>
-              </p>
+              ))}
             </div>
           </div>
-        </Bezel>
+
+          {/* Navigation columns */}
+          {navColumns.map((col) => (
+            <div key={col.title}>
+              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-300">
+                {col.title}
+              </h3>
+              <ul className="space-y-2.5">
+                {col.links.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-slate-400 transition-colors hover:text-white"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-white/[0.06]" />
+
+        {/* Bottom bar */}
+        <div className="flex flex-col items-center justify-between gap-3 py-6 sm:flex-row">
+          {/* slate-400 is the darkest grey that stays legible on slate-950: 500
+              measured 4.2:1 here, 600 2.7:1 and 700 1.9:1. */}
+          <p className="text-xs text-slate-400">
+            © {currentYear} Powermysport PVT. LTD. All rights reserved.
+          </p>
+          <p className="text-center text-xs text-slate-400 sm:text-right">
+            PowerMySport is a marketplace. Users assume all risks.{" "}
+            <Link
+              href="/health-waiver"
+              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+            >
+              Health Waiver
+            </Link>
+            {" · "}
+            <Link
+              href="/terms"
+              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+            >
+              Terms
+            </Link>
+            {" · "}
+            <a
+              href="mailto:teams@powermysport.com"
+              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+            >
+              Legal Enquiries
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );
