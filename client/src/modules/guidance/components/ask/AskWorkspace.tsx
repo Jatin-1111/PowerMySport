@@ -144,7 +144,7 @@ export function AskWorkspace() {
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
       <div
         data-ask-panel
-        className="flex h-[calc(100dvh-8.5rem)] min-h-[520px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-opacity duration-[420ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
+        className="border-hairline flex h-[calc(100dvh-8.5rem)] min-h-[520px] overflow-hidden rounded-xl border bg-white transition-opacity duration-[420ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
       >
         {!signedOut && (
           <aside
@@ -169,8 +169,8 @@ export function AskWorkspace() {
           ) : (
             <>
               <header className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-orange-50">
-                  <MessageCircle className="text-power-orange h-[18px] w-[18px]" aria-hidden />
+                <span className="bg-paper-deep flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
+                  <MessageCircle className="text-ink h-[18px] w-[18px]" aria-hidden />
                 </span>
                 <div className="min-w-0 flex-1">
                   <h1 className="font-editorial truncate text-base font-normal leading-tight text-slate-900">
@@ -188,7 +188,7 @@ export function AskWorkspace() {
                   type="button"
                   onClick={() => setHistoryOpen((open) => !open)}
                   aria-expanded={historyOpen}
-                  className="btn-motion focus-visible:ring-power-orange-solid flex h-9 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 lg:hidden"
+                  className="btn-motion focus-visible:ring-ink flex h-9 items-center gap-1.5 rounded-md border border-slate-200 px-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 lg:hidden"
                 >
                   <Clock className="h-4 w-4" aria-hidden />
                   History
@@ -213,7 +213,7 @@ export function AskWorkspace() {
                 {!hydrated || isInitializing ? (
                   <div className="flex h-full items-center justify-center">
                     <p className="flex items-center gap-2.5 text-sm text-slate-500" role="status">
-                      <Loader2 className="text-power-orange h-5 w-5 animate-spin" aria-hidden />
+                      <Loader2 className="text-ink-muted h-5 w-5 animate-spin" aria-hidden />
                       Loading your conversation…
                     </p>
                   </div>

@@ -78,11 +78,11 @@ function HistoryRow({
         onClick={() => onSelect(session._id)}
         aria-current={active ? "true" : undefined}
         className={`focus-visible:ring-power-orange-solid w-full rounded-md border py-2 pl-3 pr-10 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 ${
-          active ? "border-orange-200 bg-orange-50" : "border-transparent hover:bg-slate-50"
+          active ? "border-hairline bg-paper-deep" : "hover:bg-paper-deep/60 border-transparent"
         }`}
       >
         <span
-          className={`block truncate text-sm font-medium ${active ? "text-power-orange-solid" : "text-slate-800"}`}
+          className={`block truncate text-sm font-medium ${active ? "text-ink" : "text-slate-800"}`}
         >
           {title}
         </span>
@@ -127,7 +127,7 @@ export function AskHistory({
         <button
           type="button"
           onClick={onNewChat}
-          className="btn-motion text-power-orange-solid focus-visible:ring-power-orange-solid flex w-full items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2"
+          className="btn-motion text-ink focus-visible:ring-ink hover:bg-paper-deep flex w-full items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2"
         >
           <Plus className="h-4 w-4" aria-hidden />
           New chat
@@ -169,7 +169,7 @@ export function AskStarters({
 }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Try asking</p>
+      <p className="text-ink-muted text-sm">Try asking</p>
       <ul className="mt-2 grid gap-2 sm:grid-cols-2">
         {ASK_SUGGESTED_QUESTIONS.map((question) => (
           <li key={question}>
@@ -177,7 +177,7 @@ export function AskStarters({
               type="button"
               disabled={disabled}
               onClick={() => onPick(question)}
-              className="btn-motion focus-visible:ring-power-orange-solid hover:border-power-orange-solid/40 w-full rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50"
+              className="btn-motion focus-visible:ring-ink hover:border-ink/40 hover:bg-paper-deep w-full rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-left text-sm font-medium text-slate-700 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-50"
             >
               {question}
             </button>
@@ -232,7 +232,7 @@ export function AskComposer({
           placeholder="Ask a question"
           aria-label="Your question"
           aria-describedby={hintId}
-          className="focus-visible:border-power-orange-solid focus-visible:ring-power-orange-solid/30 min-h-[44px] flex-1 resize-none rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-base leading-relaxed text-slate-900 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2"
+          className="focus-visible:border-ink focus-visible:ring-ink/20 min-h-[44px] flex-1 resize-none rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-base leading-relaxed text-slate-900 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2"
         />
         <button
           type="button"
@@ -271,8 +271,8 @@ export function AskSignedOut({ question }: { question?: string }) {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto p-5 sm:p-8">
       <div className="mx-auto w-full max-w-xl">
-        <span className="flex h-11 w-11 items-center justify-center rounded-md bg-orange-50">
-          <MessageCircle className="text-power-orange h-5 w-5" aria-hidden />
+        <span className="bg-paper-deep flex h-11 w-11 items-center justify-center rounded-md">
+          <MessageCircle className="text-ink h-5 w-5" aria-hidden />
         </span>
         <h1 className="font-editorial mt-4 text-2xl font-light text-slate-900 sm:text-3xl">
           Ask PowerMySport AI
@@ -300,21 +300,19 @@ export function AskSignedOut({ question }: { question?: string }) {
           </Link>
           <Link
             href={registerHref}
-            className="btn-motion text-power-orange-solid border-power-orange-solid focus-visible:ring-power-orange-solid inline-flex items-center justify-center gap-2 rounded-md border bg-white px-5 py-2.5 text-base font-semibold hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            className="btn-motion text-ink border-ink focus-visible:ring-ink hover:bg-paper-deep inline-flex items-center justify-center gap-2 rounded-md border bg-white px-5 py-2.5 text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
           >
             <UserPlus className="h-4 w-4" aria-hidden />
             Create a free account
           </Link>
         </div>
-        <p className="mt-8 text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Try asking
-        </p>
+        <p className="text-ink-muted mt-8 text-sm">Try asking</p>
         <ul className="mt-2 flex flex-col gap-2">
           {ASK_SUGGESTED_QUESTIONS.map((suggestion) => (
             <li key={suggestion}>
               <Link
                 href={askHref(suggestion)}
-                className="btn-motion focus-visible:ring-power-orange-solid hover:border-power-orange-solid/40 block rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2"
+                className="btn-motion focus-visible:ring-ink hover:border-ink/40 hover:bg-paper-deep block rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 focus-visible:outline-none focus-visible:ring-2"
               >
                 {suggestion}
               </Link>

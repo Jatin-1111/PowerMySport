@@ -2,8 +2,8 @@
 
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Loader2, MessageCircle, Sparkles } from "lucide-react";
+import { cn } from "@/utils/cn";
+import { ArrowRight, Loader2, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -31,6 +31,18 @@ const RESPONSE_OPTIONS: { value: CheckInStatus; label: string }[] = [
   { value: "ambiguous", label: "Not sure yet" },
   { value: "abandoned", label: "We didn't get to try it" },
 ];
+
+const PRIMARY_LINK =
+  "bg-power-orange-solid focus-visible:ring-ink inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 text-base font-medium text-white transition-colors hover:bg-orange-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
+
+/** The page frame: paper background, one centred column. */
+function Frame({ children, narrow = false }: { children: React.ReactNode; narrow?: boolean }) {
+  return (
+    <div className="bg-paper flex-1 px-4 pb-24 pt-16 sm:pt-24">
+      <div className={cn("mx-auto w-full", narrow ? "max-w-md" : "max-w-xl")}>{children}</div>
+    </div>
+  );
+}
 
 export default function CheckInPage() {
   const params = useParams();
@@ -78,69 +90,65 @@ export default function CheckInPage() {
 
   if (!token) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-sm text-center">
-          <h1 className="font-editorial mb-2 text-xl font-normal text-slate-900">
-            Log in to continue
-          </h1>
-          <p className="mb-6 text-sm text-slate-500">This check-in is tied to your account.</p>
-          <Link
-            href={`/login?redirect=${encodeURIComponent(`/check-in/${id}`)}`}
-            className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
-          >
-            Log in <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
+      <Frame>
+        <h1 className="font-editorial text-ink text-4xl font-light tracking-tight sm:text-5xl">
+          Log in to continue
+        </h1>
+        <p className="text-ink-body mt-4 text-lg">This check-in is tied to your account.</p>
+        <Link
+          href={`/login?redirect=${encodeURIComponent(`/check-in/${id}`)}`}
+          className={cn(PRIMARY_LINK, "mt-8")}
+        >
+          Log in <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </Frame>
     );
   }
 
   if (phase === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="text-power-orange h-6 w-6 animate-spin" />
-      </div>
+      <Frame>
+        <div className="text-ink-muted flex items-center gap-2 text-sm" role="status">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          Loading your check-in
+        </div>
+      </Frame>
     );
   }
 
   if (phase === "error") {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 text-center">
-        <p className="text-sm text-slate-500">
-          Couldn&apos;t load this check-in. It may not belong to your account.
-        </p>
-      </div>
+      <Frame>
+        <h1 className="font-editorial text-ink text-4xl font-light tracking-tight">
+          We couldn&apos;t load this check-in
+        </h1>
+        <p className="text-ink-body mt-4 text-lg">It may not belong to your account.</p>
+      </Frame>
     );
   }
 
   if (phase === "submitted") {
     return (
-      <div className="relative flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-md text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
-            <CheckCircle2 className="h-7 w-7 text-emerald-600" />
-          </div>
-          <h1 className="font-editorial mb-2 text-xl font-normal text-slate-900">
-            Thanks for letting us know
-          </h1>
-          <p className="mb-7 text-sm leading-relaxed text-slate-500">
-            {followUp?.message ?? "Your answer has been recorded."}
-          </p>
+      <Frame>
+        <h1 className="font-editorial text-ink text-balance text-4xl font-light leading-tight tracking-tight sm:text-5xl">
+          Thanks for <span className="italic">letting us know</span>
+        </h1>
+        <p className="text-ink-body mt-5 max-w-prose text-pretty text-lg leading-relaxed">
+          {followUp?.message ?? "Your answer has been recorded."}
+        </p>
 
+        <div className="mt-8">
           {followUp?.kind === "try_next_sport" && (
-            <Link
-              href="/assessment/discover"
-              className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
-            >
-              Explore other sports <ArrowRight className="h-4 w-4" />
+            <Link href="/assessment/discover" className={PRIMARY_LINK}>
+              Explore other sports <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           )}
           {followUp?.kind === "re_diagnose" && (
             <Link
               href={checkIn ? `/guidance?sport=${encodeURIComponent(checkIn.sport)}` : "/guidance"}
-              className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-600"
+              className={PRIMARY_LINK}
             >
-              Take another look <ArrowRight className="h-4 w-4" />
+              Take another look <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           )}
           {followUp?.kind === "escalate" && (
@@ -148,84 +156,87 @@ export default function CheckInPage() {
               href={followUp.whatsappUrl ?? "https://wa.me/918968582443"}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#1ebe5d]"
+              className="focus-visible:ring-ink inline-flex items-center gap-2 rounded-md bg-green-700 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
-              <MessageCircle className="h-4 w-4" /> Talk to our team
+              <MessageCircle className="h-4 w-4" aria-hidden="true" /> Talk to our team
             </a>
           )}
         </div>
-      </div>
+      </Frame>
     );
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <div className="bg-power-orange/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl">
-            <Sparkles className="text-power-orange h-6 w-6" />
-          </div>
-          <h1 className="font-editorial mb-2 text-2xl font-normal text-slate-900">
-            {checkIn?.title}
-          </h1>
-        </div>
+    <Frame>
+      <p className="text-ink-muted text-sm">Check-in</p>
+      <h1 className="font-editorial text-ink mt-3 text-balance text-4xl font-light leading-tight tracking-tight sm:text-5xl">
+        {checkIn?.title}
+      </h1>
 
-        {checkIn && checkIn.signals.length > 0 && (
-          <div className="mb-6 rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              What we asked you to watch for
-            </p>
-            <ul className="space-y-1.5">
-              {checkIn.signals.map((s, i) => (
-                <li key={i} className="text-sm leading-relaxed text-slate-600">
-                  • {s}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+      {checkIn && checkIn.signals.length > 0 && (
+        <section aria-labelledby="signals" className="border-hairline mt-10 border-t pt-6">
+          <h2 id="signals" className="text-ink-muted text-sm">
+            What we asked you to watch for
+          </h2>
+          <ul className="mt-3 space-y-2">
+            {checkIn.signals.map((s, i) => (
+              <li key={i} className="text-ink-body flex gap-3 text-pretty leading-relaxed">
+                <span className="bg-ink-ash mt-2.5 h-1 w-1 shrink-0 rounded-full" aria-hidden />
+                {s}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-        <div className="mb-4 space-y-2.5">
+      <fieldset className="mt-10">
+        <legend className="text-ink mb-3 font-medium">How did it go?</legend>
+        <div className="space-y-2.5">
           {RESPONSE_OPTIONS.map((opt) => (
-            <motion.button
+            <button
               key={opt.value}
               type="button"
+              aria-pressed={selected === opt.value}
               onClick={() => setSelected(opt.value)}
-              whileTap={{ scale: 0.98 }}
-              className={`w-full rounded-xl border-2 px-4 py-3 text-left text-sm font-semibold transition-colors ${
+              className={cn(
+                "focus-visible:ring-ink w-full rounded-lg border px-4 py-3.5 text-left text-base transition-colors focus-visible:outline-none focus-visible:ring-2 active:scale-[0.99]",
                 selected === opt.value
-                  ? "border-power-orange text-power-orange bg-orange-50"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-              }`}
+                  ? "border-ink bg-paper-deep text-ink font-medium"
+                  : "border-hairline text-ink hover:border-ink/40 bg-white"
+              )}
             >
               {opt.label}
-            </motion.button>
+            </button>
           ))}
         </div>
+      </fieldset>
 
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Anything else worth mentioning? (optional)"
-          rows={3}
-          className="focus:border-power-orange focus:ring-power-orange/20 mb-5 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2"
-        />
+      <label htmlFor="checkin-note" className="text-ink mb-2 mt-8 block font-medium">
+        Anything else worth mentioning?{" "}
+        <span className="text-ink-muted font-normal">(optional)</span>
+      </label>
+      <textarea
+        id="checkin-note"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        rows={3}
+        className="border-hairline text-ink focus:border-ink focus:ring-ink/15 w-full resize-none rounded-lg border bg-white px-4 py-3 text-base focus:outline-none focus:ring-2"
+      />
 
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!selected || submitting}
-          className="bg-power-orange-solid inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.45)] transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {submitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              Submit <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </button>
-      </div>
-    </div>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!selected || submitting}
+        className={cn(PRIMARY_LINK, "mt-8 w-full disabled:cursor-not-allowed disabled:opacity-40")}
+      >
+        {submitting ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <>
+            Submit <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </>
+        )}
+      </button>
+    </Frame>
   );
 }
