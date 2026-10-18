@@ -2,6 +2,11 @@ import cron, { ScheduledTask } from "node-cron";
 import mongoose from "mongoose";
 
 import { syncAitaCalendar } from "../shared/services/aita/AitaCalendarSyncService";
+import {
+  describeCoverage,
+  detailsCoverage,
+  looksLikeParserDrift,
+} from "../shared/services/aita/detailsCoverage";
 import { revalidateTournamentEditions } from "../admin/services/ClientCacheRevalidationService";
 import { bootFact } from "./boot";
 import { log as __rootLog } from "./logger";
@@ -65,6 +70,13 @@ export async function runAitaCalendarSweep(): Promise<void> {
         `${report.sheetsRead} fact sheets read, ${report.sheetFailures.length} unreadable; ` +
         `${report.retirements.watching.length} missing and being watched`
     );
+    const coverage = detailsCoverage(report.plan);
+    log.info(`AITA calendar: ${describeCoverage(coverage)}`);
+    if (looksLikeParserDrift(coverage)) {
+      log.warn(
+        "AITA calendar: many fact sheets were read and none kept any block section; the page may have changed"
+      );
+    }
     for (const w of report.plan.warnings) log.warn(`AITA calendar: ${w}`);
     for (const s of report.plan.skipped)
       log.warn(`AITA calendar: skipped [${s.externalId}] ${s.name}: ${s.reason}`);

@@ -22,6 +22,18 @@
  *   - `--apply` refuses to run without `--backup`, and the backup is written, and
  *     read back, before the first write.
  *
+ * ── Rolling out the fact-sheet blocks (draws, organiser, venue, hotel) ───────
+ *   1. The deployed server must be running the code that reads them; until then a
+ *      sweep, scheduled or by hand, writes none. Check the scheduler's own log line
+ *      ("fact-sheet blocks kept for N of M") after the first run.
+ *   2. Run this in report mode first and read the "Fact-sheet blocks" lines below. A
+ *      run that read many sheets and kept blocks from none of them means AITA changed
+ *      its page and the parser needs looking at; do not apply it.
+ *   3. Apply with --backup. The backup holds each row as it was, so a bad write can
+ *      be put back row by row. Only fields the sweep sets are changed.
+ *   4. A sheet that cannot be read keeps the details already stored: it never
+ *      downgrades a row, so a bad minute on AITA's server costs nothing.
+ *
  * There is ONE database and it is production (server/CLAUDE.md), so this uses the raw
  * driver and imports no Mongoose model: loading a model locally creates its
  * collection and indexes in production, and a report run must not do even that.
@@ -31,6 +43,11 @@ import "dotenv/config";
 import fs from "node:fs";
 import mongoose from "mongoose";
 import { syncAitaCalendar } from "../shared/services/aita/AitaCalendarSyncService";
+import {
+  describeCoverage,
+  detailsCoverage,
+  looksLikeParserDrift,
+} from "../shared/services/aita/detailsCoverage";
 
 const MONGO_URI = process.env.MONGO_URI || process.env.DATABASE_URL || "";
 if (!MONGO_URI) {
@@ -99,6 +116,15 @@ async function main(): Promise<void> {
     `Official details from fact sheet / rules only / none (international events): ${count("factSheet")} / ${count("rules")} / ${count(undefined)}`
   );
   console.log(`Fact sheets read: ${report.sheetsRead}, unreadable: ${report.sheetFailures.length}`);
+  const coverage = detailsCoverage(plan);
+  console.log(`Fact-sheet blocks: ${describeCoverage(coverage)}`);
+  if (looksLikeParserDrift(coverage)) {
+    console.log(
+      "  WARNING: many sheets were read and none kept any block. AITA may have changed its page. Do not apply."
+    );
+  } else if (coverage.withoutDetails.length > 0) {
+    console.log(`  Read from a sheet but kept no block: ${coverage.withoutDetails.join(", ")}`);
+  }
   console.log(`Stored junior rows no AITA event matched (left alone): ${plan.unmatched.length}`);
   if (retirements.refused) console.log(`\nREFUSED to write: ${retirements.refused}`);
 
