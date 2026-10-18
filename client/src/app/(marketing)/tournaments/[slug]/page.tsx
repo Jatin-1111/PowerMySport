@@ -26,6 +26,7 @@ import {
   levelColor,
 } from "../../federations/[slug]/editionUtils";
 import { FactSheetPanel } from "@/modules/tournaments/components/FactSheetPanel";
+import { FactSheetSections } from "@/modules/tournaments/components/FactSheetSections";
 import { EntryDetails, hasEntryDetails } from "@/modules/tournaments/components/EntryDetails";
 import { PageHeader } from "@/modules/shared/ui/PageHeader";
 import { AddToCalendarButton } from "../../federations/[slug]/AddToCalendarButton";
@@ -370,6 +371,8 @@ export default async function TournamentEditionPage({
             federationName={federation?.name ?? "the federation"}
           />
         )}
+
+        <FactSheetSections edition={edition} />
 
         <FactSheetPanel
           factSheet={factSheet}

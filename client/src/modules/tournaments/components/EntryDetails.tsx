@@ -3,24 +3,9 @@ import { ExternalLink } from "lucide-react";
 import type { TournamentEdition } from "@/modules/pathway/services/pathway";
 import { formatFullDate } from "@/modules/pathway/services/tournamentEditionPage";
 
+import { rupees, withTime } from "../utils/entryFormat";
+
 type Row = { label: string; value: string };
-
-/** `HH:MM` as the federation prints it (IST) to "11:59 pm IST". */
-function clock(time: string | undefined): string | null {
-  const match = time?.match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return null;
-  const hours = Number(match[1]);
-  const suffix = hours >= 12 ? "pm" : "am";
-  const twelve = hours % 12 === 0 ? 12 : hours % 12;
-  return `${twelve}:${match[2]} ${suffix} IST`;
-}
-
-function withTime(day: string, time: string | undefined): string {
-  const at = clock(time);
-  return at ? `${formatFullDate(day)}, ${at}` : formatFullDate(day);
-}
-
-const rupees = (amount: number) => `₹${amount.toLocaleString("en-IN")}`;
 
 /** Whether the record carries anything the event's own page or the rules supplied. */
 export function hasEntryDetails(edition: TournamentEdition): boolean {

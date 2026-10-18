@@ -1,3 +1,4 @@
+import type { FactSheetDetails } from "@/modules/tournaments/types/factSheet";
 import axiosInstance from "@/lib/api/axios";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -332,6 +333,8 @@ export interface TournamentEdition {
   balls?: string;
   /** As printed: "Boys 18&Under, Girls 18&Under". */
   eventsPlayed?: string;
+  /** The draws table and the organiser, venue, travel and hotel blocks of the fact sheet. */
+  factSheetDetails?: FactSheetDetails;
   /** The event's own fact sheet, or the federation's rules applied to its level. */
   officialDetailsSource?: "factSheet" | "rules";
 }
