@@ -125,7 +125,7 @@ export default function HomeClient({
   // Logged in with no dependents yet: keep the WhatsApp default, greeted by name.
 
   return (
-    <main className="bg-[#F8F3EA]">
+    <main className="bg-paper">
       {/* ── Hero ── */}
       <Hero
         title="Helping Parents Make Confident Sports Decisions"
@@ -153,7 +153,7 @@ export default function HomeClient({
       <ExploreGrid />
 
       {/* ── A real pathway, stage by stage ── */}
-      <section className="relative overflow-hidden bg-[#EFE7DA] py-24 sm:py-32 lg:py-40">
+      <section className="bg-paper-deep relative overflow-hidden py-24 sm:py-32 lg:py-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className={`grid items-center gap-12 ${pathway ? "lg:grid-cols-[1fr_1fr]" : ""}`}>
             <div className="reveal-on-scroll">
@@ -166,7 +166,7 @@ export default function HomeClient({
               </p>
               <Link
                 href="/roadmap"
-                className="btn-motion group inline-flex items-center justify-center gap-1.5 rounded-md bg-[#1C1B1A] px-6 py-3.5 text-base font-semibold text-white hover:bg-[#39332f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1B1A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE7DA]"
+                className="btn-motion bg-ink hover:bg-ink-hover focus-visible:ring-ink focus-visible:ring-offset-paper-deep group inline-flex items-center justify-center gap-1.5 rounded-md px-6 py-3.5 text-base font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 Explore pathways
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

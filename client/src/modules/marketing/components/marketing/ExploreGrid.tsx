@@ -104,7 +104,7 @@ const AREAS = [
  */
 export function ExploreGrid() {
   return (
-    <section className="bg-[#F8F3EA] py-24 sm:py-32 lg:py-40">
+    <section className="bg-paper py-24 sm:py-32 lg:py-40">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll max-w-3xl">
           <SectionKicker label="Explore" />
@@ -121,7 +121,7 @@ export function ExploreGrid() {
               <li key={area.title} className={area.cell}>
                 <Link
                   href={area.href}
-                  className="group relative isolate flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl bg-[#1C1B1A] p-6 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1B1A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8F3EA] sm:p-8"
+                  className="bg-ink focus-visible:ring-ink focus-visible:ring-offset-paper group relative isolate flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl p-6 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:p-8"
                 >
                   <Image
                     src={area.image}
@@ -137,7 +137,7 @@ export function ExploreGrid() {
                   {/* Warm-ink fade: heavy where the text sits, light at the top. */}
                   <div
                     aria-hidden
-                    className="from-[#1C1B1A]/92 absolute inset-0 -z-10 bg-gradient-to-t via-[#1C1B1A]/60 to-[#1C1B1A]/15"
+                    className="from-ink/92 via-ink/60 to-ink/15 absolute inset-0 -z-10 bg-gradient-to-t"
                   />
 
                   <div className="mb-auto flex items-start justify-between">

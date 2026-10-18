@@ -360,7 +360,22 @@ Applied: homepage, header, footer, departures board.
 
 Not yet applied: every other marketing page, booking, dashboards, auth, shop. The header and footer are shared, so those pages already show the cream header and footer on otherwise white pages until they are migrated.
 
-The palette currently lives as hex literals in `src/modules/marketing/components/marketing/SectionKicker.tsx` (`PAPER`, `INK`, `SECTION_HEADING`, `SECTION_LEAD`) and inline in the header, footer and hero. Before migrating more pages, promote these into the theme (`@theme` in `globals.css`, as the shared `@powermysport/shared-tokens` brand colours already are) so a colour change is one edit.
+The palette is defined once, in the `@theme inline` block of `src/app/globals.css`, and used as ordinary Tailwind utilities. A colour change is one edit there.
+
+| Token        | Value   | Utilities                                         |
+| ------------ | ------- | ------------------------------------------------- |
+| `paper`      | #F8F3EA | `bg-paper`, `ring-offset-paper`                   |
+| `paper-deep` | #EFE7DA | `bg-paper-deep`                                   |
+| `wash`       | #FBE9D9 | `bg-wash`                                         |
+| `ink`        | #1C1B1A | `text-ink`, `bg-ink`, `border-ink/20`, `ring-ink` |
+| `ink-hover`  | #39332F | `hover:bg-ink-hover`                              |
+| `ink-body`   | #4A4741 | `text-ink-body`                                   |
+| `ink-muted`  | #7A766E | `text-ink-muted`                                  |
+| `ink-ash`    | #A8A5A0 | `text-ink-ash`                                    |
+| `hairline`   | #E1DCD3 | `border-hairline`, `ring-hairline`, `bg-hairline` |
+| `board-tile` | #2B2825 | `bg-board-tile`                                   |
+
+Orange is not duplicated: the action colour is the existing `power-orange-solid` token and the wordmark's "My" is `power-orange`, both from `@powermysport/shared-tokens`. Shared type helpers (`SECTION_HEADING`, `SECTION_LEAD`, `SectionKicker`) are in `src/modules/marketing/components/marketing/SectionKicker.tsx`. Do not write new hex literals for these colours; use the token.
 
 Open items:
 

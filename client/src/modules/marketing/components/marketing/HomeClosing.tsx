@@ -18,13 +18,13 @@ export function HomeClosing({
   const isWhatsApp = primaryCTA.href.includes("wa.me");
 
   return (
-    <section className="bg-[#F8F3EA] pb-24 pt-8 sm:pb-32 lg:pb-40">
+    <section className="bg-paper pb-24 pt-8 sm:pb-32 lg:pb-40">
       <div className="reveal-on-scroll mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-[#FBE9D9] px-6 py-16 sm:px-14 sm:py-24 lg:px-20">
-          <h2 className="font-editorial max-w-3xl text-balance text-4xl font-light leading-[1.06] text-[#1C1B1A] sm:text-6xl">
+        <div className="bg-wash rounded-3xl px-6 py-16 sm:px-14 sm:py-24 lg:px-20">
+          <h2 className="font-editorial text-ink max-w-3xl text-balance text-4xl font-light leading-[1.06] sm:text-6xl">
             {title}
           </h2>
-          <p className="mb-10 mt-6 max-w-[52ch] text-pretty text-lg leading-relaxed text-[#4A4741]">
+          <p className="text-ink-body mb-10 mt-6 max-w-[52ch] text-pretty text-lg leading-relaxed">
             {description}
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
@@ -39,7 +39,7 @@ export function HomeClosing({
             </Button>
             <Link
               href={secondaryCTA.href}
-              className="group inline-flex items-center gap-1.5 rounded text-base font-medium text-[#1C1B1A] underline decoration-[#1C1B1A]/30 underline-offset-[6px] transition-colors duration-200 hover:decoration-[#1C1B1A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1B1A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FBE9D9]"
+              className="text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink focus-visible:ring-offset-wash group inline-flex items-center gap-1.5 rounded text-base font-medium underline underline-offset-[6px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
             >
               {secondaryCTA.label}
               <ArrowRight

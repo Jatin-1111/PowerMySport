@@ -26,7 +26,7 @@ const STEPS = [
  */
 export function JourneySteps() {
   return (
-    <section className="bg-[#EFE7DA] py-24 sm:py-32 lg:py-40">
+    <section className="bg-paper-deep py-24 sm:py-32 lg:py-40">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll max-w-3xl">
           <SectionKicker label="How it works" />
@@ -38,12 +38,12 @@ export function JourneySteps() {
 
         <ol className="reveal-on-scroll mt-16 grid grid-cols-1 gap-x-10 gap-y-12 sm:grid-cols-2 lg:mt-24 lg:grid-cols-4">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="border-t border-[#1C1B1A]/20 pt-6">
-              <span className="font-editorial mb-10 block text-5xl font-light tabular-nums text-[#1C1B1A]">
+            <li key={step.title} className="border-ink/20 border-t pt-6">
+              <span className="font-editorial text-ink mb-10 block text-5xl font-light tabular-nums">
                 {index + 1}
               </span>
-              <h3 className="mb-2 text-lg font-semibold text-[#1C1B1A]">{step.title}</h3>
-              <p className="max-w-[32ch] text-pretty leading-relaxed text-[#4A4741]">{step.body}</p>
+              <h3 className="text-ink mb-2 text-lg font-semibold">{step.title}</h3>
+              <p className="text-ink-body max-w-[32ch] text-pretty leading-relaxed">{step.body}</p>
             </li>
           ))}
         </ol>

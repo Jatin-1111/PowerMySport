@@ -214,10 +214,10 @@ function Board({
   ];
 
   return (
-    <div ref={boardRef} className={cn("@container rounded-2xl bg-[#1C1B1A] p-3 sm:p-6", className)}>
+    <div ref={boardRef} className={cn("@container bg-ink rounded-2xl p-3 sm:p-6", className)}>
       <div
         aria-hidden
-        className="mb-3 grid gap-[2px] text-xs font-medium uppercase tracking-[0.14em] text-[#A8A5A0]"
+        className="text-ink-ash mb-3 grid gap-[2px] text-xs font-medium uppercase tracking-[0.14em]"
         style={grid}
       >
         {labels.map((label) => (
@@ -234,9 +234,9 @@ function Board({
                 <span
                   key={col}
                   className={cn(
-                    "relative flex aspect-[3/4] items-center justify-center rounded-[2px] bg-[#2B2825] font-mono font-bold leading-none",
+                    "bg-board-tile relative flex aspect-[3/4] items-center justify-center rounded-[2px] font-mono font-bold leading-none",
                     // A hairline across the middle, where the two flaps meet.
-                    "after:absolute after:inset-x-0 after:top-1/2 after:h-px after:bg-[#1C1B1A]",
+                    "after:bg-ink after:absolute after:inset-x-0 after:top-1/2 after:h-px",
                     col < layout.date ? "text-amber-300" : "text-white"
                   )}
                 >
@@ -271,7 +271,7 @@ export function FlipBoard({ editions, title }: { editions: TournamentEdition[]; 
   if (editions.length === 0) return null;
   return (
     <section aria-label={title}>
-      <p className="mb-4 text-sm font-medium text-[#7A766E]">{title}</p>
+      <p className="text-ink-muted mb-4 text-sm font-medium">{title}</p>
       <Board editions={editions} layout={LAYOUTS.narrow} className="sm:hidden" />
       <Board editions={editions} layout={LAYOUTS.wide} className="hidden sm:block" />
     </section>

@@ -68,21 +68,21 @@ const socialLinks = [
     external: true,
     // WhatsApp's own #25D366 is 2:1 under a white glyph; green-700 keeps the
     // signal and clears 3:1 for the icon.
-    hoverClass: "hover:bg-[#1C1B1A] hover:text-white",
+    hoverClass: "hover:bg-ink hover:text-white",
   },
   {
     name: "Instagram",
     href: "https://www.instagram.com/powermysport",
     icon: <Instagram className="h-4 w-4" strokeWidth={1.5} />,
     external: true,
-    hoverClass: "hover:bg-[#1C1B1A] hover:text-white",
+    hoverClass: "hover:bg-ink hover:text-white",
   },
   {
     name: "LinkedIn",
     href: "#",
     icon: <Linkedin className="h-4 w-4" strokeWidth={1.5} />,
     external: false,
-    hoverClass: "hover:bg-[#1C1B1A] hover:text-white",
+    hoverClass: "hover:bg-ink hover:text-white",
   },
 ];
 
@@ -90,7 +90,7 @@ export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-[#E1DCD3] bg-[#EFE7DA]">
+    <footer className="border-hairline bg-paper-deep border-t">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Main grid */}
         <div className="grid grid-cols-1 gap-x-8 gap-y-12 py-16 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
@@ -98,13 +98,13 @@ export const Footer: React.FC = () => {
           <div className="sm:col-span-2 md:col-span-4 lg:col-span-2">
             <Link href="/" className="inline-flex items-center">
               <span className="font-editorial text-4xl font-medium leading-none">
-                <span className="text-[#1C1B1A]">Power</span>
+                <span className="text-ink">Power</span>
                 <span className="text-power-orange-solid">My</span>
-                <span className="text-[#1C1B1A]">Sport</span>
+                <span className="text-ink">Sport</span>
               </span>
             </Link>
 
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#4A4741]">
+            <p className="text-ink-body mt-4 max-w-xs text-sm leading-relaxed">
               Helping parents understand, navigate and make confident decisions throughout their
               child&apos;s sporting journey.
             </p>
@@ -113,16 +113,16 @@ export const Footer: React.FC = () => {
             <div className="mt-6 space-y-3">
               <a
                 href="mailto:teams@powermysport.com"
-                className="flex items-center gap-2.5 text-sm text-[#4A4741] transition-colors hover:text-[#1C1B1A]"
+                className="text-ink-body hover:text-ink flex items-center gap-2.5 text-sm transition-colors"
               >
-                <Mail className="h-4 w-4 shrink-0 text-[#1C1B1A]" strokeWidth={1.5} />
+                <Mail className="text-ink h-4 w-4 shrink-0" strokeWidth={1.5} />
                 teams@powermysport.com
               </a>
               <a
                 href={WA_FOOTER_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 text-sm text-[#4A4741] transition-colors hover:text-green-700"
+                className="text-ink-body flex items-center gap-2.5 text-sm transition-colors hover:text-green-700"
               >
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center text-green-700">
                   <WhatsAppIcon />
@@ -138,7 +138,7 @@ export const Footer: React.FC = () => {
                   key={social.name}
                   href={social.href}
                   aria-label={social.name}
-                  className={`flex h-9 w-9 items-center justify-center rounded-md bg-[#F8F3EA] text-[#4A4741] ring-1 ring-[#E1DCD3] transition-colors duration-200 ${social.hoverClass}`}
+                  className={`bg-paper text-ink-body ring-hairline flex h-9 w-9 items-center justify-center rounded-md ring-1 transition-colors duration-200 ${social.hoverClass}`}
                   {...(social.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 >
                   {social.icon}
@@ -150,13 +150,13 @@ export const Footer: React.FC = () => {
           {/* Navigation columns */}
           {navColumns.map((col) => (
             <div key={col.title}>
-              <h3 className="mb-4 text-sm font-semibold text-[#1C1B1A]">{col.title}</h3>
+              <h3 className="text-ink mb-4 text-sm font-semibold">{col.title}</h3>
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-[#4A4741] transition-colors hover:text-[#1C1B1A]"
+                      className="text-ink-body hover:text-ink text-sm transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -168,32 +168,32 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-[#E1DCD3]" />
+        <div className="border-hairline border-t" />
 
         {/* Bottom bar */}
         <div className="flex flex-col items-center justify-between gap-3 py-6 sm:flex-row">
-          <p className="text-xs text-[#4A4741]">
+          <p className="text-ink-body text-xs">
             © {currentYear} Powermysport PVT. LTD. All rights reserved.
           </p>
-          <p className="text-center text-xs text-[#4A4741] sm:text-right">
+          <p className="text-ink-body text-center text-xs sm:text-right">
             PowerMySport is a marketplace. Users assume all risks.{" "}
             <Link
               href="/health-waiver"
-              className="text-[#1C1B1A] underline-offset-2 transition-colors hover:underline"
+              className="text-ink underline-offset-2 transition-colors hover:underline"
             >
               Health Waiver
             </Link>
             {" · "}
             <Link
               href="/terms"
-              className="text-[#1C1B1A] underline-offset-2 transition-colors hover:underline"
+              className="text-ink underline-offset-2 transition-colors hover:underline"
             >
               Terms
             </Link>
             {" · "}
             <a
               href="mailto:teams@powermysport.com"
-              className="text-[#1C1B1A] underline-offset-2 transition-colors hover:underline"
+              className="text-ink underline-offset-2 transition-colors hover:underline"
             >
               Legal Enquiries
             </a>

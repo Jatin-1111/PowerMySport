@@ -17,7 +17,7 @@ const QUESTIONS = [
 
 export function ParentQuestions() {
   return (
-    <section className="bg-[#F8F3EA] py-24 sm:py-32 lg:py-40">
+    <section className="bg-paper py-24 sm:py-32 lg:py-40">
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[5fr_7fr] lg:gap-24 lg:px-8">
         <div className="reveal-on-scroll lg:sticky lg:top-28 lg:self-start">
           <SectionKicker label="Ask PowerMySport" />
@@ -27,20 +27,20 @@ export function ParentQuestions() {
           <p className={SECTION_LEAD}>Tap a question to ask it on WhatsApp, or write your own.</p>
         </div>
 
-        <ul className="reveal-on-scroll border-t border-[#E1DCD3]">
+        <ul className="reveal-on-scroll border-hairline border-t">
           {QUESTIONS.map((question) => (
-            <li key={question} className="border-b border-[#E1DCD3]">
+            <li key={question} className="border-hairline border-b">
               <a
                 href={buildWhatsAppUrl(question)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group -mx-3 flex items-center justify-between gap-6 rounded-lg px-3 py-6 text-left text-lg leading-snug text-[#1C1B1A] transition-colors duration-200 hover:bg-[#EFE7DA]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1B1A] sm:text-xl"
+                className="text-ink hover:bg-paper-deep/70 focus-visible:ring-ink group -mx-3 flex items-center justify-between gap-6 rounded-lg px-3 py-6 text-left text-lg leading-snug transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 sm:text-xl"
               >
                 {question}
                 <ArrowUpRight
                   aria-hidden
                   strokeWidth={1.5}
-                  className="h-5 w-5 shrink-0 text-[#7A766E] transition-[transform,color] duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#1C1B1A] motion-reduce:transition-none"
+                  className="text-ink-muted group-hover:text-ink h-5 w-5 shrink-0 transition-[transform,color] duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none"
                 />
               </a>
             </li>

@@ -44,13 +44,13 @@ export const Hero: React.FC<HeroProps> = ({
   const after = hlIndex >= 0 && titleHighlight ? title.slice(hlIndex + titleHighlight.length) : "";
 
   return (
-    <section className="bg-[#F8F3EA]">
+    <section className="bg-paper">
       <div className="mx-auto max-w-7xl px-4 pb-8 pt-14 sm:px-6 sm:pt-20 lg:px-8 lg:pt-28">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,32rem)_minmax(0,28rem)] lg:items-center lg:justify-center lg:gap-16">
           {/* Heavy grotesk for the statement, an italic serif for the phrase that
               matters: the two voices are the point, so the serif is larger to
               match the grotesk's visual weight. */}
-          <h1 className="font-title text-balance text-[2.1rem] font-semibold leading-[1.04] tracking-[-0.04em] text-[#1C1B1A] sm:text-5xl lg:text-[3.9rem]">
+          <h1 className="font-title text-ink text-balance text-[2.1rem] font-semibold leading-[1.04] tracking-[-0.04em] sm:text-5xl lg:text-[3.9rem]">
             {before}
             {hlIndex >= 0 && (
               <em className="font-editorial text-[1.22em] font-light italic tracking-[-0.02em]">
@@ -62,12 +62,12 @@ export const Hero: React.FC<HeroProps> = ({
 
           <div className="flex flex-col items-start">
             {description && (
-              <p className="mb-8 max-w-[44ch] text-pretty text-lg leading-relaxed text-[#4A4741]">
+              <p className="text-ink-body mb-8 max-w-[44ch] text-pretty text-lg leading-relaxed">
                 {description}
               </p>
             )}
 
-            {ctaPrompt && <p className="mb-3 text-sm font-medium text-[#1C1B1A]">{ctaPrompt}</p>}
+            {ctaPrompt && <p className="text-ink mb-3 text-sm font-medium">{ctaPrompt}</p>}
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
               {primaryCTA && (
@@ -89,7 +89,7 @@ export const Hero: React.FC<HeroProps> = ({
               {secondaryCTA && (
                 <Link
                   href={secondaryCTA.href}
-                  className="group inline-flex items-center gap-1.5 rounded text-base font-medium text-[#1C1B1A] underline decoration-[#1C1B1A]/30 underline-offset-[6px] transition-colors duration-200 hover:decoration-[#1C1B1A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1B1A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#F8F3EA]"
+                  className="text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink focus-visible:ring-offset-paper group inline-flex items-center gap-1.5 rounded text-base font-medium underline underline-offset-[6px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 >
                   {secondaryCTA.label}
                   <ArrowRight
@@ -105,7 +105,7 @@ export const Hero: React.FC<HeroProps> = ({
 
         {/* The photograph: one wide plate, desaturated and warmed to sit on the paper. */}
         <div className="relative mt-14 lg:mt-20">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-[#EFE7DA] sm:aspect-[16/8] lg:aspect-[16/6.5]">
+          <div className="bg-paper-deep relative aspect-[4/3] overflow-hidden rounded-2xl sm:aspect-[16/8] lg:aspect-[16/6.5]">
             <Image
               src="https://images.unsplash.com/photo-1574629810360-7efbbe195018?fm=jpg&q=75&w=2400&auto=format&fit=crop"
               alt="Young footballer chasing the ball across a grass pitch"
@@ -117,18 +117,18 @@ export const Hero: React.FC<HeroProps> = ({
           </div>
 
           {ctaNote && (
-            <div className="mt-4 rounded-xl border border-[#E1DCD3] bg-[#F8F3EA] px-5 py-4 sm:absolute sm:bottom-6 sm:left-6 sm:mt-0 sm:max-w-[17rem] sm:shadow-[0_12px_24px_-16px_rgba(57,34,30,0.28)] lg:bottom-8 lg:left-8">
-              <p className="text-sm font-medium text-[#7A766E]">After you message us</p>
-              <p className="mt-1 text-pretty text-sm leading-snug text-[#1C1B1A]">{ctaNote}</p>
+            <div className="border-hairline bg-paper mt-4 rounded-xl border px-5 py-4 sm:absolute sm:bottom-6 sm:left-6 sm:mt-0 sm:max-w-[17rem] sm:shadow-[0_12px_24px_-16px_rgba(57,34,30,0.28)] lg:bottom-8 lg:left-8">
+              <p className="text-ink-muted text-sm font-medium">After you message us</p>
+              <p className="text-ink mt-1 text-pretty text-sm leading-snug">{ctaNote}</p>
             </div>
           )}
         </div>
 
         {trustPoints && trustPoints.length > 0 && (
-          <ul className="mt-8 flex flex-wrap gap-x-8 gap-y-2 border-t border-[#E1DCD3] pt-6 text-sm text-[#4A4741]">
+          <ul className="border-hairline text-ink-body mt-8 flex flex-wrap gap-x-8 gap-y-2 border-t pt-6 text-sm">
             {trustPoints.map((point) => (
               <li key={point} className="flex items-center gap-2">
-                <Check aria-hidden strokeWidth={1.75} className="h-4 w-4 shrink-0 text-[#1C1B1A]" />
+                <Check aria-hidden strokeWidth={1.75} className="text-ink h-4 w-4 shrink-0" />
                 {point}
               </li>
             ))}
@@ -136,14 +136,12 @@ export const Hero: React.FC<HeroProps> = ({
         )}
 
         {stats && stats.length > 0 && (
-          <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#E1DCD3] bg-[#E1DCD3] sm:grid-cols-3">
+          <dl className="border-hairline bg-hairline mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3">
             {stats.map((stat) => (
-              <div key={stat.label} className="bg-[#F8F3EA] px-5 py-4">
-                <dt className="text-sm text-[#7A766E]">{stat.label}</dt>
-                <dd className="font-editorial mt-1 text-2xl font-light text-[#1C1B1A]">
-                  {stat.value}
-                </dd>
-                {stat.helper && <p className="mt-0.5 text-xs text-[#7A766E]">{stat.helper}</p>}
+              <div key={stat.label} className="bg-paper px-5 py-4">
+                <dt className="text-ink-muted text-sm">{stat.label}</dt>
+                <dd className="font-editorial text-ink mt-1 text-2xl font-light">{stat.value}</dd>
+                {stat.helper && <p className="text-ink-muted mt-0.5 text-xs">{stat.helper}</p>}
               </div>
             ))}
           </dl>

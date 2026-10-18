@@ -29,7 +29,7 @@ export function NextTournamentsSection({
   if (editions.length === 0) return null;
 
   return (
-    <section className="bg-[#F8F3EA] py-24 sm:py-32 lg:py-40">
+    <section className="bg-paper py-24 sm:py-32 lg:py-40">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll">
           <div className="mb-12 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
@@ -43,7 +43,7 @@ export function NextTournamentsSection({
             </div>
             <Link
               href={`/tournaments/sport/${sportSlug}`}
-              className="inline-flex items-center gap-1.5 text-base font-medium text-[#1C1B1A] underline decoration-[#1C1B1A]/30 underline-offset-[6px] transition-colors hover:decoration-[#1C1B1A]"
+              className="text-ink decoration-ink/30 hover:decoration-ink inline-flex items-center gap-1.5 text-base font-medium underline underline-offset-[6px] transition-colors"
             >
               See all {sportLabel.toLowerCase()} tournaments
               <ArrowRight aria-hidden className="h-4 w-4" />

@@ -221,9 +221,9 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
   return (
     <nav
       className={cn(
-        "border-b border-[#E1DCD3] bg-[#F8F3EA]/90 text-[#1C1B1A] backdrop-blur-xl transition-all duration-300",
+        "border-hairline bg-paper/90 text-ink border-b backdrop-blur-xl transition-all duration-300",
         sticky && "fixed inset-x-0 top-0 z-50 w-full",
-        variant === "dark" && "bg-[#F8F3EA]/90 text-[#1C1B1A]"
+        variant === "dark" && "bg-paper/90 text-ink"
       )}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -234,9 +234,9 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                 (2.6:1), and at a legible 12px it would be wider than the logo. */}
             <Link href="/" className="inline-flex h-full flex-col items-start justify-center">
               <span className="font-editorial text-[1.7rem] font-medium leading-none">
-                <span className="text-[#1C1B1A]">Power</span>
+                <span className="text-ink">Power</span>
                 <span className="text-power-orange">My</span>
-                <span className="text-[#1C1B1A]">Sport</span>
+                <span className="text-ink">Sport</span>
               </span>
             </Link>
           </div>
@@ -495,7 +495,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="overflow-hidden border-t border-[#E1DCD3] bg-[#F8F3EA]/95 md:hidden"
+            className="border-hairline bg-paper/95 overflow-hidden border-t md:hidden"
           >
             <div className="space-y-1 px-2 pb-3 pt-2">
               {/* Mobile Explore Accordion (Roadmap + Guidance) */}
@@ -506,7 +506,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                     "flex w-full items-center justify-between rounded-md px-3 py-2 text-base font-medium transition-colors",
                     isExploreActive
                       ? "text-power-orange-solid bg-orange-50"
-                      : "text-slate-700 hover:bg-[#EFE7DA]"
+                      : "hover:bg-paper-deep text-slate-700"
                   )}
                 >
                   Explore
@@ -561,7 +561,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
               <Link
                 href="/community"
                 className={cn(
-                  "block rounded-md px-3 py-2 transition-colors hover:bg-[#EFE7DA]",
+                  "hover:bg-paper-deep block rounded-md px-3 py-2 transition-colors",
                   isActive("/community") ? "bg-orange-50" : ""
                 )}
                 onClick={() => setMobileMenuOpen(false)}
@@ -582,7 +582,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                   onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-3 py-2 transition-colors",
-                    isServicesActive ? "bg-orange-50" : "hover:bg-[#EFE7DA]"
+                    isServicesActive ? "bg-orange-50" : "hover:bg-paper-deep"
                   )}
                 >
                   <span
@@ -669,7 +669,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "block rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-[#EFE7DA]",
+                    "hover:bg-paper-deep block rounded-md px-3 py-2 text-base font-medium transition-colors",
                     isActive(link.href) ? "text-power-orange-solid bg-orange-50" : "text-slate-700"
                   )}
                   onClick={() => setMobileMenuOpen(false)}

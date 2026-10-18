@@ -97,6 +97,19 @@
   --color-turf-green: var(--turf-green);
   --color-error-red: var(--error-red);
 
+  /* Warm paper: the design system in client/DESIGN.md. Surfaces, text, lines.
+     Orange stays on the brand tokens above; it is the only accent. */
+  --color-paper: #f8f3ea;
+  --color-paper-deep: #efe7da;
+  --color-wash: #fbe9d9;
+  --color-ink: #1c1b1a;
+  --color-ink-hover: #39332f;
+  --color-ink-body: #4a4741;
+  --color-ink-muted: #7a766e;
+  --color-ink-ash: #a8a5a0;
+  --color-hairline: #e1dcd3;
+  --color-board-tile: #2b2825;
+
   /* Semantic Colors */
   --color-primary: var(--primary);
   --color-success: var(--success);
@@ -320,7 +333,7 @@
   }
 
   .shop-nav-link {
-    @apply rounded-lg px-3 py-2 text-[#4A4741] transition-colors duration-200 hover:bg-[#EFE7DA] hover:text-[#1C1B1A];
+    @apply text-ink-body hover:bg-paper-deep hover:text-ink rounded-lg px-3 py-2 transition-colors duration-200;
   }
 
   /* ── Scroll-driven section reveal ──
