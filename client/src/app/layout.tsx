@@ -6,7 +6,7 @@ import { FriendSocketProvider } from "@/hooks/useFriendSocket";
 import { QueryProvider } from "@/lib/query/QueryProvider";
 import { SITE_DESCRIPTION as siteDescription, SITE_URL as siteUrl } from "@/lib/seo";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -18,6 +18,14 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Editorial serif for large headings (`.font-editorial`), light weights only.
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -114,7 +122,10 @@ export default function RootLayout({
     // `--font-sans` on :root, so a variable that only exists from <body> down
     // is undefined there and every page silently falls back to the system
     // font, which is how Space Grotesk never rendered anywhere.
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable}`}
+    >
       <body className="antialiased">
         <NumericInputGuard />
         <GuestAnalyticsTracker />

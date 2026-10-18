@@ -221,9 +221,9 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
   return (
     <nav
       className={cn(
-        "border-b border-slate-200/80 bg-white/90 text-slate-900 backdrop-blur-xl transition-all duration-300",
-        sticky && "fixed inset-x-0 top-0 z-50 w-full shadow-sm",
-        variant === "dark" && "bg-white/90 text-slate-900"
+        "border-b border-[#E1DCD3] bg-[#F8F3EA]/90 text-[#1C1B1A] backdrop-blur-xl transition-all duration-300",
+        sticky && "fixed inset-x-0 top-0 z-50 w-full",
+        variant === "dark" && "bg-[#F8F3EA]/90 text-[#1C1B1A]"
       )}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -233,10 +233,10 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
             {/* The wordmark alone. A tagline sat under it at 9px in slate-400
                 (2.6:1), and at a legible 12px it would be wider than the logo. */}
             <Link href="/" className="inline-flex h-full flex-col items-start justify-center">
-              <span className="font-title text-2xl font-extrabold leading-none tracking-tight">
-                <span className="text-slate-900">Power</span>
+              <span className="font-editorial text-[1.7rem] font-normal leading-none">
+                <span className="text-[#1C1B1A]">Power</span>
                 <span className="text-power-orange">My</span>
-                <span className="text-slate-900">Sport</span>
+                <span className="text-[#1C1B1A]">Sport</span>
               </span>
             </Link>
           </div>
@@ -495,7 +495,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="overflow-hidden border-t border-slate-200 bg-white/95 md:hidden"
+            className="overflow-hidden border-t border-[#E1DCD3] bg-[#F8F3EA]/95 md:hidden"
           >
             <div className="space-y-1 px-2 pb-3 pt-2">
               {/* Mobile Explore Accordion (Roadmap + Guidance) */}
@@ -506,7 +506,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                     "flex w-full items-center justify-between rounded-md px-3 py-2 text-base font-medium transition-colors",
                     isExploreActive
                       ? "text-power-orange-solid bg-orange-50"
-                      : "text-slate-700 hover:bg-indigo-50"
+                      : "text-slate-700 hover:bg-[#EFE7DA]"
                   )}
                 >
                   Explore
@@ -561,7 +561,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
               <Link
                 href="/community"
                 className={cn(
-                  "block rounded-md px-3 py-2 transition-colors hover:bg-indigo-50",
+                  "block rounded-md px-3 py-2 transition-colors hover:bg-[#EFE7DA]",
                   isActive("/community") ? "bg-orange-50" : ""
                 )}
                 onClick={() => setMobileMenuOpen(false)}
@@ -582,7 +582,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                   onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
                   className={cn(
                     "flex w-full items-center justify-between rounded-md px-3 py-2 transition-colors",
-                    isServicesActive ? "bg-orange-50" : "hover:bg-indigo-50"
+                    isServicesActive ? "bg-orange-50" : "hover:bg-[#EFE7DA]"
                   )}
                 >
                   <span
@@ -669,7 +669,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "block rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-indigo-50",
+                    "block rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-[#EFE7DA]",
                     isActive(link.href) ? "text-power-orange-solid bg-orange-50" : "text-slate-700"
                   )}
                   onClick={() => setMobileMenuOpen(false)}

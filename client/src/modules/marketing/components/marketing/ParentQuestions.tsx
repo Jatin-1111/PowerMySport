@@ -1,6 +1,6 @@
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { ArrowRight } from "lucide-react";
-import { SectionLabel } from "./SectionLabel";
+import { ArrowUpRight } from "lucide-react";
+import { SECTION_HEADING, SECTION_LEAD, SectionKicker } from "./SectionKicker";
 
 /**
  * Real questions parents ask. Each opens WhatsApp with the question already
@@ -17,33 +17,30 @@ const QUESTIONS = [
 
 export function ParentQuestions() {
   return (
-    <section className="py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-        <div className="reveal-on-scroll mx-auto max-w-2xl text-center">
-          <div className="mb-4 flex justify-center">
-            <SectionLabel label="Ask PowerMySport" color="green" />
-          </div>
-          <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+    <section className="bg-[#F8F3EA] py-24 sm:py-32 lg:py-40">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[5fr_7fr] lg:gap-24 lg:px-8">
+        <div className="reveal-on-scroll lg:sticky lg:top-28 lg:self-start">
+          <SectionKicker label="Ask PowerMySport" />
+          <h2 className={`${SECTION_HEADING} mb-6`}>
             Ask anything about your child&apos;s sporting journey
           </h2>
-          <p className="text-lg text-slate-600">
-            Tap a question to ask it on WhatsApp, or write your own.
-          </p>
+          <p className={SECTION_LEAD}>Tap a question to ask it on WhatsApp, or write your own.</p>
         </div>
 
-        <ul className="reveal-on-scroll mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="reveal-on-scroll border-t border-[#E1DCD3]">
           {QUESTIONS.map((question) => (
-            <li key={question}>
+            <li key={question} className="border-b border-[#E1DCD3]">
               <a
                 href={buildWhatsAppUrl(question)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="focus-visible:ring-power-orange-solid group flex h-full items-center justify-between gap-3 rounded-lg border border-slate-200/60 bg-white p-5 text-left text-sm font-medium leading-snug text-slate-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-green-700/40 hover:bg-green-50 focus-visible:outline-none focus-visible:ring-2"
+                className="group -mx-3 flex items-center justify-between gap-6 rounded-lg px-3 py-6 text-left text-lg leading-snug text-[#1C1B1A] transition-colors duration-200 hover:bg-[#EFE7DA]/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1B1A] sm:text-xl"
               >
                 {question}
-                <ArrowRight
+                <ArrowUpRight
                   aria-hidden
-                  className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none"
+                  strokeWidth={1.5}
+                  className="h-5 w-5 shrink-0 text-[#7A766E] transition-[transform,color] duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#1C1B1A] motion-reduce:transition-none"
                 />
               </a>
             </li>

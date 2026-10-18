@@ -68,21 +68,21 @@ const socialLinks = [
     external: true,
     // WhatsApp's own #25D366 is 2:1 under a white glyph; green-700 keeps the
     // signal and clears 3:1 for the icon.
-    hoverClass: "hover:bg-green-700 hover:text-white",
+    hoverClass: "hover:bg-[#1C1B1A] hover:text-white",
   },
   {
     name: "Instagram",
     href: "https://www.instagram.com/powermysport",
-    icon: <Instagram className="h-4 w-4" />,
+    icon: <Instagram className="h-4 w-4" strokeWidth={1.5} />,
     external: true,
-    hoverClass: "hover:bg-pink-600 hover:text-white",
+    hoverClass: "hover:bg-[#1C1B1A] hover:text-white",
   },
   {
     name: "LinkedIn",
     href: "#",
-    icon: <Linkedin className="h-4 w-4" />,
+    icon: <Linkedin className="h-4 w-4" strokeWidth={1.5} />,
     external: false,
-    hoverClass: "hover:bg-blue-700 hover:text-white",
+    hoverClass: "hover:bg-[#1C1B1A] hover:text-white",
   },
 ];
 
@@ -90,24 +90,21 @@ export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-950">
-      {/* Top accent line */}
-      <div className="via-power-orange/50 h-px bg-gradient-to-r from-transparent to-transparent" />
-
+    <footer className="border-t border-[#E1DCD3] bg-[#EFE7DA]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Main grid */}
         <div className="grid grid-cols-1 gap-x-8 gap-y-12 py-16 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
           {/* Brand block — owns its own row until lg, then sits beside the nav */}
           <div className="sm:col-span-2 md:col-span-4 lg:col-span-2">
             <Link href="/" className="inline-flex items-center">
-              <span className="font-title text-3xl font-extrabold leading-none tracking-tight">
-                <span className="text-white">Power</span>
-                <span className="text-power-orange">My</span>
-                <span className="text-white">Sport</span>
+              <span className="font-editorial text-4xl font-normal leading-none">
+                <span className="text-[#1C1B1A]">Power</span>
+                <span className="text-power-orange-solid">My</span>
+                <span className="text-[#1C1B1A]">Sport</span>
               </span>
             </Link>
 
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#4A4741]">
               Helping parents understand, navigate and make confident decisions throughout their
               child&apos;s sporting journey.
             </p>
@@ -116,18 +113,18 @@ export const Footer: React.FC = () => {
             <div className="mt-6 space-y-3">
               <a
                 href="mailto:teams@powermysport.com"
-                className="flex items-center gap-2.5 text-sm text-slate-400 transition-colors hover:text-white"
+                className="flex items-center gap-2.5 text-sm text-[#4A4741] transition-colors hover:text-[#1C1B1A]"
               >
-                <Mail className="text-power-orange h-4 w-4 shrink-0" />
+                <Mail className="h-4 w-4 shrink-0 text-[#1C1B1A]" strokeWidth={1.5} />
                 teams@powermysport.com
               </a>
               <a
                 href={WA_FOOTER_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 text-sm text-slate-400 transition-colors hover:text-[#25D366]"
+                className="flex items-center gap-2.5 text-sm text-[#4A4741] transition-colors hover:text-green-700"
               >
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center text-[#25D366]">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center text-green-700">
                   <WhatsAppIcon />
                 </span>
                 Chat on WhatsApp
@@ -141,7 +138,7 @@ export const Footer: React.FC = () => {
                   key={social.name}
                   href={social.href}
                   aria-label={social.name}
-                  className={`flex h-9 w-9 items-center justify-center rounded-md bg-white/5 text-slate-400 transition-all duration-200 ${social.hoverClass}`}
+                  className={`flex h-9 w-9 items-center justify-center rounded-md bg-[#F8F3EA] text-[#4A4741] ring-1 ring-[#E1DCD3] transition-colors duration-200 ${social.hoverClass}`}
                   {...(social.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 >
                   {social.icon}
@@ -153,15 +150,13 @@ export const Footer: React.FC = () => {
           {/* Navigation columns */}
           {navColumns.map((col) => (
             <div key={col.title}>
-              <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-300">
-                {col.title}
-              </h3>
+              <h3 className="mb-4 text-sm font-semibold text-[#1C1B1A]">{col.title}</h3>
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-slate-400 transition-colors hover:text-white"
+                      className="text-sm text-[#4A4741] transition-colors hover:text-[#1C1B1A]"
                     >
                       {link.label}
                     </Link>
@@ -173,34 +168,32 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-white/[0.06]" />
+        <div className="border-t border-[#E1DCD3]" />
 
         {/* Bottom bar */}
         <div className="flex flex-col items-center justify-between gap-3 py-6 sm:flex-row">
-          {/* slate-400 is the darkest grey that stays legible on slate-950: 500
-              measured 4.2:1 here, 600 2.7:1 and 700 1.9:1. */}
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[#4A4741]">
             © {currentYear} Powermysport PVT. LTD. All rights reserved.
           </p>
-          <p className="text-center text-xs text-slate-400 sm:text-right">
+          <p className="text-center text-xs text-[#4A4741] sm:text-right">
             PowerMySport is a marketplace. Users assume all risks.{" "}
             <Link
               href="/health-waiver"
-              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+              className="text-[#1C1B1A] underline-offset-2 transition-colors hover:underline"
             >
               Health Waiver
             </Link>
             {" · "}
             <Link
               href="/terms"
-              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+              className="text-[#1C1B1A] underline-offset-2 transition-colors hover:underline"
             >
               Terms
             </Link>
             {" · "}
             <a
               href="mailto:teams@powermysport.com"
-              className="text-slate-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+              className="text-[#1C1B1A] underline-offset-2 transition-colors hover:underline"
             >
               Legal Enquiries
             </a>

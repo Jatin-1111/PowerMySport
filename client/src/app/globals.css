@@ -306,6 +306,11 @@
     @apply from-power-orange to-turf-green bg-linear-to-r bg-clip-text text-transparent;
   }
 
+  .font-editorial {
+    font-family: var(--font-newsreader), Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+
   .font-title {
     font-family: var(--font-title), sans-serif;
   }
@@ -315,7 +320,7 @@
   }
 
   .shop-nav-link {
-    @apply rounded-xl px-3 py-2 text-slate-700 transition-colors hover:bg-indigo-50 hover:text-slate-900;
+    @apply rounded-lg px-3 py-2 text-[#4A4741] transition-colors duration-200 hover:bg-[#EFE7DA] hover:text-[#1C1B1A];
   }
 
   /* ── Scroll-driven section reveal ──

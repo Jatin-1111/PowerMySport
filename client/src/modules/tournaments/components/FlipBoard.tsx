@@ -214,13 +214,10 @@ function Board({
   ];
 
   return (
-    <div
-      ref={boardRef}
-      className={cn("@container rounded-lg bg-slate-950 p-2.5 sm:p-4", className)}
-    >
+    <div ref={boardRef} className={cn("@container rounded-2xl bg-[#1C1B1A] p-3 sm:p-6", className)}>
       <div
         aria-hidden
-        className="mb-2 grid gap-[2px] text-xs font-semibold uppercase tracking-[0.14em] text-slate-400"
+        className="mb-3 grid gap-[2px] text-xs font-medium uppercase tracking-[0.14em] text-[#A8A5A0]"
         style={grid}
       >
         {labels.map((label) => (
@@ -237,9 +234,9 @@ function Board({
                 <span
                   key={col}
                   className={cn(
-                    "relative flex aspect-[3/4] items-center justify-center rounded-[2px] bg-slate-800 font-mono font-bold leading-none",
+                    "relative flex aspect-[3/4] items-center justify-center rounded-[2px] bg-[#2B2825] font-mono font-bold leading-none",
                     // A hairline across the middle, where the two flaps meet.
-                    "after:absolute after:inset-x-0 after:top-1/2 after:h-px after:bg-slate-950",
+                    "after:absolute after:inset-x-0 after:top-1/2 after:h-px after:bg-[#1C1B1A]",
                     col < layout.date ? "text-amber-300" : "text-white"
                   )}
                 >
@@ -274,9 +271,7 @@ export function FlipBoard({ editions, title }: { editions: TournamentEdition[]; 
   if (editions.length === 0) return null;
   return (
     <section aria-label={title}>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-        {title}
-      </p>
+      <p className="mb-4 text-sm font-medium text-[#7A766E]">{title}</p>
       <Board editions={editions} layout={LAYOUTS.narrow} className="sm:hidden" />
       <Board editions={editions} layout={LAYOUTS.wide} className="hidden sm:block" />
     </section>

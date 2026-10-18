@@ -1,12 +1,16 @@
 "use client";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { ExploreGrid } from "@/modules/marketing/components/marketing/ExploreGrid";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { JourneySteps } from "@/modules/marketing/components/marketing/JourneySteps";
 import { ParentQuestions } from "@/modules/marketing/components/marketing/ParentQuestions";
-import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
+import { HomeClosing } from "@/modules/marketing/components/marketing/HomeClosing";
+import {
+  SECTION_HEADING,
+  SECTION_LEAD,
+  SectionKicker,
+} from "@/modules/marketing/components/marketing/SectionKicker";
 import { PathwayPreviewCard } from "@/modules/pathway/components/PathwayPreviewCard";
 import { roadmapHref } from "@/modules/pathway/data/sports";
 import type { PathwayGuideSummary, TournamentEdition } from "@/modules/pathway/services/pathway";
@@ -121,7 +125,7 @@ export default function HomeClient({
   // Logged in with no dependents yet: keep the WhatsApp default, greeted by name.
 
   return (
-    <main>
+    <main className="bg-[#F8F3EA]">
       {/* ── Hero ── */}
       <Hero
         title="Helping Parents Make Confident Sports Decisions"
@@ -149,24 +153,20 @@ export default function HomeClient({
       <ExploreGrid />
 
       {/* ── A real pathway, stage by stage ── */}
-      <section className="relative overflow-hidden py-16 sm:py-20 lg:py-24">
+      <section className="relative overflow-hidden bg-[#EFE7DA] py-24 sm:py-32 lg:py-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className={`grid items-center gap-12 ${pathway ? "lg:grid-cols-[1fr_1fr]" : ""}`}>
             <div className="reveal-on-scroll">
-              <div className="mb-3">
-                <SectionLabel label="Pathway guides" color="green" />
-              </div>
-              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
-                See what each stage asks of your child
-              </h2>
-              <p className="mb-8 text-lg text-slate-600">
+              <SectionKicker label="Pathway guides" />
+              <h2 className={`${SECTION_HEADING} mb-6`}>See what each stage asks of your child</h2>
+              <p className={`${SECTION_LEAD} mb-10`}>
                 Free to read, no account needed.
                 {coveredSports.length > 0 &&
                   ` Full guides are live for ${joinNames(coveredSports)}. Ask us about any other sport.`}
               </p>
               <Link
                 href="/roadmap"
-                className="group inline-flex items-center justify-center gap-1.5 rounded-md bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+                className="btn-motion group inline-flex items-center justify-center gap-1.5 rounded-md bg-[#1C1B1A] px-6 py-3.5 text-base font-semibold text-white hover:bg-[#39332f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1B1A] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFE7DA]"
               >
                 Explore pathways
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -191,7 +191,7 @@ export default function HomeClient({
       />
 
       {/* ── Final CTA ── */}
-      <CTA
+      <HomeClosing
         title="Not sure what to do next?"
         description="Tell PowerMySport about your child, what you're trying to achieve, or simply what you're struggling with. We'll help you work out the next step. A team member replies within 24 hours."
         primaryCTA={{ label: "Get guidance on WhatsApp", href: WHATSAPP_HERO_HREF }}

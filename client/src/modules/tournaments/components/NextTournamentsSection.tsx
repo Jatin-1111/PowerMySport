@@ -2,7 +2,11 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import type { TournamentEdition } from "@/modules/pathway/services/pathway";
-import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
+import {
+  SECTION_HEADING,
+  SECTION_LEAD,
+  SectionKicker,
+} from "@/modules/marketing/components/marketing/SectionKicker";
 import { FlipBoard } from "./FlipBoard";
 
 /**
@@ -25,25 +29,21 @@ export function NextTournamentsSection({
   if (editions.length === 0) return null;
 
   return (
-    <section className="py-16 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+    <section className="bg-[#F8F3EA] py-24 sm:py-32 lg:py-40">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll">
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+          <div className="mb-12 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
             <div className="max-w-2xl">
-              <div className="mb-4">
-                <SectionLabel label="Tournaments" color="orange" />
-              </div>
-              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
-                What&apos;s coming up
-              </h2>
-              <p className="text-base leading-relaxed text-slate-600 sm:text-lg">
+              <SectionKicker label="Tournaments" />
+              <h2 className={`${SECTION_HEADING} mb-6`}>What&apos;s coming up</h2>
+              <p className={SECTION_LEAD}>
                 The next {sportLabel.toLowerCase()} tournaments on the federation&apos;s own
                 calendar. Open one for its dates, venue and entry details.
               </p>
             </div>
             <Link
               href={`/tournaments/sport/${sportSlug}`}
-              className="text-power-orange-solid inline-flex items-center gap-1.5 text-sm font-bold hover:text-orange-800"
+              className="inline-flex items-center gap-1.5 text-base font-medium text-[#1C1B1A] underline decoration-[#1C1B1A]/30 underline-offset-[6px] transition-colors hover:decoration-[#1C1B1A]"
             >
               See all {sportLabel.toLowerCase()} tournaments
               <ArrowRight aria-hidden className="h-4 w-4" />
