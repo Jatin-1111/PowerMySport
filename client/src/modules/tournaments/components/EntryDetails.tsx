@@ -68,7 +68,13 @@ export function EntryDetails({
       value: `${rupees(edition.dailyAllowance)}, paid in the main round`,
     });
   }
+  if (edition.eventsPlayed) money.push({ label: "Events played", value: edition.eventsPlayed });
   if (edition.surface) money.push({ label: "Surface", value: edition.surface });
+  if (edition.indoorOutdoor) money.push({ label: "Courts", value: edition.indoorOutdoor });
+  if (typeof edition.mainDrawCourts === "number") {
+    money.push({ label: "Main draw courts", value: String(edition.mainDrawCourts) });
+  }
+  if (edition.balls) money.push({ label: "Balls", value: edition.balls });
 
   const dates: Row[] = [];
   if (edition.entryOpensDate) {

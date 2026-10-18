@@ -326,6 +326,12 @@ export interface TournamentEdition {
   /** Paid by the tournament to main-draw players, per day, in rupees. */
   dailyAllowance?: number;
   surface?: string;
+  mainDrawCourts?: number;
+  /** "Outdoors" or "Indoors", as printed. */
+  indoorOutdoor?: string;
+  balls?: string;
+  /** As printed: "Boys 18&Under, Girls 18&Under". */
+  eventsPlayed?: string;
   /** The event's own fact sheet, or the federation's rules applied to its level. */
   officialDetailsSource?: "factSheet" | "rules";
 }

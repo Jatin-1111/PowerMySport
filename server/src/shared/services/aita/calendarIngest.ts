@@ -131,6 +131,10 @@ export interface EditionFields {
   feeDoubles?: number;
   dailyAllowance?: number;
   surface?: string;
+  mainDrawCourts?: number;
+  indoorOutdoor?: string;
+  balls?: string;
+  eventsPlayed?: string;
   qualifyingStartDate?: Date;
   mainDrawStartDate?: Date;
   officialDetailsSource?: "factSheet" | "rules";
@@ -195,6 +199,10 @@ type Details = Pick<
   | "feeDoubles"
   | "dailyAllowance"
   | "surface"
+  | "mainDrawCourts"
+  | "indoorOutdoor"
+  | "balls"
+  | "eventsPlayed"
   | "qualifyingStartDate"
   | "mainDrawStartDate"
   | "officialDetailsSource"
@@ -211,6 +219,10 @@ const DETAIL_KEYS: Array<keyof Details> = [
   "feeDoubles",
   "dailyAllowance",
   "surface",
+  "mainDrawCourts",
+  "indoorOutdoor",
+  "balls",
+  "eventsPlayed",
   "qualifyingStartDate",
   "mainDrawStartDate",
   "officialDetailsSource",
@@ -242,6 +254,10 @@ function detailsFor(
     if (sheet.feeDoubles !== null) out.feeDoubles = sheet.feeDoubles;
     if (sheet.dailyAllowance !== null) out.dailyAllowance = sheet.dailyAllowance;
     if (sheet.surface) out.surface = sheet.surface;
+    if (sheet.mainDrawCourts !== null) out.mainDrawCourts = sheet.mainDrawCourts;
+    if (sheet.indoorOutdoor) out.indoorOutdoor = sheet.indoorOutdoor;
+    if (sheet.balls) out.balls = sheet.balls;
+    if (sheet.eventsPlayed) out.eventsPlayed = sheet.eventsPlayed;
     if (sheet.qualifyingFirstDay) out.qualifyingStartDate = asDate(sheet.qualifyingFirstDay);
     if (sheet.mainDrawFirstDay) out.mainDrawStartDate = asDate(sheet.mainDrawFirstDay);
     out.officialDetailsSource = "factSheet";

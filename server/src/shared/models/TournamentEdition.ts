@@ -108,6 +108,14 @@ export interface TournamentEditionDocument extends Document {
   /** Paid by the tournament to main-draw players, per day, in rupees. */
   dailyAllowance?: number;
   surface?: string;
+  /** Courts in use for the main draw, as the fact sheet prints it. */
+  mainDrawCourts?: number;
+  /** "Outdoors" or "Indoors", as printed. */
+  indoorOutdoor?: string;
+  /** Make of balls, when the sheet names one. */
+  balls?: string;
+  /** The events played, as printed: "Boys 18&Under, Girls 18&Under". */
+  eventsPlayed?: string;
   qualifyingStartDate?: Date;
   mainDrawStartDate?: Date;
   /**
@@ -190,6 +198,10 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
     feeDoubles: { type: Number },
     dailyAllowance: { type: Number },
     surface: { type: String, trim: true },
+    mainDrawCourts: { type: Number },
+    indoorOutdoor: { type: String, trim: true },
+    balls: { type: String, trim: true },
+    eventsPlayed: { type: String, trim: true },
     qualifyingStartDate: { type: Date },
     mainDrawStartDate: { type: Date },
     officialDetailsSource: { type: String, enum: ["factSheet", "rules"] },

@@ -303,6 +303,23 @@ describe("planIngest: official details", () => {
     assert.equal(d.mainDrawStartDate.toISOString(), "2026-10-05T00:00:00.000Z");
   });
 
+  it("keeps the courts, indoor or outdoor, the balls and the events played from the sheet", () => {
+    const sheet = parseFactSheet(FACT_SHEET);
+    const d = run({ rows: [CS], sheets: new Map([["3011", sheet]]) }).creates[0].doc;
+    assert.equal(d.mainDrawCourts, 5);
+    assert.equal(d.indoorOutdoor, "Outdoors");
+    assert.equal(d.eventsPlayed, "Boys 12&Under, Girls 12&Under");
+    assert.equal(d.balls, "AITA Approved Balls");
+  });
+
+  it("stores none of them when the details come from the rules", () => {
+    const cs3 = { ...CS, levelText: "Championship Series (3 Days)" };
+    const d = run({ rows: [cs3] }).creates[0].doc;
+    for (const key of ["mainDrawCourts", "indoorOutdoor", "balls", "eventsPlayed"]) {
+      assert.equal(key in d, false, key);
+    }
+  });
+
   it("keeps the sheet and warns where it parts from the rules or the calendar", () => {
     const sheet = parseFactSheet(FACT_SHEET);
     // The saved sheet is for a different date, so against this row it disagrees.
