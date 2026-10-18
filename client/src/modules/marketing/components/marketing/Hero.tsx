@@ -46,14 +46,21 @@ export const Hero: React.FC<HeroProps> = ({
   return (
     <section className="bg-[#F8F3EA]">
       <div className="mx-auto max-w-7xl px-4 pb-8 pt-14 sm:px-6 sm:pt-20 lg:px-8 lg:pt-28">
-        <div className="grid gap-10 lg:grid-cols-[1.35fr_1fr] lg:items-end lg:gap-16">
-          <h1 className="font-editorial text-balance text-[2.6rem] font-light leading-[1.04] text-[#1C1B1A] sm:text-6xl lg:text-[5.25rem]">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,32rem)_minmax(0,28rem)] lg:items-center lg:justify-center lg:gap-16">
+          {/* Heavy grotesk for the statement, an italic serif for the phrase that
+              matters: the two voices are the point, so the serif is larger to
+              match the grotesk's visual weight. */}
+          <h1 className="font-title text-balance text-[2.1rem] font-semibold leading-[1.04] tracking-[-0.04em] text-[#1C1B1A] sm:text-5xl lg:text-[3.9rem]">
             {before}
-            {hlIndex >= 0 && <em className="font-light italic">{titleHighlight}</em>}
+            {hlIndex >= 0 && (
+              <em className="font-editorial text-[1.22em] font-light italic tracking-[-0.02em]">
+                {titleHighlight}
+              </em>
+            )}
             {after}
           </h1>
 
-          <div className="flex flex-col items-start lg:pb-3">
+          <div className="flex flex-col items-start">
             {description && (
               <p className="mb-8 max-w-[44ch] text-pretty text-lg leading-relaxed text-[#4A4741]">
                 {description}

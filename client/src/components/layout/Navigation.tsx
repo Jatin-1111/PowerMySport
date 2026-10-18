@@ -233,7 +233,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
             {/* The wordmark alone. A tagline sat under it at 9px in slate-400
                 (2.6:1), and at a legible 12px it would be wider than the logo. */}
             <Link href="/" className="inline-flex h-full flex-col items-start justify-center">
-              <span className="font-editorial text-[1.7rem] font-normal leading-none">
+              <span className="font-editorial text-[1.7rem] font-medium leading-none">
                 <span className="text-[#1C1B1A]">Power</span>
                 <span className="text-power-orange">My</span>
                 <span className="text-[#1C1B1A]">Sport</span>

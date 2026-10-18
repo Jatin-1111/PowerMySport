@@ -97,7 +97,7 @@ export const Footer: React.FC = () => {
           {/* Brand block — owns its own row until lg, then sits beside the nav */}
           <div className="sm:col-span-2 md:col-span-4 lg:col-span-2">
             <Link href="/" className="inline-flex items-center">
-              <span className="font-editorial text-4xl font-normal leading-none">
+              <span className="font-editorial text-4xl font-medium leading-none">
                 <span className="text-[#1C1B1A]">Power</span>
                 <span className="text-power-orange-solid">My</span>
                 <span className="text-[#1C1B1A]">Sport</span>
