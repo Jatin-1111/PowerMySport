@@ -1,7 +1,5 @@
 import { LegalPageHeader } from "@/modules/shared/components/legal/LegalPageHeader";
 
-import { Card } from "@/modules/shared/ui/Card";
-
 import type { Metadata } from "next";
 
 import {
@@ -28,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function RefundPolicy() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-paper min-h-screen">
       <LegalPageHeader
         title="Cancellation, Refund & Dispute Policy"
         lastUpdated="July 24, 2026"
@@ -38,7 +36,7 @@ export default function RefundPolicy() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
           <RefundPolicyToc />
-          <Card className="legal-content prose prose-lg max-w-none bg-white p-8 lg:col-start-2">
+          <div className="legal-content max-w-[72ch] lg:col-start-2">
             <Overview />
             <CancellationWindows />
             <RefundProcessing />
@@ -59,7 +57,7 @@ export default function RefundPolicy() {
                 refunds, and disputes, subject always to Section 9 above.
               </p>
             </section>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

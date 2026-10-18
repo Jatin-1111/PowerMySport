@@ -245,7 +245,7 @@ function StageListItem({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ type: "spring", stiffness: 500, damping: 26 }}
-              className="mt-1 inline-flex origin-left items-center gap-1 rounded-sm bg-amber-400 px-1.5 py-px text-xs font-black uppercase tracking-wide text-amber-950"
+              className="bg-ink mt-1 inline-flex origin-left items-center gap-1 rounded-sm px-1.5 py-px text-sm font-medium text-white"
             >
               <MapPin className="h-2.5 w-2.5" /> You are here
             </motion.span>
@@ -616,9 +616,7 @@ export function PathwayReader({
           </button>
 
           <div className="hidden rounded-lg border border-slate-200 bg-white p-2 lg:block">
-            <p className="px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-500">
-              {total} stages
-            </p>
+            <p className="px-3 py-2 text-sm font-medium text-slate-500">{total} stages</p>
             {ageField}
             <div className="mt-1 border-t border-slate-100 pt-2">{renderStageList("desktop")}</div>
           </div>
@@ -643,7 +641,7 @@ export function PathwayReader({
           // parent's min-content width, so `hidden` was silently keeping this
           // grid item inside its track; `clip` is not a scroll container, and
           // without the override the panel grew past the phone's screen.
-          className="min-w-0 scroll-mt-24 overflow-clip rounded-lg border border-slate-200 bg-white shadow-sm lg:self-start"
+          className="min-w-0 scroll-mt-24 overflow-clip rounded-lg border border-slate-200 bg-white lg:self-start"
         >
           <header
             ref={stageHeaderRef}
@@ -671,7 +669,7 @@ export function PathwayReader({
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     id="pathway-stage-position"
-                    className="inline-block rounded-md px-2 py-1 text-xs font-black uppercase tracking-widest text-white"
+                    className="inline-block rounded-md px-2 py-1 text-sm font-medium text-white"
                     style={{ background: colorFor(safeIndex) }}
                   >
                     Stage {safeIndex + 1} of {total}
@@ -685,7 +683,7 @@ export function PathwayReader({
                         stiffness: 500,
                         damping: 24,
                       }}
-                      className="inline-flex items-center gap-1 rounded-sm bg-amber-400 px-2 py-1 text-xs font-black uppercase tracking-wide text-amber-950"
+                      className="bg-ink inline-flex items-center gap-1 rounded-sm px-2 py-1 text-sm font-medium text-white"
                     >
                       <MapPin className="h-3 w-3" /> Your child is here
                     </motion.span>
@@ -713,9 +711,7 @@ export function PathwayReader({
                 <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5">
                   <Users className="h-4 w-4 shrink-0 text-emerald-600" />
                   <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
-                      Typical age
-                    </p>
+                    <p className="text-sm font-medium text-emerald-700">Typical age</p>
                     <p className="text-[15px] font-extrabold text-emerald-900">{stage.ageRange}</p>
                   </div>
                 </div>
@@ -927,9 +923,7 @@ export function PathwayReader({
 
                     {stage.helpLinks.length > 0 && (
                       <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">
-                          Get help with this
-                        </p>
+                        <p className="text-sm font-medium text-slate-500">Get help with this</p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {stage.helpLinks.map((link) => (
                             <ActionChip key={link.label} action={link} />

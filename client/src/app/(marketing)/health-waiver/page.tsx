@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function HealthWaiver() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="bg-paper min-h-screen">
       <LegalPageHeader
         title="Health, Safety & Liability Waiver"
         lastUpdated="July 9, 2026"
@@ -22,7 +22,7 @@ export default function HealthWaiver() {
         width="4xl"
       />
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 md:py-14 lg:px-8">
-        <article className="prose prose-lg max-w-none">
+        <article className="legal-content max-w-[72ch]">
           <section className="mb-8">
             <h2 className="mb-4 mt-8 text-2xl font-semibold">1. Acknowledgment of Risk</h2>
             <p>

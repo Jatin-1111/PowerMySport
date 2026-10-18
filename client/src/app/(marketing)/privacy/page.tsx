@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 
 import { LegalPageHeader } from "@/modules/shared/components/legal/LegalPageHeader";
 
-import { Card } from "@/modules/shared/ui/Card";
-
 import {
   PrivacyToc,
   Introduction,
@@ -33,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-paper min-h-screen">
       <LegalPageHeader
         title="Privacy Policy"
         lastUpdated="October 5, 2026"
@@ -46,7 +44,7 @@ export default function PrivacyPolicyPage() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
           <PrivacyToc />
-          <Card className="legal-content prose prose-slate max-w-none bg-white p-8 lg:col-start-2">
+          <div className="legal-content max-w-[72ch] lg:col-start-2">
             <Introduction />
             <InformationCollected />
             <HowWeUseInformation />
@@ -61,7 +59,7 @@ export default function PrivacyPolicyPage() {
             <ThirdPartyLinks />
             <Changes />
             <GrievanceContact />
-          </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 
 import { LegalPageHeader } from "@/modules/shared/components/legal/LegalPageHeader";
 
-import { Card } from "@/modules/shared/ui/Card";
-
 import {
   TermsToc,
   Agreement,
@@ -43,7 +41,7 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-paper min-h-screen">
       <LegalPageHeader
         title="Terms of Service"
         lastUpdated="July 24, 2026"
@@ -54,7 +52,7 @@ export default function TermsOfServicePage() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
           <TermsToc />
-          <Card className="legal-content prose prose-slate max-w-none bg-white p-8 lg:col-start-2">
+          <div className="legal-content max-w-[72ch] lg:col-start-2">
             <Agreement />
             <Services />
             <Account />
@@ -79,7 +77,7 @@ export default function TermsOfServicePage() {
             <General />
             <GoverningLaw />
             <Contact />
-          </Card>
+          </div>
         </div>
       </div>
     </div>

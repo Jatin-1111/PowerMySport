@@ -425,6 +425,31 @@
   }
 }
 
+/* Legal documents read as one column of prose. Headings are set once here, so
+   the sixty-odd sections do not each carry their own heading classes. Unlayered
+   on purpose: it has to beat the utility classes still on those headings. */
+.legal-content h2 {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+.legal-content h3 {
+  font-weight: 500;
+  color: var(--color-ink);
+}
+.legal-content p,
+.legal-content li {
+  color: var(--color-ink-body);
+}
+.legal-content a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* While the homepage card's copy is growing into /ask, the real workspace waits
    invisible beneath it (see utils/askTransition); it fades in when the copy
    fades out. Only set when the visitor has not asked for reduced motion. */

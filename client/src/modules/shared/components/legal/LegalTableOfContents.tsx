@@ -102,21 +102,20 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
   }, []);
 
   const list = (
-    <ul className="space-y-0.5">
-      {items.map(({ id, label, icon: Icon }) => (
+    <ul className="border-hairline space-y-0.5 border-l">
+      {items.map(({ id, label }) => (
         <li key={id}>
           <a
             href={`#${id}`}
             aria-current={activeId === id ? "location" : undefined}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm leading-snug transition-colors",
+              "focus-visible:ring-ink -ml-px block border-l-2 py-1.5 pl-4 pr-2 text-sm leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2",
               activeId === id
-                ? "bg-power-orange/10 text-power-orange-solid font-semibold"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                ? "border-ink text-ink font-medium"
+                : "text-ink-muted hover:text-ink border-transparent"
             )}
           >
-            <Icon size={14} className="shrink-0" />
-            <span>{label}</span>
+            {label}
           </a>
         </li>
       ))}
@@ -133,7 +132,7 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
         <select
           id="legal-toc-mobile"
           defaultValue=""
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm"
+          className="border-hairline text-ink w-full rounded-lg border bg-white px-4 py-3 text-sm font-medium"
           onChange={(e) => {
             const target = document.getElementById(e.target.value);
             target?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -161,11 +160,9 @@ export function LegalTableOfContents({ items }: { items: LegalTocItem[] }) {
           <nav
             ref={navRef}
             aria-label="Table of contents"
-            className="pointer-events-auto max-h-[calc(100vh-8rem)] w-[280px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
+            className="pointer-events-auto max-h-[calc(100vh-8rem)] w-[280px] overflow-y-auto pr-2"
           >
-            <p className="mb-2 px-2.5 pt-1.5 text-xs font-bold uppercase tracking-widest text-slate-500">
-              On this page
-            </p>
+            <p className="text-ink-muted mb-3 text-sm">On this page</p>
             {list}
           </nav>
         </div>

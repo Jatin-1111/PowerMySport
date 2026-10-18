@@ -135,9 +135,7 @@ export default async function SportPathwayPage({
             number of paragraphs in each and go lopsided at odd counts. */}
         {guide.sportIntro.length > 0 && (
           <section className="border-t border-slate-200/70 pt-6">
-            <p className="text-xs font-black uppercase tracking-widest text-slate-500">
-              About {guide.sportName}
-            </p>
+            <p className="text-sm font-medium text-slate-500">About {guide.sportName}</p>
             <div className="mt-3 gap-x-10 text-base leading-relaxed text-slate-600 lg:columns-2">
               {guide.sportIntro.map((paragraph) => (
                 <p key={paragraph} className="mb-3 break-inside-avoid">

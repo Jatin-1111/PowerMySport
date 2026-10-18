@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 
 import { LegalPageHeader } from "@/modules/shared/components/legal/LegalPageHeader";
 
-import { Card } from "@/modules/shared/ui/Card";
 import Link from "next/link";
 
 import {
@@ -42,7 +41,7 @@ export const metadata: Metadata = {
 
 export default function PartnerTermsPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-paper min-h-screen">
       <LegalPageHeader
         title="Partner Terms for Experts & Academies"
         lastUpdated="August 11, 2026"
@@ -53,7 +52,7 @@ export default function PartnerTermsPage() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-10">
           <PartnerTermsToc />
-          <Card className="legal-content prose prose-slate max-w-none bg-white p-8 lg:col-start-2">
+          <div className="legal-content max-w-[72ch] lg:col-start-2">
             <Scope />
             <Definitions />
             <Eligibility />
@@ -76,7 +75,7 @@ export default function PartnerTermsPage() {
             <Disputes />
             <Amendments />
             <Contact />
-          </Card>
+          </div>
         </div>
       </div>
     </div>
