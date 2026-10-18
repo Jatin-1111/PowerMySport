@@ -85,7 +85,7 @@ function MethodCard({
   isLoading: boolean;
 }) {
   return (
-    <div className="rounded-xl border-0 bg-white p-4 shadow-[0_2px_12px_rgb(0,0,0,0.05)] transition-shadow hover:shadow-[0_8px_20px_rgb(0,0,0,0.09)]">
+    <div className="rounded-xl border-0 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-2">
           <div className="rounded-lg bg-slate-100 p-2 text-slate-600">
@@ -410,7 +410,7 @@ export function PayoutMethodManager({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="rounded-xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+      <div className="rounded-xl border-0 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <div className="mb-2 flex items-center gap-2">
@@ -482,7 +482,7 @@ export function PayoutMethodManager({
 
       {/* Form */}
       {(isAdding || editingMethod) && (
-        <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5 rounded-xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)] duration-300">
+        <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5 rounded-xl border-0 bg-white p-6 shadow-sm duration-300">
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <h3 className="text-base font-bold text-slate-900">
               {editingMethod ? "Update Payout Method" : "Add New Payout Method"}

@@ -172,7 +172,7 @@ function StatCard({
   tint: string;
 }) {
   return (
-    <div className="rounded-xl border-0 bg-white p-4 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
+    <div className="rounded-xl border-0 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className={`flex h-9 w-9 items-center justify-center rounded-full ${tint}`}>{icon}</div>
       <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>

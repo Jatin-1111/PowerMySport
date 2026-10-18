@@ -19,6 +19,14 @@ import { useEffect, useRef, useState } from "react";
  * single letters.
  */
 
+/**
+ * An edition as the board shows it. `entryClosed` is set by the server, which
+ * knows the date, when the entry deadline has already passed: the board reads
+ * "CLOSED" there rather than a past date that looks like it is still ahead. It
+ * is computed once on the server so the browser cannot disagree about "today".
+ */
+export type BoardEdition = TournamentEdition & { entryClosed?: boolean };
+
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 const MONTH_NAMES = [
   "January",
@@ -37,15 +45,31 @@ const MONTH_NAMES = [
 const FLIP_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const TICK_MS = 45;
 
-/** Column widths, in tiles. The phone layout drops the age column. */
-const LAYOUTS = {
+/**
+ * Column widths, in tiles. The phone layout drops the age column. `entry` is the
+ * "entries close" date; it is added to a board only when at least one of its
+ * rows has a deadline, at the cost of tiles taken from the event column.
+ */
+interface Layout {
+  date: number;
+  event: number;
+  age: number;
+  entry?: number;
+}
+
+const LAYOUTS: { wide: Layout; narrow: Layout } = {
   wide: { date: 6, event: 22, age: 6 },
   narrow: { date: 6, event: 17, age: 0 },
-} as const;
-type Layout = (typeof LAYOUTS)[keyof typeof LAYOUTS];
+};
+
+const ENTRY_TILES = 6;
 
 const width = (layout: Layout) =>
-  layout.date + 1 + layout.event + (layout.age ? 1 + layout.age : 0);
+  layout.date +
+  1 +
+  layout.event +
+  (layout.age ? 1 + layout.age : 0) +
+  (layout.entry ? 1 + layout.entry : 0);
 
 // UTC parts and a fixed month list, so the server and the browser can never
 // format the same date differently and fail hydration.
@@ -104,21 +128,37 @@ function boardAge(edition: TournamentEdition): string {
 
 const cell = (text: string, size: number) => text.slice(0, size).padEnd(size, " ");
 
-function boardLine(edition: TournamentEdition, layout: Layout): string {
+function boardLine(edition: BoardEdition, layout: Layout): string {
   const parts = [
     cell(boardDate(edition.startDate), layout.date),
     cell(boardEvent(edition, layout.event), layout.event),
   ];
   if (layout.age) parts.push(cell(boardAge(edition), layout.age));
+  if (layout.entry) {
+    // Blank, not a guess, for an event whose deadline is not on the calendar.
+    const entry = edition.entryClosed
+      ? "CLOSED"
+      : edition.registrationDeadlineDate
+        ? boardDate(edition.registrationDeadlineDate)
+        : "";
+    parts.push(cell(entry, layout.entry));
+  }
   return parts.join(" ");
 }
 
-function spokenLabel(edition: TournamentEdition): string {
+function spokenLabel(edition: BoardEdition): string {
   const date = new Date(edition.startDate);
   // Spelled out: "5 oct" is not reliably expanded by a screen reader.
   const when = `${date.getUTCDate()} ${MONTH_NAMES[date.getUTCMonth()]}`;
   const ages = edition.ageGroups?.length ? `, ${edition.ageGroups.join(", ")}` : "";
-  return `${edition.name}, ${when}${ages}`;
+  let closes = "";
+  if (edition.entryClosed) {
+    closes = ", entries closed";
+  } else if (edition.registrationDeadlineDate) {
+    const deadline = new Date(edition.registrationDeadlineDate);
+    closes = `, entries close ${deadline.getUTCDate()} ${MONTH_NAMES[deadline.getUTCMonth()]}`;
+  }
+  return `${edition.name}, ${when}${ages}${closes}`;
 }
 
 /**
@@ -184,13 +224,21 @@ const settleTick = (col: number, row: number) => 4 + Math.floor(col * 0.6) + row
 
 function Board({
   editions,
-  layout,
+  layout: baseLayout,
   className,
 }: {
-  editions: TournamentEdition[];
+  editions: BoardEdition[];
   layout: Layout;
   className?: string;
 }) {
+  // The entry column only exists on the wide board, and only when there is
+  // something to show in it; it borrows its tiles from the event name.
+  const showEntry =
+    baseLayout.age > 0 &&
+    editions.some((edition) => Boolean(edition.registrationDeadlineDate || edition.entryClosed));
+  const layout: Layout = showEntry
+    ? { ...baseLayout, event: baseLayout.event - ENTRY_TILES - 1, entry: ENTRY_TILES }
+    : baseLayout;
   const cols = width(layout);
   const boardRef = useRef<HTMLDivElement>(null);
   const seen = useSeen(boardRef);
@@ -211,10 +259,19 @@ function Board({
     ...(layout.age
       ? [{ text: "Age", start: layout.date + layout.event + 3, span: layout.age }]
       : []),
+    ...(layout.entry
+      ? [
+          {
+            text: "Entries close",
+            start: layout.date + layout.event + layout.age + 4,
+            span: layout.entry,
+          },
+        ]
+      : []),
   ];
 
   return (
-    <div ref={boardRef} className={cn("@container bg-ink rounded-2xl p-3 sm:p-6", className)}>
+    <div ref={boardRef} className={cn("@container bg-ink rounded-3xl p-3 sm:p-8", className)}>
       <div
         aria-hidden
         className="text-ink-ash mb-3 grid gap-[2px] text-xs font-medium uppercase tracking-[0.14em]"
@@ -226,7 +283,7 @@ function Board({
           </span>
         ))}
       </div>
-      <ul className="flex flex-col gap-[3px]">
+      <ul className="flex flex-col gap-1">
         {editions.map((edition, row) => {
           const tiles = (
             <span aria-hidden className="grid gap-[2px]" style={{ ...grid, ...font }}>
@@ -234,7 +291,7 @@ function Board({
                 <span
                   key={col}
                   className={cn(
-                    "bg-board-tile relative flex aspect-[3/4] items-center justify-center rounded-[2px] font-mono font-bold leading-none",
+                    "bg-board-tile relative flex aspect-[5/7] items-center justify-center rounded-[2px] font-mono font-bold leading-none",
                     // A hairline across the middle, where the two flaps meet.
                     "after:bg-ink after:absolute after:inset-x-0 after:top-1/2 after:h-px",
                     col < layout.date ? "text-amber-300" : "text-white"
@@ -267,7 +324,7 @@ function Board({
   );
 }
 
-export function FlipBoard({ editions, title }: { editions: TournamentEdition[]; title: string }) {
+export function FlipBoard({ editions, title }: { editions: BoardEdition[]; title: string }) {
   if (editions.length === 0) return null;
   return (
     <section aria-label={title}>

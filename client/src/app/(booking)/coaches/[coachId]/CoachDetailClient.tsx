@@ -454,12 +454,12 @@ export function CoachDetailClient() {
   const additionalSportsCount = Math.max(coach.sports.length - 6, 0);
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f5f8ff_48%,#fff7ea_100%)]">
+    <div className="bg-paper min-h-screen">
       <div className="bg-white/72 border-b border-white/60 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="mb-3"></div>
 
-          <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
+          <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white p-6 text-slate-900 shadow-sm sm:p-8">
             <div className="relative z-10">
               <Link
                 href="/booking?tab=coaches"

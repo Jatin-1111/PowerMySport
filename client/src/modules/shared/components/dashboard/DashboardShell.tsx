@@ -217,7 +217,7 @@ export const DashboardShell = ({
       <div className="flex min-h-screen lg:pt-0">
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/60 bg-white/80 shadow-sm backdrop-blur-md lg:flex lg:flex-col">
           <div className="shrink-0 p-6">
-            <div className="rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-5 text-slate-900 shadow-sm">
+            <div className="rounded-2xl border border-white/70 bg-white p-5 text-slate-900 shadow-sm">
               <p className="text-xs uppercase tracking-wide text-slate-500">{dashboardLabel}</p>
               <h1 className="font-editorial mt-2 text-2xl font-normal text-slate-900">
                 PowerMySport

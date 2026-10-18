@@ -53,7 +53,7 @@ function ExpertAvatar({ expert, name }: { expert?: Expert; name: string }) {
 
 function SessionRowSkeleton() {
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-[0_2px_12px_rgb(0,0,0,0.04)]">
+    <div className="flex items-center gap-4 rounded-2xl bg-white p-5 shadow-sm">
       <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-4 w-1/3" />
@@ -89,9 +89,9 @@ export default function MyExpertSessionsPage() {
   }, [load]);
 
   return (
-    <div className="min-h-screen bg-[#F4F3F0]">
+    <div className="bg-paper min-h-screen">
       {/* Hero */}
-      <div className="border-b border-slate-200 bg-white">
+      <div className="border-hairline bg-paper border-b">
         <div className="mx-auto max-w-3xl px-6 py-10">
           <Link
             href="/booking?tab=experts"
@@ -100,10 +100,8 @@ export default function MyExpertSessionsPage() {
             <ArrowLeft className="h-4 w-4" /> Browse experts
           </Link>
           <FadeIn>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-700">
-              Your Bookings
-            </p>
-            <h1 className="font-editorial text-3xl font-light text-slate-900">
+            <p className="text-ink-muted mb-3 text-sm font-medium">Your bookings</p>
+            <h1 className="font-editorial text-ink text-4xl font-light sm:text-5xl">
               My expert sessions
             </h1>
             <p className="mt-2 max-w-md text-[15px] leading-relaxed text-slate-500">
@@ -122,7 +120,7 @@ export default function MyExpertSessionsPage() {
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)]">
+          <div className="rounded-2xl bg-white shadow-sm">
             <EmptyState
               icon={ServerCrash}
               title="Couldn't load your sessions"
@@ -132,7 +130,7 @@ export default function MyExpertSessionsPage() {
             />
           </div>
         ) : sessions.length === 0 ? (
-          <div className="rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)]">
+          <div className="rounded-2xl bg-white shadow-sm">
             <EmptyState
               icon={CalendarClock}
               title="No sessions yet"
@@ -160,7 +158,7 @@ export default function MyExpertSessionsPage() {
                         router.push(route);
                       }
                     }}
-                    className="group flex cursor-pointer flex-col gap-4 rounded-2xl bg-white p-5 shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)] sm:flex-row sm:items-center sm:justify-between"
+                    className="group flex cursor-pointer flex-col gap-4 rounded-2xl bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex min-w-0 items-center gap-4">
                       <ExpertAvatar expert={s.expert} name={expertName} />

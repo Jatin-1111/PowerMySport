@@ -28,7 +28,7 @@ export default function FeatureWaitlist({
   gradientFrom = "#3B82F6",
   gradientTo = "#60A5FA",
   shadowColorClass = "shadow-blue-500/30",
-  buttonColorClass = "bg-blue-600",
+  buttonColorClass = "bg-power-orange-solid",
   backHref = "/",
   backLabel = "Back to Home",
 }: FeatureWaitlistProps) {

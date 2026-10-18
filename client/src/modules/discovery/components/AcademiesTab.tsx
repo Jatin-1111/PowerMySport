@@ -6,12 +6,15 @@ import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
 import { OnboardingAcademy } from "@/modules/onboarding/types/academy";
 import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
+import {
+  LISTING_FALLBACK_CLASS,
+  LISTING_IMAGE_CLASS,
+  ListingCard,
+} from "@/modules/discovery/components/ListingCard";
 import { cn } from "@/utils/cn";
 import {
-  ArrowRight,
   BadgeCheck,
   Bath,
-  Bookmark,
   Building2,
   Car,
   ChevronLeft,
@@ -20,12 +23,9 @@ import {
   Droplets,
   Dumbbell,
   HeartPulse,
-  MapPin,
   MessageCircle,
-  Star,
   Users,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type AcademyCard = OnboardingAcademy & {
@@ -102,7 +102,6 @@ const academyMatchesAgeGroup = (academy: AcademyCard, ageGroup: string) => {
 };
 
 export default function AcademiesTab() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [academies, setAcademies] = useState<AcademyCard[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -424,7 +423,7 @@ export default function AcademiesTab() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {displayedAcademies.map((academy) => {
                 const coverImage =
                   normalizeImageUrl(academy.coverPhotoUrl) || normalizeImageUrl(academy.logoUrl);
@@ -452,101 +451,40 @@ export default function AcademiesTab() {
                 };
 
                 return (
-                  <div
+                  <ListingCard
                     key={academy.id || academy.slug || academy.name}
-                    className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
-                    onClick={() => router.push(detailsHref)}
-                  >
-                    {/* Image */}
-                    <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-                      {coverImage ? (
+                    href={detailsHref}
+                    title={academy.name}
+                    shape="landscape"
+                    media={
+                      coverImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={coverImage}
                           alt={academy.name}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                          className={LISTING_IMAGE_CLASS}
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-slate-100">
-                          <Building2 size={44} className="text-slate-300" />
+                        <div className={LISTING_FALLBACK_CLASS}>
+                          <Building2 aria-hidden strokeWidth={1.25} className="h-12 w-12" />
                         </div>
-                      )}
-                      {/* Subtle Bookmark */}
-                      <button
-                        type="button"
-                        onClick={onToggleFollow}
-                        className={cn(
-                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
-                          isFollowed
-                            ? "text-power-orange border-white bg-white"
-                            : "border-white/20 bg-black/20 text-white hover:bg-black/40"
-                        )}
-                        aria-label={isFollowed ? "Unsave academy" : "Save academy"}
-                      >
-                        <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
-                      </button>
-                    </div>
-
-                    {/* Card body */}
-                    <div className="p-5">
-                      <h3 className="text-lg font-bold tracking-tight text-slate-900">
-                        {academy.name}
-                      </h3>
-
-                      <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-                        <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
-                        <span className="line-clamp-1">
-                          {academy.city || "Location unavailable"}
-                        </span>
-                      </p>
-
-                      {/* Sport tags & Badges */}
-                      <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                        {typeof academy.rating === "number" && (
-                          <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
-                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                            {academy.rating.toFixed(1)}
-                          </span>
-                        )}
-                        {verified && (
-                          <span className="flex items-center gap-1 rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-100/50">
-                            <BadgeCheck size={12} />
-                            Verified
-                          </span>
-                        )}
-                        {(academy.sports || [])[0] && (
-                          <span className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                            {academy.sports![0]}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Price + CTA */}
-                      <div className="mt-5 flex items-center justify-between border-t border-slate-50 pt-4">
-                        <div>
-                          {typeof rupees === "number" ? (
-                            <>
-                              <span className="text-xl font-black text-slate-900">₹{rupees}</span>
-                              <span className="ml-1 text-sm font-medium text-slate-500">/hr</span>
-                            </>
-                          ) : (
-                            <span className="text-sm font-bold text-slate-500">
-                              Price on request
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(detailsHref);
-                          }}
-                          className="bg-power-orange-solid flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
-                        >
-                          View <ArrowRight size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                      )
+                    }
+                    badge={verified ? "Verified" : undefined}
+                    rating={
+                      typeof academy.rating === "number" && academy.rating > 0
+                        ? { value: academy.rating }
+                        : undefined
+                    }
+                    subtitle={academy.city || undefined}
+                    details={(academy.sports || []).slice(0, 2).join(" · ") || undefined}
+                    price={typeof rupees === "number" ? `₹${rupees}` : "Price on request"}
+                    priceUnit={typeof rupees === "number" ? "per hour" : undefined}
+                    saved={isFollowed}
+                    saveLabel={isFollowed ? "Unsave academy" : "Save academy"}
+                    onToggleSave={onToggleFollow}
+                  />
                 );
               })}
             </div>

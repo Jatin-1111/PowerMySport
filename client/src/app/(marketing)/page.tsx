@@ -2,6 +2,8 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { organizationJsonLd, SITE_DESCRIPTION, websiteJsonLd } from "@/lib/seo";
 import { fetchPublishedPathways } from "@/modules/pathway/services/fetchGuide";
 import { FEATURED_TOURNAMENT_SPORT } from "@/modules/tournaments/config/featured";
+import type { TournamentEdition } from "@/modules/pathway/services/pathway";
+import type { BoardEdition } from "@/modules/tournaments/components/FlipBoard";
 import { fetchSportEditions } from "@/modules/tournaments/services/editionListing";
 import { SPORT_LABEL } from "./federations/[slug]/federationShared";
 import type { Metadata } from "next";
@@ -46,6 +48,19 @@ const PREVIEW_SPORT = "tennis";
 /** Rows on the homepage departures board: enough to read as a board, few enough to scan. */
 const BOARD_ROWS = 5;
 
+/**
+ * Flags editions whose entry deadline has already passed, so the board can say
+ * "CLOSED" instead of showing a past date. Done here, on the server, once per
+ * render, so the server HTML and the browser agree on what "today" is.
+ */
+function markClosedEntries(editions: TournamentEdition[]): BoardEdition[] {
+  const today = new Date().toISOString().slice(0, 10);
+  return editions.map((edition) => {
+    const deadline = edition.registrationDeadlineDate?.slice(0, 10);
+    return deadline && deadline < today ? { ...edition, entryClosed: true } : edition;
+  });
+}
+
 export default async function HomePage() {
   // The summaries /roadmap renders from, so the preview cannot drift from the
   // guide. fetchPublishedPathways fails soft to [], and no data means no card.
@@ -64,7 +79,7 @@ export default async function HomePage() {
         pathway={preview}
         coveredSports={withStages.map((pathway) => pathway.sportName)}
         tournaments={{
-          editions: upcoming?.editions.slice(0, BOARD_ROWS) ?? [],
+          editions: markClosedEntries(upcoming?.editions.slice(0, BOARD_ROWS) ?? []),
           sportSlug: FEATURED_TOURNAMENT_SPORT,
           sportLabel: SPORT_LABEL[FEATURED_TOURNAMENT_SPORT] ?? FEATURED_TOURNAMENT_SPORT,
         }}

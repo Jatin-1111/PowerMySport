@@ -86,8 +86,7 @@ const field =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100";
 const label =
   "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400";
-const card =
-  "rounded-2xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)] dark:bg-slate-900 sm:p-8";
+const card = "rounded-2xl border-0 bg-white p-6 shadow-sm dark:bg-slate-900 sm:p-8";
 
 function SectionHeading({
   icon: Icon,

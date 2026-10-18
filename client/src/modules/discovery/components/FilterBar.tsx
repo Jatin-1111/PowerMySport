@@ -40,8 +40,8 @@ export function FilterBar({
   return (
     <>
       {/* ── Premium Compact Filter Bar ────────────────────────── */}
-      <div className="border-b border-slate-100 bg-white">
-        <div className="max-w-8xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
+      <div className="border-hairline bg-paper border-b">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <form onSubmit={onSubmit} className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               {/* Search input - takes most space */}
@@ -55,7 +55,7 @@ export function FilterBar({
                   value={searchValue}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder={searchPlaceholder}
-                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-10 text-sm text-slate-900 shadow-sm transition-all placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2"
+                  className="border-hairline text-ink placeholder:text-ink-muted focus-visible:ring-ink w-full rounded-lg border bg-white py-2.5 pl-10 pr-10 text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2"
                 />
                 {searchValue && (
                   <button
@@ -72,7 +72,7 @@ export function FilterBar({
               <button
                 type="button"
                 onClick={() => onModalOpenChange(true)}
-                className="relative flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
+                className="border-hairline text-ink hover:border-ink/40 focus-visible:ring-ink relative flex shrink-0 items-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2"
               >
                 <SlidersHorizontal size={16} />
                 <span className="hidden sm:inline">Filters</span>
@@ -85,14 +85,12 @@ export function FilterBar({
             {/* Active Filter Badges */}
             {hasFilters && (
               <div className="no-scrollbar flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-1">
-                <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Active:
-                </span>
+                <span className="text-ink-muted mr-1 text-sm">Active filters</span>
 
                 {activeFilters.map((filter) => (
                   <span
                     key={filter.id}
-                    className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${filter.badgeClassName || "text-power-orange border-orange-100 bg-orange-50"}`}
+                    className={`inline-flex items-center gap-1 rounded-md border px-3 py-1 text-xs font-medium ${filter.badgeClassName || "text-ink border-hairline bg-white"}`}
                   >
                     {filter.label}
                     <button

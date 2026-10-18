@@ -169,7 +169,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
+    <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
         <span
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm ${tint}`}
@@ -196,7 +196,7 @@ function ProfileSkeleton() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <Skeleton className="mb-6 h-5 w-32" />
-      <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+      <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm">
         <Skeleton className="h-36 w-full rounded-none" />
         <div className="grid grid-cols-2 gap-4 p-6 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -206,10 +206,7 @@ function ProfileSkeleton() {
       </div>
       <div className="mt-5 space-y-5">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-2xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)]"
-          >
+          <div key={i} className="rounded-2xl border-0 bg-white p-6 shadow-sm">
             <Skeleton className="mb-5 h-9 w-44 rounded-xl" />
             <div className="grid gap-4 sm:grid-cols-2">
               {Array.from({ length: 4 }).map((_, j) => (
@@ -319,7 +316,7 @@ export default function ExpertSessionPlayerDetailPage() {
 
       {/* Hero — identity + quick facts */}
       <FadeIn>
-        <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+        <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm">
           <div className="bg-ink relative overflow-hidden px-6 py-8 text-white sm:px-8">
             <div className="bg-power-orange/20 pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" />
@@ -387,7 +384,7 @@ export default function ExpertSessionPlayerDetailPage() {
       {/* Health & safety — surfaced first, deliberately */}
       {player.medicalConditions && player.medicalConditions.length > 0 && (
         <FadeIn delay={0.05}>
-          <div className="mt-5 flex items-start gap-3.5 rounded-2xl border border-amber-200/70 bg-amber-50 p-5 shadow-[0_2px_16px_rgb(0,0,0,0.04)]">
+          <div className="mt-5 flex items-start gap-3.5 rounded-2xl border border-amber-200/70 bg-amber-50 p-5 shadow-sm">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-sm">
               <HeartPulse className="h-5 w-5" />
             </span>

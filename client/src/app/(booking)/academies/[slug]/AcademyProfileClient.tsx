@@ -106,7 +106,7 @@ export function AcademyProfileClient() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
+      <div className="bg-paper flex min-h-screen items-center justify-center">
         <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2" />
       </div>
     );
@@ -114,7 +114,7 @@ export function AcademyProfileClient() {
 
   if (!academy) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
+      <div className="bg-paper flex min-h-screen flex-col items-center justify-center">
         <Card className="w-full max-w-md rounded-2xl border-slate-200 bg-white/90 p-8 text-center">
           <h1 className="font-editorial text-2xl font-normal text-slate-900">Academy not found</h1>
           <p className="mt-2 text-sm text-slate-600">
@@ -143,7 +143,7 @@ export function AcademyProfileClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
+    <div className="bg-paper min-h-screen">
       <section className="mx-auto w-full max-w-7xl px-4 pb-8 pt-4 sm:px-6 lg:px-8">
         <div className="mb-4">
           <Link

@@ -7,22 +7,13 @@ import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBa
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
+import { LISTING_IMAGE_CLASS, ListingCard } from "@/modules/discovery/components/ListingCard";
 import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { Coach } from "@/types";
 import { cn } from "@/utils/cn";
-import {
-  ArrowRight,
-  Award,
-  Globe,
-  Bookmark,
-  ImageIcon,
-  MapPin,
-  MessageCircle,
-  Star,
-  Users,
-} from "lucide-react";
+import { Globe, ImageIcon, MessageCircle, Users } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
 const normalizeImageUrl = (value?: string) => {
@@ -137,7 +128,6 @@ function CoachesTabContent() {
   const [hasLocationDenied, setHasLocationDenied] = useState(false);
   const [followedCoachIds, setFollowedCoachIds] = useState<string[]>([]);
   const hasHydratedRef = useRef(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const communityIntent = buildCoachCommunityIntent({
@@ -692,7 +682,7 @@ function CoachesTabContent() {
               </h2>
             </div>
 
-            <StaggerContainer className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <StaggerContainer className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredCoaches.map((coach, idx) => {
                 const coachId = String(coach.id || coach._id || "");
                 const key = coachId || `${String(coach.userId)}-${idx}`;
@@ -723,104 +713,35 @@ function CoachesTabContent() {
 
                 return (
                   <StaggerItem key={key} className="h-full">
-                    <div
-                      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
-                      onClick={() => router.push(coachRoute)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          router.push(coachRoute);
-                        }
-                      }}
-                      aria-label={`View coach profile for ${name}`}
-                    >
-                      <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
+                    <ListingCard
+                      href={coachRoute}
+                      title={name}
+                      media={
                         <CoachImageWithFallback
                           sources={getCoachImages(coach)}
                           alt={name}
                           fallbackLabel={initials}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          className={LISTING_IMAGE_CLASS}
                         />
-
-                        {/* Subtle Bookmark */}
-                        <button
-                          type="button"
-                          onClick={onToggleFollow}
-                          className={cn(
-                            "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
-                            isFollowed
-                              ? "text-power-orange border-white bg-white"
-                              : "border-white/20 bg-black/20 text-white hover:bg-black/40"
-                          )}
-                          aria-label={isFollowed ? "Unsave coach" : "Save coach"}
-                        >
-                          <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
-                        </button>
-                      </div>
-
-                      <div className="flex flex-1 flex-col p-5">
-                        <h3 className="text-lg font-bold tracking-tight text-slate-900">{name}</h3>
-
-                        {city && (
-                          <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-                            <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
-                            <span className="line-clamp-1">
-                              {city}{" "}
-                              {showDist && (
-                                <span className="text-turf-green ml-1 font-semibold">
-                                  ({formatDistanceKm(dist!)})
-                                </span>
-                              )}
-                            </span>
-                          </p>
-                        )}
-
-                        {/* Badges */}
-                        <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                          {Number.isFinite(Number(coach.rating)) && Number(coach.rating) > 0 && (
-                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
-                              <Star size={12} className="fill-amber-400 text-amber-400" />
-                              {Number(coach.rating).toFixed(1)}
-                            </span>
-                          )}
-                          {badge.label === "Verified" && (
-                            <span className="flex items-center gap-1 rounded-full bg-indigo-50/50 px-2.5 py-1 text-xs font-semibold text-indigo-600 ring-1 ring-inset ring-blue-100/50">
-                              <Award size={12} />
-                              Verified
-                            </span>
-                          )}
-                          <span className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                            {primarySport}
-                          </span>
-                        </div>
-
-                        <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                          {typeof coach.bio === "string" && coach.bio.trim()
-                            ? coach.bio.trim()
-                            : "Professional coach available for focused skill development and training sessions."}
-                        </p>
-
-                        <div className="mt-auto flex items-center justify-between border-t border-slate-50 pt-5">
-                          <div>
-                            {hasRate ? (
-                              <div className="flex items-baseline gap-1">
-                                <span className="text-xl font-black text-slate-900">
-                                  ₹{startingRate}
-                                </span>
-                                <span className="text-sm font-medium text-slate-500">/hr</span>
-                              </div>
-                            ) : (
-                              <p className="text-sm font-bold text-slate-700">Contact Us</p>
-                            )}
-                          </div>
-                          <div className="group-hover:bg-turf-green flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:text-white">
-                            <ArrowRight size={17} strokeWidth={2.5} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      }
+                      badge={badge.label === "Verified" ? "Verified" : undefined}
+                      rating={
+                        Number.isFinite(Number(coach.rating)) && Number(coach.rating) > 0
+                          ? { value: Number(coach.rating) }
+                          : undefined
+                      }
+                      subtitle={
+                        city
+                          ? `${city}${showDist ? ` · ${formatDistanceKm(dist!)}` : ""}`
+                          : undefined
+                      }
+                      details={coach.sports.slice(0, 2).join(" · ") || primarySport}
+                      price={hasRate ? `₹${startingRate}` : "Contact us"}
+                      priceUnit={hasRate ? "per hour" : undefined}
+                      saved={isFollowed}
+                      saveLabel={isFollowed ? "Unsave coach" : "Save coach"}
+                      onToggleSave={onToggleFollow}
+                    />
                   </StaggerItem>
                 );
               })}

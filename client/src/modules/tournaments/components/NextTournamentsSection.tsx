@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-import type { TournamentEdition } from "@/modules/pathway/services/pathway";
+import type { BoardEdition } from "./FlipBoard";
 import {
   SECTION_HEADING,
   SECTION_LEAD,
@@ -22,14 +22,14 @@ export function NextTournamentsSection({
   sportLabel,
   sportSlug,
 }: {
-  editions: TournamentEdition[];
+  editions: BoardEdition[];
   sportLabel: string;
   sportSlug: string;
 }) {
   if (editions.length === 0) return null;
 
   return (
-    <section className="bg-paper py-24 sm:py-32 lg:py-40">
+    <section className="bg-paper-deep py-20 sm:py-28 lg:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll">
           <div className="mb-12 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">

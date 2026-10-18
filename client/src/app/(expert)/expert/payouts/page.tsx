@@ -123,7 +123,7 @@ function InfoCard({
   description: string;
 }) {
   return (
-    <div className="rounded-xl border-0 bg-white p-5 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)] sm:p-6">
+    <div className="rounded-xl border-0 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
       <div className="bg-power-orange/15 mb-3 flex h-10 w-10 items-center justify-center rounded-lg">
         <Icon size={20} className="text-power-orange" />
       </div>

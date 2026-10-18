@@ -99,7 +99,7 @@ export function ExpertSessionsList({
   }
   if (sessions.length === 0) {
     return (
-      <div className="rounded-2xl border-0 bg-white py-16 text-center text-slate-500 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+      <div className="rounded-2xl border-0 bg-white py-16 text-center text-slate-500 shadow-sm">
         {emptyMessage}
       </div>
     );
@@ -216,7 +216,7 @@ export function SessionRow({
   };
 
   return (
-    <div className="rounded-2xl border-0 bg-white p-5 shadow-[0_2px_16px_rgb(0,0,0,0.06)] transition-shadow hover:shadow-[0_8px_24px_rgb(0,0,0,0.1)]">
+    <div className="rounded-2xl border-0 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-semibold text-slate-900">{session.clientName || "Client"}</p>

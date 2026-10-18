@@ -37,7 +37,7 @@ const AREAS = [
     body: "Find tournaments and check entry dates for your child's sport.",
     href: "/tournaments",
     cell: "",
-    image: unsplash("1545151414-8a948e1ea54f"),
+    image: unsplash("1643236943728-2745b38cbcf7"),
     position: "object-center",
   },
   {

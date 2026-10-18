@@ -128,7 +128,7 @@ export default function ProfilePictureUpload({
           disabled={uploading}
           className="hidden"
         />
-        <span className="inline-block rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+        <span className="bg-power-orange-solid inline-block rounded-lg px-4 py-2 text-white transition hover:bg-orange-800 disabled:cursor-not-allowed disabled:opacity-50">
           {uploading ? "Uploading..." : "Change Photo"}
         </span>
       </label>

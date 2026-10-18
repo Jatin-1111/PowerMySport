@@ -363,7 +363,7 @@ export function VenueDetailClient() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
+      <div className="bg-paper flex min-h-screen items-center justify-center">
         <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2"></div>
       </div>
     );
@@ -371,7 +371,7 @@ export function VenueDetailClient() {
 
   if (!venue) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
+      <div className="bg-paper flex min-h-screen flex-col items-center justify-center">
         <div className="max-w-md space-y-4 text-center">
           <h1 className="font-editorial text-2xl font-normal text-slate-900">Venue not found</h1>
           <p className="text-slate-600">
@@ -386,12 +386,12 @@ export function VenueDetailClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
+    <div className="bg-paper min-h-screen">
       {/* Header */}
       <div className="border-b border-white/60 bg-white/70 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 pb-6 pt-4 sm:px-6 lg:px-8">
           <BackButton label="Back to Venues" />
-          <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-6 text-slate-900 shadow-sm sm:p-8">
+          <div className="relative mt-4 overflow-hidden rounded-3xl border border-white/70 bg-white p-6 text-slate-900 shadow-sm sm:p-8">
             <div className="relative z-10">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex-1">

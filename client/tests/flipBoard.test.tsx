@@ -2,10 +2,9 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { FlipBoard } from "../src/modules/tournaments/components/FlipBoard";
-import type { TournamentEdition } from "../src/modules/pathway/services/pathway";
+import { FlipBoard, type BoardEdition } from "../src/modules/tournaments/components/FlipBoard";
 
-const edition = (overrides: Partial<TournamentEdition>): TournamentEdition => ({
+const edition = (overrides: Partial<BoardEdition>): BoardEdition => ({
   sportSlug: "tennis",
   name: "AITA CS7 (Amritsar)",
   slug: "aita-cs7-amritsar-2026-10-05",
@@ -67,6 +66,38 @@ describe("FlipBoard", () => {
   });
 
   it("lays a row out as date, event and age", () => {
+    const { container } = render(<FlipBoard editions={[edition({})]} title="Next up" />);
+    expect(wideRows(container)[0]).toBe("05 OCT AITA CS7 AMRITSAR      U16   ");
+  });
+
+  it("adds an entries-close column only when a row has a deadline, blank for rows without one", () => {
+    const { container } = render(
+      <FlipBoard
+        editions={[
+          edition({ registrationDeadlineDate: "2026-09-28T00:00:00.000Z" }),
+          edition({ slug: "other", name: "AITA CS7 (Delhi)" }),
+        ]}
+        title="Next up"
+      />
+    );
+    const rows = wideRows(container);
+    expect(rows[0].endsWith("28 SEP")).toBe(true);
+    expect(rows[1].endsWith("      ")).toBe(true);
+    expect(
+      screen.getAllByRole("link", { name: /AITA CS7 \(Amritsar\).*entries close 28 September/ })
+        .length
+    ).toBeGreaterThan(0);
+  });
+
+  it("reads CLOSED, and says so aloud, for an edition the server marked as past its deadline", () => {
+    const { container } = render(
+      <FlipBoard editions={[edition({ entryClosed: true })]} title="Next up" />
+    );
+    expect(wideRows(container)[0].trim().endsWith("CLOSED")).toBe(true);
+    expect(screen.getAllByRole("link", { name: /entries closed/ }).length).toBeGreaterThan(0);
+  });
+
+  it("keeps the three-column board when no row has a deadline", () => {
     const { container } = render(<FlipBoard editions={[edition({})]} title="Next up" />);
     expect(wideRows(container)[0]).toBe("05 OCT AITA CS7 AMRITSAR      U16   ");
   });

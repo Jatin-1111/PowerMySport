@@ -11,9 +11,11 @@ import {
   SECTION_LEAD,
   SectionKicker,
 } from "@/modules/marketing/components/marketing/SectionKicker";
+import { PhotoBand } from "@/modules/marketing/components/marketing/PhotoBand";
 import { PathwayPreviewCard } from "@/modules/pathway/components/PathwayPreviewCard";
 import { roadmapHref } from "@/modules/pathway/data/sports";
-import type { PathwayGuideSummary, TournamentEdition } from "@/modules/pathway/services/pathway";
+import type { PathwayGuideSummary } from "@/modules/pathway/services/pathway";
+import type { BoardEdition } from "@/modules/tournaments/components/FlipBoard";
 import { NextTournamentsSection } from "@/modules/tournaments/components/NextTournamentsSection";
 import { ArrowRight } from "lucide-react";
 
@@ -42,7 +44,7 @@ export default function HomeClient({
   pathway: PathwayGuideSummary | null;
   /** Names of the sports with a published pathway guide, e.g. ["Tennis", "Chess"]. */
   coveredSports: string[];
-  tournaments: { editions: TournamentEdition[]; sportSlug: string; sportLabel: string };
+  tournaments: { editions: BoardEdition[]; sportSlug: string; sportLabel: string };
 }) {
   const { user } = useAuthStore();
 
@@ -143,11 +145,30 @@ export default function HomeClient({
         stats={heroStats}
       />
 
+      {/* ── Next tournaments ── */}
+      <NextTournamentsSection
+        editions={tournaments.editions}
+        sportSlug={tournaments.sportSlug}
+        sportLabel={tournaments.sportLabel}
+      />
+
       {/* ── Real questions, each opening WhatsApp ── */}
       <ParentQuestions />
 
       {/* ── From questions to action ── */}
       <JourneySteps />
+
+      {/* ── One campaign moment: the page's only edge-to-edge photograph ── */}
+      <PhotoBand
+        title="From first trial to national rankings, one stage at a time."
+        description="Every sport has a ladder. See what each rung asks of your child before you climb it."
+        cta={{ label: "Explore pathways", href: "/roadmap" }}
+        image={{
+          src: "https://images.unsplash.com/photo-1451481454041-104482d8e284?fm=jpg&q=75&w=2400&auto=format&fit=crop",
+          alt: "Three young boys running together through a field",
+          position: "object-[50%_55%]",
+        }}
+      />
 
       {/* ── Everything PMS covers ── */}
       <ExploreGrid />
@@ -182,13 +203,6 @@ export default function HomeClient({
           </div>
         </div>
       </section>
-
-      {/* ── Next tournaments ── */}
-      <NextTournamentsSection
-        editions={tournaments.editions}
-        sportSlug={tournaments.sportSlug}
-        sportLabel={tournaments.sportLabel}
-      />
 
       {/* ── Final CTA ── */}
       <HomeClosing

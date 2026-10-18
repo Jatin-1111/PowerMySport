@@ -178,7 +178,7 @@ The system was assembled from a study of Oura (warm paper, serif plus grotesque,
 - One action colour, `{colors.action}`, used for the primary button and nowhere else decorative.
 - Hairlines and tonal bands instead of shadows, borders-plus-shadows cards, or gradients.
 - Photography first: desaturated, warm, cropped so the subject is whole.
-- One deliberate dark object on the page: the departures board.
+- Two deliberate dark moments on the homepage: the departures board and one edge-to-edge photo band. Nothing else goes dark.
 
 ## Colors
 
@@ -186,7 +186,7 @@ The system was assembled from a study of Oura (warm paper, serif plus grotesque,
 
 - `{colors.canvas}` (#F8F3EA): default page background, header, hero, most sections.
 - `{colors.canvas-deep}` (#EFE7DA): alternating bands ("How it works", the pathway section) and the footer. One step darker than canvas, same hue.
-- `{colors.wash}` (#FBE9D9): the closing panel only. A pale orange tint, not a brand fill.
+- `{colors.wash}` (#FBE9D9): a pale orange tint for callouts. The closing panel no longer uses it; see the orange moment below.
 - `{colors.surface}` (#FFFFFF): reserved for content that must read as a document (forms, tables). Not a page background.
 
 ### Text
@@ -211,6 +211,7 @@ The system was assembled from a study of Oura (warm paper, serif plus grotesque,
 ### Rules
 
 - **One accent.** Orange is the only chromatic colour in the interface. Green is for WhatsApp and success states. No purple, no gradients.
+- **One orange moment per page.** Orange is otherwise kept for the main button, so each page may carry exactly one full-width panel of `{colors.action}` with cream text and an ink button (on the homepage, the closing panel). More than one dilutes it; none leaves the page flat.
 - **One gray family.** All neutrals are warm. Do not mix in cool slate on pages that use this system.
 - **Colour is signal.** Chromatic colour comes from photography and from the action. Icons and decoration are ink.
 
@@ -300,11 +301,15 @@ Photographic tiles: the image fills the tile at 65% saturation, a warm-ink fade 
 
 ### Closing panel
 
-A `{colors.wash}` panel with 24px radius, a serif heading, one primary action and one text link.
+The page's one orange moment: a `{colors.action}` panel with 24px radius, a very large light serif heading in cream (up to 88px), one ink button (with the WhatsApp glyph where the action opens WhatsApp) and one cream underlined text link. Cream on this orange is 5:1.
+
+### Photo band
+
+The page's campaign moment (after Nike's campaign tiles in the reference). One full-width photograph with a warm-ink fade from the bottom, one large light serif line in cream (max 2xl wide, 72px on desktop so it clears the subjects), one sentence and one orange button. It appears once per page and breaks the cream rhythm on purpose. The homepage uses a black-and-white photo of three boys running through a field, which carries the "one stage at a time" line without a caption.
 
 ### Departures board
 
-The signature object. Warm ink (`{colors.board}`) with `{colors.board-tile}` tiles, amber dates and white event text in Geist Mono, 16px outer radius. Every character is real calendar data, rows are links, tiles are hidden from assistive technology, and the flip animation is skipped under reduced motion. It is the one dark block on the cream page, deliberately.
+The signature object. Warm ink (`{colors.board}`) with `{colors.board-tile}` tiles, amber dates and white event text in Geist Mono, 16px outer radius. Every character is real calendar data, rows are links, tiles are hidden from assistive technology, and the flip animation is skipped under reduced motion. It sits directly under the hero on a deeper-cream band, as the page's first proof of real, live content. Tiles are taller (5:7) and the board has more padding. When any row has an entry deadline the board gains an "Entries close" column (taking six tiles from the event name): a date for a deadline still ahead, "CLOSED" for one that has passed (flagged on the server so the browser cannot disagree about today), and blank where the calendar has no deadline. It never invents one.
 
 ### Footer
 
@@ -313,8 +318,9 @@ The signature object. Warm ink (`{colors.board}`) with `{colors.board-tile}` til
 ## Photography
 
 - Real photographs only, never AI-generated imagery or staged "diverse team" stock.
+- **Show people in motion.** Lead with a child mid-action (a save, a serve, a sprint) over empty equipment or turf. The homepage hero is a young goalkeeper diving; the tournaments tile is a boy hitting a ball off a wall. Movement is where the sport energy comes from, so the type and colour can stay calm.
 - Desaturate to about 65 to 70% and warm slightly so the photo sits on the paper.
-- **Crop to the subject.** Anchor the crop so the subject is whole before choosing an aspect ratio. The hero image (ball and boots, upper right) is anchored to the top; on phones it is shifted right so both stay in frame.
+- **Crop to the subject.** Anchor the crop so the subject is whole before choosing an aspect ratio. The hero plate is 4:3 on phones, 3:2 on tablets and 16:10 on desktop, anchored to the top so the whole figure (head to feet) stays in frame at each ratio; a wider ratio cut the legs off.
 - Place text on empty areas of the image or on a fade, not over detail.
 - Source from Unsplash (`images.unsplash.com`, already allowed in `next.config.ts`). Verify each photo's subject and that it loads before shipping.
 
@@ -352,7 +358,11 @@ The signature object. Warm ink (`{colors.board}`) with `{colors.board-tile}` til
 - Don't put shadows on cards or stack bordered cards inside bordered cards.
 - Don't bold the section headings or the italic accent phrase.
 - Don't set Newsreader below about 20px or use it for body copy.
-- Don't add a second dark section; the departures board is the single dark object.
+- Don't add dark sections beyond the departures board and the one photo band per page.
+
+## Homepage order
+
+Hero, departures board, questions, how it works, photo band, explore tiles, pathway guide, orange closing panel. Section tones alternate paper, deeper paper, paper, deeper paper, photo, paper, deeper paper, orange.
 
 ## Implementation status (as of 2026-10-19, branch `client-uat`)
 

@@ -40,7 +40,7 @@ function ExpertAvatar({ photoUrl, name }: { photoUrl?: string; name: string }) {
   const initial = (name || "E").charAt(0).toUpperCase();
   if (!photoUrl || failed) {
     return (
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white/10 bg-white/10 text-2xl font-bold text-white/70">
+      <div className="bg-paper text-ink-muted font-editorial flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-3xl font-light">
         {initial}
       </div>
     );
@@ -51,17 +51,17 @@ function ExpertAvatar({ photoUrl, name }: { photoUrl?: string; name: string }) {
       src={photoUrl}
       alt={name}
       onError={() => setFailed(true)}
-      className="h-16 w-16 shrink-0 rounded-full border-4 border-white/10 object-cover"
+      className="h-16 w-16 shrink-0 rounded-2xl object-cover"
     />
   );
 }
 
 function SessionDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-[#F4F3F0]">
+    <div className="bg-paper min-h-screen">
       <div className="mx-auto max-w-2xl px-6 py-10">
         <Skeleton className="mb-6 h-5 w-28" />
-        <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+        <Card className="overflow-hidden border-0 bg-white p-0 shadow-sm">
           <Skeleton className="h-28 w-full rounded-none" />
           <div className="space-y-4 p-6">
             <Skeleton className="h-4 w-1/3" />
@@ -227,7 +227,7 @@ export default function ExpertSessionPage() {
 
   if (error || !session) {
     return (
-      <div className="min-h-screen bg-[#F4F3F0]">
+      <div className="bg-paper min-h-screen">
         <div className="mx-auto max-w-2xl px-6 py-20 text-center">
           <p className="font-semibold text-red-600">{error || "Not found."}</p>
           <Link
@@ -284,7 +284,7 @@ export default function ExpertSessionPage() {
         };
 
   return (
-    <div className="min-h-screen bg-[#F4F3F0]">
+    <div className="bg-paper min-h-screen">
       <div className="mx-auto max-w-2xl px-6 py-10">
         <Link
           href="/experts/sessions"
@@ -294,31 +294,30 @@ export default function ExpertSessionPage() {
         </Link>
 
         <SlideUp>
-          <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
-            {/* Dark hero strip — consistent with the expert profile page */}
-            <div className="bg-ink relative overflow-hidden px-6 py-7 text-white sm:px-8">
-              <div className="bg-power-orange/20 pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full blur-3xl" />
+          <Card className="overflow-hidden border-0 bg-white p-0 shadow-sm">
+            {/* Header strip: the same paper tone as the expert profile page */}
+            <div className="bg-paper-deep border-hairline relative overflow-hidden border-b px-6 py-7 sm:px-8">
               <div className="relative flex items-center gap-4">
                 <ExpertAvatar photoUrl={session.expert?.photoUrl} name={expertName} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-white/60">
-                    Session with
-                  </p>
-                  <h1 className="font-editorial truncate text-xl font-normal sm:text-2xl">
+                  <p className="text-ink-muted text-sm">Session with</p>
+                  <h1 className="font-editorial text-ink truncate text-2xl font-normal sm:text-3xl">
                     {expertName}
                   </h1>
                   <span
                     className={cn(
-                      "mt-1.5 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset ring-white/20",
-                      "bg-white/10 text-white/90"
+                      "mt-2 inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset",
+                      "text-ink ring-hairline bg-white"
                     )}
                   >
-                    {session.status.replace(/_/g, " ")}
+                    {session.status.replace(/_/g, " ").toLowerCase()}
                   </span>
                 </div>
                 <div className="hidden shrink-0 text-right sm:block">
-                  <p className="text-xs text-white/50">Amount</p>
-                  <p className="text-lg font-bold">{formatInr(session.amount)}</p>
+                  <p className="text-ink-muted text-sm">Amount</p>
+                  <p className="font-editorial text-ink text-3xl font-light tabular-nums">
+                    {formatInr(session.amount)}
+                  </p>
                 </div>
               </div>
             </div>

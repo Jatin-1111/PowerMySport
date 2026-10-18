@@ -203,7 +203,7 @@ export function ExpertProfileEditor({
   return (
     <div className="space-y-6 pb-24 sm:space-y-8">
       {/* Hero */}
-      <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+      <Card className="overflow-hidden border-0 bg-white p-0 shadow-sm">
         <div className="bg-slate-50 px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
@@ -266,7 +266,7 @@ export function ExpertProfileEditor({
       <div className="grid gap-6 xl:grid-cols-12 xl:items-start">
         {/* Left column */}
         <div className="space-y-6 xl:col-span-7">
-          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+          <Card className="border-0 bg-white shadow-sm">
             <SectionHeader
               icon={User}
               iconClassName="bg-indigo-50 text-indigo-600"
@@ -315,7 +315,7 @@ export function ExpertProfileEditor({
             </div>
           </Card>
 
-          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+          <Card className="border-0 bg-white shadow-sm">
             <SectionHeader
               icon={Award}
               iconClassName="bg-purple-50 text-purple-600"
@@ -342,7 +342,7 @@ export function ExpertProfileEditor({
             </div>
           </Card>
 
-          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+          <Card className="border-0 bg-white shadow-sm">
             <SectionHeader
               icon={BadgeIndianRupee}
               iconClassName="bg-emerald-50 text-emerald-600"
@@ -412,7 +412,7 @@ export function ExpertProfileEditor({
             </div>
           </Card>
 
-          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+          <Card className="border-0 bg-white shadow-sm">
             <SectionHeader
               icon={FileText}
               iconClassName="bg-indigo-50 text-indigo-600"
@@ -456,7 +456,7 @@ export function ExpertProfileEditor({
 
         {/* Right column */}
         <div className="space-y-6 xl:col-span-5">
-          <Card className="border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
+          <Card className="border-0 bg-white shadow-sm">
             <SectionHeader
               icon={CalendarClock}
               iconClassName="bg-orange-50 text-power-orange"

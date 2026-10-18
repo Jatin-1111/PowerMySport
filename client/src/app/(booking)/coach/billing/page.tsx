@@ -869,7 +869,7 @@ export default function CoachBillingPage() {
                 </span>
               </div>
 
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#ffffff_40%,#fff8ef_100%)] p-4">
+              <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">

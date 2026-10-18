@@ -48,8 +48,7 @@ const field =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100";
 const label =
   "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400";
-const card =
-  "rounded-2xl border-0 bg-white p-6 shadow-[0_2px_16px_rgb(0,0,0,0.06)] dark:bg-slate-900 sm:p-8";
+const card = "rounded-2xl border-0 bg-white p-6 shadow-sm dark:bg-slate-900 sm:p-8";
 
 const STEPS = [
   { id: 1, title: "Your Identity", icon: User },
@@ -405,7 +404,7 @@ function ExpertOnboardingContent() {
   if (submitted) {
     return (
       <div className="mx-auto flex max-w-lg flex-col items-center gap-6 px-4 py-16 text-center">
-        <div className="w-full rounded-2xl border-0 bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.1)] sm:p-10">
+        <div className="w-full rounded-2xl border-0 bg-white p-8 shadow-md sm:p-10">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber-50">
             <Clock className="h-10 w-10 text-amber-500" />
           </div>
@@ -474,7 +473,7 @@ function ExpertOnboardingContent() {
                   ? "cursor-pointer bg-emerald-500 text-white hover:bg-emerald-600"
                   : step === s.id
                     ? "bg-power-orange-solid shadow-power-orange/30 text-white shadow-lg"
-                    : "bg-white text-slate-400 shadow-[0_2px_8px_rgb(0,0,0,0.05)] dark:bg-slate-800"
+                    : "bg-white text-slate-400 shadow-sm dark:bg-slate-800"
               }`}
             >
               {step > s.id ? <CheckCircle2 className="h-5 w-5" aria-hidden="true" /> : s.id}

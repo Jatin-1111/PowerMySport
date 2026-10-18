@@ -7,12 +7,15 @@ import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { sportsApi } from "@/modules/sports/services/sports";
 import { Venue } from "@/types";
+import {
+  LISTING_FALLBACK_CLASS,
+  LISTING_IMAGE_CLASS,
+  ListingCard,
+} from "@/modules/discovery/components/ListingCard";
 import { cn } from "@/utils/cn";
 import { getVenueImageUrls } from "@/utils/venueImages";
 import {
-  ArrowRight,
   Bath,
-  Bookmark,
   Building2,
   Car,
   ChevronLeft,
@@ -21,11 +24,8 @@ import {
   Droplets,
   Dumbbell,
   HeartPulse,
-  MapPin,
   MessageCircle,
-  Star,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function VenuesTab() {
@@ -45,7 +45,6 @@ export default function VenuesTab() {
   const [followedVenueIds, setFollowedVenueIds] = useState<string[]>([]);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const router = useRouter();
 
   const AMENITIES_OPTIONS = [
     { id: "Parking", label: "Parking", icon: Car },
@@ -381,7 +380,7 @@ export default function VenuesTab() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredVenues.map((venue, index) => {
                 const venueId = String(venue.id || venue._id || "");
                 const isFollowed = followedVenueIds.includes(venueId);
@@ -401,95 +400,42 @@ export default function VenuesTab() {
                 };
 
                 return (
-                  <div
+                  <ListingCard
                     key={venueId || `${venue.name}-${index}`}
-                    className="group cursor-pointer overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
-                    onClick={() => router.push(`/venues/${venueId}`)}
-                  >
-                    {/* Image */}
-                    <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-                      {venueImages.length > 0 ? (
+                    href={`/venues/${venueId}`}
+                    title={venue.name}
+                    shape="landscape"
+                    media={
+                      venueImages.length > 0 ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={venueImages[0]}
                           alt={venue.name}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                          className={LISTING_IMAGE_CLASS}
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-slate-100">
-                          <Building2 size={44} className="text-slate-300" />
+                        <div className={LISTING_FALLBACK_CLASS}>
+                          <Building2 aria-hidden strokeWidth={1.25} className="h-12 w-12" />
                         </div>
-                      )}
-                      {/* Subtle Bookmark button */}
-                      <button
-                        type="button"
-                        onClick={onToggleFollow}
-                        className={cn(
-                          "absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-colors",
-                          isFollowed
-                            ? "text-power-orange border-white bg-white"
-                            : "border-white/20 bg-black/20 text-white hover:bg-black/40"
-                        )}
-                        aria-label={isFollowed ? "Unsave venue" : "Save venue"}
-                      >
-                        <Bookmark size={14} className={isFollowed ? "fill-current" : ""} />
-                      </button>
-                    </div>
-
-                    {/* Card body */}
-                    <div className="p-5">
-                      <h3 className="text-lg font-bold tracking-tight text-slate-900">
-                        {venue.name}
-                      </h3>
-
-                      {(venue.address || venue.location) && (
-                        <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
-                          <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
-                          <span className="line-clamp-1">
-                            {venue.address ||
-                              `${venue.location?.coordinates[1].toFixed(3)}°N, ${venue.location?.coordinates[0].toFixed(3)}°E`}
-                          </span>
-                        </p>
-                      )}
-
-                      {/* Sport tags & Badges */}
-                      <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                        {venue.rating && venue.rating > 0 && (
-                          <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
-                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                            {venue.rating.toFixed(1)}
-                          </span>
-                        )}
-                        <span className="rounded-full bg-emerald-50/50 px-2.5 py-1 text-xs font-semibold text-emerald-600 ring-1 ring-inset ring-emerald-100/50">
-                          Verified
-                        </span>
-                        {venue.sports[0] && (
-                          <span className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                            {venue.sports[0]}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Price + CTA */}
-                      <div className="mt-5 flex items-center justify-between border-t border-slate-50 pt-4">
-                        <div>
-                          <span className="text-xl font-black text-slate-900">
-                            ₹{getDisplayPrice(venue)}
-                          </span>
-                          <span className="ml-1 text-sm font-medium text-slate-500">/hr</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/checkout?type=venue&venueId=${venueId}`);
-                          }}
-                          className="bg-power-orange-solid flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-600"
-                        >
-                          Book <ArrowRight size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                      )
+                    }
+                    badge="Verified"
+                    rating={venue.rating && venue.rating > 0 ? { value: venue.rating } : undefined}
+                    subtitle={
+                      venue.address ||
+                      (venue.location
+                        ? `${venue.location.coordinates[1].toFixed(3)}°N, ${venue.location.coordinates[0].toFixed(3)}°E`
+                        : undefined)
+                    }
+                    details={venue.sports.slice(0, 2).join(" · ") || undefined}
+                    price={`₹${getDisplayPrice(venue)}`}
+                    priceUnit="per hour"
+                    saved={isFollowed}
+                    saveLabel={isFollowed ? "Unsave venue" : "Save venue"}
+                    onToggleSave={onToggleFollow}
+                    action={{ label: "Book", href: `/checkout?type=venue&venueId=${venueId}` }}
+                  />
                 );
               })}
             </div>

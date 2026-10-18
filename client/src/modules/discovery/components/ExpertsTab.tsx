@@ -1,13 +1,17 @@
 "use client";
 
 import { FilterBar, type ActiveFilter } from "@/modules/discovery/components/FilterBar";
+import {
+  LISTING_FALLBACK_CLASS,
+  LISTING_IMAGE_CLASS,
+  ListingCard,
+  ListingCardSkeleton,
+} from "@/modules/discovery/components/ListingCard";
 import { expertApi, type Expert } from "@/modules/expert/services/expert";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
-import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { cn } from "@/utils/cn";
-import { ArrowRight, Globe, Languages, MapPin, Search, ServerCrash, Star } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Search, ServerCrash } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
@@ -25,16 +29,7 @@ function ExpertAvatar({ expert, className }: { expert: Expert; className: string
   const [failed, setFailed] = useState(false);
   const initial = (expert.name || "E").charAt(0).toUpperCase();
   if (!expert.photoUrl || failed) {
-    return (
-      <div
-        className={cn(
-          "flex items-center justify-center bg-slate-100 text-5xl font-bold text-slate-300",
-          className
-        )}
-      >
-        {initial}
-      </div>
-    );
+    return <div className={cn(LISTING_FALLBACK_CLASS, className)}>{initial}</div>;
   }
   return (
     <img
@@ -47,21 +42,7 @@ function ExpertAvatar({ expert, className }: { expert: Expert; className: string
 }
 
 function ExpertCardSkeleton() {
-  return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)]">
-      <Skeleton className="aspect-[4/3] w-full rounded-none" />
-      <div className="space-y-3 p-5">
-        <Skeleton className="h-5 w-2/3" />
-        <Skeleton className="h-4 w-1/3" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-5/6" />
-        <div className="!mt-5 flex items-center justify-between border-t border-slate-50 pt-5">
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-10 w-10 rounded-full" />
-        </div>
-      </div>
-    </div>
-  );
+  return <ListingCardSkeleton shape="portrait" />;
 }
 
 /**
@@ -80,8 +61,6 @@ export function ExpertsTab({
   initialExperts?: Expert[];
   initialError?: string | null;
 }) {
-  const router = useRouter();
-
   const [experts, setExperts] = useState<Expert[]>(initialExperts ?? []);
   const [loading, setLoading] = useState(!initialExperts);
   const [error, setError] = useState<string | null>(initialError);
@@ -397,76 +376,21 @@ export function ExpertsTab({
 
                 return (
                   <StaggerItem key={id} className="h-full">
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => router.push(route)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          router.push(route);
-                        }
-                      }}
-                      aria-label={`View expert profile for ${expert.name || "expert"}`}
-                      className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-[0_2px_12px_rgb(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgb(0,0,0,0.08)]"
-                    >
-                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
-                        <ExpertAvatar
-                          expert={expert}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md">
-                          <Globe className="h-3 w-3" />
-                          {modeLabel(expert.sessionMode)}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-1 flex-col p-4">
-                        <h3 className="text-base font-bold tracking-tight text-slate-900">
-                          {expert.name || "Sports Expert"}
-                        </h3>
-
-                        {expert.city && (
-                          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-                            <MapPin size={12} className="shrink-0 text-slate-400" />
-                            <span className="line-clamp-1">{expert.city}</span>
-                          </p>
-                        )}
-
-                        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                          {expert.reviewCount > 0 && (
-                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-700">
-                              <Star size={11} className="fill-amber-400 text-amber-400" />
-                              {expert.rating.toFixed(1)}
-                              <span className="font-normal text-slate-400">
-                                ({expert.reviewCount})
-                              </span>
-                            </span>
-                          )}
-                          <span className="text-power-orange rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium">
-                            {primarySport}
-                          </span>
-                          {expert.languages && expert.languages.length > 0 && (
-                            <span className="flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-600">
-                              <Languages size={10} />
-                              {expert.languages[0]}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-3">
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-lg font-black text-slate-900">
-                              {formatInr(expert.sessionFee)}
-                            </span>
-                            <span className="text-xs font-medium text-slate-500">/session</span>
-                          </div>
-                          <div className="group-hover:bg-power-orange-solid flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 text-slate-600 transition-all group-hover:-rotate-45 group-hover:text-white">
-                            <ArrowRight size={16} strokeWidth={2.5} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <ListingCard
+                      href={route}
+                      title={expert.name || "Sports expert"}
+                      media={<ExpertAvatar expert={expert} className={LISTING_IMAGE_CLASS} />}
+                      badge={modeLabel(expert.sessionMode)}
+                      rating={
+                        expert.reviewCount > 0
+                          ? { value: expert.rating, count: expert.reviewCount }
+                          : undefined
+                      }
+                      subtitle={expert.city || undefined}
+                      details={[primarySport, expert.languages?.[0]].filter(Boolean).join(" · ")}
+                      price={formatInr(expert.sessionFee)}
+                      priceUnit="per session"
+                    />
                   </StaggerItem>
                 );
               })}

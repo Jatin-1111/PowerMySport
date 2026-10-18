@@ -31,7 +31,7 @@ export default function SavedPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_52%,#fff8ee_100%)]">
+    <div className="bg-paper flex min-h-screen flex-col">
       <Navigation sticky />
       <div className="h-16" aria-hidden />
       <main className="flex-1 py-8">

@@ -247,10 +247,21 @@ export const applyExpertPaymentSuccess = async (
     channel: "WEBHOOK",
   }
 ): Promise<ExpertSessionDocument> => {
-  const wasPaid = session.paymentStatus === "COMPLETED";
+  // Claim the unpaid -> paid transition atomically. The webhook and the
+  // client-driven reconcile routinely land within milliseconds of each other,
+  // and each loads its own copy of the session: reading `paymentStatus` from
+  // that copy let both see "not paid yet", so both recorded the event and sent
+  // the receipt (the parent saw the same toast twice). Only the call that flips
+  // the flag in the database is the first confirmation.
+  const claimed = await ExpertSession.findOneAndUpdate(
+    { _id: session._id, paymentStatus: { $ne: "COMPLETED" } },
+    { $set: { paymentStatus: "COMPLETED", paidAt: new Date() } },
+    { new: false }
+  );
+  const wasPaid = !claimed;
   const statusBefore = session.status;
   session.paymentStatus = "COMPLETED";
-  if (!wasPaid) session.paidAt = new Date();
+  if (claimed) session.paidAt = new Date();
   session.set("holdExpiresAt", undefined);
   if (session.status === "PENDING_PAYMENT") {
     session.status = session.scheduledAt ? "SCHEDULED" : "PAID";

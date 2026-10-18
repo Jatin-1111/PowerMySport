@@ -545,7 +545,7 @@ export default function Step1VenueDetails({ onSubmit, loading }: Step1VenueDetai
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-blue-600 py-3 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="bg-power-orange-solid w-full rounded-lg py-3 font-medium text-white transition hover:bg-orange-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading ? "Creating Venue..." : "Continue to Step 2: Upload Images"}
         </button>
