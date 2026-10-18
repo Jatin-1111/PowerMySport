@@ -444,6 +444,13 @@
 .legal-content li {
   color: var(--color-ink-body);
 }
+.legal-prose p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+.legal-prose li {
+  line-height: 1.7;
+}
 .legal-content a {
   color: var(--color-ink);
   text-decoration: underline;

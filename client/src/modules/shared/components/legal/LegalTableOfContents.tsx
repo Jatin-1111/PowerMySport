@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from "react";
 export interface LegalTocItem {
   id: string;
   label: string;
-  icon: LucideIcon;
+  /** Accepted for existing callers; the contents list shows labels only. */
+  icon?: LucideIcon;
 }
 
 // Clears the site's sticky h-16 nav with room to spare.
