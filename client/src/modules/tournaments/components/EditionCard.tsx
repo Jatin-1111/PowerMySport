@@ -1,13 +1,58 @@
-import { CalendarDays, MapPin, Users } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import type { ListedEdition } from "../services/editionListing";
 import { formatEditionDates, formatLocation } from "../utils/editionFormat";
 
+/** The column grid shared by the heading row and every tournament. */
+const ROW_GRID =
+  "md:grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)_minmax(0,1.3fr)_minmax(0,1fr)] md:gap-x-6";
+
+/** A caption that only shows on small screens, where the columns stack. */
+function Cell({ caption, children }: { caption: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-ink-muted mb-0.5 text-sm md:hidden">{caption}</p>
+      {children}
+    </div>
+  );
+}
+
+export function EditionTableHead() {
+  return (
+    <div
+      aria-hidden="true"
+      className={`${ROW_GRID} text-ink-muted border-hairline hidden border-b pb-3 text-sm`}
+    >
+      <span>Dates</span>
+      <span>Tournament</span>
+      <span>Where</span>
+      <span>Age groups</span>
+    </div>
+  );
+}
+
+/** A list of tournaments as a hairline-ruled table: head row, then one row each. */
+export function EditionTable({ editions }: { editions: ListedEdition[] }) {
+  return (
+    <div>
+      <EditionTableHead />
+      <ul className="divide-hairline border-hairline divide-y border-b">
+        {editions.map((edition) => (
+          <li key={edition.slug}>
+            <EditionCard edition={edition} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
- * One tournament in a list. Leads with what kind of event it is, because the
- * short calendar name ("AITA CS7 (Pollachi)") only says so to a parent who
- * already knows the codes.
+ * One tournament, as a row. It leads with the date, which is what a parent
+ * plans around, then the name with what kind of event it is (the short calendar
+ * name, "AITA CS7 (Pollachi)", only says so to a parent who already knows the
+ * codes), where it is, and which age groups play.
  */
 export function EditionCard({ edition }: { edition: ListedEdition }) {
   const where = formatLocation(edition.venue, edition.city);
@@ -17,34 +62,25 @@ export function EditionCard({ edition }: { edition: ListedEdition }) {
   return (
     <Link
       href={`/tournaments/${edition.slug}`}
-      className="hover:border-power-orange/40 group flex flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+      className={`${ROW_GRID} hover:bg-paper-deep/60 focus-visible:ring-ink group block space-y-3 px-1 py-5 transition-colors focus-visible:outline-none focus-visible:ring-2 md:space-y-0 md:px-2`}
     >
-      {kindLabel && (
-        <span className="mb-2 w-fit rounded-md bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-800">
-          {kindLabel}
-        </span>
-      )}
-      <p className="font-title group-hover:text-power-orange-solid line-clamp-2 text-[15px] font-bold leading-snug text-slate-900">
-        {edition.name}
-      </p>
-      <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3 text-[13px] text-slate-600">
-        <div className="flex items-center gap-2">
-          <CalendarDays aria-hidden className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-          <span>{formatEditionDates(edition.startDate, edition.endDate)}</span>
-        </div>
-        {where && (
-          <div className="flex items-center gap-2">
-            <MapPin aria-hidden className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-            <span className="truncate">{where}</span>
-          </div>
-        )}
-        {ages.length > 0 && (
-          <div className="flex items-center gap-2">
-            <Users aria-hidden className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-            <span className="truncate">{ages.join(", ")}</span>
-          </div>
-        )}
-      </div>
+      <Cell caption="Dates">
+        <p className="text-ink font-medium tabular-nums">
+          {formatEditionDates(edition.startDate, edition.endDate)}
+        </p>
+      </Cell>
+      <Cell caption="Tournament">
+        <p className="text-ink line-clamp-2 text-lg leading-snug group-hover:underline group-hover:underline-offset-4">
+          {edition.name}
+        </p>
+        {kindLabel && <p className="text-ink-muted mt-1 text-sm">{kindLabel}</p>}
+      </Cell>
+      <Cell caption="Where">
+        <p className="text-ink-body text-sm">{where || "Venue to be announced"}</p>
+      </Cell>
+      <Cell caption="Age groups">
+        <p className="text-ink-body text-sm">{ages.length > 0 ? ages.join(", ") : "Not listed"}</p>
+      </Cell>
     </Link>
   );
 }

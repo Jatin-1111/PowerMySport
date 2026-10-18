@@ -2,8 +2,8 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Trophy } from "lucide-react";
-import { EditionCard } from "@/modules/tournaments/components/EditionCard";
+import { ArrowRight } from "lucide-react";
+import { EditionTable } from "@/modules/tournaments/components/EditionCard";
 import { FEATURED_TOURNAMENT_SPORT } from "@/modules/tournaments/config/featured";
 import {
   fetchSportEditions,
@@ -66,7 +66,7 @@ export default async function TournamentsPage() {
         ]}
       />
 
-      <div className="min-h-screen bg-slate-50">
+      <div className="bg-paper min-h-screen">
         <PageHeader
           breadcrumbs={[{ label: "Tournaments" }]}
           title="Tournaments"
@@ -79,7 +79,7 @@ export default async function TournamentsPage() {
               <div>
                 <h2
                   id="featured-heading"
-                  className="font-editorial text-xl font-normal text-slate-900"
+                  className="font-editorial text-ink text-3xl font-light tracking-tight"
                 >
                   Coming up in {featuredLabel.toLowerCase()}
                 </h2>
@@ -92,7 +92,7 @@ export default async function TournamentsPage() {
               {featuredTotal > 0 && (
                 <Link
                   href={`/tournaments/sport/${featured}`}
-                  className="inline-flex items-center gap-1.5 text-sm font-bold text-orange-700 hover:text-orange-800"
+                  className="text-ink inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
                 >
                   See all {featuredLabel.toLowerCase()} tournaments
                   <ArrowRight aria-hidden className="h-4 w-4" />
@@ -102,9 +102,7 @@ export default async function TournamentsPage() {
 
             {categories.length > 1 && (
               <div className="mb-5">
-                <p className="mb-2 text-[12px] font-bold uppercase tracking-wider text-slate-500">
-                  Browse by type of event
-                </p>
+                <p className="text-ink-muted mb-2 text-sm">Browse by type of event</p>
                 <ul className="flex flex-wrap gap-2">
                   {categories.map((category) => (
                     <li key={category.value}>
@@ -112,7 +110,7 @@ export default async function TournamentsPage() {
                         href={tournamentListHref(featured, featuredState, {
                           category: category.value,
                         })}
-                        className="hover:border-power-orange/50 inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-700 transition hover:text-orange-700"
+                        className="border-hairline text-ink hover:border-ink/40 inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-white px-3 text-sm font-medium transition"
                       >
                         {category.label}
                         <span className="text-slate-500">{category.count}</span>
@@ -124,15 +122,10 @@ export default async function TournamentsPage() {
             )}
 
             {featuredEditions.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {featuredEditions.map((edition) => (
-                  <EditionCard key={edition.slug} edition={edition} />
-                ))}
-              </div>
+              <EditionTable editions={featuredEditions} />
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-300 py-14 text-center">
-                <Trophy aria-hidden className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-                <p className="text-sm font-semibold text-slate-600">
+              <div className="border-hairline rounded-xl border border-dashed py-14 text-center">
+                <p className="text-ink-body text-sm">
                   No upcoming {featuredLabel.toLowerCase()} tournaments are listed right now.
                 </p>
               </div>
@@ -143,26 +136,24 @@ export default async function TournamentsPage() {
             <section aria-labelledby="other-sports-heading">
               <h2
                 id="other-sports-heading"
-                className="font-editorial mb-4 text-xl font-normal text-slate-900"
+                className="font-editorial text-ink mb-6 text-3xl font-light tracking-tight"
               >
                 Other sports
               </h2>
-              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <ul className="divide-hairline border-hairline divide-y border-y">
                 {otherSports.map((sport) => (
                   <li key={sport.sportSlug}>
                     <Link
                       href={`/tournaments/sport/${sport.sportSlug}`}
-                      className="hover:border-power-orange/40 group flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                      className="hover:bg-paper-deep/60 group flex items-center justify-between gap-4 px-1 py-4 transition-colors md:px-2"
                     >
-                      <span>
-                        <span className="font-title block text-[15px] font-bold text-slate-900 group-hover:text-orange-700">
-                          {SPORT_LABEL[sport.sportSlug]}
-                        </span>
-                        <span className="text-[13px] text-slate-500">
-                          {sport.upcoming} upcoming tournament{sport.upcoming === 1 ? "" : "s"}
-                        </span>
+                      <span className="text-ink text-lg group-hover:underline group-hover:underline-offset-4">
+                        {SPORT_LABEL[sport.sportSlug]}
                       </span>
-                      <ArrowRight aria-hidden className="h-4 w-4 text-slate-400" />
+                      <span className="text-ink-muted flex items-center gap-3 text-sm">
+                        {sport.upcoming} upcoming tournament{sport.upcoming === 1 ? "" : "s"}
+                        <ArrowRight aria-hidden className="text-ink h-4 w-4" />
+                      </span>
                     </Link>
                   </li>
                 ))}

@@ -3,8 +3,7 @@ import { breadcrumbJsonLd, itemListJsonLd, NOINDEX_METADATA } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Trophy } from "lucide-react";
-import { EditionCard } from "@/modules/tournaments/components/EditionCard";
+import { EditionTable } from "@/modules/tournaments/components/EditionCard";
 import { EditionFilters } from "@/modules/tournaments/components/EditionFilters";
 import {
   fetchSportEditions,
@@ -125,7 +124,7 @@ export default async function SportTournamentsHubPage({
         ]}
       />
 
-      <div className="min-h-screen bg-slate-50">
+      <div className="bg-paper min-h-screen">
         <PageHeader
           breadcrumbs={[{ label: "Tournaments", href: "/tournaments" }, { label: sportLabel }]}
           title={`${sportLabel} tournaments in India`}
@@ -144,10 +143,10 @@ export default async function SportTournamentsHubPage({
                 key={String(isUpcoming)}
                 href={tournamentListHref(sport, state, { upcoming: isUpcoming })}
                 aria-current={isUpcoming === upcoming ? "true" : undefined}
-                className={`rounded-md border px-4 py-1.5 text-xs font-semibold transition ${
+                className={`rounded-md border px-4 py-2 text-sm font-medium transition ${
                   isUpcoming === upcoming
-                    ? "bg-power-orange-solid border-power-orange-solid text-white"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-orange-700"
+                    ? "bg-ink border-ink text-white"
+                    : "border-hairline text-ink hover:border-ink/40 bg-white"
                 }`}
               >
                 {isUpcoming ? "Upcoming" : "Past"}
@@ -160,15 +159,10 @@ export default async function SportTournamentsHubPage({
           )}
 
           {editions.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {editions.map((e) => (
-                <EditionCard key={e.slug} edition={e} />
-              ))}
-            </div>
+            <EditionTable editions={editions} />
           ) : (
-            <div className="rounded-lg border border-dashed border-slate-300 py-16 text-center">
-              <Trophy className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-              <p className="text-sm font-semibold text-slate-600">
+            <div className="border-hairline rounded-xl border border-dashed py-16 text-center">
+              <p className="text-ink-body text-sm">
                 {filtered
                   ? `No ${upcoming ? "upcoming" : "past"} ${sportLower} tournaments match these filters`
                   : `No ${upcoming ? "upcoming" : "past"} ${sportLower} tournaments listed yet`}
@@ -180,7 +174,7 @@ export default async function SportTournamentsHubPage({
                     age: undefined,
                     month: undefined,
                   })}
-                  className="mt-3 inline-block text-sm font-bold text-orange-700 hover:text-orange-800"
+                  className="text-ink mt-3 inline-block text-sm font-medium underline underline-offset-4"
                 >
                   Clear all filters
                 </Link>
@@ -196,7 +190,7 @@ export default async function SportTournamentsHubPage({
                   key={p}
                   href={tournamentListHref(sport, state, { page: p })}
                   aria-current={p === page ? "page" : undefined}
-                  className={`rounded-sm border px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`rounded-md border px-3 py-2 text-sm font-medium tabular-nums transition ${
                     p === page
                       ? "bg-power-orange-solid border-power-orange-solid text-white"
                       : "border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:text-orange-700"

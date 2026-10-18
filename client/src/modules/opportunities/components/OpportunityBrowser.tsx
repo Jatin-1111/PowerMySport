@@ -10,7 +10,7 @@ import { GROUP_THRESHOLD, TRACKS, askUsHref } from "../config/tracks";
 import type { Opportunity, OpportunityTrack } from "../services/opportunities";
 import { formatDay } from "../utils/format";
 import { VERDICT_ORDER, checkOpportunity, hasProfile, type Verdict } from "../utils/match";
-import { OpportunityCard } from "./OpportunityCard";
+import { OpportunityRow, OpportunityTableHead } from "./OpportunityRow";
 import { ProfileFields } from "./ProfileFields";
 
 // ─── The list on /admissions and /scholarships ───────────────────────────
@@ -95,7 +95,7 @@ export function OpportunityBrowser({
 
   const card = (item: Opportunity, withCategory: boolean) => (
     <li key={item.slug}>
-      <OpportunityCard
+      <OpportunityRow
         opportunity={item}
         today={today}
         categoryLabel={withCategory ? config.categories[item.category]?.label : undefined}
@@ -109,17 +109,17 @@ export function OpportunityBrowser({
       {items.length > 0 && (
         <section
           aria-labelledby="find-fit-heading"
-          className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5"
+          className="border-ink rounded-xl border bg-white p-5 sm:p-6"
         >
           <div className="mb-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-1">
             <div>
               <h2
                 id="find-fit-heading"
-                className="font-editorial text-base font-light text-slate-900"
+                className="font-editorial text-ink text-2xl font-light tracking-tight"
               >
                 Find what fits your child
               </h2>
-              <p className="mt-0.5 text-sm text-slate-600">
+              <p className="text-ink-muted mt-1 text-sm">
                 Tell us any of these and we mark each entry. Kept on this device only.
               </p>
             </div>
@@ -127,7 +127,7 @@ export function OpportunityBrowser({
               <button
                 type="button"
                 onClick={clear}
-                className="btn-motion text-power-orange-solid focus-visible:ring-power-orange-solid inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-semibold hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2"
+                className="btn-motion text-ink focus-visible:ring-ink hover:bg-paper-deep inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium focus-visible:outline-none focus-visible:ring-2"
               >
                 <RotateCcw aria-hidden className="h-3.5 w-3.5" />
                 Clear
@@ -143,11 +143,11 @@ export function OpportunityBrowser({
               className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-slate-100 pt-3 text-sm"
             >
               <p className="text-slate-700">
-                <span className="font-semibold text-emerald-800">{counts.fits} fit</span>
+                <span className="font-semibold text-green-700">{counts.fits} fit</span>
                 {" · "}
-                <span className="font-semibold text-amber-900">{counts.check} to check</span>
+                <span className="text-ink font-semibold">{counts.check} to check</span>
                 {" · "}
-                <span className="font-semibold text-slate-700">{counts.no} not a match</span>
+                <span className="text-ink-muted font-semibold">{counts.no} not a match</span>
               </p>
               {counts.no > 0 && (
                 <label className="flex cursor-pointer items-center gap-2 text-slate-700">
@@ -155,7 +155,7 @@ export function OpportunityBrowser({
                     type="checkbox"
                     checked={hideMismatches}
                     onChange={(e) => setHideMismatches(e.target.checked)}
-                    className="accent-power-orange-solid h-4 w-4"
+                    className="accent-ink h-4 w-4"
                   />
                   Hide the ones that do not match
                 </label>
@@ -167,7 +167,7 @@ export function OpportunityBrowser({
 
       {items.length > 0 && (
         <p className="text-sm text-slate-600">
-          <span className="font-semibold text-slate-800">
+          <span className="text-ink font-medium">
             {items.length} {noun} listed so far
           </span>
           {latestCheck ? `, last checked ${formatDay(latestCheck)}` : ""}.
@@ -184,10 +184,10 @@ export function OpportunityBrowser({
                 key={slug ?? "all"}
                 href={slug ? `${config.path}?sport=${slug}` : config.path}
                 aria-current={selected ? "true" : undefined}
-                className={`inline-flex min-h-9 items-center rounded-md border px-3 text-sm font-semibold transition-colors ${
+                className={`inline-flex min-h-9 items-center rounded-md border px-3 text-sm font-medium transition-colors ${
                   selected
-                    ? "bg-power-orange-solid border-power-orange-solid text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:text-orange-700"
+                    ? "bg-ink border-ink text-white"
+                    : "border-hairline text-ink hover:border-ink/40 bg-white"
                 }`}
               >
                 {slug ? (SPORT_LABEL[slug] ?? slug) : "All sports"}
@@ -208,10 +208,10 @@ export function OpportunityBrowser({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setCategory(name)}
-                className={`btn-motion min-h-9 rounded-md border px-3 text-sm font-semibold ${
+                className={`btn-motion min-h-9 rounded-md border px-3 text-sm font-medium ${
                   active
-                    ? "bg-power-orange-solid border-power-orange-solid text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-orange-200 hover:text-orange-700"
+                    ? "bg-ink border-ink text-white"
+                    : "border-hairline text-ink hover:border-ink/40 bg-white"
                 }`}
               >
                 {label}
@@ -223,9 +223,12 @@ export function OpportunityBrowser({
 
       {shown.length > 0 ? (
         flat ? (
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((item) => card(item, presentCategories.length > 1))}
-          </ul>
+          <div>
+            <OpportunityTableHead />
+            <ul className="divide-hairline border-hairline divide-y border-b">
+              {shown.map((item) => card(item, presentCategories.length > 1))}
+            </ul>
+          </div>
         ) : (
           categories
             .map((name) => ({
@@ -238,23 +241,26 @@ export function OpportunityBrowser({
               <section key={section.name} aria-labelledby={`section-${section.name}`}>
                 <h2
                   id={`section-${section.name}`}
-                  className="font-editorial text-xl font-normal text-slate-900"
+                  className="font-editorial text-ink text-3xl font-light tracking-tight"
                 >
                   {section.meta!.label}
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">{section.meta!.blurb}</p>
-                <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {section.entries.map((item) => card(item, false))}
-                </ul>
+                <div className="mt-6">
+                  <OpportunityTableHead />
+                  <ul className="divide-hairline border-hairline divide-y border-b">
+                    {section.entries.map((item) => card(item, false))}
+                  </ul>
+                </div>
               </section>
             ))
         )
       ) : items.length > 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-700">
+        <p className="border-hairline rounded-xl border border-dashed px-6 py-10 text-center text-sm text-slate-700">
           Nothing here matches that. Clear the filters or ask us below.
         </p>
       ) : (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+        <div className="border-hairline rounded-xl border border-dashed px-6 py-14 text-center">
           <p className="text-sm font-semibold text-slate-800">
             We are checking these against their official sources.
           </p>
@@ -266,7 +272,7 @@ export function OpportunityBrowser({
       )}
 
       {(flat || items.length === 0 || shown.length === 0) && (
-        <aside className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5">
+        <aside className="border-hairline flex flex-wrap items-center justify-between gap-4 border-t pt-8">
           <div className="max-w-xl">
             <h2 className="font-editorial text-base font-light text-slate-900">
               Not listed here? Tell us what you are looking for.

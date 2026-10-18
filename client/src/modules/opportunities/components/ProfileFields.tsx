@@ -10,7 +10,7 @@ import { useOpportunityProfile } from "../hooks/useOpportunityProfile";
 const MAX_AGE = 25;
 
 const fieldClass =
-  "focus-visible:border-power-orange-solid focus-visible:ring-power-orange-solid/30 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 focus-visible:outline-none focus-visible:ring-2";
+  "focus-visible:border-ink focus-visible:ring-ink/20 border-hairline w-full rounded-md border bg-white px-3 py-2 text-base text-slate-900 focus-visible:outline-none focus-visible:ring-2";
 
 /**
  * The four answers that let us mark which entries fit a child: age, sport,
@@ -34,7 +34,7 @@ export function ProfileFields({
   return (
     <div className={className}>
       <div>
-        <label htmlFor={ids.age} className="mb-1 block text-xs font-semibold text-slate-600">
+        <label htmlFor={ids.age} className="text-ink mb-1 block text-sm font-medium">
           Child&apos;s age
         </label>
         <input
@@ -54,7 +54,7 @@ export function ProfileFields({
       </div>
 
       <div>
-        <label htmlFor={ids.sport} className="mb-1 block text-xs font-semibold text-slate-600">
+        <label htmlFor={ids.sport} className="text-ink mb-1 block text-sm font-medium">
           Sport
         </label>
         <select
@@ -73,7 +73,7 @@ export function ProfileFields({
       </div>
 
       <div>
-        <label htmlFor={ids.gender} className="mb-1 block text-xs font-semibold text-slate-600">
+        <label htmlFor={ids.gender} className="text-ink mb-1 block text-sm font-medium">
           Boy or girl
         </label>
         <select
@@ -91,7 +91,7 @@ export function ProfileFields({
       </div>
 
       <div>
-        <label htmlFor={ids.state} className="mb-1 block text-xs font-semibold text-slate-600">
+        <label htmlFor={ids.state} className="text-ink mb-1 block text-sm font-medium">
           State
         </label>
         <select

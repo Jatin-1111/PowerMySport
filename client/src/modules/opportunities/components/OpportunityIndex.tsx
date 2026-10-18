@@ -25,7 +25,7 @@ export async function OpportunityIndex({
   const selectedSport = sport && sports.includes(sport) ? sport : undefined;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="bg-paper min-h-screen">
       <PageHeader
         breadcrumbs={[{ label: config.title }]}
         title={config.heading}
@@ -33,8 +33,8 @@ export async function OpportunityIndex({
       />
 
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-        <p className="flex items-start gap-2 rounded-lg border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-700">
-          <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+        <p className="text-ink-body border-hairline flex items-start gap-2 border-y py-4 text-sm leading-relaxed">
+          <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-green-700" />
           <span>
             Every entry links the official source it was checked against and the date we last
             checked it. These rules change every year, so confirm on the source before you apply.

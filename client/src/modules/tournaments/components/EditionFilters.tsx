@@ -22,10 +22,10 @@ const ROWS: Array<{ key: FilterKey; facet: keyof EditionFacets; label: string }>
 ];
 
 const chipClass = (selected: boolean) =>
-  `inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-semibold transition ${
+  `inline-flex min-h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition ${
     selected
-      ? "bg-power-orange-solid border-power-orange-solid text-white"
-      : "hover:border-power-orange/50 border-slate-200 bg-white text-slate-700 hover:text-orange-700"
+      ? "bg-ink border-ink text-white"
+      : "border-hairline text-ink hover:border-ink/40 bg-white"
   }`;
 
 function FilterRow({
@@ -44,9 +44,7 @@ function FilterRow({
   const selected = state[filterKey];
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
-      <p className="shrink-0 pt-2 text-[12px] font-bold uppercase tracking-wider text-slate-500 sm:w-32">
-        {label}
-      </p>
+      <p className="text-ink-muted shrink-0 pt-2 text-sm sm:w-32">{label}</p>
       <ul className="flex flex-wrap gap-2">
         <li>
           <Link
@@ -65,7 +63,7 @@ function FilterRow({
               className={chipClass(selected === option.value)}
             >
               {option.label}
-              <span className={selected === option.value ? "text-orange-100" : "text-slate-500"}>
+              <span className={selected === option.value ? "text-white/70" : "text-ink-muted"}>
                 {option.count}
               </span>
             </Link>
@@ -93,7 +91,7 @@ export function EditionFilters({
   return (
     <section
       aria-label="Filter tournaments"
-      className="mb-6 space-y-3 rounded-lg border border-slate-200 bg-white p-4 sm:p-5"
+      className="border-ink mb-8 space-y-3 rounded-xl border bg-white p-5 sm:p-6"
     >
       {rows.map((row) => (
         <FilterRow
@@ -106,14 +104,14 @@ export function EditionFilters({
         />
       ))}
       {anyApplied && (
-        <div className="border-t border-slate-100 pt-3">
+        <div className="border-hairline border-t pt-3">
           <Link
             href={tournamentListHref(sportSlug, state, {
               category: undefined,
               age: undefined,
               month: undefined,
             })}
-            className="text-[13px] font-bold text-orange-700 hover:text-orange-800"
+            className="text-ink text-sm font-medium underline underline-offset-4"
           >
             Clear all filters
           </Link>

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { EligibilityChecklist } from "../src/modules/opportunities/components/EligibilityChecklist";
 import { OpportunityBrowser } from "../src/modules/opportunities/components/OpportunityBrowser";
-import { OpportunityCard } from "../src/modules/opportunities/components/OpportunityCard";
+import { OpportunityRow } from "../src/modules/opportunities/components/OpportunityRow";
 import type { Opportunity } from "../src/modules/opportunities/services/opportunities";
 
 const TODAY = "2026-10-03";
@@ -236,10 +236,10 @@ describe("finding what fits", () => {
   });
 });
 
-describe("OpportunityCard", () => {
+describe("OpportunityRow", () => {
   it("leads with the amount when there is one", () => {
     render(
-      <OpportunityCard
+      <OpportunityRow
         today={TODAY}
         opportunity={entry({
           benefit: {
@@ -256,7 +256,7 @@ describe("OpportunityCard", () => {
 
   it("shows who it is for and how long is left, flagging a close deadline", () => {
     render(
-      <OpportunityCard
+      <OpportunityRow
         today={TODAY}
         opportunity={entry({
           cycleState: "open",
@@ -269,20 +269,20 @@ describe("OpportunityCard", () => {
     expect(screen.getByText("Ages 10 to 14")).toBeTruthy();
     expect(screen.getByText("Girls and women only")).toBeTruthy();
     const deadline = screen.getByText("Closes 10 Oct 2026 · 7 days left");
-    expect(deadline.className).toContain("text-amber-800");
+    expect(deadline.className).toContain("font-semibold");
   });
 
   it("says when it was last checked", () => {
-    render(<OpportunityCard today={TODAY} opportunity={entry({ lastVerifiedOn: "2026-10-03" })} />);
+    render(<OpportunityRow today={TODAY} opportunity={entry({ lastVerifiedOn: "2026-10-03" })} />);
 
     expect(screen.getByText("Checked 3 Oct 2026")).toBeTruthy();
   });
 
   it("shows no verdict badge unless one is given", () => {
-    const { rerender } = render(<OpportunityCard today={TODAY} opportunity={entry()} />);
+    const { rerender } = render(<OpportunityRow today={TODAY} opportunity={entry()} />);
     expect(screen.queryByText("Fits your child")).toBeNull();
 
-    rerender(<OpportunityCard today={TODAY} opportunity={entry()} verdict="fits" />);
+    rerender(<OpportunityRow today={TODAY} opportunity={entry()} verdict="fits" />);
     expect(screen.getByText("Fits your child")).toBeTruthy();
   });
 });
