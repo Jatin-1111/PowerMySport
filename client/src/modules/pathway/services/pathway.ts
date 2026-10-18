@@ -311,6 +311,23 @@ export interface TournamentEdition {
   state?: string;
   category?: string;
   documents?: EditionDocument[];
+
+  // ── From the federation's fact sheet, or its published rules (see officialDetailsSource) ──
+  /** Printed calendar days as ISO strings at 00:00 UTC; times are `HH:MM` IST, kept separately. */
+  entryOpensDate?: string;
+  withdrawalDeadlineDate?: string;
+  freezeDeadlineDate?: string;
+  qualifyingStartDate?: string;
+  mainDrawStartDate?: string;
+  deadlineTimes?: { entryCloses?: string; withdrawal?: string; freeze?: string };
+  /** Rupees; singles, and doubles per pair. */
+  feeSingles?: number;
+  feeDoubles?: number;
+  /** Paid by the tournament to main-draw players, per day, in rupees. */
+  dailyAllowance?: number;
+  surface?: string;
+  /** The event's own fact sheet, or the federation's rules applied to its level. */
+  officialDetailsSource?: "factSheet" | "rules";
 }
 
 /** A trimmed edition used for cross-links, not a full record. */
