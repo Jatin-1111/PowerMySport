@@ -1,4 +1,9 @@
 import type { EditionCircuit, EditionKind, AitaLadderRung } from "./editionSeries";
+import {
+  hasFactSheetDetails,
+  parseFactSheetDetails,
+  type FactSheetDetails,
+} from "./factSheetSections";
 
 /**
  * Reading AITA's tournament calendar and fact-sheet pages.
@@ -76,6 +81,11 @@ export interface FactSheet {
   country: string | null;
   state: string | null;
   city: string | null;
+  /**
+   * The draws table and the organiser, venue, travel and hotel blocks. Null when the
+   * page held none of them, which is a statement about the page, not an empty record.
+   */
+  details?: FactSheetDetails | null;
 }
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
@@ -274,6 +284,10 @@ export function parseFactSheet(html: string): FactSheet {
     country: valueAfter(text, "Country", venueFrom),
     state: valueAfter(text, "State", venueFrom),
     city: valueAfter(text, "City", venueFrom),
+    details: (() => {
+      const details = parseFactSheetDetails(html);
+      return hasFactSheetDetails(details) ? details : null;
+    })(),
   };
 }
 

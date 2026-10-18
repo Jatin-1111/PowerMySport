@@ -8,6 +8,7 @@ import {
   type MonthRow,
 } from "./calendarParser";
 import { deadlinesFor, entryFeeFor } from "./calendarRules";
+import type { FactSheetDetails } from "./factSheetSections";
 
 /**
  * Deciding what to store from what AITA's calendar says. Pure: it takes the rows
@@ -135,6 +136,7 @@ export interface EditionFields {
   indoorOutdoor?: string;
   balls?: string;
   eventsPlayed?: string;
+  factSheetDetails?: FactSheetDetails;
   qualifyingStartDate?: Date;
   mainDrawStartDate?: Date;
   officialDetailsSource?: "factSheet" | "rules";
@@ -203,6 +205,7 @@ type Details = Pick<
   | "indoorOutdoor"
   | "balls"
   | "eventsPlayed"
+  | "factSheetDetails"
   | "qualifyingStartDate"
   | "mainDrawStartDate"
   | "officialDetailsSource"
@@ -223,6 +226,7 @@ const DETAIL_KEYS: Array<keyof Details> = [
   "indoorOutdoor",
   "balls",
   "eventsPlayed",
+  "factSheetDetails",
   "qualifyingStartDate",
   "mainDrawStartDate",
   "officialDetailsSource",
@@ -258,6 +262,7 @@ function detailsFor(
     if (sheet.indoorOutdoor) out.indoorOutdoor = sheet.indoorOutdoor;
     if (sheet.balls) out.balls = sheet.balls;
     if (sheet.eventsPlayed) out.eventsPlayed = sheet.eventsPlayed;
+    if (sheet.details) out.factSheetDetails = sheet.details;
     if (sheet.qualifyingFirstDay) out.qualifyingStartDate = asDate(sheet.qualifyingFirstDay);
     if (sheet.mainDrawFirstDay) out.mainDrawStartDate = asDate(sheet.mainDrawFirstDay);
     out.officialDetailsSource = "factSheet";

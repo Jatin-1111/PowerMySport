@@ -1,5 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+import type { FactSheetDetails } from "../services/aita/factSheetSections";
+
 /**
  * A dated instance ("edition") of a real tournament — e.g. the August 2026
  * running of the AITA Talent Series. Populated via the admin-managed data
@@ -116,6 +118,12 @@ export interface TournamentEditionDocument extends Document {
   balls?: string;
   /** The events played, as printed: "Boys 18&Under, Girls 18&Under". */
   eventsPlayed?: string;
+  /**
+   * The draws table and the organiser, venue, travel and hotel blocks of the fact
+   * sheet, as printed. Includes named individuals' contact details exactly as AITA
+   * publishes them on its own public page.
+   */
+  factSheetDetails?: FactSheetDetails;
   qualifyingStartDate?: Date;
   mainDrawStartDate?: Date;
   /**
@@ -198,6 +206,8 @@ const tournamentEditionSchema = new Schema<TournamentEditionDocument>(
     feeDoubles: { type: Number },
     dailyAllowance: { type: Number },
     surface: { type: String, trim: true },
+    // Nested and read-only from the fact sheet, so it is stored whole rather than field by field.
+    factSheetDetails: { type: Schema.Types.Mixed, default: undefined },
     mainDrawCourts: { type: Number },
     indoorOutdoor: { type: String, trim: true },
     balls: { type: String, trim: true },
