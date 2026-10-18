@@ -219,7 +219,9 @@ export const DashboardShell = ({
           <div className="shrink-0 p-6">
             <div className="rounded-2xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] p-5 text-slate-900 shadow-sm">
               <p className="text-xs uppercase tracking-wide text-slate-500">{dashboardLabel}</p>
-              <h1 className="font-title mt-2 text-2xl font-bold text-slate-900">PowerMySport</h1>
+              <h1 className="font-editorial mt-2 text-2xl font-normal text-slate-900">
+                PowerMySport
+              </h1>
               <p className="mt-1 text-sm text-slate-600">{displayName}</p>
             </div>
           </div>

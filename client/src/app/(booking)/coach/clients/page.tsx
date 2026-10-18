@@ -264,7 +264,7 @@ export default function CoachClientsPage() {
               <div className="bg-power-orange flex h-10 w-10 items-center justify-center rounded-xl">
                 <Users className="h-5 w-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
                 Clients &amp; Athletes
               </h1>
             </div>

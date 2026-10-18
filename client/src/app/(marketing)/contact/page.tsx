@@ -724,7 +724,7 @@ export default function ContactPage() {
               </span>
             </div>
 
-            <h2 className="font-title mb-5 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
+            <h2 className="font-editorial mb-5 text-3xl font-light text-white sm:text-4xl lg:text-5xl">
               We&apos;re here to help
             </h2>
 

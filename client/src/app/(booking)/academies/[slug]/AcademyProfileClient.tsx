@@ -116,7 +116,7 @@ export function AcademyProfileClient() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
         <Card className="w-full max-w-md rounded-2xl border-slate-200 bg-white/90 p-8 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">Academy not found</h1>
+          <h1 className="font-editorial text-2xl font-normal text-slate-900">Academy not found</h1>
           <p className="mt-2 text-sm text-slate-600">
             This academy profile may be unavailable or not publicly visible yet.
           </p>
@@ -158,7 +158,7 @@ export function AcademyProfileClient() {
             {coverImage ? (
               <img src={coverImage} alt={academy.name} className="h-full w-full object-cover" />
             ) : (
-              <div className="bg-linear-to-br flex h-full items-center justify-center from-slate-200 to-slate-300 text-slate-600">
+              <div className="flex h-full items-center justify-center bg-slate-200 text-slate-600">
                 No cover photo
               </div>
             )}
@@ -183,7 +183,7 @@ export function AcademyProfileClient() {
 
                 <div>
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+                    <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
                       {academy.name}
                     </h1>
                     {academy.kycVerified && academy.isApproved && (

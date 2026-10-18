@@ -350,7 +350,7 @@ export default function AcademyOnboardingContainer() {
   }
 
   return (
-    <div className="bg-linear-to-br min-h-screen from-slate-50 to-slate-100 px-4 py-8">
+    <div className="min-h-screen bg-slate-50 px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <p className="mx-auto mb-6 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs text-amber-700">
           Early access, bookings aren&apos;t open yet. Submit your details now and our team will
@@ -366,7 +366,7 @@ export default function AcademyOnboardingContainer() {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="from-power-orange to-power-orange/80 bg-linear-to-r h-full transition-all duration-500"
+              className="bg-power-orange h-full transition-all duration-500"
               style={{ width: `${(currentStep / 6) * 100}%` }}
             />
           </div>

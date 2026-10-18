@@ -239,7 +239,7 @@ export default function BookingInvoicePage() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-400">Invoice</p>
-            <h1 className="text-2xl font-bold text-slate-900">PowerMySport</h1>
+            <h1 className="font-editorial text-2xl font-normal text-slate-900">PowerMySport</h1>
             <p className="mt-2 text-sm text-slate-600">Thank you for booking with PowerMySport.</p>
           </div>
           <div className="text-sm text-slate-700">

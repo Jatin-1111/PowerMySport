@@ -173,7 +173,7 @@ export default function Step3DocumentUpload({
       <OnboardingSectionCard
         title="Upload Progress"
         subtitle="Track completion of required onboarding documents"
-        className="from-power-orange/10 border-power-orange/20 bg-linear-to-r mb-6 to-white"
+        className="bg-power-orange/10 border-power-orange/20 mb-6"
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium text-slate-700">Upload Progress</span>
@@ -183,7 +183,7 @@ export default function Step3DocumentUpload({
         </div>
         <div className="h-3 overflow-hidden rounded-full bg-slate-200">
           <div
-            className="from-power-orange bg-linear-to-r h-full to-orange-500 transition-all duration-500 ease-out"
+            className="bg-power-orange h-full transition-all duration-500 ease-out"
             style={{ width: `${uploadProgress}%` }}
           ></div>
         </div>
@@ -295,7 +295,7 @@ export default function Step3DocumentUpload({
         {/* Info Box */}
         <OnboardingSectionCard
           title="What Happens Next"
-          className="from-power-orange/10 border-power-orange/20 bg-linear-to-br mt-6 to-white"
+          className="bg-power-orange/10 border-power-orange/20 mt-6"
           contentClassName="space-y-0"
         >
           <h4 className="mb-3 flex items-center gap-2 font-semibold text-slate-900">

@@ -65,7 +65,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 shadow-sm">
-          <h1 className="text-3xl font-black text-slate-950">Product not found</h1>
+          <h1 className="font-editorial text-3xl font-light text-slate-950">Product not found</h1>
           <p className="mt-3 text-slate-600">
             This product is unavailable or the shop backend is not reachable.
           </p>
@@ -130,7 +130,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <div className="absolute right-4 top-4 z-20">
             <WishlistButton productId={product.id} className="h-12 w-12 border border-slate-200" />
           </div>
-          <div className="bg-linear-to-br aspect-square from-blue-50 via-white to-orange-50">
+          <div className="aspect-square bg-blue-50">
             {image ? (
               <img src={image} alt={product.name} className="h-full w-full object-cover" />
             ) : (
@@ -158,7 +158,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </span>
               )}
             </div>
-            <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950">
+            <h1 className="font-editorial mt-4 text-4xl font-light text-slate-950">
               {product.name}
             </h1>
             <p className="mt-4 text-base leading-7 text-slate-600">{product.description}</p>

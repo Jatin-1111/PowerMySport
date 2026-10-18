@@ -33,7 +33,7 @@ export function CheckoutEntityCard({
           {venue.images?.[0] ? (
             <img src={venue.images[0]} alt={venue.name} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+            <div className="flex h-full w-full items-center justify-center bg-slate-100">
               <MapPin size={28} className="text-slate-300" />
             </div>
           )}
@@ -72,7 +72,7 @@ export function CheckoutEntityCard({
           {img ? (
             <img src={img} alt={name} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+            <div className="flex h-full w-full items-center justify-center bg-slate-100">
               <UserIcon size={32} className="text-slate-300" />
             </div>
           )}
@@ -144,7 +144,7 @@ export function CheckoutEntityCard({
           {coverImage ? (
             <img src={coverImage} alt={academy.name} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+            <div className="flex h-full w-full items-center justify-center bg-slate-100">
               <Users size={32} className="text-slate-300" />
             </div>
           )}

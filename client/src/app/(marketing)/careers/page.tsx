@@ -66,7 +66,7 @@ export default function CareersPage() {
 
       <div className="mx-auto max-w-5xl space-y-14 px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <section aria-labelledby="work-heading">
-          <h2 id="work-heading" className="font-title text-2xl font-bold text-slate-900">
+          <h2 id="work-heading" className="font-editorial text-2xl font-normal text-slate-900">
             What the work is
           </h2>
           <ul className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -80,7 +80,10 @@ export default function CareersPage() {
         </section>
 
         <section aria-labelledby="principles-heading">
-          <h2 id="principles-heading" className="font-title text-2xl font-bold text-slate-900">
+          <h2
+            id="principles-heading"
+            className="font-editorial text-2xl font-normal text-slate-900"
+          >
             What we hold to
           </h2>
           <ol className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -99,7 +102,7 @@ export default function CareersPage() {
         </section>
 
         <section aria-labelledby="team-heading">
-          <h2 id="team-heading" className="font-title text-2xl font-bold text-slate-900">
+          <h2 id="team-heading" className="font-editorial text-2xl font-normal text-slate-900">
             Who you would work with
           </h2>
           <ul className="mt-6 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
@@ -121,7 +124,7 @@ export default function CareersPage() {
           aria-labelledby="contact-heading"
           className="rounded-lg border border-slate-200 bg-white p-6 sm:p-8"
         >
-          <h2 id="contact-heading" className="font-title text-2xl font-bold text-slate-900">
+          <h2 id="contact-heading" className="font-editorial text-2xl font-normal text-slate-900">
             Get in touch
           </h2>
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600">

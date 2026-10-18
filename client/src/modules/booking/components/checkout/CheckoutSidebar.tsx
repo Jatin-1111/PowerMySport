@@ -93,7 +93,7 @@ export function CheckoutSidebar({
         className="space-y-4"
       >
         {isZeroCommission && (
-          <div className="border-turf-green/20 from-turf-green/5 relative overflow-hidden rounded-2xl border bg-gradient-to-br via-white to-emerald-50/40 p-4">
+          <div className="border-turf-green/20 bg-turf-green/5 relative overflow-hidden rounded-2xl border p-4">
             <div className="bg-turf-green/10 absolute -right-6 -top-6 h-16 w-16 rounded-full blur-xl" />
             <div className="relative flex items-start gap-3">
               <div className="bg-turf-green/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl">
@@ -192,7 +192,7 @@ export function CheckoutSidebar({
               )}
             </div>
 
-            <div className="from-power-orange/8 mt-4 rounded-xl bg-gradient-to-r to-amber-50/60 px-4 py-3">
+            <div className="bg-power-orange/8 mt-4 rounded-xl px-4 py-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-700">Total due</span>
                 <motion.span

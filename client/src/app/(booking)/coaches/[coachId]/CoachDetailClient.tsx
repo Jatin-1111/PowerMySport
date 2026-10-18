@@ -436,7 +436,7 @@ export function CoachDetailClient() {
   if (!coach) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center">
-        <h1 className="mb-4 text-2xl font-bold">Coach not found</h1>
+        <h1 className="font-editorial mb-4 text-2xl font-normal">Coach not found</h1>
         <Link href="/booking?tab=coaches">
           <Button variant="outline">Back to Coaches</Button>
         </Link>
@@ -495,7 +495,7 @@ export function CoachDetailClient() {
                     )}
                   </div>
 
-                  <h1 className="font-title wrap-break-word mb-2 max-w-5xl text-2xl font-bold leading-tight sm:text-4xl">
+                  <h1 className="font-editorial wrap-break-word mb-2 max-w-5xl text-2xl font-light leading-tight sm:text-4xl">
                     {coachDisplayName}
                   </h1>
 
@@ -549,7 +549,7 @@ export function CoachDetailClient() {
           <div className="space-y-6 lg:col-span-2">
             {/* About */}
             <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-              <div className="from-turf-green/5 bg-linear-to-br border-b border-slate-100 to-slate-50 p-6">
+              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                   <Info size={24} className="text-turf-green" />
                   About the Coach
@@ -583,7 +583,7 @@ export function CoachDetailClient() {
 
             {/* Subscription Packages */}
             <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-              <div className="from-turf-green/5 bg-linear-to-br border-b border-slate-100 to-slate-50 p-6">
+              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
                 <h2 className="text-xl font-bold text-slate-900">Subscription Packages</h2>
                 <p className="mt-1 text-sm text-slate-600">
                   Monthly, quarterly, and yearly packages published by this coach.
@@ -706,7 +706,7 @@ export function CoachDetailClient() {
             {/* Venue Images */}
             {venueImages.length > 0 && (
               <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-                <div className="from-turf-green/5 bg-linear-to-br border-b border-slate-100 to-slate-50 p-6">
+                <div className="bg-turf-green/5 border-b border-slate-100 p-6">
                   <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                     <ImageIcon size={24} className="text-turf-green" />
                     Venue Images
@@ -733,7 +733,7 @@ export function CoachDetailClient() {
 
             {coach.serviceMode === "OWN_VENUE" && coach.ownVenueDetails && (
               <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-                <div className="from-turf-green/5 bg-linear-to-br border-b border-slate-100 to-slate-50 p-6">
+                <div className="bg-turf-green/5 border-b border-slate-100 p-6">
                   <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                     <MapPin size={24} className="text-turf-green" />
                     Venue Location
@@ -771,7 +771,7 @@ export function CoachDetailClient() {
 
             {/* Certifications */}
             <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-              <div className="from-turf-green/5 bg-linear-to-br border-b border-slate-100 to-slate-50 p-6">
+              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
                   <Award size={24} className="text-turf-green" />
                   Certification & Verification
@@ -817,7 +817,7 @@ export function CoachDetailClient() {
 
             {/* Reviews */}
             <Card className="premium-shadow bg-white/92 overflow-hidden rounded-3xl border border-slate-200/70 p-0 backdrop-blur-sm">
-              <div className="from-turf-green/5 bg-linear-to-br border-b border-slate-100 to-slate-50 p-6">
+              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
                 <h2 className="text-xl font-bold text-slate-900">Coach Reviews</h2>
                 <p className="mt-1 inline-flex items-center gap-1 text-sm text-slate-600">
                   <Star size={14} className="fill-yellow-500 text-yellow-500" />
@@ -931,7 +931,7 @@ export function CoachDetailClient() {
           {/* Booking Sidebar */}
           <div className="lg:col-span-1">
             <Card className="premium-shadow sticky top-24 overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-0 backdrop-blur-sm">
-              <div className="from-turf-green/5 bg-linear-to-br border-b border-slate-100 to-slate-50 p-6">
+              <div className="bg-turf-green/5 border-b border-slate-100 p-6">
                 <h2 className="text-xl font-bold text-slate-900">Book a Session</h2>
               </div>
               <div className="p-6">

@@ -21,7 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* ── LEFT: Image panel (desktop only) ──────────────────── */}
       <div className="hidden lg:block">
         <div className="sticky top-0 h-screen p-4">
-          <div className="bg-deep-slate relative flex h-full flex-col overflow-hidden rounded-[1.75rem]">
+          <div className="bg-ink relative flex h-full flex-col overflow-hidden rounded-[1.75rem]">
             <Image
               src={stadiumNight}
               alt="Floodlit stadium under a night sky"
@@ -35,11 +35,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {/* Scrims for text legibility */}
             <div
               aria-hidden="true"
-              className="from-deep-slate via-deep-slate/30 absolute inset-0 bg-gradient-to-t to-transparent"
+              className="from-ink via-ink/30 absolute inset-0 bg-gradient-to-t to-transparent"
             />
             <div
               aria-hidden="true"
-              className="from-deep-slate/70 absolute inset-x-0 top-0 h-40 bg-gradient-to-b to-transparent"
+              className="from-ink/70 absolute inset-x-0 top-0 h-40 bg-gradient-to-b to-transparent"
             />
 
             {/* Logo */}

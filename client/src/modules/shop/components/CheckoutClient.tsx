@@ -216,7 +216,9 @@ export function CheckoutClient() {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 shadow-sm">
-          <h1 className="text-3xl font-black text-slate-950">Checkout needs a cart</h1>
+          <h1 className="font-editorial text-3xl font-light text-slate-950">
+            Checkout needs a cart
+          </h1>
           <p className="mt-3 text-slate-600">
             Add a product first, then return here to complete the order.
           </p>
@@ -240,7 +242,7 @@ export function CheckoutClient() {
           className="rounded-2xl border border-emerald-200 bg-white p-10 shadow-sm"
         >
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
-          <h1 className="mt-4 text-3xl font-black text-slate-950">Order started</h1>
+          <h1 className="font-editorial mt-4 text-3xl font-light text-slate-950">Order started</h1>
           <p className="mx-auto mt-3 max-w-xl text-slate-600">{message}</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
@@ -268,7 +270,7 @@ export function CheckoutClient() {
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
             Secure Checkout
           </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+          <h1 className="font-editorial mt-2 text-3xl font-light text-slate-950">
             Delivery details
           </h1>
         </div>

@@ -277,7 +277,7 @@ export default function Step1VenueDetails({ onSubmit, loading }: Step1VenueDetai
   return (
     <div className="mx-auto w-full max-w-2xl rounded-lg bg-white p-6 shadow">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Add Your Venue</h1>
+        <h1 className="font-editorial text-3xl font-light text-slate-900">Add Your Venue</h1>
         <p className="mt-2 text-slate-600">Step 1 of 3: Basic Details</p>
       </div>
 

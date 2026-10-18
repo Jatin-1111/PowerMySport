@@ -11,7 +11,7 @@ export function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 py-16">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-50/60 via-white to-slate-50" />
+        <div className="bg-paper absolute inset-0" />
         <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
         <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/25 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-indigo-200/15 blur-3xl" />
@@ -28,7 +28,7 @@ export function ProblemPicker({ onSelect }: { onSelect: (id: ProblemId) => void 
             <BrainCircuit className="h-3 w-3" />
             Expert Help
           </div>
-          <h1 className="font-title mb-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="font-editorial mb-3 text-3xl font-light text-slate-900 sm:text-4xl">
             What do you need help with?
           </h1>
           <p className="mx-auto max-w-md text-base leading-relaxed text-slate-500">

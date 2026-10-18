@@ -97,10 +97,7 @@ export function NavDropdownPanel({
                 : "left-1/2 w-80 -translate-x-1/2"
             )}
           >
-            <motion.div
-              variants={accent}
-              className="from-power-orange/60 via-power-orange to-power-orange/60 h-0.5 w-full bg-gradient-to-r"
-            />
+            <motion.div variants={accent} className="bg-power-orange/60 h-0.5 w-full" />
             <div className={wide ? undefined : "py-1.5"}>{children}</div>
           </motion.div>
         </ReducedMotionContext.Provider>

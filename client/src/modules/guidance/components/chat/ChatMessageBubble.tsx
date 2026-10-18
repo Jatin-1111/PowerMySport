@@ -16,7 +16,9 @@ export function MarkdownContent({ content }: { content: string }) {
       components={{
         // Headings
         h1: ({ children }) => (
-          <h1 className="mb-1.5 mt-3 text-sm font-bold text-slate-900 first:mt-0">{children}</h1>
+          <h1 className="font-editorial mb-1.5 mt-3 text-sm font-light text-slate-900 first:mt-0">
+            {children}
+          </h1>
         ),
         h2: ({ children }) => (
           <h2 className="mb-1 mt-3 text-sm font-bold text-slate-900 first:mt-0">{children}</h2>

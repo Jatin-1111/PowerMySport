@@ -60,7 +60,7 @@ export function PageHeader({
   const compact = size === "compact";
   const centered = align === "center";
   return (
-    <header className={cn("border-b border-slate-200 bg-white", className)}>
+    <header className={cn("border-hairline bg-paper border-b", className)}>
       <div
         className={cn(
           "mx-auto px-4 sm:px-6 lg:px-8",
@@ -72,11 +72,7 @@ export function PageHeader({
         {breadcrumbs && breadcrumbs.length > 0 && (
           <Breadcrumbs items={breadcrumbs} className={cn("mb-6", centered && "justify-center")} />
         )}
-        {eyebrow && (
-          <p className="text-power-orange-solid mb-3 text-xs font-semibold uppercase tracking-[0.16em]">
-            {eyebrow}
-          </p>
-        )}
+        {eyebrow && <p className="text-ink-muted mb-4 text-sm font-medium">{eyebrow}</p>}
         {badges && (
           <div
             className={cn("mb-4 flex flex-wrap items-center gap-2", centered && "justify-center")}
@@ -86,8 +82,8 @@ export function PageHeader({
         )}
         <h1
           className={cn(
-            "font-title max-w-4xl font-bold tracking-tight text-slate-900",
-            compact ? "text-3xl sm:text-4xl" : "text-3xl leading-[1.1] sm:text-4xl lg:text-5xl",
+            "font-editorial text-ink max-w-4xl text-balance font-light",
+            compact ? "text-3xl sm:text-4xl" : "text-4xl leading-[1.08] sm:text-5xl lg:text-6xl",
             centered && "mx-auto"
           )}
         >
@@ -96,7 +92,7 @@ export function PageHeader({
         {description && (
           <p
             className={cn(
-              "mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg",
+              "text-ink-body mt-5 max-w-[60ch] text-pretty text-base leading-relaxed sm:text-lg",
               centered && "mx-auto"
             )}
           >

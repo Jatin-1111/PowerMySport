@@ -61,7 +61,7 @@ function StatCard({ title, amount, subtitle, icon, accent, trend }: StatCardProp
     <div
       className={`flex flex-col gap-3 rounded-2xl border p-5 shadow-sm transition-shadow hover:shadow-md ${
         accent
-          ? "border-orange-400 bg-gradient-to-br from-orange-500 to-orange-600 text-white"
+          ? "border-orange-400 bg-orange-500 text-white"
           : "border-slate-100 bg-white text-slate-800"
       }`}
     >
@@ -278,7 +278,7 @@ function SportEarningsList({ sports }: { sports: SportEarning[] }) {
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-700"
+                className="h-full rounded-full bg-orange-400 transition-all duration-700"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -413,7 +413,9 @@ export default function AcademyEarningsPage() {
         <SlideUp delay={0}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-800">Academy Earnings</h1>
+              <h1 className="font-editorial text-2xl font-normal text-slate-800">
+                Academy Earnings
+              </h1>
               <p className="mt-0.5 text-sm text-slate-400">
                 Your academy&apos;s revenue overview and booking history
               </p>
@@ -510,7 +512,7 @@ export default function AcademyEarningsPage() {
         {/* ── Manage Academy CTA ── */}
         <SlideUp delay={0.2}>
           <motion.div
-            className="flex flex-col items-start justify-between gap-5 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 shadow-md sm:flex-row sm:items-center sm:p-8"
+            className="bg-ink flex flex-col items-start justify-between gap-5 rounded-2xl p-6 shadow-md sm:flex-row sm:items-center sm:p-8"
             whileHover={{ scale: 1.005 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >

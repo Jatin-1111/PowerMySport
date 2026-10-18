@@ -91,7 +91,7 @@ export default function ConciergeRequestsPage() {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Concierge Requests</h1>
+        <h1 className="font-editorial text-2xl font-normal text-slate-900">Concierge Requests</h1>
         <p className="mt-1 text-sm text-slate-500">
           Track the status of your document submissions. Our team's responses will appear here.
         </p>
@@ -205,7 +205,7 @@ export default function ConciergeRequestsPage() {
 
                     {/* Completed CTA — go discover next tournaments */}
                     {request.status === "completed" && (
-                      <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                         <div className="flex items-start gap-2.5">
                           <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                           <div className="flex-1">

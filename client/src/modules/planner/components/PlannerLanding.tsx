@@ -42,7 +42,7 @@ export function PlannerLanding() {
       </ul>
 
       <div className="rounded-lg border border-slate-200 bg-white p-6">
-        <h2 className="font-title text-lg font-extrabold text-slate-900">
+        <h2 className="font-editorial text-lg font-normal text-slate-900">
           Sign in to plan a season
         </h2>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">

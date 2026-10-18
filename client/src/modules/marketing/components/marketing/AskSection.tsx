@@ -45,7 +45,7 @@ export const AskSection: React.FC = () => {
             <div className="mb-4">
               <SectionLabel label="Ask PowerMySport AI" color="orange" />
             </div>
-            <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+            <h2 className="font-editorial mb-4 text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
               Ask before you decide
             </h2>
             <p className="max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg">

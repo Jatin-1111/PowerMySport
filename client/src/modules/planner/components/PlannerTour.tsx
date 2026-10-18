@@ -99,7 +99,7 @@ export function PlannerTour({ onFinish }: { onFinish: () => void }) {
       </div>
 
       <div aria-live="polite">
-        <h2 className="font-title mt-1 text-base font-extrabold text-slate-900">{step.title}</h2>
+        <h2 className="font-editorial mt-1 text-base font-light text-slate-900">{step.title}</h2>
         <p className="mt-1 text-sm leading-relaxed text-slate-700">{step.body}</p>
       </div>
 

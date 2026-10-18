@@ -461,7 +461,7 @@ export function ResultsView({
               )}
             </div>
 
-            <h1 className="font-title text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">
+            <h1 className="font-editorial text-3xl font-light leading-tight text-slate-900 sm:text-4xl">
               {hasShortlist
                 ? `How ${name} fits the sports you're considering`
                 : `${name}'s personalised sports roadmap`}

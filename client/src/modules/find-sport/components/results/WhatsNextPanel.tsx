@@ -126,7 +126,7 @@ export function WhatsNextPanel({
   }, [dependentId]);
 
   return (
-    <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
+    <div className="bg-ink relative mb-8 overflow-hidden rounded-3xl">
       {/* Ambient glow accents */}
       <div className="bg-power-orange/[0.07] pointer-events-none absolute -right-20 -top-28 h-72 w-72 rounded-full blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-violet-500/[0.07] blur-3xl" />

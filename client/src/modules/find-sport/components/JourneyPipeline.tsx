@@ -47,7 +47,7 @@ export function JourneyPipeline({
     // One card, not a white shell wrapping a dark one. The old version spent a
     // full row plus an arrow connector restating a step the parent had just
     // finished; that now sits in the header strip.
-    <div className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 shadow-sm">
+    <div className="bg-ink mb-6 overflow-hidden rounded-2xl shadow-sm">
       {/* ── Step 1: done ── */}
       <div className="flex items-center gap-2.5 border-b border-white/[0.07] px-5 py-3 sm:px-7">
         <CheckCircle2 className="text-turf-green h-4 w-4 shrink-0" />

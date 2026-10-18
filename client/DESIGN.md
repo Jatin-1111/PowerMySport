@@ -356,9 +356,21 @@ The signature object. Warm ink (`{colors.board}`) with `{colors.board-tile}` til
 
 ## Implementation status (as of 2026-10-19, branch `client-uat`)
 
-Applied: homepage, header, footer, departures board.
+Applied everywhere in the client app, through the theme and the shared primitives rather than page by page:
 
-Not yet applied: every other marketing page, booking, dashboards, auth, shop. The header and footer are shared, so those pages already show the cream header and footer on otherwise white pages until they are migrated.
+- **Neutrals:** the whole `slate-*` scale in `globals.css` is redefined to the warm paper neutrals (50 and 100 are the deep tints, 200 is the hairline, 500 muted, 600 body, 900 ink). Every existing `slate-*` utility now resolves to them.
+- **Second accent retired:** `indigo-*` resolves to the brand orange. `deep-slate` and `ghost-white` utilities were replaced with `ink` and `paper`.
+- **Page canvas:** `--background` is paper, `--border` is the hairline, and the muted, secondary and accent surfaces are the deeper paper.
+- **Shadows:** `--shadow-xs` to `--shadow-2xl` are warm, low and diffuse. There are no black drop shadows.
+- **Primitives:** `Button` (secondary is ink, outline is an ink outline), `Card` (16px, hairline, hover goes to an ink border), `Input` (white field), `PageHeader` (paper band, serif light title, sentence-case kicker) follow the system.
+- **Gradients:** decorative gradients across the app were flattened to a solid tone (ink for dark cards, paper for page washes, the first stop's colour otherwise). Image scrims that fade to transparent or black were kept because they exist for legibility.
+- **Headings:** every `h1` with a bold grotesk title was switched to the serif at light weight (normal below 3xl), and marketing-area `h2`s the same. Dashboard section and card headings stay in the bold grotesk, as UI labels.
+
+Not done, because it needs a person looking at each screen:
+
+- Signed-in surfaces (dashboards, booking flows, expert and coach consoles, shop account) were changed through the theme and the codemods but not visually reviewed, because they need a login. Review them before release.
+- Dashboard cards still use `rounded-2xl` and `rounded-3xl` in places (16 and 24px, within the scale) and some colour-coded status chips use blue, green and amber for meaning. These are intentional.
+- Dark mode is untouched; the `.dark` variables still carry the old values.
 
 The palette is defined once, in the `@theme inline` block of `src/app/globals.css`, and used as ordinary Tailwind utilities. A colour change is one edit there.
 

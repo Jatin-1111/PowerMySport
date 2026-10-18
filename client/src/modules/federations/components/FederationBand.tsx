@@ -35,7 +35,7 @@ export async function FederationBand({
           <div className="mb-3">
             <SectionLabel label="Who runs the competitions" color="green" />
           </div>
-          <h2 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
+          <h2 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
             The bodies that govern {sportName} in India
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">

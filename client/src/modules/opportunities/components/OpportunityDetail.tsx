@@ -20,7 +20,7 @@ import { EligibilityChecklist } from "./EligibilityChecklist";
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="border-t border-slate-200 pt-8 first:border-t-0 first:pt-0">
-      <h2 className="font-title text-xl font-extrabold text-slate-900">{title}</h2>
+      <h2 className="font-editorial text-xl font-normal text-slate-900">{title}</h2>
       <div className="mt-4 text-[15px] leading-relaxed text-slate-700">{children}</div>
     </section>
   );

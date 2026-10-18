@@ -28,7 +28,7 @@ export function ProfileHeaderCard({
 
   return (
     <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm">
-      <div className="bg-linear-to-r from-slate-50 to-white px-4 py-5 sm:px-6 md:px-8">
+      <div className="bg-slate-50 px-4 py-5 sm:px-6 md:px-8">
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
             <ProfilePictureUpload

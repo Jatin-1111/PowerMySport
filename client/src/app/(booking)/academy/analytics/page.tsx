@@ -140,7 +140,7 @@ export default function AcademyAnalyticsPage() {
         <SlideUp>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900 sm:text-3xl">
+              <h1 className="font-editorial flex items-center gap-2 text-2xl font-light text-slate-900 sm:text-3xl">
                 <TrendingUp size={28} className="text-power-orange" />
                 Academy Analytics
               </h1>

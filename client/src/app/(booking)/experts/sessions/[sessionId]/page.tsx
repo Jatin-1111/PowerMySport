@@ -296,7 +296,7 @@ export default function ExpertSessionPage() {
         <SlideUp>
           <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             {/* Dark hero strip — consistent with the expert profile page */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-7 text-white sm:px-8">
+            <div className="bg-ink relative overflow-hidden px-6 py-7 text-white sm:px-8">
               <div className="bg-power-orange/20 pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full blur-3xl" />
               <div className="relative flex items-center gap-4">
                 <ExpertAvatar photoUrl={session.expert?.photoUrl} name={expertName} />
@@ -304,7 +304,7 @@ export default function ExpertSessionPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-white/60">
                     Session with
                   </p>
-                  <h1 className="font-title truncate text-xl font-bold sm:text-2xl">
+                  <h1 className="font-editorial truncate text-xl font-normal sm:text-2xl">
                     {expertName}
                   </h1>
                   <span

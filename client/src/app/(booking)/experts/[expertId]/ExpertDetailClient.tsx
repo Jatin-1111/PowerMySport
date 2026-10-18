@@ -247,7 +247,7 @@ export function ExpertDetailClient() {
   return (
     <div className="min-h-screen bg-[#F4F3F0]">
       {/* ── Full-width Hero ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
+      <div className="bg-ink relative overflow-hidden">
         <div className="bg-power-orange/15 pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full blur-[100px]" />
         <div className="pointer-events-none absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-indigo-500/10 blur-[80px]" />
         {/* Nav */}
@@ -275,7 +275,7 @@ export function ExpertDetailClient() {
               <span className="border-power-orange/30 bg-power-orange/10 text-power-orange inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
                 <Award className="h-3 w-3" /> Verified Expert
               </span>
-              <h1 className="font-title mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-5xl">
+              <h1 className="font-editorial mt-2 text-3xl font-light text-white sm:text-4xl lg:text-5xl">
                 {expert.name || "Expert"}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -397,7 +397,7 @@ export function ExpertDetailClient() {
                         className="rounded-xl border border-slate-100 bg-slate-50/60 p-4 transition-colors hover:bg-slate-50"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-xs font-bold text-slate-600">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600">
                             {(r.reviewerName || "A").charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">

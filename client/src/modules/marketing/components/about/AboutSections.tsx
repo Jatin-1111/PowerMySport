@@ -37,7 +37,7 @@ function SectionHead({
       <p className="text-power-orange-solid text-xs font-black uppercase tracking-[0.2em]">
         {eyebrow}
       </p>
-      <h2 className="font-title mt-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+      <h2 className="font-editorial mt-2.5 text-2xl font-light text-slate-900 sm:text-3xl">
         {title}
       </h2>
       {children && (

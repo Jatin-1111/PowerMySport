@@ -83,7 +83,7 @@ export const CTA: React.FC<CTAProps> = ({
                 <SectionLabel label={label} color="orange" />
               </div>
             )}
-            <h2 className="font-title mb-5 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+            <h2 className="font-editorial mb-5 text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
               {title}
             </h2>
             <p className="mx-auto mb-10 max-w-2xl text-base leading-relaxed text-slate-700 sm:text-lg">

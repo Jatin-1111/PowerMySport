@@ -54,7 +54,7 @@ function ProgrammesBrowser() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Coaching programmes</h1>
+        <h1 className="font-editorial text-2xl font-normal">Coaching programmes</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Regular classes with the same coach every week, one-to-one or in a small batch, in person
           or online.

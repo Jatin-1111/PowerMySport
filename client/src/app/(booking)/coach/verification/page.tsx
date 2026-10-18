@@ -24,7 +24,7 @@ export default function CoachVerificationPage() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">Coach Verification</p>
-            <h1 className="text-xl font-bold text-slate-900 sm:text-3xl">
+            <h1 className="font-editorial text-xl font-light text-slate-900 sm:text-3xl">
               Complete Your Verification
             </h1>
             <p className="mt-1 text-sm text-slate-600">

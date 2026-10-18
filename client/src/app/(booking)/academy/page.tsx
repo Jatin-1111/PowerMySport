@@ -31,12 +31,12 @@ const quickLinks = [
 export default function AcademyDashboardPage() {
   return (
     <main className="space-y-8">
-      <section className="rounded-3xl border border-white/70 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_55%,#fff4e5_100%)] px-6 py-8 text-white shadow-xl sm:px-8 sm:py-10">
+      <section className="bg-ink rounded-3xl border border-white/70 px-6 py-8 text-white shadow-xl sm:px-8 sm:py-10">
         <div className="max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
             <Building2 size={14} /> Academy Owner
           </div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="font-editorial text-3xl font-light sm:text-5xl">
             Manage your academy from one place.
           </h1>
           <p className="max-w-2xl text-sm text-white/80 sm:text-base">

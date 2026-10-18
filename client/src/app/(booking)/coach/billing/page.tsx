@@ -432,7 +432,7 @@ export default function CoachBillingPage() {
               <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
                 <Sparkles size={12} /> Package builder
               </span>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
+              <h1 className="font-editorial text-2xl font-light text-slate-950 sm:text-3xl lg:text-4xl">
                 Create subscription packages that feel premium and easy to buy.
               </h1>
               <p className="max-w-2xl text-xs leading-5 text-slate-600 sm:text-sm lg:text-base">

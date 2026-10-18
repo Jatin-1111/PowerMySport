@@ -48,7 +48,7 @@ function OnboardingPageSkeleton() {
 export default function PublicOnboardingPage() {
   return (
     <div className="relative min-h-screen">
-      <div className="bg-linear-to-br pointer-events-none fixed inset-0 -z-10 from-orange-50 via-white to-slate-100" />
+      <div className="bg-paper pointer-events-none fixed inset-0 -z-10" />
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="bg-power-orange/20 absolute -left-20 -top-16 h-72 w-72 rounded-full blur-3xl" />

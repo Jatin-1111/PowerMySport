@@ -222,7 +222,9 @@ export default function CoachReviewsPage() {
           transition={{ duration: 0.45 }}
           className="mb-8"
         >
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Reviews &amp; Ratings</h1>
+          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
+            Reviews &amp; Ratings
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             See what your clients are saying about your coaching.
           </p>

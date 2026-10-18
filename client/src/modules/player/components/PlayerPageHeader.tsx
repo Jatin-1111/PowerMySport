@@ -12,7 +12,9 @@ export function PlayerPageHeader({ title, subtitle, action }: PlayerPageHeaderPr
     <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/60 p-6 shadow-sm backdrop-blur-sm sm:p-8">
       <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1">
-          <h1 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">{title}</h1>
+          <h1 className="font-editorial mt-3 text-3xl font-light text-slate-900 sm:text-4xl">
+            {title}
+          </h1>
           {subtitle && (
             <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">{subtitle}</p>
           )}

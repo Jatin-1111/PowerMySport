@@ -44,9 +44,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       primary:
         "bg-power-orange-solid text-white hover:bg-orange-800 focus-visible:ring-power-orange-solid",
-      secondary: "bg-deep-slate text-white hover:bg-slate-800 focus-visible:ring-deep-slate",
+      secondary: "bg-ink text-white hover:bg-ink-hover focus-visible:ring-ink",
       outline:
-        "border-power-orange-solid text-power-orange-solid hover:bg-orange-50 focus-visible:ring-power-orange-solid",
+        "border-ink/25 text-ink hover:border-ink/40 hover:bg-paper-deep focus-visible:ring-ink",
       ghost: "text-power-orange-solid hover:bg-orange-50 focus-visible:ring-power-orange-solid",
       // The 700 steps, not the brand turf-green/error-red: white text on those
       // measures 2.3:1 and 3.8:1.

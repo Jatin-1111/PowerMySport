@@ -130,7 +130,7 @@ function BookingPageContent() {
                 Instant Booking
               </p>
               <h1
-                className="font-title font-black leading-[0.92] tracking-tight text-slate-900"
+                className="font-editorial font-light leading-[0.92] text-slate-900"
                 style={{
                   fontSize: "clamp(2.2rem, 5vw, 3.75rem)",
                   textWrap: "balance",

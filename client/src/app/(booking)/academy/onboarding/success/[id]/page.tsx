@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function AcademySubmissionSuccessPage() {
   return (
-    <main className="bg-linear-to-br flex min-h-screen items-center justify-center from-slate-50 to-slate-100 px-4 py-8">
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="space-y-6 rounded-2xl bg-white p-8 text-center shadow-lg">
           {/* Success Icon */}
@@ -22,7 +22,9 @@ export default function AcademySubmissionSuccessPage() {
 
           {/* Heading */}
           <div>
-            <h1 className="mb-2 text-3xl font-bold text-slate-900">Application Submitted!</h1>
+            <h1 className="font-editorial mb-2 text-3xl font-light text-slate-900">
+              Application Submitted!
+            </h1>
             <p className="text-slate-600">
               Your academy onboarding has been submitted for approval
             </p>

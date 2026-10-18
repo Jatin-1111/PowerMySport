@@ -50,7 +50,7 @@ export function BalanceView() {
     <div className="space-y-6">
       <h2 className="text-2xl font-black text-slate-900">PowerMySport Wallet</h2>
 
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-8 shadow-xl">
+      <div className="bg-ink relative overflow-hidden rounded-3xl p-8 shadow-xl">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#ff5722] opacity-20 blur-3xl" />
         <div className="relative z-10 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div>

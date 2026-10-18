@@ -36,7 +36,7 @@ export function Collapsible({
 
   return (
     <section data-tour={tour} className="rounded-lg border border-slate-200 bg-white">
-      <h2 className="font-title text-lg font-extrabold text-slate-900">
+      <h2 className="font-editorial text-lg font-normal text-slate-900">
         <button
           type="button"
           aria-expanded={open}

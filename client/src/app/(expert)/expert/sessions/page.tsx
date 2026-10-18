@@ -63,7 +63,9 @@ export default function ExpertSessionsPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">All Sessions</h1>
+          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
+            All Sessions
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             {loading
               ? "Loading…"

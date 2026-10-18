@@ -19,7 +19,7 @@ export function CartClient() {
     return (
       <div className="mx-auto w-full max-w-4xl px-4 py-16 text-center sm:px-6">
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 shadow-sm">
-          <h1 className="text-3xl font-black text-slate-950">Your cart is empty</h1>
+          <h1 className="font-editorial text-3xl font-light text-slate-950">Your cart is empty</h1>
           <p className="mt-3 text-slate-600">
             Add training gear to see live totals and checkout details here.
           </p>
@@ -42,7 +42,7 @@ export function CartClient() {
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
               Shopping Cart
             </p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">
+            <h1 className="font-editorial mt-2 text-3xl font-light text-slate-950">
               Review your kit
             </h1>
           </div>
@@ -67,7 +67,7 @@ export function CartClient() {
                 exit={{ opacity: 0, x: -24 }}
                 className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-[96px_1fr_auto]"
               >
-                <div className="bg-linear-to-br aspect-square overflow-hidden rounded-lg from-blue-50 to-orange-50">
+                <div className="aspect-square overflow-hidden rounded-lg bg-blue-50">
                   {item.image ? (
                     <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
                   ) : null}

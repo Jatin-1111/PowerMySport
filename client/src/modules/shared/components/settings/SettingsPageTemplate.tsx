@@ -275,7 +275,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
               <Settings size={14} />
               Account Settings
             </div>
-            <h1 className="relative z-10 mt-4 text-3xl font-bold text-slate-900 sm:text-4xl">
+            <h1 className="font-editorial relative z-10 mt-4 text-3xl font-light text-slate-900 sm:text-4xl">
               Settings
             </h1>
             <p className="relative z-10 mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
@@ -290,7 +290,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         <StaggerItem>
           <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
             <div className="flex items-center gap-4 p-6">
-              <div className="from-power-orange flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br to-orange-500 text-lg font-bold text-white shadow-md">
+              <div className="bg-power-orange flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-md">
                 {initials(user.name)}
               </div>
               <div className="min-w-0 flex-1">

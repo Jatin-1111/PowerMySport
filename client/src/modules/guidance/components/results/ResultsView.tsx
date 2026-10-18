@@ -323,7 +323,7 @@ export function ResultsView({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.07 }}
                 whileHover={{ y: -3 }}
-                className="border-power-orange/20 from-power-orange/[0.07] flex items-center gap-3 rounded-2xl border bg-gradient-to-br to-amber-50/60 p-3 transition-shadow hover:shadow-md"
+                className="border-power-orange/20 bg-power-orange/[0.07] flex items-center gap-3 rounded-2xl border p-3 transition-shadow hover:shadow-md"
               >
                 <div className="text-power-orange flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white font-bold shadow-sm">
                   #{idx + 1}

@@ -148,7 +148,7 @@ export default function VenueListerEarningsPage() {
         <SlideUp delay={0}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+              <h1 className="font-editorial text-2xl font-normal text-slate-800">
                 Earnings &amp; Financials
               </h1>
               <p className="mt-0.5 text-sm text-slate-400">Your venue revenue overview</p>
@@ -278,7 +278,7 @@ export default function VenueListerEarningsPage() {
         {/* ── Dark CTA ── */}
         <SlideUp delay={0.2}>
           <motion.div
-            className="flex flex-col items-start justify-between gap-5 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-6 shadow-md sm:flex-row sm:items-center sm:p-8"
+            className="bg-ink flex flex-col items-start justify-between gap-5 rounded-2xl p-6 shadow-md sm:flex-row sm:items-center sm:p-8"
             whileHover={{ scale: 1.005 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >

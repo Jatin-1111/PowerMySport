@@ -62,13 +62,15 @@ export default function CoachPayoutsPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* ── Page header ── */}
-      <div className="bg-linear-to-br rounded-xl border border-slate-200 from-blue-50 to-indigo-50 p-4 shadow-sm sm:p-6">
+      <div className="rounded-xl border border-slate-200 bg-blue-50 p-4 shadow-sm sm:p-6">
         <div className="flex flex-col items-start gap-4 sm:flex-row">
           <div className="bg-power-orange/15 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
             <BadgeIndianRupee size={24} className="text-power-orange" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Payout Settings</h1>
+            <h1 className="font-editorial text-xl font-normal text-slate-900 sm:text-2xl">
+              Payout Settings
+            </h1>
             <p className="mt-1 text-sm text-slate-600">
               Manage how you receive earnings from your coaching sessions. Your payout method is
               used when a booking is completed and funds are released.

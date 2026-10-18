@@ -274,7 +274,7 @@ export function AskSignedOut({ question }: { question?: string }) {
         <span className="flex h-11 w-11 items-center justify-center rounded-md bg-orange-50">
           <MessageCircle className="text-power-orange h-5 w-5" aria-hidden />
         </span>
-        <h1 className="font-title mt-4 text-2xl font-bold text-slate-900 sm:text-3xl">
+        <h1 className="font-editorial mt-4 text-2xl font-light text-slate-900 sm:text-3xl">
           Ask PowerMySport AI
         </h1>
         <p className="mt-3 text-base leading-relaxed text-slate-600">

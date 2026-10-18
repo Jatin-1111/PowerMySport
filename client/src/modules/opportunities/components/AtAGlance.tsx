@@ -21,7 +21,7 @@ export function AtAGlance({ opportunity }: { opportunity: Opportunity }) {
       aria-labelledby="at-a-glance"
       className="rounded-lg border border-slate-200 bg-white p-5 lg:sticky lg:top-24"
     >
-      <h2 id="at-a-glance" className="font-title text-lg font-extrabold text-slate-900">
+      <h2 id="at-a-glance" className="font-editorial text-lg font-normal text-slate-900">
         At a glance
       </h2>
 

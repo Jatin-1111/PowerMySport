@@ -33,13 +33,13 @@ export default function VenuePayoutsPage() {
   return (
     <div className="space-y-8">
       {/* ── Page header ── */}
-      <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-green-50 p-6 shadow-sm">
         <div className="flex items-start gap-4">
           <div className="bg-power-orange/15 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
             <BadgeIndianRupee size={24} className="text-power-orange" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Payout Settings</h1>
+            <h1 className="font-editorial text-2xl font-normal text-slate-900">Payout Settings</h1>
             <p className="mt-1 text-sm text-slate-600">
               Manage how you receive earnings from venue bookings. The payout method you set here
               applies to all your listed venues.

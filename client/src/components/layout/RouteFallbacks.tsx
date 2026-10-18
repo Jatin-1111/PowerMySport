@@ -47,7 +47,7 @@ export function RouteError({
     <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="shadow-xs max-w-md rounded-lg border border-slate-200 bg-white p-6 text-center">
         <AlertTriangle className="mx-auto h-8 w-8 text-amber-600" />
-        <h1 className="mt-3 text-lg font-bold text-slate-900">{title}</h1>
+        <h1 className="font-editorial mt-3 text-lg font-normal text-slate-900">{title}</h1>
         <p className="mt-2 text-sm text-slate-600">{description}</p>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <button

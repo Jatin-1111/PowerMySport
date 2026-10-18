@@ -18,7 +18,7 @@ export function ProfileEditPanel({
   return (
     <div
       className={cn(
-        "border-power-orange/20 ring-power-orange/10 rounded-xl border bg-gradient-to-br from-orange-50/80 to-white p-4 ring-1 sm:p-5",
+        "border-power-orange/20 ring-power-orange/10 rounded-xl border bg-orange-50/80 p-4 ring-1 sm:p-5",
         className
       )}
     >

@@ -718,7 +718,9 @@ function OnboardingFlow() {
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-4xl font-bold text-slate-900">List Your Venue</h1>
+          <h1 className="font-editorial mb-2 text-4xl font-light text-slate-900">
+            List Your Venue
+          </h1>
           <p className="text-slate-600">Complete these 5 steps to get your venue on PowerMySport</p>
           <p className="mx-auto mt-3 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
             Early access, bookings aren&apos;t open yet. Submit your details now and our team will
@@ -771,7 +773,7 @@ function OnboardingFlow() {
                           isCompleted
                             ? "bg-turf-green cursor-pointer text-white shadow-md hover:scale-105"
                             : isActive
-                              ? "from-power-orange bg-linear-to-br scale-110 to-orange-500 text-white shadow-lg"
+                              ? "bg-power-orange scale-110 text-white shadow-lg"
                               : "cursor-not-allowed bg-slate-200 text-slate-600"
                         }`}
                       >
@@ -786,7 +788,7 @@ function OnboardingFlow() {
                       <div
                         className={`mt-3 rounded-2xl border px-3 py-3 transition-all duration-300 ${
                           isActive
-                            ? "border-power-orange/25 from-power-orange/10 bg-linear-to-b to-white shadow-sm"
+                            ? "border-power-orange/25 bg-power-orange/10 shadow-sm"
                             : isCompleted
                               ? "border-emerald-200 bg-emerald-50/70"
                               : "border-slate-200 bg-slate-50/80"

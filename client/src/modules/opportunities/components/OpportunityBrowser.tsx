@@ -113,7 +113,10 @@ export function OpportunityBrowser({
         >
           <div className="mb-3 flex flex-wrap items-start justify-between gap-x-6 gap-y-1">
             <div>
-              <h2 id="find-fit-heading" className="font-title text-base font-bold text-slate-900">
+              <h2
+                id="find-fit-heading"
+                className="font-editorial text-base font-light text-slate-900"
+              >
                 Find what fits your child
               </h2>
               <p className="mt-0.5 text-sm text-slate-600">
@@ -235,7 +238,7 @@ export function OpportunityBrowser({
               <section key={section.name} aria-labelledby={`section-${section.name}`}>
                 <h2
                   id={`section-${section.name}`}
-                  className="font-title text-xl font-extrabold text-slate-900"
+                  className="font-editorial text-xl font-normal text-slate-900"
                 >
                   {section.meta!.label}
                 </h2>
@@ -265,7 +268,7 @@ export function OpportunityBrowser({
       {(flat || items.length === 0 || shown.length === 0) && (
         <aside className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5">
           <div className="max-w-xl">
-            <h2 className="font-title text-base font-bold text-slate-900">
+            <h2 className="font-editorial text-base font-light text-slate-900">
               Not listed here? Tell us what you are looking for.
             </h2>
             <p className="mt-1 text-sm text-slate-600">

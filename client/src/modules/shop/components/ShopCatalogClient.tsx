@@ -142,7 +142,7 @@ export function ShopCatalogClient({
         <motion.div
           initial={{ opacity: 0, scale: 0.98, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="relative flex flex-col items-center justify-between overflow-hidden rounded-[2rem] border border-slate-200/50 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm sm:p-10 lg:flex-row"
+          className="relative flex flex-col items-center justify-between overflow-hidden rounded-[2rem] border border-slate-200/50 bg-slate-50 p-8 shadow-sm sm:p-10 lg:flex-row"
         >
           {/* Decorative background blur */}
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#ff5722] opacity-10 blur-[100px]" />

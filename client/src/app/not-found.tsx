@@ -15,7 +15,7 @@ export default function NotFound() {
       <p className="text-power-orange relative mb-2 text-sm font-semibold uppercase tracking-[0.2em]">
         Error 404
       </p>
-      <h1 className="font-title text-deep-slate relative text-7xl font-extrabold leading-none sm:text-8xl">
+      <h1 className="font-editorial text-ink relative text-7xl font-light leading-none sm:text-8xl">
         404
       </h1>
       <h2 className="font-title relative mt-4 text-2xl font-bold text-slate-900 sm:text-3xl">

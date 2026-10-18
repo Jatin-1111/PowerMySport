@@ -320,7 +320,7 @@ export default function ExpertSessionPlayerDetailPage() {
       {/* Hero — identity + quick facts */}
       <FadeIn>
         <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
-          <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 px-6 py-8 text-white sm:px-8">
+          <div className="bg-ink relative overflow-hidden px-6 py-8 text-white sm:px-8">
             <div className="bg-power-orange/20 pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full blur-3xl" />
             <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" />
             <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/70 ring-1 ring-inset ring-white/10">
@@ -331,7 +331,7 @@ export default function ExpertSessionPlayerDetailPage() {
                 {initial}
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="font-title truncate text-2xl font-bold sm:text-3xl">
+                <h1 className="font-editorial truncate text-2xl font-light sm:text-3xl">
                   {player.name}
                 </h1>
                 {metaLine && <p className="mt-1 truncate text-sm text-white/60">{metaLine}</p>}

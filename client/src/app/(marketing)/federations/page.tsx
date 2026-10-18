@@ -126,7 +126,7 @@ export default async function FederationsIndexPage() {
               {groups.map(([slug, sportFederations]) => (
                 <div key={slug}>
                   <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
-                    <h2 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
+                    <h2 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
                       {sportName(slug)}
                     </h2>
                     {publishedSports.has(slug) && (

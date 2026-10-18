@@ -415,7 +415,7 @@ export default function VenuesTab() {
                           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+                        <div className="flex h-full w-full items-center justify-center bg-slate-100">
                           <Building2 size={44} className="text-slate-300" />
                         </div>
                       )}

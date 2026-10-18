@@ -53,7 +53,7 @@ export function EarningsStatCard({
       className={[
         "flex flex-col gap-3 rounded-2xl border p-5 shadow-sm",
         accent
-          ? "border-orange-400 bg-gradient-to-br from-orange-500 to-orange-600 text-white"
+          ? "border-orange-400 bg-orange-500 text-white"
           : "border-slate-100 bg-white text-slate-800",
       ].join(" ")}
     >
@@ -313,7 +313,7 @@ export function CategoryBreakdownList({
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-500"
+                className="h-full rounded-full bg-orange-400"
               />
             </div>
           </li>

@@ -316,7 +316,7 @@ export default async function TournamentEditionPage({
             <div className="flex items-start gap-3">
               <Clock className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
               <div className="min-w-0 flex-1">
-                <h2 className="font-title text-deep-slate text-xl font-bold">
+                <h2 className="font-editorial text-ink text-xl font-normal">
                   This event has finished
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
@@ -361,7 +361,7 @@ export default async function TournamentEditionPage({
         {/* ── Fact sheet: the thing a parent actually came for ── */}
         {factSheet ? (
           <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-            <h2 className="font-title text-deep-slate text-xl font-bold">
+            <h2 className="font-editorial text-ink text-xl font-normal">
               {finished ? "Entry details (archived)" : "Entry details"}
             </h2>
             <p className="mt-1.5 text-sm text-slate-500">
@@ -404,7 +404,7 @@ export default async function TournamentEditionPage({
             <div className="flex items-start gap-3">
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
               <div>
-                <h2 className="font-title text-deep-slate text-lg font-bold">
+                <h2 className="font-editorial text-ink text-lg font-normal">
                   No fact sheet published yet
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
@@ -429,7 +429,7 @@ export default async function TournamentEditionPage({
 
         {/* ── At a glance ── */}
         <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-          <h2 className="font-title text-deep-slate text-xl font-bold">At a glance</h2>
+          <h2 className="font-editorial text-ink text-xl font-normal">At a glance</h2>
           <dl className="mt-5 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
             {facts.map((fact) => (
               <div key={fact.label} className="flex items-start gap-3">
@@ -448,7 +448,7 @@ export default async function TournamentEditionPage({
         {/* ── Remaining documents ── */}
         {otherDocuments.length > 0 && (
           <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-            <h2 className="font-title text-deep-slate text-xl font-bold">Documents</h2>
+            <h2 className="font-editorial text-ink text-xl font-normal">Documents</h2>
             {/* Grouped by kind so the explanation is stated once, instead of
                 repeating under every row of the same type. */}
             {groupDocumentsByKind(otherDocuments).map((group) => (
@@ -497,7 +497,7 @@ export default async function TournamentEditionPage({
         {/* ── Other events nearby ── */}
         {related.length > 0 && (
           <section className="rounded-lg border border-slate-100 bg-white p-7 shadow-sm sm:p-8">
-            <h2 className="font-title text-deep-slate text-xl font-bold">
+            <h2 className="font-editorial text-ink text-xl font-normal">
               {/* The list tops up sport-wide when the city runs dry, so only
                   claim the city when every row actually is in it. */}
               {edition.city && related.every((r) => r.city === edition.city)

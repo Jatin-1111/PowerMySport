@@ -35,7 +35,7 @@ function ExpertAvatar({ expert, name }: { expert?: Expert; name: string }) {
   const initial = (name || "E").charAt(0).toUpperCase();
   if (!expert?.photoUrl || failed) {
     return (
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-base font-bold text-slate-400">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base font-bold text-slate-400">
         {initial}
       </div>
     );
@@ -103,7 +103,7 @@ export default function MyExpertSessionsPage() {
             <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-orange-700">
               Your Bookings
             </p>
-            <h1 className="font-title text-3xl font-black tracking-tight text-slate-900">
+            <h1 className="font-editorial text-3xl font-light text-slate-900">
               My expert sessions
             </h1>
             <p className="mt-2 max-w-md text-[15px] leading-relaxed text-slate-500">

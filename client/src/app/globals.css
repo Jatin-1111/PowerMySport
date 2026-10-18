@@ -20,9 +20,9 @@
   --error: var(--error-red);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --border: oklch(0.922 0 0);
+  --muted: #efe7da;
+  --muted-foreground: #6b675f;
+  --border: #e1dcd3;
   /* 8px base gives the crisp scale the theme derives below: sm 4 (chips,
      badges), md 6 (buttons, inputs), lg 8 (cards), xl 12 (modals, large
      media). Marketing pages stop at xl; 2xl and up are legacy app surfaces. */
@@ -30,17 +30,17 @@
   /* Ghost white (slate-50), not the old blue-tinted #f4f7ff: on that tint the
      site's secondary text (slate-500, muted-foreground) measured 4.42-4.44:1,
      just under AA, while on slate-50 the same text clears it. */
-  --background: var(--ghost-white);
-  --foreground: #111827;
+  --background: #f8f3ea;
+  --foreground: #1c1b1a;
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --accent: oklch(0.97 0 0);
+  --secondary: #efe7da;
+  --secondary-foreground: #1c1b1a;
+  --accent: #efe7da;
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --input: oklch(0.922 0 0);
+  --input: #d9d3c8;
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -105,10 +105,47 @@
   --color-ink: #1c1b1a;
   --color-ink-hover: #39332f;
   --color-ink-body: #4a4741;
-  --color-ink-muted: #7a766e;
+  --color-ink-muted: #6b675f;
   --color-ink-ash: #a8a5a0;
   --color-hairline: #e1dcd3;
   --color-board-tile: #2b2825;
+
+  /* The whole app's neutral scale, warmed. Every `slate-*` utility in the
+     client resolves to these, so pages inherit the paper palette without a
+     per-file edit: 200 is the hairline, 500 the muted text, 600 the body text,
+     900 the ink. */
+  --color-slate-50: #f3ede3;
+  --color-slate-100: #efe7da;
+  --color-slate-200: #e1dcd3;
+  --color-slate-300: #cfc8bc;
+  --color-slate-400: #a8a5a0;
+  --color-slate-500: #6b675f;
+  --color-slate-600: #4a4741;
+  --color-slate-700: #3a3733;
+  --color-slate-800: #2b2825;
+  --color-slate-900: #1c1b1a;
+  --color-slate-950: #12110f;
+
+  /* Indigo was a second accent; the brand has one. Same utilities, brand orange. */
+  --color-indigo-50: #fff7ed;
+  --color-indigo-100: #ffedd5;
+  --color-indigo-200: #fed7aa;
+  --color-indigo-300: #fdba74;
+  --color-indigo-400: #fb923c;
+  --color-indigo-500: #e97316;
+  --color-indigo-600: #c2410c;
+  --color-indigo-700: #9a3412;
+  --color-indigo-800: #7c2d12;
+  --color-indigo-900: #431407;
+  --color-indigo-950: #2a0d04;
+
+  /* Warm, low shadows. Black drop shadows are off the system. */
+  --shadow-xs: 0 1px 2px 0 rgb(57 34 30 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(57 34 30 / 0.05);
+  --shadow-md: 0 8px 16px -10px rgb(57 34 30 / 0.16);
+  --shadow-lg: 0 14px 28px -14px rgb(57 34 30 / 0.2);
+  --shadow-xl: 0 22px 40px -20px rgb(57 34 30 / 0.24);
+  --shadow-2xl: 0 30px 60px -24px rgb(57 34 30 / 0.28);
 
   /* Semantic Colors */
   --color-primary: var(--primary);

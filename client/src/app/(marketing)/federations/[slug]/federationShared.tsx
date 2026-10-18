@@ -116,7 +116,7 @@ export const ARCHETYPE_CALENDAR_NOTE: Record<
 export function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <h2 className="font-title text-xl font-bold leading-tight tracking-tight text-slate-900">
+      <h2 className="font-editorial text-xl font-normal leading-tight text-slate-900">
         {children}
       </h2>
       <div className="bg-power-orange mt-1.5 h-[3px] w-7 rounded-full" />

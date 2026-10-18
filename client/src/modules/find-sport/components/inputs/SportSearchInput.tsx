@@ -169,7 +169,7 @@ export function SportSearchInput({
       {/* Dropdown */}
       {open && (
         <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl">
-          <div className="from-power-orange/60 via-power-orange to-power-orange/60 h-0.5 w-full bg-gradient-to-r" />
+          <div className="bg-power-orange/60 h-0.5 w-full" />
           {suggestions.length > 0 ? (
             <ul role="listbox" className="max-h-64 overflow-y-auto py-1.5">
               {suggestions.map((s, idx) => {

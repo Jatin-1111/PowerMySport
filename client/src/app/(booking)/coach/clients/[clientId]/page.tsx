@@ -465,7 +465,7 @@ export default function ClientProfilePage() {
           className="mb-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
         >
           {/* Orange top bar accent */}
-          <div className="h-1.5 bg-gradient-to-r from-orange-400 to-orange-600" />
+          <div className="h-1.5 bg-orange-400" />
 
           <div className="p-6">
             <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
@@ -485,7 +485,9 @@ export default function ClientProfilePage() {
               {/* Name / email / sports */}
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl font-bold leading-tight text-slate-900">{client.name}</h1>
+                  <h1 className="font-editorial text-2xl font-normal leading-tight text-slate-900">
+                    {client.name}
+                  </h1>
                   <span
                     className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
                       client.isActive

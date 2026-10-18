@@ -129,7 +129,7 @@ export const ProgrammeDetailClient = () => {
   if (!offering) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-8">
-        <h1 className="text-xl font-semibold">Programme not found</h1>
+        <h1 className="font-editorial text-xl font-normal">Programme not found</h1>
         <p className="text-muted-foreground mt-2 text-sm">It may have been paused or filled up.</p>
         <Button className="mt-4" variant="outline" onClick={() => router.push("/programmes")}>
           Back to programmes
@@ -144,7 +144,7 @@ export const ProgrammeDetailClient = () => {
     <main className="mx-auto w-full max-w-2xl px-4 py-8">
       <header className="mb-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{offering.title}</h1>
+          <h1 className="font-editorial text-2xl font-normal">{offering.title}</h1>
           <DeliveryBadge
             kind={offering.deliveryKind}
             {...(offering.onlinePlatform ? { platform: offering.onlinePlatform } : {})}

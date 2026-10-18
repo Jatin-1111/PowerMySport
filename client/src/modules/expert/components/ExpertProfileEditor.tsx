@@ -204,7 +204,7 @@ export function ExpertProfileEditor({
     <div className="space-y-6 pb-24 sm:space-y-8">
       {/* Hero */}
       <Card className="overflow-hidden border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
-        <div className="bg-linear-to-r from-slate-50 to-white px-5 py-6 sm:px-8">
+        <div className="bg-slate-50 px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
               <ExpertPhotoUpload

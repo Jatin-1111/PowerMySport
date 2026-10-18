@@ -67,7 +67,7 @@ export default function CoachSchedulePage() {
           className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Schedule</h1>
+            <h1 className="font-editorial text-2xl font-normal text-slate-900">Schedule</h1>
             <p className="mt-0.5 text-sm text-slate-500">
               Manage your bookings, availability, and blocked dates
             </p>

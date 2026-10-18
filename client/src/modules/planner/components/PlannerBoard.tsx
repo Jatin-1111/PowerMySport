@@ -99,7 +99,7 @@ export function PlannerBoard({
     if (sport && !rankedSportFor([sport])) {
       return (
         <div className="rounded-lg border border-slate-200 bg-white p-6">
-          <h2 className="font-title text-lg font-extrabold text-slate-900">
+          <h2 className="font-editorial text-lg font-normal text-slate-900">
             The planner covers tennis for now
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
@@ -122,7 +122,7 @@ export function PlannerBoard({
   if (data.linkState === "no-junior-standing" || !data.standing || !data.shortlist) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-6">
-        <h2 className="font-title text-lg font-extrabold text-slate-900">
+        <h2 className="font-editorial text-lg font-normal text-slate-900">
           {dependentName} is not on a junior ranking right now
         </h2>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
@@ -165,7 +165,7 @@ export function PlannerBoard({
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
         <div>
-          <h2 className="font-title text-xl font-extrabold text-slate-900">
+          <h2 className="font-editorial text-xl font-normal text-slate-900">
             {dependentName}&apos;s season
           </h2>
           <p className="mt-0.5 text-sm text-slate-600">

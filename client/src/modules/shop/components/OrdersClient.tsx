@@ -46,7 +46,7 @@ export function OrdersClient() {
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-orange-600">
             Order History
           </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Your orders</h1>
+          <h1 className="font-editorial mt-2 text-3xl font-light text-slate-950">Your orders</h1>
         </div>
         <button
           type="button"

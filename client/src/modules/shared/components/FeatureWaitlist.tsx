@@ -78,7 +78,7 @@ export default function FeatureWaitlist({
           <Icon className="text-white" size={48} strokeWidth={1.5} />
         </motion.div>
 
-        <h1 className="mb-4 text-5xl font-extrabold tracking-tight text-slate-900 sm:text-7xl">
+        <h1 className="font-editorial mb-4 text-5xl font-light text-slate-900 sm:text-7xl">
           {title} <br className="hidden sm:block" />
           {subtitle}
         </h1>

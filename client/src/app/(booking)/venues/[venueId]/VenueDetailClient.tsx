@@ -373,7 +373,7 @@ export function VenueDetailClient() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_46%,#fff8ee_100%)]">
         <div className="max-w-md space-y-4 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">Venue not found</h1>
+          <h1 className="font-editorial text-2xl font-normal text-slate-900">Venue not found</h1>
           <p className="text-slate-600">
             The venue you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
@@ -395,7 +395,9 @@ export function VenueDetailClient() {
             <div className="relative z-10">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex-1">
-                  <h1 className="font-title mb-2 text-3xl font-bold sm:text-4xl">{venue.name}</h1>
+                  <h1 className="font-editorial mb-2 text-3xl font-light sm:text-4xl">
+                    {venue.name}
+                  </h1>
                   {venue.address && (
                     <p className="flex items-center gap-2 text-sm text-slate-700 sm:text-base">
                       <MapPin size={18} />
@@ -632,7 +634,7 @@ export function VenueDetailClient() {
                     className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                       selectedSport === sport
                         ? "bg-power-orange-solid border-power-orange-solid text-white shadow-sm"
-                        : "from-power-orange/10 to-power-orange/5 border-power-orange/20 text-power-orange hover:border-power-orange/40 bg-linear-to-br"
+                        : "bg-power-orange/10 border-power-orange/20 text-power-orange hover:border-power-orange/40"
                     }`}
                   >
                     {sport}

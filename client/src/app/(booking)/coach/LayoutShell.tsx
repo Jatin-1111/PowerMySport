@@ -237,7 +237,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center">
           <ShieldCheck className="mx-auto h-8 w-8 text-amber-600" />
-          <h1 className="mt-3 text-lg font-bold text-slate-900">
+          <h1 className="font-editorial mt-3 text-lg font-normal text-slate-900">
             We couldn&apos;t confirm your coach profile
           </h1>
           <p className="mt-2 text-sm text-slate-600">

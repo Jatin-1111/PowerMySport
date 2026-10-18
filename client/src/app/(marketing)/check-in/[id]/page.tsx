@@ -80,7 +80,9 @@ export default function CheckInPage() {
     return (
       <div className="relative flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-sm text-center">
-          <h1 className="font-title mb-2 text-xl font-bold text-slate-900">Log in to continue</h1>
+          <h1 className="font-editorial mb-2 text-xl font-normal text-slate-900">
+            Log in to continue
+          </h1>
           <p className="mb-6 text-sm text-slate-500">This check-in is tied to your account.</p>
           <Link
             href={`/login?redirect=${encodeURIComponent(`/check-in/${id}`)}`}
@@ -118,7 +120,7 @@ export default function CheckInPage() {
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
             <CheckCircle2 className="h-7 w-7 text-emerald-600" />
           </div>
-          <h1 className="font-title mb-2 text-xl font-bold text-slate-900">
+          <h1 className="font-editorial mb-2 text-xl font-normal text-slate-900">
             Thanks for letting us know
           </h1>
           <p className="mb-7 text-sm leading-relaxed text-slate-500">
@@ -163,7 +165,9 @@ export default function CheckInPage() {
           <div className="bg-power-orange/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl">
             <Sparkles className="text-power-orange h-6 w-6" />
           </div>
-          <h1 className="font-title mb-2 text-2xl font-bold text-slate-900">{checkIn?.title}</h1>
+          <h1 className="font-editorial mb-2 text-2xl font-normal text-slate-900">
+            {checkIn?.title}
+          </h1>
         </div>
 
         {checkIn && checkIn.signals.length > 0 && (

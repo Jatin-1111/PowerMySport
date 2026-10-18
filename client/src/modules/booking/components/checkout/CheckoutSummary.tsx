@@ -69,7 +69,7 @@ export function CheckoutSummary({
         </div>
 
         {/* Total */}
-        <div className="from-power-orange/8 mt-4 rounded-xl bg-gradient-to-r to-amber-50/60 px-4 py-3">
+        <div className="bg-power-orange/8 mt-4 rounded-xl px-4 py-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-slate-700">{totalLabel}</span>
             <span className="text-power-orange text-2xl font-bold">{totalValue}</span>

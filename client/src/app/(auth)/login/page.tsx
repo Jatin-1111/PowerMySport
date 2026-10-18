@@ -142,7 +142,7 @@ function LoginContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
         >
-          <h1 className="font-title text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">
+          <h1 className="font-editorial text-3xl font-light leading-tight text-slate-900 dark:text-white">
             Welcome back
           </h1>
           <p className="mt-2 text-[15px] text-slate-500 dark:text-slate-400">

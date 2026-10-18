@@ -337,7 +337,7 @@ export default function HowItWorksPage() {
             <div className="mb-5 flex justify-center">
               <SectionLabel label="What We Do Today" color="orange" />
             </div>
-            <h2 className="font-title mx-auto max-w-2xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+            <h2 className="font-editorial mx-auto max-w-2xl text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
               Roadmap, Community and{" "}
               <span className="relative inline-block">
                 Execution Support
@@ -366,7 +366,7 @@ export default function HowItWorksPage() {
             <div className="mb-5 flex justify-center">
               <SectionLabel label="What You Walk Away With" color="orange" />
             </div>
-            <h2 className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+            <h2 className="font-editorial mx-auto max-w-xl text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
               Not Vague Advice. A Real Plan.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
@@ -390,7 +390,7 @@ export default function HowItWorksPage() {
             <div className="mb-5 flex justify-center">
               <SectionLabel label="The Difference" color="orange" />
             </div>
-            <h2 className="font-title mx-auto max-w-xl text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+            <h2 className="font-editorial mx-auto max-w-xl text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
               Guesswork Out. Clarity In.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
@@ -467,7 +467,7 @@ export default function HowItWorksPage() {
             <div className="mb-5 flex justify-center">
               <SectionLabel label="Common Questions" color="slate" />
             </div>
-            <h2 className="font-title text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+            <h2 className="font-editorial text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
               Frequently Asked Questions
             </h2>
           </div>

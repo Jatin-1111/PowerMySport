@@ -29,7 +29,7 @@ export function CheckoutPageHeader({
       initial="hidden"
       animate="show"
       transition={{ delay: 0.05 }}
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 shadow-lg sm:p-8"
+      className="bg-ink relative overflow-hidden rounded-2xl p-6 shadow-lg sm:p-8"
     >
       <div className="bg-power-orange/20 pointer-events-none absolute -right-12 -top-10 h-48 w-48 rounded-full blur-3xl" />
       <div className="bg-turf-green/15 pointer-events-none absolute -bottom-8 left-1/3 h-32 w-32 rounded-full blur-2xl" />
@@ -47,7 +47,7 @@ export function CheckoutPageHeader({
               </span>
             )}
           </div>
-          <h1 className="font-title mt-3 text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="font-editorial mt-3 text-2xl font-light text-white sm:text-3xl">
             {type === "coach"
               ? "Book your coach session"
               : type === "academy"

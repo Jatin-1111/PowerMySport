@@ -29,7 +29,7 @@ export function PayoutBanner({
   if (payoutMethod !== null || dismissed) return null;
 
   return (
-    <div className="animate-in fade-in slide-in-from-top-2 relative overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm duration-500">
+    <div className="animate-in fade-in slide-in-from-top-2 relative overflow-hidden rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-sm duration-500">
       <div className="flex items-start gap-4">
         {/* Icon */}
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100">

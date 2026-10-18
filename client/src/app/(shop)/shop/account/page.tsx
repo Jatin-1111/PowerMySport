@@ -45,7 +45,7 @@ export default function AccountPage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-black tracking-tight text-slate-900">My Account</h1>
+        <h1 className="font-editorial text-3xl font-light text-slate-900">My Account</h1>
         <p className="mt-2 text-slate-500">Manage your orders, balance, and personal details.</p>
       </div>
 

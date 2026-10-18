@@ -42,7 +42,7 @@ export default function SavedPage() {
                 <Bookmark size={18} />
               </span>
               <div>
-                <h1 className="font-title text-2xl font-semibold text-slate-900">
+                <h1 className="font-editorial text-2xl font-normal text-slate-900">
                   Saved & Followed
                 </h1>
                 <p className="text-sm text-slate-600">

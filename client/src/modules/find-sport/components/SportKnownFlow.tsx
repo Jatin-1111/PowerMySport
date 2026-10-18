@@ -489,7 +489,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
     <div className="relative min-h-screen">
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 via-white to-slate-50" />
+        <div className="bg-paper absolute inset-0" />
         <div className="bg-power-orange/8 absolute -left-32 -top-10 h-[28rem] w-[28rem] rounded-full blur-3xl" />
         <div className="absolute right-[-6rem] top-40 h-80 w-80 rounded-full bg-amber-200/20 blur-3xl" />
       </div>
@@ -704,7 +704,7 @@ function NavigateResultsScreen({
           <div className="bg-power-orange/10 mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl">
             <CheckCircle2 className="text-power-orange h-7 w-7" />
           </div>
-          <h1 className="font-title mb-2 text-2xl font-bold text-slate-900">
+          <h1 className="font-editorial mb-2 text-2xl font-normal text-slate-900">
             {form.childName ? `${form.childName}'s profile is ready` : "Profile ready"}
           </h1>
           <p className="text-sm text-slate-500">

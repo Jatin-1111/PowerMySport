@@ -193,7 +193,9 @@ export function NotificationsPageTemplate({ backUrl = "/settings" }: { backUrl?:
     return (
       <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">Notification Preferences</h1>
+          <h1 className="font-editorial text-3xl font-light text-slate-900">
+            Notification Preferences
+          </h1>
           <p className="mt-2 text-slate-600">Loading preferences...</p>
         </div>
       </div>
@@ -208,7 +210,9 @@ export function NotificationsPageTemplate({ backUrl = "/settings" }: { backUrl?:
           <Bell size={14} />
           Notification Settings
         </div>
-        <h1 className="mt-4 text-3xl font-bold text-slate-900">Notification Preferences</h1>
+        <h1 className="font-editorial mt-4 text-3xl font-light text-slate-900">
+          Notification Preferences
+        </h1>
         <p className="mt-2 text-slate-600">
           Choose how you want to receive notifications for different types of activity.
         </p>

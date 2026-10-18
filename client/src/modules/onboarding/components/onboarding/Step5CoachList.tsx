@@ -208,7 +208,9 @@ export default function Step5CoachList({ onFinalize, loading, venueId }: Step5Co
       <div className="space-y-6 p-6 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">Add In-House Coaches</h1>
+          <h1 className="font-editorial text-3xl font-light text-slate-900">
+            Add In-House Coaches
+          </h1>
           <p className="mt-2 text-slate-600">Step 5 of 5: List your internal coaches (optional)</p>
         </div>
 

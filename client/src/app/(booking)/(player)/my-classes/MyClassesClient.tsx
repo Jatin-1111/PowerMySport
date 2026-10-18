@@ -62,7 +62,7 @@ export const MyClassesClient = () => {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">My classes</h1>
+        <h1 className="font-editorial text-2xl font-normal">My classes</h1>
       </header>
 
       <section className="mb-8" aria-labelledby="next-heading">

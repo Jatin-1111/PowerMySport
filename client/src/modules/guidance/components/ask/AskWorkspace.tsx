@@ -173,7 +173,7 @@ export function AskWorkspace() {
                   <MessageCircle className="text-power-orange h-[18px] w-[18px]" aria-hidden />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <h1 className="truncate text-base font-bold leading-tight text-slate-900">
+                  <h1 className="font-editorial truncate text-base font-normal leading-tight text-slate-900">
                     PowerMySport AI
                   </h1>
                   <p className="truncate text-xs text-slate-500">

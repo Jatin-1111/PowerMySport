@@ -183,7 +183,7 @@ export function OrderDetailClient({ orderId }: { orderId: string }) {
 
       <div className="mt-6 flex flex-col justify-between gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-950">
+          <h1 className="font-editorial text-3xl font-light text-slate-950">
             Order #{order.orderNumber}
           </h1>
           <p className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-500">

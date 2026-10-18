@@ -212,7 +212,7 @@ export function WizardShell() {
 
                     {/* Headline */}
                     <div>
-                      <h1 className="font-title mb-3 text-2xl font-bold leading-tight text-white xl:text-3xl">
+                      <h1 className="font-editorial mb-3 text-2xl font-normal leading-tight text-white xl:text-3xl">
                         Find the right sport
                         <br />
                         for your child.

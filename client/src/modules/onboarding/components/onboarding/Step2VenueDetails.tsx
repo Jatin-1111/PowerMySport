@@ -374,7 +374,9 @@ export default function Step2VenueDetails({
   return (
     <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
-        <h1 className="mb-2 text-3xl font-bold text-slate-900">Tell us about your venue</h1>
+        <h1 className="font-editorial mb-2 text-3xl font-light text-slate-900">
+          Tell us about your venue
+        </h1>
         <p className="text-slate-600">Step 2 of 4: Venue Details</p>
       </div>
 

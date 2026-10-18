@@ -8,7 +8,7 @@ interface PaymentBreakdownProps {
 export default function PaymentBreakdown({ payments, totalAmount }: PaymentBreakdownProps) {
   return (
     <div className="bg-card border-border rounded-lg border p-6">
-      <h3 className="text-deep-slate mb-4 text-lg font-semibold">Payment Breakdown</h3>
+      <h3 className="text-ink mb-4 text-lg font-semibold">Payment Breakdown</h3>
 
       <div className="space-y-3">
         {payments.map((payment, index) => (
@@ -37,8 +37,8 @@ export default function PaymentBreakdown({ payments, totalAmount }: PaymentBreak
           </div>
         ))}
 
-        <div className="border-deep-slate flex items-center justify-between border-t-2 pt-3">
-          <p className="text-deep-slate text-lg font-bold">Total</p>
+        <div className="border-ink flex items-center justify-between border-t-2 pt-3">
+          <p className="text-ink text-lg font-bold">Total</p>
           <p className="text-power-orange text-xl font-bold">₹{totalAmount}</p>
         </div>
       </div>

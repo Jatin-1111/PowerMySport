@@ -28,7 +28,7 @@ function ExpertAvatar({ expert, className }: { expert: Expert; className: string
     return (
       <div
         className={cn(
-          "flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-5xl font-bold text-slate-300",
+          "flex items-center justify-center bg-slate-100 text-5xl font-bold text-slate-300",
           className
         )}
       >

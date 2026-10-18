@@ -79,7 +79,7 @@ export default async function TournamentsPage() {
               <div>
                 <h2
                   id="featured-heading"
-                  className="font-title text-xl font-extrabold text-slate-900"
+                  className="font-editorial text-xl font-normal text-slate-900"
                 >
                   Coming up in {featuredLabel.toLowerCase()}
                 </h2>
@@ -143,7 +143,7 @@ export default async function TournamentsPage() {
             <section aria-labelledby="other-sports-heading">
               <h2
                 id="other-sports-heading"
-                className="font-title mb-4 text-xl font-extrabold text-slate-900"
+                className="font-editorial mb-4 text-xl font-normal text-slate-900"
               >
                 Other sports
               </h2>

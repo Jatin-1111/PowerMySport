@@ -249,7 +249,7 @@ export const FeaturesShowcase: React.FC<FeaturesShowcaseProps> = ({
               </div>
             )}
             {title && (
-              <h2 className="font-title mb-4 text-3xl font-bold text-slate-900 sm:text-4xl lg:text-5xl">
+              <h2 className="font-editorial mb-4 text-3xl font-light text-slate-900 sm:text-4xl lg:text-5xl">
                 {title}
               </h2>
             )}

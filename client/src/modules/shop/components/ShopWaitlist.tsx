@@ -51,7 +51,7 @@ export default function ShopWaitlist() {
           <ShoppingBag className="text-white" size={48} strokeWidth={1.5} />
         </motion.div>
 
-        <h1 className="mb-4 text-5xl font-extrabold tracking-tight text-slate-900 sm:text-7xl">
+        <h1 className="font-editorial mb-4 text-5xl font-light text-slate-900 sm:text-7xl">
           Gear Up. <br className="hidden sm:block" />
           <span className="from-power-orange bg-gradient-to-r to-amber-500 bg-clip-text text-transparent">
             Coming Soon.

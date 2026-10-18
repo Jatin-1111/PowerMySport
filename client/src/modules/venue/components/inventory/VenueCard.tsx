@@ -92,7 +92,7 @@ export function VenueCard({
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-slate-100 to-slate-200">
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-100">
             <Building2 className="h-10 w-10 text-slate-300" />
             <span className="text-xs font-medium text-slate-400">No photos yet</span>
           </div>

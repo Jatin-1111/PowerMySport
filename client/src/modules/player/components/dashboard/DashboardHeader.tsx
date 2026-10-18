@@ -65,7 +65,9 @@ export function DashboardHeader() {
 
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Hi, {name}</h1>
+              <h1 className="font-editorial text-xl font-normal text-slate-900 sm:text-2xl">
+                Hi, {name}
+              </h1>
               <Badge className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50">
                 {isParent ? "Parent" : "Player"}
               </Badge>

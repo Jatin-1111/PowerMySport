@@ -36,7 +36,7 @@ export function LinkRankingPrompt({
         <div className="flex items-start gap-3">
           <Link2 className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" aria-hidden />
           <div>
-            <h2 className="font-title text-lg font-extrabold text-slate-900">
+            <h2 className="font-editorial text-lg font-normal text-slate-900">
               Link {dependentName}&apos;s AITA ranking
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
