@@ -69,6 +69,7 @@ const details: FactSheetDetails = {
     website: "www.example-academy.test",
   },
   travel: { airport: "Example International Airport", trainStation: "Example Junction" },
+  additional: { meeting: null, notes: ["Example Academy Room Rates", "Double: ₹3,400"] },
   hotel: {
     name: "Example Tennis Academy",
     distanceFromVenue: "Inside the venue",
@@ -118,6 +119,13 @@ describe("FactSheetSections", () => {
     const email = within(organisers).getByText("director@example.test");
     expect(email.getAttribute("href")).toBe("mailto:director@example.test");
     expect(within(organisers).getByText("9000000002").getAttribute("href")).toBe("tel:9000000002");
+  });
+
+  it("shows the organiser's notes as written, under their own heading", () => {
+    render(<FactSheetSections edition={edition} />);
+    const notes = screen.getByRole("region", { name: "Notes from the organiser" });
+    expect(within(notes).getByText("Example Academy Room Rates")).toBeTruthy();
+    expect(within(notes).getByText("Double: ₹3,400")).toBeTruthy();
   });
 
   it("renders nothing for a record without the blocks", () => {

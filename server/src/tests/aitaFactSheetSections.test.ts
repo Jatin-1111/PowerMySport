@@ -6,7 +6,11 @@ import {
   parseDraws,
   parseFactSheetDetails,
 } from "../shared/services/aita/factSheetSections";
-import { FACT_SHEET_SECTIONS, FACT_SHEET_WITHOUT_SECTIONS } from "./fixtures/aitaFactSheetSections";
+import {
+  FACT_SHEET_BLANK_ADDITIONAL,
+  FACT_SHEET_SECTIONS,
+  FACT_SHEET_WITHOUT_SECTIONS,
+} from "./fixtures/aitaFactSheetSections";
 
 describe("fact sheet draws table", () => {
   const draws = parseDraws(FACT_SHEET_SECTIONS);
@@ -82,5 +86,53 @@ describe("fact sheet blocks", () => {
     assert.equal(none.hotel, null);
     assert.equal(hasFactSheetDetails(none), false);
     assert.equal(hasFactSheetDetails(d), true);
+  });
+});
+
+describe("the organiser's additional notes", () => {
+  it("keeps the organiser's own lines, in order, and no meeting when none is given", () => {
+    const d = parseFactSheetDetails(FACT_SHEET_SECTIONS);
+    assert.equal(d.additional?.meeting, null);
+    assert.deepEqual(d.additional?.notes.slice(0, 2), [
+      "Example Academy Room Rates",
+      "Room Type (Non-AC)",
+    ]);
+    assert.ok(d.additional?.notes.includes("Double: ₹3,400"));
+    assert.ok(d.additional?.notes.includes("Double: ₹4,400"));
+  });
+
+  it("stops at the page's login links and does not take them as notes", () => {
+    const d = parseFactSheetDetails(FACT_SHEET_SECTIONS);
+    assert.equal(
+      d.additional?.notes.some((line) => /Player Login|Referee Portal/.test(line)),
+      false
+    );
+  });
+
+  it("is null when the organiser left the block blank", () => {
+    assert.equal(parseFactSheetDetails(FACT_SHEET_BLANK_ADDITIONAL).additional, null);
+    assert.equal(parseFactSheetDetails(FACT_SHEET_WITHOUT_SECTIONS).additional, null);
+  });
+
+  it("keeps a meeting time when one is printed", () => {
+    const withMeeting = FACT_SHEET_BLANK_ADDITIONAL.replace(
+      "Meeting Date &amp; Time :-",
+      "Meeting Date &amp; Time : 23-10-2026 19:00"
+    );
+    assert.equal(parseFactSheetDetails(withMeeting).additional?.meeting, "23-10-2026 19:00");
+  });
+
+  it("ignores the comments and loading messages the page keeps after the notes", () => {
+    const noisy = `
+<!-- <i class="fas fa-icon ms-1"></i> Font Awesome fontawesome.com -->
+<h5>Additional Tournament Information</h5>
+<p>Meeting Date &amp; Time :-</p>
+<p>Tournament Information:-</p>
+<p>Bring your own balls</p>
+<div class="modal">Pulling out the requested data! Please give us a moment!</div>
+<div>Loading...</div>
+<!-- begin ============================-->
+`;
+    assert.deepEqual(parseFactSheetDetails(noisy).additional?.notes, ["Bring your own balls"]);
   });
 });

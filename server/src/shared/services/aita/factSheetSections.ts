@@ -55,6 +55,14 @@ export interface Hotel {
   breakfastIncluded: boolean | null;
 }
 
+/** What the organiser typed under "Additional Tournament Information", kept as written. */
+export interface AdditionalInfo {
+  /** The meeting date and time, when one is given. */
+  meeting: string | null;
+  /** The organiser's own lines, in order: room rates, rules, how to reach the venue. */
+  notes: string[];
+}
+
 export interface FactSheetDetails {
   draws: DrawRow[];
   organisation: {
@@ -71,6 +79,7 @@ export interface FactSheetDetails {
   venue: Place | null;
   travel: { airport: string | null; trainStation: string | null } | null;
   hotel: Hotel | null;
+  additional: AdditionalInfo | null;
 }
 
 // ─── Reading the page ─────────────────────────────────────────────────────────
@@ -94,6 +103,8 @@ function textOf(html: string): string {
     html
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
+      // Comments can hold a ">" (an icon tag quoted in one), which would end the tag early.
+      .replace(/<!--[\s\S]*?-->/g, "")
       .replace(/<[^>]+>/g, "\n")
   )
     .replace(/[ \t ]+/g, " ")
@@ -206,7 +217,9 @@ const HEADINGS = [
   "Tournament Travel",
   "Event Details",
   "Official Hotel Information",
+  "Additional Tournament Information",
   "Entry Opens",
+  "Player Login",
 ];
 
 function block(text: string, heading: string): string | null {
@@ -238,6 +251,48 @@ function place(section: string, labels: { contact: string; phone: string }): Pla
   };
 }
 
+const MAX_NOTE_LINES = 60;
+const MAX_NOTE_CHARS = 400;
+
+/**
+ * The free-text block at the foot of the sheet. A label with nothing after it
+ * ("Meeting Date & Time :-") is empty, and a block with no meeting and no notes is
+ * null, so a sheet the organiser left blank adds nothing.
+ */
+/**
+ * Where the organiser's text ends in the page's HTML: the loading messages the page
+ * keeps in its markup for its own scripts follow it, and are not part of the sheet.
+ */
+const PAGE_CHROME =
+  /^(?:Pulling out the requested data|Loading\.\.\.|Player Login|Referee Portal)/i;
+
+function parseAdditional(section: string | null): AdditionalInfo | null {
+  if (!section) return null;
+  const all = section
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const end = all.findIndex((line) => PAGE_CHROME.test(line));
+  const lines = end === -1 ? all : all.slice(0, end);
+
+  let meeting: string | null = null;
+  const notes: string[] = [];
+  for (const line of lines) {
+    const label = /^(Meeting Date (?:&|and) Time|Tournament Information)\s*:?-?\s*(.*)$/i.exec(
+      line
+    );
+    if (label) {
+      const rest = (label[2] ?? "").replace(/^[-:\s]+/, "").trim();
+      if (/^Meeting/i.test(label[1]!)) meeting = rest || null;
+      else if (rest) notes.push(rest.slice(0, MAX_NOTE_CHARS));
+      continue;
+    }
+    notes.push(line.slice(0, MAX_NOTE_CHARS));
+  }
+  const kept = notes.slice(0, MAX_NOTE_LINES);
+  return meeting || kept.length > 0 ? { meeting, notes: kept } : null;
+}
+
 export function parseFactSheetDetails(html: string): FactSheetDetails {
   const text = textOf(html);
 
@@ -248,6 +303,7 @@ export function parseFactSheetDetails(html: string): FactSheetDetails {
   const venue = block(text, "VENUE INFORMATION");
   const travel = block(text, "Tournament Travel");
   const hotel = block(text, "Official Hotel Information");
+  const additional = block(text, "Additional Tournament Information");
 
   const price = hotel
     ? /Doubles Room Price\s*:?\s*([\d,.]+)\s*INR\s*(?:\(([^)]*)\))?/i.exec(hotel)
@@ -282,6 +338,7 @@ export function parseFactSheetDetails(html: string): FactSheetDetails {
     travel: travel
       ? { airport: field(travel, "Airport"), trainStation: field(travel, "Train station") }
       : null,
+    additional: parseAdditional(additional),
     hotel: hotel
       ? {
           name: field(hotel, "Hotel Name"),
@@ -314,6 +371,7 @@ export function hasFactSheetDetails(details: FactSheetDetails): boolean {
       details.venue,
       details.travel,
       details.hotel,
+      details.additional,
     ].some(Boolean)
   );
 }

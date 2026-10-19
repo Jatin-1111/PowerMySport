@@ -23,7 +23,8 @@ export function hasFactSheetSections(edition: TournamentEdition): boolean {
       d.academy ||
       d.venue ||
       d.travel ||
-      d.hotel)
+      d.hotel ||
+      d.additional)
   );
 }
 
@@ -303,7 +304,33 @@ function Organisers({ details }: { details: FactSheetDetails }) {
   );
 }
 
-/** The fact sheet's draws, venue and stay, and organiser sections, for one tournament. */
+// ─── The organiser's own notes ────────────────────────────────────────────────
+
+function Notes({ details }: { details: FactSheetDetails }) {
+  const additional = details.additional;
+  if (!additional) return null;
+  return (
+    <Panel
+      id="organiser-notes"
+      title="Notes from the organiser"
+      lead="Written by the organiser on the fact sheet, shown as written."
+    >
+      {additional.meeting && (
+        <p className="text-ink mb-4">
+          <span className="text-ink-muted text-sm">Meeting: </span>
+          {additional.meeting}
+        </p>
+      )}
+      <ul className="text-ink-body max-w-prose space-y-1.5 leading-relaxed">
+        {additional.notes.map((line, index) => (
+          <li key={index}>{line}</li>
+        ))}
+      </ul>
+    </Panel>
+  );
+}
+
+/** The fact sheet's draws, venue and stay, organiser sections and notes, for one tournament. */
 export function FactSheetSections({ edition }: { edition: TournamentEdition }) {
   const details = edition.factSheetDetails;
   if (!details) return null;
@@ -312,6 +339,7 @@ export function FactSheetSections({ edition }: { edition: TournamentEdition }) {
       {details.draws.length > 0 && <Draws draws={details.draws} />}
       <VenueAndStay details={details} />
       <Organisers details={details} />
+      <Notes details={details} />
     </>
   );
 }

@@ -72,6 +72,23 @@ export const FACT_SHEET_SECTIONS = `
   <p><strong><strong>Breakfast Included </strong>YES</strong></p>
 </div>
 <div><span>Entry Opens</span><span>11 Aug 2026</span></div>
+<div class="card"><h5>Additional Tournament Information</h5>
+  <p>Meeting Date &amp; Time :-</p>
+  <p>Tournament Information:-</p>
+  <p>Example Academy Room Rates</p>
+  <p>Room Type (Non-AC)<br>Single: ₹2,800<br>Double: ₹3,400</p>
+  <p>Room Type (AC)<br>Double: ₹4,400</p>
+</div>
+<div><a>Player Login</a><a>Referee Portal</a></div>
+`;
+
+/** The same sheet where the organiser left the additional block empty. */
+export const FACT_SHEET_BLANK_ADDITIONAL = `
+<div class="card"><h5>Additional Tournament Information</h5>
+  <p>Meeting Date &amp; Time :-</p>
+  <p>Tournament Information:-</p>
+</div>
+<div><a>Player Login</a></div>
 `;
 
 /** A sheet that carries none of those blocks. */

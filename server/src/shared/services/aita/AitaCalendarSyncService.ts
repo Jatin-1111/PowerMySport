@@ -25,19 +25,12 @@ import {
  * Anything is written only when `apply` is true. A month page that cannot be read
  * fails the whole sweep before any decision is made: a partial picture of the
  * calendar is exactly the one in which a missing month looks like cancelled events.
- * It refuses to write when the database has too little room left, because past the
- * quota the cluster stops accepting writes for every collection, bookings included.
  */
 
 /** Mongoose bundles its own driver, so its `Db` type is the one a live connection returns. */
 type Db = mongo.Db;
 
 const COLLECTION = "tournamenteditions";
-
-/** The cluster's logical limit on the free tier. */
-const QUOTA_BYTES = 512 * 1024 * 1024;
-/** A sweep needs well under a megabyte; this is a margin, not an estimate. */
-const MIN_HEADROOM_BYTES = 4 * 1024 * 1024;
 
 export interface SyncOptions {
   apply: boolean;
@@ -60,8 +53,6 @@ export interface SyncReport {
   sheetsRead: number;
   sheetFailures: string[];
   written: { updated: number; created: number; cancelled: number; failed: string[] };
-  /** Room left under the quota, read only when writing. */
-  headroomBytes: number | null;
 }
 
 export async function syncAitaCalendar(
@@ -170,7 +161,6 @@ export async function syncAitaCalendar(
     sheetsRead: sheets.size,
     sheetFailures,
     written: { updated: 0, created: 0, cancelled: 0, failed: [] },
-    headroomBytes: null,
   };
   if (!options.apply) return report;
 
@@ -178,15 +168,6 @@ export async function syncAitaCalendar(
   if (retirements.refused) {
     throw new Error(`Calendar sweep refused, nothing written: ${retirements.refused}`);
   }
-  const stats = await deps.db.stats();
-  report.headroomBytes = QUOTA_BYTES - (stats.dataSize + stats.indexSize);
-  if (report.headroomBytes < MIN_HEADROOM_BYTES) {
-    throw new Error(
-      `Calendar sweep refused, nothing written: ${(report.headroomBytes / 1048576).toFixed(1)} MiB left of the ` +
-        "512 MiB quota, and past it every write on the cluster fails"
-    );
-  }
-
   const touched = [...plan.updates.map((u) => u.id), ...retirements.cancel.map((s) => s._id)];
   if (options.backup && touched.length > 0) {
     const before = await col.find({ _id: { $in: touched as never[] } }).toArray();

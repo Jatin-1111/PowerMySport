@@ -43,6 +43,12 @@ export interface FactSheetHotel {
   breakfastIncluded: boolean | null;
 }
 
+/** What the organiser typed under "Additional Tournament Information", kept as written. */
+export interface AdditionalInfo {
+  meeting: string | null;
+  notes: string[];
+}
+
 export interface FactSheetDetails {
   draws: DrawRow[];
   organisation: {
@@ -59,4 +65,5 @@ export interface FactSheetDetails {
   venue: FactSheetPlace | null;
   travel: { airport: string | null; trainStation: string | null } | null;
   hotel: FactSheetHotel | null;
+  additional?: AdditionalInfo | null;
 }
