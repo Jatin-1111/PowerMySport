@@ -83,7 +83,7 @@ export function PathwayStatsBanner() {
 
 export function PathwayHelpSection() {
   return (
-    <section className="relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
+    <section className="bg-paper-deep relative overflow-hidden py-12 sm:py-16 md:py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           variants={orchestrator}

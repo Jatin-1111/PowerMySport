@@ -210,7 +210,7 @@ export default async function PathwaysIndexPage() {
           answers it, so scanning for your own worry and reading the answer is a
           single click rather than a sport, a stage and a section. */}
       {questions.length > 0 && (
-        <section className="reveal-on-scroll border-y border-white/60 bg-white/50 py-16 sm:py-20">
+        <section className="reveal-on-scroll bg-paper-deep py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <SectionHead
               eyebrow="Straight to the answer"
@@ -302,7 +302,7 @@ export default async function PathwaysIndexPage() {
           naming what it actually does. This replaces the generic stats banner
           and the "PowerMySport helps you grow faster" pair, which between them
           asked for a long scroll and offered no specific action. */}
-      <section className="reveal-on-scroll relative overflow-hidden border-y border-white/60 bg-white/50 py-16 sm:py-20">
+      <section className="reveal-on-scroll bg-paper-deep relative overflow-hidden py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHead
             eyebrow="If reading isn't enough"

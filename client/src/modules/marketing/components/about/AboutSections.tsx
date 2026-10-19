@@ -34,9 +34,7 @@ function SectionHead({
   const centered = align === "center";
   return (
     <div className={centered ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <p className="text-power-orange-solid text-xs font-black uppercase tracking-[0.2em]">
-        {eyebrow}
-      </p>
+      <p className="text-ink-muted text-sm font-medium">{eyebrow}</p>
       <h2 className="font-editorial mt-2.5 text-2xl font-light text-slate-900 sm:text-3xl">
         {title}
       </h2>
@@ -142,7 +140,7 @@ export function LiveToday({ sportNames, federationCount }: LiveTodayProps) {
   };
 
   return (
-    <section className="reveal-on-scroll border-y border-white/60 bg-white/50 py-16 sm:py-20">
+    <section className="reveal-on-scroll bg-paper-deep py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <SectionHead eyebrow="Live today" title="What you can use right now">
           We would rather ship one thing that works than six that almost do. All of this is free.
@@ -204,7 +202,7 @@ export function Principles() {
 /** Pre-empts the "what's the catch" question the free product invites. */
 export function WhyItsFree() {
   return (
-    <section className="reveal-on-scroll border-y border-white/60 bg-white/50 py-16 sm:py-20">
+    <section className="reveal-on-scroll bg-paper-deep py-16 sm:py-20">
       <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
         <SectionHead eyebrow="The obvious question" title="So what's the catch?">
           There isn&apos;t one, and this is the honest accounting.
@@ -275,7 +273,7 @@ export function ChildSafety() {
 /** The team, described honestly rather than aspirationally. */
 export function WhoWeAre() {
   return (
-    <section className="reveal-on-scroll border-y border-white/60 bg-white/50 py-16 sm:py-20">
+    <section className="reveal-on-scroll bg-paper-deep py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <SectionHead eyebrow="Who's building this" title="A small team, building in the open">
           Three engineers in {ORGANIZATION.addressLocality}, {ORGANIZATION.addressRegion}, who got
@@ -291,9 +289,7 @@ export function WhoWeAre() {
               className={`flex h-full flex-col gap-1.5 p-6 text-center ${SURFACE}`}
             >
               <h3 className="text-base font-bold text-slate-900">{member.name}</h3>
-              <p className="text-power-orange-solid text-xs font-semibold uppercase tracking-wider">
-                {member.role}
-              </p>
+              <p className="text-ink-muted text-sm font-medium">{member.role}</p>
               <p className="text-sm leading-relaxed text-slate-600">{member.desc}</p>
             </li>
           ))}
@@ -337,9 +333,7 @@ export function WhatsNext() {
               key={phase.when}
               className={`flex flex-col gap-1.5 p-5 sm:flex-row sm:items-baseline sm:gap-6 ${SURFACE}`}
             >
-              <span className="text-power-orange-solid w-24 shrink-0 text-xs font-black uppercase tracking-[0.2em]">
-                {phase.when}
-              </span>
+              <span className="text-ink-muted w-24 shrink-0 text-sm font-medium">{phase.when}</span>
               <span className="text-[15px] leading-relaxed text-slate-700">{phase.what}</span>
             </li>
           ))}

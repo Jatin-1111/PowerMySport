@@ -358,7 +358,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* ── What you walk away with ── */}
-      <section className="relative overflow-hidden bg-slate-50 py-20 sm:py-24 lg:py-32">
+      <section className="bg-paper-deep relative overflow-hidden py-20 sm:py-24 lg:py-32">
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-14 text-center">
             <div className="mb-5 flex justify-center">
@@ -457,7 +457,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section className="relative overflow-hidden bg-slate-50 py-20 sm:py-24 lg:py-32">
+      <section className="bg-paper-deep relative overflow-hidden py-20 sm:py-24 lg:py-32">
         <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="reveal-on-scroll mb-12 text-center">
             <div className="mb-5 flex justify-center">
