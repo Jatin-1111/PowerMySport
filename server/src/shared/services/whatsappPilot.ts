@@ -21,16 +21,13 @@ export function parseAllowList(raw: string | undefined): Set<string> {
 }
 
 /**
- * Whether `from` (a sender number as Meta gives it) may use the assistant.
- *
- * With no list set, everyone may: that is how it behaved before the pilot, so
- * switching the assistant on without a list is a deliberate act. With a list, only
- * those numbers may, and everyone else gets the fixed holding message.
+ * Whether `from` (a sender number as Meta gives it) is on the
+ * `WHATSAPP_ALLOWED_NUMBERS` list. That list is a fixed fallback for the team; the
+ * numbers staff manage from the admin panel live in the database (see
+ * `mayUseAssistant`).
  */
-export function isPilotNumber(from: string, raw = process.env.WHATSAPP_ALLOWED_NUMBERS): boolean {
-  const allowed = parseAllowList(raw);
-  if (allowed.size === 0) return true;
-  return allowed.has(normalizeIndianPhone(from));
+export function isOnEnvList(from: string, raw = process.env.WHATSAPP_ALLOWED_NUMBERS): boolean {
+  return parseAllowList(raw).has(normalizeIndianPhone(from));
 }
 
 // ─── Not answering twice ──────────────────────────────────────────────────────

@@ -7,21 +7,40 @@ process.env.REDIS_ENABLED = "false";
 
 import assert = require("node:assert/strict");
 import crypto = require("node:crypto");
-const { after, afterEach, beforeEach, describe, it } = require("node:test");
+const { after, afterEach, before, beforeEach, describe, it } = require("node:test");
 const express = require("express");
 const request = require("supertest");
 
+const { MongoMemoryServer } = require("mongodb-memory-server");
+const mongoose = require("mongoose");
 const {
   PILOT_REPLY,
   claimInboundMessage,
+  isOnEnvList,
   isOptOutMessage,
-  isPilotNumber,
   parseAllowList,
 } = require("../shared/services/whatsappPilot");
+const {
+  addPilotNumbers,
+  listPilotNumbers,
+  mayUseAssistant,
+  parsePilotInput,
+  removePilotNumber,
+  setPilotMode,
+} = require("../shared/services/whatsappPilotNumbers");
+const { WhatsAppPilotNumber } = require("../shared/models/WhatsAppPilotNumber");
 const whatsappWebhook = require("../shared/routes/whatsappWebhook").default;
 const redis = require("../config/redis").default;
 
-after(() => {
+let mongod: any;
+before(async () => {
+  mongod = await MongoMemoryServer.create();
+  await mongoose.connect(mongod.getUri());
+});
+
+after(async () => {
+  await mongoose.disconnect();
+  await mongod.stop();
   redis.disconnect();
 });
 
@@ -31,11 +50,86 @@ describe("the pilot allow-list", () => {
     assert.deepEqual([...list].sort(), ["919876543210", "919876543211", "919876543212"]);
   });
 
-  it("lets everyone in when no list is set, and only the named numbers when one is", () => {
-    assert.equal(isPilotNumber("919000000001", undefined), true);
-    assert.equal(isPilotNumber("919000000001", ""), true);
-    assert.equal(isPilotNumber("919876543210", "9876543210"), true);
-    assert.equal(isPilotNumber("919876543299", "9876543210"), false);
+  it("matches a sender against the environment list, in any form", () => {
+    assert.equal(isOnEnvList("919876543210", "9876543210"), true);
+    assert.equal(isOnEnvList("919876543299", "9876543210"), false);
+    assert.equal(isOnEnvList("919876543210", undefined), false);
+    assert.equal(isOnEnvList("919876543210", ""), false);
+  });
+});
+
+describe("pasted numbers", () => {
+  it("reads one number per line with an optional name, and says which lines it could not", () => {
+    const { entries, invalid } = parsePilotInput(
+      [
+        "9876543210, Coach Ravi",
+        "+91 98765 43211 Meera (parent)",
+        "09876543212",
+        "9876543210",
+        "12345",
+        "not a number",
+        "",
+      ].join("\n")
+    );
+    assert.deepEqual(entries, [
+      { phone: "919876543210", label: "Coach Ravi" },
+      { phone: "919876543211", label: "Meera (parent)" },
+      { phone: "919876543212", label: "" },
+    ]);
+    assert.deepEqual(invalid, ["12345", "not a number"]);
+  });
+
+  it("refuses a number that is not an Indian mobile", () => {
+    assert.equal(parsePilotInput("919876543210").invalid.length, 0);
+    assert.equal(parsePilotInput("5551234567").entries.length, 0);
+  });
+});
+
+describe("the database allow-list", () => {
+  beforeEach(async () => {
+    await WhatsAppPilotNumber.deleteMany({});
+    await setPilotMode("listed");
+    delete process.env.WHATSAPP_ALLOWED_NUMBERS;
+  });
+
+  it("is closed when nothing is listed", async () => {
+    assert.equal(await mayUseAssistant("919876543210"), false);
+  });
+
+  it("lets a listed number in, stores only a hash and the last four digits, and drops it on removal", async () => {
+    const result = await addPilotNumbers("9876543210, Coach Ravi", "admin-1");
+    assert.deepEqual(result, { added: 1, alreadyListed: 0, invalid: [] });
+    assert.equal(await mayUseAssistant("919876543210"), true);
+    assert.equal(await mayUseAssistant("919876543299"), false);
+
+    const raw = await WhatsAppPilotNumber.collection.findOne({});
+    assert.equal(JSON.stringify(raw).includes("9876543210"), false);
+    assert.equal(raw.lastFour, "3210");
+
+    const [entry] = await listPilotNumbers();
+    assert.equal(entry.label, "Coach Ravi");
+    assert.equal(await removePilotNumber(entry.id), true);
+    assert.equal(await mayUseAssistant("919876543210"), false);
+  });
+
+  it("counts a number that is already listed instead of adding it twice", async () => {
+    await addPilotNumbers("9876543210");
+    const again = await addPilotNumbers("+91 98765 43210");
+    assert.equal(again.added, 0);
+    assert.equal(again.alreadyListed, 1);
+    assert.equal((await listPilotNumbers()).length, 1);
+  });
+
+  it("lets everyone in when staff choose that, and only the listed ones when they switch back", async () => {
+    await setPilotMode("everyone");
+    assert.equal(await mayUseAssistant("919000000001"), true);
+    await setPilotMode("listed");
+    assert.equal(await mayUseAssistant("919000000001"), false);
+  });
+
+  it("still lets in a number on the environment list", async () => {
+    process.env.WHATSAPP_ALLOWED_NUMBERS = "9876543210";
+    assert.equal(await mayUseAssistant("919876543210"), true);
   });
 });
 

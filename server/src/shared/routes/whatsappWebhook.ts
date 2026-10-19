@@ -19,19 +19,17 @@
  *   WHATSAPP_PHONE_NUMBER_ID    the sending number's id, needed to send replies
  *   WHATSAPP_ASSISTANT          "on" answers with the real assistant; anything
  *                               else sends the fixed holding message
- *   WHATSAPP_ALLOWED_NUMBERS    optional, comma-separated. When set, only these
- *                               numbers get the assistant (a pilot); others get a
- *                               short "being tested" message
+ *   WHATSAPP_ALLOWED_NUMBERS    optional, comma-separated fallback list for the
+ *                               team. Numbers staff add in the admin panel live in
+ *                               the database; either way, anyone not listed gets a
+ *                               short "being tested" message (unless the panel is
+ *                               set to "everyone")
  */
 import crypto from "crypto";
 import express from "express";
 import { answerWhatsAppMessage } from "../services/whatsappAssistantService";
-import {
-  FIRST_CONTACT_NOTICE,
-  PILOT_REPLY,
-  claimInboundMessage,
-  isPilotNumber,
-} from "../services/whatsappPilot";
+import { FIRST_CONTACT_NOTICE, PILOT_REPLY, claimInboundMessage } from "../services/whatsappPilot";
+import { mayUseAssistant } from "../services/whatsappPilotNumbers";
 import {
   extractInboundMessages,
   isValidMetaSignature,
@@ -62,9 +60,9 @@ async function handleInboundMessage(message: InboundWhatsAppMessage): Promise<vo
     await sendWhatsAppText(message.from, HOLDING_REPLY);
     return;
   }
-  // A pilot is limited to the numbers on WHATSAPP_ALLOWED_NUMBERS; anyone else is
-  // told so and nothing of theirs is stored.
-  if (!isPilotNumber(message.from)) {
+  // A pilot is limited to the numbers staff listed (admin panel or
+  // WHATSAPP_ALLOWED_NUMBERS); anyone else is told so and nothing of theirs is stored.
+  if (!(await mayUseAssistant(message.from))) {
     await sendWhatsAppText(message.from, PILOT_REPLY);
     return;
   }
