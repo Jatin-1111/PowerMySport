@@ -2,6 +2,7 @@
 
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBar";
+import { SportChips } from "@/modules/discovery/components/SportChips";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
@@ -220,6 +221,16 @@ export default function VenuesTab() {
         onModalOpenChange={setIsFilterModalOpen}
         activeFilters={activeFilters}
         onClearAll={handleClear}
+        quickFilters={
+          <SportChips
+            value={appliedSportFilter}
+            onSelect={(sport) => {
+              setSportInput(sport);
+              setAppliedSportFilter(sport);
+              setCurrentPage(1);
+            }}
+          />
+        }
       >
         {/* Price range */}
         <div>

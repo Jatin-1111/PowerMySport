@@ -4,6 +4,7 @@ import { getCommunityAppUrl } from "@/lib/community/url";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
 import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBar";
+import { SportChips } from "@/modules/discovery/components/SportChips";
 import { discoveryApi } from "@/modules/discovery/services/discovery";
 import { clientFollowStore } from "../../shared/store/followStore";
 import { Button } from "@/modules/shared/ui/Button";
@@ -463,6 +464,15 @@ function CoachesTabContent() {
         onModalOpenChange={setIsFilterModalOpen}
         activeFilters={activeFilters}
         onClearAll={handleClear}
+        quickFilters={
+          <SportChips
+            value={appliedSportFilter}
+            onSelect={(sport) => {
+              setSportInput(sport);
+              setAppliedSportFilter(normalizeSearchTerm(sport));
+            }}
+          />
+        }
       >
         {/* Service Mode */}
         <div>

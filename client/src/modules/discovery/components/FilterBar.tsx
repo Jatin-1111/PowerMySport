@@ -20,6 +20,8 @@ interface FilterBarProps {
   onModalOpenChange: (isOpen: boolean) => void;
   activeFilters: ActiveFilter[];
   onClearAll: () => void;
+  /** A quick filter set directly under the search box, e.g. a row of sport chips. */
+  quickFilters?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -33,6 +35,7 @@ export function FilterBar({
   onModalOpenChange,
   activeFilters,
   onClearAll,
+  quickFilters,
   children,
 }: FilterBarProps) {
   const hasFilters = activeFilters.length > 0;
@@ -81,6 +84,8 @@ export function FilterBar({
                 )}
               </button>
             </div>
+
+            {quickFilters}
 
             {/* Active Filter Badges */}
             {hasFilters && (
