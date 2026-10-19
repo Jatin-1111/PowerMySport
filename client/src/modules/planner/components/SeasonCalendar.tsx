@@ -12,7 +12,7 @@ import {
 import type { MonthChoice } from "@/modules/planner/utils/calendarMonths";
 import { itemLabel, shortEventLabel } from "@/modules/planner/utils/itemLabel";
 import { cn } from "@/utils/cn";
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Flag } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronRight, ChevronUp, Flag } from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -134,6 +134,9 @@ function EventBar({
           <span className="font-semibold">{place}</span>
           {level && <span className={cn("ml-1.5", style.level)}>{level}</span>}
         </span>
+      )}
+      {bar.continuesAfter && (
+        <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
       )}
     </button>
   );

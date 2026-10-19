@@ -514,11 +514,29 @@ describe("a single month", () => {
     const crossing = item("x", 25, 29);
     const inOctober = month([crossing], october).weeks.flatMap((week) => week.bars);
     expect(inOctober).toHaveLength(1);
-    expect(inOctober[0]).toMatchObject({ startCol: 5, endCol: 7, continuesAfter: true });
+    // It stops on Saturday 31 Oct, the month's last day, and does not run on into
+    // Sunday 1 Nov, which is a greyed-out cell of the next month.
+    expect(inOctober[0]).toMatchObject({ startCol: 5, endCol: 6, continuesAfter: true });
 
     const inNovember = month([crossing], november).weeks.flatMap((week) => week.bars);
     expect(inNovember).toHaveLength(2);
+    // The first piece starts on Sunday 1 Nov, not back in the October cells before it.
+    expect(inNovember[0]).toMatchObject({ startCol: 7, endCol: 7, continuesBefore: true });
     expect(inNovember[1]).toMatchObject({ startCol: 1, endCol: 2, continuesBefore: true });
+  });
+
+  it("stops a bar at the month edge when the event starts on the month's last day", () => {
+    // Saturday 31 Oct to Friday 6 Nov: the Delhi case. One cell in October, not two.
+    const delhi = item("delhi", 26, 32);
+    const inOctober = month([delhi], october).weeks.flatMap((week) => week.bars);
+    expect(inOctober).toHaveLength(1);
+    expect(inOctober[0]).toMatchObject({ startCol: 6, endCol: 6, continuesAfter: true });
+    expect(inOctober[0]!.continuesBefore).toBe(false);
+
+    // In November it picks up on the 1st and says it came from before.
+    const inNovember = month([delhi], november).weeks.flatMap((week) => week.bars);
+    expect(inNovember[0]).toMatchObject({ startCol: 7, endCol: 7, continuesBefore: true });
+    expect(inNovember.at(-1)!.continuesAfter).toBe(false);
   });
 
   it("does not draw an event that lies wholly in the leading days of the first week", () => {

@@ -238,11 +238,21 @@ export function buildCalendar(params: {
     const inWeek = visible
       .filter((entry) => entry.item.kind !== "available")
       .filter((entry) => entry.start <= endDay && entry.end >= startDay)
-      .map((entry) => ({
-        ...entry,
-        startCol: Math.max(entry.start, startDay) - startDay + 1,
-        endCol: Math.min(entry.end, endDay) - startDay + 1,
-      }))
+      // A month is drawn as whole weeks, so its first and last rows hold days that belong
+      // to the months either side. A bar stops at the edge of the month shown rather than
+      // running on into those greyed-out cells; it still says it continues.
+      .map((entry) => {
+        const barFrom = Math.max(entry.start, startDay, rangeFrom ?? -Infinity);
+        const barTo = Math.min(entry.end, endDay, rangeTo ?? Infinity);
+        return {
+          ...entry,
+          barFrom,
+          barTo,
+          startCol: barFrom - startDay + 1,
+          endCol: barTo - startDay + 1,
+        };
+      })
+      .filter((entry) => entry.startCol <= entry.endCol)
       .sort(
         (a, b) =>
           a.startCol - b.startCol ||
@@ -289,8 +299,8 @@ export function buildCalendar(params: {
         startCol: entry.startCol,
         endCol: entry.endCol,
         lane,
-        continuesBefore: entry.start < startDay,
-        continuesAfter: entry.end > endDay,
+        continuesBefore: entry.start < entry.barFrom,
+        continuesAfter: entry.end > entry.barTo,
       }))
       .sort((a, b) => a.startCol - b.startCol || a.lane - b.lane);
     const hidden = [
