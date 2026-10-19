@@ -165,6 +165,19 @@ describe("replyToWhatsAppMessage", () => {
     assert.match(seen[0]!.systemPrompt, /medical details/);
   });
 
+  it("does not pass an expert consultation off as a coach", async () => {
+    const seen: Seen[] = [];
+    await replyToWhatsAppMessage(msg("find me a tennis coach"), stub("Hi.", seen));
+    // The prompt says a coach request is not a consultation request, and the fee
+    // rule asks for rupees and the unit instead of a bare number.
+    assert.match(seen[0]!.systemPrompt, /regular coaches are not listed/);
+    assert.match(seen[0]!.systemPrompt, /per session/);
+
+    const { ASSISTANT_CHAT_TOOLS } = require("../shared/services/chatToolsService");
+    const tool = ASSISTANT_CHAT_TOOLS.find((t: { name: string }) => t.name === "search_experts");
+    assert.match(tool.description, /NOT coaches for regular training/);
+  });
+
   it("hashPhone is stable and differs per number", () => {
     assert.equal(hashPhone(PHONE), hashPhone(PHONE));
     assert.notEqual(hashPhone(PHONE), hashPhone("919876543211"));
