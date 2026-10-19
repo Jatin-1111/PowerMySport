@@ -2,31 +2,19 @@
 
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
-import { HomeClosing } from "@/modules/marketing/components/marketing/HomeClosing";
-import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
-import { Button } from "@/modules/shared/ui/Button";
-import { cn } from "@/utils/cn";
-import { PageHeader } from "@/modules/shared/ui/PageHeader";
-import { AnimatePresence, motion, Variants } from "framer-motion";
-import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
+import { DirectContact } from "@/modules/marketing/components/contact/DirectContact";
 import {
-  Award,
-  Building2,
-  Check,
-  ChevronDown,
-  HelpCircle,
-  Loader2,
-  Instagram,
-  Linkedin,
-  Mail,
-  MapPin,
-  Phone,
-  UserRound,
-} from "lucide-react";
-import Image from "next/image";
-import React, { useEffect, useRef, useState } from "react";
-
-// ─── Constants ───────────────────────────────────────────────────────────────
+  CustomSelect,
+  Field,
+  type SelectOption,
+} from "@/modules/marketing/components/contact/FormControls";
+import { Button } from "@/modules/shared/ui/Button";
+import { PageHeader } from "@/modules/shared/ui/PageHeader";
+import { cn } from "@/utils/cn";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Award, Building2, Check, HelpCircle, Loader2, UserRound } from "lucide-react";
+import Link from "next/link";
+import React, { useEffect, useState } from "react";
 
 const SUBJECT_OPTIONS = [
   "General enquiry",
@@ -42,289 +30,14 @@ const USER_TYPE_OPTIONS: SelectOption[] = [
   { value: "other", label: "Other", icon: HelpCircle },
 ];
 
-// Unsplash image sources — sports/fitness/stadium themed
-const SPORT_IMG_3 =
-  "https://images.unsplash.com/photo-1544216717-3bbf52512659?auto=format&fit=crop&w=600&q=80";
+const TEXTAREA =
+  "border-hairline text-ink placeholder:text-ink-muted focus:border-ink focus:ring-ink w-full resize-none rounded-lg border bg-white px-4 py-3 transition-colors duration-300 focus:outline-none focus:ring-1";
 
-// ─── Info Card Component ───────────────────────────────────────────────────────
+const QUICK_LINK =
+  "text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink group inline-flex items-center gap-1.5 rounded font-medium underline underline-offset-[6px] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2";
 
-interface InfoCardProps {
-  icon: React.ElementType;
-  title: string;
-  children: React.ReactNode;
-}
-
-// Static: the email and phone links inside are what you click, not the card,
-// so the card does not lift or scale on hover and the icon does not pop.
-function InfoCard({ icon: Icon, title, children }: InfoCardProps) {
-  return (
-    <div
-      className="border-hairline flex items-start gap-5 rounded-lg border bg-white p-6"
-      style={{
-        boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
-      }}
-    >
-      <div className="text-power-orange-solid flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-orange-50">
-        <Icon className="h-5 w-5" strokeWidth={2} />
-      </div>
-      <div>
-        <h3 className="text-ink mb-1 text-base font-medium">{title}</h3>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ─── Social Row ────────────────────────────────────────────────────────────────
-
-const SOCIALS = [
-  { Icon: Instagram, label: "Instagram", href: "https://www.instagram.com/powermysport" },
-  { Icon: Linkedin, label: "LinkedIn", href: "#" },
-] as const;
-
-// ─── Form Field ────────────────────────────────────────────────────────────────
-
-interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
-  required?: boolean;
-}
-
-function Field({ label, id, required, ...props }: FieldProps) {
-  return (
-    <div>
-      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-slate-800">
-        {label} {required && <span className="text-power-orange-solid">*</span>}
-      </label>
-      <input
-        id={id}
-        required={required}
-        className="w-full rounded-md border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
-        {...props}
-      />
-    </div>
-  );
-}
-
-// ─── Custom Select ─────────────────────────────────────────────────────────────
-
-interface SelectOption {
-  value: string;
-  label: string;
-  icon?: React.ElementType;
-}
-
-interface CustomSelectProps {
-  id: string;
-  label: string;
-  required?: boolean;
-  placeholder: string;
-  value: string;
-  options: SelectOption[];
-  onChange: (value: string) => void;
-}
-
-function CustomSelect({
-  id,
-  label,
-  required,
-  placeholder,
-  value,
-  options,
-  onChange,
-}: CustomSelectProps) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const typeaheadRef = useRef({ buffer: "", lastTime: 0 });
-
-  const close = (refocusTrigger: boolean) => {
-    setOpen(false);
-    if (refocusTrigger) triggerRef.current?.focus();
-  };
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const selectedIndex = options.findIndex((opt) => opt.value === value);
-    const focusIndex = selectedIndex >= 0 ? selectedIndex : 0;
-    optionRefs.current[focusIndex]?.focus();
-  }, [open, options, value]);
-
-  const focusOption = (index: number) => {
-    const clamped = Math.max(0, Math.min(options.length - 1, index));
-    optionRefs.current[clamped]?.focus();
-  };
-
-  const selectOption = (opt: SelectOption) => {
-    onChange(opt.value);
-    close(true);
-  };
-
-  const handleTriggerKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
-      e.preventDefault();
-      setOpen(true);
-    }
-  };
-
-  const handleOptionKeyDown = (
-    e: React.KeyboardEvent<HTMLButtonElement>,
-    index: number,
-    opt: SelectOption
-  ) => {
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        focusOption(index + 1);
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        focusOption(index - 1);
-        break;
-      case "Home":
-        e.preventDefault();
-        focusOption(0);
-        break;
-      case "End":
-        e.preventDefault();
-        focusOption(options.length - 1);
-        break;
-      case "Enter":
-      case " ":
-        e.preventDefault();
-        selectOption(opt);
-        break;
-      case "Escape":
-        e.preventDefault();
-        close(true);
-        break;
-      case "Tab":
-        setOpen(false);
-        break;
-      default:
-        if (e.key.length === 1 && /\S/.test(e.key)) {
-          const now = Date.now();
-          const buf =
-            now - typeaheadRef.current.lastTime < 600
-              ? typeaheadRef.current.buffer + e.key.toLowerCase()
-              : e.key.toLowerCase();
-          typeaheadRef.current = { buffer: buf, lastTime: now };
-          const match = options.findIndex((o) => o.label.toLowerCase().startsWith(buf));
-          if (match >= 0) focusOption(match);
-        }
-    }
-  };
-
-  const selected = options.find((opt) => opt.value === value);
-  const SelectedIcon = selected?.icon;
-
-  return (
-    <div ref={containerRef} className="relative">
-      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-slate-800">
-        {label} {required && <span className="text-power-orange-solid">*</span>}
-      </label>
-
-      <button
-        ref={triggerRef}
-        type="button"
-        id={id}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        onKeyDown={handleTriggerKeyDown}
-        className={`flex w-full items-center justify-between gap-3 rounded-md border bg-white/60 px-4 py-3 text-left text-sm shadow-sm transition-[color,background-color,border-color,box-shadow] duration-150 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25 ${
-          open
-            ? "border-orange-400 bg-white ring-2 ring-orange-400/25"
-            : "border-slate-200 hover:border-orange-300 hover:shadow-md"
-        }`}
-      >
-        <span className="flex items-center gap-2.5 truncate">
-          {SelectedIcon && (
-            <span className="text-power-orange flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-orange-50">
-              <SelectedIcon className="h-4 w-4" strokeWidth={2} />
-            </span>
-          )}
-          <span className={selected ? "font-medium text-slate-900" : "text-slate-500"}>
-            {selected ? selected.label : placeholder}
-          </span>
-        </span>
-        <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
-            open ? "text-power-orange rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.ul
-            role="listbox"
-            aria-labelledby={id}
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 420, damping: 30 }}
-            style={{ originY: 0 }}
-            className="absolute z-20 mt-2 w-full overflow-hidden rounded-lg border border-slate-100 bg-white p-1.5 shadow-xl shadow-slate-900/10"
-          >
-            {options.map((opt, index) => {
-              const isSelected = opt.value === value;
-              const OptIcon = opt.icon;
-              return (
-                <li key={opt.value} role="option" aria-selected={isSelected}>
-                  <button
-                    ref={(el) => {
-                      optionRefs.current[index] = el;
-                    }}
-                    type="button"
-                    onClick={() => selectOption(opt)}
-                    onKeyDown={(e) => handleOptionKeyDown(e, index, opt)}
-                    className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm transition-colors focus:outline-none focus-visible:bg-orange-50/70 focus-visible:ring-2 focus-visible:ring-orange-400/40 ${
-                      isSelected
-                        ? "text-power-orange-solid bg-orange-50 font-semibold"
-                        : "text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    {OptIcon && (
-                      <span
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
-                          isSelected ? "text-power-orange bg-white" : "bg-slate-100 text-slate-400"
-                        }`}
-                      >
-                        <OptIcon className="h-4 w-4" strokeWidth={2} />
-                      </span>
-                    )}
-                    <span className="flex-1 truncate">{opt.label}</span>
-                    {isSelected && <Check className="h-4 w-4 shrink-0" />}
-                  </button>
-                </li>
-              );
-            })}
-          </motion.ul>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// ─── Stats Strip ──────────────────────────────────────────────────────────────
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+const ARROW =
+  "h-4 w-4 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 motion-reduce:transition-none";
 
 export default function ContactPage() {
   const [initialSubject, setInitialSubject] = useState("");
@@ -420,281 +133,179 @@ export default function ContactPage() {
     // container that never scrolls, and the `.reveal-on-scroll` view timelines
     // inside then track it instead of the page, freezing part-way transparent.
     <main className="overflow-x-clip">
-      {/* ── Hero Section ── */}
       <PageHeader
         eyebrow="Get in touch"
         title="Contact us"
         description="Questions about a pathway, a tournament or your account? Send us a message, call, or chat on WhatsApp."
         width="7xl"
+        size="compact"
       />
-      {/* ── Main Contact Section ─────────────────────────────────────────────── */}
-      <section className="bg-paper relative overflow-hidden py-16 sm:py-24 lg:py-32">
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="reveal-on-scroll grid grid-cols-1 gap-10 lg:grid-cols-[1fr_420px] lg:gap-16 xl:grid-cols-[1fr_460px]">
-            {/* ── LEFT COLUMN: Form ─────────────────────────────────────────── */}
-            <div className="relative z-10">
-              <div className="border-hairline relative rounded-xl border bg-white px-5 py-8 sm:px-10 sm:py-12">
-                <div className="mb-4 inline-block">
-                  <SectionLabel label="Send a message" color="orange" />
+
+      <section className="bg-paper py-10 sm:py-12 lg:py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="reveal-on-scroll grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
+            <div className="border-hairline rounded-xl border bg-white p-6 shadow-[0_18px_40px_-30px_rgba(57,34,30,0.3)] sm:p-8">
+              <h2 className="font-editorial text-ink mb-6 text-3xl font-light">
+                Send us a message
+              </h2>
+
+              <AnimatePresence>
+                {submitStatus === "success" && (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, y: -12, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    className="mb-5 overflow-hidden rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3"
+                  >
+                    <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
+                      <Check aria-hidden className="h-4 w-4 shrink-0" />
+                      Message sent. We&apos;ll be in touch within 24 hours.
+                    </p>
+                  </motion.div>
+                )}
+                {submitStatus === "error" && (
+                  <motion.div
+                    key="error"
+                    initial={{ opacity: 0, y: -12, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    className="mb-5 overflow-hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3"
+                  >
+                    <p className="text-sm font-semibold text-red-800">
+                      Something went wrong. Please try again.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field
+                    label="Full Name"
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    placeholder="Your name"
+                  />
+                  <Field
+                    label="Email Address"
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    placeholder="you@example.com"
+                  />
                 </div>
 
-                <h2 className="font-editorial text-ink mb-3 text-4xl font-light tracking-tight sm:text-5xl">
-                  How can we <span className="italic">help?</span>
-                </h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field
+                    label="Phone Number"
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    optional
+                    placeholder="+91 98765 43210"
+                  />
+                  <CustomSelect
+                    id="userType"
+                    label="I am a"
+                    required
+                    placeholder="Select an option"
+                    value={formData.userType}
+                    options={USER_TYPE_OPTIONS}
+                    onChange={(value) => setFormData((prev) => ({ ...prev, userType: value }))}
+                  />
+                </div>
 
-                <p className="mb-8 text-base leading-relaxed text-slate-500">
-                  Fill out the form below and we&apos;ll get back to you within 24 hours.
-                </p>
+                <CustomSelect
+                  id="subject"
+                  label="Subject"
+                  required
+                  placeholder="Select a subject"
+                  value={formData.subject}
+                  options={SUBJECT_OPTIONS.map((opt) => ({ value: opt, label: opt }))}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, subject: value }))}
+                />
 
-                {/* Status banners */}
-                <AnimatePresence>
-                  {submitStatus === "success" && (
-                    <motion.div
-                      key="success"
-                      initial={{ opacity: 0, y: -12, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: "auto" }}
-                      exit={{ opacity: 0, y: -8, height: 0 }}
-                      className="mb-6 overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3"
-                    >
-                      <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
-                        <Check aria-hidden className="h-4 w-4 shrink-0" />
-                        Message sent. We&apos;ll be in touch within 24 hours.
-                      </p>
-                    </motion.div>
-                  )}
-                  {submitStatus === "error" && (
-                    <motion.div
-                      key="error"
-                      initial={{ opacity: 0, y: -12, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: "auto" }}
-                      exit={{ opacity: 0, y: -8, height: 0 }}
-                      className="mb-6 overflow-hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3"
-                    >
-                      <p className="text-sm font-semibold text-red-800">
-                        Something went wrong. Please try again.
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div>
+                  <label htmlFor="message" className="text-ink mb-1.5 block text-sm font-medium">
+                    Message <span className="text-power-orange-solid">*</span>
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    required
+                    rows={4}
+                    className={TEXTAREA}
+                    placeholder="Tell us about your inquiry..."
+                  />
+                </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* Row: Name + Email */}
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <Field
-                      label="Full Name"
-                      id="name"
-                      name="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      placeholder="Your name"
-                    />
-                    <Field
-                      label="Email Address"
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      placeholder="your@gmail.com"
-                    />
-                  </div>
-
-                  {/* Row: Phone + User Type */}
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <Field
-                      label="Phone Number"
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="+91 9876543210"
-                    />
-
-                    <CustomSelect
-                      id="userType"
-                      label="I am a"
-                      required
-                      placeholder="Select an option"
-                      value={formData.userType}
-                      options={USER_TYPE_OPTIONS}
-                      onChange={(value) => setFormData((prev) => ({ ...prev, userType: value }))}
-                    />
-                  </div>
-
-                  {/* Subject */}
-                  <div>
-                    <CustomSelect
-                      id="subject"
-                      label="Subject"
-                      required
-                      placeholder="Select a subject"
-                      value={formData.subject}
-                      options={SUBJECT_OPTIONS.map((opt) => ({
-                        value: opt,
-                        label: opt,
-                      }))}
-                      onChange={(value) => setFormData((prev) => ({ ...prev, subject: value }))}
-                    />
-                  </div>
-
-                  {/* Message */}
-                  <div>
-                    <label
-                      htmlFor="message"
-                      className="mb-2 block text-sm font-semibold text-slate-800"
-                    >
-                      Message <span className="text-power-orange-solid">*</span>
-                    </label>
-                    <textarea
-                      id="message"
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      required
-                      rows={5}
-                      className="w-full resize-none rounded-md border border-slate-200 bg-white/60 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-400/25"
-                      placeholder="Tell us about your inquiry..."
-                    />
-                  </div>
-
-                  {/* Submit */}
-                  <div>
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="lg"
-                      aria-disabled={isSubmitting}
-                      aria-busy={isSubmitting}
-                      className={
-                        justSent
-                          ? "w-full bg-emerald-700 hover:bg-emerald-700 focus-visible:ring-emerald-700"
-                          : cn("w-full", isSubmitting && "cursor-wait")
-                      }
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 aria-hidden className="h-5 w-5 animate-spin" />
-                          Sending…
-                        </>
-                      ) : justSent ? (
-                        <>
-                          <Check aria-hidden className="h-5 w-5" />
-                          Sent
-                        </>
-                      ) : (
-                        "Send Message →"
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </div>
+                <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:gap-5">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    aria-disabled={isSubmitting}
+                    aria-busy={isSubmitting}
+                    className={
+                      justSent
+                        ? "w-full bg-emerald-700 hover:bg-emerald-700 focus-visible:ring-emerald-700 sm:w-auto sm:px-8"
+                        : cn("w-full sm:w-auto sm:px-8", isSubmitting && "cursor-wait")
+                    }
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 aria-hidden className="h-5 w-5 animate-spin" />
+                        Sending…
+                      </>
+                    ) : justSent ? (
+                      <>
+                        <Check aria-hidden className="h-5 w-5" />
+                        Sent
+                      </>
+                    ) : (
+                      <>
+                        Send Message
+                        <ArrowRight aria-hidden className="h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-ink-muted text-sm">We reply within 24 hours.</p>
+                </div>
+              </form>
             </div>
 
-            {/* ── RIGHT COLUMN: Info + Image ───────────────────────────────── */}
-            <div className="flex flex-col gap-5 lg:pt-2">
-              {/* Section header */}
-              <div>
-                <SectionLabel label="Reach us directly" color="slate" />
-                <h2 className="font-editorial text-ink mt-2 text-3xl font-light tracking-tight sm:text-4xl">
-                  Other ways to reach us
-                </h2>
-              </div>
+            <DirectContact />
+          </div>
 
-              <div className="relative h-36 w-full overflow-hidden rounded-xl sm:h-44">
-                <Image
-                  src={SPORT_IMG_3}
-                  alt="Outdoor sports court"
-                  fill
-                  sizes="(min-width: 1024px) 460px, 100vw"
-                  className="object-cover"
-                />
-                {/* The hours, not "Support team online" with a pulsing dot: nothing
-                    checked whether anyone was actually online. */}
-                <div className="absolute bottom-4 left-5 rounded-sm bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 shadow-sm">
-                  Mon to Sat, 9 AM to 8 PM IST
-                </div>
-              </div>
-
-              {/* Email */}
-              <InfoCard icon={Mail} title="Email">
-                <a
-                  href="mailto:teams@powermysport.com"
-                  className="hover:text-power-orange-solid text-sm text-slate-600 transition-colors"
-                >
-                  teams@powermysport.com
-                </a>
-              </InfoCard>
-
-              {/* Phone */}
-              <InfoCard icon={Phone} title="Phone">
-                <a
-                  href="tel:+918968582443"
-                  className="hover:text-power-orange-solid text-sm text-slate-600 transition-colors"
-                >
-                  +91 89685 82443
-                </a>
-                <p className="mt-0.5 text-xs text-slate-500">Mon–Sat: 9 AM – 8 PM IST</p>
-              </InfoCard>
-
-              {/* WhatsApp */}
-              <InfoCard icon={WhatsAppIcon} title="WhatsApp">
-                <a
-                  href={`https://wa.me/918968582443?text=${encodeURIComponent("Hi! I have a question about PowerMySport.")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-power-orange-solid text-sm text-slate-600 transition-colors"
-                >
-                  Chat with us on WhatsApp →
-                </a>
-                <p className="mt-0.5 text-xs text-slate-500">Usually replies within minutes</p>
-              </InfoCard>
-
-              {/* Address */}
-              <InfoCard icon={MapPin} title="Office Address">
-                <p className="text-sm leading-relaxed text-slate-600">
-                  Powermysport PVT. LTD.
-                  <br />
-                  Mullanpur, Punjab.
-                </p>
-              </InfoCard>
-
-              {/* Social */}
-              <div
-                className="border-hairline rounded-lg border bg-white p-6"
-                style={{
-                  boxShadow: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
-                }}
-              >
-                <h3 className="text-ink mb-4 text-base font-medium">Follow us</h3>
-                <div className="flex gap-3">
-                  {SOCIALS.map(({ Icon, label, href }) => (
-                    <a
-                      key={label}
-                      href={href}
-                      aria-label={label}
-                      className="btn-motion hover:bg-power-orange-solid focus-visible:ring-power-orange-solid flex h-11 w-11 items-center justify-center rounded-md bg-slate-100 text-slate-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                    >
-                      <Icon className="h-4.5 w-4.5" strokeWidth={2} />
-                    </a>
-                  ))}
-                </div>
-              </div>
+          {/* The form and the panel do the page's job, so what follows is one line pointing
+              at the quick answers, not a second full-width call to action. */}
+          <div className="border-hairline mt-10 flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-t pt-6">
+            <p className="text-ink-body">Looking for a quick answer first?</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <Link href="/faq" className={QUICK_LINK}>
+                Browse the FAQ
+                <ArrowRight aria-hidden strokeWidth={1.5} className={ARROW} />
+              </Link>
+              <Link href="/how-it-works" className={QUICK_LINK}>
+                See how it works
+                <ArrowRight aria-hidden strokeWidth={1.5} className={ARROW} />
+              </Link>
             </div>
           </div>
         </div>
       </section>
-
-      <HomeClosing
-        title="We're here to help"
-        description="Whether you're a parent planning your child's sports journey, a venue owner listing your facility, or a coach expanding your practice, we're a message away. Our team usually replies within 24 hours."
-        primaryCTA={{ label: "Get started", href: "/register" }}
-        secondaryCTA={{ label: "Browse the FAQ", href: "/faq" }}
-      />
     </main>
   );
 }
