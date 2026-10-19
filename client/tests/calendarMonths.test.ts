@@ -137,7 +137,7 @@ describe("what a month says about itself", () => {
 
   it("counts them by what has been done with each, naming only what is there", () => {
     expect(describeMonth(october, items)).toBe(
-      "5 events in October 2026: 1 entered, 1 still to enter, 1 suggested, 2 open to enter."
+      "5 events in October 2026: 1 entered, 1 not entered yet, 1 suggested, 2 open to enter."
     );
   });
 
