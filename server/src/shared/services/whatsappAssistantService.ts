@@ -5,6 +5,7 @@ import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticCha
 import { ASSISTANT_CHAT_TOOLS } from "./chatToolsService";
 import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitService";
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
+import { withdrawConsentForPhone } from "./whatsappConsent";
 import { OPT_OUT_REPLY, isOptOutMessage } from "./whatsappPilot";
 import type { InboundWhatsAppMessage } from "./whatsappService";
 import { log as __rootLog } from "../../utils/logger";
@@ -85,6 +86,10 @@ export async function answerWhatsAppMessage(
   // who has used their messages can still take their data back.
   if (isOptOutMessage(text)) {
     await WhatsAppConversation.deleteOne({ phoneHash });
+    // Also off the list for booking messages. A failure here must not stop the reply.
+    await withdrawConsentForPhone(message.from).catch((err) =>
+      log.error("could not withdraw WhatsApp consent", err)
+    );
     return { reply: OPT_OUT_REPLY, firstContact: false };
   }
   // Not the website's limiter key: a WhatsApp number is not a user id.

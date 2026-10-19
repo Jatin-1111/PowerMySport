@@ -12,6 +12,8 @@ export const authApi = {
     serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
     acceptedTerms: boolean;
     acceptedPrivacy: boolean;
+    /** Optional, unticked by default: agreement to get booking updates on WhatsApp. */
+    whatsappConsent?: boolean;
   }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/register", data);
     return response.data;
@@ -20,6 +22,21 @@ export const authApi = {
   login: async (data: { email: string; password: string }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/login", data);
     return response.data;
+  },
+
+  getWhatsAppConsent: async (): Promise<{ granted: boolean; at: string | null }> => {
+    const response = await axiosInstance.get("/auth/whatsapp-consent");
+    return response.data.data;
+  },
+
+  setWhatsAppConsent: async (
+    granted: boolean
+  ): Promise<{ granted: boolean; at: string | null }> => {
+    const response = await axiosInstance.put("/auth/whatsapp-consent", {
+      granted,
+      source: "settings",
+    });
+    return response.data.data;
   },
 
   logout: async (): Promise<ApiResponse<null>> => {

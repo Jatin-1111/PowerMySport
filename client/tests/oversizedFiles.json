@@ -1,5 +1,5 @@
 {
-  "app/(auth)/register/page.tsx": 556,
+  "app/(auth)/register/page.tsx": 511,
   "app/(booking)/(player)/dashboard/dependents/[id]/page.tsx": 728,
   "app/(booking)/(player)/dashboard/friends/page.tsx": 652,
   "app/(booking)/(player)/dashboard/my-bookings/page.tsx": 581,

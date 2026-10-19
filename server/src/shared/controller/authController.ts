@@ -26,6 +26,7 @@ import {
   updateProfile,
 } from "../services/AuthService";
 import { asyncHandler } from "../../middleware/asyncHandler";
+import { setWhatsAppConsent } from "../services/whatsappConsent";
 import { AppError } from "../../utils/AppError";
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
@@ -53,7 +54,11 @@ export const register = asyncHandler(async (req: Request, res: Response): Promis
   // role always arrives already defaulted here — registerSchema (applied by
   // the validateRequest middleware ahead of this handler) guarantees it's
   // present and valid before req.body reaches this point.
-  const user = await registerUser({ ...req.body });
+  const { whatsappConsent, ...registration } = req.body;
+  const user = await registerUser({ ...registration });
+  if (whatsappConsent === true) {
+    await setWhatsAppConsent(user._id.toString(), true, "signup");
+  }
 
   const token = generateToken({
     id: user._id.toString(),

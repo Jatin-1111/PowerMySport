@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { postSignupFor, safeReturnPath } from "@/flow/policy";
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
+import { SignupAgreements } from "@/modules/auth/components/SignupAgreements";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { motion } from "framer-motion";
@@ -81,6 +82,7 @@ function RegisterContent() {
     serviceMode: "OWN_VENUE" as "OWN_VENUE" | "FREELANCE" | "HYBRID",
     acceptedTerms: false,
     acceptedPrivacy: false,
+    whatsappConsent: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -436,54 +438,7 @@ function RegisterContent() {
             </motion.div>
           )}
 
-          {/* Terms */}
-          <div className="space-y-3 rounded-xl border border-slate-200/70 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/50">
-            <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-              <input
-                type="checkbox"
-                name="acceptedTerms"
-                checked={formData.acceptedTerms}
-                onChange={handleChange}
-                value="true"
-                className="text-power-orange focus:ring-power-orange/50 mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300"
-              />
-              <span>
-                I agree to the{" "}
-                <Link
-                  href="/terms"
-                  target="_blank"
-                  className="text-power-orange font-semibold transition-colors hover:text-orange-600"
-                >
-                  Terms of Service
-                </Link>
-              </span>
-            </label>
-            {errors.acceptedTerms && <p className="text-xs text-red-500">{errors.acceptedTerms}</p>}
-
-            <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-              <input
-                type="checkbox"
-                name="acceptedPrivacy"
-                checked={formData.acceptedPrivacy}
-                onChange={handleChange}
-                value="true"
-                className="text-power-orange focus:ring-power-orange/50 mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300"
-              />
-              <span>
-                I agree to the{" "}
-                <Link
-                  href="/privacy"
-                  target="_blank"
-                  className="text-power-orange font-semibold transition-colors hover:text-orange-600"
-                >
-                  Privacy Policy
-                </Link>
-              </span>
-            </label>
-            {errors.acceptedPrivacy && (
-              <p className="text-xs text-red-500">{errors.acceptedPrivacy}</p>
-            )}
-          </div>
+          <SignupAgreements values={formData} errors={errors} onChange={handleChange} />
 
           <button
             type="submit"

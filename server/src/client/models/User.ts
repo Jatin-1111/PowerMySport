@@ -29,6 +29,17 @@ export interface UserDocument extends Document {
     terms?: { accepted: boolean; acceptedAt?: Date; version?: string };
     privacy?: { accepted: boolean; acceptedAt?: Date; version?: string };
   };
+  /**
+   * Whether this person agreed to get WhatsApp messages from us (Meta requires an
+   * opt-in before a business messages someone first). `at` and `source` are the
+   * proof; `withdrawnAt` is set when they switch it off or reply STOP.
+   */
+  whatsappConsent?: {
+    granted: boolean;
+    at?: Date;
+    source?: "signup" | "settings" | "booking";
+    withdrawnAt?: Date;
+  };
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   notificationPreferences?: {
@@ -139,6 +150,12 @@ const userSchema = new Schema<UserDocument>(
         acceptedAt: { type: Date },
         version: { type: String },
       },
+    },
+    whatsappConsent: {
+      granted: { type: Boolean, default: false },
+      at: { type: Date },
+      source: { type: String, enum: ["signup", "settings", "booking"] },
+      withdrawnAt: { type: Date },
     },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },

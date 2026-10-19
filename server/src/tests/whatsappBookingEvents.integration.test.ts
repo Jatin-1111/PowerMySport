@@ -62,7 +62,7 @@ afterEach(() => {
   onMessage = null;
 });
 
-const seedPlayer = async (phone?: string) => {
+const seedPlayer = async (phone?: string, consent = true) => {
   const _id = oid();
   await User.collection.insertOne({
     _id,
@@ -70,6 +70,7 @@ const seedPlayer = async (phone?: string) => {
     email: `aarav-${_id}@example.test`,
     role: "Player",
     ...(phone ? { phone } : {}),
+    ...(consent ? { whatsappConsent: { granted: true, at: new Date(), source: "settings" } } : {}),
   });
   return _id;
 };
@@ -128,6 +129,24 @@ describe("booking WhatsApp messages by state", () => {
   it("says nothing while the booking is still waiting on its provider", async () => {
     const userId = await seedPlayer("9876543210");
     await sendBookingLifecycleEmails(booking(userId), "AWAITING_PROVIDER");
+    assert.equal(await nextMessage(400), false);
+    assert.equal(received.length, 0);
+  });
+
+  it("says nothing to a player who never agreed to WhatsApp messages", async () => {
+    const userId = await seedPlayer("9876543210", false);
+    await sendBookingLifecycleEmails(booking(userId), "CONFIRMED");
+    assert.equal(await nextMessage(400), false);
+    assert.equal(received.length, 0);
+  });
+
+  it("says nothing to a player who has withdrawn", async () => {
+    const userId = await seedPlayer("9876543210");
+    await User.collection.updateOne(
+      { _id: userId },
+      { $set: { "whatsappConsent.granted": false, "whatsappConsent.withdrawnAt": new Date() } }
+    );
+    await sendBookingLifecycleEmails(booking(userId), "CANCELLED", { refundAmount: 400 });
     assert.equal(await nextMessage(400), false);
     assert.equal(received.length, 0);
   });

@@ -6,6 +6,7 @@ import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
+import { WhatsAppConsentSetting } from "./WhatsAppConsentSetting";
 import { Modal } from "@/modules/shared/ui/Modal";
 import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { UserRole } from "@/types";
@@ -416,6 +417,11 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
               </div>
             </Card>
           </div>
+        </StaggerItem>
+
+        {/* WhatsApp updates */}
+        <StaggerItem>
+          <WhatsAppConsentSetting />
         </StaggerItem>
 
         {/* Linked Accounts */}

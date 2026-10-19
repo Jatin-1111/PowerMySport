@@ -13,6 +13,7 @@ import {
   notifyBookingWhatsApp,
   normalizeIndianPhone,
 } from "../../../shared/services/WhatsAppNotificationService";
+import { hasWhatsAppConsent } from "../../../shared/services/whatsappConsent";
 import { combineDateAndTimeIST } from "../../../utils/openingHours";
 import { log, toPaise } from "./shared";
 
@@ -118,8 +119,11 @@ export const sendBookingLifecycleEmails = async (
   if (state === "CANCELLED" || state === "CONFIRMED") {
     const player = recipients.find((r) => r.role === "Player");
     if (player) {
-      const playerUser = await User.findOne({ email: player.email }).select("phone name").lean();
-      if (playerUser?.phone) {
+      const playerUser = await User.findOne({ email: player.email })
+        .select("phone name whatsappConsent")
+        .lean();
+      // Only people who agreed to WhatsApp messages get one.
+      if (playerUser?.phone && hasWhatsAppConsent(playerUser)) {
         // Only a booking with a coach has one; otherwise the provider is the venue owner.
         const coachName = booking.coachId
           ? recipients.find((r) => r.role === "PROVIDER")?.name
@@ -484,8 +488,8 @@ export const notifyBookingRescheduledWhatsApp = async (
   previousStart: Date
 ): Promise<void> => {
   try {
-    const player = await User.findById(booking.userId).select("phone name").lean();
-    if (!player?.phone) return;
+    const player = await User.findById(booking.userId).select("phone name whatsappConsent").lean();
+    if (!player?.phone || !hasWhatsAppConsent(player)) return;
 
     let coachName: string | undefined;
     if (booking.coachId) {
