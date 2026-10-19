@@ -11,13 +11,13 @@ import { AppError } from "../../utils/AppError";
  */
 export const sendVerificationCodeHandler = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
-    const { email, name, phone } = req.body;
+    const { email, name } = req.body;
 
     if (!email || !name) {
       throw new AppError("Email and name are required", 400);
     }
 
-    const result = await sendVerificationCode(email, name, phone);
+    const result = await sendVerificationCode(email, name);
 
     if (!result.success) {
       throw new AppError(result.message, 429);

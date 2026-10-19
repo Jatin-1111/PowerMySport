@@ -2,7 +2,6 @@ import crypto from "crypto";
 import { sendEmail } from "../../utils/email";
 import { EmailVerification } from "../models/EmailVerification";
 import { RateLimit } from "../models/RateLimit";
-import { sendWhatsAppOtp, normalizeIndianPhone } from "./WhatsAppNotificationService";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("emailVerification");
 
@@ -66,12 +65,11 @@ const incrementRateLimit = async (email: string): Promise<void> => {
 };
 
 /**
- * Send verification code to email (and optionally to WhatsApp if a phone is provided).
+ * Send verification code to email
  */
 export const sendVerificationCode = async (
   email: string,
-  name: string,
-  phone?: string
+  name: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
     // Check rate limit
@@ -214,15 +212,6 @@ export const sendVerificationCode = async (
       subject: "Verify Your Email - PowerMySport Venue Onboarding",
       html,
     });
-
-    // ── WhatsApp OTP in parallel (best-effort, never blocks email) ──────────
-    if (phone) {
-      sendWhatsAppOtp({
-        phone: normalizeIndianPhone(phone),
-        otp: code,
-        name,
-      });
-    }
 
     log.info(`Verification code sent to ${email}`);
 
