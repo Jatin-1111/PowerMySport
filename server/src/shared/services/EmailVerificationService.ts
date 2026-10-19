@@ -2,7 +2,11 @@ import crypto from "crypto";
 import { sendEmail } from "../../utils/email";
 import { EmailVerification } from "../models/EmailVerification";
 import { RateLimit } from "../models/RateLimit";
-import { sendWhatsAppOtp, normalizeIndianPhone } from "./WhatsAppNotificationService";
+import {
+  isIndianMobile,
+  normalizeIndianPhone,
+  sendWhatsAppOtp,
+} from "./WhatsAppNotificationService";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("emailVerification");
 
@@ -11,6 +15,9 @@ const CODE_EXPIRY_MINUTES = 5;
 const MAX_ATTEMPTS = 5;
 const RATE_LIMIT_REQUESTS = 3;
 const RATE_LIMIT_WINDOW_HOURS = 1;
+// Each WhatsApp code is a real message to someone's phone, so a number is limited
+// on its own, whatever email the request names.
+const WHATSAPP_OTP_MAX_PER_WINDOW = 3;
 
 /**
  * Generate a 6-digit OTP code
@@ -63,6 +70,49 @@ const incrementRateLimit = async (email: string): Promise<void> => {
       new: true,
     }
   );
+};
+
+/**
+ * Copies a verification code to WhatsApp, best-effort: a missing, malformed or
+ * over-limit number is skipped and the email code is unaffected. Counts per phone
+ * number (kept as a keyed hash, never the number) in a one-hour window.
+ */
+export const sendOtpToWhatsApp = async (
+  phone: string | undefined,
+  code: string,
+  name: string
+): Promise<boolean> => {
+  if (!phone) return false;
+  const normalized = normalizeIndianPhone(phone);
+  if (!isIndianMobile(normalized)) return false;
+
+  try {
+    const key = crypto
+      .createHmac("sha256", process.env.WHATSAPP_PHONE_HASH_KEY || process.env.JWT_SECRET || "")
+      .update(`whatsapp-otp:${normalized}`)
+      .digest("hex");
+    const now = new Date();
+    await RateLimit.deleteOne({ key, type: "WHATSAPP_OTP", resetAt: { $lte: now } });
+    const entry = await RateLimit.findOneAndUpdate(
+      { key, type: "WHATSAPP_OTP" },
+      {
+        $inc: { count: 1 },
+        $setOnInsert: { resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW_HOURS * 3600 * 1000) },
+      },
+      { upsert: true, new: true }
+    );
+    if (entry.count > WHATSAPP_OTP_MAX_PER_WINDOW) {
+      log.warn("WhatsApp OTP skipped: this number has reached its hourly limit");
+      return false;
+    }
+  } catch (err) {
+    // A fault in the limiter must not turn into unlimited sends.
+    log.warn("WhatsApp OTP skipped: could not check the limit", { error: (err as Error).message });
+    return false;
+  }
+
+  sendWhatsAppOtp({ phone: normalized, otp: code, name });
+  return true;
 };
 
 /**
@@ -215,14 +265,8 @@ export const sendVerificationCode = async (
       html,
     });
 
-    // ── WhatsApp OTP in parallel (best-effort, never blocks email) ──────────
-    if (phone) {
-      sendWhatsAppOtp({
-        phone: normalizeIndianPhone(phone),
-        otp: code,
-        name,
-      });
-    }
+    // ── WhatsApp copy (best-effort, never blocks email) ─────────────────────
+    void sendOtpToWhatsApp(phone, code, name);
 
     log.info(`Verification code sent to ${email}`);
 

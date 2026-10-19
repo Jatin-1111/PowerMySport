@@ -95,3 +95,20 @@ export const guestTrackRateLimiter = rateLimit({
     message: "Too many requests.",
   },
 });
+
+/**
+ * Limiter for the public "send me a verification code" endpoint: 10 requests an
+ * hour per IP. The per-email and per-phone limits stop one target being flooded;
+ * this stops one source trying many. Fails open if Redis is down.
+ */
+export const sendVerificationRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisRateLimitStore("rl:verify:send:"),
+  message: {
+    success: false,
+    message: "Too many verification requests. Please try again in an hour.",
+  },
+});

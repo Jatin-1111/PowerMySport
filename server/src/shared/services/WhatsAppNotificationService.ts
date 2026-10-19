@@ -62,6 +62,15 @@ export function normalizeIndianPhone(raw: string): string {
   return digits; // already includes country code or is unknown format — pass through
 }
 
+/**
+ * Whether `normalized` (the 12-digit form from `normalizeIndianPhone`) is an
+ * Indian mobile number: 91, then a number starting 6-9. Anything else is not
+ * worth a call to Meta.
+ */
+export function isIndianMobile(normalized: string): boolean {
+  return /^91[6-9]\d{9}$/.test(normalized);
+}
+
 function hmacSign(body: string): string {
   const secret = n8nSecret();
   if (!secret) throw new Error("PMS_SERVER_WEBHOOK_SECRET is not set");

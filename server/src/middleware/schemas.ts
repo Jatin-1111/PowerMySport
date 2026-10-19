@@ -1108,7 +1108,7 @@ export const sendVerificationCodeSchema = z.object({
   email: z.string().email("Invalid email format"),
   name: z.string().min(2, "Name must be at least 2 characters"),
   /** Optional — when present, OTP is also sent via WhatsApp */
-  phone: z.string().optional(),
+  phone: z.string().max(20).optional(),
 });
 
 /**

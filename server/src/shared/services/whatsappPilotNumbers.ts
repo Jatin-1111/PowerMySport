@@ -7,7 +7,7 @@ import {
 } from "../models/WhatsAppPilotNumber";
 import { log as __rootLog } from "../../utils/logger";
 import { isOnEnvList } from "./whatsappPilot";
-import { normalizeIndianPhone } from "./WhatsAppNotificationService";
+import { isIndianMobile, normalizeIndianPhone } from "./WhatsAppNotificationService";
 
 const log = __rootLog.child("whatsappPilot");
 
@@ -23,7 +23,6 @@ export function hashPilotPhone(normalized: string): string {
   return crypto.createHmac("sha256", key).update(`whatsapp-pilot:${normalized}`).digest("hex");
 }
 
-const INDIAN_MOBILE = /^91[6-9]\d{9}$/;
 export const MAX_ENTRIES_PER_REQUEST = 500;
 
 export interface ParsedEntry {
@@ -51,7 +50,7 @@ export function parsePilotInput(text: string): ParsedInput {
     if (!trimmed) continue;
     const match = trimmed.match(/^(\+?\d[\d\s-]{8,16}\d)\s*[,;\t:-]?\s*(.*)$/);
     const phone = match ? normalizeIndianPhone(match[1]!) : "";
-    if (!match || !INDIAN_MOBILE.test(phone)) {
+    if (!match || !isIndianMobile(phone)) {
       invalid.push(trimmed.slice(0, 60));
       continue;
     }

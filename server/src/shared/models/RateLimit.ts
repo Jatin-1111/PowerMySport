@@ -20,7 +20,7 @@ const rateLimitSchema = new Schema<RateLimitDocument>(
     type: {
       type: String,
       required: true,
-      enum: ["EMAIL_VERIFICATION", "LOGIN", "API"],
+      enum: ["EMAIL_VERIFICATION", "WHATSAPP_OTP", "LOGIN", "API"],
     },
     count: {
       type: Number,
