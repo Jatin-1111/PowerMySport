@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { Fragment, useEffect, useRef, useState } from "react";
+import React, { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   NavDropdownDivider,
   NavDropdownFooter,
@@ -34,6 +34,7 @@ import {
   NavDropdownItem,
   NavDropdownPanel,
 } from "./NavDropdown";
+import { MobileMenu, type MobileMenuItem } from "./MobileMenu";
 import { NotificationDropdown } from "./NotificationDropdown";
 
 export interface NavProps {
@@ -129,6 +130,15 @@ const exploreGroups = exploreItems.reduce<
   return groups;
 }, []);
 
+/** Served by the community app through a rewrite, so it has no page in this route tree. */
+const COMMUNITY_PATH = "/community";
+
+/** "SUPER_ADMIN" as "Super admin": sentence case, for the menu's account block. */
+const roleLabel = (role: string) => {
+  const text = role.replace(/_/g, " ").toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
 /**
  * Global Navigation Bar for marketing pages
  */
@@ -136,9 +146,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
-  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
-  const [mobileExploreOpen, setMobileExploreOpen] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const servicesDropdownRef = useRef<HTMLDivElement>(null);
@@ -212,6 +220,32 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
       router.push("/");
     }
   };
+
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  // Prefix match so a page inside a section still lights up its row.
+  const isMenuActive = (href: string) =>
+    pathname === href || (href !== "/" && !!pathname?.startsWith(`${href}/`));
+
+  const mobileMenuItems: MobileMenuItem[] = [
+    {
+      kind: "group",
+      key: "explore",
+      label: "Explore",
+      links: exploreItems.map(({ href, label, description }) => ({ href, label, description })),
+    },
+    { kind: "link", href: COMMUNITY_PATH, label: "Community" },
+    {
+      kind: "group",
+      key: "services",
+      label: "Services",
+      links: [
+        ...(isBookingLive ? [{ href: "/booking", label: "Book", description: BOOK_TABS }] : []),
+        ...servicesItems.map(({ href, label, description }) => ({ href, label, description })),
+      ],
+    },
+    ...navigationLinksRight.map((link) => ({ kind: "link" as const, ...link })),
+  ];
 
   const getDashboardLink = () => {
     if (!user) return null;
@@ -479,7 +513,9 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="hover:text-power-orange-solid focus:ring-power-orange rounded-md p-2 text-slate-800 focus:outline-none focus:ring-2"
-              aria-label="Toggle menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -487,291 +523,25 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="border-hairline bg-paper/95 overflow-hidden border-t md:hidden"
-          >
-            <div className="space-y-1 px-2 pb-3 pt-2">
-              {/* Mobile Explore Accordion (Roadmap + Guidance) */}
-              <div>
-                <button
-                  onClick={() => setMobileExploreOpen(!mobileExploreOpen)}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-base font-medium transition-colors",
-                    isExploreActive
-                      ? "text-power-orange-solid bg-orange-50"
-                      : "hover:bg-paper-deep text-slate-700"
-                  )}
-                >
-                  Explore
-                  <motion.span
-                    animate={{ rotate: mobileExploreOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="inline-flex"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </motion.span>
-                </button>
-
-                <AnimatePresence>
-                  {mobileExploreOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
-                        {exploreItems.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => {
-                                setMobileExploreOpen(false);
-                                setMobileMenuOpen(false);
-                              }}
-                              className={cn(
-                                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                                pathname === item.href
-                                  ? "text-power-orange-solid bg-orange-50"
-                                  : "hover:text-power-orange-solid text-slate-600 hover:bg-orange-50"
-                              )}
-                            >
-                              <Icon className="h-4 w-4 shrink-0" />
-                              {item.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Community Link */}
-              <Link
-                href="/community"
-                className={cn(
-                  "hover:bg-paper-deep block rounded-md px-3 py-2 transition-colors",
-                  isActive("/community") ? "bg-orange-50" : ""
-                )}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span
-                  className={cn(
-                    "text-base font-medium",
-                    isActive("/community") ? "text-power-orange-solid" : "text-slate-700"
-                  )}
-                >
-                  Community
-                </span>
-              </Link>
-
-              {/* Mobile Services Accordion */}
-              <div>
-                <button
-                  onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-md px-3 py-2 transition-colors",
-                    isServicesActive ? "bg-orange-50" : "hover:bg-paper-deep"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "text-base font-medium",
-                      isServicesActive ? "text-power-orange-solid" : "text-slate-700"
-                    )}
-                  >
-                    Services
-                  </span>
-                  <motion.span
-                    animate={{ rotate: mobileServicesOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className={cn(
-                      "inline-flex",
-                      isServicesActive ? "text-power-orange" : "text-slate-700"
-                    )}
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </motion.span>
-                </button>
-
-                <AnimatePresence>
-                  {mobileServicesOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
-                        {/* Book link */}
-                        {isBookingLive && (
-                          <Link
-                            href="/booking"
-                            onClick={() => {
-                              setMobileServicesOpen(false);
-                              setMobileMenuOpen(false);
-                            }}
-                            className={cn(
-                              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                              isBookingActive
-                                ? "text-power-orange-solid bg-orange-50"
-                                : "hover:text-power-orange-solid text-slate-600 hover:bg-orange-50"
-                            )}
-                          >
-                            <CalendarCheck className="h-4 w-4 shrink-0" />
-                            Book
-                          </Link>
-                        )}
-
-                        {servicesItems.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => {
-                                setMobileServicesOpen(false);
-                                setMobileMenuOpen(false);
-                              }}
-                              className={cn(
-                                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                                pathname === item.href
-                                  ? "text-power-orange-solid bg-orange-50"
-                                  : "hover:text-power-orange-solid text-slate-600 hover:bg-orange-50"
-                              )}
-                            >
-                              <Icon className="h-4 w-4 shrink-0" />
-                              {item.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Right Nav Links */}
-              {navigationLinksRight.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "hover:bg-paper-deep block rounded-md px-3 py-2 text-base font-medium transition-colors",
-                    isActive(link.href) ? "text-power-orange-solid bg-orange-50" : "text-slate-700"
-                  )}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
-
-              {/* Mobile Auth Buttons */}
-              <div className="space-y-2 pb-2 pt-4">
-                {user ? (
-                  <>
-                    <div className="border-border border-b px-3 py-2">
-                      <p className="text-sm font-medium text-slate-900">{user.name}</p>
-                      <p className="mt-1 text-xs text-slate-500">{user.email}</p>
-                      <p className="text-power-orange-solid mt-1.5 text-xs font-semibold uppercase tracking-wider">
-                        {user.role.replace("_", " ")}
-                      </p>
-                    </div>
-
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      fullWidth
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="justify-start"
-                    >
-                      <Link href={getDashboardLink() || "/"}>
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </Button>
-
-                    {user.role !== "EXPERT" && (
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="justify-start"
-                      >
-                        <Link href="/experts/sessions">
-                          <CalendarCheck className="mr-2 h-4 w-4" />
-                          My Sessions
-                        </Link>
-                      </Button>
-                    )}
-
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      fullWidth
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="justify-start"
-                    >
-                      <Link href={settingsHomeFor(user.role)}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
-                      </Link>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      fullWidth
-                      onClick={handleLogout}
-                      className="text-error-red justify-start"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      fullWidth
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link href="/login">Login</Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="primary"
-                      size="sm"
-                      fullWidth
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <Link href="/register">Get Started</Link>
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <MobileMenu
+        open={mobileMenuOpen}
+        onClose={closeMobileMenu}
+        items={mobileMenuItems}
+        isActive={isMenuActive}
+        account={
+          user
+            ? {
+                name: user.name,
+                email: user.email,
+                roleLabel: roleLabel(user.role),
+                dashboardHref: getDashboardLink() || "/",
+                sessionsHref: user.role !== "EXPERT" ? "/experts/sessions" : undefined,
+                settingsHref: settingsHomeFor(user.role),
+                onLogout: handleLogout,
+              }
+            : null
+        }
+      />
     </nav>
   );
 };
