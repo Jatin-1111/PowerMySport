@@ -173,36 +173,40 @@ export default function HomeClient({
       {/* ── Everything PMS covers ── */}
       <ExploreGrid />
 
-      {/* ── A real pathway, stage by stage ── */}
-      <section className="bg-paper-deep relative overflow-hidden py-24 sm:py-32 lg:py-40">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className={`grid items-center gap-12 ${pathway ? "lg:grid-cols-[1fr_1fr]" : ""}`}>
-            <div className="reveal-on-scroll">
-              <SectionKicker label="Pathway guides" />
-              <h2 className={`${SECTION_HEADING} mb-6`}>See what each stage asks of your child</h2>
-              <p className={`${SECTION_LEAD} mb-10`}>
-                Free to read, no account needed.
-                {coveredSports.length > 0 &&
-                  ` Full guides are live for ${joinNames(coveredSports)}. Ask us about any other sport.`}
-              </p>
-              <Link
-                href="/roadmap"
-                className="btn-motion bg-ink hover:bg-ink-hover focus-visible:ring-ink focus-visible:ring-offset-paper-deep group inline-flex items-center justify-center gap-1.5 rounded-md px-6 py-3.5 text-base font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-              >
-                Explore pathways
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </div>
+      {/* ── One real pathway, opened up. The photo band above already makes the
+          pitch and links to /roadmap, so this only shows when there is a guide to
+          show: with no pathway data (API down) there is nothing to add. ── */}
+      {pathway && (pathway.stages?.length ?? 0) > 0 && (
+        <section className="bg-paper-deep relative overflow-hidden py-24 sm:py-32 lg:py-40">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
+              <div className="reveal-on-scroll">
+                <SectionKicker label="One guide, opened up" />
+                <h2 className={`${SECTION_HEADING} mb-6`}>
+                  What a {pathway.sportName} guide tells you
+                </h2>
+                <p className={`${SECTION_LEAD} mb-10`}>
+                  Each stage lists the ages it covers and the question parents ask there. Free to
+                  read, no account needed.
+                  {coveredSports.length > 1 &&
+                    ` Full guides are live for ${joinNames(coveredSports)}. Ask us about any other sport.`}
+                </p>
+                <Link
+                  href={roadmapHref(pathway.sportName)}
+                  className="btn-motion bg-ink hover:bg-ink-hover focus-visible:ring-ink focus-visible:ring-offset-paper-deep group inline-flex items-center justify-center gap-1.5 rounded-md px-6 py-3.5 text-base font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                >
+                  Read the {pathway.sportName} guide
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </div>
 
-            {/* The product itself is the picture; no pathway data (API down), no card. */}
-            {pathway && (
               <div className="reveal-on-scroll mx-auto w-full max-w-[612px]">
                 <PathwayPreviewCard pathway={pathway} />
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── Final CTA ── */}
       <HomeClosing
