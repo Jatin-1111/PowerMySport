@@ -1,9 +1,9 @@
 import { Button } from "@/modules/shared/ui/Button";
 import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import { ArrowRight, Check } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { HeroPhoto } from "./HeroPhoto";
 
 export interface HeroProps {
   title: string;
@@ -106,14 +106,7 @@ export const Hero: React.FC<HeroProps> = ({
         {/* The photograph: one wide plate. A young footballer on a local turf ground, anchored to the top so the face stays in frame at every ratio. */}
         <div className="relative mt-14 lg:mt-20">
           <div className="bg-paper-deep relative aspect-[4/3] overflow-hidden rounded-2xl sm:aspect-[3/2] lg:aspect-[16/10]">
-            <Image
-              src="https://images.unsplash.com/photo-1605550498663-f270981a3cf8?fm=jpg&q=75&w=2400&auto=format&fit=crop"
-              alt="A smiling young boy in a blue kit about to kick a football on a turf ground"
-              fill
-              priority
-              sizes="(min-width: 1280px) 1216px, 100vw"
-              className="object-cover object-top saturate-[0.9]"
-            />
+            <HeroPhoto />
           </div>
 
           {ctaNote && (
