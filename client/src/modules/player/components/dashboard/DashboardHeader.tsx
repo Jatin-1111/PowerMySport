@@ -4,7 +4,6 @@ import { useProfile } from "@/modules/auth/hooks/useProfile";
 import { calculateProfileCompletion } from "@/modules/player/utils/profileCompletion";
 import { ProfileCompletionRing } from "@/modules/player/components/ProfileCompletionRing";
 import { Avatar, AvatarFallback, AvatarImage } from "@/modules/shared/ui/Avatar";
-import { Badge } from "@/modules/shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import Link from "next/link";
@@ -65,12 +64,9 @@ export function DashboardHeader() {
 
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-editorial text-xl font-normal text-slate-900 sm:text-2xl">
+              <h1 className="font-editorial text-ink text-2xl font-light sm:text-3xl">
                 Hi, {name}
               </h1>
-              <Badge className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50">
-                {isParent ? "Parent" : "Player"}
-              </Badge>
             </div>
             <p className="mt-0.5 text-sm text-slate-500">
               {percent >= 100

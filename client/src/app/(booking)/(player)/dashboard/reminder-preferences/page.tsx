@@ -7,10 +7,9 @@ import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
+import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import { cn } from "@/utils/cn";
-import { motion } from "framer-motion";
-import { AlarmClock, Bell, CalendarDays, CheckCircle } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface ReminderPreferences {
@@ -102,11 +101,11 @@ export default function ReminderPreferencesPage() {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reminder Preferences" }]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reminder preferences" }]}
         />
         <PlayerPageHeader
           badge="Player"
-          title="Reminder Preferences"
+          title="Reminder preferences"
           subtitle="Control when and how you receive booking reminders."
         />
         <ListSkeleton count={3} />
@@ -121,38 +120,35 @@ export default function ReminderPreferencesPage() {
       key: "twentyFourHours" as const,
       label: "24 hours before",
       description: "A day in advance, good for planning ahead",
-      icon: CalendarDays,
     },
     {
       key: "oneHour" as const,
       label: "1 hour before",
       description: "An hour in advance, time to get ready",
-      icon: AlarmClock,
     },
     {
       key: "fifteenMinutes" as const,
       label: "15 minutes before",
       description: "A last-minute heads up, just before the session",
-      icon: Bell,
     },
   ];
 
   return (
     <div className="space-y-6">
       <Breadcrumbs
-        items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reminder Preferences" }]}
+        items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reminder preferences" }]}
       />
 
       <PlayerPageHeader
         badge="Player"
-        title="Reminder Preferences"
+        title="Reminder preferences"
         subtitle="Control when and how you receive booking reminders."
       />
 
-      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+      <Card className="overflow-hidden p-0">
         <ProfileSectionHeader
           icon={Bell}
-          title="Booking Reminders"
+          title="Booking reminders"
           description="Receive push notifications before your upcoming sessions."
           action={
             <label className="relative inline-flex cursor-pointer items-center gap-2">
@@ -160,11 +156,12 @@ export default function ReminderPreferencesPage() {
                 type="checkbox"
                 checked={bookingReminders.enabled}
                 onChange={(e) => toggleEnabled(e.target.checked)}
-                className="sr-only"
+                role="switch"
+                className="peer sr-only"
               />
               <div
                 className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${
-                  bookingReminders.enabled ? "bg-power-orange" : "bg-slate-200"
+                  bookingReminders.enabled ? "bg-ink" : "bg-slate-300"
                 }`}
               >
                 <span
@@ -173,8 +170,8 @@ export default function ReminderPreferencesPage() {
                   }`}
                 />
               </div>
-              <span className="text-sm font-semibold text-slate-700">
-                {bookingReminders.enabled ? "Enabled" : "Disabled"}
+              <span className="text-ink text-sm font-medium">
+                {bookingReminders.enabled ? "On" : "Off"}
               </span>
             </label>
           }
@@ -182,75 +179,43 @@ export default function ReminderPreferencesPage() {
 
         <CardContent className="space-y-4 px-6 py-6">
           {bookingReminders.enabled ? (
-            <>
-              <p className="text-sm font-semibold text-slate-700">Remind me before a booking:</p>
-              <div className="space-y-3">
-                {intervalItems.map(({ key, label, description, icon: Icon }) => {
+            <fieldset>
+              <legend className="text-ink mb-1 text-base font-medium">
+                Remind me before a booking
+              </legend>
+              <ul className="border-hairline divide-hairline divide-y border-y">
+                {intervalItems.map(({ key, label, description }) => {
                   const isChecked = bookingReminders.intervals[key];
                   return (
-                    <motion.label
-                      key={key}
-                      className={cn(
-                        "flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all",
-                        isChecked
-                          ? "border-power-orange/30 bg-orange-50/50"
-                          : "border-slate-200/70 bg-slate-50/40 hover:border-slate-300 hover:bg-white"
-                      )}
-                      whileHover={{ y: -1 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                            isChecked
-                              ? "bg-power-orange/10 text-power-orange"
-                              : "bg-slate-100 text-slate-500"
-                          )}
-                        >
-                          <Icon className="h-5 w-5" aria-hidden />
-                        </div>
-                        <div>
-                          <p
-                            className={cn(
-                              "text-sm font-semibold",
-                              isChecked ? "text-slate-900" : "text-slate-700"
-                            )}
-                          >
-                            {label}
-                          </p>
-                          <p className="text-xs text-slate-500">{description}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isChecked && <CheckCircle className="text-power-orange h-4 w-4" />}
+                    <li key={key}>
+                      <label className="hover:bg-paper-deep/60 flex cursor-pointer items-center justify-between gap-4 px-1 py-4 transition-colors">
+                        <span>
+                          <span className="text-ink block font-medium">{label}</span>
+                          <span className="text-ink-muted block text-sm">{description}</span>
+                        </span>
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={(e) => toggleInterval(key, e.target.checked)}
-                          className="accent-power-orange h-4 w-4 cursor-pointer"
+                          className="accent-ink h-5 w-5 shrink-0 cursor-pointer"
                         />
-                      </div>
-                    </motion.label>
+                      </label>
+                    </li>
                   );
                 })}
-              </div>
-            </>
+              </ul>
+            </fieldset>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 px-4 py-8 text-center">
-              <Bell className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-              <p className="text-sm font-medium text-slate-500">
-                Booking reminders are currently disabled.
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Toggle the switch above to enable notifications.
-              </p>
-            </div>
+            <EmptyState
+              icon={Bell}
+              title="Reminders are off"
+              description="Switch booking reminders on above to be told before your sessions."
+            />
           )}
 
-          <div className="flex justify-end border-t border-slate-200/60 pt-4">
+          <div className="flex justify-end pt-2">
             <Button variant="primary" onClick={handleSave} disabled={isSaving} loading={isSaving}>
-              {isSaving ? "Saving..." : "Save Preferences"}
+              {isSaving ? "Saving" : "Save preferences"}
             </Button>
           </div>
         </CardContent>

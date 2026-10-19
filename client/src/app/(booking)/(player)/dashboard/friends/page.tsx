@@ -325,7 +325,7 @@ export default function FriendsPage() {
           {/* Friends List Tab */}
           <TabsContent value="friends" className="space-y-4">
             {friends.length === 0 ? (
-              <Card className="shop-surface premium-shadow">
+              <Card>
                 <EmptyState
                   icon={Users}
                   title="No friends yet"
@@ -337,10 +337,7 @@ export default function FriendsPage() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {friends.map((friend) => (
-                  <Card
-                    key={friend.id}
-                    className="shop-surface premium-shadow p-0 transition-all duration-200 hover:shadow-md"
-                  >
+                  <Card key={friend.id} className="p-0">
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between">
                         <div className="flex flex-1 items-center gap-3">
@@ -404,7 +401,7 @@ export default function FriendsPage() {
           {/* Pending Requests Tab */}
           <TabsContent value="requests" className="space-y-6">
             {/* Received Requests */}
-            <Card className="shop-surface premium-shadow overflow-hidden p-0">
+            <Card className="overflow-hidden p-0">
               <ProfileSectionHeader
                 icon={Clock}
                 title="Received Requests"
@@ -474,7 +471,7 @@ export default function FriendsPage() {
             </Card>
 
             {/* Sent Requests */}
-            <Card className="shop-surface premium-shadow overflow-hidden p-0">
+            <Card className="overflow-hidden p-0">
               <ProfileSectionHeader
                 icon={Send}
                 title="Sent Requests"
@@ -521,7 +518,7 @@ export default function FriendsPage() {
 
           {/* Search Tab */}
           <TabsContent value="search" className="space-y-4">
-            <Card className="shop-surface premium-shadow overflow-hidden p-0">
+            <Card className="overflow-hidden p-0">
               <ProfileSectionHeader
                 icon={Search}
                 title="Find Friends"

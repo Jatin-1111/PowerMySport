@@ -17,8 +17,6 @@ import {
   EyeOff,
   KeyRound,
   Loader2,
-  Settings,
-  Shield,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -270,36 +268,30 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
       <StaggerContainer staggerChildren={0.08} className="space-y-6">
         {/* Header */}
         <StaggerItem>
-          <div className="relative overflow-hidden rounded-2xl border-0 bg-white/70 p-6 shadow-sm backdrop-blur-sm sm:p-8">
-            <div className="border-power-orange/30 bg-power-orange/10 text-power-orange relative z-10 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-semibold">
-              <Settings size={14} />
-              Account Settings
-            </div>
-            <h1 className="font-editorial relative z-10 mt-4 text-3xl font-light text-slate-900 sm:text-4xl">
+          <header>
+            <h1 className="font-editorial text-ink text-4xl font-light tracking-tight sm:text-5xl">
               Settings
             </h1>
-            <p className="relative z-10 mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+            <p className="text-ink-body mt-3 max-w-2xl text-base">
               Manage your account, security, and preferences.
             </p>
-            <div className="bg-power-orange/5 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
-            <div className="bg-turf-green/5 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
-          </div>
+          </header>
         </StaggerItem>
 
         {/* Account overview */}
         <StaggerItem>
-          <Card className="border-0 bg-white p-0 shadow-sm">
+          <Card className="p-0">
             <div className="flex items-center gap-4 p-6">
-              <div className="bg-power-orange flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-md">
+              <div className="bg-ink flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-lg font-semibold text-white">
                 {initials(user.name)}
               </div>
               <div className="min-w-0 flex-1">
                 <h2 className="truncate text-lg font-semibold text-slate-900">{user.name}</h2>
                 <p className="truncate text-sm text-slate-500">{user.email}</p>
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                  <Shield size={12} />
-                  {user.role.replace(/_/g, " ")}
-                </div>
+                <p className="text-ink-muted mt-1 text-sm">
+                  {user.role.replace(/_/g, " ").charAt(0).toUpperCase() +
+                    user.role.replace(/_/g, " ").slice(1).toLowerCase()}
+                </p>
               </div>
             </div>
           </Card>
@@ -308,7 +300,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Security */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="font-editorial text-ink mb-3 text-2xl font-light tracking-tight">
               Security
             </h2>
             <Card className="border-0 bg-white p-0 shadow-sm">
@@ -421,7 +413,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Linked Accounts */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="font-editorial text-ink mb-3 text-2xl font-light tracking-tight">
               Linked Accounts
             </h2>
             <Card className="border-0 bg-white p-0 shadow-sm">
@@ -481,7 +473,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Notifications */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="font-editorial text-ink mb-3 text-2xl font-light tracking-tight">
               General
             </h2>
             <Link href={`${basePath}/notifications`}>
@@ -511,7 +503,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Role-specific links */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="font-editorial text-ink mb-3 text-2xl font-light tracking-tight">
               {user.role.replace(/_/g, " ")} Settings
             </h2>
             <div className="grid gap-3">
@@ -538,7 +530,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         {/* Danger zone */}
         <StaggerItem>
           <div>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-rose-600">
+            <h2 className="font-editorial mb-3 text-2xl font-light tracking-tight text-red-700">
               Danger Zone
             </h2>
             <Card className="border-0 bg-rose-50/40 p-0 shadow-sm ring-1 ring-inset ring-rose-100">

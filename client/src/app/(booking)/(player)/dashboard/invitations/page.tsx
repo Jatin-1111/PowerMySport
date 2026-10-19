@@ -110,7 +110,7 @@ export default function InvitationsPage() {
       ) : (
         <div className="space-y-6">
           {/* Pending Invitations */}
-          <Card className="shop-surface premium-shadow overflow-hidden p-0">
+          <Card className="overflow-hidden p-0">
             <ProfileSectionHeader
               icon={Clock}
               title="Pending Invitations"
@@ -225,7 +225,7 @@ export default function InvitationsPage() {
 
           {/* Past Invitations */}
           {respondedInvitations.length > 0 && (
-            <Card className="shop-surface premium-shadow overflow-hidden p-0">
+            <Card className="overflow-hidden p-0">
               <ProfileSectionHeader
                 icon={History}
                 title="Past Invitations"

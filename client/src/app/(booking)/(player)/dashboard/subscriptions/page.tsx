@@ -169,7 +169,7 @@ export default function SubscriptionsPage() {
         ]}
       />
 
-      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+      <Card className="overflow-hidden p-0">
         <ProfileSectionHeader
           icon={TrendingUp}
           title="Manage Subscriptions"

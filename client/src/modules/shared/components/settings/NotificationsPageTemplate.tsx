@@ -11,7 +11,7 @@ import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Bell, Lightbulb, Mail, MonitorSmartphone, Save, Smartphone, X } from "lucide-react";
+import { Lightbulb, Mail, MonitorSmartphone, Save, Smartphone, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -206,11 +206,7 @@ export function NotificationsPageTemplate({ backUrl = "/settings" }: { backUrl?:
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="border-power-orange/30 bg-power-orange/10 text-power-orange inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm">
-          <Bell size={14} />
-          Notification Settings
-        </div>
-        <h1 className="font-editorial mt-4 text-3xl font-light text-slate-900">
+        <h1 className="font-editorial text-ink text-4xl font-light tracking-tight sm:text-5xl">
           Notification Preferences
         </h1>
         <p className="mt-2 text-slate-600">

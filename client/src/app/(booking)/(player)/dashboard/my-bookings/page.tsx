@@ -309,7 +309,7 @@ export default function BookingsPage() {
       {view === "calendar" ? (
         <BookingCalendar />
       ) : bookings.length === 0 ? (
-        <Card className="shop-surface premium-shadow">
+        <Card>
           <EmptyState
             icon={CalendarX}
             title="No bookings yet"
@@ -323,7 +323,7 @@ export default function BookingsPage() {
       ) : (
         <div className="space-y-6">
           {/* Tabs */}
-          <Card className="shop-surface premium-shadow overflow-hidden p-0">
+          <Card className="overflow-hidden p-0">
             <BookingTabBar
               activeTab={activeTab}
               counts={tabCounts}
@@ -336,7 +336,7 @@ export default function BookingsPage() {
 
           {/* Bookings List */}
           {filteredBookings.length === 0 ? (
-            <Card className="shop-surface premium-shadow">
+            <Card>
               <EmptyState
                 icon={activeTabConfig.icon}
                 title={activeTabConfig.emptyTitle}
@@ -348,10 +348,7 @@ export default function BookingsPage() {
           ) : (
             <div className="space-y-4">
               {filteredBookings.map((booking) => (
-                <Card
-                  key={booking.id}
-                  className="shop-surface premium-shadow overflow-hidden p-0 transition-all duration-200 hover:shadow-md"
-                >
+                <Card key={booking.id} className="overflow-hidden p-0">
                   {/* Colored left stripe based on status */}
                   <div className="flex">
                     <div
@@ -519,7 +516,7 @@ export default function BookingsPage() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && filteredBookings.length > 0 && (
-            <Card className="shop-surface premium-shadow">
+            <Card>
               <div className="flex items-center justify-between gap-4">
                 <div className="text-sm text-slate-600">
                   Page {currentPage} of {pagination.totalPages} • {filteredBookings.length}{" "}

@@ -506,7 +506,7 @@ export default function DependentDetailPage() {
               <Button
                 onClick={() => setShowGraduationModal(true)}
                 disabled={!isEligibleToGraduate}
-                variant={isEligibleToGraduate ? "primary" : "secondary"}
+                variant={isEligibleToGraduate ? "primary" : "outline"}
                 icon={<GraduationCap size={16} />}
                 className="w-full sm:w-auto"
               >

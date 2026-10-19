@@ -1,7 +1,6 @@
 "use client";
 
 import { useNotifications } from "@/hooks/useNotifications";
-import { cn } from "@/utils/cn";
 import { Bell, Mail, UserPlus, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
@@ -24,7 +23,6 @@ interface ActionPillSpec {
   href: string;
   icon: LucideIcon;
   label: (n: number) => string;
-  tone: string;
 }
 
 function ActionPill({ spec }: { spec: ActionPillSpec }) {
@@ -32,12 +30,9 @@ function ActionPill({ spec }: { spec: ActionPillSpec }) {
   return (
     <Link
       href={spec.href}
-      className={cn(
-        "premium-shadow flex items-center gap-3 rounded-xl border bg-white/70 px-4 py-3 transition-all hover:-translate-y-0.5 hover:shadow-lg",
-        spec.tone
-      )}
+      className="border-hairline text-ink hover:bg-paper-deep flex items-center gap-3 rounded-xl border bg-white px-4 py-3 transition-colors"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/70">
+      <span className="bg-paper-deep flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
         <Icon className="h-4 w-4" />
       </span>
       <span className="text-sm font-semibold">{spec.label(spec.count)}</span>
@@ -57,7 +52,6 @@ export function ActionCenter() {
       href: "/dashboard/friends",
       icon: UserPlus,
       label: (n) => `${n} friend ${plural(n, "request", "requests")}`,
-      tone: "border-indigo-200 text-indigo-700",
     },
     {
       key: "invitations",
@@ -65,7 +59,6 @@ export function ActionCenter() {
       href: "/dashboard/invitations",
       icon: Mail,
       label: (n) => `${n} ${plural(n, "invitation", "invitations")}`,
-      tone: "border-orange-200 text-orange-700",
     },
     {
       key: "unread",
@@ -73,7 +66,6 @@ export function ActionCenter() {
       href: "/notifications",
       icon: Bell,
       label: (n) => `${n} unread ${plural(n, "notification", "notifications")}`,
-      tone: "border-slate-200 text-slate-700",
     },
   ];
 

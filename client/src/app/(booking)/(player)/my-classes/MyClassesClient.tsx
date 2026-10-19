@@ -14,7 +14,9 @@ import {
 import { coachProgramsApi } from "@/modules/coach/services/coachPrograms";
 import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import type { CoachEnrollment, CoachOffering } from "@/types/coachPrograms";
@@ -36,10 +38,15 @@ export const MyClassesClient = () => {
   const { data: sessions = [] } = useMyUpcomingSessions();
   const refresh = useInvalidateCoachPrograms();
 
+  const crumbs = (
+    <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My classes" }]} />
+  );
+
   if (isPending) {
     return (
-      <main className="mx-auto w-full max-w-3xl px-4 py-8">
-        <Skeleton className="mb-4 h-8 w-48" />
+      <main className="space-y-6">
+        {crumbs}
+        <Skeleton className="h-12 w-64" />
         <Skeleton className="h-40 w-full rounded-xl" />
       </main>
     );
@@ -47,7 +54,12 @@ export const MyClassesClient = () => {
 
   if (enrollments.length === 0) {
     return (
-      <main className="mx-auto w-full max-w-3xl px-4 py-8">
+      <main className="space-y-6">
+        {crumbs}
+        <PlayerPageHeader
+          title="My classes"
+          subtitle="Your weekly coaching classes and what is left in each programme."
+        />
         <EmptyState
           icon={CalendarDays}
           title="No classes yet"
@@ -60,31 +72,39 @@ export const MyClassesClient = () => {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
-      <header className="mb-6">
-        <h1 className="font-editorial text-2xl font-normal">My classes</h1>
-      </header>
+    <main className="space-y-10">
+      <div className="space-y-6">
+        {crumbs}
+        <PlayerPageHeader
+          title="My classes"
+          subtitle="Your weekly coaching classes and what is left in each programme."
+        />
+      </div>
 
-      <section className="mb-8" aria-labelledby="next-heading">
-        <h2 id="next-heading" className="mb-3 font-semibold">
+      <section aria-labelledby="next-heading">
+        <h2
+          id="next-heading"
+          className="font-editorial text-ink border-hairline border-b pb-3 text-2xl font-light tracking-tight"
+        >
           Coming up
         </h2>
         {sessions.length === 0 ? (
-          <Card className="text-muted-foreground p-4 text-sm">No classes scheduled right now.</Card>
+          <p className="text-ink-muted py-5 text-sm">No classes scheduled right now.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-hairline divide-y">
             {sessions.slice(0, 8).map((session) => (
-              <li key={session.id}>
-                <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
-                  <div>
-                    <p className="font-medium">{formatSessionTime(session.scheduledAt)}</p>
-                    <p className="text-muted-foreground text-sm">
-                      {session.sport}
-                      {session.isMakeup ? " · makeup class" : ""}
-                    </p>
-                  </div>
-                  <ConnectionDetail delivery={session.delivery} status={session.status} />
-                </Card>
+              <li
+                key={session.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-4"
+              >
+                <div>
+                  <p className="text-ink font-medium">{formatSessionTime(session.scheduledAt)}</p>
+                  <p className="text-ink-muted text-sm">
+                    {session.sport}
+                    {session.isMakeup ? " · makeup class" : ""}
+                  </p>
+                </div>
+                <ConnectionDetail delivery={session.delivery} status={session.status} />
               </li>
             ))}
           </ul>
@@ -92,10 +112,13 @@ export const MyClassesClient = () => {
       </section>
 
       <section aria-labelledby="programmes-heading">
-        <h2 id="programmes-heading" className="mb-3 font-semibold">
+        <h2
+          id="programmes-heading"
+          className="font-editorial text-ink border-hairline border-b pb-3 text-2xl font-light tracking-tight"
+        >
           Programmes
         </h2>
-        <ul className="space-y-2">
+        <ul className="divide-hairline divide-y">
           {enrollments.map((enrollment) => (
             <li key={enrollment.id}>
               <EnrollmentCard enrollment={enrollment} onChanged={refresh} />
@@ -116,6 +139,7 @@ const EnrollmentCard = ({
 }) => {
   const [renewing, setRenewing] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const offering =
     typeof enrollment.offeringId === "object"
@@ -131,16 +155,12 @@ const EnrollmentCard = ({
   const unusedClasses = enrollment.credits?.AVAILABLE?.count ?? 0;
   const refundablePaise = enrollment.credits?.AVAILABLE?.amountPaise ?? 0;
 
-  const leave = async () => {
-    // Say the number out loud before they commit. It is computed exactly from
-    // the ledger, so it is a promise the system can actually keep.
-    const confirmed = window.confirm(
-      unusedClasses > 0
-        ? `Leave this programme? ${unusedClasses} unused class${unusedClasses === 1 ? "" : "es"}, ${formatPaise(refundablePaise)}, will be refunded.`
-        : "Leave this programme? You have no unused classes, so there is nothing to refund."
-    );
-    if (!confirmed) return;
+  const leaveMessage =
+    unusedClasses > 0
+      ? `${unusedClasses} unused class${unusedClasses === 1 ? "" : "es"}, ${formatPaise(refundablePaise)}, will be refunded.`
+      : "You have no unused classes, so there is nothing to refund.";
 
+  const leave = async () => {
     setLeaving(true);
     try {
       const response = await coachProgramsApi.leave(enrollment.id);
@@ -188,10 +208,10 @@ const EnrollmentCard = ({
   };
 
   return (
-    <Card className="flex flex-wrap items-start justify-between gap-3 p-4">
+    <div className="flex flex-wrap items-start justify-between gap-4 py-5">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-medium">{offering?.title ?? "Coaching programme"}</p>
+          <p className="text-ink text-lg font-medium">{offering?.title ?? "Coaching programme"}</p>
           {offering ? (
             <DeliveryBadge
               kind={offering.deliveryKind}
@@ -199,21 +219,21 @@ const EnrollmentCard = ({
             />
           ) : null}
         </div>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-ink-muted text-sm">
           {enrollment.studentName}
           {offering ? ` · ${formatSchedule(offering.schedule, offering.timezone)}` : ""}
         </p>
         {needsRenewal ? (
-          <p className="text-power-orange mt-1 text-sm font-medium">
-            Out of classes. Renew to keep {enrollment.studentName}&apos;s place
+          <p className="mt-1 text-sm font-medium text-amber-700">
+            Out of classes. Renew to keep {enrollment.studentName}&apos;s place.
           </p>
         ) : null}
       </div>
 
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-col items-end gap-3">
         <div className="text-right">
-          <p className="text-lg font-semibold">{classesLeft}</p>
-          <p className="text-muted-foreground text-xs">class{classesLeft === 1 ? "" : "es"} left</p>
+          <p className="text-ink text-3xl font-light tabular-nums leading-none">{classesLeft}</p>
+          <p className="text-ink-muted mt-1 text-sm">class{classesLeft === 1 ? "" : "es"} left</p>
         </div>
         <div className="flex gap-2">
           {needsRenewal ? (
@@ -221,11 +241,27 @@ const EnrollmentCard = ({
               Renew
             </Button>
           ) : null}
-          <Button size="sm" variant="ghost" loading={leaving} onClick={leave}>
+          <Button
+            size="sm"
+            variant="outline"
+            loading={leaving}
+            onClick={() => setConfirmLeave(true)}
+          >
             Leave
           </Button>
         </div>
       </div>
-    </Card>
+
+      <ConfirmDialog
+        isOpen={confirmLeave}
+        onClose={() => setConfirmLeave(false)}
+        onConfirm={leave}
+        title="Leave this programme?"
+        message={leaveMessage}
+        confirmLabel="Leave programme"
+        cancelLabel="Stay"
+        variant="danger"
+      />
+    </div>
   );
 };

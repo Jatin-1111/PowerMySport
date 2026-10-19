@@ -96,7 +96,7 @@ export function RankingLinkCard({
     // `backdrop-blur-md` and `overflow-hidden` is a bad place to write an
     // overlay, and keeping them siblings says so.
     <>
-      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+      <Card className="overflow-hidden p-0">
         <ProfileSectionHeader
           icon={Trophy}
           title="Federation ranking"
