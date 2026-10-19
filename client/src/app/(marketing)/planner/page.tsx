@@ -39,10 +39,10 @@ export default function PlannerPage() {
       <div className="min-h-screen bg-slate-50">
         <PageHeader
           breadcrumbs={[{ label: "Season planner" }]}
-          eyebrow="Tennis"
           title="Season planner"
-          description="Plan your child's season around the tournaments they can actually enter. Events are checked against the federation's published entry rules for their age group and rank."
+          description="Tennis tournaments your child can actually enter, checked against the federation's entry rules for their age and rank."
           width="7xl"
+          size="compact"
         />
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <PlannerApp />

@@ -6,6 +6,11 @@ import { useState } from "react";
 /**
  * A titled section that stays closed until it is wanted.
  *
+ * It is a ruled row, not a card: a hairline above, the title and a chevron, and the
+ * content open on the page beneath. With the calendar and both event lists open at
+ * once, three stacked boxes read as three more things to look at; three ruled rows
+ * read as one page with sections.
+ *
  * Open state can belong to the parent (`open` with `onOpenChange`), for the one
  * place where a button elsewhere on the page needs to open it. Without those it
  * looks after itself.
@@ -35,25 +40,28 @@ export function Collapsible({
   };
 
   return (
-    <section data-tour={tour} className="rounded-lg border border-slate-200 bg-white">
-      <h2 className="font-editorial text-lg font-normal text-slate-900">
+    <section data-tour={tour} className="border-hairline border-t">
+      <h2 className="font-editorial text-ink text-xl font-normal">
         <button
           type="button"
           aria-expanded={open}
           onClick={toggle}
-          className="flex min-h-14 w-full items-center justify-between gap-4 rounded-lg px-5 py-3 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:px-6"
+          className="focus-visible:ring-ink hover:bg-paper-deep/60 group -mx-3 flex min-h-16 w-[calc(100%+1.5rem)] items-center justify-between gap-4 rounded-lg px-3 py-4 text-left transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2"
         >
           <span>
             {title}
-            <span className="mt-0.5 block text-sm font-normal text-slate-600">{description}</span>
+            <span className="text-ink-body mt-0.5 block font-sans text-sm font-normal">
+              {description}
+            </span>
           </span>
           <ChevronDown
-            className={`h-5 w-5 shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`text-ink-muted h-5 w-5 shrink-0 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+            strokeWidth={1.5}
             aria-hidden
           />
         </button>
       </h2>
-      {open && <div className="border-t border-slate-100 p-5 sm:p-6">{children}</div>}
+      {open && <div className="pb-8 pt-2">{children}</div>}
     </section>
   );
 }

@@ -473,11 +473,7 @@ function renderPlanner(session: "parent" | "anonymous" | "coach" = "parent") {
 const section = (title: string): HTMLElement => {
   if (title === "Suggested season") return screen.getByRole("tabpanel", { name: /^Suggested/ });
   if (title === "Their plan") return screen.getByRole("tabpanel", { name: /^Your plan/ });
-  const collapsible = [
-    "What they can enter",
-    "Every event they can enter",
-    "Season calendar",
-  ].includes(title);
+  const collapsible = ["What they can enter", "All tournaments", "Season calendar"].includes(title);
   // The collapsible's heading holds its description too, so it is found by its start.
   const heading = screen.getByRole("heading", {
     level: 2,
@@ -699,7 +695,7 @@ describe("what past draws showed", () => {
   it("marks an open event in the full list with what past draws showed", async () => {
     world.reach = { "cs7-sonipat": likely };
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
     const card = (await within(enter).findByText("AITA cs7-sonipat")).closest("li") as HTMLElement;
     expect(within(card).getByText("Past draws took this rank")).toBeTruthy();
   });
@@ -716,7 +712,7 @@ describe("what past draws showed", () => {
       },
     };
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
     const card = (await within(enter).findByText("AITA cs7-sonipat")).closest("li") as HTMLElement;
     expect(within(card).queryByText(/Past draws/)).toBeNull();
     expect(within(card).queryByText(/We hold no past events/)).toBeNull();
@@ -808,7 +804,7 @@ describe("what last year suggests", () => {
   it("is a section of its own, closed until it is asked for, when there is something to say", async () => {
     world.expected = [expected()];
     renderPlanner();
-    const toggle = await screen.findByRole("button", { name: /^Likely later, from last year/ });
+    const toggle = await screen.findByRole("button", { name: /^Not announced yet/ });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByText("Expected around March 2027")).toBeNull();
   });
@@ -827,7 +823,7 @@ describe("what last year suggests", () => {
       }),
     ];
     renderPlanner();
-    fireEvent.click(await screen.findByRole("button", { name: /^Likely later, from last year/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Not announced yet/ }));
 
     expect(await screen.findByText("Expected around March 2027")).toBeTruthy();
     expect(screen.getByText("Expected around April 2027")).toBeTruthy();
@@ -841,7 +837,7 @@ describe("what last year suggests", () => {
 
   it("is left out entirely when there is nothing to expect", async () => {
     renderPlanner();
-    await screen.findByRole("button", { name: /^Every event they can enter/ });
+    await screen.findByRole("button", { name: /^All tournaments/ });
     expect(screen.queryByRole("button", { name: /Likely later/ })).toBeNull();
   });
 });
@@ -851,7 +847,7 @@ describe("what last year suggests", () => {
 describe("what a child can enter", () => {
   it("lists their own age group by month, and keeps the rest behind disclosures", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
 
     expect(within(enter).getByText("AITA cs7-sonipat")).toBeTruthy();
     expect(within(enter).queryByText("AITA cs9-mumbai")).toBeNull();
@@ -861,16 +857,19 @@ describe("what a child can enter", () => {
 
   it("says an entry deadline is not published rather than leaving a gap", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
 
     expect(within(enter).getAllByText(/Entry deadline not published/).length).toBeGreaterThan(0);
   });
 
   it("flags a deadline that is about to pass, and offers no actions on one that has", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
 
     expect(within(enter).getByText(/Entries closing soon/)).toBeTruthy();
+    // Events whose entries have shut wait behind their own disclosure, off the main list.
+    expect(within(enter).queryByText("AITA cs-closed")).toBeNull();
+    fireEvent.click(within(enter).getByRole("button", { name: /^Entries already closed/ }));
     const closed = within(enter).getByText("AITA cs-closed").closest("li") as HTMLElement;
     expect(within(closed).getByText(/Entries closed/)).toBeTruthy();
     expect(within(closed).queryByRole("button", { name: /Add .* to the plan/ })).toBeNull();
@@ -1029,7 +1028,7 @@ describe("planning preferences", () => {
 describe("what the season may cost", () => {
   const withPlanned = async (slug = "cs7-sonipat") => {
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: `Add AITA ${slug} to the plan` })
     );
@@ -1044,9 +1043,7 @@ describe("what the season may cost", () => {
     await withPlanned();
     await waitFor(() => cost());
 
-    expect(
-      await within(cost()).findByText(/Season travel and stay ₹24,500 to ₹49,500/)
-    ).toBeTruthy();
+    expect(await within(cost()).findByText(/₹24,500 to ₹49,500/)).toBeTruthy();
     expect(within(cost()).getByText(/Entry fees are not included for 1 event/)).toBeTruthy();
     expect(within(cost()).getByText(/Set a season budget in your season setup/)).toBeTruthy();
   });
@@ -1072,7 +1069,7 @@ describe("what the season may cost", () => {
     fireEvent.click(within(plan).getByRole("button", { name: "Save figures" }));
 
     await waitFor(() => expect(savedCosts).toEqual([{ travel: 8000, stay: 9000, entryFee: 1500 }]));
-    expect(await within(cost()).findByText(/Season travel and stay ₹18,500/)).toBeTruthy();
+    expect(await within(cost()).findByText(/₹18,500/)).toBeTruthy();
     expect(within(plan).getByText(/your figures, includes your entry fee of ₹1,500/)).toBeTruthy();
     expect(within(cost()).queryByText(/Entry fees are not included/)).toBeNull();
   });
@@ -1104,7 +1101,7 @@ describe("what the season may cost", () => {
 describe("the plan", () => {
   it("warns about two events that overlap", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: "Add AITA cs7-sonipat to the plan" })
     );
@@ -1116,11 +1113,21 @@ describe("the plan", () => {
     ).toBeTruthy();
   });
 
-  it("gives every event a Google Calendar link with its dates", async () => {
+  it("gives every event on the plan a Google Calendar link with its dates", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
+    // The list offers one action, Add to plan; the calendar link belongs to a chosen event.
+    expect(within(enter).queryAllByRole("link", { name: /to Google Calendar/ })).toHaveLength(0);
+    fireEvent.click(
+      await within(enter).findByRole("button", { name: "Add AITA cs7-sonipat to the plan" })
+    );
+    const plan = await waitFor(() => {
+      const el = section("Their plan");
+      expect(within(el).getByText("AITA cs7-sonipat")).toBeTruthy();
+      return el;
+    });
     const link = (
-      await within(enter).findAllByRole("link", { name: /to Google Calendar/ })
+      await within(plan).findAllByRole("link", { name: /to Google Calendar/ })
     )[0] as HTMLAnchorElement;
 
     expect(link.href).toContain("https://calendar.google.com/calendar/render");
@@ -1133,7 +1140,7 @@ describe("when something goes wrong", () => {
   it("says so when the estimates cannot be had, instead of leaving a blank that reads as free", async () => {
     world.costsFail = true;
     renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: "Add AITA cs7-sonipat to the plan" })
     );
@@ -1157,9 +1164,7 @@ describe("when something goes wrong", () => {
     // The verdicts come from a different request, so they still show.
     expect((await screen.findAllByText(/Boys U-14, ranked 312/)).length).toBeGreaterThan(0);
     expect(
-      within(await waitFor(() => section("Every event they can enter"))).getByText(
-        "AITA cs7-sonipat"
-      )
+      within(await waitFor(() => section("All tournaments"))).getByText("AITA cs7-sonipat")
     ).toBeTruthy();
   });
 });
@@ -1185,7 +1190,7 @@ describe("accessibility", () => {
     world.recs = { savedKey: inputKey(), value: suggestionFor() };
     const { container } = renderPlanner();
 
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: "Add AITA cs5-pune to the plan" })
     );
@@ -1198,7 +1203,7 @@ describe("accessibility", () => {
 
   it("has no violations with the preferences, the figure form and the city form open", async () => {
     const { container } = renderPlanner();
-    const enter = await waitFor(() => section("Every event they can enter"));
+    const enter = await waitFor(() => section("All tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: "Add AITA cs5-pune to the plan" })
     );
@@ -1654,7 +1659,7 @@ describe("the season calendar", () => {
   it("falls back to the list below for anyone who cannot use the grid", async () => {
     await openCalendar();
     // The same events, in date order, with everything the calendar shows.
-    const list = section("Every event they can enter");
+    const list = section("All tournaments");
     expect(within(list).getByText("AITA cs7-sonipat")).toBeTruthy();
     expect(
       within(list).getAllByText(/Entry deadline not published|Entries close/).length
@@ -1914,7 +1919,7 @@ describe("what to do next", () => {
     await waitFor(() => section("Season calendar"));
     fireEvent.click(within(summary()).getByRole("button", { name: /^Browse all/ }));
 
-    const toggle = await screen.findByRole("button", { name: /^Every event they can enter/ });
+    const toggle = await screen.findByRole("button", { name: /^All tournaments/ });
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
   });
 

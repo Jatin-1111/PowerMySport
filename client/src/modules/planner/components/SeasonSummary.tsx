@@ -32,6 +32,7 @@ function headline(item: NextUpItem): string {
   const time = item.time ? `, ${formatClockTime(item.time)}` : "";
   if (item.kind === "enter-by") return `Entries close ${day}${time}`;
   if (item.kind === "withdraw-by") return `Last day to withdraw ${day}${time}`;
+  if (item.entryClosed) return "Entries have closed for this event";
   return item.underWay ? "Under way now" : `Starts ${day}`;
 }
 
@@ -60,7 +61,7 @@ function NextUpTile({
     <section
       aria-labelledby="next-up"
       data-tour="next"
-      className="rounded-lg border border-slate-900 bg-slate-900 p-4 text-white"
+      className="order-1 rounded-lg border border-slate-900 bg-slate-900 p-4 text-white lg:order-none"
     >
       <h2 id="next-up" className={`${LABEL} text-slate-300`}>
         {first ? "Do this next" : "Next step"}
@@ -79,6 +80,11 @@ function NextUpTile({
             </button>
             , {whenText(first).toLowerCase()}
           </p>
+          {first.entryClosed && (
+            <p className="mt-1 text-xs text-slate-300">
+              If you entered in time, mark it entered. If not, take it off the plan.
+            </p>
+          )}
           {first.kind === "withdraw-by" && (
             <p className="mt-1 text-xs text-slate-300">
               After that, withdrawing counts as a late withdrawal.
@@ -167,7 +173,7 @@ function BudgetTile({
   return (
     <section
       aria-labelledby="budget-tile"
-      className="rounded-lg border border-slate-200 bg-white p-4"
+      className="order-3 rounded-lg border border-slate-200 bg-white p-4 lg:order-none"
     >
       <h2 id="budget-tile" className={`${LABEL} text-slate-500`}>
         What it may cost
@@ -234,7 +240,7 @@ export function SeasonSummary({
   const planned = entries.length > 0;
 
   return (
-    <div aria-label="What to do next" className="space-y-4">
+    <div aria-label="What to do next" className="contents lg:block lg:space-y-4">
       <NextUpTile
         items={items}
         childName={childName}

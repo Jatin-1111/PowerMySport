@@ -16,11 +16,15 @@ export function EventActions({
   isPlanned,
   isAdding,
   onAdd,
+  compact = false,
 }: {
   edition: PlannerEdition;
   isPlanned: boolean;
   isAdding: boolean;
   onAdd: () => void;
+  /** For a card in a grid of many: one button, and the AITA page as a quiet link.
+   *  Google Calendar is left for the plan, where the event has been chosen. */
+  compact?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -44,7 +48,19 @@ export function EventActions({
             Add to plan
           </Button>
         ))}
-      {edition.official?.pageUrl && (
+      {compact && edition.official?.pageUrl && (
+        <a
+          href={edition.official.pageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-ink-body decoration-ink/30 hover:text-ink hover:decoration-ink inline-flex min-h-9 items-center gap-1.5 text-sm font-medium underline underline-offset-4 transition-colors duration-300"
+          aria-label={`Open ${edition.name} on AITA, where entries are made`}
+        >
+          AITA page
+          <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+        </a>
+      )}
+      {!compact && edition.official?.pageUrl && (
         <a
           href={edition.official.pageUrl}
           target="_blank"
@@ -56,16 +72,18 @@ export function EventActions({
           Event page on AITA
         </a>
       )}
-      <a
-        href={googleCalendarUrl(edition)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-        aria-label={`Add ${edition.name} to Google Calendar`}
-      >
-        <CalendarPlus className="h-4 w-4" aria-hidden />
-        Google Calendar
-      </a>
+      {!compact && (
+        <a
+          href={googleCalendarUrl(edition)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+          aria-label={`Add ${edition.name} to Google Calendar`}
+        >
+          <CalendarPlus className="h-4 w-4" aria-hidden />
+          Google Calendar
+        </a>
+      )}
     </div>
   );
 }

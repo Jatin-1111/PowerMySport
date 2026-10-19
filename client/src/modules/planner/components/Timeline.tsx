@@ -43,12 +43,12 @@ function Disclosure({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-6 border-t border-slate-200 pt-4">
+    <div className="border-hairline mt-6 border-t pt-4">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:underline"
+        className="text-ink-body inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
       >
         <ChevronDown
           className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
@@ -79,7 +79,16 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} 
     .filter((item): item is { entry: PlannerEntry; state: SoonState } => item.state.kind === "soon")
     .sort((a, b) => a.state.daysLeft - b.state.daysLeft);
 
-  const months = groupByMonth(shortlist.ownGroup, (entry) => entry.edition.startDate);
+  // Events whose entries have shut cannot be entered, so listing them among the ones a
+  // parent can still act on buries those under a wall of dead ends. They stay one click
+  // away, with the date each closed, because "why isn't that one here?" deserves an answer.
+  const entriesShut = (entry: PlannerEntry) =>
+    deadlineState(entry.edition.registrationDeadlineDate).kind === "passed";
+  const openEntries = shortlist.ownGroup.filter((entry) => !entriesShut(entry));
+  const shutEntries = shortlist.ownGroup.filter(entriesShut);
+
+  const months = groupByMonth(openEntries, (entry) => entry.edition.startDate);
+  const shutMonths = groupByMonth(shutEntries, (entry) => entry.edition.startDate);
 
   return (
     <div>
@@ -103,27 +112,52 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} 
       )}
 
       {months.length === 0 ? (
-        <p className="text-sm leading-relaxed text-slate-600">
-          Nothing in their own age group is open on the calendar right now. The federation publishes
-          about ten weeks ahead, so this fills in as events are announced.
+        <p className="text-ink-body text-sm leading-relaxed">
+          {shutEntries.length > 0
+            ? "Entries have closed for every event in their own age group. New ones appear as the federation announces them."
+            : "Nothing in their own age group is open on the calendar right now. The federation publishes about ten weeks ahead, so this fills in as events are announced."}
         </p>
       ) : (
         months.map((month) => (
           <section key={month.key} aria-labelledby={`month-${month.key}`} className="mb-6">
             <h3
               id={`month-${month.key}`}
-              className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-500"
+              className="text-ink-muted mb-3 text-[12px] font-bold uppercase tracking-wider"
             >
               {month.label}
             </h3>
-            <ul className="space-y-3">{month.items.map((entry) => renderCard(entry, "open"))}</ul>
+            <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {month.items.map((entry) => renderCard(entry, "open"))}
+            </ul>
           </section>
         ))
       )}
 
+      {shutEntries.length > 0 && (
+        <Disclosure label="Entries already closed" count={shutEntries.length}>
+          {shutMonths.map((month) => (
+            <section
+              key={month.key}
+              aria-labelledby={`shut-month-${month.key}`}
+              className="mb-5 last:mb-0"
+            >
+              <h3
+                id={`shut-month-${month.key}`}
+                className="text-ink-muted mb-3 text-[12px] font-bold uppercase tracking-wider"
+              >
+                {month.label}
+              </h3>
+              <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {month.items.map((entry) => renderCard(entry, "open"))}
+              </ul>
+            </section>
+          ))}
+        </Disclosure>
+      )}
+
       {shortlist.playingUp.length > 0 && (
         <Disclosure label="Events in an older age group" count={shortlist.playingUp.length}>
-          <ul className="space-y-3">
+          <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {shortlist.playingUp.map((entry) => renderCard(entry, "open"))}
           </ul>
         </Disclosure>
@@ -131,7 +165,7 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} 
 
       {shortlist.unknown.length > 0 && (
         <Disclosure label="Check the fact sheet first" count={shortlist.unknown.length}>
-          <ul className="space-y-3">
+          <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {shortlist.unknown.map((entry) => renderCard(entry, "closed"))}
           </ul>
         </Disclosure>
@@ -139,13 +173,13 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} 
 
       {shortlist.closed.length > 0 && (
         <Disclosure label="Events they cannot enter" count={shortlist.closed.length}>
-          <ul className="space-y-3">
+          <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {shortlist.closed.map((entry) => renderCard(entry, "closed"))}
           </ul>
         </Disclosure>
       )}
 
-      <p className="mt-6 text-xs leading-relaxed text-slate-500">
+      <p className="text-ink-muted mt-6 text-xs leading-relaxed">
         Open means not barred by the published entry rules. Above Championship Series a draw is cut
         by ranking, so a place is earned rather than granted. Check each event&apos;s fact sheet
         before you travel.

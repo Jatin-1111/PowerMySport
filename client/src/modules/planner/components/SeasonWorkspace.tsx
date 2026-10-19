@@ -137,12 +137,15 @@ export function SeasonWorkspace({
   const trigger =
     "min-h-11 rounded-none border-b-2 border-transparent px-3 py-2.5 text-sm font-semibold text-slate-600 shadow-none data-[state=active]:border-orange-600 data-[state=active]:bg-transparent data-[state=active]:text-slate-900 data-[state=active]:shadow-none";
 
+  // A fragment, not a wrapper: the board's grid places the plan beside the rail and the
+  // calendar across the full width beneath them, so a wide calendar is never squeezed
+  // into the plan's column with the rail's space left empty beside it.
   return (
-    <div className="space-y-6">
+    <>
       <section
         aria-label="Your plan and suggestions"
         data-tour="pick"
-        className="rounded-lg border border-slate-200 bg-white"
+        className="order-2 min-w-0 rounded-lg border border-slate-200 bg-white lg:order-none lg:col-start-1 lg:row-start-1"
       >
         <Tabs
           value={tab}
@@ -191,73 +194,75 @@ export function SeasonWorkspace({
         </Tabs>
       </section>
 
-      <Collapsible
-        tour="calendar"
-        title="Season calendar"
-        description="See your tournaments month by month and spot clashes."
-      >
-        {isWide && (
-          <div
-            role="group"
-            aria-label="How to show the season"
-            className="mb-4 flex justify-end gap-1"
-          >
-            {(
-              [
-                ["calendar", "Calendar", CalendarDays],
-                ["list", "List", List],
-              ] as const
-            ).map(([value, label, Icon]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={view === value}
-                onClick={() => setView(value)}
-                className={cn(
-                  "inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold",
-                  view === value
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                )}
-              >
-                <Icon className="h-4 w-4" aria-hidden />
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
+      <div className="order-5 min-w-0 lg:order-none lg:col-span-2 lg:row-start-3">
+        <Collapsible
+          tour="calendar"
+          title="Season calendar"
+          description="See your tournaments month by month and spot clashes."
+        >
+          {isWide && (
+            <div
+              role="group"
+              aria-label="How to show the season"
+              className="mb-4 flex justify-end gap-1"
+            >
+              {(
+                [
+                  ["calendar", "Calendar", CalendarDays],
+                  ["list", "List", List],
+                ] as const
+              ).map(([value, label, Icon]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={view === value}
+                  onClick={() => setView(value)}
+                  className={cn(
+                    "inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold",
+                    view === value
+                      ? "border-ink bg-ink text-white"
+                      : "border-hairline text-ink-body hover:border-ink/40 bg-white"
+                  )}
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
 
-        {showGrid ? (
-          <SeasonCalendar
-            items={items}
-            blocked={preferences?.blockedRanges ?? []}
-            today={today}
-            month={month}
-            months={months}
-            onMonthChange={setChosenMonth}
-            selectedSlug={selectedSlug}
-            onSelect={(slug) => onSelect(slug === selectedSlug ? null : slug)}
-            showAvailable={showAvailable}
-            onToggleAvailable={setShowAvailable}
-          />
-        ) : (
-          <div>
-            <label className="mb-3 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                checked={showAvailable}
-                onChange={(event) => setShowAvailable(event.target.checked)}
-              />
-              Show every event they can enter
-            </label>
-            <SeasonAgenda
+          {showGrid ? (
+            <SeasonCalendar
               items={items}
+              blocked={preferences?.blockedRanges ?? []}
+              today={today}
+              month={month}
+              months={months}
+              onMonthChange={setChosenMonth}
               selectedSlug={selectedSlug}
               onSelect={(slug) => onSelect(slug === selectedSlug ? null : slug)}
+              showAvailable={showAvailable}
+              onToggleAvailable={setShowAvailable}
             />
-          </div>
-        )}
-      </Collapsible>
+          ) : (
+            <div>
+              <label className="text-ink-body mb-3 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold">
+                <input
+                  type="checkbox"
+                  checked={showAvailable}
+                  onChange={(event) => setShowAvailable(event.target.checked)}
+                />
+                Show every event they can enter
+              </label>
+              <SeasonAgenda
+                items={items}
+                selectedSlug={selectedSlug}
+                onSelect={(slug) => onSelect(slug === selectedSlug ? null : slug)}
+              />
+            </div>
+          )}
+        </Collapsible>
+      </div>
 
       <Modal
         isOpen={Boolean(selected)}
@@ -267,6 +272,6 @@ export function SeasonWorkspace({
       >
         {detail}
       </Modal>
-    </div>
+    </>
   );
 }

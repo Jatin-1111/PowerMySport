@@ -42,14 +42,14 @@ export function TimelineEventCard({
   const location = [edition.city, edition.state].filter(Boolean).join(", ");
 
   return (
-    <li className="rounded-lg border border-slate-200 bg-white p-4">
+    <li className="border-hairline flex h-full flex-col rounded-xl border bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <p
             className={
               mode === "open"
-                ? "text-sm font-semibold text-slate-900"
-                : "text-sm font-semibold text-slate-600"
+                ? "text-ink text-sm font-semibold"
+                : "text-ink-body text-sm font-semibold"
             }
           >
             {edition.slug ? (
@@ -60,17 +60,13 @@ export function TimelineEventCard({
               edition.name
             )}
           </p>
-          <p className="mt-0.5 text-xs text-slate-600">
+          <p className="text-ink-body mt-0.5 text-xs">
             {formatEventWindow(edition.startDate, edition.endDate)}
           </p>
         </div>
-
-        {mode === "open" && !entriesClosed && (
-          <EventActions edition={edition} isPlanned={isPlanned} isAdding={isAdding} onAdd={onAdd} />
-        )}
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
+      <div className="text-ink-body mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         {location && (
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5" aria-hidden />
@@ -81,7 +77,7 @@ export function TimelineEventCard({
         {entry.playingUp && (
           <Badge
             variant="outline"
-            className="border-slate-200 bg-slate-50 text-[11px] text-slate-600"
+            className="border-hairline bg-paper-deep/50 text-ink-body text-[11px]"
           >
             Older age group
           </Badge>
@@ -99,14 +95,26 @@ export function TimelineEventCard({
             <DeadlineLine deadline={edition.registrationDeadlineDate} />
           </p>
           {entry.notes.length > 0 && (
-            <p className="mt-2 flex gap-1.5 text-xs leading-relaxed text-slate-600">
+            <p className="text-ink-body mt-2 flex gap-1.5 text-xs leading-relaxed">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>{entry.notes.join(" ")}</span>
             </p>
           )}
         </>
       ) : (
-        <p className="mt-2 text-xs leading-relaxed text-slate-600">{entry.reason}</p>
+        <p className="text-ink-body mt-2 text-xs leading-relaxed">{entry.reason}</p>
+      )}
+
+      {mode === "open" && !entriesClosed && (
+        <div className="mt-auto pt-4">
+          <EventActions
+            edition={edition}
+            isPlanned={isPlanned}
+            isAdding={isAdding}
+            onAdd={onAdd}
+            compact
+          />
+        </div>
       )}
     </li>
   );

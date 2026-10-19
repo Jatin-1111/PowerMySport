@@ -54,6 +54,30 @@ describe("nextUp", () => {
     ]);
   });
 
+  it("marks an event not yet entered whose entries have closed, and only that one", () => {
+    const result = run(
+      [
+        entry("late", "2026-10-20", "shortlisted"),
+        entry("done", "2026-10-21", "entered"),
+        entry("open", "2026-10-22", "shortlisted"),
+        entry("nodate", "2026-10-23", "shortlisted"),
+      ],
+      {
+        late: edition({ registrationDeadlineDate: "2026-10-02T00:00:00.000Z" }),
+        done: edition({ registrationDeadlineDate: "2026-10-02T00:00:00.000Z" }),
+        open: edition({ registrationDeadlineDate: "2026-10-12T00:00:00.000Z" }),
+        nodate: edition(),
+      },
+      10
+    );
+    const closedFlags = Object.fromEntries(
+      result
+        .filter((item) => item.kind === "event")
+        .map((item) => [item.slug, item.entryClosed === true])
+    );
+    expect(closedFlags).toEqual({ late: true, done: false, open: false, nodate: false });
+  });
+
   it("carries AITA's page and cut-off time on a deadline, so it can be acted on", () => {
     const [first] = run([entry("a", "2026-10-20", "shortlisted")], {
       a: edition({

@@ -33,6 +33,8 @@ export interface NextUpItem {
   pageUrl?: string | undefined;
   /** The `HH:MM` IST cut-off AITA prints with a deadline. */
   time?: string | undefined;
+  /** An event still on the plan as "not entered" whose entry deadline has passed. */
+  entryClosed?: boolean | undefined;
 }
 
 /** Same day: a deadline first, then the event, because the deadline is what needs doing. */
@@ -86,9 +88,14 @@ export function nextUp(params: {
 
     const start = day(entry.startDate);
     const end = day(live?.endDate ?? entry.startDate);
+    const entryClosed =
+      entry.status === "shortlisted" &&
+      Boolean(live?.registrationDeadlineDate) &&
+      dayNumber(day(live!.registrationDeadlineDate!)) < today;
     if (dayNumber(end) >= today) {
       items.push({
         ...base,
+        ...(entryClosed ? { entryClosed: true } : {}),
         kind: "event",
         date: start,
         daysAway: Math.max(0, dayNumber(start) - today),

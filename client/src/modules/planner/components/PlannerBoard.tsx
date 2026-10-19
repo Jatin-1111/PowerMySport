@@ -182,94 +182,101 @@ export function PlannerBoard({
         </button>
       </header>
 
-      {/* Two columns. The rail holds what the parent acts on and sets: the next step, the
-          budget once there is a plan, and the season setup. It is always full, so the space
-          beside the plan is never a blank column. On a phone it stacks above the plan in
-          the same order. */}
+      {/* One grid. Left: the plan, and the season setup under it. Right: the rail, which
+          spans both rows and sticks while the left column is long, so opening the setup
+          grows the left without leaving a blank slab on either side. Everything after
+          spans the full width, because the calendar and the event lists are wide and long.
+          The rail's sticky block lives inside its own grid item, so it can never ride up
+          over the full-width rows. On a phone it is one column, ordered by `order-*`. */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        <div className="space-y-4 lg:col-start-2 lg:row-start-1">
-          <SeasonSummary
-            entries={entries}
-            calendar={calendar}
-            childName={dependentName}
-            openCount={openCount}
-            costs={costs}
-            costsLoading={costsLoading}
-            costsFailed={costsFailed}
-            saveHomeCity={{
-              saving: saveHomeCity.isPending,
-              save: (city) => saveHomeCity.mutate(city),
-            }}
-            onOpenEvent={setSelectedSlug}
-            onSuggest={() => {
-              setTab("suggested");
-              suggest.mutate(false);
-            }}
-            suggesting={suggest.isPending}
-            onBrowse={() => {
-              setBrowseOpen(true);
-              // The full list is at the foot of the page, so bring it up.
-              requestAnimationFrame(() =>
-                browseRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" })
-              );
-            }}
-          />
-          {!planLoading && (
+        <div className="contents lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:block lg:self-stretch">
+          <div className="contents lg:sticky lg:top-28 lg:block">
+            <SeasonSummary
+              entries={entries}
+              calendar={calendar}
+              childName={dependentName}
+              openCount={openCount}
+              costs={costs}
+              costsLoading={costsLoading}
+              costsFailed={costsFailed}
+              saveHomeCity={{
+                saving: saveHomeCity.isPending,
+                save: (city) => saveHomeCity.mutate(city),
+              }}
+              onOpenEvent={setSelectedSlug}
+              onSuggest={() => {
+                setTab("suggested");
+                suggest.mutate(false);
+              }}
+              suggesting={suggest.isPending}
+              onBrowse={() => {
+                setBrowseOpen(true);
+                // The full list is at the foot of the page, so bring it up.
+                requestAnimationFrame(() =>
+                  browseRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" })
+                );
+              }}
+            />
+          </div>
+        </div>
+
+        <SeasonWorkspace
+          dependentId={dependentId}
+          yearlyLimit={{ cap: data.annualEntryCap, ageGroup: standing.subcategory }}
+          tab={activeTab}
+          onTabChange={setTab}
+          shortlist={shortlist}
+          planEntries={entries}
+          preferences={preferences}
+          recommendations={recommendations}
+          calendar={calendar}
+          costs={costs}
+          costsLoading={costsLoading}
+          plannedSlugs={plannedSlugs}
+          isAdding={add.isPending}
+          onAdd={(slug) => add.mutate(slug)}
+          selectedSlug={selectedSlug}
+          onSelect={setSelectedSlug}
+          reach={data.reach ?? {}}
+        />
+
+        {!planLoading && (
+          <div className="order-4 min-w-0 lg:order-none lg:col-start-1 lg:row-start-2">
             <PreferencesPanel
               dependentId={dependentId}
               homeState={standing.state ?? null}
               defaultOpen={untouched}
             />
-          )}
+          </div>
+        )}
+
+        <div ref={browseRef} className="order-6 min-w-0 lg:order-none lg:col-span-2 lg:row-start-4">
+          <Collapsible
+            title="All tournaments"
+            description={`Everything ${standing.category} ${standing.subcategory} (${rankClause(standing)}) can enter, and what is closed to them and why.`}
+            open={browseOpen}
+            onOpenChange={setBrowseOpen}
+          >
+            <Timeline
+              shortlist={shortlist}
+              plannedSlugs={plannedSlugs}
+              isAdding={add.isPending}
+              onAdd={(slug) => add.mutate(slug)}
+              reach={data.reach ?? {}}
+            />
+          </Collapsible>
         </div>
 
-        <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
-          <SeasonWorkspace
-            dependentId={dependentId}
-            yearlyLimit={{ cap: data.annualEntryCap, ageGroup: standing.subcategory }}
-            tab={activeTab}
-            onTabChange={setTab}
-            shortlist={shortlist}
-            planEntries={entries}
-            preferences={preferences}
-            recommendations={recommendations}
-            calendar={calendar}
-            costs={costs}
-            costsLoading={costsLoading}
-            plannedSlugs={plannedSlugs}
-            isAdding={add.isPending}
-            onAdd={(slug) => add.mutate(slug)}
-            selectedSlug={selectedSlug}
-            onSelect={setSelectedSlug}
-            reach={data.reach ?? {}}
-          />
-
-          {data.expected && data.expected.length > 0 && (
+        {data.expected && data.expected.length > 0 && (
+          <div className="order-7 min-w-0 lg:order-none lg:col-span-2 lg:row-start-5">
             <Collapsible
-              title="Likely later, from last year"
-              description="Events that ran about this time last year and are not on the calendar yet."
+              title="Not announced yet"
+              description="Events that ran about this time last year."
             >
               <ExpectedLater events={data.expected} />
             </Collapsible>
-          )}
-
-          <div ref={browseRef}>
-            <Collapsible
-              title="Every event they can enter"
-              description={`Upcoming events matched to ${standing.category} ${standing.subcategory}, ${rankClause(standing)}, including the ones they cannot enter and why.`}
-              open={browseOpen}
-              onOpenChange={setBrowseOpen}
-            >
-              <Timeline
-                shortlist={shortlist}
-                plannedSlugs={plannedSlugs}
-                isAdding={add.isPending}
-                onAdd={(slug) => add.mutate(slug)}
-                reach={data.reach ?? {}}
-              />
-            </Collapsible>
           </div>
-        </div>
+        )}
       </div>
 
       {tour.open && <PlannerTour onFinish={tour.finish} />}

@@ -49,21 +49,21 @@ export function PlanEntryRow({
   const advance = nextStatus(entry.status);
   return (
     <li className="border-b border-slate-100 py-3 first:pt-0 last:border-0 last:pb-0">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold leading-snug text-slate-900">
+          <p className="text-base font-semibold leading-snug text-slate-900">
             <Link href={`/tournaments/${entry.editionSlug}`} className="hover:underline">
               {entry.name}
             </Link>
           </p>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-sm text-slate-600">
             {formatEventWindow(entry.startDate, endDate)}
             {location ? ` · ${location}` : ""}
             {entry.note ? ` · ${entry.note}` : ""}
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1 sm:self-start">
           <Badge variant="outline" className={`${STATUS_BADGE[entry.status]} text-[11px]`}>
             {STATUS_LABEL[entry.status]}
           </Badge>
@@ -73,9 +73,10 @@ export function PlanEntryRow({
             aria-label={`Remove ${entry.name} from the plan`}
             disabled={busy}
             onClick={onRemove}
-            className="text-slate-400"
+            className="text-slate-600"
           >
-            <X className="h-4 w-4" aria-hidden />
+            <X className="mr-1 h-4 w-4" aria-hidden />
+            Remove
           </Button>
         </div>
       </div>
@@ -90,9 +91,14 @@ export function PlanEntryRow({
           )}
         </div>
       )}
+      {advance === "entered" && !warning && (
+        <p className="mt-2 text-sm text-slate-600">
+          Entries are made on AITA. Mark it entered here once you have.
+        </p>
+      )}
       {warning && (
-        <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-relaxed text-amber-700">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+        <p className="mt-2 flex items-start gap-1.5 text-sm leading-relaxed text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>{warning}</span>
         </p>
       )}

@@ -26,7 +26,7 @@ const STATUS_LINE: Record<SeasonCost["status"], (season: SeasonCost) => string> 
 export function BudgetBar({ season }: { season: SeasonCost }) {
   if (!season.total) {
     return (
-      <p className="text-xs leading-relaxed text-slate-600">
+      <p className="text-ink-body text-xs leading-relaxed">
         {season.events === 0
           ? "Add events to the plan to see what the season may cost."
           : "No travel and stay figures for the plan yet."}
@@ -52,21 +52,19 @@ export function BudgetBar({ season }: { season: SeasonCost }) {
 
   return (
     <div>
-      <p className="text-sm text-slate-800">
-        <span className="font-semibold">
-          Season travel and stay {formatRange(total.low, total.high)}
-        </span>
-        <span className="text-slate-500">
-          {" "}
-          for {season.events} event{season.events === 1 ? "" : "s"}
-        </span>
+      <p className="text-ink-muted text-sm">Season travel and stay</p>
+      <p className="font-title text-ink mt-1 text-[1.75rem] font-semibold tabular-nums leading-tight tracking-[-0.02em]">
+        {formatRange(total.low, total.high)}
+      </p>
+      <p className="text-ink-muted mt-1 text-sm">
+        for {season.events} event{season.events === 1 ? "" : "s"}, estimated
       </p>
 
       {budget !== null && (
         <div
           role="img"
           aria-label={`Estimated ${formatRange(total.low, total.high)} against a budget of ${formatInr(budget)}`}
-          className="relative mt-2 h-3 w-full rounded-sm bg-slate-100"
+          className="bg-paper-deep relative mt-2 h-3 w-full rounded-sm"
         >
           <div
             className={`absolute inset-y-0 left-0 rounded-sm ${toneSoft}`}
@@ -77,25 +75,25 @@ export function BudgetBar({ season }: { season: SeasonCost }) {
             style={{ width: pct(total.low) }}
           />
           <div
-            className="absolute -inset-y-1 w-0.5 bg-slate-900"
+            className="bg-ink absolute -inset-y-1 w-0.5"
             style={{ left: pct(budget) }}
             title={`Budget ${formatInr(budget)}`}
           />
         </div>
       )}
 
-      <p className="mt-2 text-xs leading-relaxed text-slate-600">
+      <p className="text-ink-body mt-3 text-sm leading-relaxed">
         {STATUS_LINE[season.status](season)}
       </p>
 
       {season.withoutFigures > 0 && (
-        <p className="mt-1 text-xs leading-relaxed text-slate-600">
+        <p className="text-ink-body mt-1 text-xs leading-relaxed">
           {season.withoutFigures} event{season.withoutFigures === 1 ? " has" : "s have"} no travel
           and stay figure yet and {season.withoutFigures === 1 ? "is" : "are"} not in this total.
         </p>
       )}
       {season.missingEntryFees > 0 && (
-        <p className="mt-1 text-xs leading-relaxed text-slate-600">
+        <p className="text-ink-body mt-1 text-xs leading-relaxed">
           Entry fees are not included for {season.missingEntryFees} event
           {season.missingEntryFees === 1 ? "" : "s"}. AITA has not published a fee for{" "}
           {season.missingEntryFees === 1 ? "it" : "them"}, so add{" "}

@@ -17,7 +17,7 @@ export function ExpectedLater({ events }: { events: ExpectedEvent[] }) {
 
   return (
     <div>
-      <p className="text-sm leading-relaxed text-slate-700">
+      <p className="text-ink-body text-sm leading-relaxed">
         These are not on the calendar. They ran at about this time last year, so they may come
         again. Nothing is confirmed: no dates, no entry, and an event can be moved or not held.
       </p>
@@ -27,18 +27,18 @@ export function ExpectedLater({ events }: { events: ExpectedEvent[] }) {
           <section key={month} aria-labelledby={`expected-${month}`} className="mt-5">
             <h3
               id={`expected-${month}`}
-              className="mb-2 text-[12px] font-bold uppercase tracking-wider text-slate-500"
+              className="text-ink-muted mb-2 text-[12px] font-bold uppercase tracking-wider"
             >
               Expected around {inMonth[0]!.expectedMonth}
             </h3>
-            <ul className="space-y-2">
+            <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {inMonth.map((event) => (
                 <li
                   key={`${event.name}-${event.lastYearStart}`}
-                  className="rounded-lg border border-slate-200 bg-white p-3 text-sm"
+                  className="border-hairline rounded-lg border bg-white p-3 text-sm"
                 >
-                  <p className="font-semibold text-slate-900">{event.name}</p>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-600">
+                  <p className="text-ink font-semibold">{event.name}</p>
+                  <p className="text-ink-body mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
                     {(event.city || event.state) && (
                       <span className="inline-flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5" aria-hidden />
