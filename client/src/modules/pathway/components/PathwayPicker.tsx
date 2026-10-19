@@ -138,7 +138,7 @@ function SportTile({
   return (
     // `isolate`, so the stretched link below covers this tile and stops at its
     // edge rather than sitting over the neighbouring one.
-    <div className="premium-shadow hover:border-power-orange/40 relative isolate flex h-full flex-col rounded-lg border border-slate-200 bg-white p-4 transition hover:shadow-lg">
+    <div className="hover:border-ink/40 relative isolate flex h-full flex-col rounded-lg border border-slate-200 bg-white p-4 transition">
       {/* The whole tile is the target, but only one element is the link: an
           anchor with a stretched `::after` rather than a card-wide anchor with
           controls nested inside it. Nesting a button inside an anchor is invalid
@@ -146,7 +146,7 @@ function SportTile({
           secondary "show stages" toggle tempts you into. */}
       <Link
         href={stageHref(entry.sportSlug, match?.key)}
-        className="font-title hover:text-power-orange-solid focus-visible:outline-power-orange text-[17px] font-bold leading-tight text-slate-900 transition after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="font-title focus-visible:outline-power-orange text-[17px] font-bold leading-tight text-slate-900 underline-offset-4 transition after:absolute after:inset-0 after:content-[''] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {entry.sportName}
       </Link>
@@ -160,7 +160,7 @@ function SportTile({
           need to: once the age is known there is exactly one stage this parent
           should open, and the tile links straight to it. */}
       {match && (
-        <p className="mt-2 inline-flex w-fit items-center gap-1 rounded-sm bg-amber-50 px-2 py-1 text-[12px] font-bold text-amber-900 ring-1 ring-amber-200">
+        <p className="bg-paper-deep text-ink mt-2 inline-flex w-fit items-center gap-1 rounded-sm px-2 py-1 text-sm font-medium">
           <MapPin aria-hidden className="h-3 w-3 shrink-0" />
           Stage {matchIndex + 1} · {match.name}
         </p>
@@ -295,7 +295,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
       <div
         className={`z-20 mx-auto mt-9 max-w-2xl px-1 py-1 ${
           dense
-            ? "premium-shadow sticky top-16 rounded-lg border border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md"
+            ? "sticky top-16 rounded-lg border border-slate-200 bg-white/95 px-3 py-3 backdrop-blur-md"
             : ""
         }`}
       >
@@ -427,7 +427,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
         // A search that finds nothing is the clearest signal this page ever gets
         // that a parent knows exactly what they want and we do not have it. It
         // ends in a route to a person, not an apology.
-        <div className="premium-shadow mx-auto mt-6 max-w-md rounded-lg border border-slate-200 bg-white p-6 text-center">
+        <div className="mx-auto mt-6 max-w-md rounded-lg border border-slate-200 bg-white p-6 text-center">
           <p className="text-[15px] font-bold text-slate-900">
             No pathway for {needle ? `"${query.trim()}"` : "that group"} yet
           </p>
@@ -498,7 +498,7 @@ export function PathwayPicker({ entries }: { entries: PathwayIndexEntry[] }) {
               <li key={entry.sportSlug} className="break-inside-avoid">
                 <Link
                   href={`/roadmap/${entry.sportSlug}`}
-                  className="hover:text-power-orange-solid block truncate py-1 text-[13.5px] font-semibold text-slate-600 transition"
+                  className="block truncate py-1 text-[13.5px] font-semibold text-slate-600 underline-offset-4 transition hover:underline"
                 >
                   {entry.sportName}
                 </Link>

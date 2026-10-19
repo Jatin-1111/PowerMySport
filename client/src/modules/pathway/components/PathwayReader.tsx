@@ -44,7 +44,7 @@ import { parseTypedAge, rememberChildAge, useChildAge } from "../utils/childAge"
 import { headingDomId, sectionDomId } from "../utils/sectionIds";
 // One colour per stage, so the rail reads as a sequence of distinct places
 // rather than six identical rows.
-import { colorFor } from "../utils/stageColors";
+import { colorFor, STAGE_TRACK } from "../utils/stageColors";
 import type { SectionId } from "../utils/sectionIds";
 
 // ─── Motion ──────────────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ function ActionChip({ action }: { action: PathwayAction }) {
   return action.href ? (
     <Link
       href={action.href}
-      className={`${base} btn-motion hover:border-power-orange-solid hover:text-power-orange-solid border-slate-200 bg-white text-slate-700`}
+      className={`${base} btn-motion hover:border-power-orange-solid border-slate-200 bg-white text-slate-700 underline-offset-4 hover:underline`}
     >
       {action.label}
     </Link>
@@ -287,7 +287,7 @@ function SectionHeading({
       {/* The bucket number is decoration beside a heading that already says the
           same thing — read aloud it would announce "zero one" before every
           section title. */}
-      <p aria-hidden className="text-power-orange-solid text-xs font-black tracking-[0.18em]">
+      <p aria-hidden className="text-ink-muted text-sm font-medium tabular-nums">
         {n}
       </p>
       <h3
@@ -708,11 +708,13 @@ export function PathwayReader({
               </div>
 
               {stage.ageRange && (
-                <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2.5">
-                  <Users className="h-4 w-4 shrink-0 text-emerald-600" />
+                <div className="bg-paper-deep flex items-center gap-2.5 rounded-lg px-3.5 py-2.5">
+                  <Users className="text-ink-muted h-4 w-4 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-emerald-700">Typical age</p>
-                    <p className="text-[15px] font-extrabold text-emerald-900">{stage.ageRange}</p>
+                    <p className="text-ink-muted text-sm">Typical age</p>
+                    <p className="text-ink text-base font-semibold tabular-nums">
+                      {stage.ageRange}
+                    </p>
                   </div>
                 </div>
               )}
@@ -731,7 +733,7 @@ export function PathwayReader({
                   className="h-1.5 flex-1 rounded-full"
                   initial={false}
                   animate={{
-                    backgroundColor: i <= safeIndex ? colorFor(i) : "#e2e8f0",
+                    backgroundColor: i <= safeIndex ? colorFor(i) : STAGE_TRACK,
                   }}
                   transition={{
                     duration: 0.3,
@@ -942,7 +944,7 @@ export function PathwayReader({
                           key={`${step.when}-${step.action}`}
                           className="grid gap-1 rounded-lg border border-slate-200 bg-white p-3.5 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-4"
                         >
-                          <span className="text-power-orange-solid inline-flex w-fit items-center rounded-lg bg-orange-100 px-2.5 py-1 text-[12.5px] font-black">
+                          <span className="text-ink bg-paper-deep inline-flex w-fit items-center rounded-md px-2.5 py-1 text-sm font-semibold">
                             {step.when}
                           </span>
                           <span className="text-[14.5px] leading-relaxed text-slate-700">

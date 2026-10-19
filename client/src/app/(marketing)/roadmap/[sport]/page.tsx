@@ -129,20 +129,22 @@ export default async function SportPathwayPage({
         title={guide.intro.headline ?? "Understand. Question. Observe. Decide. Act."}
         description={guide.intro.description ?? undefined}
       >
-        {/* Two balanced columns on desktop, one on mobile. `columns` rather
-            than a grid so the paragraphs flow and the two sides end level
-            whatever the sport's intro length is, a grid would put a fixed
-            number of paragraphs in each and go lopsided at odd counts. */}
+        {/* The first paragraph leads, in the serif; the rest follow as plain prose in one
+            readable column. Two flowing columns made a short intro look like a magazine
+            spread and a long one an uneven wall. */}
         {guide.sportIntro.length > 0 && (
-          <section className="border-t border-slate-200/70 pt-6">
-            <p className="text-sm font-medium text-slate-500">About {guide.sportName}</p>
-            <div className="mt-3 gap-x-10 text-base leading-relaxed text-slate-600 lg:columns-2">
-              {guide.sportIntro.map((paragraph) => (
-                <p key={paragraph} className="mb-3 break-inside-avoid">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
+          <section className="border-hairline border-t pt-6">
+            <p className="text-ink-muted text-sm">About {guide.sportName}</p>
+            <p className="font-editorial text-ink mt-3 max-w-3xl text-pretty text-2xl font-light leading-snug">
+              {guide.sportIntro[0]}
+            </p>
+            {guide.sportIntro.length > 1 && (
+              <div className="text-ink-body mt-5 max-w-prose space-y-3 leading-relaxed">
+                {guide.sportIntro.slice(1).map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            )}
           </section>
         )}
       </PageHeader>
@@ -156,7 +158,7 @@ export default async function SportPathwayPage({
               <PathwayContributorCard contributor={guide.contributor} sportName={guide.sportName} />
             </div>
           )}
-          {guide.reviewedOn && <p className="mt-4 text-xs text-slate-500">{guide.reviewedOn}</p>}
+          {guide.reviewedOn && <p className="text-ink-muted mt-4 text-sm">{guide.reviewedOn}</p>}
         </div>
       </section>
 
@@ -171,7 +173,7 @@ export default async function SportPathwayPage({
       <CTA
         title="Ready to support their dream?"
         description="Find the right coach, book the right ground, and get a smart plan that shows exactly how to help your child grow in sports."
-        primaryCTA={{ label: "Get Guidance", href: "/guidance" }}
+        primaryCTA={{ label: "Get guidance", href: "/guidance" }}
         secondaryCTA={{ label: "Join parent community", href: communityUrl }}
       />
     </main>

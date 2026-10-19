@@ -62,7 +62,7 @@ export function PathwayStatsBanner() {
             <motion.div
               key={stat.label}
               variants={cardReveal}
-              className="premium-shadow flex flex-col items-center rounded-lg border border-slate-200 bg-white p-5 text-center sm:p-6"
+              className="flex flex-col items-center rounded-lg border border-slate-200 bg-white p-5 text-center sm:p-6"
             >
               <div
                 className={`mb-4 flex h-12 w-12 items-center justify-center rounded-md ${stat.color}`}
@@ -138,7 +138,7 @@ export function PathwayHelpSection() {
             <motion.div
               key={item.title}
               variants={cardReveal}
-              className="premium-shadow relative overflow-hidden rounded-lg border border-slate-200 bg-white p-6 sm:p-8"
+              className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-6 sm:p-8"
             >
               {/* decorative circle */}
               <div

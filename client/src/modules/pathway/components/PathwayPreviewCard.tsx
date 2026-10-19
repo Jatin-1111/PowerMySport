@@ -38,7 +38,7 @@ export function PathwayPreviewCard({ pathway }: { pathway: PathwayGuideSummary }
               href={`${guideHref}?stage=${encodeURIComponent(stage.key)}`}
               className="group flex items-center gap-4 px-5 py-3 transition-colors hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none"
             >
-              <span className="group-hover:text-power-orange-solid flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 transition-colors group-hover:bg-orange-50">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 underline-offset-4 transition-colors group-hover:bg-orange-50 group-hover:underline">
                 {i + 1}
               </span>
               <span className="min-w-0 flex-1">

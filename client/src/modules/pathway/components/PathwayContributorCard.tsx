@@ -35,7 +35,7 @@ export function PathwayContributorCard({
   const { name, organisation, url, blurb, profile } = contributor;
 
   return (
-    <aside className="premium-shadow rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
+    <aside className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
       <p className="text-sm font-medium text-slate-500">{sportName} pathway contributed by</p>
 
       <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -74,7 +74,7 @@ export function PathwayContributorCard({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    className="hover:text-power-orange-solid inline-flex items-center gap-1 transition"
+                    className="inline-flex items-center gap-1 underline-offset-4 transition hover:underline"
                   >
                     {organisation}
                     <ExternalLink className="h-3 w-3" />

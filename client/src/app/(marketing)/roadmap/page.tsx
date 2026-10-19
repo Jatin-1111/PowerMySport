@@ -1,13 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarCheck,
-  Compass,
-  MessagesSquare,
-  PenLine,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
@@ -21,53 +13,27 @@ import { PageHeader } from "@/modules/shared/ui/PageHeader";
 // The index: which sports a parent can read a pathway for, and enough of what is
 // inside one to make opening it obviously worth doing.
 //
-// A server component with no client state of its own. The old explorer was a
-// 2,000-line client component that generated a pathway on demand; pathways are
-// now authored and published in the CMS, so this page only lists what exists —
-// the one interactive part, the picker, is a client island.
+// A server component with no client state of its own. Pathways are authored and
+// published in the CMS, so this page only lists what exists; the one interactive
+// part, the picker, is a client island.
 //
-// ── What this page is optimised for ──
+// ── What the page is optimised for ──
 //
-// Two things, in order: getting a parent *into* a pathway at the stage that is
-// about their child, and — for the parent who is not ready to read one — giving
-// them a next move that is not "leave".
-//
-// Three things carry most of that, and the ordering of the page is the third:
-//
-//   1. The picker is search-first, and once the child's age is known (asked for
-//      inside a pathway, never here) each sport points at their stage.
-//   2. A band of real, already-answered parent questions links straight into the
-//      stage that answers each one. The index used to describe the content in
-//      the abstract ("Your questions: what am I worried about?"); a parent
-//      cannot tell from that whether their own worry is in there.
-//   3. Everything a parent can act on comes before everything that explains why
-//      the page exists. The generic stats banner and the two-card "how we help"
-//      block used to sit between the sport list and the footer CTA, which meant
-//      three marketing blocks in a row and a long scroll past content nobody
-//      came here for. Both still run on `/roadmap/[sport]`, where a reader who
-//      finished a pathway has actually earned the pitch; here they are replaced
-//      by one band of concrete next steps.
+// Getting a parent *into* a pathway at the stage that is about their child, and,
+// for the parent who is not ready to read one, giving them a next move that is not
+// "leave". So everything a parent can act on (the picker, real already-answered
+// questions, concrete next steps) comes before anything that explains why the page
+// exists, and the explanation is one short strip, not a band.
 //
 // ── On the layout ──
 //
-// Four sections and a closer, each with one job, alternating between the page's
-// own washed background and a flat white band so the boundaries are legible
-// without a rule across the screen. Section chrome — eyebrow, heading, standfirst
-// — goes through `SectionHead`, and every raised surface through `SURFACE`,
-// because the previous pass had five sections inventing their own heading sizes
-// and six different card borders. Consistency is most of what reads as "designed".
+// Sections alternate paper and deeper cream, and are ruled with hairlines rather
+// than boxed: rows, not cards. Section chrome goes through `SectionHead` so no
+// section invents its own heading scale.
 //
 // `overflow-x-clip` on <main>, not `overflow-x-hidden`: hiding one axis promotes
 // the other to `auto`, which makes this a scroll container and silently breaks
 // `position: sticky` for every descendant on the page.
-
-/** Every raised card on this page. One definition, so they cannot drift apart. */
-const SURFACE = "rounded-lg border border-slate-200 bg-white premium-shadow";
-
-/** The same, plus the lift that marks a card as a link. */
-// Clickable surfaces answer the cursor with an orange border and the deeper
-// `premium-shadow` hover, nothing that moves. The whole card is the link.
-const SURFACE_LINK = `${SURFACE} transition hover:border-power-orange/40`;
 
 const BUCKETS = [
   { n: "01", title: "Overview", body: "Where am I, and what does this stage mean?" },
@@ -87,32 +53,29 @@ const BUCKETS = [
 
 const NEXT_STEPS = [
   {
-    icon: Compass,
     title: "Not sure which sport yet?",
     body: "Answer a few questions about your child and get a shortlist of sports worth trying, with what a first trial looks like.",
     href: "/assessment",
     cta: "Find their sport",
-    tone: "text-power-orange bg-orange-100",
   },
   {
-    icon: CalendarCheck,
     title: "Know the sport, need a plan?",
     body: "Get a plan built around your child's age, level and what you're aiming at: training, competitions and the decisions in between.",
     href: "/guidance",
     cta: "Get guidance",
-    tone: "text-emerald-600 bg-emerald-100",
   },
   {
-    icon: MessagesSquare,
     title: "Want to ask a person?",
     body: "Book time with a verified expert who has been through this: a coach, an ex-player, someone who has taken a child down this road.",
     href: "/booking?tab=experts",
     cta: "Connect with an expert",
-    tone: "text-teal-700 bg-teal-100",
   },
 ];
 
-/** Shared section chrome, so five sections cannot each invent their own scale. */
+const ROW_LINK =
+  "group hover:bg-paper-deep/60 focus-visible:ring-ink block transition-colors focus-visible:outline-none focus-visible:ring-2";
+
+/** Shared section chrome, so no section invents its own heading scale. */
 function SectionHead({
   eyebrow,
   title,
@@ -123,17 +86,13 @@ function SectionHead({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto max-w-2xl text-center">
-      <p className="text-power-orange-solid text-xs font-black uppercase tracking-[0.2em]">
-        {eyebrow}
-      </p>
-      <h2 className="font-editorial mt-2.5 text-2xl font-light text-slate-900 sm:text-3xl">
+    <div className="max-w-2xl">
+      <p className="text-ink-muted text-sm">{eyebrow}</p>
+      <h2 className="font-editorial text-ink mt-2 text-balance text-3xl font-light tracking-tight sm:text-4xl">
         {title}
       </h2>
       {children && (
-        <p className="mx-auto mt-3 text-[15px] leading-relaxed text-slate-600 sm:text-base">
-          {children}
-        </p>
+        <p className="text-ink-body mt-3 max-w-prose text-pretty leading-relaxed">{children}</p>
       )}
     </div>
   );
@@ -159,58 +118,35 @@ export default async function PathwaysIndexPage() {
 
   return (
     <main className="overflow-x-clip">
-      {/* ── Hero + picker ──
-          One section, deliberately. They were two, and the gap between them
-          pushed the only thing a parent can actually click below the fold on a
-          laptop: a page whose job is "pick your sport" opened with no sport in
-          sight. */}
+      {/* ── Hero and picker ──
+          One section, deliberately: a page whose job is "pick your sport" must show
+          a sport before the fold. */}
       <PageHeader
         align="center"
         width="7xl"
         title={
           <>
             Starting a sport is easy.
-            {/* The turn is the whole headline, so it gets its own line rather
-                than wrapping wherever the viewport happens to break it. */}
-            <span className="mt-1 block text-slate-500">Navigating the journey is not.</span>
+            {/* The turn is the whole headline, so it gets its own line. */}
+            <span className="mt-1 block italic">Navigating the journey is not.</span>
           </>
         }
         description="Coaches, academies, competitions, costs, education. The answers are scattered everywhere. We put them in one place, stage by stage."
       >
         <PathwayPicker entries={sports} />
 
-        {/* ── Credibility, in one row ──
-            This was a four-card stats banner of its own, most of the way down
-            the page, saying "6 stages / 5 questions / Built with coaches / ₹0".
-            Two of those are facts the page itself demonstrates, and none of
-            them were worth a band. As a single meta line under the picker they
-            answer the two questions a first-time visitor actually has, who
-            wrote this, and what will it cost me — in the place they ask them. */}
-        <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12.5px] font-semibold text-slate-500">
-          <li className="inline-flex items-center gap-1.5">
-            <PenLine aria-hidden className="h-3.5 w-3.5 text-slate-400" />
-            Written with coaches and sports parents
-          </li>
-          <li className="inline-flex items-center gap-1.5">
-            <Wallet aria-hidden className="h-3.5 w-3.5 text-slate-400" />
-            Free to read, no sign-up
-          </li>
-          {updated && (
-            <li className="inline-flex items-center gap-1.5">
-              <Sparkles aria-hidden className="h-3.5 w-3.5 text-slate-400" />
-              Last updated {updated}
-            </li>
-          )}
+        <ul className="text-ink-muted mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+          <li>Written with coaches and sports parents</li>
+          <li>Free to read, no sign-up</li>
+          {updated && <li>Last updated {updated}</li>}
         </ul>
       </PageHeader>
 
       {/* ── Real questions ──
-          Proof, in the parent's own words, placed where a visitor decides
-          whether this page is a brochure. Each one is a link into the stage that
-          answers it, so scanning for your own worry and reading the answer is a
-          single click rather than a sport, a stage and a section. */}
+          Proof, in parents' own words, each a link into the stage that answers it, so
+          scanning for your own worry and reading the answer is one click. */}
       {questions.length > 0 && (
-        <section className="reveal-on-scroll bg-paper-deep py-16 sm:py-20">
+        <section className="bg-paper-deep py-16 sm:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <SectionHead
               eyebrow="Straight to the answer"
@@ -220,30 +156,30 @@ export default async function PathwaysIndexPage() {
               answer.
             </SectionHead>
 
-            {/* Three columns at nine questions — two would run to five rows and
-                turn a scan into a scroll. */}
-            <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {questions.map((item) => (
-                <li key={`${item.sportSlug}-${item.question}`}>
+            <ul className="divide-hairline border-hairline mt-10 grid divide-y border-y lg:grid-cols-2 lg:divide-y-0">
+              {questions.map((item, index) => (
+                <li
+                  key={`${item.sportSlug}-${item.question}`}
+                  className={`border-hairline lg:border-b ${index % 2 === 0 ? "lg:border-r" : ""}`}
+                >
                   <Link
-                    // `?stage=` is read on the server, so this renders the right
-                    // stage in the HTML; the hash then scrolls to the questions
-                    // section within it. Both work without JavaScript.
+                    // `?stage=` is read on the server, so this renders the right stage in
+                    // the HTML; the hash then scrolls to the questions section within it.
                     href={`/roadmap/${item.sportSlug}?stage=${encodeURIComponent(
                       item.stageKey
                     )}#${sectionDomId("questions")}`}
-                    className={`group flex h-full flex-col justify-between gap-3 p-4 ${SURFACE_LINK}`}
+                    className={`${ROW_LINK} px-1 py-5 lg:px-6`}
                   >
-                    <span className="group-hover:text-power-orange-solid text-[15px] font-bold leading-snug text-slate-900 transition">
+                    <span className="text-ink block text-lg leading-snug group-hover:underline group-hover:underline-offset-4">
                       {item.question}
                     </span>
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-[12px] font-semibold uppercase tracking-wider text-slate-500">
+                    <span className="text-ink-muted mt-2 flex items-center justify-between gap-3 text-sm">
+                      <span className="truncate">
                         {item.sportName} · {item.stageName}
                       </span>
                       <ArrowRight
                         aria-hidden
-                        className="group-hover:text-power-orange h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5"
+                        className="text-ink h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5"
                       />
                     </span>
                   </Link>
@@ -255,12 +191,9 @@ export default async function PathwaysIndexPage() {
       )}
 
       {/* ── What a pathway is ──
-          The shape of the content, and the argument for reading it, in one
-          section rather than two. They were separate bands stacked back to back,
-          which made the page feel like a list of blocks; the five buckets are
-          the *what* and the two paragraphs below are the *why*, and reading them
-          together is how the shape actually lands. */}
-      <section className="reveal-on-scroll py-16 sm:py-20">
+          The shape of the content in one ruled strip: the same five questions at
+          every stage, whatever the sport. */}
+      <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHead
             eyebrow="The same shape, every time"
@@ -270,39 +203,26 @@ export default async function PathwaysIndexPage() {
             child&apos;s age.
           </SectionHead>
 
-          {/* The rail behind the numbers turns five boxes into one sequence.
-              Decorative and desktop-only: on a phone the cards already stack in
-              reading order and a vertical line would just be another thing to
-              draw. */}
-          <div className="relative mx-auto mt-10 max-w-5xl">
-            <div
-              aria-hidden
-              className="absolute inset-x-8 top-[1.4rem] hidden h-px bg-gradient-to-r from-transparent via-slate-300/70 to-transparent lg:block"
-            />
-            <ol className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
-              {BUCKETS.map((bucket) => (
-                <li key={bucket.n} className="flex h-full flex-col">
-                  <span className="font-title text-power-orange-solid mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white text-[13px] font-extrabold shadow-sm">
-                    {bucket.n}
-                  </span>
-                  <p className="font-title text-[15px] font-bold text-slate-900">{bucket.title}</p>
-                  <p className="mt-1.5 text-[13.5px] leading-relaxed text-slate-600">
-                    {bucket.body}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          </div>
+          <ol className="divide-hairline border-hairline mt-10 grid divide-y border-y sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-5 lg:divide-x">
+            {BUCKETS.map((bucket) => (
+              <li key={bucket.n} className="px-1 py-6 lg:px-6 lg:first:pl-1">
+                <span className="text-ink-muted text-sm tabular-nums">{bucket.n}</span>
+                <p className="font-editorial text-ink mt-2 text-2xl font-light tracking-tight">
+                  {bucket.title}
+                </p>
+                <p className="text-ink-body mt-2 text-pretty text-sm leading-relaxed">
+                  {bucket.body}
+                </p>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
       {/* ── Next steps ──
-          For the parent whose sport is not published yet, or who does not want
-          to read six stages tonight. One band, three concrete routes, each
-          naming what it actually does. This replaces the generic stats banner
-          and the "PowerMySport helps you grow faster" pair, which between them
-          asked for a long scroll and offered no specific action. */}
-      <section className="reveal-on-scroll bg-paper-deep relative overflow-hidden py-16 sm:py-20">
+          For the parent whose sport is not published yet, or who does not want to read
+          six stages tonight: three concrete routes, each naming what it does. */}
+      <section className="bg-paper-deep py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHead
             eyebrow="If reading isn't enough"
@@ -311,29 +231,24 @@ export default async function PathwaysIndexPage() {
             Three ways to get an answer today.
           </SectionHead>
 
-          <ul className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
-            {NEXT_STEPS.map(({ icon: Icon, ...step }) => (
-              <li key={step.href} className="h-full">
+          <ul className="divide-hairline border-hairline mt-10 grid divide-y border-y md:grid-cols-3 md:divide-x md:divide-y-0">
+            {NEXT_STEPS.map((step) => (
+              <li key={step.href}>
                 <Link
                   href={step.href}
-                  className={`group flex h-full flex-col p-6 sm:p-7 ${SURFACE_LINK}`}
+                  className={`${ROW_LINK} flex h-full flex-col px-1 py-8 md:px-8 md:first:pl-1`}
                 >
-                  <span
-                    className={`mb-5 flex h-12 w-12 items-center justify-center rounded-md ${step.tone}`}
-                  >
-                    <Icon aria-hidden className="h-5 w-5" />
-                  </span>
-                  <span className="font-title text-[17px] font-bold leading-snug text-slate-900">
+                  <span className="font-editorial text-ink text-2xl font-light leading-snug tracking-tight">
                     {step.title}
                   </span>
-                  <span className="mt-2.5 flex-1 text-[14px] leading-relaxed text-slate-600">
+                  <span className="text-ink-body mt-3 flex-1 text-pretty text-sm leading-relaxed">
                     {step.body}
                   </span>
-                  <span className="text-power-orange-solid mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold">
+                  <span className="text-ink mt-6 inline-flex items-center gap-1.5 text-sm font-medium group-hover:underline group-hover:underline-offset-4">
                     {step.cta}
                     <ArrowRight
                       aria-hidden
-                      className="h-4 w-4 transition group-hover:translate-x-0.5"
+                      className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
                     />
                   </span>
                 </Link>
@@ -343,14 +258,13 @@ export default async function PathwaysIndexPage() {
         </div>
       </section>
 
-      {/* The closer is the community, not guidance: guidance already has a card
-          of its own three inches up, and the thing most likely to bring a parent
-          back is other parents. */}
+      {/* The closer is the community, not guidance: guidance already has a card of its
+          own above, and the thing most likely to bring a parent back is other parents. */}
       <CTA
         title="You are not the first parent doing this"
         description="Thousands of Indian sports parents comparing academies, coaches, costs and competitions. Ask the question you have not found an answer to yet."
         primaryCTA={{ label: "Join parent community", href: communityUrl }}
-        secondaryCTA={{ label: "Get Guidance", href: "/guidance" }}
+        secondaryCTA={{ label: "Get guidance", href: "/guidance" }}
       />
     </main>
   );
