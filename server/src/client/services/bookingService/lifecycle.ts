@@ -17,6 +17,7 @@ import {
   isProviderAuthorizedForBooking,
   sendBookingPaymentConfirmation,
   notifyWaitlistForFreedSlot,
+  notifyBookingRescheduledWhatsApp,
 } from "./notifications";
 
 export const processBookingRefund = async (
@@ -1069,6 +1070,7 @@ export const rescheduleBookingByCoach = async (
     startTime: booking.startTime,
     endTime: booking.endTime,
   };
+  const previousStart = combineDateAndTimeIST(booking.date, booking.startTime);
 
   booking.date = newDate;
   booking.startTime = newStartTime;
@@ -1092,6 +1094,9 @@ export const rescheduleBookingByCoach = async (
       },
     },
   });
+
+  // Fire-and-forget: a WhatsApp hiccup must never fail the reschedule itself.
+  void notifyBookingRescheduledWhatsApp(booking, previousStart);
 
   return booking;
 };
