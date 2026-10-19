@@ -124,6 +124,10 @@ export default function RootLayout({
     // font, which is how Space Grotesk never rendered anywhere.
     <html
       lang="en"
+      // Next 16 no longer forces an instant jump to the top on a route change
+      // when `scroll-behavior: smooth` is set; this attribute restores it, so
+      // only in-page links glide, not page navigation.
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable}`}
     >
       <body className="antialiased">

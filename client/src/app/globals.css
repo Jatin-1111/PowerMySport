@@ -282,6 +282,18 @@
        paints the reserved gutter as a second scrollbar track next to the
        real one, so the page appears to have two scrollbars. */
     overflow-y: scroll;
+
+    /* Room for the sticky header when a link jumps to a heading. */
+    scroll-padding-top: 6rem;
+  }
+
+  /* In-page links glide instead of jumping, for people who have not asked for
+     less motion. Native smooth scrolling, no library: the browser keeps
+     owning the wheel, touch, keyboard and find-in-page. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
 
   body {
