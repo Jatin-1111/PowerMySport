@@ -40,7 +40,10 @@ export const ORGANIZATION = {
   addressCountry: "IN",
   foundingDate: "2026",
   /** Only profiles that actually exist. An invented `sameAs` is worse than none. */
-  socialProfiles: ["https://www.instagram.com/powermysport"],
+  socialProfiles: [
+    "https://www.instagram.com/powermysport",
+    "https://www.linkedin.com/company/powermysport-pvt-ltd/",
+  ],
 } as const;
 
 /** Build an absolute URL from a site-relative path. */

@@ -79,9 +79,9 @@ const socialLinks = [
   },
   {
     name: "LinkedIn",
-    href: "#",
+    href: "https://www.linkedin.com/company/powermysport-pvt-ltd/",
     icon: <Linkedin className="h-4 w-4" strokeWidth={1.5} />,
-    external: false,
+    external: true,
     hoverClass: "hover:bg-ink hover:text-white",
   },
 ];
