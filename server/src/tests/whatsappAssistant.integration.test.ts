@@ -12,6 +12,7 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const { WhatsAppConversation } = require("../client/models/WhatsAppConversation");
 const {
+  answerWhatsAppMessage,
   hashPhone,
   replyToWhatsAppMessage,
 } = require("../shared/services/whatsappAssistantService");
@@ -130,6 +131,38 @@ describe("replyToWhatsAppMessage", () => {
     const reply = await replyToWhatsAppMessage(msg("tell me everything"), stub("x".repeat(6000)));
     assert.ok(reply.length <= 3800);
     assert.ok(reply.endsWith("…"));
+  });
+
+  it("flags a first message from a number, and not the ones after it", async () => {
+    const first = await answerWhatsAppMessage(msg("hello"), stub("Hi there."));
+    assert.equal(first.firstContact, true);
+    const second = await answerWhatsAppMessage(msg("and another", "wamid.2"), stub("Sure."));
+    assert.equal(second.firstContact, false);
+  });
+
+  it("deletes the chat on STOP, without asking the model, and treats the next message as new", async () => {
+    await replyToWhatsAppMessage(msg("My son plays tennis"), stub("Great."));
+    assert.equal(await WhatsAppConversation.countDocuments({}), 1);
+
+    let asked = false;
+    const never = async function* () {
+      asked = true;
+      yield "should not be used";
+    };
+    const stopped = await answerWhatsAppMessage(msg("STOP", "wamid.2"), never);
+    assert.match(stopped.reply, /deleted/i);
+    assert.equal(asked, false);
+    assert.equal(await WhatsAppConversation.countDocuments({}), 0);
+
+    const again = await answerWhatsAppMessage(msg("hello again", "wamid.3"), stub("Welcome back."));
+    assert.equal(again.firstContact, true);
+  });
+
+  it("tells the model it is an AI and not to collect sensitive details", async () => {
+    const seen: Seen[] = [];
+    await replyToWhatsAppMessage(msg("hello"), stub("Hi.", seen));
+    assert.match(seen[0]!.systemPrompt, /AI assistant/);
+    assert.match(seen[0]!.systemPrompt, /medical details/);
   });
 
   it("hashPhone is stable and differs per number", () => {

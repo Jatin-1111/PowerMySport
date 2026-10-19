@@ -5,6 +5,7 @@ import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticCha
 import { ASSISTANT_CHAT_TOOLS } from "./chatToolsService";
 import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitService";
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
+import { OPT_OUT_REPLY, isOptOutMessage } from "./whatsappPilot";
 import type { InboundWhatsAppMessage } from "./whatsappService";
 import { log as __rootLog } from "../../utils/logger";
 
@@ -26,7 +27,10 @@ You are replying inside WhatsApp, not on the website. Adjust everything above to
 - Plain text only. No markdown headings, tables or **double-asterisk** bold. A single *asterisk* pair for emphasis is fine, sparingly.
 - Short. Aim for under 900 characters unless the parent asks for detail. One idea, then one question at most.
 - Relative paths like /guidance do not work here. Always write the full link, e.g. https://powermysport.com/guidance
-- Do not use markdown links. Put the bare URL on its own line.`;
+- Do not use markdown links. Put the bare URL on its own line.
+- You are an AI assistant. If asked whether you are a person or a bot, say you are an AI assistant.
+- Never ask for a child's medical details, ID numbers, payment details or passwords, and tell a parent not to send them here.
+- If a parent wants to talk to a person, say the PowerMySport team can help and give them https://powermysport.com/contact`;
 
 const FALLBACK_REPLY =
   "Sorry, I couldn't put an answer together just now. Please try again in a minute, or ask on https://powermysport.com/ask";
@@ -55,21 +59,34 @@ export type ReplyGenerator = (
 const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage) =>
   streamAgenticChatResponse(systemPrompt, history, userMessage, ASSISTANT_CHAT_TOOLS);
 
+export interface WhatsAppAnswer {
+  reply: string;
+  /** No earlier conversation was found for this number, so the parent has not seen the notice. */
+  firstContact: boolean;
+}
+
 /**
  * Works out the reply to one inbound WhatsApp message and records the turn.
  * Always returns text to send: a failure becomes an apology rather than
  * silence, because a parent staring at an unanswered message is the worst
  * outcome here.
  */
-export async function replyToWhatsAppMessage(
+export async function answerWhatsAppMessage(
   message: InboundWhatsAppMessage,
   generate: ReplyGenerator = defaultGenerator
-): Promise<string> {
+): Promise<WhatsAppAnswer> {
   const text = message.text?.trim();
-  if (!text) return UNSUPPORTED_REPLY;
+  if (!text) return { reply: UNSUPPORTED_REPLY, firstContact: false };
 
   const userMessage = text.slice(0, MAX_INBOUND_CHARS);
   const phoneHash = hashPhone(message.from);
+
+  // "STOP" and the like delete the chat. Checked before the daily limit so a parent
+  // who has used their messages can still take their data back.
+  if (isOptOutMessage(text)) {
+    await WhatsAppConversation.deleteOne({ phoneHash });
+    return { reply: OPT_OUT_REPLY, firstContact: false };
+  }
   // Not the website's limiter key: a WhatsApp number is not a user id.
   const limiterKey = `wa:${phoneHash}`;
 
@@ -80,12 +97,13 @@ export async function replyToWhatsAppMessage(
     dailyReached: DAILY_LIMIT_REPLY,
     lifetimeReached: DAILY_LIMIT_REPLY,
   });
-  if (!limit.ok) return limit.message;
+  if (!limit.ok) return { reply: limit.message, firstContact: false };
 
   try {
     const conversation = await WhatsAppConversation.findOne({ phoneHash })
       .select("messages")
       .lean();
+    const firstContact = !conversation;
     const history: ChatHistoryMessage[] = (conversation?.messages ?? [])
       .slice(-HISTORY_MESSAGES)
       .map((m) => ({ role: m.role, content: m.content }));
@@ -121,10 +139,18 @@ export async function replyToWhatsAppMessage(
       { upsert: true }
     );
 
-    return reply;
+    return { reply, firstContact };
   } catch (err) {
     log.error("could not produce a reply", err);
     await decrementDailyMessageCount(limiterKey);
-    return FALLBACK_REPLY;
+    return { reply: FALLBACK_REPLY, firstContact: false };
   }
+}
+
+/** The reply text alone, for callers that do not need to know whether this was a first message. */
+export async function replyToWhatsAppMessage(
+  message: InboundWhatsAppMessage,
+  generate: ReplyGenerator = defaultGenerator
+): Promise<string> {
+  return (await answerWhatsAppMessage(message, generate)).reply;
 }
