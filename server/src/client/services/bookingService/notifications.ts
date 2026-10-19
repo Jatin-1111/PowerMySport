@@ -111,23 +111,30 @@ export const sendBookingLifecycleEmails = async (
   );
 
   // ── WhatsApp notification for the player only ──────────────────────────────
-  if (state === "CANCELLED") {
+  // Sent from here, with the emails, so it follows every path that emails: payment
+  // landing on a booking that is already confirmed, a provider accepting one that
+  // was waiting on them, and a cancellation. AWAITING_PROVIDER sends nothing: the
+  // booking is not confirmed yet, and telling the player it is would be wrong.
+  if (state === "CANCELLED" || state === "CONFIRMED") {
     const player = recipients.find((r) => r.role === "Player");
     if (player) {
       const playerUser = await User.findOne({ email: player.email }).select("phone name").lean();
       if (playerUser?.phone) {
-        const coachName = recipients.find((r) => r.role === "PROVIDER")?.name;
+        // Only a booking with a coach has one; otherwise the provider is the venue owner.
+        const coachName = booking.coachId
+          ? recipients.find((r) => r.role === "PROVIDER")?.name
+          : undefined;
         // date is UTC midnight of the booking day; startTime is an IST wall-clock time.
         const dt = combineDateAndTimeIST(booking.date, booking.startTime);
         notifyBookingWhatsApp({
-          event: "BOOKING_CANCELLED",
+          event: state === "CANCELLED" ? "BOOKING_CANCELLED" : "BOOKING_CONFIRMED",
           playerPhone: normalizeIndianPhone(playerUser.phone),
           playerName: playerUser.name || player.name,
           coachName,
           sport: booking.sport,
           dateTime: dt.toISOString(),
           venue: venueName,
-          refundAmount: extra.refundAmount,
+          ...(state === "CANCELLED" ? { refundAmount: extra.refundAmount } : {}),
         });
       }
     }
@@ -289,32 +296,6 @@ export const sendBookingPaymentConfirmation = async (bookingId: string): Promise
   }
 
   const venue = await Venue.findById(booking.venueId).select("name");
-
-  // ── WhatsApp notification on payment / confirmation ────────────────────────
-  if (booking.status === "CONFIRMED") {
-    const playerUser = await User.findById(booking.userId).select("phone name").lean();
-    if (playerUser?.phone) {
-      let coachName: string | undefined;
-      if (booking.coachId) {
-        const coach = await Coach.findById(booking.coachId)
-          .populate("userId", "name")
-          .select("userId")
-          .lean();
-        coachName = (coach?.userId as { name?: string } | undefined)?.name;
-      }
-      // date is UTC midnight of the booking day; startTime is an IST wall-clock time.
-      const dt = combineDateAndTimeIST(booking.date, booking.startTime);
-      notifyBookingWhatsApp({
-        event: "BOOKING_CONFIRMED",
-        playerPhone: normalizeIndianPhone(playerUser.phone),
-        playerName: playerUser.name,
-        coachName,
-        sport: booking.sport,
-        dateTime: dt.toISOString(),
-        venue: venue?.name,
-      });
-    }
-  }
 
   NotificationService.send({
     userId: booking.userId.toString(),
