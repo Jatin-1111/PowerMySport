@@ -62,9 +62,7 @@ const NavItems = ({
       {sections.map((section, sectionIndex) => (
         <div key={`${section.title ?? "general"}-${sectionIndex}`}>
           {section.title && (
-            <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              {section.title}
-            </p>
+            <p className="text-ink-muted mb-1 px-3 text-xs font-medium">{section.title}</p>
           )}
           <div className="space-y-1">
             {section.items.map((item) => {
@@ -156,7 +154,7 @@ export const DashboardShell = ({
       <header className="sticky top-0 z-40 border-b border-white/60 bg-white/80 px-4 py-3 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">{dashboardLabel}</p>
+            <p className="text-ink-muted text-xs">{dashboardLabel}</p>
             <p className="text-sm font-semibold text-slate-900">{displayName}</p>
           </div>
           {hasNav && (
@@ -181,7 +179,7 @@ export const DashboardShell = ({
           <div className="absolute left-0 top-0 flex h-full w-[88vw] max-w-sm flex-col border-r border-white/60 bg-white/95 shadow-lg backdrop-blur-xl">
             <div className="flex shrink-0 items-center justify-between border-b border-white/60 p-4">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">{dashboardLabel}</p>
+                <p className="text-ink-muted text-xs">{dashboardLabel}</p>
                 <p className="text-sm font-semibold text-slate-900">{displayName}</p>
               </div>
               <button
@@ -218,7 +216,7 @@ export const DashboardShell = ({
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-white/60 bg-white/80 shadow-sm backdrop-blur-md lg:flex lg:flex-col">
           <div className="shrink-0 p-6">
             <div className="rounded-2xl border border-white/70 bg-white p-5 text-slate-900 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-slate-500">{dashboardLabel}</p>
+              <p className="text-ink-muted text-xs">{dashboardLabel}</p>
               <h1 className="font-editorial mt-2 text-2xl font-normal text-slate-900">
                 PowerMySport
               </h1>

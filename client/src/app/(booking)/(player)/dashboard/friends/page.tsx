@@ -15,6 +15,7 @@ import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { queryKeys } from "@/lib/query/keys";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { StatStrip } from "@/modules/player/components/StatStrip";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import {
   Friend,
@@ -277,47 +278,32 @@ export default function FriendsPage() {
         subtitle="Manage your friends and connect with other players to book together."
       />
 
-      {/* Stats strip */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Friends</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{friends.length}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Pending Requests
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{pendingRequests.length}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sent</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{sentRequests.length}</p>
-        </div>
-      </div>
+      <StatStrip
+        stats={[
+          { label: "Friends", value: friends.length },
+          { label: "Pending requests", value: pendingRequests.length },
+          { label: "Sent", value: sentRequests.length },
+        ]}
+      />
 
       {loading ? (
         <ListSkeleton count={5} />
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="shop-surface premium-shadow grid h-auto w-full grid-cols-3 border border-slate-200/60 p-1">
+          <TabsList className="border-hairline flex h-auto w-full justify-start gap-7 rounded-none border-b bg-transparent p-0">
             <TabsTrigger
               value="friends"
-              className="data-[state=active]:bg-power-orange-solid flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
+              className="text-ink-muted data-[state=active]:text-ink data-[state=active]:border-ink focus-visible:ring-ink -mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent bg-transparent px-0.5 py-3 text-base data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
               <Users className="h-4 w-4" />
               Friends
               {friends.length > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="ml-1 bg-indigo-100/70 text-xs text-indigo-700"
-                >
-                  {friends.length}
-                </Badge>
+                <span className="text-ink-muted tabular-nums">{friends.length}</span>
               )}
             </TabsTrigger>
             <TabsTrigger
               value="requests"
-              className="data-[state=active]:bg-power-orange-solid flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
+              className="text-ink-muted data-[state=active]:text-ink data-[state=active]:border-ink focus-visible:ring-ink -mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent bg-transparent px-0.5 py-3 text-base data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
               <Clock className="h-4 w-4" />
               Requests
@@ -329,7 +315,7 @@ export default function FriendsPage() {
             </TabsTrigger>
             <TabsTrigger
               value="search"
-              className="data-[state=active]:bg-power-orange-solid flex items-center gap-2 py-2.5 text-sm text-slate-700 data-[state=active]:text-white"
+              className="text-ink-muted data-[state=active]:text-ink data-[state=active]:border-ink focus-visible:ring-ink -mb-px flex items-center gap-2 rounded-none border-b-2 border-transparent bg-transparent px-0.5 py-3 text-base data-[state=active]:bg-transparent data-[state=active]:shadow-none"
             >
               <Search className="h-4 w-4" />
               Search

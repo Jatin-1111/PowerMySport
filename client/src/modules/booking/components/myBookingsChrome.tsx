@@ -2,6 +2,7 @@
 
 import { CalendarDays, List } from "lucide-react";
 import type { Booking } from "@/types";
+import { StatStrip } from "@/modules/player/components/StatStrip";
 import { cn } from "@/utils/cn";
 
 /**
@@ -28,19 +29,7 @@ export function BookingStatsStrip({ bookings }: { bookings: Booking[] }) {
     { label: "Confirmed", value: bookings.filter((b) => b.status === "CONFIRMED").length },
   ];
 
-  return (
-    <div className="grid gap-3 sm:grid-cols-3">
-      {stats.map(({ label, value }) => (
-        <div
-          key={label}
-          className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3"
-        >
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
-        </div>
-      ))}
-    </div>
-  );
+  return <StatStrip stats={stats} />;
 }
 
 const VIEWS: Array<{ id: BookingsView; label: string; icon: typeof List }> = [
@@ -61,7 +50,7 @@ export function BookingsViewSwitch({
     <div
       role="tablist"
       aria-label="Bookings view"
-      className="inline-flex rounded-xl border border-slate-200/70 bg-white/70 p-1"
+      className="bg-paper-deep inline-flex rounded-lg p-1"
     >
       {VIEWS.map(({ id, label, icon: Icon }) => {
         const isSelected = view === id;
@@ -74,10 +63,8 @@ export function BookingsViewSwitch({
             tabIndex={isSelected ? 0 : -1}
             onClick={() => onChange(id)}
             className={cn(
-              "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
-              isSelected
-                ? "bg-power-orange-solid text-white"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              "focus-visible:ring-ink inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2",
+              isSelected ? "bg-ink text-white" : "text-ink-muted hover:text-ink"
             )}
           >
             <Icon className="h-4 w-4" />

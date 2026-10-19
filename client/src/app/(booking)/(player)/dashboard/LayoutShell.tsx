@@ -13,8 +13,11 @@ import {
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import {
   Bell,
-  Calendar,
+  BellRing,
+  Bookmark,
+  CalendarCheck,
   CalendarRange,
+  ConciergeBell,
   CreditCard,
   Home,
   LayoutDashboard,
@@ -107,7 +110,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
     {
       href: "/saved",
       label: "Saved",
-      icon: Calendar,
+      icon: Bookmark,
       section: "Community",
     },
     {
@@ -122,7 +125,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
     {
       href: "/dashboard/my-bookings",
       label: "My Bookings",
-      icon: Calendar,
+      icon: CalendarCheck,
       section: "Activity",
     },
     {
@@ -136,7 +139,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
     {
       href: "/dashboard/concierge-requests",
       label: "Concierge Requests",
-      icon: Users, // Or a better icon if imported, maybe FileText
+      icon: ConciergeBell,
       section: "Activity",
     },
     {
@@ -148,7 +151,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
     {
       href: "/dashboard/reminder-preferences",
       label: "Reminders",
-      icon: Bell,
+      icon: BellRing,
       section: "Activity",
     },
     {

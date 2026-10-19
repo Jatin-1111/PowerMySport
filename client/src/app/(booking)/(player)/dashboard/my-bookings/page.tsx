@@ -293,10 +293,10 @@ export default function BookingsPage() {
         action={
           <div className="flex flex-wrap gap-3">
             <Link href="/booking">
-              <Button variant="secondary">Book Venue</Button>
+              <Button variant="outline">Book a venue</Button>
             </Link>
             <Link href="/booking?tab=coaches">
-              <Button variant="primary">Find a Coach</Button>
+              <Button variant="primary">Find a coach</Button>
             </Link>
           </div>
         }

@@ -20,8 +20,6 @@ interface BookingTabConfig {
   id: BookingTabId;
   label: string;
   icon: typeof MapPin;
-  /** Badge colour when the tab is not selected. */
-  idleBadgeClass: string;
   emptyTitle: string;
   emptyDescription: string;
   emptyActionLabel: string;
@@ -35,7 +33,6 @@ const ALL_TABS: BookingTabConfig[] = [
     id: "venues",
     label: "Venue Bookings",
     icon: MapPin,
-    idleBadgeClass: "bg-slate-100 text-slate-600",
     emptyTitle: "No venue bookings",
     emptyDescription: "You haven't booked any venues yet.",
     emptyActionLabel: "Browse Venues",
@@ -45,7 +42,6 @@ const ALL_TABS: BookingTabConfig[] = [
     id: "coaches",
     label: "Coach Bookings",
     icon: Award,
-    idleBadgeClass: "bg-purple-100/70 text-purple-700",
     emptyTitle: "No coach bookings",
     emptyDescription: "You haven't booked any coaches yet.",
     emptyActionLabel: "Find a Coach",
@@ -55,7 +51,6 @@ const ALL_TABS: BookingTabConfig[] = [
     id: "academies",
     label: "Academy Bookings",
     icon: Building2,
-    idleBadgeClass: "bg-teal-100/70 text-teal-700",
     emptyTitle: "No academy bookings",
     emptyDescription: "You haven't booked any academy sessions yet.",
     emptyActionLabel: "Browse Academies",
@@ -65,7 +60,6 @@ const ALL_TABS: BookingTabConfig[] = [
     id: "experts",
     label: "Expert Sessions",
     icon: Users,
-    idleBadgeClass: "bg-orange-100/70 text-orange-700",
     emptyTitle: "No expert sessions",
     emptyDescription: "You haven't booked a 1:1 session with an expert yet.",
     emptyActionLabel: "Find an Expert",
@@ -101,10 +95,9 @@ export function BookingTabBar({
     <div
       role="tablist"
       aria-label="Booking types"
-      className="flex flex-col border-b border-slate-200/60 sm:flex-row"
+      className="border-hairline flex gap-x-7 overflow-x-auto overflow-y-hidden border-b"
     >
-      {visibleBookingTabs(counts).map((tab, index) => {
-        const Icon = tab.icon;
+      {visibleBookingTabs(counts).map((tab) => {
         const isSelected = activeTab === tab.id;
         return (
           <button
@@ -117,32 +110,14 @@ export function BookingTabBar({
             tabIndex={isSelected ? 0 : -1}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              "flex-1 border-b-2 px-3 py-4 font-semibold transition-colors sm:px-6",
-              index > 0 && "sm:border-l",
+              "focus-visible:ring-ink shrink-0 whitespace-nowrap border-b-2 px-0.5 py-3.5 text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
               isSelected
-                ? "border-power-orange text-power-orange bg-orange-50/50"
-                : "border-transparent text-slate-600 hover:text-slate-900"
+                ? "border-ink text-ink"
+                : "text-ink-muted hover:text-ink border-transparent"
             )}
           >
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <span
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-lg",
-                  isSelected ? "bg-power-orange-solid text-white" : "bg-slate-100 text-slate-500"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-              </span>
-              <span className="text-sm sm:text-base">{tab.label}</span>
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs",
-                  isSelected ? "bg-power-orange/10 text-power-orange" : tab.idleBadgeClass
-                )}
-              >
-                {counts[tab.id]}
-              </span>
-            </div>
+            {tab.label}
+            <span className="text-ink-muted ml-2 tabular-nums">{counts[tab.id]}</span>
           </button>
         );
       })}

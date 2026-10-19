@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { StatStrip } from "@/modules/player/components/StatStrip";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
@@ -155,23 +156,13 @@ export default function SupportTicketsPage() {
         }
       />
 
-      {/* Stats strip */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{tickets.length}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Open / In Progress
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{openCount}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Resolved</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{resolvedCount}</p>
-        </div>
-      </div>
+      <StatStrip
+        stats={[
+          { label: "Total", value: tickets.length },
+          { label: "Open or in progress", value: openCount },
+          { label: "Resolved", value: resolvedCount },
+        ]}
+      />
 
       <Card className="shop-surface premium-shadow overflow-hidden p-0">
         <ProfileSectionHeader

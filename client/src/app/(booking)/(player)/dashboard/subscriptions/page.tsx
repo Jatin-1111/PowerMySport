@@ -7,6 +7,8 @@ import { useFriendSocket } from "@/hooks/useFriendSocket";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { StatStrip } from "@/modules/player/components/StatStrip";
+import { UnderlineFilter } from "@/modules/shared/ui/UnderlineFilter";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
@@ -159,34 +161,13 @@ export default function SubscriptionsPage() {
         subtitle="Track all your coach subscriptions, renew active plans, and cancel when needed."
       />
 
-      {/* Stats strip */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid gap-3 sm:grid-cols-3"
-      >
-        <motion.div variants={itemVariants}>
-          <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{counts.all}</p>
-          </div>
-        </motion.div>
-        <motion.div variants={itemVariants}>
-          <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Active / Past Due
-            </p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{counts.live}</p>
-          </div>
-        </motion.div>
-        <motion.div variants={itemVariants}>
-          <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ended</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{counts.ended}</p>
-          </div>
-        </motion.div>
-      </motion.div>
+      <StatStrip
+        stats={[
+          { label: "Total", value: counts.all },
+          { label: "Active or past due", value: counts.live },
+          { label: "Ended", value: counts.ended },
+        ]}
+      />
 
       <Card className="shop-surface premium-shadow overflow-hidden p-0">
         <ProfileSectionHeader
@@ -195,39 +176,22 @@ export default function SubscriptionsPage() {
           description="Use filters to focus on live plans or completed ones."
         />
         <CardContent className="space-y-4 px-6 py-5">
-          {/* Filter buttons */}
-          <div className="flex flex-wrap gap-2">
-            {[
+          <UnderlineFilter<SubscriptionFilter>
+            label="Filter subscriptions"
+            value={filter}
+            onChange={setFilter}
+            items={[
               { label: "All", value: "ALL", count: counts.all },
               { label: "Live", value: "LIVE", count: counts.live },
               { label: "Ended", value: "ENDED", count: counts.ended },
-            ].map((item) => (
-              <button
-                key={item.value}
-                onClick={() => setFilter(item.value as SubscriptionFilter)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-semibold transition-all ${
-                  filter === item.value
-                    ? "border-power-orange-solid bg-power-orange-solid text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
-                }`}
-              >
-                {item.label}
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${
-                    filter === item.value ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {item.count}
-                </span>
-              </button>
-            ))}
-          </div>
+            ]}
+          />
 
           {loading ? (
             <ListSkeleton count={4} />
           ) : filteredSubscriptions.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60">
+              <div>
                 <EmptyState
                   icon={Wallet}
                   title="No subscriptions yet"

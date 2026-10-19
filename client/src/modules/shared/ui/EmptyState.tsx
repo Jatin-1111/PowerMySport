@@ -22,16 +22,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onSecondaryAction,
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="mb-4 rounded-full bg-slate-100 p-6">
-        <Icon size={48} className="text-slate-400" />
+    <div className="flex flex-col items-center justify-center px-4 py-14 text-center">
+      <div className="bg-paper-deep text-ink-muted mb-5 flex h-12 w-12 items-center justify-center rounded-lg">
+        <Icon className="h-6 w-6" aria-hidden="true" />
       </div>
 
-      <h3 className="mb-2 text-xl font-bold text-slate-900">{title}</h3>
-      <p className="mb-6 max-w-sm text-slate-600">{description}</p>
+      <h3 className="font-editorial text-ink mb-2 text-balance text-2xl font-light tracking-tight">
+        {title}
+      </h3>
+      <p className="text-ink-muted mb-6 max-w-sm text-pretty">{description}</p>
 
       {(actionLabel || secondaryActionLabel) && (
-        <div className="flex gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           {actionLabel && onAction && (
             <Button onClick={onAction} variant="primary">
               {actionLabel}

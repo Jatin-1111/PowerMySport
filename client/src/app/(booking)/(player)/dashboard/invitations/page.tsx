@@ -5,6 +5,7 @@ import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { queryKeys } from "@/lib/query/keys";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
+import { StatStrip } from "@/modules/player/components/StatStrip";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
@@ -96,21 +97,13 @@ export default function InvitationsPage() {
         subtitle="Manage invitations to group bookings from your friends."
       />
 
-      {/* Stats strip */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pending</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{pendingInvitations.length}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Responded</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{respondedInvitations.length}</p>
-        </div>
-        <div className="premium-shadow shop-surface rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">{invitations.length}</p>
-        </div>
-      </div>
+      <StatStrip
+        stats={[
+          { label: "Pending", value: pendingInvitations.length },
+          { label: "Responded", value: respondedInvitations.length },
+          { label: "Total", value: invitations.length },
+        ]}
+      />
 
       {loading ? (
         <ListSkeleton count={5} />
