@@ -27,7 +27,7 @@ export interface ChatToolDefinition {
 const searchExpertsTool: ChatToolDefinition = {
   name: "search_experts",
   description:
-    "Search PowerMySport's verified sports experts by sport and/or free-text (city, expertise, style). Experts give one-to-one consultations (guidance sessions, online or in person); they are NOT coaches for regular training, and PowerMySport does not list regular coaches right now. Returns up to 5 matches with fee per session, rating, and city. Use when a parent asks for an expert or consultation, or asks for a coach: in that case say first that regular coaching is not listed, then offer these as the closest option.",
+    "Search PowerMySport's verified sports experts by sport and/or free-text (city, expertise, style). Experts give one-to-one consultations (guidance sessions, online or in person); they are NOT coaches for regular training, and regular coaching on PowerMySport is coming soon. Returns up to 5 matches with fee per session, rating, and city. Use when a parent asks for an expert or consultation, or asks for a coach: in that case say first that regular coaching is coming soon, then offer these as the closest option for now.",
   parametersJsonSchema: {
     type: "object",
     properties: {

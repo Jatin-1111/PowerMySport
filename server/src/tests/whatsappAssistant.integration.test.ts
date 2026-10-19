@@ -170,7 +170,7 @@ describe("replyToWhatsAppMessage", () => {
     await replyToWhatsAppMessage(msg("find me a tennis coach"), stub("Hi.", seen));
     // The prompt says a coach request is not a consultation request, and the fee
     // rule asks for rupees and the unit instead of a bare number.
-    assert.match(seen[0]!.systemPrompt, /regular coaches are not listed/);
+    assert.match(seen[0]!.systemPrompt, /regular coaching is coming soon/);
     assert.match(seen[0]!.systemPrompt, /per session/);
 
     const { ASSISTANT_CHAT_TOOLS } = require("../shared/services/chatToolsService");
