@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { log as __rootLog } from "../../utils/logger";
+import { sendBookingTemplate, templatesEnabled } from "./whatsappTemplates";
 
 const log = __rootLog.child("whatsappNotification");
 
@@ -100,11 +101,19 @@ async function postToN8n(url: string, payload: unknown): Promise<void> {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Fire a booking lifecycle event to n8n which will send a WhatsApp message to
- * the player. This is fire-and-forget — it never throws and never blocks the
- * caller.
+ * Send a booking lifecycle WhatsApp message to the player: directly as an
+ * approved template when `WHATSAPP_TEMPLATES=on`, otherwise through n8n. This is
+ * fire-and-forget: it never throws and never blocks the caller.
  */
 export function notifyBookingWhatsApp(payload: BookingWhatsAppPayload): void {
+  // With templates switched on the message goes straight from this server, using
+  // the approved booking templates. Otherwise it is handed to n8n as before.
+  if (templatesEnabled()) {
+    const { event, ...details } = payload;
+    void sendBookingTemplate(event, details);
+    return;
+  }
+
   const url = n8nBookingWebhook();
   if (!url || !n8nSecret()) {
     log.debug(
