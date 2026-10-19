@@ -13,27 +13,22 @@ interface HeroPhotoOption {
 
 const UNSPLASH = "?fm=jpg&q=75&w=2400&auto=format&fit=crop";
 
-// The first is what the page shows. The others are there for choosing between
+// The first is what the page shows. The other is there for choosing between
 // photographs: open the homepage with `?compare=photos` for a switch that shows
 // them one at a time.
 const OPTIONS: HeroPhotoOption[] = [
   {
-    label: "Current",
+    label: "Tennis",
+    src: "/images/hero-tennis.jpg",
+    alt: "A young girl hitting a forehand on a tennis court at sunset while her coach and a parent watch",
+    // The player is on the right; keep her in frame when a narrow screen crops the sides.
+    position: "object-[72%_50%] lg:object-center",
+  },
+  {
+    label: "Football",
     src: `https://images.unsplash.com/photo-1605550498663-f270981a3cf8${UNSPLASH}`,
     alt: "A smiling young boy in a blue kit about to kick a football on a turf ground",
     position: "object-top",
-  },
-  {
-    label: "Photo 2",
-    src: `https://images.unsplash.com/photo-1612542795178-ef13feed5ddd${UNSPLASH}`,
-    alt: "Boys playing together on a grass field",
-    position: "object-center",
-  },
-  {
-    label: "Photo 3",
-    src: `https://images.unsplash.com/photo-1620700374542-d129058c0d0a${UNSPLASH}`,
-    alt: "Children playing together in a lane",
-    position: "object-center",
   },
 ];
 
