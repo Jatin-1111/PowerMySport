@@ -322,6 +322,42 @@ describe("which events are drawn", () => {
     });
   });
 
+  describe("events whose entries have closed", () => {
+    // Dates far from now on either side, so these hold whenever the test runs.
+    const SHUT = { registrationDeadlineDate: "2020-01-01T00:00:00.000Z" };
+    const OPEN = { registrationDeadlineDate: "2099-01-01T00:00:00.000Z" };
+    const shortlist = shortlistOf([
+      edition("open", 12, OPEN),
+      edition("shut", 14, SHUT),
+      edition("nodate", 16),
+    ]);
+    const draw = (extra: Partial<Parameters<typeof buildCalendarItems>[0]> = {}) =>
+      kinds(
+        buildCalendarItems({
+          shortlist,
+          planEntries: [],
+          suggestions: [],
+          showAvailable: true,
+          ...extra,
+        })
+      );
+
+    it("are drawn, but flagged as closed, so the calendar still shows what is on", () => {
+      const items = buildCalendarItems({
+        shortlist,
+        planEntries: [],
+        suggestions: [],
+        showAvailable: true,
+      });
+      expect(Object.keys(kinds(items))).toEqual(["open", "shut", "nodate"]);
+      expect(items.filter((item) => item.entriesClosed).map((item) => item.slug)).toEqual(["shut"]);
+    });
+
+    it("stay on the calendar as planned when they are already on the plan", () => {
+      expect(draw({ planEntries: [entry("shut", 14)] })).toMatchObject({ shut: "planned" });
+    });
+  });
+
   it("lets a decision outrank advice: an event both planned and suggested is planned", () => {
     const items = build({
       planEntries: [entry("a", 10)],

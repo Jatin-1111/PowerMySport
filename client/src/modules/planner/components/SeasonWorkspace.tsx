@@ -1,15 +1,21 @@
 "use client";
 
-import { Collapsible } from "@/modules/planner/components/Collapsible";
 import { EventDetail } from "@/modules/planner/components/EventDetail";
 import { PlanPanel } from "@/modules/planner/components/PlanPanel";
 import { RecommendationsSection } from "@/modules/planner/components/RecommendationsSection";
-import { SeasonAgenda } from "@/modules/planner/components/SeasonAgenda";
-import { SeasonCalendar } from "@/modules/planner/components/SeasonCalendar";
+import { TournamentFinder, type FinderView } from "@/modules/planner/components/TournamentFinder";
 import { useIsWide } from "@/modules/planner/hooks/useIsWide";
 import type { CostResponse, EventCost, Recommendations } from "@/modules/planner/services/planner";
 import type { PlanPreferences, SeasonPlanEntry } from "@/modules/planner/services/seasonPlan";
 import { buildCalendarItems } from "@/modules/planner/utils/calendarItems";
+import {
+  filterItems,
+  filterOptions,
+  filterShortlist,
+  NO_FILTERS,
+  type FinderFilters,
+} from "@/modules/planner/utils/finderFilters";
+import { splitByEntryState } from "@/modules/planner/utils/timeline";
 import {
   defaultMonth,
   itemsInMonth,
@@ -18,10 +24,10 @@ import {
 } from "@/modules/planner/utils/calendarMonths";
 import { Modal } from "@/modules/shared/ui/Modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/modules/shared/ui/Tabs";
-import { cn } from "@/utils/cn";
 import type { PlannerEdition, ReachVerdict, Shortlist } from "@powermysport/shared-types";
-import { CalendarDays, List } from "lucide-react";
-import { useState } from "react";
+import { motion } from "framer-motion";
+import { useState, type RefObject } from "react";
+import { BLOCK } from "@/modules/planner/utils/motion";
 
 /**
  * Choosing tournaments, the plan they become, and the calendar they sit on.
@@ -61,6 +67,8 @@ export function SeasonWorkspace({
   selectedSlug,
   onSelect,
   reach,
+  finder,
+  afterPlan,
 }: {
   dependentId: string;
   yearlyLimit: { cap: number | null; ageGroup: string };
@@ -80,19 +88,44 @@ export function SeasonWorkspace({
   onSelect: (slug: string | null) => void;
   /** What past draws showed for each open event, by slug. */
   reach: Record<string, ReachVerdict>;
+  /** The tournament finder is opened from elsewhere too ("browse all"), so the board holds it. */
+  finder: {
+    containerRef: RefObject<HTMLDivElement | null>;
+    description: string;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  };
+  /** Sits under the plan in the same column: the season setup. */
+  afterPlan?: React.ReactNode;
 }) {
   const isWide = useIsWide();
+  // What can still be entered. The suggestions list and its count draw from this, so
+  // "open to enter" never lists an event whose entries have shut.
+  const enterable = splitByEntryState(shortlist.ownGroup).open;
   const [showAvailable, setShowAvailable] = useState(true);
-  const [view, setView] = useState<"calendar" | "list">("calendar");
+  // The list is the way in: each event there can be added to the plan. The calendar is
+  // for checking clashes, so it is one click away rather than the first thing seen.
+  const [view, setView] = useState<FinderView>("list");
+  const [filters, setFilters] = useState<FinderFilters>(NO_FILTERS);
 
-  const items = buildCalendarItems({
+  const allItems = buildCalendarItems({
     shortlist,
     planEntries,
     suggestions: recommendations?.items ?? [],
     showAvailable,
     selectedSlug,
   });
-  const selected = items.find((item) => item.slug === selectedSlug) ?? null;
+  // The dialog finds its event among everything, so a filter never hides one the parent
+  // opened from somewhere else. The calendar and list draw only what the filters leave.
+  const selected = allItems.find((item) => item.slug === selectedSlug) ?? null;
+  const items = filterItems(allItems, filters);
+  const filteredShortlist = filterShortlist(shortlist, filters);
+  const hasMatches =
+    filteredShortlist.ownGroup.length +
+      filteredShortlist.playingUp.length +
+      filteredShortlist.unknown.length +
+      filteredShortlist.closed.length >
+    0;
   const today = new Date().toISOString().slice(0, 10);
 
   // The month on show. The parent's choice is kept while it is still on offer;
@@ -117,7 +150,6 @@ export function SeasonWorkspace({
     }
   }
   const eventCosts: Record<string, EventCost> | undefined = costs?.events;
-  const showGrid = isWide && view === "calendar";
 
   const detail = selected && (
     <EventDetail
@@ -142,126 +174,99 @@ export function SeasonWorkspace({
   // into the plan's column with the rail's space left empty beside it.
   return (
     <>
-      <section
-        aria-label="Your plan and suggestions"
-        data-tour="pick"
-        className="order-2 min-w-0 rounded-lg border border-slate-200 bg-white lg:order-none lg:col-start-1 lg:row-start-1"
-      >
-        <Tabs
-          value={tab}
-          onValueChange={(value) => {
-            onTabChange(value as WorkspaceTab);
-          }}
+      {/* The plan, then the setup under it. A wrapper only so they travel together; on a
+          phone each part is ordered by `order-*`. */}
+      <div className="contents">
+        <motion.section
+          variants={BLOCK}
+          aria-label="Your plan and suggestions"
+          data-tour="pick"
+          className="order-2 min-w-0 rounded-lg border border-slate-200 bg-white lg:order-none"
         >
-          <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b border-slate-200 bg-transparent p-0 px-2">
-            <TabsTrigger value="plan" className={trigger}>
-              Your plan{planCount > 0 ? ` (${planCount})` : ""}
-            </TabsTrigger>
-            <TabsTrigger value="suggested" className={trigger}>
-              Suggested{suggestedCount > 0 ? ` (${suggestedCount})` : ""}
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Both stay mounted and the inactive one is hidden, so a figure half
-              typed or a panel left open is still there when the parent comes back. */}
-          <TabsContent value="plan" forceMount className="mt-0 p-4 data-[state=inactive]:hidden">
-            <PlanPanel
-              dependentId={dependentId}
-              calendar={calendar}
-              costs={costs}
-              costsLoading={costsLoading}
-              yearlyLimit={yearlyLimit}
-            />
-          </TabsContent>
-          <TabsContent
-            value="suggested"
-            forceMount
-            className="mt-0 p-4 data-[state=inactive]:hidden"
+          <Tabs
+            value={tab}
+            onValueChange={(value) => {
+              onTabChange(value as WorkspaceTab);
+            }}
           >
-            <RecommendationsSection
-              dependentId={dependentId}
-              costs={eventCosts}
-              costsLoading={costsLoading}
-              calendar={calendar}
-              plannedSlugs={plannedSlugs}
-              isAdding={isAdding}
-              onAdd={onAdd}
-              upcoming={shortlist.ownGroup.slice(0, 4)}
-              openCount={shortlist.ownGroup.length}
-              reach={reach}
-            />
-          </TabsContent>
-        </Tabs>
-      </section>
+            <TabsList className="h-auto w-full justify-start gap-1 rounded-none border-b border-slate-200 bg-transparent p-0 px-2">
+              <TabsTrigger value="plan" className={trigger}>
+                Your plan{planCount > 0 ? ` (${planCount})` : ""}
+              </TabsTrigger>
+              <TabsTrigger value="suggested" className={trigger}>
+                Suggested{suggestedCount > 0 ? ` (${suggestedCount})` : ""}
+              </TabsTrigger>
+            </TabsList>
 
-      <div className="order-5 min-w-0 lg:order-none lg:col-span-2 lg:row-start-3">
-        <Collapsible
-          tour="calendar"
-          title="Season calendar"
-          description="See your tournaments month by month and spot clashes."
-        >
-          {isWide && (
-            <div
-              role="group"
-              aria-label="How to show the season"
-              className="mb-4 flex justify-end gap-1"
-            >
-              {(
-                [
-                  ["calendar", "Calendar", CalendarDays],
-                  ["list", "List", List],
-                ] as const
-              ).map(([value, label, Icon]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={view === value}
-                  onClick={() => setView(value)}
-                  className={cn(
-                    "inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold",
-                    view === value
-                      ? "border-ink bg-ink text-white"
-                      : "border-hairline text-ink-body hover:border-ink/40 bg-white"
-                  )}
-                >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {showGrid ? (
-            <SeasonCalendar
-              items={items}
-              blocked={preferences?.blockedRanges ?? []}
-              today={today}
-              month={month}
-              months={months}
-              onMonthChange={setChosenMonth}
-              selectedSlug={selectedSlug}
-              onSelect={(slug) => onSelect(slug === selectedSlug ? null : slug)}
-              showAvailable={showAvailable}
-              onToggleAvailable={setShowAvailable}
-            />
-          ) : (
-            <div>
-              <label className="text-ink-body mb-3 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold">
-                <input
-                  type="checkbox"
-                  checked={showAvailable}
-                  onChange={(event) => setShowAvailable(event.target.checked)}
-                />
-                Show every event they can enter
-              </label>
-              <SeasonAgenda
-                items={items}
-                selectedSlug={selectedSlug}
-                onSelect={(slug) => onSelect(slug === selectedSlug ? null : slug)}
+            {/* Both stay mounted and the inactive one is hidden, so a figure half
+              typed or a panel left open is still there when the parent comes back. */}
+            <TabsContent value="plan" forceMount className="mt-0 p-4 data-[state=inactive]:hidden">
+              <PlanPanel
+                dependentId={dependentId}
+                calendar={calendar}
+                costs={costs}
+                costsLoading={costsLoading}
+                yearlyLimit={yearlyLimit}
               />
-            </div>
-          )}
-        </Collapsible>
+            </TabsContent>
+            <TabsContent
+              value="suggested"
+              forceMount
+              className="mt-0 p-4 data-[state=inactive]:hidden"
+            >
+              <RecommendationsSection
+                dependentId={dependentId}
+                costs={eventCosts}
+                costsLoading={costsLoading}
+                calendar={calendar}
+                plannedSlugs={plannedSlugs}
+                isAdding={isAdding}
+                onAdd={onAdd}
+                upcoming={enterable.slice(0, 4)}
+                openCount={enterable.length}
+                reach={reach}
+              />
+            </TabsContent>
+          </Tabs>
+        </motion.section>
+        {afterPlan && (
+          <motion.div variants={BLOCK} className="order-4 min-w-0 lg:order-none">
+            {afterPlan}
+          </motion.div>
+        )}
+      </div>
+
+      <div className="order-5 min-w-0 lg:order-none">
+        <TournamentFinder
+          containerRef={finder.containerRef}
+          description={finder.description}
+          open={finder.open}
+          onOpenChange={finder.onOpenChange}
+          isWide={isWide}
+          view={view}
+          onViewChange={setView}
+          filters={filters}
+          onFiltersChange={setFilters}
+          options={filterOptions(shortlist)}
+          shortlist={filteredShortlist}
+          hasMatches={hasMatches}
+          plannedSlugs={plannedSlugs}
+          isAdding={isAdding}
+          onAdd={onAdd}
+          reach={reach}
+          calendar={{
+            items,
+            blocked: preferences?.blockedRanges ?? [],
+            today,
+            month,
+            months,
+            onMonthChange: setChosenMonth,
+            selectedSlug,
+            onSelect: (slug) => onSelect(slug === selectedSlug ? null : slug),
+            showAvailable,
+            onToggleAvailable: setShowAvailable,
+          }}
+        />
       </div>
 
       <Modal

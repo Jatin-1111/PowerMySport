@@ -66,7 +66,7 @@ function FigureForm({
   const invalid = Object.values(parsed).some((value) => value !== null && Number.isNaN(value));
 
   const field = (key: keyof EntryCosts, label: string, placeholder: string) => (
-    <label className="text-xs font-semibold text-slate-700">
+    <label className="text-sm font-semibold text-slate-700">
       {label}
       <div className="mt-1 flex items-center gap-1">
         <span aria-hidden className="text-sm text-slate-500">
@@ -100,7 +100,7 @@ function FigureForm({
       }}
       className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3"
     >
-      <p className="text-xs leading-relaxed text-slate-600">
+      <p className="text-sm leading-relaxed text-slate-600">
         Your own figures replace ours. Leave a box empty to use the estimate again.
       </p>
       <div className="mt-2 flex flex-wrap items-end gap-3">
@@ -109,7 +109,7 @@ function FigureForm({
         {field("entryFee", "Entry fee", "from the fact sheet")}
       </div>
       {invalid && (
-        <p role="alert" className="mt-2 text-xs text-red-700">
+        <p role="alert" className="mt-2 text-sm text-red-700">
           Enter whole rupees, for example 8000.
         </p>
       )}
@@ -145,12 +145,12 @@ export function CostLine({
 
   if (!cost) {
     return loading ? (
-      <p className="mt-2 text-xs text-slate-500">Estimating travel and stay...</p>
+      <p className="mt-2 text-sm text-slate-500">Estimating travel and stay...</p>
     ) : null;
   }
 
   return (
-    <div className="mt-2 text-xs leading-relaxed">
+    <div className="mt-2 text-sm leading-relaxed">
       {cost.total ? (
         <p className="text-slate-800">
           <span className="font-semibold">
@@ -193,39 +193,47 @@ export function CostLine({
       </div>
 
       {open && (
-        <dl className="mt-2 space-y-1 rounded-md bg-slate-50 p-3 text-slate-700">
-          {cost.travel && (
-            <div className="flex justify-between gap-4">
-              <dt>Travel{cost.travel.basis === "yours" ? " (yours)" : ""}</dt>
-              <dd>{formatRange(cost.travel.low, cost.travel.high)}</dd>
+        <div className="bg-paper-deep/50 mt-3 rounded-lg px-4 py-1">
+          <dl className="divide-hairline text-ink-body divide-y">
+            {cost.travel && (
+              <div className="flex justify-between gap-4 py-2.5">
+                <dt>Travel{cost.travel.basis === "yours" ? " (yours)" : ""}</dt>
+                <dd className="text-ink text-right font-medium tabular-nums">
+                  {formatRange(cost.travel.low, cost.travel.high)}
+                </dd>
+              </div>
+            )}
+            {cost.stay && (
+              <div className="flex justify-between gap-4 py-2.5">
+                <dt>Stay and meals{cost.stay.basis === "yours" ? " (yours)" : ""}</dt>
+                <dd className="text-ink text-right font-medium tabular-nums">
+                  {formatRange(cost.stay.low, cost.stay.high)}
+                </dd>
+              </div>
+            )}
+            <div className="flex justify-between gap-4 py-2.5">
+              <dt>Entry fee</dt>
+              <dd className="text-ink text-right font-medium tabular-nums">
+                {cost.entryFee === null
+                  ? "Not estimated, check the fact sheet"
+                  : `${formatInr(cost.entryFee)} (${
+                      cost.entryFeeBasis === "yours"
+                        ? "yours"
+                        : cost.entryFeeBasis === "fact-sheet"
+                          ? "singles, from AITA"
+                          : "singles, from AITA's rules"
+                    })`}
+              </dd>
             </div>
-          )}
-          {cost.stay && (
-            <div className="flex justify-between gap-4">
-              <dt>Stay and meals{cost.stay.basis === "yours" ? " (yours)" : ""}</dt>
-              <dd>{formatRange(cost.stay.low, cost.stay.high)}</dd>
-            </div>
-          )}
-          <div className="flex justify-between gap-4">
-            <dt>Entry fee</dt>
-            <dd>
-              {cost.entryFee === null
-                ? "Not estimated, check the fact sheet"
-                : `${formatInr(cost.entryFee)} (${
-                    cost.entryFeeBasis === "yours"
-                      ? "yours"
-                      : cost.entryFeeBasis === "fact-sheet"
-                        ? "singles, from AITA"
-                        : "singles, from AITA's rules"
-                  })`}
-            </dd>
+          </dl>
+          <div className="border-hairline text-ink-muted space-y-1 border-t py-3">
+            {cost.assumptions && <p>{cost.assumptions}</p>}
+            <p>
+              These are estimates, not quotes. Fares and rooms change with the date and how early
+              you book.
+            </p>
           </div>
-          {cost.assumptions && <p className="pt-1 text-slate-500">{cost.assumptions}</p>}
-          <p className="text-slate-500">
-            These are estimates, not quotes. Fares and rooms change with the date and how early you
-            book.
-          </p>
-        </dl>
+        </div>
       )}
 
       {onSave && editing && (

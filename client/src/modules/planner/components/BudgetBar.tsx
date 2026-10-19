@@ -20,13 +20,13 @@ const STATUS_LINE: Record<SeasonCost["status"], (season: SeasonCost) => string> 
   "may-exceed": (season) =>
     `The plan may go over your budget: it could reach ${formatInr(season.total!.high)} against ${formatInr(season.budget!)}.`,
   over: () => "The plan is over your budget even at the low end of the estimates.",
-  none: () => "Set a season budget in your season setup to compare the plan with it.",
+  none: () => "",
 };
 
 export function BudgetBar({ season }: { season: SeasonCost }) {
   if (!season.total) {
     return (
-      <p className="text-ink-body text-xs leading-relaxed">
+      <p className="text-ink-body text-sm leading-relaxed">
         {season.events === 0
           ? "Add events to the plan to see what the season may cost."
           : "No travel and stay figures for the plan yet."}
@@ -82,18 +82,20 @@ export function BudgetBar({ season }: { season: SeasonCost }) {
         </div>
       )}
 
-      <p className="text-ink-body mt-3 text-sm leading-relaxed">
-        {STATUS_LINE[season.status](season)}
-      </p>
+      {season.status !== "none" && (
+        <p className="text-ink-body mt-3 text-sm leading-relaxed">
+          {STATUS_LINE[season.status](season)}
+        </p>
+      )}
 
       {season.withoutFigures > 0 && (
-        <p className="text-ink-body mt-1 text-xs leading-relaxed">
+        <p className="text-ink-body mt-1 text-sm leading-relaxed">
           {season.withoutFigures} event{season.withoutFigures === 1 ? " has" : "s have"} no travel
           and stay figure yet and {season.withoutFigures === 1 ? "is" : "are"} not in this total.
         </p>
       )}
       {season.missingEntryFees > 0 && (
-        <p className="text-ink-body mt-1 text-xs leading-relaxed">
+        <p className="text-ink-body mt-1 text-sm leading-relaxed">
           Entry fees are not included for {season.missingEntryFees} event
           {season.missingEntryFees === 1 ? "" : "s"}. AITA has not published a fee for{" "}
           {season.missingEntryFees === 1 ? "it" : "them"}, so add{" "}

@@ -25,10 +25,7 @@ export function ExpectedLater({ events }: { events: ExpectedEvent[] }) {
         const inMonth = events.filter((event) => event.month === month);
         return (
           <section key={month} aria-labelledby={`expected-${month}`} className="mt-5">
-            <h3
-              id={`expected-${month}`}
-              className="text-ink-muted mb-2 text-[12px] font-bold uppercase tracking-wider"
-            >
+            <h3 id={`expected-${month}`} className="text-ink mb-2 text-base font-semibold">
               Expected around {inMonth[0]!.expectedMonth}
             </h3>
             <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -38,7 +35,7 @@ export function ExpectedLater({ events }: { events: ExpectedEvent[] }) {
                   className="border-hairline rounded-lg border bg-white p-3 text-sm"
                 >
                   <p className="text-ink font-semibold">{event.name}</p>
-                  <p className="text-ink-body mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+                  <p className="text-ink-body mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm">
                     {(event.city || event.state) && (
                       <span className="inline-flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5" aria-hidden />

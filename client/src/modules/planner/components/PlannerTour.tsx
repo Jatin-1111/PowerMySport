@@ -43,8 +43,8 @@ export const TOUR_STEPS = [
   },
   {
     target: "calendar",
-    title: "Check the calendar",
-    body: "Open the calendar to see your tournaments month by month and spot clashes. You don't need it to make a plan.",
+    title: "Find a tournament",
+    body: "Open this to look through every event your child can enter. Filter by state or level, or switch to the calendar to spot clashes. You don't need it to make a plan.",
   },
 ] as const;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { deadlineState } from "@/modules/planner/utils/timeline";
+import { entriesClosed } from "@/modules/planner/utils/timeline";
 import { EventActions } from "@/modules/planner/components/EventActions";
 import { DeadlineLine } from "@/modules/planner/components/DeadlineLine";
 import { formatEventWindow } from "@/modules/planner/utils/eventFormat";
@@ -38,7 +38,7 @@ export function TimelineEventCard({
   // An event whose entries have already closed cannot be entered, so offering to
   // plan it would put something on the list that the entry desk will refuse. It
   // stays visible, with the date it closed, so the parent sees why it is quiet.
-  const entriesClosed = deadlineState(edition.registrationDeadlineDate).kind === "passed";
+  const closed = entriesClosed(edition.registrationDeadlineDate);
   const location = [edition.city, edition.state].filter(Boolean).join(", ");
 
   return (
@@ -60,13 +60,13 @@ export function TimelineEventCard({
               edition.name
             )}
           </p>
-          <p className="text-ink-body mt-0.5 text-xs">
+          <p className="text-ink-body mt-0.5 text-sm">
             {formatEventWindow(edition.startDate, edition.endDate)}
           </p>
         </div>
       </div>
 
-      <div className="text-ink-body mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+      <div className="text-ink-body mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
         {location && (
           <span className="inline-flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5" aria-hidden />
@@ -77,7 +77,7 @@ export function TimelineEventCard({
         {entry.playingUp && (
           <Badge
             variant="outline"
-            className="border-hairline bg-paper-deep/50 text-ink-body text-[11px]"
+            className="border-hairline bg-paper-deep/50 text-ink-body text-sm"
           >
             Older age group
           </Badge>
@@ -91,21 +91,21 @@ export function TimelineEventCard({
               <ReachNote verdict={verdict} />
             </div>
           )}
-          <p className="mt-2 text-xs">
+          <p className="mt-2 text-sm">
             <DeadlineLine deadline={edition.registrationDeadlineDate} />
           </p>
           {entry.notes.length > 0 && (
-            <p className="text-ink-body mt-2 flex gap-1.5 text-xs leading-relaxed">
+            <p className="text-ink-body mt-2 flex gap-1.5 text-sm leading-relaxed">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>{entry.notes.join(" ")}</span>
             </p>
           )}
         </>
       ) : (
-        <p className="text-ink-body mt-2 text-xs leading-relaxed">{entry.reason}</p>
+        <p className="text-ink-body mt-2 text-sm leading-relaxed">{entry.reason}</p>
       )}
 
-      {mode === "open" && !entriesClosed && (
+      {mode === "open" && !closed && (
         <div className="mt-auto pt-4">
           <EventActions
             edition={edition}

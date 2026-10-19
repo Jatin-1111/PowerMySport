@@ -69,7 +69,7 @@ export function HomeCityPrompt({
           }}
           className="mt-3"
         >
-          <label htmlFor="home-city" className="text-xs font-semibold text-slate-700">
+          <label htmlFor="home-city" className="text-sm font-semibold text-slate-700">
             Your city
           </label>
           <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -92,7 +92,7 @@ export function HomeCityPrompt({
               </Button>
             )}
           </div>
-          <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-500">
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-500">
             Saved to your profile. Only the city is used, and it is shared with our AI model
             together with the venue to estimate the trip. We do not ask for an address.
           </p>

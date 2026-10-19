@@ -1,5 +1,6 @@
 import { dayNumber, type PlannerEdition } from "@powermysport/shared-types";
 import type { SeasonPlanEntry } from "@/modules/planner/services/seasonPlan";
+import { entriesClosed } from "@/modules/planner/utils/timeline";
 
 /**
  * What a parent should look at next, from their plan and the dates AITA prints.
@@ -50,6 +51,8 @@ export function nextUp(params: {
   limit?: number;
 }): NextUpItem[] {
   const today = dayNumber(params.today);
+  // Today as a date, so the "entries closed" rule is the one the rest of the page uses.
+  const now = new Date(`${params.today}T00:00:00.000Z`);
   const items: NextUpItem[] = [];
 
   for (const entry of params.entries) {
@@ -60,7 +63,7 @@ export function nextUp(params: {
 
     if (entry.status === "shortlisted" && live?.registrationDeadlineDate) {
       const date = day(live.registrationDeadlineDate);
-      if (dayNumber(date) >= today) {
+      if (!entriesClosed(live.registrationDeadlineDate, now)) {
         items.push({
           ...base,
           kind: "enter-by",
@@ -89,9 +92,7 @@ export function nextUp(params: {
     const start = day(entry.startDate);
     const end = day(live?.endDate ?? entry.startDate);
     const entryClosed =
-      entry.status === "shortlisted" &&
-      Boolean(live?.registrationDeadlineDate) &&
-      dayNumber(day(live!.registrationDeadlineDate!)) < today;
+      entry.status === "shortlisted" && entriesClosed(live?.registrationDeadlineDate, now);
     if (dayNumber(end) >= today) {
       items.push({
         ...base,

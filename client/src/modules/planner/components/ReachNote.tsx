@@ -45,7 +45,7 @@ export function ReachNote({
   if (verdict.kind === "no-evidence") {
     if (!detail) return null;
     return (
-      <p className="flex gap-1.5 text-xs leading-relaxed text-slate-600">
+      <p className="flex gap-1.5 text-sm leading-relaxed text-slate-600">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
         {verdict.text}
       </p>
@@ -55,7 +55,7 @@ export function ReachNote({
   const { label, tone, Icon } = SHORT[verdict.kind];
   if (!detail) {
     return (
-      <p className={`inline-flex items-center gap-1 text-xs font-medium ${tone}`}>
+      <p className={`inline-flex items-center gap-1 text-sm font-medium ${tone}`}>
         <Icon className="h-3.5 w-3.5" aria-hidden />
         {label}
       </p>
@@ -64,11 +64,11 @@ export function ReachNote({
 
   return (
     <div>
-      <p className={`inline-flex items-center gap-1 text-xs font-semibold ${tone}`}>
+      <p className={`inline-flex items-center gap-1 text-sm font-semibold ${tone}`}>
         <Icon className="h-3.5 w-3.5" aria-hidden />
         {label}
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-slate-600">{verdict.text}</p>
+      <p className="mt-1 text-sm leading-relaxed text-slate-600">{verdict.text}</p>
     </div>
   );
 }

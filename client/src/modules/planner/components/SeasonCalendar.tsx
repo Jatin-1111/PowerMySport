@@ -162,11 +162,14 @@ function EventChip({
       title={item.name}
       className={cn(
         "flex h-6 w-full min-w-0 items-center rounded px-1.5 text-left text-[11px] font-medium leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
-        "bg-slate-100 text-slate-700 hover:bg-slate-200",
+        item.entriesClosed
+          ? "bg-paper-deep/60 text-ink-muted hover:bg-paper-deep"
+          : "bg-slate-100 text-slate-700 hover:bg-slate-200",
         selected && "ring-2 ring-orange-500"
       )}
     >
       <span className="truncate">{place}</span>
+      {item.entriesClosed && <span className="ml-auto shrink-0 pl-1 text-[10px]">closed</span>}
     </button>
   );
 }
@@ -355,10 +358,16 @@ function Legend({ weeks, items }: { weeks: WeekRow[]; items: CalendarItem[] }) {
       label: "Suggested",
     },
     {
-      show: has((i) => i.kind === "available"),
+      show: has((i) => i.kind === "available" && !i.entriesClosed),
       key: "open",
       mark: <span className={cn(swatch, "bg-slate-100 ring-1 ring-slate-200")} aria-hidden />,
       label: "Open to enter",
+    },
+    {
+      show: has((i) => i.kind === "available" && Boolean(i.entriesClosed)),
+      key: "shut",
+      mark: <span className={cn(swatch, "bg-paper-deep/60 ring-1 ring-slate-200")} aria-hidden />,
+      label: "Entries closed",
     },
     {
       show: days.some((day) => day.blocked),
@@ -470,7 +479,7 @@ export function SeasonCalendar({
               checked={showAvailable}
               onChange={(event) => onToggleAvailable(event.target.checked)}
             />
-            Show every event they can enter
+            Show other events
           </label>
         }
       />

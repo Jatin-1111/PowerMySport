@@ -15,7 +15,9 @@ export function itemLabel(item: CalendarItem): string {
         ? item.tier === "consider"
           ? "worth considering"
           : "suggested"
-        : "open to enter";
+        : item.entriesClosed
+          ? "entries closed"
+          : "open to enter";
   return `${item.name}, ${when}, ${state}${item.hasOverlap ? ", overlaps another planned event" : ""}`;
 }
 

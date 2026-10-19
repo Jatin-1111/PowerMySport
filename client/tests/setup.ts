@@ -32,3 +32,12 @@ if (typeof window !== "undefined" && typeof window.IntersectionObserver === "und
   window.IntersectionObserver = IntersectionObserverStub;
   globalThis.IntersectionObserver = IntersectionObserverStub;
 }
+
+// Animations are for people, not assertions. With them on, a test can read an element
+// halfway through a fade (and axe can score its colour at half opacity), so framer-motion
+// is told to land every animation on its final frame at once. Loaded only where there is a
+// document, so the node-only logic suite does not pay to import it.
+if (typeof window !== "undefined") {
+  const { MotionGlobalConfig } = await import("framer-motion");
+  MotionGlobalConfig.skipAnimations = true;
+}

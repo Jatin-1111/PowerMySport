@@ -7,6 +7,7 @@ import { useDependents } from "@/modules/player/hooks/useDependents";
 import { rankedSportFor } from "@/modules/player/services/rankingClaim";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { cn } from "@/utils/cn";
+import { MotionConfig, motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -24,6 +25,13 @@ import { useState } from "react";
  */
 
 const PLANNER_ROLES = new Set(["Parent", "Player"]);
+
+/**
+ * What a child's tab says under their name. Only the sport they chose: whether the planner
+ * can help depends on a linked ranking, which this page does not know until the board for
+ * that child has loaded, so the tab does not claim more than it knows.
+ */
+const sportNote = (sport: string | null): string => sport ?? "Sport not chosen";
 
 export function PlannerApp() {
   const hydrated = useAuthStore((state) => state.hydrated);
@@ -76,40 +84,64 @@ export function PlannerApp() {
   const current = dependents.find((child) => child.id === chosenId) ?? fallback;
 
   return (
-    <div className="space-y-6">
-      {dependents.length > 1 && (
-        <div role="tablist" aria-label="Choose a player" className="flex flex-wrap gap-2">
-          {dependents.map((child) => {
-            const selected = child.id === current.id;
-            return (
-              <button
-                key={child.id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => setChosenId(child.id)}
-                className={cn(
-                  "min-h-10 rounded-lg border px-4 text-sm font-semibold transition",
-                  selected
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                )}
-              >
-                {child.name}
-              </button>
-            );
-          })}
-        </div>
-      )}
+    <MotionConfig reducedMotion="user">
+      <div className="space-y-6">
+        {dependents.length > 1 && (
+          <div role="tablist" aria-label="Choose a player" className="flex flex-wrap gap-2">
+            {dependents.map((child) => {
+              const selected = child.id === current.id;
+              return (
+                <button
+                  key={child.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-describedby={`player-${child.id}-sport`}
+                  onClick={() => setChosenId(child.id)}
+                  className={cn(
+                    "relative min-h-12 rounded-lg border px-4 py-1.5 text-left text-sm font-semibold transition-colors duration-300",
+                    selected
+                      ? "border-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                  )}
+                >
+                  {/* One dark pill that slides to whichever child is chosen, rather than two
+                    buttons swapping colour. It sits behind the label. */}
+                  {selected && (
+                    <motion.span
+                      layoutId="player-pill"
+                      aria-hidden
+                      className="absolute -inset-px rounded-lg bg-slate-900"
+                      transition={{ type: "spring", stiffness: 520, damping: 42 }}
+                    />
+                  )}
+                  <span className="relative block">{child.name}</span>
+                  {/* Visible, but described to a screen reader rather than part of the tab's name. */}
+                  <span
+                    id={`player-${child.id}-sport`}
+                    aria-hidden
+                    className={cn(
+                      "relative block text-sm font-normal",
+                      selected ? "text-white/70" : "text-ink-muted"
+                    )}
+                  >
+                    {sportNote(child.sport)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-      {/* Keyed by child so switching starts every board from a clean state:
+        {/* Keyed by child so switching starts every board from a clean state:
           open disclosures, a half-open modal, nothing carries over. */}
-      <PlannerBoard
-        key={current.id}
-        dependentId={current.id}
-        dependentName={current.name}
-        sport={current.sport}
-      />
-    </div>
+        <PlannerBoard
+          key={current.id}
+          dependentId={current.id}
+          dependentName={current.name}
+          sport={current.sport}
+        />
+      </div>
+    </MotionConfig>
   );
 }

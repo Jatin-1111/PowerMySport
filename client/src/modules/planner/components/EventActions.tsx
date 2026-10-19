@@ -30,10 +30,7 @@ export function EventActions({
     <div className="flex flex-wrap items-center gap-2">
       {edition.slug &&
         (isPlanned ? (
-          <Badge
-            variant="outline"
-            className="border-slate-200 bg-slate-100 text-[11px] text-slate-700"
-          >
+          <Badge variant="outline" className="border-slate-200 bg-slate-100 text-sm text-slate-700">
             On the plan
           </Badge>
         ) : (

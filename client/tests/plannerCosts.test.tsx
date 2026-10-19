@@ -233,10 +233,10 @@ describe("the budget bar", () => {
     expect(screen.getByText(/over your budget even at the low end/)).toBeTruthy();
   });
 
-  it("points to the preference when no budget is set, and draws no bar", () => {
+  it("draws no bar and no comparison when no budget is set: setting one is the editor's job", () => {
     render(<BudgetBar season={season()} />);
-    expect(screen.getByText(/Set a season budget in your season setup/)).toBeTruthy();
     expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.queryByText(/budget/i)).toBeNull();
   });
 
   it("gives the bar a text alternative carrying the same facts", () => {

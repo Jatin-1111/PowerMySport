@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -473,17 +473,26 @@ function renderPlanner(session: "parent" | "anonymous" | "coach" = "parent") {
 const section = (title: string): HTMLElement => {
   if (title === "Suggested season") return screen.getByRole("tabpanel", { name: /^Suggested/ });
   if (title === "Their plan") return screen.getByRole("tabpanel", { name: /^Your plan/ });
-  const collapsible = ["What they can enter", "All tournaments", "Season calendar"].includes(title);
+  // The calendar and the list of events are two views of one section, "Find tournaments".
+  // "Season calendar" asks for that section on its calendar view, which a wide screen offers.
+  const wantsCalendar = title === "Season calendar";
+  const name = wantsCalendar ? "Find tournaments" : title;
+  const collapsible = ["What they can enter", "Find tournaments"].includes(name);
   // The collapsible's heading holds its description too, so it is found by its start.
   const heading = screen.getByRole("heading", {
     level: 2,
-    name: collapsible ? new RegExp(`^${title}`) : title,
+    name: collapsible ? new RegExp(`^${name}`) : name,
   });
   if (collapsible) {
     const toggle = within(heading).getByRole("button");
     if (toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
   }
-  return heading.closest("section") as HTMLElement;
+  const found = heading.closest("section") as HTMLElement;
+  if (wantsCalendar) {
+    const view = within(found).queryByRole("button", { name: "Calendar" });
+    if (view && view.getAttribute("aria-pressed") !== "true") fireEvent.click(view);
+  }
+  return found;
 };
 
 /** The summary tile that says what the season may cost. It exists once something is planned. */
@@ -564,6 +573,17 @@ describe("the states a child can be in", () => {
     expect(screen.queryByRole("button", { name: "Link a ranking" })).toBeNull();
   });
 
+  it("shows each child's sport on their tab, without renaming the tab", async () => {
+    renderPlanner();
+    // The tab's name stays the child's name; the sport is described, not part of the name.
+    const kabir = await screen.findByRole("tab", { name: "Kabir" });
+    expect(kabir.textContent).toMatch(/Badminton/);
+    expect(document.getElementById(kabir.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
+      "Badminton"
+    );
+    expect(screen.getByRole("tab", { name: "Diya" }).textContent).toMatch(/Tennis/);
+  });
+
   it("starts a switched child from a clean page, with nothing carried over", async () => {
     renderPlanner();
     await screen.findAllByText(/Boys U-14, ranked 312/);
@@ -623,6 +643,10 @@ const openCal = async () => {
 };
 
 describe("what past draws showed", () => {
+  // Details open from the calendar, which a wide screen draws as a grid.
+  beforeEach(wide);
+  afterEach(narrow);
+
   const likely = {
     kind: "likely",
     events: 3,
@@ -695,7 +719,7 @@ describe("what past draws showed", () => {
   it("marks an open event in the full list with what past draws showed", async () => {
     world.reach = { "cs7-sonipat": likely };
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
     const card = (await within(enter).findByText("AITA cs7-sonipat")).closest("li") as HTMLElement;
     expect(within(card).getByText("Past draws took this rank")).toBeTruthy();
   });
@@ -712,7 +736,7 @@ describe("what past draws showed", () => {
       },
     };
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
     const card = (await within(enter).findByText("AITA cs7-sonipat")).closest("li") as HTMLElement;
     expect(within(card).queryByText(/Past draws/)).toBeNull();
     expect(within(card).queryByText(/We hold no past events/)).toBeNull();
@@ -837,7 +861,7 @@ describe("what last year suggests", () => {
 
   it("is left out entirely when there is nothing to expect", async () => {
     renderPlanner();
-    await screen.findByRole("button", { name: /^All tournaments/ });
+    await screen.findByRole("button", { name: /^Find tournaments/ });
     expect(screen.queryByRole("button", { name: /Likely later/ })).toBeNull();
   });
 });
@@ -847,7 +871,7 @@ describe("what last year suggests", () => {
 describe("what a child can enter", () => {
   it("lists their own age group by month, and keeps the rest behind disclosures", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
 
     expect(within(enter).getByText("AITA cs7-sonipat")).toBeTruthy();
     expect(within(enter).queryByText("AITA cs9-mumbai")).toBeNull();
@@ -857,14 +881,14 @@ describe("what a child can enter", () => {
 
   it("says an entry deadline is not published rather than leaving a gap", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
 
     expect(within(enter).getAllByText(/Entry deadline not published/).length).toBeGreaterThan(0);
   });
 
   it("flags a deadline that is about to pass, and offers no actions on one that has", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
 
     expect(within(enter).getByText(/Entries closing soon/)).toBeTruthy();
     // Events whose entries have shut wait behind their own disclosure, off the main list.
@@ -889,6 +913,18 @@ describe("the suggested season", () => {
       return el;
     });
   };
+
+  it("lists only events that can still be entered under 'open to enter soon'", async () => {
+    renderPlanner();
+    const el = await waitFor(() => section("Suggested season"));
+    const heading = await within(el).findByRole("heading", { name: /Open to enter soon/ });
+    // Four events can be entered and all four are shown, so there is no "x of y" count
+    // that includes the one whose entries have shut.
+    expect(heading.textContent).toBe("Open to enter soon");
+    const list = heading.closest("section") as HTMLElement;
+    expect(within(list).getByText("AITA cs7-sonipat")).toBeTruthy();
+    expect(within(list).queryByText("AITA cs-closed")).toBeNull();
+  });
 
   it("makes nothing until the parent asks, and says what it will do", async () => {
     renderPlanner();
@@ -1028,7 +1064,7 @@ describe("planning preferences", () => {
 describe("what the season may cost", () => {
   const withPlanned = async (slug = "cs7-sonipat") => {
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: `Add AITA ${slug} to the plan` })
     );
@@ -1045,7 +1081,53 @@ describe("what the season may cost", () => {
 
     expect(await within(cost()).findByText(/₹24,500 to ₹49,500/)).toBeTruthy();
     expect(within(cost()).getByText(/Entry fees are not included for 1 event/)).toBeTruthy();
-    expect(within(cost()).getByText(/Set a season budget in your season setup/)).toBeTruthy();
+    // With no budget set, the cost card asks for one itself.
+    expect(within(cost()).getByLabelText("Set a budget (optional)")).toBeTruthy();
+  });
+
+  it("sets the budget from the cost card, and shows it", async () => {
+    await withPlanned();
+    await waitFor(() => cost());
+
+    fireEvent.change(within(cost()).getByLabelText("Set a budget (optional)"), {
+      target: { value: "40000" },
+    });
+    fireEvent.click(within(cost()).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(savedPrefs.length).toBe(1));
+    expect(savedPrefs[0]).toMatchObject({ budget: 40000, goal: "points" });
+    expect(await within(cost()).findByText(/Budget ₹40,000/)).toBeTruthy();
+  });
+
+  it("will not save a budget that is not an amount, and says what it wants", async () => {
+    await withPlanned();
+    await waitFor(() => cost());
+
+    fireEvent.change(within(cost()).getByLabelText("Set a budget (optional)"), {
+      target: { value: "lots" },
+    });
+    expect(within(cost()).getByRole("alert").textContent).toMatch(/whole rupees/);
+    expect(
+      (within(cost()).getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled
+    ).toBe(true);
+    expect(savedPrefs).toEqual([]);
+  });
+
+  it("changes or removes a budget that is set", async () => {
+    world.prefs = { goal: "points", blockedRanges: [], budget: 40000, includeOlderGroup: false };
+    await withPlanned();
+    await waitFor(() => cost());
+
+    fireEvent.click(within(cost()).getByRole("button", { name: "Change" }));
+    const field = within(cost()).getByLabelText("Change the budget") as HTMLInputElement;
+    expect(field.value).toBe("40000");
+    fireEvent.change(field, { target: { value: "55000" } });
+    fireEvent.click(within(cost()).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(savedPrefs.at(-1)).toMatchObject({ budget: 55000 }));
+
+    fireEvent.click(await within(cost()).findByRole("button", { name: "Change" }));
+    fireEvent.click(within(cost()).getByRole("button", { name: "Remove the budget" }));
+    await waitFor(() => expect(savedPrefs.at(-1)).toMatchObject({ budget: null }));
   });
 
   it("compares the season with the budget", async () => {
@@ -1101,7 +1183,7 @@ describe("what the season may cost", () => {
 describe("the plan", () => {
   it("warns about two events that overlap", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: "Add AITA cs7-sonipat to the plan" })
     );
@@ -1115,7 +1197,7 @@ describe("the plan", () => {
 
   it("gives every event on the plan a Google Calendar link with its dates", async () => {
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
     // The list offers one action, Add to plan; the calendar link belongs to a chosen event.
     expect(within(enter).queryAllByRole("link", { name: /to Google Calendar/ })).toHaveLength(0);
     fireEvent.click(
@@ -1140,7 +1222,7 @@ describe("when something goes wrong", () => {
   it("says so when the estimates cannot be had, instead of leaving a blank that reads as free", async () => {
     world.costsFail = true;
     renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: "Add AITA cs7-sonipat to the plan" })
     );
@@ -1164,7 +1246,7 @@ describe("when something goes wrong", () => {
     // The verdicts come from a different request, so they still show.
     expect((await screen.findAllByText(/Boys U-14, ranked 312/)).length).toBeGreaterThan(0);
     expect(
-      within(await waitFor(() => section("All tournaments"))).getByText("AITA cs7-sonipat")
+      within(await waitFor(() => section("Find tournaments"))).getByText("AITA cs7-sonipat")
     ).toBeTruthy();
   });
 });
@@ -1190,7 +1272,7 @@ describe("accessibility", () => {
     world.recs = { savedKey: inputKey(), value: suggestionFor() };
     const { container } = renderPlanner();
 
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: "Add AITA cs5-pune to the plan" })
     );
@@ -1203,7 +1285,7 @@ describe("accessibility", () => {
 
   it("has no violations with the preferences, the figure form and the city form open", async () => {
     const { container } = renderPlanner();
-    const enter = await waitFor(() => section("All tournaments"));
+    const enter = await waitFor(() => section("Find tournaments"));
     fireEvent.click(
       await within(enter).findByRole("button", { name: "Add AITA cs5-pune to the plan" })
     );
@@ -1287,6 +1369,21 @@ describe("the season calendar", () => {
     expect(queryBar(/AITA cs9-mumbai/)).toBeNull();
   });
 
+  it("draws an event whose entries have closed as a faded chip that says so", async () => {
+    await openCalendar();
+    // The start is 20 days from the test's today, which lands in whichever month it does.
+    const startMonth = new Date(day(20)).toLocaleString("en-IN", {
+      month: "long",
+      timeZone: "UTC",
+    });
+    const thisMonth = new Date(day(0)).toLocaleString("en-IN", { month: "long", timeZone: "UTC" });
+    if (startMonth !== thisMonth) goTo(startMonth);
+
+    const chip = bar(/AITA cs-closed.*entries closed/);
+    expect(chip.textContent).toMatch(/closed/);
+    expect(queryBar(/AITA cs-closed.*open to enter/)).toBeNull();
+  });
+
   it("keeps the other events in view when one is added, and narrows to the plan on request", async () => {
     await openCalendar();
     fireEvent.click(bar(/AITA cs7-sonipat/));
@@ -1298,9 +1395,7 @@ describe("the season calendar", () => {
     // The events they might add next are still there, quietly.
     expect(bar(/AITA cs5-pune.*open to enter/)).toBeTruthy();
 
-    fireEvent.click(
-      within(calendar()).getByRole("checkbox", { name: /Show every event they can enter/ })
-    );
+    fireEvent.click(within(calendar()).getByRole("checkbox", { name: /Show other events/ }));
     expect(queryBar(/AITA cs5-pune/)).toBeNull();
     expect(bar(/AITA cs7-sonipat.*on the plan/)).toBeTruthy();
   });
@@ -1590,20 +1685,6 @@ describe("the season calendar", () => {
       expect(drawn()).toBeLessThan(6);
     });
 
-    it("opens the week of an event chosen from the list, so it is never out of sight", async () => {
-      crowd();
-      await openCalendar();
-      expect(within(calendar()).queryAllByTitle("AITA busy5")).toHaveLength(0);
-
-      fireEvent.click(screen.getByRole("button", { name: "List" }));
-      fireEvent.click(
-        within(calendar()).getByRole("button", { name: /^AITA busy5.*open to enter/ })
-      );
-      fireEvent.click(screen.getByRole("button", { name: "Calendar" }));
-
-      expect(within(calendar()).getAllByTitle("AITA busy5").length).toBeGreaterThan(0);
-    });
-
     it("keeps the plan in view however busy the week is", async () => {
       crowd();
       world.plan = [
@@ -1656,14 +1737,17 @@ describe("the season calendar", () => {
     });
   });
 
-  it("falls back to the list below for anyone who cannot use the grid", async () => {
+  it("offers the same events as a list, with what to do about each", async () => {
     await openCalendar();
-    // The same events, in date order, with everything the calendar shows.
-    const list = section("All tournaments");
+    fireEvent.click(screen.getByRole("button", { name: "List" }));
+    const list = section("Find tournaments");
     expect(within(list).getByText("AITA cs7-sonipat")).toBeTruthy();
     expect(
       within(list).getAllByText(/Entry deadline not published|Entries close/).length
     ).toBeGreaterThan(0);
+    expect(
+      within(list).getByRole("button", { name: "Add AITA cs7-sonipat to the plan" })
+    ).toBeTruthy();
   });
 });
 
@@ -1861,34 +1945,213 @@ describe("the plan and suggestions panel", () => {
 
   it("keeps the calendar closed until it is asked for", async () => {
     renderPlanner();
-    const toggle = await screen.findByRole("button", { name: /^Season calendar/ });
+    const toggle = await screen.findByRole("button", { name: /^Find tournaments/ });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByRole("list", { name: "Season calendar, by week" })).toBeNull();
+  });
+});
+
+describe("filtering the tournaments", () => {
+  const finder = async () => {
+    renderPlanner();
+    return waitFor(() => section("Find tournaments"));
+  };
+
+  it("narrows the list to a state, and clears again", async () => {
+    const el = await finder();
+    expect(within(el).getByText("AITA ts-jaipur")).toBeTruthy();
+
+    fireEvent.change(within(el).getByLabelText("State"), { target: { value: "Delhi" } });
+    expect(within(el).getByText("AITA ss-delhi")).toBeTruthy();
+    expect(within(el).queryByText("AITA cs7-sonipat")).toBeNull();
+
+    fireEvent.click(within(el).getAllByRole("button", { name: "Clear filters" })[0]!);
+    expect(within(el).getByText("AITA cs7-sonipat")).toBeTruthy();
+  });
+
+  it("offers only the states and levels some event has", async () => {
+    const el = await finder();
+    const states = within(within(el).getByLabelText("State")).getAllByRole("option");
+    expect(states.map((option) => option.textContent)).toEqual([
+      "Anywhere",
+      "Delhi",
+      "Haryana",
+      "Maharashtra",
+      "Rajasthan",
+    ]);
+  });
+
+  it("says so when nothing matches, rather than showing a blank", async () => {
+    const el = await finder();
+    fireEvent.change(within(el).getByLabelText("State"), { target: { value: "Delhi" } });
+    fireEvent.change(within(el).getByLabelText("Level"), { target: { value: "Talent Series" } });
+    expect(within(el).getByText(/No tournaments match these filters/)).toBeTruthy();
   });
 });
 
 describe("the season on a phone", () => {
   it("lists the events by month instead of drawing seven narrow columns", async () => {
     renderPlanner();
-    const el = await waitFor(() => section("Season calendar"));
+    const el = await waitFor(() => section("Find tournaments"));
 
-    expect(within(el).queryByRole("list", { name: "Season calendar, by week" })).toBeNull();
+    expect(within(el).queryByRole("list", { name: /by week/ })).toBeNull();
+    expect(within(el).getByText("AITA cs7-sonipat")).toBeTruthy();
     expect(
-      within(el).getByRole("button", { name: /^AITA cs7-sonipat.*open to enter/ })
+      within(el).getByRole("button", { name: "Add AITA cs7-sonipat to the plan" })
     ).toBeTruthy();
+    // No grid, so no switch to one.
     expect(within(el).queryByRole("button", { name: "Calendar" })).toBeNull();
   });
 
   it("opens an event in a dialog, where the panel has no room beside the list", async () => {
+    world.plan = [
+      {
+        editionSlug: "ts-jaipur",
+        name: "AITA ts-jaipur",
+        startDate: day(30),
+        status: "shortlisted",
+        addedAt: day(-1),
+      },
+    ];
     renderPlanner();
-    const el = await waitFor(() => section("Season calendar"));
-    fireEvent.click(within(el).getByRole("button", { name: /^AITA cs7-sonipat.*open to enter/ }));
+    const summary = await screen.findByLabelText("What to do next");
+    fireEvent.click(within(summary).getAllByRole("button", { name: "AITA ts-jaipur" })[0]!);
 
     const dialog = await screen.findByRole("dialog", { name: /AITA/ });
     expect(within(dialog).getByText("Entry rules")).toBeTruthy();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Close modal" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /AITA/ })).toBeNull());
+  });
+});
+
+describe("the next step on a phone", () => {
+  const original = globalThis.IntersectionObserver;
+  // Every observer the page made: the card is observed again when the plan arrives, and
+  // the one that is still mounted is whichever of them the page is listening to.
+  const observers: IntersectionObserverCallback[] = [];
+  const notify = (inView: boolean) =>
+    act(() => {
+      for (const callback of observers) {
+        callback([{ isIntersecting: inView } as IntersectionObserverEntry], {} as never);
+      }
+    });
+
+  beforeEach(() => {
+    observers.length = 0;
+    globalThis.IntersectionObserver = class {
+      constructor(callback: IntersectionObserverCallback) {
+        observers.push(callback);
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+      root = null;
+      rootMargin = "";
+      thresholds = [];
+    } as unknown as typeof IntersectionObserver;
+  });
+  afterEach(() => {
+    globalThis.IntersectionObserver = original;
+  });
+
+  const planned = () => {
+    world.plan = [
+      {
+        editionSlug: "cs7-sonipat",
+        name: "AITA cs7-sonipat",
+        startDate: day(10),
+        status: "shortlisted",
+        addedAt: day(-1),
+      },
+    ];
+  };
+
+  it("keeps a one-line bar in reach once the next-step card has scrolled away", async () => {
+    planned();
+    renderPlanner();
+    // Wait for the plan itself: the bar has something to say only once there is a next step.
+    await within(await screen.findByLabelText("What to do next")).findAllByRole("button", {
+      name: "AITA cs7-sonipat",
+    });
+    // The card is on screen to begin with, so there is no bar.
+    expect(screen.queryByRole("region", { name: "Next step" })).toBeNull();
+
+    notify(false);
+    const bar = await screen.findByRole("region", { name: "Next step" });
+    expect(within(bar).getByRole("button", { name: "Show" })).toBeTruthy();
+
+    notify(true);
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Next step" })).toBeNull());
+  });
+
+  it("brings the card back into view from the bar", async () => {
+    planned();
+    const scroll = vi.fn();
+    const originalScroll = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scroll;
+    try {
+      renderPlanner();
+      await within(await screen.findByLabelText("What to do next")).findAllByRole("button", {
+        name: "AITA cs7-sonipat",
+      });
+      notify(false);
+      fireEvent.click(await screen.findByRole("button", { name: "Show" }));
+      expect(scroll).toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = originalScroll;
+    }
+  });
+});
+
+describe("an event on the plan whose entries have closed", () => {
+  const closedOnPlan = () => {
+    world.plan = [
+      {
+        editionSlug: "cs-closed",
+        name: "AITA cs-closed",
+        startDate: day(20),
+        status: "shortlisted",
+        addedAt: day(-3),
+      },
+    ];
+  };
+  const summary = () => screen.getByLabelText("What to do next");
+
+  it("says so in the next-step box, and asks whether the parent entered in time", async () => {
+    closedOnPlan();
+    renderPlanner();
+    expect(
+      await within(await screen.findByLabelText("What to do next")).findByText(
+        "Entries have closed for this event"
+      )
+    ).toBeTruthy();
+    expect(within(summary()).getByText("Did you enter in time?")).toBeTruthy();
+  });
+
+  it("marks it entered when the parent did enter in time", async () => {
+    closedOnPlan();
+    renderPlanner();
+    fireEvent.click(
+      await within(await screen.findByLabelText("What to do next")).findByRole("button", {
+        name: "Yes, mark it entered",
+      })
+    );
+    await waitFor(() => expect(world.plan[0]!.status).toBe("entered"));
+  });
+
+  it("takes it off the plan when they did not", async () => {
+    closedOnPlan();
+    renderPlanner();
+    fireEvent.click(
+      await within(await screen.findByLabelText("What to do next")).findByRole("button", {
+        name: "No, take it off the plan",
+      })
+    );
+    await waitFor(() => expect(world.plan).toHaveLength(0));
   });
 });
 
@@ -1919,7 +2182,7 @@ describe("what to do next", () => {
     await waitFor(() => section("Season calendar"));
     fireEvent.click(within(summary()).getByRole("button", { name: /^Browse all/ }));
 
-    const toggle = await screen.findByRole("button", { name: /^All tournaments/ });
+    const toggle = await screen.findByRole("button", { name: /^Find tournaments/ });
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
   });
 

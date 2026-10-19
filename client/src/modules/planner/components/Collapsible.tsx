@@ -1,5 +1,7 @@
 "use client";
 
+import { PANEL, PANEL_FADE } from "@/modules/planner/utils/motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
@@ -22,6 +24,7 @@ export function Collapsible({
   tour,
   open: controlledOpen,
   onOpenChange,
+  heavy = false,
 }: {
   title: string;
   description: string;
@@ -30,6 +33,8 @@ export function Collapsible({
   tour?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** A long body: fade it in rather than animating its height, which re-lays-out every frame. */
+  heavy?: boolean;
 }) {
   const [ownOpen, setOwnOpen] = useState(false);
   const open = controlledOpen ?? ownOpen;
@@ -61,7 +66,16 @@ export function Collapsible({
           />
         </button>
       </h2>
-      {open && <div className="pb-8 pt-2">{children}</div>}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            {...(heavy ? PANEL_FADE : PANEL)}
+            className={heavy ? undefined : "-mx-2 overflow-hidden px-2"}
+          >
+            <div className="pb-8 pt-2">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

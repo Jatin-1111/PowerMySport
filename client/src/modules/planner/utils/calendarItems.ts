@@ -7,6 +7,7 @@ import {
 } from "@powermysport/shared-types";
 import type { RecommendationItem } from "@/modules/planner/services/planner";
 import type { SeasonPlanEntry, SeasonPlanEntryStatus } from "@/modules/planner/services/seasonPlan";
+import { entriesClosed } from "@/modules/planner/utils/timeline";
 
 /**
  * Which events the calendar shows, and what state each one is in.
@@ -22,8 +23,9 @@ import type { SeasonPlanEntry, SeasonPlanEntryStatus } from "@/modules/planner/s
  *
  * An event on the plan is always "planned", even if it was also suggested or is
  * also open, because a decision outranks advice. Events the child cannot enter are
- * not drawn: the list under the calendar explains why, and a calendar of things
- * they cannot do is noise.
+ * not drawn: the list explains why, and a calendar of things they cannot do is noise.
+ * An event whose entries have shut IS drawn, faded, because the calendar is also how a
+ * parent sees what is on that week.
  */
 
 export type CalendarItemKind = "planned" | "suggested" | "available";
@@ -51,6 +53,8 @@ export interface CalendarItem {
   clashes: string[];
   /** True only for a real overlap, which the calendar draws as a problem. */
   hasOverlap: boolean;
+  /** Entries for this event have shut: drawn faded, so the calendar still shows what is on. */
+  entriesClosed?: boolean | undefined;
 }
 
 const bySlug = (entries: PlannerEntry[]): Array<[string, PlannerEntry]> =>
@@ -163,6 +167,8 @@ export function buildCalendarItems(params: {
       verdict,
       clashes: [],
       hasOverlap: false,
+      // The calendar still shows when an event is on, but says its entries have shut.
+      ...(entriesClosed(verdict.edition.registrationDeadlineDate) ? { entriesClosed: true } : {}),
     });
   }
 

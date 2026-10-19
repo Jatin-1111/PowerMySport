@@ -14,15 +14,17 @@ import type { SeasonPlanEntryStatus } from "@/modules/planner/services/seasonPla
  *   suggested    orange, dashed edge on the calendar: a proposal, not a decision
  *   open         white with a slate edge: available, and quiet
  *
- * Every pair here is at least 4.5:1: white on slate-800 and on emerald-700, and dark
- * text on the pale ones.
+ * The calendar bars are solid (dark slate for the plan, emerald for entered) because a
+ * bar has to read at a glance across a grid. The labels beside an event's name are soft
+ * tints of the same hues: amber while it still needs doing, green once it is done, grey
+ * when it is over. Every pair here is at least 4.5:1: dark text on the pale fills.
  */
 
 /** A small label saying what state a plan entry is in. */
 export const STATUS_BADGE: Record<SeasonPlanEntryStatus, string> = {
-  shortlisted: "border-slate-800 bg-slate-800 text-white",
-  entered: "border-emerald-700 bg-emerald-700 text-white",
-  played: "border-slate-200 bg-slate-100 text-slate-600",
+  shortlisted: "border-amber-300 bg-amber-50 text-amber-950",
+  entered: "border-emerald-300 bg-emerald-50 text-emerald-900",
+  played: "border-hairline bg-paper-deep text-ink-body",
 };
 
 export const SUGGESTED_BADGE = "border-orange-300 bg-orange-50 text-orange-900";

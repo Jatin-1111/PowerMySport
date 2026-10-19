@@ -85,7 +85,7 @@ export function OfficialDetails({
   return (
     <div className="space-y-3">
       {entered && withdrawal && withdrawal.kind !== "unpublished" && (
-        <p className="flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs leading-relaxed text-amber-900">
+        <p className="flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-2 text-sm leading-relaxed text-amber-900">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           {withdrawal.kind === "passed"
             ? "The withdrawal deadline has passed. Withdrawing now counts as a late withdrawal."
@@ -106,7 +106,7 @@ export function OfficialDetails({
         </dl>
       )}
 
-      <p className="text-xs leading-relaxed text-slate-500">
+      <p className="text-sm leading-relaxed text-slate-500">
         {official.source === "factSheet"
           ? `Read from AITA's page for this event${
               official.checkedAt ? ` on ${formatLongDate(official.checkedAt)}` : ""
@@ -114,7 +114,7 @@ export function OfficialDetails({
           : "From AITA's 2026 rules for this level and these dates. This event's own page could not be read, so check it before you enter."}
       </p>
 
-      <details className="text-xs leading-relaxed text-slate-700">
+      <details className="text-sm leading-relaxed text-slate-700">
         <summary className="cursor-pointer font-semibold text-slate-600 hover:underline">
           If you withdraw late or do not turn up
         </summary>

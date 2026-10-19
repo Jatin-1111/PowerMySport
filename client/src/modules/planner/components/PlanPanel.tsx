@@ -6,9 +6,10 @@ import type { CostResponse } from "@/modules/planner/services/planner";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import { eventLocation, googleCalendarUrl } from "@/modules/planner/utils/calendarLinks";
 import { formatLongDate } from "@/modules/planner/utils/eventFormat";
-import { deadlineState, planWarnings } from "@/modules/planner/utils/timeline";
+import { entriesClosed, planWarnings } from "@/modules/planner/utils/timeline";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import type { PlannerEdition } from "@powermysport/shared-types";
+import { AnimatePresence } from "framer-motion";
 import { CalendarPlus } from "lucide-react";
 
 /**
@@ -26,10 +27,8 @@ import { CalendarPlus } from "lucide-react";
  * have entered in time and not ticked it off, so this asks rather than assumes.
  */
 function closedNotice(status: string, deadline: string | null | undefined): string | undefined {
-  if (status !== "shortlisted") return undefined;
-  const state = deadlineState(deadline);
-  if (state.kind !== "passed") return undefined;
-  return `Entries closed on ${formatLongDate(state.date)}. If you entered in time, mark it entered. If not, you can no longer enter, so take it off the plan.`;
+  if (status !== "shortlisted" || !deadline || !entriesClosed(deadline)) return undefined;
+  return `Entries closed on ${formatLongDate(deadline)}. If you entered in time, mark it entered. If not, you can no longer enter, so take it off the plan.`;
 }
 
 export function PlanPanel({
@@ -107,56 +106,58 @@ export function PlanPanel({
 
   return (
     <div>
-      <p className="mb-3 text-xs leading-relaxed text-slate-600">
+      <p className="mb-3 text-sm leading-relaxed text-slate-600">
         {cap
           ? `AITA lets a player in ${ageGroup} play up to ${cap} events a year. ${countedThisYear} ${countedThisYear === 1 ? "is" : "are"} on this plan. Events in an older age group count towards this too.`
           : `${countedThisYear} event${countedThisYear === 1 ? "" : "s"} on this plan for ${thisYear}.`}
       </p>
       <ul>
-        {merged.map(({ entry, endDate, location, calendarEvent }) => (
-          <PlanEntryRow
-            key={entry.editionSlug}
-            entry={entry}
-            endDate={endDate}
-            location={location || undefined}
-            warning={[
-              closedNotice(entry.status, calendarEvent.registrationDeadlineDate),
-              warnings.get(entry.editionSlug),
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            details={
-              entry.status === "played" ? undefined : (
-                <CostLine
-                  cost={costs?.events[entry.editionSlug]}
-                  loading={costsLoading}
-                  yours={entry.costs}
-                  saving={setCosts.isPending}
-                  onSave={(figures) =>
-                    setCosts.mutate({ editionSlug: entry.editionSlug, costs: figures })
-                  }
-                />
-              )
-            }
-            busy={setStatus.isPending || remove.isPending}
-            onAdvance={(status) => setStatus.mutate({ editionSlug: entry.editionSlug, status })}
-            onRemove={() => remove.mutate(entry.editionSlug)}
-            extraActions={
-              entry.status !== "played" && (
-                <a
-                  href={googleCalendarUrl(calendarEvent)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Add ${entry.name} to Google Calendar`}
-                  className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                >
-                  <CalendarPlus className="h-4 w-4" aria-hidden />
-                  <span>Google Calendar</span>
-                </a>
-              )
-            }
-          />
-        ))}
+        <AnimatePresence initial={false}>
+          {merged.map(({ entry, endDate, location, calendarEvent }) => (
+            <PlanEntryRow
+              key={entry.editionSlug}
+              entry={entry}
+              endDate={endDate}
+              location={location || undefined}
+              warning={[
+                closedNotice(entry.status, calendarEvent.registrationDeadlineDate),
+                warnings.get(entry.editionSlug),
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              details={
+                entry.status === "played" ? undefined : (
+                  <CostLine
+                    cost={costs?.events[entry.editionSlug]}
+                    loading={costsLoading}
+                    yours={entry.costs}
+                    saving={setCosts.isPending}
+                    onSave={(figures) =>
+                      setCosts.mutate({ editionSlug: entry.editionSlug, costs: figures })
+                    }
+                  />
+                )
+              }
+              busy={setStatus.isPending || remove.isPending}
+              onAdvance={(status) => setStatus.mutate({ editionSlug: entry.editionSlug, status })}
+              onRemove={() => remove.mutate(entry.editionSlug)}
+              extraActions={
+                entry.status !== "played" && (
+                  <a
+                    href={googleCalendarUrl(calendarEvent)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Add ${entry.name} to Google Calendar`}
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <CalendarPlus className="h-4 w-4" aria-hidden />
+                    <span>Google Calendar</span>
+                  </a>
+                )
+              }
+            />
+          ))}
+        </AnimatePresence>
       </ul>
     </div>
   );

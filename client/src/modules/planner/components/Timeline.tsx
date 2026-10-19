@@ -2,7 +2,12 @@
 
 import { TimelineEventCard } from "@/modules/planner/components/TimelineEventCard";
 import { formatLongDate } from "@/modules/planner/utils/eventFormat";
-import { deadlineState, groupByMonth, type DeadlineState } from "@/modules/planner/utils/timeline";
+import {
+  deadlineState,
+  groupByMonth,
+  splitByEntryState,
+  type DeadlineState,
+} from "@/modules/planner/utils/timeline";
 import type { PlannerEntry, ReachVerdict, Shortlist } from "@powermysport/shared-types";
 import { ChevronDown, Clock } from "lucide-react";
 import { useState } from "react";
@@ -82,10 +87,7 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} 
   // Events whose entries have shut cannot be entered, so listing them among the ones a
   // parent can still act on buries those under a wall of dead ends. They stay one click
   // away, with the date each closed, because "why isn't that one here?" deserves an answer.
-  const entriesShut = (entry: PlannerEntry) =>
-    deadlineState(entry.edition.registrationDeadlineDate).kind === "passed";
-  const openEntries = shortlist.ownGroup.filter((entry) => !entriesShut(entry));
-  const shutEntries = shortlist.ownGroup.filter(entriesShut);
+  const { open: openEntries, shut: shutEntries } = splitByEntryState(shortlist.ownGroup);
 
   const months = groupByMonth(openEntries, (entry) => entry.edition.startDate);
   const shutMonths = groupByMonth(shutEntries, (entry) => entry.edition.startDate);
@@ -120,10 +122,7 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} 
       ) : (
         months.map((month) => (
           <section key={month.key} aria-labelledby={`month-${month.key}`} className="mb-6">
-            <h3
-              id={`month-${month.key}`}
-              className="text-ink-muted mb-3 text-[12px] font-bold uppercase tracking-wider"
-            >
+            <h3 id={`month-${month.key}`} className="text-ink mb-3 text-base font-semibold">
               {month.label}
             </h3>
             <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -141,10 +140,7 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} 
               aria-labelledby={`shut-month-${month.key}`}
               className="mb-5 last:mb-0"
             >
-              <h3
-                id={`shut-month-${month.key}`}
-                className="text-ink-muted mb-3 text-[12px] font-bold uppercase tracking-wider"
-              >
+              <h3 id={`shut-month-${month.key}`} className="text-ink mb-3 text-base font-semibold">
                 {month.label}
               </h3>
               <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -179,7 +175,7 @@ export function Timeline({ shortlist, plannedSlugs, isAdding, onAdd, reach = {} 
         </Disclosure>
       )}
 
-      <p className="text-ink-muted mt-6 text-xs leading-relaxed">
+      <p className="text-ink-muted mt-6 text-sm leading-relaxed">
         Open means not barred by the published entry rules. Above Championship Series a draw is cut
         by ranking, so a place is earned rather than granted. Check each event&apos;s fact sheet
         before you travel.

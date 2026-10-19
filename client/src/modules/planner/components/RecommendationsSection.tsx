@@ -83,7 +83,7 @@ function SuggestionCard({
               edition.name
             )}
           </p>
-          <p className="mt-0.5 text-xs text-slate-600">
+          <p className="mt-0.5 text-sm text-slate-600">
             {formatEventWindow(edition.startDate, edition.endDate)}
             {location && (
               <span className="ml-3 inline-flex items-center gap-1">
@@ -104,10 +104,10 @@ function SuggestionCard({
       )}
       <CostLine cost={cost} loading={costsLoading} />
       {edition.registrationDeadlineDate && (
-        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-slate-600">
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-slate-600">
           <span>Entries close {formatLongDate(edition.registrationDeadlineDate)}</span>
           {item.urgent && (
-            <span className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[11px] font-semibold text-amber-900">
+            <span className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-sm font-semibold text-amber-900">
               Closes soon
             </span>
           )}
@@ -119,7 +119,7 @@ function SuggestionCard({
           onClick={onDismiss}
           disabled={dismissing}
           aria-label={`${edition.name} is not for us`}
-          className="text-xs font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline disabled:opacity-60"
+          className="text-sm font-semibold text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline disabled:opacity-60"
         >
           Not for us
         </button>
@@ -191,10 +191,7 @@ function Suggestions({
 
       {recommended.length > 0 && (
         <section aria-labelledby="suggested-heading">
-          <h3
-            id="suggested-heading"
-            className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-500"
-          >
+          <h3 id="suggested-heading" className="text-ink-body mb-3 text-sm font-semibold">
             Suggested
           </h3>
           {render(recommended)}
@@ -203,10 +200,7 @@ function Suggestions({
 
       {consider.length > 0 && (
         <section aria-labelledby="consider-heading">
-          <h3
-            id="consider-heading"
-            className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-500"
-          >
+          <h3 id="consider-heading" className="text-ink-body mb-3 text-sm font-semibold">
             Worth considering
           </h3>
           {render(consider)}
@@ -215,13 +209,10 @@ function Suggestions({
 
       {stretch.length > 0 && (
         <section aria-labelledby="stretch-heading">
-          <h3
-            id="stretch-heading"
-            className="mb-1 text-[12px] font-bold uppercase tracking-wider text-slate-500"
-          >
+          <h3 id="stretch-heading" className="text-ink-body mb-1 text-sm font-semibold">
             A stretch
           </h3>
-          <p className="mb-3 text-xs leading-relaxed text-slate-600">
+          <p className="mb-3 text-sm leading-relaxed text-slate-600">
             Past draws of these closed above this rank. They are here so you know about them, not as
             picks.
           </p>
@@ -236,7 +227,7 @@ function Suggestions({
       {recommendations.notes.length > 0 && (
         <ul className="space-y-1">
           {recommendations.notes.map((note) => (
-            <li key={note} className="flex gap-1.5 text-xs leading-relaxed text-slate-600">
+            <li key={note} className="flex gap-1.5 text-sm leading-relaxed text-slate-600">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
               {note}
             </li>
@@ -267,14 +258,14 @@ function HiddenSuggestions({
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+        className="text-sm font-semibold text-slate-600 hover:text-slate-900"
       >
         {slugs.length} left out as not for us {open ? "(hide)" : "(show)"}
       </button>
       {open && (
         <ul className="mt-2 space-y-1.5">
           {slugs.map((slug) => (
-            <li key={slug} className="flex items-center justify-between gap-3 text-xs">
+            <li key={slug} className="flex items-center justify-between gap-3 text-sm">
               <span className="min-w-0 truncate text-slate-700">
                 {calendar.get(slug)?.name ?? slug}
               </span>
@@ -350,10 +341,7 @@ export function RecommendationsSection({
 
           {upcoming.length > 0 && (
             <section aria-labelledby="upcoming-heading">
-              <h3
-                id="upcoming-heading"
-                className="mb-3 text-[12px] font-bold uppercase tracking-wider text-slate-500"
-              >
+              <h3 id="upcoming-heading" className="text-ink-body mb-3 text-sm font-semibold">
                 Open to enter soon
                 {openCount > upcoming.length ? ` (${upcoming.length} of ${openCount})` : ""}
               </h3>
@@ -434,7 +422,7 @@ export function RecommendationsSection({
           />
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-            <p className="max-w-xl text-xs leading-relaxed text-slate-500">
+            <p className="max-w-xl text-sm leading-relaxed text-slate-500">
               {recommendations.source === "ai"
                 ? "The events were chosen by the planner's rules from what this child can enter. An AI model wrote the explanations, and each was checked against the data."
                 : "Chosen by the planner's own rules from the events this child can enter."}{" "}

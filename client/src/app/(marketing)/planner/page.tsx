@@ -44,7 +44,7 @@ export default function PlannerPage() {
           width="7xl"
           size="compact"
         />
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6 sm:pb-8 lg:px-8">
           <PlannerApp />
         </div>
       </div>

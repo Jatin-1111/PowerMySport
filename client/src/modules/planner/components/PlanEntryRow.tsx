@@ -10,6 +10,8 @@ import { formatEventWindow } from "@/modules/planner/utils/eventFormat";
 import { STATUS_BADGE } from "@/modules/planner/utils/statusStyle";
 import { Badge } from "@/modules/shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
+import { QUICK } from "@/modules/planner/utils/motion";
+import { motion } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -48,7 +50,14 @@ export function PlanEntryRow({
 }) {
   const advance = nextStatus(entry.status);
   return (
-    <li className="border-b border-slate-100 py-3 first:pt-0 last:border-0 last:pb-0">
+    <motion.li
+      layout="position"
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -10 }}
+      transition={QUICK}
+      className="border-b border-slate-100 py-3 first:pt-0 last:border-0 last:pb-0"
+    >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0">
           <p className="text-base font-semibold leading-snug text-slate-900">
@@ -64,7 +73,7 @@ export function PlanEntryRow({
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:self-start">
-          <Badge variant="outline" className={`${STATUS_BADGE[entry.status]} text-[11px]`}>
+          <Badge variant="outline" className={`${STATUS_BADGE[entry.status]} text-sm`}>
             {STATUS_LABEL[entry.status]}
           </Badge>
           <Button
@@ -102,6 +111,6 @@ export function PlanEntryRow({
           <span>{warning}</span>
         </p>
       )}
-    </li>
+    </motion.li>
   );
 }

@@ -81,6 +81,32 @@ export function deadlineState(
   return { kind: "open", date: deadline, daysLeft };
 }
 
+/**
+ * Whether an event's entries have shut. The one answer every part of the planner uses,
+ * so an event cannot be "open to enter" in one list and "entries closed" in the next.
+ *
+ * Only a published deadline that has passed counts. No deadline is not closed: the
+ * calendar rarely prints one, and calling those events shut would hide most of them.
+ */
+export function entriesClosed(
+  deadline: string | null | undefined,
+  now: Date = new Date()
+): boolean {
+  return deadlineState(deadline, now).kind === "passed";
+}
+
+/** Splits events into those that can still be entered and those whose entries have shut. */
+export function splitByEntryState<
+  T extends { edition: { registrationDeadlineDate?: string | null | undefined } },
+>(entries: T[], now: Date = new Date()): { open: T[]; shut: T[] } {
+  const open: T[] = [];
+  const shut: T[] = [];
+  for (const entry of entries) {
+    (entriesClosed(entry.edition.registrationDeadlineDate, now) ? shut : open).push(entry);
+  }
+  return { open, shut };
+}
+
 // ─── Plan warnings ────────────────────────────────────────────────────────────
 
 // Defined in shared-types: the recommender on the server must use the same

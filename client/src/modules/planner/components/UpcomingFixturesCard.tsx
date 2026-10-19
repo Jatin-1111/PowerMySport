@@ -6,6 +6,7 @@ import { ProfileSectionHeader } from "@/modules/player/components/ProfileSection
 import { rankingClaimApi } from "@/modules/player/services/rankingClaim";
 import { useSeasonPlan } from "@/modules/planner/hooks/useSeasonPlan";
 import { fetchUpcomingEditions } from "@/modules/planner/services/editions";
+import { splitByEntryState } from "@/modules/planner/utils/timeline";
 import { Badge } from "@/modules/shared/ui/Badge";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
@@ -175,6 +176,9 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
     ? buildShortlist(editions, { bracket: standing.ageGroup, rank: standing.rank })
     : null;
 
+  // Events whose entries have shut are not offered here as something to enter.
+  const openNow = shortlist ? splitByEntryState(shortlist.ownGroup).open : [];
+
   return (
     <Card className="shop-surface premium-shadow overflow-hidden p-0">
       <ProfileSectionHeader
@@ -197,9 +201,9 @@ export function UpcomingFixturesCard({ dependentId }: { dependentId: string }) {
           </p>
         ) : (
           <>
-            {shortlist.ownGroup.length > 0 ? (
+            {openNow.length > 0 ? (
               <ul>
-                {shortlist.ownGroup.slice(0, 6).map((entry) => (
+                {openNow.slice(0, 6).map((entry) => (
                   <FixtureRow
                     key={entry.edition.slug ?? entry.edition.name}
                     entry={entry}
