@@ -103,12 +103,12 @@ export const Hero: React.FC<HeroProps> = ({
           </div>
         </div>
 
-        {/* The photograph: one wide plate. A child mid-save, anchored to the top so the whole figure stays in frame at every ratio. */}
+        {/* The photograph: one wide plate. A young footballer on a local turf ground, anchored to the top so the face stays in frame at every ratio. */}
         <div className="relative mt-14 lg:mt-20">
           <div className="bg-paper-deep relative aspect-[4/3] overflow-hidden rounded-2xl sm:aspect-[3/2] lg:aspect-[16/10]">
             <Image
-              src="https://images.unsplash.com/photo-1544333323-ec9ed3218dd1?fm=jpg&q=75&w=2400&auto=format&fit=crop"
-              alt="A young goalkeeper diving to save a shot in front of the goal net"
+              src="https://images.unsplash.com/photo-1605550498663-f270981a3cf8?fm=jpg&q=75&w=2400&auto=format&fit=crop"
+              alt="A smiling young boy in a blue kit about to kick a football on a turf ground"
               fill
               priority
               sizes="(min-width: 1280px) 1216px, 100vw"

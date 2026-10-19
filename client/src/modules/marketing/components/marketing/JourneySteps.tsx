@@ -1,4 +1,4 @@
-import { SECTION_HEADING, SECTION_LEAD, SectionKicker } from "./SectionKicker";
+import { SECTION_HEADING, SectionKicker } from "./SectionKicker";
 
 const STEPS = [
   {
@@ -14,8 +14,8 @@ const STEPS = [
     body: "Compare options and see what the next stage asks of you.",
   },
   {
-    title: "Get it done",
-    body: "Find tournaments, book an expert or buy what you need.",
+    title: "Take the next step",
+    body: "Find a tournament, book an expert or shop for kit.",
   },
 ] as const;
 
@@ -26,17 +26,14 @@ const STEPS = [
  */
 export function JourneySteps() {
   return (
-    <section className="bg-paper-deep py-24 sm:py-32 lg:py-40">
+    <section className="bg-paper py-16 sm:py-24 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll max-w-3xl">
           <SectionKicker label="How it works" />
-          <h2 className={`${SECTION_HEADING} mb-6`}>From questions to action</h2>
-          <p className={SECTION_LEAD}>
-            Sports decisions are easier when someone helps you work out the next step.
-          </p>
+          <h2 className={SECTION_HEADING}>From questions to action</h2>
         </div>
 
-        <ol className="reveal-on-scroll mt-16 grid grid-cols-1 gap-x-10 gap-y-12 sm:grid-cols-2 lg:mt-24 lg:grid-cols-4">
+        <ol className="reveal-on-scroll mt-12 grid grid-cols-1 gap-x-10 gap-y-12 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4">
           {STEPS.map((step, index) => (
             <li key={step.title} className="border-ink/20 border-t pt-6">
               <span className="font-editorial text-ink mb-10 block text-5xl font-light tabular-nums">

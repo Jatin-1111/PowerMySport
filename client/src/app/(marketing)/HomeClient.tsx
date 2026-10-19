@@ -152,6 +152,11 @@ export default function HomeClient({
         sportLabel={tournaments.sportLabel}
       />
 
+      {/* ── Everything PMS covers. Early on purpose: a parent who already knows
+          they want rankings or scholarships should not scroll four screens to
+          find the way in. ── */}
+      <ExploreGrid />
+
       {/* ── Real questions, each opening WhatsApp ── */}
       <ParentQuestions />
 
@@ -170,14 +175,11 @@ export default function HomeClient({
         }}
       />
 
-      {/* ── Everything PMS covers ── */}
-      <ExploreGrid />
-
       {/* ── One real pathway, opened up. The photo band above already makes the
           pitch and links to /roadmap, so this only shows when there is a guide to
           show: with no pathway data (API down) there is nothing to add. ── */}
       {pathway && (pathway.stages?.length ?? 0) > 0 && (
-        <section className="bg-paper-deep relative overflow-hidden py-24 sm:py-32 lg:py-40">
+        <section className="bg-paper-deep relative overflow-hidden py-16 sm:py-24 lg:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr]">
               <div className="reveal-on-scroll">

@@ -17,7 +17,7 @@ const QUESTIONS = [
 
 export function ParentQuestions() {
   return (
-    <section className="bg-paper py-24 sm:py-32 lg:py-40">
+    <section className="bg-paper-deep py-16 sm:py-24 lg:py-28">
       <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[5fr_7fr] lg:gap-24 lg:px-8">
         <div className="reveal-on-scroll lg:sticky lg:top-28 lg:self-start">
           <SectionKicker label="Ask PowerMySport" />
@@ -34,9 +34,12 @@ export function ParentQuestions() {
                 href={buildWhatsAppUrl(question)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-ink hover:bg-paper-deep/70 focus-visible:ring-ink group -mx-3 flex items-center justify-between gap-6 rounded-lg px-3 py-6 text-left text-lg leading-snug transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 sm:text-xl"
+                className="text-ink hover:bg-paper/70 focus-visible:ring-ink group -mx-3 flex items-center justify-between gap-6 rounded-lg px-3 py-6 text-left text-lg leading-snug transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 sm:text-xl"
               >
-                {question}
+                <span>
+                  {question}
+                  <span className="sr-only"> (opens WhatsApp in a new tab)</span>
+                </span>
                 <ArrowUpRight
                   aria-hidden
                   strokeWidth={1.5}

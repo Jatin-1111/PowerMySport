@@ -104,7 +104,7 @@ const AREAS = [
  */
 export function ExploreGrid() {
   return (
-    <section className="bg-paper py-24 sm:py-32 lg:py-40">
+    <section className="bg-paper py-16 sm:py-24 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll max-w-3xl">
           <SectionKicker label="Explore" />
@@ -114,7 +114,7 @@ export function ExploreGrid() {
           </p>
         </div>
 
-        <ul className="reveal-on-scroll mt-16 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:mt-24 lg:grid-cols-4">
+        <ul className="reveal-on-scroll mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4">
           {AREAS.map((area) => {
             const featured = "featured" in area && area.featured;
             return (
