@@ -151,6 +151,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     dangerouslyAllowLocalIP: true,
+    // The default is 75 only. Large photographs (the homepage hero) ask for 90.
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: "https",

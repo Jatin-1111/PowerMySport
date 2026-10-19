@@ -112,6 +112,7 @@ export const Hero: React.FC<HeroProps> = ({
               fill
               priority
               sizes="(min-width: 1280px) 1216px, 100vw"
+              quality={90}
               className="object-cover object-[72%_50%] saturate-[0.9] lg:object-center"
             />
           </div>
