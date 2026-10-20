@@ -66,7 +66,9 @@ const TABS = ALL_TABS.filter((t) => t.enabled);
 /** The tab shown when the URL names none, or names one that is switched off. */
 const DEFAULT_TAB: Tab = TABS.find((t) => t.id === "experts")?.id ?? TABS[0]?.id ?? "experts";
 
-const TRUST_POINTS = ["Secure payments", "Verified listings", "Instant confirmation"];
+// A session is confirmed once the expert accepts the time, so "instant" is not
+// claimed.
+const TRUST_POINTS = ["Secure payments", "Verified listings", "Your expert confirms the time"];
 
 function TabBar({ activeTab, onTabChange }: { activeTab: Tab; onTabChange: (t: Tab) => void }) {
   const listRef = useRef<HTMLDivElement>(null);

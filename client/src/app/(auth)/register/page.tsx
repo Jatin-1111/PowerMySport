@@ -231,7 +231,7 @@ function RegisterContent() {
             Create your account
           </h1>
           <p className="mt-2 text-[15px] text-slate-500 dark:text-slate-400">
-            Join thousands of families building their sporting journey.
+            Keep your child&apos;s sporting journey in one place.
           </p>
         </motion.div>
 

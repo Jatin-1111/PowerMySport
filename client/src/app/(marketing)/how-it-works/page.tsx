@@ -1,5 +1,6 @@
 import { JsonLd } from "@/components/seo/JsonLd";
 import { faqJsonLd } from "@/lib/seo";
+import { SPORT_PROFILES } from "@/modules/find-sport/data/sportProfiles";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Timeline, type TimelineEntry } from "@/modules/marketing/components/marketing/Timeline";
@@ -274,7 +275,7 @@ export default function HowItWorksPage() {
     {
       icon: Target,
       title: "The right sport, not a guess",
-      desc: "A match from 50+ sports based on your child's age, personality, and physical traits, with the reasons behind every pick.",
+      desc: `A match from ${SPORT_PROFILES.length} sports based on your child's age, personality, and physical traits, with the reasons behind every pick.`,
       accent: "bg-orange-50 text-power-orange ring-orange-200/60",
     },
     {

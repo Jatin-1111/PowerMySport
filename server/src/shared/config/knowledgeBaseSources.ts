@@ -18,7 +18,7 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "general-what-is-powermysport",
     title: "What is PowerMySport?",
     content:
-      "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India. Core tools are kept separate on purpose: Get Started (a free Sport Assessment at /assessment/discover for parents who don't yet know which sport suits their child), Problem Solver (AI Guidance at /guidance that builds a full personalized development plan once a sport is known), Sports Pathways (a roadmap explorer at /roadmap covering 70+ sports), and Experts (1:1 consultations with verified coaches and mentors at /experts). The venue/coach/academy booking marketplace is temporarily paused.",
+      "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India. Core tools are kept separate on purpose: Get Started (a free Sport Assessment at /assessment/discover for parents who don't yet know which sport suits their child), Problem Solver (AI Guidance at /guidance that builds a full personalized development plan once a sport is known), Sports Pathways (a roadmap explorer at /roadmap, published one sport at a time, starting with tennis; do not say it covers dozens of sports), and Experts (1:1 consultations with verified coaches and mentors at /experts). The venue/coach/academy booking marketplace is temporarily paused.",
   },
   {
     sourceType: "faq",

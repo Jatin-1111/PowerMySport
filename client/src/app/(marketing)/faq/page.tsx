@@ -14,7 +14,7 @@ const faqs = [
       {
         question: "What is PowerMySport?",
         answer:
-          "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India. Our core tools are kept separate on purpose: Get Started (a free Sport Assessment for parents who don't yet know which sport suits their child), Problem Solver (AI Guidance that builds a full personalized development plan once a sport is known), Sports Pathways (a roadmap explorer covering 70+ sports), and Experts (1:1 consultations with verified coaches and mentors).",
+          "PowerMySport helps parents plan their child's sports journey with AI-powered pathways, personalised guidance, and verified expert sessions across India. Our core tools are kept separate on purpose: Get Started (a free Sport Assessment for parents who don't yet know which sport suits their child), Problem Solver (AI Guidance that builds a full personalized development plan once a sport is known), Sports Pathways (a roadmap explorer, published one sport at a time, starting with tennis), and Experts (1:1 consultations with verified coaches and mentors).",
       },
       {
         question: "How do I create an account?",
