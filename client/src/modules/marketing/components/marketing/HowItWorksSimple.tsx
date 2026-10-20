@@ -1,5 +1,4 @@
 import { cn } from "@/utils/cn";
-import Link from "next/link";
 import React from "react";
 import { HOW_STEPS } from "../../data/howItWorksSteps";
 import { SECTION_HEADING, SectionKicker } from "./SectionKicker";
@@ -61,7 +60,6 @@ export function HowOneLine() {
         <Header />
         <ol className="mt-12 lg:mt-20 lg:grid lg:grid-cols-5 lg:gap-8">
           {HOW_STEPS.map((step, index) => {
-            const links = step.items.filter((item) => typeof item !== "string");
             return (
               <li
                 key={step.title}
@@ -72,31 +70,15 @@ export function HowOneLine() {
                   "after:bg-ink after:absolute after:left-0 after:top-2 after:h-[11px] after:w-[11px] after:rounded-full after:content-[''] lg:after:top-0"
                 )}
               >
-                <p className="text-ink-muted mb-1 text-sm font-medium tabular-nums">
+                <p className="text-ink-muted mb-3 text-sm font-medium tabular-nums">
                   Step {index + 1}
                 </p>
-                <h3 className="font-editorial text-ink mb-3 text-balance text-2xl font-normal leading-tight">
+                <h3 className="font-editorial text-ink mb-4 text-balance text-3xl font-normal leading-[1.1] tracking-tight">
                   {step.title}
                 </h3>
-                <p className="text-ink-body max-w-[32ch] text-pretty leading-relaxed">
+                <p className="text-ink-body max-w-[30ch] text-pretty text-base leading-relaxed">
                   {step.body}
                 </p>
-                {links.length > 0 && (
-                  <ul className="mt-4 space-y-1.5">
-                    {links.map((item) =>
-                      typeof item === "string" ? null : (
-                        <li key={item.label}>
-                          <Link
-                            href={item.href}
-                            className="text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink rounded text-base underline underline-offset-4 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2"
-                          >
-                            {item.label}
-                          </Link>
-                        </li>
-                      )
-                    )}
-                  </ul>
-                )}
               </li>
             );
           })}
