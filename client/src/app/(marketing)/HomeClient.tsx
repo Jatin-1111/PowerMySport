@@ -5,6 +5,7 @@ import { ExploreGrid } from "@/modules/marketing/components/marketing/ExploreGri
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { HeroAsk } from "@/modules/marketing/components/marketing/HeroAsk";
 import { JourneySteps } from "@/modules/marketing/components/marketing/JourneySteps";
+import { MyChildCard } from "@/modules/marketing/components/marketing/MyChildCard";
 import { ParentQuestions } from "@/modules/marketing/components/marketing/ParentQuestions";
 import { HomeClosing } from "@/modules/marketing/components/marketing/HomeClosing";
 import {
@@ -145,6 +146,9 @@ export default function HomeClient({
 
       {/* ── From questions to action ── */}
       <JourneySteps />
+
+      {/* ── My Child: what PMS keeps about a child, shown with an invented, labelled example ── */}
+      <MyChildCard />
 
       {/* ── Everything PMS covers ── */}
       <ExploreGrid />

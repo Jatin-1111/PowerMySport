@@ -104,7 +104,7 @@ const AREAS = [
  */
 export function ExploreGrid() {
   return (
-    <section className="bg-paper-deep py-16 sm:py-24 lg:py-28">
+    <section className="bg-paper py-16 sm:py-24 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll max-w-3xl">
           <SectionKicker label="Explore" />
@@ -121,7 +121,7 @@ export function ExploreGrid() {
               <li key={area.title} className={area.cell}>
                 <Link
                   href={area.href}
-                  className="bg-ink focus-visible:ring-ink focus-visible:ring-offset-paper-deep group relative isolate flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl p-6 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:p-8"
+                  className="bg-ink focus-visible:ring-ink focus-visible:ring-offset-paper group relative isolate flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl p-6 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:p-8"
                 >
                   <Image
                     src={area.image}
