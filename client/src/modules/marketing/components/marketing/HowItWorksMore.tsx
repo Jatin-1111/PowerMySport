@@ -188,3 +188,63 @@ export function HowGiantNumerals() {
     </section>
   );
 }
+
+// ─── K: the recommended mix ─────────────────────────────────────────────────
+
+/**
+ * Cards from I, the big numerals from J and the ink card from H, on the step where the
+ * advice arrives. Every step shows a small example of what the parent sees, so nobody has
+ * to imagine it. On a phone it is one plain column, read top to bottom.
+ */
+const MIX_TONE = ["bg-white", "bg-wash", "bg-ink", "bg-paper-deep", "bg-white"] as const;
+
+export function HowCombined() {
+  return (
+    <section className="bg-paper py-16 sm:py-24 lg:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Header />
+        <ol className="mt-12 grid gap-5 lg:mt-16 lg:grid-cols-6">
+          {HOW_STEPS.map((step, index) => {
+            const dark = MIX_TONE[index] === "bg-ink";
+            return (
+              <li
+                key={step.title}
+                className={cn(
+                  "reveal-on-scroll border-hairline flex flex-col rounded-3xl border p-6 sm:p-8",
+                  MIX_TONE[index],
+                  BLOCK_SPAN[index],
+                  dark && "border-ink"
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "font-editorial mb-5 block text-7xl font-light tabular-nums leading-[0.85] tracking-[-0.03em] sm:text-8xl",
+                    dark ? "text-white" : "text-ink"
+                  )}
+                >
+                  {index + 1}
+                </span>
+                <h3 className={cn("mb-2 text-xl font-semibold", dark ? "text-white" : "text-ink")}>
+                  <span className="sr-only">Step {index + 1}: </span>
+                  {step.title}
+                </h3>
+                <p
+                  className={cn(
+                    "mb-6 max-w-[40ch] text-pretty leading-relaxed",
+                    dark ? "text-white/80" : "text-ink-body"
+                  )}
+                >
+                  {step.body}
+                </p>
+                <div className="mt-auto">
+                  <Specimen index={index} step={step} />
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </section>
+  );
+}

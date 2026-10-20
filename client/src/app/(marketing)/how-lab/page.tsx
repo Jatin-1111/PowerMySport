@@ -10,6 +10,7 @@ import {
 } from "@/modules/marketing/components/marketing/HowItWorksVariants";
 import {
   HowBands,
+  HowCombined,
   HowColourBlocks,
   HowGiantNumerals,
 } from "@/modules/marketing/components/marketing/HowItWorksMore";
@@ -34,6 +35,11 @@ function Label({ children }: { children: string }) {
 export default function HowLabPage() {
   return (
     <main className="bg-paper">
+      <Label>
+        K. Recommended: cards with examples, big numerals, advice step in ink (mix of I, J, H)
+      </Label>
+      <HowCombined />
+
       <Label>A. Five ruled columns</Label>
       <HowColumns />
 
