@@ -49,68 +49,10 @@ export default function HomeClient({
 }) {
   const { user } = useAuthStore();
 
-  // ── Personalize the hero for a logged-in parent ──
-  // Guests (and the loading/unhydrated state) fall through to the original
-  // generic hero below — only a real `user` changes any of this.
-  const isVenueLister = user?.role === "VenueLister";
-  const firstName = user?.name?.split(" ")[0];
-  const dependents = user?.dependents ?? [];
-  // Most relevant child: one who's already picked a sport (via the assessment
-  // results screen, `chosenSport`) or already told us what they play (via the
-  // profile's "Sport & setup" step, `sportsFocus`) — either counts as "knows
-  // their sport" for the hero. Else one with finished assessment results,
-  // else just the first profile on the account.
-  const primaryDependent =
-    dependents.find((d) => d.sport?.chosenSport || d.sport?.sportsFocus?.length) ??
-    dependents.find((d) => d.sport?.wizardCompletedAt) ??
-    dependents[0];
-  // `chosenSport` is the assessment's own pick; `sportsFocus[0]` is what the
-  // parent told us directly. Either is "the sport" for hero purposes.
-  const effectiveSport =
-    primaryDependent?.sport?.chosenSport || primaryDependent?.sport?.sportsFocus?.[0];
-  // The greeting rides on the CTA prompt line rather than a separate badge —
-  // "Jatin, ready to find Aarav's sport?" instead of "Does your child...".
-  // `sentence` is always lowercase-first so it reads naturally either way.
-  const greet = (sentence: string) =>
-    firstName ? `${firstName}, ${sentence}` : sentence.charAt(0).toUpperCase() + sentence.slice(1);
-
-  // Guests, and parents with no child profile yet: WhatsApp is the way in.
-  let heroCtaPrompt: string | undefined = firstName
-    ? greet("what would you like help with?")
-    : undefined;
-  let heroPrimaryCTA = { label: "Talk to PMS", href: WHATSAPP_HERO_HREF };
-
-  if (isVenueLister) {
-    heroCtaPrompt = firstName ? `Welcome back, ${firstName}` : undefined;
-    heroPrimaryCTA = { label: "Manage Venues", href: "/venue-lister/inventory" };
-  } else if (user && primaryDependent && effectiveSport) {
-    // Already knows the sport — either chosen via the assessment or told to
-    // us directly — get them back to it, not a pitch.
-    heroCtaPrompt = greet("let's continue where you left off");
-    heroPrimaryCTA = {
-      label: `Continue ${primaryDependent.name}'s ${effectiveSport} Journey`,
-      href: roadmapHref(effectiveSport),
-    };
-  } else if (user && primaryDependent?.sport?.wizardCompletedAt) {
-    // Assessment done, no decision yet — surface the matches, not the funnel question.
-    heroCtaPrompt = greet(`${primaryDependent.name}'s sport matches are ready`);
-    heroPrimaryCTA = {
-      label: `View ${primaryDependent.name}'s Matches`,
-      href: "/assessment/discover",
-    };
-  } else if (user && primaryDependent) {
-    // Profile started, assessment not finished.
-    heroCtaPrompt = greet(`ready to find ${primaryDependent.name}'s sport?`);
-    heroPrimaryCTA = { label: "Continue Assessment", href: "/assessment/discover" };
-  }
-  // Everyone gets the ask-first hero, greeted by name when we have one. A returning parent (or venue lister) gets a link back to where they were; guests get none.
-  const personalisedHero = isVenueLister || Boolean(user && primaryDependent);
-  const resume = personalisedHero ? heroPrimaryCTA : undefined;
-
   return (
     <main className="bg-paper">
       {/* ── Hero ── */}
-      <HeroAsk greeting={heroCtaPrompt} resume={resume} />
+      <HeroAsk />
 
       {/* ── Real questions, each opening WhatsApp. Straight after the hero: the
           parent's first move is to ask, so the questions come before anything

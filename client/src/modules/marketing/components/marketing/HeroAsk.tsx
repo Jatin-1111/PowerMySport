@@ -1,14 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
 import React from "react";
 import { HeroAskField } from "./HeroAskField";
-
-export interface HeroAskProps {
-  /** A greeting for a signed-in parent, shown above the field. */
-  greeting?: string;
-  /** Where a returning parent picks up, shown beside the greeting. */
-  resume?: { label: string; href: string };
-}
 
 /**
  * The homepage hero for visitors and parents with no child profile yet. Centred
@@ -16,7 +8,7 @@ export interface HeroAskProps {
  * becomes the first WhatsApp message, and the note says what happens after.
  * The photograph sits below as a single plate.
  */
-export const HeroAsk: React.FC<HeroAskProps> = ({ greeting, resume }) => (
+export const HeroAsk: React.FC = () => (
   <section className="bg-paper">
     <div className="mx-auto max-w-7xl px-4 pb-14 pt-14 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8 lg:pb-24 lg:pt-24">
       <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
@@ -33,16 +25,7 @@ export const HeroAsk: React.FC<HeroAskProps> = ({ greeting, resume }) => (
           you understand your child&apos;s options, decide what to do next, and take action.
         </p>
 
-        {greeting && <p className="text-ink-muted mt-8 text-sm font-medium">{greeting}</p>}
-        {resume && (
-          <Link
-            href={resume.href}
-            className="text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink focus-visible:ring-offset-paper mt-1 rounded text-base font-medium underline underline-offset-4 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-          >
-            {resume.label}
-          </Link>
-        )}
-        <div className={`w-full max-w-2xl ${greeting ? "mt-3" : "mt-9"}`}>
+        <div className="mt-9 w-full max-w-2xl">
           <HeroAskField />
         </div>
         <p className="text-ink-muted mt-4 text-sm">
