@@ -3,6 +3,7 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { ExploreGrid } from "@/modules/marketing/components/marketing/ExploreGrid";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
+import { HeroAsk } from "@/modules/marketing/components/marketing/HeroAsk";
 import { JourneySteps } from "@/modules/marketing/components/marketing/JourneySteps";
 import { ParentQuestions } from "@/modules/marketing/components/marketing/ParentQuestions";
 import { HomeClosing } from "@/modules/marketing/components/marketing/HomeClosing";
@@ -80,17 +81,12 @@ export default function HomeClient({
   let heroCtaPrompt: string | undefined = firstName
     ? greet("what would you like help with?")
     : undefined;
-  let heroPrimaryCTA = { label: "Get guidance on WhatsApp", href: WHATSAPP_HERO_HREF };
-  let heroSecondaryCTA: { label: string; href: string } | undefined = {
-    label: "Find my child's sport",
-    href: "/assessment/discover",
-  };
+  let heroPrimaryCTA = { label: "Talk to PMS", href: WHATSAPP_HERO_HREF };
   let heroStats: Array<{ label: string; value: string; helper?: string }> | undefined;
 
   if (isVenueLister) {
     heroCtaPrompt = firstName ? `Welcome back, ${firstName}` : undefined;
     heroPrimaryCTA = { label: "Manage Venues", href: "/venue-lister/inventory" };
-    heroSecondaryCTA = undefined;
   } else if (user && primaryDependent && effectiveSport) {
     // Already knows the sport — either chosen via the assessment or told to
     // us directly — get them back to it, not a pitch.
@@ -99,7 +95,6 @@ export default function HomeClient({
       label: `Continue ${primaryDependent.name}'s ${effectiveSport} Journey`,
       href: roadmapHref(effectiveSport),
     };
-    heroSecondaryCTA = { label: "Manage Sport Profile", href: "/sport-profile" };
     heroStats = [
       { label: "Sport", value: effectiveSport },
       ...(chosenMatch ? [{ label: "Fit", value: chosenMatch.fitLabel }] : []),
@@ -111,7 +106,6 @@ export default function HomeClient({
       label: `View ${primaryDependent.name}'s Matches`,
       href: "/assessment/discover",
     };
-    heroSecondaryCTA = { label: "Explore Roadmaps", href: "/roadmap" };
     if (primaryDependent.sport.sportMatches?.length) {
       heroStats = [
         { label: "Matches Found", value: String(primaryDependent.sport.sportMatches.length) },
@@ -122,28 +116,27 @@ export default function HomeClient({
     // Profile started, assessment not finished.
     heroCtaPrompt = greet(`ready to find ${primaryDependent.name}'s sport?`);
     heroPrimaryCTA = { label: "Continue Assessment", href: "/assessment/discover" };
-    heroSecondaryCTA = { label: "Explore Roadmaps", href: "/roadmap" };
   }
-  // Logged in with no dependents yet: keep the WhatsApp default, greeted by name.
+  // Everyone else, including a signed-in parent with no child yet, gets the ask-first hero,
+  // greeted by name when we have one.
+  const personalisedHero = isVenueLister || Boolean(user && primaryDependent);
 
   return (
     <main className="bg-paper">
       {/* ── Hero ── */}
-      <Hero
-        title="Helping Parents Make Confident Sports Decisions"
-        titleHighlight="Sports Decisions"
-        description="PowerMySport is a guide for parents of young athletes in India: stage-by-stage sport pathways, tournament dates, federation rankings, scholarships and sessions with sports experts. Free to explore."
-        ctaNote="A PowerMySport team member replies within 24 hours."
-        ctaPrompt={heroCtaPrompt}
-        primaryCTA={heroPrimaryCTA}
-        secondaryCTA={heroSecondaryCTA}
-        trustPoints={[
-          "No account needed",
-          "Personalised to your child",
-          ...(coveredSports.length > 0 ? [`Pathway guides for ${joinNames(coveredSports)}`] : []),
-        ]}
-        stats={heroStats}
-      />
+      {personalisedHero ? (
+        <Hero
+          title="Helping Parents Make Confident Sports Decisions"
+          titleHighlight="Sports Decisions"
+          description="From discovering the right sport to navigating competition and future pathways, PMS helps you understand your child's options, decide what to do next, and take action."
+          ctaNote="A PowerMySport team member replies within 24 hours."
+          ctaPrompt={heroCtaPrompt}
+          primaryCTA={heroPrimaryCTA}
+          stats={heroStats}
+        />
+      ) : (
+        <HeroAsk greeting={heroCtaPrompt} />
+      )}
 
       {/* ── Real questions, each opening WhatsApp. Straight after the hero: the
           parent's first move is to ask, so the questions come before anything
