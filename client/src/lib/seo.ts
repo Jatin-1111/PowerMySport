@@ -201,9 +201,9 @@ export function aboutPageJsonLd(input: {
 }
 
 /**
- * The site, with the sitelinks search box pointed at the pathway explorer —
- * the only site search that takes a free-text sport and returns something
- * useful.
+ * The site. No `SearchAction`: it used to point at `/roadmap/{search_term}`,
+ * which is a sport page and not a search, so it described a search box the site
+ * does not have (and Google no longer shows the sitelinks search box anyway).
  */
 export const websiteJsonLd: JsonLdObject = {
   "@context": "https://schema.org",
@@ -212,14 +212,6 @@ export const websiteJsonLd: JsonLdObject = {
   url: SITE_URL,
   inLanguage: "en-IN",
   publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-  potentialAction: {
-    "@type": "SearchAction",
-    target: {
-      "@type": "EntryPoint",
-      urlTemplate: `${SITE_URL}/roadmap/{search_term_string}`,
-    },
-    "query-input": "required name=search_term_string",
-  },
 };
 
 /**

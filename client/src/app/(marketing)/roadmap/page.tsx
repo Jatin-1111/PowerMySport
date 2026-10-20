@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { JsonLd } from "@/components/seo/JsonLd";
 import { getCommunityAppUrl } from "@/lib/community/url";
+import { itemListJsonLd } from "@/lib/seo";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { PathwayPicker } from "@/modules/pathway/components/PathwayPicker";
 import { fetchPathwayIndex } from "@/modules/pathway/services/fetchGuide";
@@ -118,6 +120,18 @@ export default async function PathwaysIndexPage() {
 
   return (
     <main className="overflow-x-clip">
+      {sports.length > 0 && (
+        <JsonLd
+          data={itemListJsonLd({
+            name: "Sport pathways for parents in India",
+            path: "/roadmap",
+            items: sports.map((sport) => ({
+              name: `${sport.sportName} pathway`,
+              path: `/roadmap/${sport.sportSlug}`,
+            })),
+          })}
+        />
+      )}
       {/* ── Hero and picker ──
           One section, deliberately: a page whose job is "pick your sport" must show
           a sport before the fold. */}

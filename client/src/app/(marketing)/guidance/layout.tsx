@@ -1,3 +1,5 @@
+import { JsonLd } from "@/components/seo/JsonLd";
+import { webPageJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import React from "react";
 
@@ -25,5 +27,17 @@ export const metadata: Metadata = {
 };
 
 export default function ConsultLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <JsonLd
+        data={webPageJsonLd({
+          name: "Get Expert Sports Guidance",
+          path: "/guidance",
+          description:
+            "Tell us your child's challenge, a weakness to fix, a tournament to prepare for, or a level to break through, and get a personalised action plan.",
+        })}
+      />
+      {children}
+    </>
+  );
 }

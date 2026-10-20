@@ -1,3 +1,5 @@
+import { JsonLd } from "@/components/seo/JsonLd";
+import { faqJsonLd } from "@/lib/seo";
 import { CTA } from "@/modules/marketing/components/marketing/CTA";
 import { SectionLabel } from "@/modules/marketing/components/marketing/SectionLabel";
 import { Timeline, type TimelineEntry } from "@/modules/marketing/components/marketing/Timeline";
@@ -319,6 +321,7 @@ export default function HowItWorksPage() {
     // container that never scrolls, and the `.reveal-on-scroll` view timelines
     // inside then track it instead of the page, freezing part-way transparent.
     <main className="overflow-x-clip">
+      <JsonLd data={faqJsonLd(faqs.map((faq) => ({ question: faq.q, answer: faq.a })))} />
       {/* ── Hero ── */}
       <PageHeader
         eyebrow="Getting started"

@@ -51,7 +51,10 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
+    // The community app (Q&A and Experiences) is served under /community and keeps
+    // its own sitemap; listing it here is the only way a crawler reading this
+    // file finds those URLs.
+    sitemap: [`${siteUrl}/sitemap.xml`, `${siteUrl}/community/sitemap.xml`],
     host: siteUrl,
   };
 }
