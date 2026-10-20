@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
 
 // Component tests share a jsdom document, so an uncleaned tree from one test
@@ -12,6 +12,15 @@ afterEach(() => {
     cleanup();
   }
 });
+
+// `findBy*` and `waitFor` give up after 1000ms by default. That is wall-clock time, and
+// the full suite runs dozens of jsdom files in parallel, so a heavy page (the expert
+// onboarding wizard) could take over a second to render a step on a busy machine and fail
+// a test that passes alone. A generous ceiling costs nothing when the element is there,
+// because these resolve as soon as it appears; it only changes how long a real failure waits.
+if (typeof document !== "undefined") {
+  configure({ asyncUtilTimeout: 5000 });
+}
 
 // jsdom has no IntersectionObserver, but framer-motion's `whileInView`
 // (used throughout the app/ marketing and booking pages) reaches for it on

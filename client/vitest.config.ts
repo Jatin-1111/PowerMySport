@@ -17,6 +17,13 @@ export default defineConfig({
     environment: "node",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
+    // The default is 5s per test. The component tests take 15-200ms alone, but the full
+    // run puts dozens of jsdom workers on the same CPUs and the heavier pages (the expert
+    // onboarding wizard) were seen taking over 5s there, failing one test per run at
+    // random. A ceiling this high changes nothing on a healthy run; it only stops load
+    // from being mistaken for a bug.
+    testTimeout: 20000,
+    hookTimeout: 20000,
   },
   resolve: {
     alias: {
