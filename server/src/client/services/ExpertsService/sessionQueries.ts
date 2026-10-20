@@ -4,6 +4,7 @@ import { ExpertSession } from "../../models/ExpertBooking";
 import {
   toObjectId,
   serializeExpert,
+  withFreshPhoto,
   serializeFullPlayerForExpert,
   fetchPlayerSummariesByIds,
   serializeSession,
@@ -28,7 +29,7 @@ export const getExpertSessionForUser = async (params: {
   }
   const playerSummaries = await fetchPlayerSummariesByIds([session]);
   return serializeSession(session, {
-    expert: expert ? serializeExpert(expert) : undefined,
+    expert: expert ? await withFreshPhoto(serializeExpert(expert), expert) : undefined,
     expertInPersonAddress: expert?.inPersonAddress,
     player: (session as any).playerId
       ? playerSummaries.get((session as any).playerId.toString())
@@ -76,14 +77,16 @@ export const listUserExpertSessions = async (userId: string) => {
     .lean();
   const byId = new Map(experts.map((e) => [e._id.toString(), e]));
   const playerSummaries = await fetchPlayerSummariesByIds(sessions);
-  return sessions.map((s) => {
-    const e = byId.get(s.expertId.toString());
-    return serializeSession(s, {
-      expert: e ? serializeExpert(e) : undefined,
-      expertInPersonAddress: e?.inPersonAddress,
-      player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
-    });
-  });
+  return Promise.all(
+    sessions.map(async (s) => {
+      const e = byId.get(s.expertId.toString());
+      return serializeSession(s, {
+        expert: e ? await withFreshPhoto(serializeExpert(e), e) : undefined,
+        expertInPersonAddress: e?.inPersonAddress,
+        player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
+      });
+    })
+  );
 };
 
 export const listExpertOwnSessions = async (expertUserId: string) => {

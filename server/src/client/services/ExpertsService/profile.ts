@@ -8,6 +8,7 @@ import {
   GST_REGEX,
   generateTemporaryPassword,
   serializeExpertFull,
+  withFreshPhoto,
 } from "./shared";
 
 // ── Admin: create / list ─────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ export const listExpertsForAdmin = async (params: {
   // Always include pending count for the badge
   const pendingCount = await Expert.countDocuments({ verificationStatus: "PENDING" });
   return {
-    data: experts.map(serializeExpertFull),
+    data: await Promise.all(experts.map((e) => withFreshPhoto(serializeExpertFull(e), e))),
     pagination: { total, page, totalPages: Math.ceil(total / limit) },
     pendingCount,
   };
@@ -214,7 +215,7 @@ export const updateExpertByAdmin = async (expertId: string, patch: Record<string
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert not found");
-  return serializeExpertFull(expert);
+  return withFreshPhoto(serializeExpertFull(expert), expert);
 };
 
 export const setExpertActive = async (expertId: string, isActive: boolean) => {
@@ -229,7 +230,7 @@ export const setExpertActive = async (expertId: string, isActive: boolean) => {
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert not found");
-  return serializeExpertFull(expert);
+  return withFreshPhoto(serializeExpertFull(expert), expert);
 };
 
 export const submitExpertForReview = async (userId: string) => {
@@ -274,7 +275,7 @@ export const submitExpertForReview = async (userId: string) => {
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert profile not found or not eligible for review submission");
-  return serializeExpertFull(expert);
+  return withFreshPhoto(serializeExpertFull(expert), expert);
 };
 
 export const approveExpert = async (expertId: string) => {
@@ -296,7 +297,7 @@ export const approveExpert = async (expertId: string) => {
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert not found");
-  return serializeExpertFull(expert);
+  return withFreshPhoto(serializeExpertFull(expert), expert);
 };
 
 export const rejectExpert = async (expertId: string, reason: string) => {
@@ -308,7 +309,7 @@ export const rejectExpert = async (expertId: string, reason: string) => {
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert not found");
-  return serializeExpertFull(expert);
+  return withFreshPhoto(serializeExpertFull(expert), expert);
 };
 
 // ── Expert self-service profile ──────────────────────────────────────────────
@@ -318,7 +319,7 @@ export const getMyExpertProfile = async (userId: string) => {
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert profile not found");
-  return serializeExpertFull(expert);
+  return withFreshPhoto(serializeExpertFull(expert), expert);
 };
 
 export const updateMyExpertProfile = async (userId: string, patch: Record<string, unknown>) => {
@@ -329,5 +330,5 @@ export const updateMyExpertProfile = async (userId: string, patch: Record<string
     .populate("userId", "name email")
     .lean();
   if (!expert) throw new Error("Expert profile not found");
-  return serializeExpertFull(expert);
+  return withFreshPhoto(serializeExpertFull(expert), expert);
 };

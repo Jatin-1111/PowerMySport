@@ -5,6 +5,7 @@ import { IPayoutMethod } from "../../models/Coach";
 import { Player, PlayerDocument } from "../../models/Player";
 import { NotificationService } from "../NotificationService";
 import { decryptValue } from "../../../shared/utils/encryption";
+import { s3Service } from "../../../shared/services/S3Service";
 import { log as __rootLog } from "../../../utils/logger";
 
 export const log = __rootLog.child("experts");
@@ -47,6 +48,25 @@ const expertUserName = (expert: any): { name?: string; email?: string } => {
   const u = expert?.userId;
   if (u && typeof u === "object") return { name: u.name, email: u.email };
   return {};
+};
+
+const ownerUserId = (expert: any): string | undefined => {
+  const u = expert?.userId;
+  if (u && typeof u === "object") return (u._id ?? u.id)?.toString();
+  return u?.toString();
+};
+
+/**
+ * A serialized expert with a photo URL that still loads. The stored URL is a
+ * 7-day pre-signed link, so it is re-signed from its key on read; see
+ * `S3Service.refreshOwnedImageUrl` for what it will and will not touch.
+ */
+export const withFreshPhoto = async <T extends { photoUrl?: string | undefined }>(
+  serialized: T,
+  expert: any
+): Promise<T> => {
+  const photoUrl = await s3Service.refreshOwnedImageUrl(serialized.photoUrl, ownerUserId(expert));
+  return photoUrl === serialized.photoUrl ? serialized : ({ ...serialized, photoUrl } as T);
 };
 
 /**

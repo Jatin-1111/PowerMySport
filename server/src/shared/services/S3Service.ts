@@ -749,6 +749,41 @@ export class S3Service {
   }
 
   /**
+   * A fresh download URL for an image the owner uploaded, given the URL that was
+   * stored when they uploaded it.
+   *
+   * Profile photos were stored as the 7-day pre-signed URL the upload returned,
+   * so they stopped loading a week later. The key is still inside that URL, so
+   * this re-signs it on read, with no migration of the stored values.
+   *
+   * Deliberately narrow, because `url` comes from user input: it only re-signs a
+   * URL on this service's images bucket whose key sits under `users/<ownerUserId>/`.
+   * Anything else (an external photo, another user's object) is returned
+   * untouched, so a profile cannot be made to mint a link to someone else's file.
+   * Never throws: on any failure the stored URL is returned.
+   */
+  async refreshOwnedImageUrl(
+    url: string | undefined,
+    ownerUserId: string | undefined
+  ): Promise<string | undefined> {
+    if (!url || !ownerUserId) return url;
+    let key: string;
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname !== `${this.imagesBucket}.s3.${this.region}.amazonaws.com`) return url;
+      key = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
+    } catch {
+      return url;
+    }
+    if (key.includes("..") || !key.startsWith(`users/${ownerUserId}/`)) return url;
+    try {
+      return await this.generateCachedDownloadUrl(key, "images", 604800);
+    } catch {
+      return url;
+    }
+  }
+
+  /**
    * Delete file from S3
    * @param key - S3 object key
    * @param bucketType - Type of bucket ("documents" or "images")
