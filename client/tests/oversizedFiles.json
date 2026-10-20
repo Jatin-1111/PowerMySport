@@ -10,7 +10,7 @@
   "app/(booking)/coach/reviews/page.tsx": 436,
   "app/(booking)/coaches/[coachId]/CoachDetailClient.tsx": 1059,
   "app/(booking)/experts/sessions/[sessionId]/page.tsx": 638,
-  "app/(booking)/experts/[expertId]/ExpertDetailClient.tsx": 581,
+  "app/(booking)/experts/[expertId]/ExpertDetailClient.tsx": 521,
   "app/(booking)/payment/page.tsx": 619,
   "app/(booking)/venues/[venueId]/VenueDetailClient.tsx": 976,
   "app/(expert)/expert/onboarding/page.tsx": 990,

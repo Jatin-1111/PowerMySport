@@ -8,6 +8,7 @@ import {
   stableImageUrl,
 } from "@/lib/seo";
 import type { Metadata } from "next";
+import type { Expert } from "@/modules/expert/services/expert";
 import { ExpertDetailClient } from "./ExpertDetailClient";
 
 /**
@@ -36,6 +37,11 @@ interface PublicExpert {
   languages?: string[];
   photoUrl?: string;
   sessionFee?: number;
+  sessionMode?: Expert["sessionMode"];
+  sessionDurationMinutes?: number;
+  achievements?: string;
+  timezone?: string;
+  hasAvailability?: boolean;
   rating?: number;
   reviewCount?: number;
   isActive?: boolean;
@@ -104,6 +110,29 @@ export async function generateMetadata({
   };
 }
 
+/** The public API fields, as the client's `Expert`, with defaults for anything absent. */
+function toExpert(e: PublicExpert, expertId: string): Expert {
+  return {
+    id: e.id ?? e._id ?? expertId,
+    name: e.name,
+    bio: e.bio ?? "",
+    sports: e.sports ?? [],
+    expertise: e.expertise ?? [],
+    sessionFee: e.sessionFee ?? 0,
+    sessionMode: e.sessionMode ?? "ONLINE",
+    sessionDurationMinutes: e.sessionDurationMinutes,
+    achievements: e.achievements,
+    timezone: e.timezone,
+    hasAvailability: e.hasAvailability,
+    city: e.city,
+    languages: e.languages,
+    photoUrl: e.photoUrl,
+    isActive: true,
+    rating: e.rating ?? 0,
+    reviewCount: e.reviewCount ?? 0,
+  };
+}
+
 export default async function ExpertDetailPage({
   params,
 }: {
@@ -146,7 +175,7 @@ export default async function ExpertDetailPage({
           ]}
         />
       )}
-      <ExpertDetailClient />
+      <ExpertDetailClient initialExpert={showSchema ? toExpert(expert, expertId) : null} />
     </>
   );
 }

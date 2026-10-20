@@ -3,6 +3,11 @@
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import ParentExperiencesBand from "@/modules/community/components/ParentExperiencesBand";
+import {
+  DetailSkeleton,
+  ExpertPortrait,
+  RatingStars,
+} from "@/modules/expert/components/ExpertProfileParts";
 import { SlotPicker } from "@/modules/expert/components/SlotPicker";
 import {
   expertApi,
@@ -16,10 +21,9 @@ import {
 } from "@/modules/player/components/CompleteProfileNudge";
 import { Button } from "@/modules/shared/ui/Button";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
-import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
-import { ArrowLeft, CalendarCheck, Check, ShieldCheck, Sparkles, Star } from "lucide-react";
+import { ArrowLeft, CalendarCheck, Check, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -33,87 +37,25 @@ interface DependentOption {
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
-function ExpertPortrait({ expert }: { expert: Expert }) {
-  const [failed, setFailed] = useState(false);
-  const initial = (expert.name || "E").charAt(0).toUpperCase();
-  const frame = "aspect-[4/5] w-36 shrink-0 rounded-2xl sm:w-44";
-  if (!expert.photoUrl || failed) {
-    return (
-      <div
-        aria-hidden
-        className={`${frame} bg-paper-deep text-ink-muted font-editorial flex items-center justify-center text-6xl font-light`}
-      >
-        {initial}
-      </div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={expert.photoUrl}
-      alt={expert.name || "Expert"}
-      onError={() => setFailed(true)}
-      className={`${frame} object-cover`}
-    />
-  );
-}
-
-function RatingStars({ value }: { value: number }) {
-  return (
-    <span
-      className="flex items-center gap-0.5"
-      role="img"
-      aria-label={`${Math.round(value)} out of 5`}
-    >
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          aria-hidden
-          strokeWidth={1.5}
-          className={`h-3.5 w-3.5 ${i < Math.round(value) ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
-        />
-      ))}
-    </span>
-  );
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="bg-paper min-h-screen">
-      <div className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
-        <Skeleton className="mb-10 h-5 w-28" />
-        <div className="grid gap-12 lg:grid-cols-[1fr_400px] lg:gap-16">
-          <div>
-            <div className="flex flex-col gap-8 sm:flex-row sm:items-end">
-              <Skeleton className="aspect-[4/5] w-36 rounded-2xl sm:w-44" />
-              <div className="space-y-3">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-12 w-64" />
-                <Skeleton className="h-4 w-40" />
-              </div>
-            </div>
-            <Skeleton className="mt-10 h-20 w-full" />
-            <Skeleton className="mt-8 h-40 w-full" />
-          </div>
-          <Skeleton className="h-[28rem] w-full rounded-2xl" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ExpertDetailClient() {
+/**
+ * `initialExpert` is the profile the server page already fetched. Rendering it on
+ * the first pass puts the profile in the HTML for crawlers and for a visitor
+ * before JavaScript runs; without it the page shipped only a skeleton.
+ */
+export function ExpertDetailClient({ initialExpert = null }: { initialExpert?: Expert | null }) {
   const params = useParams();
   const router = useRouter();
   const expertId = String(params?.expertId || "");
   const user = useAuthStore((s) => s.user);
 
-  const [expert, setExpert] = useState<Expert | null>(null);
+  const [expert, setExpert] = useState<Expert | null>(initialExpert);
   const [reviews, setReviews] = useState<ExpertReview[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialExpert);
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
-  const [mode, setMode] = useState<ExpertSessionMode>("ONLINE");
+  const [mode, setMode] = useState<ExpertSessionMode>(
+    initialExpert?.sessionMode === "IN_PERSON" ? "IN_PERSON" : "ONLINE"
+  );
   const [note, setNote] = useState("");
   const [slot, setSlot] = useState<string | null>(null);
   const [dependents, setDependents] = useState<DependentOption[]>([]);
@@ -155,7 +97,8 @@ export function ExpertDetailClient() {
 
   const load = useCallback(async () => {
     try {
-      setLoading(true);
+      // Keep showing the server-rendered profile while it refreshes.
+      if (!initialExpert) setLoading(true);
       setError(null);
       const [e, r] = await Promise.all([
         expertApi.getExpert(expertId),
@@ -173,7 +116,7 @@ export function ExpertDetailClient() {
     } finally {
       setLoading(false);
     }
-  }, [expertId]);
+  }, [expertId, initialExpert]);
 
   useEffect(() => {
     if (expertId) load();
