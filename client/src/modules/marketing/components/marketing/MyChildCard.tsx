@@ -75,10 +75,11 @@ export function MyChildCard() {
                   key={row.key}
                   className={cn(
                     "border-hairline grid gap-1 border-b px-5 py-4 last:border-b-0 sm:grid-cols-[7.5rem_1fr] sm:gap-4 sm:px-6",
-                    // The marker is drawn inside the row, so it does not push the text
-                    // across, and the card's overflow-hidden rounds it at the corner.
+                    // A real left border, rounded to match the card's inner corner (16px
+                    // radius less its 1px border), so it bends round the corner. The
+                    // padding is 2px short to make room, which keeps the text aligned.
                     row.key === "open" &&
-                      "before:bg-power-orange-solid relative before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:content-['']"
+                      "border-l-power-orange-solid rounded-bl-[15px] border-l-2 pl-[18px] sm:pl-[22px]"
                   )}
                 >
                   <dt className="text-ink-muted text-sm font-medium">{row.label}</dt>
