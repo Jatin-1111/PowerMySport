@@ -1,6 +1,7 @@
 "use client";
 
-import api from "@/lib/api/axios";
+import api, { API_BASE_URL } from "@/lib/api/axios";
+import { resolveApiPath } from "@/lib/api/resolveApiPath";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { cn } from "@/utils/cn";
 import { ArrowRight, Loader2, MessageCircle } from "lucide-react";
@@ -153,7 +154,11 @@ export default function CheckInPage() {
           )}
           {followUp?.kind === "escalate" && (
             <a
-              href={followUp.whatsappUrl ?? "https://wa.me/918968582443"}
+              href={
+                followUp.whatsappUrl
+                  ? resolveApiPath(followUp.whatsappUrl, API_BASE_URL)
+                  : "https://wa.me/918968582443"
+              }
               target="_blank"
               rel="noopener noreferrer"
               className="focus-visible:ring-ink inline-flex items-center gap-2 rounded-md bg-green-700 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-green-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
