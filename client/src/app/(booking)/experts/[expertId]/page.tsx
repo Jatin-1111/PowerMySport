@@ -1,5 +1,12 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import { breadcrumbJsonLd, clampText, expertJsonLd, NOINDEX_METADATA } from "@/lib/seo";
+import { isExcludedFromSearch } from "@/lib/expertIndexing";
+import {
+  breadcrumbJsonLd,
+  clampText,
+  expertJsonLd,
+  NOINDEX_METADATA,
+  stableImageUrl,
+} from "@/lib/seo";
 import type { Metadata } from "next";
 import { ExpertDetailClient } from "./ExpertDetailClient";
 
@@ -65,12 +72,14 @@ export async function generateMetadata({
   const expert = await fetchExpert(expertId);
 
   // Unknown or deactivated expert — do not let an empty profile shell into the
-  // index under a real person's URL.
-  if (!expert || expert.isActive === false) {
+  // index under a real person's URL. A test profile is active but must not be
+  // indexed either.
+  if (!expert || expert.isActive === false || isExcludedFromSearch(expertId)) {
     return { title: "Expert", ...NOINDEX_METADATA };
   }
 
   const name = expert.name ?? "PowerMySport Expert";
+  const photo = stableImageUrl(expert.photoUrl);
   const description = expertDescription(expert);
   const title = expert.sports?.length ? `${name}, ${expert.sports.join(", ")} expert` : name;
 
@@ -84,13 +93,13 @@ export async function generateMetadata({
       url: `/experts/${expertId}`,
       title,
       description,
-      ...(expert.photoUrl ? { images: [{ url: expert.photoUrl }] } : {}),
+      ...(photo ? { images: [{ url: photo }] } : {}),
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      ...(expert.photoUrl ? { images: [expert.photoUrl] } : {}),
+      ...(photo ? { images: [photo] } : {}),
     },
   };
 }
@@ -102,7 +111,8 @@ export default async function ExpertDetailPage({
 }) {
   const { expertId } = await params;
   const expert = await fetchExpert(expertId);
-  const showSchema = expert && expert.isActive !== false && expert.name;
+  const showSchema =
+    expert && expert.isActive !== false && expert.name && !isExcludedFromSearch(expertId);
 
   return (
     <>

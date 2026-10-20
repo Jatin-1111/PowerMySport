@@ -433,6 +433,23 @@ export function articleJsonLd(input: {
 }
 
 /**
+ * An image URL that is safe to publish in structured data or a social preview,
+ * or `undefined`.
+ *
+ * User uploads are often stored as pre-signed S3 URLs. Those expire (a week, by
+ * default), so a crawler that cached the page keeps a dead image, and the URL
+ * carries an AWS access key id and signature into public HTML. Drop them rather
+ * than publish them; a page with no image is better than one with a broken one.
+ */
+export function stableImageUrl(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
+  if (/[?&]x-amz-(signature|expires|credential)=/i.test(url)) return undefined;
+  // CloudFront signed URLs.
+  if (/[?&](signature|key-pair-id)=/i.test(url)) return undefined;
+  return url;
+}
+
+/**
  * A bookable expert, as a `Person` who `makesOffer` a consultation.
  *
  * Ratings are only included when there are real reviews behind them — an
@@ -465,7 +482,7 @@ export function expertJsonLd(input: {
     url,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     ...(input.description ? { description: input.description } : {}),
-    ...(input.image ? { image: input.image } : {}),
+    ...(stableImageUrl(input.image) ? { image: stableImageUrl(input.image) } : {}),
     ...(input.jobTitle ? { jobTitle: input.jobTitle } : {}),
     ...(input.sports?.length ? { knowsAbout: input.sports } : {}),
     ...(input.languages?.length ? { knowsLanguage: input.languages } : {}),

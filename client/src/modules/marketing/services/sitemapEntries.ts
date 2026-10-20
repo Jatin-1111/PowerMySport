@@ -1,3 +1,4 @@
+import { isExcludedFromSearch } from "@/lib/expertIndexing";
 import type { MetadataRoute } from "next";
 
 import { SITE_URL as siteUrl } from "@/lib/seo";
@@ -248,7 +249,7 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   // are live and bookable.
   const expertEntries: MetadataRoute.Sitemap = experts
     .map((expert) => expert.id ?? expert._id)
-    .filter((id): id is string => Boolean(id))
+    .filter((id): id is string => Boolean(id) && !isExcludedFromSearch(id))
     .map((id) => ({
       url: `${siteUrl}/experts/${id}`,
       lastModified: now,
