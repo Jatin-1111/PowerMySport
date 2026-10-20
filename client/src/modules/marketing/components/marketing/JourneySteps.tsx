@@ -1,3 +1,4 @@
+import { cn } from "@/utils/cn";
 import { SECTION_HEADING, SectionKicker } from "./SectionKicker";
 
 /**
@@ -29,14 +30,24 @@ const STEPS = [
   },
   {
     title: "PMS remembers",
-    body: "Your decisions and check-ins are kept with your child's journey, so you can pick up where you left off.",
+    body: (
+      <>
+        Your decisions and <span className="whitespace-nowrap">check-ins</span> are kept with your
+        child&apos;s journey, so you can pick up where you left off.
+      </>
+    ),
   },
 ] as const;
 
+/** How far each step sits below the one before it, from the `xl` breakpoint up. */
+const STAIR = ["", "xl:mt-8", "xl:mt-16", "xl:mt-24", "xl:mt-32"] as const;
+
 /**
- * The five-step "from questions to action" band. A lighter paper tone separates it
- * from the sections around it; the steps are ruled columns led by a serif numeral,
- * with no cards.
+ * The five-step "from questions to action" band, drawn as a staircase on wide
+ * screens: each step starts a little lower than the last, and one hairline runs
+ * along every step and down every riser, so the five read as a single path rather
+ * than five equal boxes. Below `xl` it falls back to ruled columns, then one column.
+ * Server-rendered, no client code; the reveal is the CSS scroll-driven one.
  */
 export function JourneySteps() {
   return (
@@ -47,17 +58,31 @@ export function JourneySteps() {
           <h2 className={SECTION_HEADING}>From questions to action</h2>
         </div>
 
-        <ol className="reveal-on-scroll mt-12 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:mt-16 lg:grid-cols-3 xl:grid-cols-5">
+        <ol className="mt-12 grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:mt-16 lg:grid-cols-3 xl:grid-cols-5 xl:gap-x-0 xl:gap-y-0">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="border-ink/20 border-t pt-6">
-              <span className="font-editorial text-ink mb-10 block text-5xl font-light tabular-nums">
+            <li
+              key={step.title}
+              className={cn(
+                "reveal-on-scroll border-ink/25 relative border-t pt-8 xl:pr-8",
+                // The marker where the step begins, sitting on its rule.
+                "before:bg-ink before:absolute before:-top-[5px] before:left-0 before:h-[9px] before:w-[9px] before:rounded-[2px] before:content-['']",
+                // The riser: from the end of this step's rule down to where the next one starts.
+                index < STEPS.length - 1 &&
+                  "xl:after:bg-ink/25 xl:after:absolute xl:after:-top-px xl:after:right-0 xl:after:h-8 xl:after:w-px xl:after:content-['']",
+                STAIR[index]
+              )}
+            >
+              <span className="font-editorial text-ink mb-8 block text-6xl font-light tabular-nums leading-none">
                 {index + 1}
               </span>
               <h3 className="text-ink mb-2 text-lg font-semibold">{step.title}</h3>
-              <p className="text-ink-body max-w-[32ch] text-pretty leading-relaxed">{step.body}</p>
+              <p className="text-ink-body max-w-[30ch] text-pretty leading-relaxed">{step.body}</p>
             </li>
           ))}
         </ol>
+
+        {/* Room under the lowest step on wide screens, where the staircase ends. */}
+        <div aria-hidden className="hidden xl:block xl:h-4" />
       </div>
     </section>
   );
