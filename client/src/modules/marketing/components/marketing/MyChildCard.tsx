@@ -54,7 +54,7 @@ export function MyChildCard() {
             </div>
           </div>
 
-          <div className="reveal-on-scroll border-hairline w-full rounded-2xl border bg-white">
+          <div className="reveal-on-scroll border-hairline w-full overflow-hidden rounded-2xl border bg-white">
             <div className="border-hairline flex items-center gap-3 border-b px-5 py-4 sm:px-6">
               {/* An initial in a small square: a person, without a stock photo of a child. */}
               <span
@@ -75,7 +75,10 @@ export function MyChildCard() {
                   key={row.key}
                   className={cn(
                     "border-hairline grid gap-1 border-b px-5 py-4 last:border-b-0 sm:grid-cols-[7.5rem_1fr] sm:gap-4 sm:px-6",
-                    row.key === "open" && "border-l-power-orange-solid border-l-2"
+                    // The marker is drawn inside the row, so it does not push the text
+                    // across, and the card's overflow-hidden rounds it at the corner.
+                    row.key === "open" &&
+                      "before:bg-power-orange-solid relative before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:content-['']"
                   )}
                 >
                   <dt className="text-ink-muted text-sm font-medium">{row.label}</dt>
