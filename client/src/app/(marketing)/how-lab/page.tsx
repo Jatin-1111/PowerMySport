@@ -8,6 +8,11 @@ import {
   HowSpecimens,
   HowStaircase,
 } from "@/modules/marketing/components/marketing/HowItWorksVariants";
+import {
+  HowBands,
+  HowColourBlocks,
+  HowGiantNumerals,
+} from "@/modules/marketing/components/marketing/HowItWorksMore";
 import { JourneySteps } from "@/modules/marketing/components/marketing/JourneySteps";
 import type { Metadata } from "next";
 
@@ -49,6 +54,15 @@ export default function HowLabPage() {
 
       <Label>G. Asymmetric bento, swipes sideways on a phone</Label>
       <HowBento />
+
+      <Label>H. Full-width bands, the advice step flipped to ink (Uber)</Label>
+      <HowBands />
+
+      <Label>I. Colour-blocked cards, each holding what the parent sees (Clay, Cal)</Label>
+      <HowColourBlocks />
+
+      <Label>J. Giant numerals, no rules and no cards (Nike, Framer)</Label>
+      <HowGiantNumerals />
     </main>
   );
 }

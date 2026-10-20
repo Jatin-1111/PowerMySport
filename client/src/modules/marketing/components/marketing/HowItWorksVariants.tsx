@@ -89,7 +89,7 @@ export function HowStaircase() {
 // ─── E: each step beside what the parent sees ───────────────────────────────
 
 /** A small framed specimen for each step. Invented, and labelled where it shows an example. */
-function Specimen({ index, step }: { index: number; step: HowStep }) {
+export function Specimen({ index, step }: { index: number; step: HowStep }) {
   const frame = "border-hairline rounded-2xl border bg-white p-5 sm:p-6";
 
   if (index === 0) {
