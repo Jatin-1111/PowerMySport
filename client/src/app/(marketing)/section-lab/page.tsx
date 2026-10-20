@@ -3,6 +3,12 @@ import {
   MyChildComposite,
   MyChildMemory,
 } from "@/modules/marketing/components/marketing/MyChildCombined";
+import {
+  MyChildBoardRise,
+  MyChildDriftPanels,
+  MyChildFillTimeline,
+  MyChildScrollStory,
+} from "@/modules/marketing/components/marketing/MyChildMotion";
 import { MyChildTabs } from "@/modules/marketing/components/marketing/MyChildTabs";
 import {
   MyChildCard,
@@ -49,6 +55,18 @@ export default function SectionLabPage() {
 
       <Label>G. Three product panels crossing the band edge (Stripe, Notion)</Label>
       <MyChildComposite />
+
+      <Label>H. Moves on scroll: the timeline rail fills as it is read</Label>
+      <MyChildFillTimeline />
+
+      <Label>I. Moves on scroll: the three panels drift at different speeds</Label>
+      <MyChildDriftPanels />
+
+      <Label>J. Moves on scroll: a card stays while each part is read</Label>
+      <MyChildScrollStory />
+
+      <Label>K. Moves on scroll: notes settle into place one after another</Label>
+      <MyChildBoardRise />
     </main>
   );
 }

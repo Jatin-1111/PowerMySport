@@ -99,7 +99,7 @@ const TILT = [
   "lg:-rotate-[0.6deg]",
 ];
 
-function Note({
+export function Note({
   label,
   tilt,
   accent,
@@ -200,7 +200,7 @@ export function MyChildBoard() {
   );
 }
 
-function Panel({
+export function Panel({
   title,
   right,
   className,
