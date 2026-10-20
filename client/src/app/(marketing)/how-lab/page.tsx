@@ -14,6 +14,11 @@ import {
   HowColourBlocks,
   HowGiantNumerals,
 } from "@/modules/marketing/components/marketing/HowItWorksMore";
+import {
+  HowContents,
+  HowOneLine,
+  HowOneSentence,
+} from "@/modules/marketing/components/marketing/HowItWorksSimple";
 import { JourneySteps } from "@/modules/marketing/components/marketing/JourneySteps";
 import type { Metadata } from "next";
 
@@ -35,6 +40,15 @@ function Label({ children }: { children: string }) {
 export default function HowLabPage() {
   return (
     <main className="bg-paper">
+      <Label>L. Contents page: titles and one line, nothing else</Label>
+      <HowContents />
+
+      <Label>M. One line, five stops</Label>
+      <HowOneLine />
+
+      <Label>N. One big sentence, the lines in small type below</Label>
+      <HowOneSentence />
+
       <Label>
         K. Recommended: cards with examples, big numerals, advice step in ink (mix of I, J, H)
       </Label>
