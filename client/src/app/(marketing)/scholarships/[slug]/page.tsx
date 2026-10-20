@@ -1,5 +1,5 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, webPageJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { OpportunityDetail } from "@/modules/opportunities/components/OpportunityDetail";
@@ -40,11 +40,20 @@ export default async function ScholarshipsDetailPage({ params }: Params) {
   return (
     <>
       <JsonLd
-        data={breadcrumbJsonLd([
-          { name: "Home", path: "/" },
-          { name: config.title, path: config.path },
-          { name: opportunity.title, path: `${config.path}/${opportunity.slug}` },
-        ])}
+        data={[
+          webPageJsonLd({
+            name: opportunity.title,
+            path: `${config.path}/${opportunity.slug}`,
+            ...(opportunity.summary ? { description: opportunity.summary } : {}),
+            // The date the page itself prints as "Last checked by PowerMySport".
+            ...(opportunity.lastVerifiedOn ? { dateModified: opportunity.lastVerifiedOn } : {}),
+          }),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: config.title, path: config.path },
+            { name: opportunity.title, path: `${config.path}/${opportunity.slug}` },
+          ]),
+        ]}
       />
       <OpportunityDetail opportunity={opportunity} />
     </>

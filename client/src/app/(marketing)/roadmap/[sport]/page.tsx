@@ -158,7 +158,24 @@ export default async function SportPathwayPage({
               <PathwayContributorCard contributor={guide.contributor} sportName={guide.sportName} />
             </div>
           )}
-          {guide.reviewedOn && <p className="text-ink-muted mt-4 text-sm">{guide.reviewedOn}</p>}
+          {guide.reviewedOn ? (
+            <p className="text-ink-muted mt-4 text-sm">{guide.reviewedOn}</p>
+          ) : (
+            // `reviewedOn` is an editor-written line and is empty for most
+            // sports; the dateModified in the Article JSON-LD above should not
+            // be a date a reader cannot see.
+            guide.updatedAt && (
+              <p className="text-ink-muted mt-4 text-sm">
+                Last updated{" "}
+                {new Date(guide.updatedAt).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                  timeZone: "Asia/Kolkata",
+                })}
+              </p>
+            )
+          )}
         </div>
       </section>
 

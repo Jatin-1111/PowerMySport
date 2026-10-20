@@ -1,5 +1,5 @@
 import { JsonLd } from "@/components/seo/JsonLd";
-import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, clampText, sportsEventJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -29,6 +29,7 @@ import { FactSheetPanel } from "@/modules/tournaments/components/FactSheetPanel"
 import { FactSheetSections } from "@/modules/tournaments/components/FactSheetSections";
 import { EntryDetails, hasEntryDetails } from "@/modules/tournaments/components/EntryDetails";
 import { PageHeader } from "@/modules/shared/ui/PageHeader";
+import { editionSnippet } from "@/modules/tournaments/utils/editionFormat";
 import { AddToCalendarButton } from "../../federations/[slug]/AddToCalendarButton";
 import { SPORT_LABEL } from "../../federations/[slug]/federationShared";
 
@@ -78,24 +79,14 @@ export async function generateMetadata({
   // at that point "starts 11 Aug" is the wrong promise — it reads as an event
   // you can still enter. Say it is over and name what comes next, because the
   // snippet is where most of these searchers decide, not the page.
-  const description = (
-    finished
-      ? [
-          `${title} took place on ${formatShortDate(edition.startDate)}`,
-          where ? `at ${where}.` : null,
-          nextInSeries
-            ? `The next edition is ${formatShortDate(nextInSeries.startDate)}.`
-            : `See upcoming ${edition.sportSlug} tournaments${edition.city ? ` in ${edition.city}` : ""}.`,
-        ]
-      : [
-          `${title} starts ${formatShortDate(edition.startDate)}`,
-          where ? `at ${where}` : null,
-          edition.ageGroups?.length ? `for ${edition.ageGroups.join(", ")}` : null,
-        ]
-  )
-    .filter(Boolean)
-    .join(" ")
-    .slice(0, 155);
+  // Word-boundary clamp: a hard slice used to cut the snippet mid-word.
+  const description = clampText(
+    editionSnippet(
+      { edition, title, where, finished, nextStartDate: nextInSeries?.startDate },
+      formatShortDate
+    ),
+    155
+  );
 
   // Many edition names are internal federation shorthand ("CS7 Delhi") with no
   // sport or "tournament" in sight — a page can rank well for that name and

@@ -222,6 +222,29 @@ export const websiteJsonLd: JsonLdObject = {
   },
 };
 
+/**
+ * A plain WebPage node, for pages whose useful structured-data signal is *when
+ * the facts on it were last confirmed* (scholarships, admissions). Publisher is
+ * the homepage's Organization by @id, the same pattern as `aboutPageJsonLd`.
+ */
+export function webPageJsonLd(input: {
+  name: string;
+  path: string;
+  description?: string;
+  dateModified?: string;
+}): JsonLdObject {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: input.name,
+    url: absoluteUrl(input.path),
+    ...(input.description ? { description: input.description } : {}),
+    ...(input.dateModified ? { dateModified: input.dateModified } : {}),
+    inLanguage: "en-IN",
+    publisher: { "@id": ORGANIZATION_ID },
+  };
+}
+
 /** FAQPage, for a page that genuinely renders every question and answer. */
 export function faqJsonLd(items: { question: string; answer: string }[]): JsonLdObject {
   return {
