@@ -122,7 +122,7 @@ export function HeroQuestionTags({ ctaHref }: HeroVariantProps) {
  */
 export function HeroEdgeChooser() {
   return (
-    <section className="bg-paper lg:grid lg:min-h-[38rem] lg:grid-cols-2">
+    <section className="bg-paper flex flex-col lg:grid lg:min-h-[38rem] lg:grid-cols-2">
       <div className="px-4 pb-10 pt-12 sm:px-6 sm:pb-14 sm:pt-16 lg:flex lg:items-center lg:justify-end lg:py-20 lg:pl-8 lg:pr-16">
         <div className="mx-auto max-w-[34rem] lg:mx-0">
           <Headline />
@@ -136,7 +136,7 @@ export function HeroEdgeChooser() {
         </div>
       </div>
 
-      <div className="bg-paper-deep relative order-first aspect-[4/5] sm:aspect-[3/2] lg:order-none lg:aspect-auto">
+      <div className="bg-paper-deep relative order-first aspect-[16/9] sm:aspect-[3/2] lg:order-none lg:aspect-auto">
         <Image
           src="/images/hero-parent-child-portrait.jpg"
           alt={ALT}

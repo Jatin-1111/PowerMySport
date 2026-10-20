@@ -50,7 +50,7 @@ export function HeroSerifStatement({ ctaHref }: HeroVariantProps) {
 /** F: text on the left, the photograph runs off the right edge of the screen at full height, square cornered. */
 export function HeroEdgePhoto({ ctaHref }: HeroVariantProps) {
   return (
-    <section className="bg-paper lg:grid lg:min-h-[36rem] lg:grid-cols-2">
+    <section className="bg-paper flex flex-col lg:grid lg:min-h-[36rem] lg:grid-cols-2">
       <div className="px-4 pb-12 pt-12 sm:px-6 sm:pb-16 sm:pt-16 lg:flex lg:items-center lg:justify-end lg:py-20 lg:pl-8 lg:pr-16">
         <div className="mx-auto max-w-[34rem] lg:mx-0">
           <Headline />
@@ -64,7 +64,7 @@ export function HeroEdgePhoto({ ctaHref }: HeroVariantProps) {
         </div>
       </div>
 
-      <div className="bg-paper-deep relative order-first aspect-[4/5] sm:aspect-[3/2] lg:order-none lg:aspect-auto">
+      <div className="bg-paper-deep relative order-first aspect-[16/9] sm:aspect-[3/2] lg:order-none lg:aspect-auto">
         <Image
           src="/images/hero-parent-child-portrait.jpg"
           alt={ALT}
