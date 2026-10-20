@@ -132,7 +132,7 @@ export default function HomeClient({
       <Hero
         title="Helping Parents Make Confident Sports Decisions"
         titleHighlight="Sports Decisions"
-        description="Choosing a sport, a tournament or the next stage? Tell us about your child and we'll help you work out what to do next."
+        description="PowerMySport is a guide for parents of young athletes in India: stage-by-stage sport pathways, tournament dates, federation rankings, scholarships and sessions with sports experts. Free to explore."
         ctaNote="A PowerMySport team member replies within 24 hours."
         ctaPrompt={heroCtaPrompt}
         primaryCTA={heroPrimaryCTA}
