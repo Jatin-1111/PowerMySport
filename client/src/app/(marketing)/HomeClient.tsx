@@ -4,7 +4,7 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { ExploreGrid } from "@/modules/marketing/components/marketing/ExploreGrid";
 import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { HeroAsk } from "@/modules/marketing/components/marketing/HeroAsk";
-import { JourneySteps } from "@/modules/marketing/components/marketing/JourneySteps";
+import { HowItWorks } from "@/modules/marketing/components/marketing/HowItWorks";
 import { MyChildCard } from "@/modules/marketing/components/marketing/MyChildCard";
 import { ParentQuestions } from "@/modules/marketing/components/marketing/ParentQuestions";
 import { HomeClosing } from "@/modules/marketing/components/marketing/HomeClosing";
@@ -145,7 +145,7 @@ export default function HomeClient({
       <ParentQuestions />
 
       {/* ── From questions to action ── */}
-      <JourneySteps />
+      <HowItWorks />
 
       {/* ── My Child: what PMS keeps about a child, shown with an invented, labelled example ── */}
       <MyChildCard />
