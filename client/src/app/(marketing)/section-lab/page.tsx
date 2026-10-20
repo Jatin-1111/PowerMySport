@@ -1,3 +1,8 @@
+import {
+  MyChildBoard,
+  MyChildComposite,
+  MyChildMemory,
+} from "@/modules/marketing/components/marketing/MyChildCombined";
 import { MyChildTabs } from "@/modules/marketing/components/marketing/MyChildTabs";
 import {
   MyChildCard,
@@ -35,6 +40,15 @@ export default function SectionLabPage() {
 
       <Label>D. Where each fact came from</Label>
       <MyChildSources />
+
+      <Label>E. Dark memory panel (Claude) with ruled entries (Linear)</Label>
+      <MyChildMemory />
+
+      <Label>F. A board of notes (Pinterest masonry, Figma off-axis notes)</Label>
+      <MyChildBoard />
+
+      <Label>G. Three product panels crossing the band edge (Stripe, Notion)</Label>
+      <MyChildComposite />
     </main>
   );
 }

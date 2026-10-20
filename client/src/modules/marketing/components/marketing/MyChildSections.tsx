@@ -49,7 +49,7 @@ function SectionCopy({ children }: { children?: React.ReactNode }) {
   );
 }
 
-function ControlAndLink() {
+export function ControlAndLink() {
   return (
     <div className="mt-8 flex flex-col items-start gap-4">
       <p className="text-ink-muted max-w-[44ch] text-sm leading-relaxed">{MY_CHILD_CONTROL_LINE}</p>
@@ -69,7 +69,7 @@ function ControlAndLink() {
 }
 
 /** Initial in a small square: a person, without a stock photo of a child. */
-function Initial() {
+export function Initial() {
   return (
     <span
       aria-hidden
