@@ -403,6 +403,76 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
   } catch (error) {
     log.error("Failed to remove season plan for deleted dependent:", error);
   }
+
+  // Everything else that names this child. Each is tried on its own so one
+  // failure leaves the rest cleaned: the profile is already gone, so the caller
+  // should not be told the deletion failed.
+  const cleanups: Array<[string, () => Promise<unknown>]> = [
+    [
+      "pathway profile",
+      async () =>
+        (await import("../../models/UserPathwayProfile")).UserPathwayProfile.deleteMany({
+          userId,
+          dependentId,
+        }),
+    ],
+    [
+      // A check-in has a queued email behind it; removing only the check-in
+      // would leave an email asking how a deleted child's sport is going.
+      "plan check-ins",
+      async () => {
+        const { PlanCheckIn } = await import("../../models/PlanCheckIn");
+        const { ScheduledNotification } =
+          await import("../../../client/models/ScheduledNotification");
+        const checkIns = await PlanCheckIn.find({ userId, dependentId }).select("_id").lean();
+        const ids = checkIns.map((checkIn) => checkIn._id.toString());
+        if (ids.length > 0) {
+          await ScheduledNotification.deleteMany({
+            userId,
+            type: "PLAN_CHECKIN",
+            status: "PENDING",
+            "data.checkInId": { $in: ids },
+          });
+        }
+        return PlanCheckIn.deleteMany({ userId, dependentId });
+      },
+    ],
+    [
+      // The stored questionnaire carries the child's age, gender and the
+      // parent's own words; the follow-up chat on it goes with it.
+      "guidance submissions",
+      async () => {
+        const { GuidanceSubmission } = await import("../../../client/models/GuidanceSubmission");
+        const { GuidanceChatSession } = await import("../../../client/models/GuidanceChatSession");
+        const submissions = await GuidanceSubmission.find({
+          userId,
+          "request.dependent_id": dependentId,
+        })
+          .select("_id")
+          .lean();
+        const ids = submissions.map((submission) => submission._id);
+        if (ids.length > 0) {
+          await GuidanceChatSession.deleteMany({ userId, submissionId: { $in: ids } });
+        }
+        return GuidanceSubmission.deleteMany({ userId, "request.dependent_id": dependentId });
+      },
+    ],
+    [
+      "screening requests",
+      async () =>
+        (await import("../../../client/models/ScreeningRequest")).ScreeningRequest.deleteMany({
+          dependentId,
+        }),
+    ],
+  ];
+
+  for (const [label, run] of cleanups) {
+    try {
+      await run();
+    } catch (error) {
+      log.error(`Failed to remove ${label} for deleted dependent:`, error);
+    }
+  }
 };
 
 export const getPlayersByUserId = async (userId: string): Promise<any[]> => {

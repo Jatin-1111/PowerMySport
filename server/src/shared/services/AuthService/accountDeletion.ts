@@ -157,6 +157,23 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
           userId,
         }),
     ],
+    // The site assistant's chats can hold a child's age, sport and goals, and
+    // were the one chat store missing from this list.
+    [
+      "AssistantChatSession",
+      async () =>
+        (
+          await import("../../../client/models/AssistantChatSession")
+        ).AssistantChatSession.deleteMany({ userId }),
+    ],
+    // A request names the child and carries the parent's phone number.
+    [
+      "ScreeningRequest",
+      async () =>
+        (await import("../../../client/models/ScreeningRequest")).ScreeningRequest.deleteMany({
+          parentId: userId,
+        }),
+    ],
     [
       "PlanCheckIn",
       async () => (await import("../../models/PlanCheckIn")).PlanCheckIn.deleteMany({ userId }),

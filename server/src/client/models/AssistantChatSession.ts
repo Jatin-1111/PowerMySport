@@ -37,6 +37,10 @@ const assistantChatSessionSchema = new Schema<AssistantChatSessionDocument>(
 // the assistant is opened, with history to switch back to older ones).
 assistantChatSessionSchema.index({ userId: 1 });
 assistantChatSessionSchema.index({ userId: 1, updatedAt: -1 });
+// Retention: chats expire through a TTL index on `updatedAt` created by
+// migration 55, deliberately NOT declared here. An index on the model is created
+// by any local run with autoIndex on, in whatever database it points at, which
+// here is production. See the migration for the period and why.
 
 export const AssistantChatSession = mongoose.model<AssistantChatSessionDocument>(
   "AssistantChatSession",
