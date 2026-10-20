@@ -4,11 +4,13 @@ import {
   MyChildMemory,
 } from "@/modules/marketing/components/marketing/MyChildCombined";
 import {
-  MyChildBoardRise,
   MyChildDriftPanels,
   MyChildFillTimeline,
-  MyChildScrollStory,
 } from "@/modules/marketing/components/marketing/MyChildMotion";
+import {
+  MyChildBoardRise,
+  MyChildScrollStory,
+} from "@/modules/marketing/components/marketing/MyChildStory";
 import { MyChildTabs } from "@/modules/marketing/components/marketing/MyChildTabs";
 import {
   MyChildCard,
@@ -56,16 +58,27 @@ export default function SectionLabPage() {
       <Label>G. Three product panels crossing the band edge (Stripe, Notion)</Label>
       <MyChildComposite />
 
-      <Label>H. Moves on scroll: the timeline rail fills as it is read</Label>
+      <Label>
+        H. Moves on scroll: the rail fills, a marker leads it, the counter ticks, a ring marks the
+        open action
+      </Label>
       <MyChildFillTimeline />
 
-      <Label>I. Moves on scroll: the three panels drift at different speeds</Label>
+      <Label>
+        I. Moves on scroll: panels land with a tilt, then drift at their own pace; the shadow
+        arrives last
+      </Label>
       <MyChildDriftPanels />
 
-      <Label>J. Moves on scroll: a card stays while each part is read</Label>
+      <Label>
+        J. Moves on scroll: the card stays, the highlight slides, bars fill, each part rises into
+        focus
+      </Label>
       <MyChildScrollStory />
 
-      <Label>K. Moves on scroll: notes settle into place one after another</Label>
+      <Label>
+        K. Moves on scroll: notes land with a tilt, then drift; the open-actions rule draws across
+      </Label>
       <MyChildBoardRise />
     </main>
   );
