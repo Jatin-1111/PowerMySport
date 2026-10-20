@@ -36,7 +36,36 @@ async function mergedEditionRedirects() {
   }
 }
 
+/**
+ * Hosts that must never be indexed: the UAT deployment.
+ *
+ * UAT is a public URL running the same build as production, so it answers
+ * "index, follow", its robots.txt allows everything, and its robots.txt and
+ * sitemaps name the production host. Canonicals point at production, which
+ * limits the harm, but nothing told a crawler to leave the host alone.
+ *
+ * Keyed on the request host with an explicit allow-list of hosts to noindex,
+ * never "everything that is not production": a mistake in this list can leave
+ * UAT indexable, but it cannot noindex production, which is the failure that
+ * costs. `NOINDEX_HOSTS` (comma separated) adds hosts such as a preview domain
+ * without a code change.
+ */
+const NOINDEX_HOSTS = [
+  "client-uat.powermysport.com",
+  ...(process.env.NOINDEX_HOSTS ?? "")
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean),
+];
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return NOINDEX_HOSTS.map((host) => ({
+      source: "/:path*",
+      has: [{ type: "host" as const, value: host }],
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    }));
+  },
   async redirects() {
     return [
       ...(await mergedEditionRedirects()),
