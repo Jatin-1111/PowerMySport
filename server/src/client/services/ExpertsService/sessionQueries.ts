@@ -2,6 +2,7 @@ import { Expert } from "../../models/ExpertProfile";
 import { Player } from "../../models/Player";
 import { ExpertSession } from "../../models/ExpertBooking";
 import {
+  log,
   toObjectId,
   serializeExpert,
   withFreshPhoto,
@@ -37,6 +38,47 @@ export const getExpertSessionForUser = async (params: {
   });
 };
 
+/**
+ * How long after a session ends the expert can still open the child's full profile.
+ * Long enough to write the session notes, short enough that a stale booking does
+ * not leave a child's date of birth and medical conditions readable for good.
+ */
+export const CHILD_PROFILE_ACCESS_DAYS_AFTER_SESSION = 14;
+
+/**
+ * A child's full profile (date of birth, medical conditions, height, weight) goes
+ * to the expert only for a session that was paid for and was not cancelled or
+ * declined, and only until a short time after it ends. The list view already hid
+ * unpaid holds; this closes the same gap on the detail view.
+ */
+export const assertExpertMayReadChildProfile = (
+  session: {
+    paymentStatus?: string;
+    status?: string;
+    expertAcceptance?: string;
+    scheduledAt?: Date | string | null;
+    durationMinutes?: number;
+  },
+  now: Date = new Date()
+): void => {
+  if (session.paymentStatus !== "COMPLETED") {
+    throw new Error("The child's profile is available once the session is paid for");
+  }
+  if (session.status === "CANCELLED" || session.expertAcceptance === "DECLINED") {
+    throw new Error("The child's profile is not available for a cancelled or declined session");
+  }
+  if (!session.scheduledAt) {
+    throw new Error("The child's profile is available once the session has a scheduled time");
+  }
+  const endsAt = new Date(session.scheduledAt).getTime() + (session.durationMinutes || 60) * 60_000;
+  const closesAt = endsAt + CHILD_PROFILE_ACCESS_DAYS_AFTER_SESSION * 24 * 60 * 60_000;
+  if (now.getTime() > closesAt) {
+    throw new Error(
+      `The child's profile is only available for ${CHILD_PROFILE_ACCESS_DAYS_AFTER_SESSION} days after the session`
+    );
+  }
+};
+
 /** Full child profile + roadmap narrative for the expert's booking-detail page. Expert-only. */
 export const getExpertSessionPlayerDetail = async (params: {
   sessionId: string;
@@ -54,6 +96,7 @@ export const getExpertSessionPlayerDetail = async (params: {
     throw new Error("You are not authorized to view this session");
   }
   assertExpertOperational(expert);
+  assertExpertMayReadChildProfile(session);
 
   if (!session.playerId) {
     throw new Error("No player profile is linked to this session");
@@ -61,6 +104,9 @@ export const getExpertSessionPlayerDetail = async (params: {
 
   const player = await Player.findById(session.playerId).lean();
   if (!player) throw new Error("Player profile not found");
+
+  // An access record without any of the child's details, so a read can be traced later.
+  log.info(`Expert ${expert._id} opened the child profile for session ${session._id}`);
 
   return {
     player: serializeFullPlayerForExpert(player),
