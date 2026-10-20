@@ -55,6 +55,5 @@ export default function robots(): MetadataRoute.Robots {
     // its own sitemap; listing it here is the only way a crawler reading this
     // file finds those URLs.
     sitemap: [`${siteUrl}/sitemap.xml`, `${siteUrl}/community/sitemap.xml`],
-    host: siteUrl,
   };
 }

@@ -1,4 +1,5 @@
 import { isExcludedFromSearch } from "@/lib/expertIndexing";
+import { fetchRankingMeta } from "@/modules/rankings/services/api";
 import type { MetadataRoute } from "next";
 
 import { SITE_URL as siteUrl } from "@/lib/seo";
@@ -82,6 +83,21 @@ interface IdRecord {
 }
 
 /**
+ * The newest of some ISO dates, or undefined when there are none.
+ *
+ * A sitemap `lastmod` is only useful if it is true: Google learns to ignore the
+ * field on a site where every URL claims to have changed at build time, which
+ * is what this file used to say. So a URL with no real date gets no `lastmod`.
+ */
+function latestDate(values: Array<string | null | undefined>): Date | undefined {
+  const times = values
+    .filter((value): value is string => Boolean(value))
+    .map((value) => new Date(value).getTime())
+    .filter((time) => Number.isFinite(time));
+  return times.length ? new Date(Math.max(...times)) : undefined;
+}
+
+/**
  * The shop and expert list endpoints answer with different envelopes from the
  * pathways API (`{ ok, data }` vs `{ success, data }`) and nest their arrays,
  * so they get their own reader. Like `fetchSlugs` it never throws.
@@ -106,14 +122,18 @@ async function fetchIds(path: string, pick: (body: unknown) => IdRecord[]): Prom
 /** Published admissions or scholarships; an empty track is left out entirely. */
 const fetchOpportunitySlugs = (track: "admission" | "scholarship") =>
   fetchIds(`/opportunities?track=${track}`, (body) => {
-    const envelope = body as { success?: boolean; data?: { items?: Array<{ slug?: string }> } };
+    const envelope = body as {
+      success?: boolean;
+      data?: { items?: Array<{ slug?: string; lastVerifiedOn?: string }> };
+    };
     if (!envelope?.success || !Array.isArray(envelope.data?.items)) return [];
-    return envelope.data.items.map((item) => ({ id: item.slug }));
+    return envelope.data.items.map((item) => ({
+      id: item.slug,
+      ...(item.lastVerifiedOn ? { updatedAt: item.lastVerifiedOn } : {}),
+    }));
   });
 
 export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
-
   const [
     federations,
     editions,
@@ -123,6 +143,7 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     experts,
     admissions,
     scholarships,
+    rankingMetas,
   ] = await Promise.all([
     fetchSlugs("/federations"),
     fetchSlugs("/tournament-editions"),
@@ -147,6 +168,7 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
       : Promise.resolve([]),
     fetchOpportunitySlugs("admission"),
     fetchOpportunitySlugs("scholarship"),
+    Promise.all(RANKING_SPORTS.map((sport) => fetchRankingMeta(sport.slug))),
   ]);
 
   // Index and detail pages together, and only for a track with something
@@ -163,7 +185,7 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
       : [
           {
             url: `${siteUrl}${path}`,
-            lastModified: now,
+            lastModified: latestDate(rows.map((row) => row.updatedAt)),
             changeFrequency: "weekly" as const,
             priority: 0.75,
           },
@@ -171,14 +193,14 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
             .filter((row) => row.id)
             .map((row) => ({
               url: `${siteUrl}${path}/${row.id}`,
-              lastModified: now,
+              lastModified: latestDate([row.updatedAt]),
               changeFrequency: "monthly" as const,
               priority: 0.6,
             })),
         ]
   );
 
-  const lastMod = (record: SlugRecord) => (record.updatedAt ? new Date(record.updatedAt) : now);
+  const lastMod = (record: SlugRecord) => latestDate([record.updatedAt]);
 
   // ── Federation detail pages (/federations/[slug]) ──
   // Deep, long-tail content — eligibility rules and official calendars parents
@@ -227,16 +249,15 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     ? [
         {
           url: `${siteUrl}/shop`,
-          lastModified: now,
+          lastModified: latestDate(products.map((product) => product.updatedAt)),
           changeFrequency: "daily" as const,
           priority: 0.7,
         },
         ...products
-          .map((product) => product.id ?? product._id)
-          .filter((id): id is string => Boolean(id))
-          .map((id) => ({
-            url: `${siteUrl}/shop/products/${id}`,
-            lastModified: now,
+          .filter((product) => Boolean(product.id ?? product._id))
+          .map((product) => ({
+            url: `${siteUrl}/shop/products/${product.id ?? product._id}`,
+            lastModified: latestDate([product.updatedAt]),
             changeFrequency: "weekly" as const,
             priority: 0.5,
           })),
@@ -252,30 +273,40 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     .filter((id): id is string => Boolean(id) && !isExcludedFromSearch(id))
     .map((id) => ({
       url: `${siteUrl}/experts/${id}`,
-      lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.6,
     }));
 
-  const rankingEntries: MetadataRoute.Sitemap = RANKING_SPORTS.flatMap((sport) => [
-    {
-      url: `${siteUrl}${rankingSportHref(sport.slug)}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    },
-    ...sport.combos.map((combo) => ({
-      url: `${siteUrl}${comboHref(sport.slug, combo)}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    })),
-  ]);
+  // A ranking list changes when the federation publishes a new week, and each
+  // list carries that date ("as on"), so it is the honest lastmod. If the meta
+  // call failed there is no date, and the URL is listed without one.
+  const rankingEntries: MetadataRoute.Sitemap = RANKING_SPORTS.flatMap((sport, index) => {
+    const combos = rankingMetas[index]?.combos ?? [];
+    return [
+      {
+        url: `${siteUrl}${rankingSportHref(sport.slug)}`,
+        lastModified: latestDate(combos.map((c) => c.asOnDate)),
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      },
+      ...sport.combos.map((combo) => ({
+        url: `${siteUrl}${comboHref(sport.slug, combo)}`,
+        lastModified: latestDate([
+          combos.find((c) => c.category === combo.category && c.subcategory === combo.subcategory)
+            ?.asOnDate,
+        ]),
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      })),
+    ];
+  });
 
   return [
     {
       url: `${siteUrl}/rankings`,
-      lastModified: now,
+      lastModified: latestDate(
+        rankingMetas.flatMap((meta) => (meta?.combos ?? []).map((c) => c.asOnDate))
+      ),
       changeFrequency: "weekly",
       priority: 0.85,
     },
@@ -283,43 +314,38 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     // ── Core product pages (highest priority — live and valuable) ──
     {
       url: `${siteUrl}`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${siteUrl}/roadmap`,
-      lastModified: now,
+      lastModified: latestDate(pathways.map((pathway) => pathway.updatedAt)),
       changeFrequency: "daily",
       priority: 0.98,
     },
     {
       url: `${siteUrl}/federations`,
-      lastModified: now,
+      lastModified: latestDate(federations.map((f) => f.updatedAt)),
       changeFrequency: "weekly",
       priority: 0.85,
     },
     {
       url: `${siteUrl}/assessment`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.97,
     },
     {
       url: `${siteUrl}/assessment/discover`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.95,
     },
     {
       url: `${siteUrl}/sport-profile`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.95,
     },
     {
       url: `${siteUrl}/guidance`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.95,
     },
@@ -327,31 +353,26 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     // ── Marketing / informational ──
     {
       url: `${siteUrl}/how-it-works`,
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
       url: `${siteUrl}/about`,
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
       url: `${siteUrl}/faq`,
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
       url: `${siteUrl}/contact`,
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.6,
     },
     {
       url: `${siteUrl}/careers`,
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.5,
     },
@@ -362,7 +383,6 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     // (/register, /forgot-password, /reset-password) stay noindex and stay out.
     {
       url: `${siteUrl}/login`,
-      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.5,
     },
@@ -380,49 +400,41 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     // ── Legal ── (low priority, don't waste crawl budget) ──
     {
       url: `${siteUrl}/privacy`,
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${siteUrl}/terms`,
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${siteUrl}/partner-terms`,
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${siteUrl}/refund-policy`,
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${siteUrl}/cookies`,
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.2,
     },
     {
       url: `${siteUrl}/content-policy`,
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.2,
     },
     {
       url: `${siteUrl}/health-waiver`,
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.2,
     },
     {
       url: `${siteUrl}/parental-consent`,
-      lastModified: now,
       changeFrequency: "yearly",
       priority: 0.2,
     },
@@ -438,7 +450,7 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
       .filter((pathway) => (pathway.stages?.length ?? 0) > 0)
       .map((pathway) => ({
         url: `${siteUrl}/roadmap/${pathway.sportSlug}`,
-        lastModified: now,
+        lastModified: latestDate([pathway.updatedAt]),
         changeFrequency: "monthly" as const,
         priority: 0.8,
       })),
@@ -446,13 +458,12 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     ...opportunityEntries,
     {
       url: `${siteUrl}/planner`,
-      lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.6,
     },
     {
       url: `${siteUrl}/tournaments`,
-      lastModified: now,
+      lastModified: latestDate(editions.map((e) => e.updatedAt)),
       changeFrequency: "daily" as const,
       priority: 0.8,
     },
@@ -466,7 +477,6 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
       .filter((facet) => facet.total > 0 && SPORT_LABEL[facet.sportSlug])
       .map((facet) => ({
         url: `${siteUrl}/tournaments/sport/${facet.sportSlug}`,
-        lastModified: now,
         changeFrequency: "daily" as const,
         priority: 0.75,
       })),
