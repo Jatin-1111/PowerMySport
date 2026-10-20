@@ -1,4 +1,5 @@
 import { cn } from "@/utils/cn";
+import Link from "next/link";
 import React from "react";
 import { HOW_STEPS } from "../../data/howItWorksSteps";
 import { SECTION_HEADING, SectionKicker } from "./SectionKicker";
@@ -59,23 +60,46 @@ export function HowOneLine() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Header />
         <ol className="mt-12 lg:mt-20 lg:grid lg:grid-cols-5 lg:gap-8">
-          {HOW_STEPS.map((step, index) => (
-            <li
-              key={step.title}
-              className={cn(
-                "reveal-on-scroll relative pb-10 pl-8 last:pb-0 lg:pb-0 lg:pl-0 lg:pt-10",
-                // the line: down the left on a phone, along the top from lg
-                "before:bg-ink/25 before:absolute before:left-[5px] before:top-2 before:h-full before:w-px before:content-[''] last:before:hidden lg:before:left-0 lg:before:top-[5px] lg:before:h-px lg:before:w-[calc(100%+2rem)]",
-                "after:bg-ink after:absolute after:left-0 after:top-2 after:h-[11px] after:w-[11px] after:rounded-full after:content-[''] lg:after:top-0"
-              )}
-            >
-              <h3 className="text-ink mb-2 text-xl font-semibold leading-snug">
-                <span className="sr-only">Step {index + 1}: </span>
-                {step.title}
-              </h3>
-              <p className="text-ink-body max-w-[32ch] text-pretty leading-relaxed">{step.body}</p>
-            </li>
-          ))}
+          {HOW_STEPS.map((step, index) => {
+            const links = step.items.filter((item) => typeof item !== "string");
+            return (
+              <li
+                key={step.title}
+                className={cn(
+                  "reveal-on-scroll relative pb-10 pl-8 last:pb-0 lg:pb-0 lg:pl-0 lg:pt-10",
+                  // the line: down the left on a phone, along the top from lg, ending at the last dot
+                  "before:bg-ink/25 before:absolute before:left-[5px] before:top-2 before:h-full before:w-px before:content-[''] last:before:hidden lg:before:left-0 lg:before:top-[5px] lg:before:h-px lg:before:w-[calc(100%+2rem)]",
+                  "after:bg-ink after:absolute after:left-0 after:top-2 after:h-[11px] after:w-[11px] after:rounded-full after:content-[''] lg:after:top-0"
+                )}
+              >
+                <p className="text-ink-muted mb-1 text-sm font-medium tabular-nums">
+                  Step {index + 1}
+                </p>
+                <h3 className="font-editorial text-ink mb-3 text-balance text-2xl font-normal leading-tight">
+                  {step.title}
+                </h3>
+                <p className="text-ink-body max-w-[32ch] text-pretty leading-relaxed">
+                  {step.body}
+                </p>
+                {links.length > 0 && (
+                  <ul className="mt-4 space-y-1.5">
+                    {links.map((item) =>
+                      typeof item === "string" ? null : (
+                        <li key={item.label}>
+                          <Link
+                            href={item.href}
+                            className="text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink rounded text-base underline underline-offset-4 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2"
+                          >
+                            {item.label}
+                          </Link>
+                        </li>
+                      )
+                    )}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
         </ol>
       </div>
     </section>
