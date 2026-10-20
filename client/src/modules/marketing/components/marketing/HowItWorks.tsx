@@ -10,7 +10,7 @@ import { SECTION_HEADING, SectionKicker } from "./SectionKicker";
  */
 export function HowItWorks() {
   return (
-    <section className="bg-paper-deep py-16 sm:py-24 lg:py-28">
+    <section className="bg-paper py-16 sm:py-24 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="reveal-on-scroll max-w-3xl">
           <SectionKicker label="How it works" />
