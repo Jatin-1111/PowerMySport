@@ -58,7 +58,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const path = comboHref(sport.slug, combo);
   const acronym = sport.federation.acronym;
   return {
-    title: `${acronym} ${label} Ranking: Live List by State | PowerMySport`,
+    // The root layout appends " | PowerMySport"; repeating it here doubled it.
+    title: `${acronym} ${label} Ranking: Live List by State`,
     description:
       `The current ${sport.federation.name} ${label} ranking, searchable by ` +
       `player name and filterable by state, with each player's week-by-week history.`,

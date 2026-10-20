@@ -7,10 +7,17 @@ import type { ProblemId } from "@/modules/guidance/config/wizard/guidanceUtils";
 import { Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+const noop = () => {};
+
 export default function GuidancePage() {
   // useSearchParams needs a Suspense boundary; the whole flow lives inside it.
+  // On a statically prerendered page that boundary's fallback IS the server
+  // HTML, so a `null` fallback shipped /guidance with no H1 and no content to
+  // crawlers that do not run JavaScript. The picker is the page's real landing
+  // state, so render it as the fallback: its buttons are inert until hydration,
+  // when GuidanceRoot takes over (and swaps in the wizard for ?problem= links).
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<ProblemPicker onSelect={noop} />}>
       <GuidanceRoot />
     </Suspense>
   );

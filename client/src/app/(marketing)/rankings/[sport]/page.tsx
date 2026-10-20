@@ -31,7 +31,8 @@ export async function generateMetadata({
   if (!sport) return {};
   const { acronym, name } = sport.federation;
   return {
-    title: `${acronym} ${sport.name} Rankings: Search by State, Age Group & Player | PowerMySport`,
+    // The root layout appends " | PowerMySport"; repeating it here doubled it.
+    title: `${acronym} ${sport.name} Rankings: Search by State, Age Group & Player`,
     description: `Official ${name} rankings, made searchable. Filter every list by state, look up a player by name or registration number, and follow a rank week by week.`,
     alternates: { canonical: `/rankings/${sport.slug}` },
     openGraph: {
