@@ -6,6 +6,7 @@ export type ViolationKind =
   | "missingTool"
   | "forbiddenTool"
   | "missingToolArgs"
+  | "toolArgsLeak"
   | "missingInReply"
   | "forbiddenInReply"
   | "tooLong";
@@ -42,6 +43,20 @@ export function scoreCase(c: AssistantCase, run: CaseRun): Violation[] {
       violations.push({
         kind: "missingToolArgs",
         detail: `${check.tool} arguments had none of: ${check.anyOf.join(", ")}`,
+      });
+    }
+  }
+  for (const check of c.toolArgsNeverInclude ?? []) {
+    const text = run.calls
+      .filter((call) => call.name === check.tool)
+      .map((call) => JSON.stringify(call.args))
+      .join(" ")
+      .toLowerCase();
+    const leaked = check.anyOf.filter((needle) => text.includes(needle.toLowerCase()));
+    if (leaked.length > 0) {
+      violations.push({
+        kind: "toolArgsLeak",
+        detail: `${check.tool} was given: ${leaked.join(", ")}`,
       });
     }
   }
