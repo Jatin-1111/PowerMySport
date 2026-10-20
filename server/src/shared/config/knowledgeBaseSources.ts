@@ -214,28 +214,30 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "safety-waiver-what-is-it",
     title: "What is the Health & Safety Waiver?",
     content:
-      "A legal document acknowledging the risks of sports activities (sprains, fractures, head trauma, etc.) and accepting responsibility for health and safety. Accepting it releases PowerMySport, coaches, and venues from liability for injuries during normal activity.",
+      "A legal document acknowledging the risks of sports activities (sprains, fractures, head trauma, etc.) and accepting responsibility for health and safety. By booking through PowerMySport a parent or player agrees to it, which releases PowerMySport, coaches, and venues from liability for injuries during normal activity. The full text is on the Health & Safety Waiver page.",
   },
   {
     sourceType: "faq",
     sourceId: "safety-waiver-when-required",
-    title: "When do I need to accept the health waiver?",
+    title: "When does the health waiver apply?",
     content:
-      "During the first booking as a player, on behalf of any dependent minor at their first booking, and when renewing an expired waiver. Booking is not possible without a current waiver.",
+      "Whenever a session, class, or facility is booked through PowerMySport. For a child, the parent or legal guardian agrees on the child's behalf. There is no separate sign-off screen yet, so parents should read the full waiver before their first booking.",
   },
   {
     sourceType: "faq",
     sourceId: "safety-waiver-validity",
-    title: "How long is my waiver valid?",
+    title: "Does the waiver expire?",
     content:
-      "Waivers are valid for 12 months from acceptance. An email reminder goes out 30 days before expiry. The waiver must be renewed online before it expires to keep booking — renewal takes about a minute.",
+      "Waivers are not expired and no renewal reminders are sent today. The version published on the Health & Safety Waiver page is the one that applies. Do not tell parents they have a waiver on file, a renewal date, or a Renew Waiver button.",
   },
   {
+    // Kept (not deleted) so a re-run of embed:knowledge overwrites the old
+    // "Renew Waiver" text in the database: the script upserts and never prunes.
     sourceType: "faq",
     sourceId: "safety-waiver-expired",
-    title: "What if my waiver expires?",
+    title: "Where do I renew my waiver?",
     content:
-      "New sessions cannot be booked until the waiver is renewed. Go to account settings, find the expired waiver, and click 'Renew Waiver' to accept the current version immediately.",
+      "There is no waiver renewal step, no Renew Waiver button in account settings, and no expiry date today. The current waiver is published on the Health & Safety Waiver page.",
   },
 
   // ── Parental Consent & Minors ─────────────────────────────────────────────
@@ -251,14 +253,14 @@ export const KNOWLEDGE_BASE_SOURCES: KnowledgeSourceEntry[] = [
     sourceId: "minors-add-dependent",
     title: "How do I add a minor as a dependent?",
     content:
-      "After creating and verifying a parent account, go to Family & Dependents and click 'Add Dependent.' Provide the child's full name, date of birth, relationship, and medical/emergency contact information. Unlimited dependents can be added.",
+      "After creating a parent account, open the dashboard and choose Add child. To start, the child's name and date of birth are needed. Sports and any medical conditions can be added later from the child's profile.",
   },
   {
     sourceType: "faq",
     sourceId: "minors-parental-consent-process",
     title: "What's the parental consent process?",
     content:
-      "Booking sports activities for a child requires accepting the Parental Consent agreement, accepting the Health & Safety Waiver on the child's behalf, declaring any medical conditions or health concerns, and authorizing emergency contact. All consent requirements must be completed before booking.",
+      "A parent or legal guardian who books for a child agrees to the Parental Consent policy and the Health & Safety Waiver on the child's behalf. Both are published in full. There is no separate consent screen at booking yet, and the booking is not blocked by one. Parents should tell the coach or venue about any medical conditions and keep them in the child's profile.",
   },
   {
     sourceType: "faq",

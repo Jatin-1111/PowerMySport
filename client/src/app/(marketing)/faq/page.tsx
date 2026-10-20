@@ -179,22 +179,17 @@ const faqs = [
       {
         question: "What is the Health & Safety Waiver?",
         answer:
-          "The waiver is a legal document where you acknowledge the risks of sports activities (sprains, fractures, head trauma, etc.) and accept responsibility for your health and safety. By accepting, you release PowerMySport, coaches, and venues from liability for injuries during normal activity.",
+          "The waiver is a legal document where you acknowledge the risks of sports activities (sprains, fractures, head trauma, etc.) and accept responsibility for your health and safety. By booking through PowerMySport you agree to it, and you release PowerMySport, coaches, and venues from liability for injuries during normal activity. The full text is on the Health & Safety Waiver page.",
       },
       {
-        question: "When do I need to accept the waiver?",
+        question: "When does the waiver apply?",
         answer:
-          "You must accept the waiver:\n• During your first booking as a player\n• On behalf of any dependent minor at their first booking\n• When renewing an expired waiver (see below)\nYou cannot book without a current waiver.",
+          "It applies whenever you book a session, class, or facility through PowerMySport. When you book for your child, you agree to it as their parent or legal guardian, on their behalf. There is no separate sign-off screen yet, so please read the full waiver before your first booking.",
       },
       {
-        question: "How long is my waiver valid?",
+        question: "Does the waiver expire?",
         answer:
-          "Waivers are valid for 12 months from the acceptance date. We'll send you an email reminder 30 days before expiry. You must renew your waiver online before it expires to continue booking. Renewing takes 1 minute - simply re-accept the updated waiver.",
-      },
-      {
-        question: "What if my waiver expires?",
-        answer:
-          "If your waiver expires, you cannot book new sessions until you renew it. Go to your account settings, find the expired waiver, and click 'Renew Waiver.' You'll see the current waiver version and can accept to renew immediately.",
+          "We do not expire waivers or send renewal reminders today. The version published on the Health & Safety Waiver page is the one that applies.",
       },
     ],
   },
@@ -209,12 +204,12 @@ const faqs = [
       {
         question: "How do I add a minor as a dependent?",
         answer:
-          "After creating your parent account and verifying your identity, go to Family & Dependents section. Click 'Add Dependent' and provide: the child's full name, date of birth, relationship, and medical/emergency contact information. You can add unlimited dependents.",
+          "After creating your parent account, open your dashboard and choose Add child. To start, we ask for your child's name and date of birth. You can add more later, such as their sports and any medical conditions, from your child's profile.",
       },
       {
         question: "What's the parental consent process?",
         answer:
-          "When booking sports activities for your child, you must:\n• Accept our Parental Consent agreement\n• Accept the Health & Safety Waiver on behalf of your child\n• Declare any medical conditions or health concerns\n• Authorize us to contact you in emergencies\nYou cannot book without completing all consent requirements.",
+          "When you book sports activities for your child, you do so as their parent or legal guardian and agree to our Parental Consent policy and the Health & Safety Waiver on their behalf. Both are published in full. We do not have a separate consent screen at booking yet. Please tell the coach or venue about any medical conditions, and keep them in your child's profile.",
       },
       {
         question: "What are the supervision requirements for minors?",
