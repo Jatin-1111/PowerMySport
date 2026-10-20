@@ -7,6 +7,7 @@ import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitS
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
 import { withdrawConsentForPhone } from "./whatsappConsent";
 import { OPT_OUT_REPLY, isOptOutMessage } from "./whatsappPilot";
+import { clipReply, formatForWhatsApp } from "./whatsappFormat";
 import type { InboundWhatsAppMessage } from "./whatsappService";
 import { log as __rootLog } from "../../utils/logger";
 
@@ -19,7 +20,7 @@ const MAX_REPLY_CHARS = 3800;
 const STORED_MESSAGES = 20;
 const HISTORY_MESSAGES = 12;
 
-const CHANNEL_ADDENDUM = `
+export const CHANNEL_ADDENDUM = `
 
 ---
 
@@ -115,7 +116,8 @@ export async function answerWhatsAppMessage(
       .map((m) => ({ role: m.role, content: m.content }));
 
     const chunks = await retrieveRelevantChunks(userMessage);
-    const systemPrompt = buildAssistantChatSystemPrompt(chunks) + CHANNEL_ADDENDUM;
+    const systemPrompt =
+      buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) + CHANNEL_ADDENDUM;
 
     let reply = "";
     for await (const piece of generate(systemPrompt, history, userMessage)) {
@@ -123,7 +125,9 @@ export async function answerWhatsAppMessage(
     }
     reply = reply.trim();
     if (!reply) throw new Error("empty reply from the model");
-    if (reply.length > MAX_REPLY_CHARS) reply = `${reply.slice(0, MAX_REPLY_CHARS - 1).trimEnd()}…`;
+    // What is stored and sent is the formatted text, so the history the model sees next time
+    // matches what the parent actually read.
+    reply = clipReply(formatForWhatsApp(reply), MAX_REPLY_CHARS);
 
     const now = new Date();
     // One atomic update, so two messages arriving together cannot overwrite

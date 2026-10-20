@@ -1,3 +1,4 @@
+import type { ChatToolDefinition } from "./chatToolsService";
 import type { RetrievedChunk } from "./knowledgeRetrievalService";
 import { SITE_MAP_REFERENCE } from "./siteMapReference";
 
@@ -6,7 +7,8 @@ import { SITE_MAP_REFERENCE } from "./siteMapReference";
 // to one sport's pathway), this assistant has no prior context — it's the
 // site-wide entry point reachable from the floating bubble on every page.
 
-const PERSONA_GUARDRAIL = `
+const personaGuardrail = (TOOLS_SECTION: string): string =>
+  `
 You are the PowerMySport Assistant — a warm, knowledgeable guide for parents exploring youth sports on this platform. You have no prior context about this specific parent or child yet.
 
 ## In scope (answer these):
@@ -20,8 +22,7 @@ You are the PowerMySport Assistant — a warm, knowledgeable guide for parents e
 - General equipment, cost, and safety questions at a high level (not personalized — for a plan tailored to their child, point them to /guidance once they know the sport, or /assessment/discover first if they don't)
 - Platform navigation — always answer "where do I..." questions with tell + link using the site-map below
 
-## Tools available:
-You can call search_experts, get_pathway_level, and get_upcoming_tournaments to pull real, current data instead of guessing. Use them whenever a parent asks something they'd answer — e.g. "find me a badminton coach in Bangalore," "what does level 3 of the football pathway involve," "when's the next state tournament." Summarize the results conversationally; never dump raw JSON. search_experts results are 1:1 expert consultations, not regular coaching — point to /experts for more, never /booking. A parent who asks for a coach is not asking for a consultation: tell them plainly that regular coaching is coming soon, then offer an expert consultation as the closest option for now. These tools only look things up — you still cannot book, pay for, or confirm anything on the parent's behalf.
+${TOOLS_SECTION}
 
 ## Booking marketplace status:
 The venue/coach/academy booking marketplace is currently down (see the site-map's Booking hub section for exact scope). Do not recommend, mention, suggest, or link to it under any circumstance, even if retrieved knowledge below references booking a venue, coach, or academy — treat that feature as if it doesn't exist right now. This does NOT apply to /experts (1:1 expert consultations), which is unaffected and still live.
@@ -40,6 +41,28 @@ When declining, always stay in character: "I'm the PowerMySport assistant, not a
 - Warm, encouraging, and concise — parents are busy and may be new to the platform
 - If a question needs a specific child's details to answer well, say so and point to /assessment/discover (sport not yet chosen) or /guidance (sport already known) rather than guessing
 `.trim();
+
+// ─── Tools section, built from the registry ───────────────────────────────────
+// Written by hand, this section named a tool that did not exist, and every tool added
+// would have drifted the same way. It is built from the registry the model is actually
+// given, so what the prompt says the assistant can do is what it can do.
+
+export function buildToolsSection(tools: readonly ChatToolDefinition[]): string {
+  if (tools.length === 0) {
+    return `## Tools available:
+You have no tools in this conversation. Answer from the knowledge and site map below, and say plainly when you cannot look something up.`;
+  }
+  const list = tools.map((tool) => `- ${tool.name}: ${tool.summary}.`).join("\n");
+  const examples = tools.map((tool) => `"${tool.example}"`).join(", ");
+  const notes = tools
+    .filter((tool) => tool.promptNote)
+    .map((tool) => `${tool.name}: ${tool.promptNote}`)
+    .join(" ");
+  return `## Tools available:
+You can call these tools to pull real, current data instead of guessing:
+${list}
+Use them whenever a parent asks something they would answer, for example ${examples}. Summarize the results conversationally; never dump raw JSON.${notes ? ` ${notes}` : ""} These tools only look things up: you still cannot book, pay for, or confirm anything on the parent's behalf.`;
+}
 
 // ─── Retrieved knowledge block ────────────────────────────────────────────────
 
@@ -60,8 +83,15 @@ When the parent's question matches one of these, answer directly from this retri
 
 // ─── System prompt builder ────────────────────────────────────────────────────
 
-export function buildAssistantChatSystemPrompt(retrievedChunks: RetrievedChunk[] = []): string {
-  return `${PERSONA_GUARDRAIL}
+/**
+ * The tools are a required argument on purpose: the prompt describes exactly the tools the
+ * caller is about to give the model, so the two cannot disagree.
+ */
+export function buildAssistantChatSystemPrompt(
+  tools: readonly ChatToolDefinition[],
+  retrievedChunks: RetrievedChunk[] = []
+): string {
+  return `${personaGuardrail(buildToolsSection(tools))}
 
 ---
 

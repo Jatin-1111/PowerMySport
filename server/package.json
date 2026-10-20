@@ -75,6 +75,8 @@
     "migrate:notifications-permissions": "ts-node src/migrations/49_backfill_notifications_permissions.ts",
     "migrate:review-indexes": "ts-node src/migrations/50_fix_review_unique_indexes.ts",
     "migrate:analytics-retention": "ts-node src/migrations/51_analytics_event_retention_and_indexes.ts",
+    "eval:assistant": "npm run build && node dist/evals/assistant/run.js",
+    "eval:assistant:model": "npm run build && node dist/evals/assistant/run.js --model --label model",
     "test:season-plan": "npm run build && node --test --test-force-exit dist/tests/seasonPlan.integration.test.js",
     "prune:rankings": "ts-node src/scripts/pruneRankingHistory.ts"
   },

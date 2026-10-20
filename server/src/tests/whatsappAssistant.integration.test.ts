@@ -56,6 +56,29 @@ const stub = (reply: string, seen?: Seen[]) =>
   };
 
 describe("replyToWhatsAppMessage", () => {
+  it("tells the model about exactly the tools it is given, and the channel it is on", async () => {
+    const { ASSISTANT_CHAT_TOOLS } = require("../shared/services/chatToolsService");
+    const seen: Seen[] = [];
+    await replyToWhatsAppMessage(msg("What can you do?"), stub("I can help.", seen));
+
+    const prompt = seen[0]!.systemPrompt;
+    for (const tool of ASSISTANT_CHAT_TOOLS as Array<{ name: string; summary: string }>) {
+      assert.ok(prompt.includes(`- ${tool.name}: ${tool.summary}.`), `prompt lists ${tool.name}`);
+    }
+    assert.match(prompt, /Channel: WhatsApp/);
+  });
+
+  it("sends WhatsApp text, not markdown, and stores what the parent actually read", async () => {
+    const reply = await replyToWhatsAppMessage(
+      msg("What can you do?"),
+      stub("**I can help with:**\n*   Choosing a sport\n*   Finding tournaments")
+    );
+    assert.equal(reply, "*I can help with:*\n• Choosing a sport\n• Finding tournaments");
+
+    const doc = await WhatsAppConversation.findOne({}).lean();
+    assert.equal(doc.messages[1].content, reply);
+  });
+
   it("returns the model's reply and stores the turn under a hash, not the number", async () => {
     const reply = await replyToWhatsAppMessage(
       msg("Which sport suits my son?"),

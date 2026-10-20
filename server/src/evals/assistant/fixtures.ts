@@ -1,0 +1,110 @@
+/**
+ * Stand-ins for what the assistant's tools return, so a run never reads a database.
+ *
+ * Everything here is invented: the experts are not real people and the dates are not real
+ * events. What matters to the evaluation is the shape the model receives and how it uses
+ * it, not whether the facts are true. Keeping them fixed also means a changed answer is a
+ * change in the assistant, not in the data.
+ */
+
+const EXPERTS = [
+  {
+    name: "Asha Verma",
+    city: "Bangalore",
+    sports: ["Badminton"],
+    sessionFee: 800,
+    sessionMode: "ONLINE",
+    rating: 4.8,
+    reviewCount: 31,
+  },
+  {
+    name: "Rohit Menon",
+    city: "Pune",
+    sports: ["Football", "Fitness"],
+    sessionFee: 600,
+    sessionMode: "ONLINE",
+    rating: 4.6,
+    reviewCount: 18,
+  },
+  {
+    name: "Kavya Nair",
+    city: "Mumbai",
+    sports: ["Tennis"],
+    sessionFee: 1200,
+    sessionMode: "ONLINE",
+    rating: 4.9,
+    reviewCount: 44,
+  },
+];
+
+const STAGES = [
+  { stage: 1, name: "Exploring", ageRange: "5 to 8", coreQuestion: "Does my child enjoy it?" },
+  {
+    stage: 2,
+    name: "Learning the game",
+    ageRange: "8 to 10",
+    coreQuestion: "Is the basic technique sound?",
+  },
+  {
+    stage: 3,
+    name: "First competition",
+    ageRange: "10 to 12",
+    coreQuestion: "Is my child ready to compete?",
+  },
+];
+
+export function fixtureFor(tool: string, args: Record<string, unknown>): unknown {
+  switch (tool) {
+    case "search_experts": {
+      const sport = String(args.sport ?? "").toLowerCase();
+      const search = String(args.search ?? "").toLowerCase();
+      const hits = EXPERTS.filter(
+        (e) =>
+          (!sport || e.sports.some((s) => s.toLowerCase() === sport)) &&
+          (!search || `${e.city} ${e.name} ${e.sports.join(" ")}`.toLowerCase().includes(search))
+      );
+      // A narrow search that finds nobody would hide whether the model used the result, so
+      // fall back to everyone: this evaluates the reply, not the search.
+      const experts = hits.length > 0 ? hits : EXPERTS;
+      return { totalMatches: experts.length, experts };
+    }
+    case "get_pathway_stage": {
+      const sportName = String(args.sportSlug ?? "the sport");
+      if (args.stage != null) {
+        const stage = STAGES.find((s) => s.stage === Number(args.stage)) ?? STAGES[0]!;
+        return {
+          sportName,
+          stage: {
+            order: stage.stage,
+            name: stage.name,
+            ageRange: stage.ageRange,
+            whatItMeans: "A stage for building the basics and a love of the game.",
+            nextSteps: ["Keep sessions short and fun", "Try a first friendly match"],
+          },
+        };
+      }
+      return { sportName, intro: [], stages: STAGES };
+    }
+    case "get_upcoming_tournaments":
+      return {
+        personalised: false,
+        note: "This is the general calendar, not filtered for any child's age group or rank. Say so, and mention that linking a ranking at /planner shows which events a child can actually enter.",
+        tournaments: [
+          {
+            name: "District Junior Open",
+            startDate: "2026-11-14",
+            city: "Pune",
+            ageGroups: ["Under-12", "Under-14"],
+          },
+          {
+            name: "State Junior Championship",
+            startDate: "2026-12-05",
+            city: "Mumbai",
+            ageGroups: ["Under-14"],
+          },
+        ],
+      };
+    default:
+      return { error: `no fixture for ${tool}` };
+  }
+}

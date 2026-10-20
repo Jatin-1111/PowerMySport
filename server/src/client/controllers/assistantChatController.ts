@@ -206,7 +206,7 @@ export const sendAssistantChatSessionMessage = asyncHandler(
       }
 
       const retrievedChunks = await retrieveRelevantChunks(userMessage);
-      const systemPrompt = buildAssistantChatSystemPrompt(retrievedChunks);
+      const systemPrompt = buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, retrievedChunks);
 
       await streamChatAndPersist(
         res,

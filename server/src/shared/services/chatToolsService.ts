@@ -17,7 +17,19 @@ export interface ChatToolContext {
 
 export interface ChatToolDefinition {
   name: string;
+  /** For the model: when to call this tool. */
   description: string;
+  /**
+   * For the assistant's own system prompt and for "what can you do": one plain phrase saying
+   * what the tool lets it do for a parent. The prompt's tools section is built from these, so
+   * a tool added here is described to the model, and to a parent who asks, with no second
+   * place to remember.
+   */
+  summary: string;
+  /** A question a parent might ask that should make the model reach for this tool. */
+  example: string;
+  /** Anything the model must remember about this tool's results, such as where to point next. */
+  promptNote?: string;
   parametersJsonSchema: Record<string, unknown>;
   execute: (args: Record<string, unknown>, context?: ChatToolContext) => Promise<unknown>;
 }
@@ -26,6 +38,11 @@ export interface ChatToolDefinition {
 
 const searchExpertsTool: ChatToolDefinition = {
   name: "search_experts",
+  summary:
+    "find verified sports experts for one-to-one consultations by sport and city, with their fee per session and rating",
+  example: "find me a badminton coach in Bangalore",
+  promptNote:
+    "Its results are 1:1 expert consultations, not regular coaching: point to /experts for more, never to /booking. A parent who asks for a coach is not asking for a consultation: tell them plainly that regular coaching is coming soon, then offer an expert consultation as the closest option for now.",
   description:
     "Search PowerMySport's verified sports experts by sport and/or free-text (city, expertise, style). Experts give one-to-one consultations (guidance sessions, online or in person); they are NOT coaches for regular training, and regular coaching on PowerMySport is coming soon. Returns up to 5 matches with fee per session, rating, and city. Use when a parent asks for an expert or consultation, or asks for a coach: in that case say first that regular coaching is coming soon, then offer these as the closest option for now.",
   parametersJsonSchema: {
@@ -67,6 +84,9 @@ const searchExpertsTool: ChatToolDefinition = {
 
 const getPathwayStageTool: ChatToolDefinition = {
   name: "get_pathway_stage",
+  summary:
+    "explain a sport's development pathway, from an overview of every stage to one stage in full",
+  example: "what does stage 3 of the football pathway involve",
   description:
     "Look up a sport's parent-facing pathway — either an overview of every stage, or one stage in full (what it means, the questions parents ask, what to watch for, the decisions it forces, and the recommended next steps). Use when a parent asks about a sport's pathway, its stages, or what a stage of development involves.",
   parametersJsonSchema: {
@@ -121,6 +141,9 @@ const getPathwayStageTool: ChatToolDefinition = {
 
 const getUpcomingTournamentsTool: ChatToolDefinition = {
   name: "get_upcoming_tournaments",
+  summary:
+    "list upcoming tournaments for a sport, and for a signed-in parent with a linked ranking, the ones their own child can enter",
+  example: "when's the next state tournament",
   description:
     "Get upcoming tournament dates for a sport from the platform's tournament calendar. Use when a parent asks about tournament dates, competitions, or what's coming up next for a sport. For a signed-in parent with a linked ranking this returns the events THEIR CHILD can enter, judged by the same rules as the planner page, so prefer it over any general list.",
   parametersJsonSchema: {
