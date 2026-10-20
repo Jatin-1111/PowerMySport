@@ -9,6 +9,8 @@ import { NotificationService } from "../services/NotificationService";
 import {
   getFlaggedReviews,
   moderateReview as moderateReviewByAction,
+  recomputeCoachRating,
+  recomputeVenueRating,
 } from "../services/ReviewService";
 import { log as __rootLog } from "../../utils/logger";
 import { asyncHandler } from "../../middleware/asyncHandler";
@@ -44,52 +46,6 @@ const isBookingReviewable = (bookingStatus: string, bookingDate: Date): boolean 
   endOfBookingDay.setHours(23, 59, 59, 999);
 
   return endOfBookingDay.getTime() < Date.now();
-};
-
-const recomputeVenueRating = async (venueId: string): Promise<void> => {
-  const [stats] = await Review.aggregate([
-    {
-      $match: {
-        targetType: "VENUE",
-        targetId: new mongoose.Types.ObjectId(venueId),
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        averageRating: { $avg: "$rating" },
-        reviewCount: { $sum: 1 },
-      },
-    },
-  ]);
-
-  await Venue.findByIdAndUpdate(venueId, {
-    rating: stats?.averageRating || 0,
-    reviewCount: stats?.reviewCount || 0,
-  });
-};
-
-const recomputeCoachRating = async (coachId: string): Promise<void> => {
-  const [stats] = await Review.aggregate([
-    {
-      $match: {
-        targetType: "Coach",
-        targetId: new mongoose.Types.ObjectId(coachId),
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        averageRating: { $avg: "$rating" },
-        reviewCount: { $sum: 1 },
-      },
-    },
-  ]);
-
-  await Coach.findByIdAndUpdate(coachId, {
-    rating: stats?.averageRating || 0,
-    reviewCount: stats?.reviewCount || 0,
-  });
 };
 
 export const createReview = asyncHandler(async (req: Request, res: Response): Promise<void> => {

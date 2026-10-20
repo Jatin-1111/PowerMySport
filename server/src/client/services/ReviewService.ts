@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { Review, ReviewDocument } from "../models/Review";
@@ -84,9 +85,9 @@ export const createReview = async (payload: CreateReviewPayload): Promise<Review
 
   // Update venue or coach rating
   if (payload.targetType === "VENUE") {
-    await updateVenueRating(targetId.toString());
+    await recomputeVenueRating(targetId.toString());
   } else if (payload.targetType === "Coach") {
-    await updateCoachRating(targetId.toString());
+    await recomputeCoachRating(targetId.toString());
   }
 
   // Notify the provider of the new review (fire-and-forget).
@@ -131,53 +132,47 @@ export const createReview = async (payload: CreateReviewPayload): Promise<Review
 };
 
 /**
- * Update venue's average rating and review count
+ * A review counts toward a provider's rating only while the public can see it.
+ * The public lists already filter on these two fields (see getVenueReviews);
+ * the headline rating did not, so a removed one-star review kept dragging a
+ * coach or venue down and the star count and the list disagreed.
  */
-const updateVenueRating = async (venueId: string): Promise<void> => {
-  const stats = await Review.aggregate([
-    { $match: { targetType: "VENUE", targetId: venueId as any } },
-    {
-      $group: {
-        _id: null,
-        avgRating: { $avg: "$rating" },
-        count: { $sum: 1 },
-      },
-    },
-  ]);
-
-  if (stats.length > 0) {
-    await Venue.findByIdAndUpdate(venueId, {
-      rating: Math.round(stats[0].avgRating * 10) / 10, // Round to 1 decimal
-      reviewCount: stats[0].count,
-    });
-  }
+const COUNTS_TOWARD_RATING = {
+  isHidden: { $ne: true },
+  moderationStatus: { $ne: "REMOVED" },
 };
 
 /**
- * Update coach's average rating and review count
+ * Average rating and review count from the reviews the public can see. Zero
+ * when none are left, so hiding the last review does not leave the old rating
+ * standing.
  */
-const updateCoachRating = async (coachId: string): Promise<void> => {
-  if (!coachId) {
-    return;
-  }
-
-  const stats = await Review.aggregate([
-    { $match: { targetType: "Coach", targetId: coachId as any } },
+const visibleRatingStats = async (
+  targetType: "VENUE" | "Coach",
+  targetId: string
+): Promise<{ rating: number; reviewCount: number }> => {
+  const [stats] = await Review.aggregate([
     {
-      $group: {
-        _id: null,
-        avgRating: { $avg: "$rating" },
-        count: { $sum: 1 },
+      $match: {
+        targetType,
+        targetId: new mongoose.Types.ObjectId(targetId),
+        ...COUNTS_TOWARD_RATING,
       },
     },
+    { $group: { _id: null, averageRating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } },
   ]);
+  return { rating: stats?.averageRating || 0, reviewCount: stats?.reviewCount || 0 };
+};
 
-  if (stats.length > 0) {
-    await Coach.findByIdAndUpdate(coachId, {
-      rating: Math.round(stats[0].avgRating * 10) / 10,
-      reviewCount: stats[0].count,
-    });
-  }
+/** Update a venue's average rating and review count. */
+export const recomputeVenueRating = async (venueId: string): Promise<void> => {
+  await Venue.findByIdAndUpdate(venueId, await visibleRatingStats("VENUE", venueId));
+};
+
+/** Update a coach's average rating and review count. */
+export const recomputeCoachRating = async (coachId: string): Promise<void> => {
+  if (!coachId) return;
+  await Coach.findByIdAndUpdate(coachId, await visibleRatingStats("Coach", coachId));
 };
 
 /**
@@ -362,5 +357,15 @@ export const moderateReview = async (
     update.isHidden = true;
   }
 
-  return Review.findByIdAndUpdate(reviewId, update, { new: true });
+  const moderated = await Review.findByIdAndUpdate(reviewId, update, { new: true });
+
+  // Hiding, removing or restoring a review changes what the provider's rating
+  // is made of, so the headline rating has to follow.
+  if (moderated) {
+    const targetId = String(moderated.targetId);
+    if (moderated.targetType === "VENUE") await recomputeVenueRating(targetId);
+    else if (moderated.targetType === "Coach") await recomputeCoachRating(targetId);
+  }
+
+  return moderated;
 };
