@@ -2,7 +2,7 @@ import { User } from "../../models/User";
 import { Expert } from "../../models/ExpertProfile";
 import { ExpertSession } from "../../models/ExpertBooking";
 import { computeOpenSlots, OpenSlot } from "../ExpertAvailabilityService";
-import { toObjectId, escapeRegex, serializeExpert } from "./shared";
+import { toObjectId, escapeRegex, serializeExpertPublic } from "./shared";
 
 // ── Public discovery ─────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ export const listActiveExperts = async (params: {
   ]);
 
   return {
-    data: experts.map(serializeExpert),
+    data: experts.map(serializeExpertPublic),
     pagination: { total, page, totalPages: Math.ceil(total / limit) },
   };
 };
@@ -48,7 +48,7 @@ export const listActiveExperts = async (params: {
 export const getExpertById = async (expertId: string) => {
   const expert = await Expert.findById(expertId).populate("userId", "name email").lean();
   if (!expert || !expert.isActive) throw new Error("Expert not found");
-  return serializeExpert(expert);
+  return serializeExpertPublic(expert);
 };
 
 export const getExpertOpenSlots = async (

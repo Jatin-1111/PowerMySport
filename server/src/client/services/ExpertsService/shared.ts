@@ -49,6 +49,44 @@ const expertUserName = (expert: any): { name?: string; email?: string } => {
   return {};
 };
 
+/**
+ * The unauthenticated discovery view (GET /experts, GET /experts/:id, and the
+ * assistant's search_experts tool). An explicit allow-list: a field added to the
+ * Expert model or to `serializeExpert` stays private until it is named here.
+ *
+ * Deliberately absent: email, verificationStatus and createdAt (internal),
+ * everything `serializeExpertFull` adds, and userId/phone, which are never
+ * serialized by any expert view.
+ */
+export const serializeExpertPublic = (expert: any) => {
+  const { name } = expertUserName(expert);
+  return {
+    id: expert._id?.toString(),
+    _id: expert._id?.toString(),
+    name,
+    bio: expert.bio,
+    sports: expert.sports || [],
+    expertise: expert.expertise || [],
+    achievements: expert.achievements,
+    sessionFee: expert.sessionFee,
+    sessionMode: expert.sessionMode,
+    sessionDurationMinutes: expert.sessionDurationMinutes || 60,
+    timezone: expert.timezone || "Asia/Kolkata",
+    hasAvailability: (expert.weeklyAvailability || []).length > 0,
+    city: expert.city,
+    languages: expert.languages || [],
+    photoUrl: expert.photoUrl,
+    isActive: expert.isActive,
+    rating: expert.rating || 0,
+    reviewCount: expert.reviewCount || 0,
+  };
+};
+
+/**
+ * Base for the authenticated views (`serializeExpertFull`, and the expert block
+ * on a session). Includes the expert's email, so it must NOT be returned from a
+ * public route; use `serializeExpertPublic` there.
+ */
 export const serializeExpert = (expert: any) => {
   const { name, email } = expertUserName(expert);
   return {
