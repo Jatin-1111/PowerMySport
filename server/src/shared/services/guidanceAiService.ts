@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
+import { AiBusyError } from "./aiErrors";
 import { SportBasePath } from "../models/SportBasePath";
 import { SportStatePath } from "../models/SportStatePath";
 import { log as __rootLog } from "../../utils/logger";
@@ -403,9 +404,8 @@ async function callGuidanceModel<T>(
   }
 
   if (sawQuotaIssue) {
-    throw new Error(
-      "Guidance generation is temporarily unavailable because Gemini API quota was exceeded for all configured models. Please wait a minute, reduce request volume, or switch GEMINI_MODEL_NAME / API key to one with available quota."
-    );
+    // The old text told the parent to "switch GEMINI_MODEL_NAME / API key".
+    throw new AiBusyError(lastError);
   }
   throw new Error(
     `No supported Gemini guidance model found. Tried: ${guidanceModelCandidates.join(
@@ -566,9 +566,7 @@ export const generateGuidanceDiagnosis = async (
   }
 
   if (sawQuotaIssue) {
-    throw new Error(
-      "Diagnosis is temporarily unavailable because Gemini API quota was exceeded for all configured models."
-    );
+    throw new AiBusyError(lastError);
   }
   throw new Error(
     `No supported Gemini model found for diagnosis. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`
@@ -717,7 +715,7 @@ Return ONLY a valid JSON object matching this schema exactly:
   }
 
   if (sawQuotaIssue) {
-    throw new Error("Guidance generation temporarily unavailable due to quota limits.");
+    throw new AiBusyError(lastError);
   }
   throw new Error(
     `No supported Gemini model found for sport match. Last error: ${lastError instanceof Error ? lastError.message : String(lastError)}`

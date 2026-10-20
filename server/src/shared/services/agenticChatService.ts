@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import type { Content, FunctionCall, Part } from "@google/genai";
+import { AiBusyError, canTryNextModel, isBusyError } from "./aiErrors";
 import type { ChatToolContext, ChatToolDefinition } from "./chatToolsService";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -97,6 +98,11 @@ export async function* streamAgenticChatResponse(
       : {};
 
   let lastError: unknown = null;
+  // Once the parent has seen text, or a tool has run, another model cannot take
+  // over cleanly: its answer would be glued onto the first one, and a tool call
+  // (a team hand-off, for one) would run twice. Failing over is only safe before.
+  let startedAnswering = false;
+  let toolHasRun = false;
 
   for (const modelName of chatModelCandidates) {
     try {
@@ -121,12 +127,16 @@ export async function* streamAgenticChatResponse(
           modelTurnContent = chunk.candidates?.[0]?.content;
           break;
         }
-        if (chunk.text) yield chunk.text;
+        if (chunk.text) {
+          startedAnswering = true;
+          yield chunk.text;
+        }
       }
 
       if (!pendingCalls) return; // No tool call — hop 0's stream WAS the full answer.
 
       if (modelTurnContent) contents.push(modelTurnContent);
+      toolHasRun = true;
       contents.push({
         role: "user",
         parts: await executeToolCalls(pendingCalls, toolsByName, toolContext),
@@ -160,16 +170,22 @@ export async function* streamAgenticChatResponse(
         config: { systemInstruction: systemPrompt, temperature: 0.6, maxOutputTokens: 1024 },
       });
       for await (const chunk of finalStream) {
-        if (chunk.text) yield chunk.text;
+        if (chunk.text) {
+          startedAnswering = true;
+          yield chunk.text;
+        }
       }
       return;
     } catch (error) {
       lastError = error;
-      const msg = error instanceof Error ? error.message.toLowerCase() : "";
-      if (msg.includes("404") || msg.includes("not found")) continue;
-      throw error;
+      // A missing model, an exhausted quota or an overloaded model is worth
+      // trying on the next one, as long as nothing has been shown or run yet.
+      if (!startedAnswering && !toolHasRun && canTryNextModel(error)) continue;
+      throw isBusyError(error) ? new AiBusyError(error) : error;
     }
   }
+
+  if (isBusyError(lastError)) throw new AiBusyError(lastError);
 
   throw new Error(
     `No supported Gemini chat model found. Tried: ${chatModelCandidates.join(", ")}. Last error: ${

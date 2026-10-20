@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { AiBusyError, canTryNextModel, isBusyError } from "./aiErrors";
 import type { GuidanceRequest, GuidanceResponse } from "./guidanceAiService";
 import { SITE_MAP_REFERENCE } from "./siteMapReference";
 
@@ -152,6 +153,9 @@ export async function* streamGuidanceChatResponse(
   ];
 
   let lastError: unknown = null;
+  // Another model can only take over before the parent has seen any text,
+  // otherwise its answer would be glued onto the first one.
+  let startedAnswering = false;
 
   for (const modelName of chatModelCandidates) {
     try {
@@ -168,20 +172,20 @@ export async function* streamGuidanceChatResponse(
       for await (const chunk of response) {
         const text = chunk.text;
         if (text) {
+          startedAnswering = true;
           yield text;
         }
       }
       return; // Success — exit generator
     } catch (error) {
       lastError = error;
-      const msg = error instanceof Error ? error.message.toLowerCase() : "";
-      // Try next model only on 404/model-not-found
-      if (msg.includes("404") || msg.includes("not found")) {
-        continue;
-      }
-      throw error; // Re-throw quota / other errors immediately
+      // Missing model, exhausted quota or an overloaded model: try the next one.
+      if (!startedAnswering && canTryNextModel(error)) continue;
+      throw isBusyError(error) ? new AiBusyError(error) : error;
     }
   }
+
+  if (isBusyError(lastError)) throw new AiBusyError(lastError);
 
   throw new Error(
     `No supported Gemini chat model found. Tried: ${chatModelCandidates.join(", ")}. Last error: ${

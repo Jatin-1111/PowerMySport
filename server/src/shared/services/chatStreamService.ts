@@ -1,9 +1,13 @@
 import { Response } from "express";
+import { log as __rootLog } from "../../utils/logger";
+import { parentSafeAiMessage } from "./aiErrors";
 import { decrementDailyMessageCount } from "./chatRateLimitService";
 import { streamGuidanceChatResponse } from "./guidanceChatService";
 import { streamAgenticChatResponse } from "./agenticChatService";
 import type { ChatToolContext, ChatToolDefinition } from "./chatToolsService";
 import type { ChatMessage } from "../../client/models/GuidanceChatSession";
+
+const log = __rootLog.child("chatStream");
 
 export interface ChatPersistableSession {
   messages: ChatMessage[];
@@ -54,9 +58,12 @@ export async function streamChatAndPersist(
     }
   } catch (aiError) {
     await decrementDailyMessageCount(userId);
-    res.write(
-      `data: ${JSON.stringify({ error: aiError instanceof Error ? aiError.message : "AI error" })}\n\n`
-    );
+    // The provider's own message can be a long JSON blob naming the project and
+    // quota metric. It goes to the log; the parent gets a plain sentence.
+    // Log the provider's real error (kept as the cause of a busy error) so the
+    // team can still see what happened.
+    log.error("AI chat failed", (aiError as { cause?: unknown } | null)?.cause ?? aiError);
+    res.write(`data: ${JSON.stringify({ error: parentSafeAiMessage(aiError) })}\n\n`);
     res.end();
     return;
   }
