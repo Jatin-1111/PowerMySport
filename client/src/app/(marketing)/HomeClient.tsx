@@ -2,7 +2,6 @@
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { ExploreGrid } from "@/modules/marketing/components/marketing/ExploreGrid";
-import { Hero } from "@/modules/marketing/components/marketing/Hero";
 import { HeroAsk } from "@/modules/marketing/components/marketing/HeroAsk";
 import { HowItWorks } from "@/modules/marketing/components/marketing/HowItWorks";
 import { MyChildCard } from "@/modules/marketing/components/marketing/MyChildCard";
@@ -69,9 +68,6 @@ export default function HomeClient({
   // parent told us directly. Either is "the sport" for hero purposes.
   const effectiveSport =
     primaryDependent?.sport?.chosenSport || primaryDependent?.sport?.sportsFocus?.[0];
-  const chosenMatch = primaryDependent?.sport?.sportMatches?.find(
-    (m) => m.sport === primaryDependent.sport?.chosenSport
-  );
   // The greeting rides on the CTA prompt line rather than a separate badge —
   // "Jatin, ready to find Aarav's sport?" instead of "Does your child...".
   // `sentence` is always lowercase-first so it reads naturally either way.
@@ -83,7 +79,6 @@ export default function HomeClient({
     ? greet("what would you like help with?")
     : undefined;
   let heroPrimaryCTA = { label: "Talk to PMS", href: WHATSAPP_HERO_HREF };
-  let heroStats: Array<{ label: string; value: string; helper?: string }> | undefined;
 
   if (isVenueLister) {
     heroCtaPrompt = firstName ? `Welcome back, ${firstName}` : undefined;
@@ -96,10 +91,6 @@ export default function HomeClient({
       label: `Continue ${primaryDependent.name}'s ${effectiveSport} Journey`,
       href: roadmapHref(effectiveSport),
     };
-    heroStats = [
-      { label: "Sport", value: effectiveSport },
-      ...(chosenMatch ? [{ label: "Fit", value: chosenMatch.fitLabel }] : []),
-    ];
   } else if (user && primaryDependent?.sport?.wizardCompletedAt) {
     // Assessment done, no decision yet — surface the matches, not the funnel question.
     heroCtaPrompt = greet(`${primaryDependent.name}'s sport matches are ready`);
@@ -107,37 +98,19 @@ export default function HomeClient({
       label: `View ${primaryDependent.name}'s Matches`,
       href: "/assessment/discover",
     };
-    if (primaryDependent.sport.sportMatches?.length) {
-      heroStats = [
-        { label: "Matches Found", value: String(primaryDependent.sport.sportMatches.length) },
-        { label: "Top Fit", value: primaryDependent.sport.sportMatches[0].sport },
-      ];
-    }
   } else if (user && primaryDependent) {
     // Profile started, assessment not finished.
     heroCtaPrompt = greet(`ready to find ${primaryDependent.name}'s sport?`);
     heroPrimaryCTA = { label: "Continue Assessment", href: "/assessment/discover" };
   }
-  // Everyone else, including a signed-in parent with no child yet, gets the ask-first hero,
-  // greeted by name when we have one.
+  // Everyone gets the ask-first hero, greeted by name when we have one. A returning parent (or venue lister) gets a link back to where they were; guests get none.
   const personalisedHero = isVenueLister || Boolean(user && primaryDependent);
+  const resume = personalisedHero ? heroPrimaryCTA : undefined;
 
   return (
     <main className="bg-paper">
       {/* ── Hero ── */}
-      {personalisedHero ? (
-        <Hero
-          title="Helping Parents Make Confident Sports Decisions"
-          titleHighlight="Sports Decisions"
-          description="From discovering the right sport to navigating competition and future pathways, PMS helps you understand your child's options, decide what to do next, and take action."
-          ctaNote="A PowerMySport team member replies within 24 hours."
-          ctaPrompt={heroCtaPrompt}
-          primaryCTA={heroPrimaryCTA}
-          stats={heroStats}
-        />
-      ) : (
-        <HeroAsk greeting={heroCtaPrompt} />
-      )}
+      <HeroAsk greeting={heroCtaPrompt} resume={resume} />
 
       {/* ── Real questions, each opening WhatsApp. Straight after the hero: the
           parent's first move is to ask, so the questions come before anything
