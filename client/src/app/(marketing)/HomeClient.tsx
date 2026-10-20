@@ -145,23 +145,23 @@ export default function HomeClient({
         stats={heroStats}
       />
 
+      {/* ── Real questions, each opening WhatsApp. Straight after the hero: the
+          parent's first move is to ask, so the questions come before anything
+          that explains or lists. ── */}
+      <ParentQuestions />
+
+      {/* ── From questions to action ── */}
+      <JourneySteps />
+
+      {/* ── Everything PMS covers ── */}
+      <ExploreGrid />
+
       {/* ── Next tournaments ── */}
       <NextTournamentsSection
         editions={tournaments.editions}
         sportSlug={tournaments.sportSlug}
         sportLabel={tournaments.sportLabel}
       />
-
-      {/* ── Everything PMS covers. Early on purpose: a parent who already knows
-          they want rankings or scholarships should not scroll four screens to
-          find the way in. ── */}
-      <ExploreGrid />
-
-      {/* ── Real questions, each opening WhatsApp ── */}
-      <ParentQuestions />
-
-      {/* ── From questions to action ── */}
-      <JourneySteps />
 
       {/* ── One campaign moment: the page's only edge-to-edge photograph ── */}
       <PhotoBand
