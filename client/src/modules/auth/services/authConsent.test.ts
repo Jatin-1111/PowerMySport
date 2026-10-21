@@ -32,7 +32,46 @@ beforeEach(() => {
   });
 });
 
-describe("adding a child asks for the parent's agreement when the server requires it", () => {
+describe("adding a child when the profile already says consent is missing", () => {
+  it("asks first and sends one request, already carrying the agreement", async () => {
+    post.mockResolvedValueOnce({ data: { success: true } });
+    answerDialog(true);
+
+    const result = await authApi.addDependent({ name: "Riya", dob: "2016-01-01" });
+
+    expect(result.success).toBe(true);
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post.mock.calls[0][1]).toMatchObject({ name: "Riya", parentalConsent: true });
+    expect(useAuthStore.getState().user?.parentalConsentCurrent).toBe(true);
+  });
+
+  it("sends no request at all when the parent cancels", async () => {
+    answerDialog(false);
+
+    await expect(authApi.addDependent({ name: "Riya", dob: "2016-01-01" })).rejects.toThrow(
+      /agreement/
+    );
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("does not ask a parent who has already agreed", async () => {
+    useAuthStore.setState({ user: { id: "u1", parentalConsentCurrent: true } as never });
+    post.mockResolvedValueOnce({ data: { success: true } });
+
+    await authApi.addDependent({ name: "Riya", dob: "2016-01-01" });
+
+    expect(useParentalConsentStore.getState().pending).toBeNull();
+    expect(post.mock.calls[0][1]).not.toHaveProperty("parentalConsent");
+  });
+});
+
+describe("adding a child when the consent state is not known yet", () => {
+  // A fresh sign-in has not loaded the profile, so the flag is absent. The server then
+  // decides, and answers 428 when it needs the agreement.
+  beforeEach(() => {
+    useAuthStore.setState({ user: { id: "u1" } as never });
+  });
+
   it("shows the dialog on a 428, then retries with the agreement", async () => {
     post
       .mockRejectedValueOnce(consentRequired())

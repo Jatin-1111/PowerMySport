@@ -14,6 +14,19 @@ const markConsentGiven = () => {
   if (user) useAuthStore.setState({ user: { ...user, parentalConsentCurrent: true } });
 };
 
+/** Asks for the parent's agreement, then adds the child with it. */
+const askThenAddDependent = async (payload: Record<string, unknown>) => {
+  if (!(await requestParentalConsent())) {
+    throw new Error("We need your agreement to the Parental Consent policy to add a child.");
+  }
+  const response = await axiosInstance.post("/auth/dependents", {
+    ...payload,
+    parentalConsent: true,
+  });
+  markConsentGiven();
+  return response.data;
+};
+
 export const authApi = {
   register: async (data: {
     name: string;
@@ -135,23 +148,23 @@ export const authApi = {
     data: Partial<Omit<Dependent, "_id">> & { name: string; dob?: string | Date }
   ): Promise<ApiResponse<any>> => {
     const payload = toApiPayload(denormalizeDependent(data));
+
+    // The profile already says consent is missing, so ask first instead of sending a
+    // request that is certain to be refused.
+    if (useAuthStore.getState().user?.parentalConsentCurrent === false) {
+      return askThenAddDependent(payload);
+    }
+
     try {
       const response = await axiosInstance.post("/auth/dependents", payload);
       return response.data;
     } catch (error) {
-      // The server asks for the parent's agreement before it takes a child's details.
+      // The consent state was not known here (a fresh sign-in has not loaded the
+      // profile yet), and the server asks before it takes a child's details.
       if ((error as { response?: { status?: number } }).response?.status !== CONSENT_REQUIRED) {
         throw error;
       }
-      if (!(await requestParentalConsent())) {
-        throw new Error("We need your agreement to the Parental Consent policy to add a child.");
-      }
-      const response = await axiosInstance.post("/auth/dependents", {
-        ...payload,
-        parentalConsent: true,
-      });
-      markConsentGiven();
-      return response.data;
+      return askThenAddDependent(payload);
     }
   },
 
