@@ -16,10 +16,9 @@ import mongoose from "mongoose";
  * deleting production chats. This file does not import the model, for the
  * same reason as migrations 50 and 51.
  *
- * DECISION NEEDED BEFORE --apply: RETENTION_DAYS below is 180, a starting point.
- * Creating the index starts deleting every chat whose last message is older than
- * that, within about a minute, and it cannot be undone. Parents lose old chat
- * history. Check the number against the privacy policy first.
+ * DECIDED 2026-10-21: RETENTION_DAYS is 180, for this chat store and the other two
+ * (migration 63). Creating the index starts deleting every chat whose last message is
+ * older than that, within about a minute, and it cannot be undone. The dry run counts them.
  *
  * USAGE: invoke ts-node directly (PowerShell strips `--` from `npm run`).
  *

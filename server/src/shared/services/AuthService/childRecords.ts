@@ -103,7 +103,7 @@ export const CHILD_RECORDS: ChildRecordRule[] = [
     model: "GuidanceSubmission",
     field: "request.dependent_id",
     action: "remove",
-    why: "The stored questionnaire carries the child's age, gender and the parent's own words; the follow-up chat on it goes with it.",
+    why: "The stored questionnaire carries the child's age, gender and the parent's own words; the follow-up chat on it goes with it. Retention: submissions have no timer and are kept until the child or the account is deleted (decided 2026-10-21); chats expire 180 days after the last message (migrations 55 and 63).",
     run: async ({ userId, child }) => {
       const dependentId = String(child._id);
       const { GuidanceSubmission } = await import("../../../client/models/GuidanceSubmission");
