@@ -61,7 +61,6 @@ import geoRoutes from "./shared/routes/geoRoutes";
 import phonepeWebhook from "./shared/routes/phonepeWebhook";
 import whatsappWebhook from "./shared/routes/whatsappWebhook";
 import sportsRoutes from "./shared/routes/sportsRoutes";
-import findSportTestRoutes from "./shared/routes/findSportTestRoutes";
 import pathwayRoutes from "./shared/routes/pathwayRoutes";
 import opportunityRoutes from "./shared/routes/opportunityRoutes";
 import opportunityFollowRoutes from "./shared/routes/opportunityFollowRoutes";
@@ -202,8 +201,6 @@ app.use(requestLogger);
 app.use("/api/auth", authRoutes);
 app.use("/api/geo", geoRoutes);
 app.use("/api/sports", sportsRoutes);
-// Find-Sport Scoring — Testing Only (not used by the live wizard; see findSportTestScorer.ts)
-app.use("/api/find-sport-test", findSportTestRoutes);
 app.use("/api/pathways", pathwayRoutes);
 app.use("/api/federations", federationRoutes);
 app.use("/api/tournament-editions", tournamentEditionRoutes);
