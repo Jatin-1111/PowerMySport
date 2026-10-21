@@ -227,10 +227,7 @@ describe("how many children a parent can add", () => {
     await assert.rejects(addDependent(parent, { name: "One too many", dob: yearsAgo(8) }), {
       statusCode: 400,
     });
-    assert.equal(
-      await Player.countDocuments({ userId: parent, type: "DEPENDENT" }),
-      MAX_DEPENDENTS_PER_PARENT
-    );
+    assert.equal(await Player.countDocuments({ userId: parent }), MAX_DEPENDENTS_PER_PARENT);
   });
 });
 
@@ -265,7 +262,7 @@ describe("the parent's consent to add a child", () => {
 
     await addDependent(parent, { name: "Arjun", dob: yearsAgo(8) });
 
-    assert.equal(await Player.countDocuments({ userId: parent, type: "DEPENDENT" }), 2);
+    assert.equal(await Player.countDocuments({ userId: parent }), 2);
   });
 
   it("asks again when the policy version has changed", async () => {
@@ -278,7 +275,7 @@ describe("the parent's consent to add a child", () => {
 
   it("records the agreement from an edit, and never blocks an edit that lacks it", async () => {
     const parent = await seedParent(false);
-    const child = await Player.create({ userId: parent, type: "DEPENDENT", name: "Riya" });
+    const child = await Player.create({ userId: parent, name: "Riya" });
 
     await updateDependent(parent, child._id.toString(), { location: "Delhi" });
     assert.equal(await consentOf(parent), undefined);

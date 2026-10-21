@@ -47,7 +47,6 @@ export const serializeChildForParent = (p: any) => ({
  */
 export const NOT_SENT_TO_THE_PARENT: Record<string, string> = {
   userId: "the owner's own id; the caller already knows it",
-  type: "always DEPENDENT now; being removed from the stored rows (migration 66)",
   createdAt: "internal bookkeeping",
   updatedAt: "internal bookkeeping",
 };

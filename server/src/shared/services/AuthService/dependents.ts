@@ -209,7 +209,6 @@ export const addDependent = async (userId: string, payload: AddDependentPayload)
 
   const newDependent = new Player({
     userId: user._id,
-    type: "DEPENDENT",
     name: payload.name,
     age: age,
     dob: parsedDob,
@@ -353,5 +352,5 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
 };
 
 export const getPlayersByUserId = async (userId: string): Promise<any[]> => {
-  return Player.find({ userId }).sort({ type: -1, name: 1 });
+  return Player.find({ userId }).sort({ name: 1 });
 };

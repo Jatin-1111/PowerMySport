@@ -63,8 +63,6 @@ const quizSchema = new Schema<QuizAnswers>(
 
 export interface PlayerDocument extends Document {
   userId: mongoose.Types.ObjectId; // Master User who owns this profile
-  /** Always DEPENDENT. Kept until migration 66 removes it from every row; nothing filters on it any more. */
-  type: "DEPENDENT";
   name: string;
   age?: number;
   dob?: Date;
@@ -108,11 +106,6 @@ const playerSchema = new Schema<PlayerDocument>(
       ref: "User",
       required: true,
       index: true,
-    },
-    type: {
-      type: String,
-      enum: ["DEPENDENT"],
-      default: "DEPENDENT",
     },
     name: {
       type: String,

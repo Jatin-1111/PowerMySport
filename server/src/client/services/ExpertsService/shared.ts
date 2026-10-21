@@ -172,7 +172,6 @@ const quiz = (player: PlayerDocument | any): Record<string, any> => player?.quiz
  */
 export const EXPERT_BRIEFING_WITHHOLDS: Record<string, string> = {
   userId: "the owner's id",
-  type: "internal marker",
   createdAt: "internal bookkeeping",
   updatedAt: "internal bookkeeping",
   dob: "the briefing shows an age, not a date of birth",
@@ -199,7 +198,6 @@ export const EXPERT_BRIEFING_WITHHOLDS: Record<string, string> = {
 
 export const EXPERT_FULL_PROFILE_WITHHOLDS: Record<string, string> = {
   userId: "the owner's id",
-  type: "internal marker",
   createdAt: "internal bookkeeping",
   updatedAt: "internal bookkeeping",
   consideringSports: "the parent's shortlist is theirs, not the expert's",

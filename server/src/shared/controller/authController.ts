@@ -429,10 +429,8 @@ export const getMyPlayersHandler = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Players fetched successfully",
-      // The same view of a child as the profile. `type` is constant now that the list holds
-      // children only; it is still sent so a browser tab running the previous client, which
-      // filters on it, keeps working. Remove it in the release after that client is gone.
-      data: players.map((p: any) => ({ ...serializeChildForParent(p), type: "DEPENDENT" })),
+      // The same view of a child as the profile.
+      data: players.map(serializeChildForParent),
     });
   }
 );
