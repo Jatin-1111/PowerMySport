@@ -440,7 +440,7 @@ export default function DependentDetailPage() {
           variant="flat"
           icon={Info}
           title="Profile details"
-          description="Physical, personality and practical traits from the assessment."
+          description="From the assessment, plus your goal, budget and time."
           completionPercent={completion.percent}
           onEdit={() => setShowEditModal(true)}
         />
@@ -456,16 +456,14 @@ export default function DependentDetailPage() {
             <div className="border-hairline max-w-lg rounded-xl border border-dashed px-5 py-6">
               <p className="text-ink font-medium">No profile details yet</p>
               <p className="text-ink-muted mt-1 text-pretty text-sm">
-                Fill in physical, personality and practical details to get a fuller picture.
+                Take the assessment to add physical and play-style details. Goal, budget and time
+                are in Edit profile.
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => setShowEditModal(true)}
-              >
-                Edit profile
-              </Button>
+              <Link href={discoverHref} className="mt-4 inline-block">
+                <Button variant="outline" size="sm">
+                  Take the assessment
+                </Button>
+              </Link>
             </div>
           )}
         </div>
