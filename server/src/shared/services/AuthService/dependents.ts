@@ -332,7 +332,7 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
   // registry. Protections first, so a refusal leaves the child exactly as it was.
   const context = { userId, child: dependent };
   for (const rule of CHILD_RECORDS) {
-    if (rule.action === "protect") await rule.check(context);
+    if (rule.action === "protect" && rule.check) await rule.check(context);
   }
   for (const rule of CHILD_RECORDS) {
     if (rule.action === "protect" && rule.settle) await rule.settle(context);

@@ -1,4 +1,8 @@
+import type mongoose from "mongoose";
 import { Booking } from "../../../client/models/Booking";
+import { CoachEnrollment } from "../../../client/models/CoachEnrollment";
+import { CoachSessionCredit } from "../../../client/models/CoachSessionCredit";
+import { CoachWaitlistEntry } from "../../../client/models/CoachWaitlistEntry";
 import { ExpertSession } from "../../../client/models/ExpertBooking";
 import { AppError } from "../../../utils/AppError";
 import { resolveChildAge } from "../../../utils/childAge";
@@ -26,7 +30,7 @@ import { resolveChildAge } from "../../../utils/childAge";
 export interface ChildRecordContext {
   userId: string;
   /** The child's profile, still present: protect and settle run before it is deleted. */
-  child: { _id: unknown; name?: string } & Parameters<typeof resolveChildAge>[0];
+  child: { _id: mongoose.Types.ObjectId; name?: string } & Parameters<typeof resolveChildAge>[0];
 }
 
 interface RuleBase {
@@ -43,7 +47,7 @@ export type ChildRecordRule = RuleBase &
     | { action: "remove"; run: (context: ChildRecordContext) => Promise<unknown> }
     | {
         action: "protect";
-        check: (context: ChildRecordContext) => Promise<void>;
+        check?: (context: ChildRecordContext) => Promise<void>;
         settle?: (context: ChildRecordContext) => Promise<unknown>;
       }
     | { action: "keep" }
@@ -173,8 +177,27 @@ export const CHILD_RECORDS: ChildRecordRule[] = [
   {
     model: "CoachEnrollment",
     field: "playerId",
-    action: "keep",
-    why: "Tied to a paid coaching programme and already stores the child's name (studentName). Whether an active enrolment should block the delete is not decided yet.",
+    action: "protect",
+    why: "A live enrolment is a recurring subscription the parent pays for and a seat the coach counts on, so it blocks the delete until the parent cancels it, which runs the refund flow. Finished enrolments are kept and already store the child's name (studentName).",
+    check: async ({ child }) => {
+      const now = new Date();
+      const live = await CoachEnrollment.countDocuments({
+        playerId: child._id,
+        $or: [
+          { status: { $in: ["ACTIVE", "PAUSED"] } },
+          {
+            status: "PENDING",
+            $or: [{ holdExpiresAt: null }, { holdExpiresAt: { $gt: now } }],
+          },
+        ],
+      });
+      if (live > 0) {
+        throw new AppError(
+          `Cannot delete ${child.name} while ${live} coaching enrolment(s) for them are still active. Cancel the enrolment first, then delete the profile.`,
+          409
+        );
+      }
+    },
   },
   {
     model: "CoachSessionOccurrence",
@@ -185,14 +208,31 @@ export const CHILD_RECORDS: ChildRecordRule[] = [
   {
     model: "CoachWaitlistEntry",
     field: "playerId",
-    action: "keep",
-    why: "Already stores the child's name (studentName). Not decided: whether a waiting-list place should go with the child.",
+    action: "protect",
+    why: "A waiting-list place has no seat and no money, so deleting the child cancels it and the coach stops notifying a profile that is gone. Finished entries are kept as history and store the child's name (studentName).",
+    settle: async ({ child }) =>
+      CoachWaitlistEntry.updateMany(
+        { playerId: child._id, status: { $in: ["WAITING", "NOTIFIED"] } },
+        { $set: { status: "CANCELLED", leftAt: new Date() } }
+      ),
   },
   {
     model: "CoachSessionCredit",
     field: "playerId",
-    action: "keep",
-    why: "A credit ledger entry for money the parent paid; kept for tax and dispute purposes.",
+    action: "protect",
+    why: "An unused credit is a prepaid session and a pending refund is money owed back, so either blocks the delete. Consumed, expired and refunded credits are the ledger, kept for tax and dispute purposes.",
+    check: async ({ child }) => {
+      const open = await CoachSessionCredit.countDocuments({
+        playerId: child._id,
+        status: { $in: ["AVAILABLE", "REFUND_PENDING"] },
+      });
+      if (open > 0) {
+        throw new AppError(
+          `Cannot delete ${child.name} while they have unused coaching credits or a refund still being settled. Use or refund them first, then delete the profile.`,
+          409
+        );
+      }
+    },
   },
   {
     model: "CoachSubscription",
