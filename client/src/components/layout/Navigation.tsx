@@ -329,7 +329,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                 <NavDropdownFooter
                   href={buildWhatsAppUrl("Hi! I'm not sure where to start with my child's sport.")}
                   prompt="Not sure where to start?"
-                  label="Get guidance on WhatsApp"
+                  label="Talk to PMS on WhatsApp"
                 />
               </NavDropdownPanel>
             </div>

@@ -190,7 +190,7 @@ export default async function SportPathwayPage({
       <CTA
         title="Ready to support their dream?"
         description="Find the right coach, book the right ground, and get a smart plan that shows exactly how to help your child grow in sports."
-        primaryCTA={{ label: "Get guidance", href: "/guidance" }}
+        primaryCTA={{ label: "Talk to PMS", href: "/guidance" }}
         secondaryCTA={{ label: "Join parent community", href: communityUrl }}
       />
     </main>

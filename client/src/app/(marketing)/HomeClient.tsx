@@ -126,7 +126,7 @@ export default function HomeClient({
       <HomeClosing
         title="Not sure what to do next?"
         description="Tell PowerMySport about your child, what you're trying to achieve, or simply what you're struggling with. We'll help you work out the next step. A team member replies within 24 hours."
-        primaryCTA={{ label: "Get guidance on WhatsApp", href: WHATSAPP_HERO_HREF }}
+        primaryCTA={{ label: "Talk to PMS on WhatsApp", href: WHATSAPP_HERO_HREF }}
         secondaryCTA={{
           label: user ? "Go to Roadmap" : "Explore Your Roadmap",
           href: "/roadmap",

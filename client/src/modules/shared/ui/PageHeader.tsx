@@ -16,7 +16,8 @@ export interface PageHeaderProps {
   eyebrow?: string;
   /** Status chips above the title on a detail page: a level, a type, "Finished". */
   badges?: React.ReactNode;
-  description?: string;
+  /** One paragraph, or several (an array renders one paragraph each). */
+  description?: string | string[];
   breadcrumbs?: BreadcrumbItem[];
   /** A quiet line under the description, e.g. "Last updated 24 July 2026". */
   meta?: React.ReactNode;
@@ -72,7 +73,7 @@ export function PageHeader({
         {breadcrumbs && breadcrumbs.length > 0 && (
           <Breadcrumbs items={breadcrumbs} className={cn("mb-6", centered && "justify-center")} />
         )}
-        {eyebrow && <p className="text-ink-muted mb-4 text-sm font-medium">{eyebrow}</p>}
+        {eyebrow && <p className="text-ink-muted mb-4 text-base font-medium">{eyebrow}</p>}
         {badges && (
           <div
             className={cn("mb-4 flex flex-wrap items-center gap-2", centered && "justify-center")}
@@ -90,14 +91,16 @@ export function PageHeader({
           {title}
         </h1>
         {description && (
-          <p
-            className={cn(
-              "text-ink-body mt-5 max-w-[60ch] text-pretty text-base leading-relaxed sm:text-lg",
-              centered && "mx-auto"
-            )}
-          >
-            {description}
-          </p>
+          <div className={cn("mt-5 max-w-[60ch] space-y-4", centered && "mx-auto")}>
+            {(Array.isArray(description) ? description : [description]).map((paragraph) => (
+              <p
+                key={paragraph}
+                className="text-ink-body text-pretty text-base leading-relaxed sm:text-lg"
+              >
+                {paragraph}
+              </p>
+            ))}
+          </div>
         )}
         {meta && <div className="mt-4 text-sm text-slate-500">{meta}</div>}
         {actions && (

@@ -5,9 +5,12 @@ import { cn } from "@/utils/cn";
  * `paper-deep`, `ink`, `ink-body`, `ink-muted`, `hairline`); see client/DESIGN.md.
  */
 
-/** Small sentence-case line above a heading, in the muted warm grey. */
+/**
+ * Sentence-case line above a heading, in the muted warm grey. 16px: the 21 Oct review asked for
+ * these to be a little larger than the 14px they were, on every section that has one.
+ */
 export function SectionKicker({ label, className }: { label: string; className?: string }) {
-  return <p className={cn("text-ink-muted mb-5 text-sm font-medium", className)}>{label}</p>;
+  return <p className={cn("text-ink-muted mb-5 text-base font-medium", className)}>{label}</p>;
 }
 
 /** Large light serif heading shared by the homepage sections. */

@@ -28,10 +28,10 @@ export function HowItWorks() {
                 "after:bg-ink after:absolute after:left-0 after:top-2 after:h-[11px] after:w-[11px] after:rounded-full after:content-[''] lg:after:top-0"
               )}
             >
-              <p className="text-ink-muted mb-3 text-sm font-medium tabular-nums">
+              <p className="text-ink-muted mb-3 text-base font-medium tabular-nums">
                 Step {index + 1}
               </p>
-              <h3 className="font-editorial text-ink mb-4 text-balance text-3xl font-normal leading-[1.1] tracking-tight">
+              <h3 className="font-editorial text-ink mb-4 text-balance text-4xl font-normal leading-[1.1] tracking-tight lg:text-[clamp(1.75rem,2.7vw,2.25rem)]">
                 {step.title}
               </h3>
               <p className="text-ink-body max-w-[30ch] text-pretty text-base leading-relaxed">

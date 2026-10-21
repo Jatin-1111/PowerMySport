@@ -34,7 +34,7 @@ function SectionHead({
   const centered = align === "center";
   return (
     <div className={centered ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <p className="text-ink-muted text-sm font-medium">{eyebrow}</p>
+      <p className="text-ink-muted text-base font-medium">{eyebrow}</p>
       <h2 className="font-editorial mt-2.5 text-2xl font-light text-slate-900 sm:text-3xl">
         {title}
       </h2>
@@ -194,31 +194,6 @@ export function Principles() {
             </li>
           ))}
         </ul>
-      </div>
-    </section>
-  );
-}
-
-/** Pre-empts the "what's the catch" question the free product invites. */
-export function WhyItsFree() {
-  return (
-    <section className="reveal-on-scroll bg-paper-deep py-16 sm:py-20">
-      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-        <SectionHead eyebrow="The obvious question" title="So what's the catch?">
-          There isn&apos;t one, and this is the honest accounting.
-        </SectionHead>
-        <div className="mt-6 space-y-5 text-[15px] leading-relaxed text-slate-600 sm:text-base">
-          <p>
-            The roadmap, the pathway guides and the guidance are free, and they are how you find out
-            whether we are worth trusting at all. Charging for them would mean asking you to pay
-            before you can tell.
-          </p>
-          <p>
-            Later, we intend to charge for the parts where we genuinely save you effort, bookings,
-            gear, and helping academies and coaches reach the families looking for them. When that
-            arrives, it will be obvious which part you are paying for.
-          </p>
-        </div>
       </div>
     </section>
   );

@@ -64,10 +64,10 @@ const NEXT_STEPS = [
     title: "Know the sport, need a plan?",
     body: "Get a plan built around your child's age, level and what you're aiming at: training, competitions and the decisions in between.",
     href: "/guidance",
-    cta: "Get guidance",
+    cta: "Talk to PMS",
   },
   {
-    title: "Want to ask a person?",
+    title: "Want to speak to an expert?",
     body: "Book time with a verified expert who has been through this: a coach, an ex-player, someone who has taken a child down this road.",
     href: "/booking?tab=experts",
     cta: "Connect with an expert",
@@ -278,7 +278,7 @@ export default async function PathwaysIndexPage() {
         title="You are not the first parent doing this"
         description="Thousands of Indian sports parents comparing academies, coaches, costs and competitions. Ask the question you have not found an answer to yet."
         primaryCTA={{ label: "Join parent community", href: communityUrl }}
-        secondaryCTA={{ label: "Get guidance", href: "/guidance" }}
+        secondaryCTA={{ label: "Talk to PMS", href: "/guidance" }}
       />
     </main>
   );

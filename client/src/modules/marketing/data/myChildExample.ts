@@ -10,25 +10,29 @@
 export const EXAMPLE_CHILD = {
   name: "Anaya",
   initial: "A",
-  summary: "9 years old, tennis, Pune",
+  summary: "13 years old, tennis, Pune",
 } as const;
 
 export interface MyChildRow {
-  key: "profile" | "goals" | "progress" | "decisions" | "open";
+  key: "profile" | "goal" | "progress" | "calendar" | "open";
   label: string;
   summary: string;
 }
 
 export const MY_CHILD_ROWS: MyChildRow[] = [
-  { key: "profile", label: "Profile", summary: "Anaya, 9. Plays tennis twice a week in Pune." },
-  { key: "goals", label: "Goals", summary: "Play a first district tournament this season." },
-  { key: "progress", label: "Progress", summary: "Ranking linked. Two events played so far." },
+  { key: "profile", label: "Profile", summary: "Intermediate player, 2 years playing." },
+  { key: "goal", label: "Goal", summary: "Become a professional player." },
   {
-    key: "decisions",
-    label: "Decisions",
-    summary: "Chose tennis. Shortlisted one event. Skipped one.",
+    key: "progress",
+    label: "Progress",
+    summary: "AITA rank: 150. Played 2 tournaments this year.",
   },
-  { key: "open", label: "Open actions", summary: "Entries close in 6 days. A check-in is due." },
+  { key: "calendar", label: "Tournament calendar", summary: "Not created." },
+  {
+    key: "open",
+    label: "Open actions",
+    summary: "Check-in due for upcoming SS tournament.",
+  },
 ];
 
 /** One line on who controls the data. True today: deleting a child removes what is kept about them. */

@@ -6,7 +6,6 @@ import {
   Principles,
   WhatsNext,
   WhoWeAre,
-  WhyItsFree,
   WhyWeExist,
 } from "@/modules/marketing/components/about/AboutSections";
 import { fetchFederations } from "@/modules/federations/services/fetchFederations";
@@ -21,7 +20,7 @@ import { PageHeader } from "@/modules/shared/ui/PageHeader";
 // an empty array, and the section hides a count rather than printing a zero, so
 // an API outage costs us the number and not the page.
 //
-// The page reads problem -> what's live -> what we believe -> how we're funded
+// The page reads problem -> what's live -> what we believe
 // -> your child's data -> who we are -> what's next. The order is deliberate:
 // a parent's questions arrive roughly in that sequence.
 
@@ -34,9 +33,14 @@ export async function AboutPageContent() {
     // inside then track it instead of the page, freezing part-way transparent.
     <main className="overflow-x-clip">
       <PageHeader
-        eyebrow="Our story"
-        title="The map we wish every parent had"
-        description="Indian youth sport comes with no instruction manual. We are a small team trying to write one, clear, honest, and built around the parent doing the work."
+        eyebrow="About PowerMySport"
+        title="Every child's sports journey deserves a clearer plan."
+        description={[
+          "Every child has the potential to discover something they love through sport. But for parents, knowing where to begin, and what to do next, isn't always easy.",
+          "Which sport is right for my child? How do I find the right coach or academy? When should my child start competing? What does it take to progress from a beginner to a competitive athlete? And how much time, effort and money will the journey require?",
+          "The answers are often scattered across websites, coaches, federations, WhatsApp groups and other parents' experiences.",
+          "PowerMySport brings clarity to that journey, helping parents make informed decisions at every stage of their child's sporting development.",
+        ]}
       />
 
       <WhyWeExist />
@@ -45,7 +49,6 @@ export async function AboutPageContent() {
         federationCount={federations.length}
       />
       <Principles />
-      <WhyItsFree />
       <ChildSafety />
       <WhoWeAre />
       <WhatsNext />

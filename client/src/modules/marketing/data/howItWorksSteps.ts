@@ -1,10 +1,11 @@
 /**
- * The five steps from the 20 Oct review, shown by the homepage "How it works" band.
+ * The five steps from the 20 and 21 Oct reviews, shown by the homepage "How it works" band.
+ * Titles and descriptions are the review's own words.
  *
- * The titles and the first four descriptions follow the review. The last step says
- * "remembers" where the review says "learns", and does not promise that outcomes
- * change future recommendations: outcomes are kept (decisions, check-ins) but
- * nothing reads them back yet. Change it when that is built.
+ * Step 5 ("Learns") says the outcome makes future recommendations more relevant. That is
+ * NOT built: decisions and check-ins are kept with the child's journey, but nothing reads
+ * them back to change a recommendation yet. It is live copy by the owner's decision on
+ * 21 Oct 2026, after being told so; reword it if that stops being the plan.
  */
 
 export interface HowStep {
@@ -14,23 +15,23 @@ export interface HowStep {
 
 export const HOW_STEPS: HowStep[] = [
   {
-    title: "Choose a question",
-    body: "Pick a suggested question, or describe what you want for your child.",
+    title: "Select",
+    body: "The parent selects a suggested question or describes a goal.",
   },
   {
-    title: "PMS understands",
-    body: "We ask about your child, your goals, their current level and anything that limits you.",
+    title: "Understands",
+    body: "PMS asks relevant follow-up questions about the child, goals, current level and constraints.",
   },
   {
-    title: "PMS recommends",
-    body: "Your child's situation is combined with what we know about the sport, and the next step is explained.",
+    title: "Recommends",
+    body: "It combines the child's context with relevant sports knowledge and explains the recommended next step.",
   },
   {
-    title: "PMS helps execute",
-    body: "Find the options, connect with experts, plan the season, book or complete the step.",
+    title: "Execute",
+    body: "PMS helps the parent find options, connect with experts, plan, book or complete the relevant action.",
   },
   {
-    title: "PMS remembers",
-    body: "Your decisions and check-ins are kept with your child's journey, so you can pick up where you left off.",
+    title: "Learns",
+    body: "The outcome updates the child's journey, making PMS future recommendations more relevant.",
   },
 ];
