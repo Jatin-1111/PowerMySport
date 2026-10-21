@@ -28,7 +28,7 @@ import {
 } from "../services/AuthService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
-import { resolveChildAge } from "../../utils/childAge";
+import { serializeChildForParent } from "../services/AuthService/childProfile";
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
 
@@ -140,32 +140,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response): Prom
   const allPlayers = await getPlayersByUserId(user._id.toString());
   const dependents = allPlayers
     .filter((p: any) => p.type === "DEPENDENT")
-    .map((p: any) => ({
-      _id: p._id,
-      name: p.name,
-      dob: p.dob || null,
-      age: resolveChildAge(p),
-      gender: p.gender,
-      relation: p.relation,
-      sportsFocus: p.sportsFocus || [],
-      skillLevel: p.skillLevel,
-      yearsPlaying: p.yearsPlaying,
-      personalityTags: p.personalityTags,
-      location: p.location,
-      // Wizard practical
-      consideringSports: p.consideringSports || [],
-      budgetRange: p.budgetRange,
-      ambition: p.ambition,
-      weeklyHoursCategory: p.weeklyHoursCategory,
-      experienceLevel: p.experienceLevel,
-      trainingType: p.trainingType,
-      // Results
-      sportMatches: p.sportMatches || [],
-      quiz: p.quiz ?? undefined,
-      wizardCompletedAt: p.wizardCompletedAt,
-      chosenSport: p.chosenSport,
-      chosenSportAt: p.chosenSportAt,
-    }));
+    .map(serializeChildForParent);
 
   const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
   const playerProfile = selfPlayer
@@ -452,7 +427,9 @@ export const getMyPlayersHandler = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Players fetched successfully",
-      data: players,
+      // The same view of a child as the profile, plus the row's type: this list mixes a
+      // parent's own athlete row with their children, and callers filter on it.
+      data: players.map((p: any) => ({ ...serializeChildForParent(p), type: p.type })),
     });
   }
 );
