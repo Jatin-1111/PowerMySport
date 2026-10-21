@@ -65,6 +65,9 @@ export const CommunityService = {
 
     let messageAudit:
       | {
+          contentSnapshot?: string;
+          messageType?: string;
+          conversationId?: string;
           senderId?: string;
           createdAt?: Date;
           updatedAt?: Date;
@@ -77,13 +80,28 @@ export const CommunityService = {
 
     if (payload.targetType === "MESSAGE") {
       const message = await CommunityMessage.findById(payload.targetId)
-        .select("_id senderId createdAt updatedAt editedAt deletedAt isDeleted")
+        .select(
+          "_id conversationId type content senderId createdAt updatedAt editedAt deletedAt isDeleted +contentHistory"
+        )
         .lean();
       if (!message) {
         throw new Error("message not found");
       }
 
+      // Only someone who can read the conversation may report a message in it.
+      // Without this, any account could file reports against ids it had no
+      // business knowing, and the snapshot below would copy their text.
+      await assertConversationAccess(userId, String(message.conversationId));
+
+      // What was said, kept on the report. A deleted message's own text has
+      // been replaced, so fall back to the last text its history recorded.
+      const lastKept = message.contentHistory?.[message.contentHistory.length - 1]?.content;
+      const snapshotText = message.isDeleted ? lastKept : message.content;
+
       messageAudit = {
+        ...(snapshotText ? { contentSnapshot: snapshotText.slice(0, 2000) } : {}),
+        messageType: message.type || "TEXT",
+        conversationId: String(message.conversationId),
         senderId: String(message.senderId),
         createdAt: message.createdAt,
         updatedAt: message.updatedAt,

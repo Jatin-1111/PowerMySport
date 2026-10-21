@@ -209,6 +209,12 @@ export default function AdminCommunityReportsPage() {
                       >
                         &ldquo;{report.targetPreview}&rdquo;
                       </p>
+                      {report.reportedContent && report.targetDeleted ? (
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                          <span className="font-semibold">As reported:</span> &ldquo;
+                          {report.reportedContent}&rdquo;
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-xs text-slate-400">
                         Reported by {report.reporterUserId.name}
                         {report.reporterUserId.email && ` (${report.reporterUserId.email})`} •{" "}

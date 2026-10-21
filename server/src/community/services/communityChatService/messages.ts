@@ -18,6 +18,9 @@ import {
 import { log as __rootLog } from "../../../utils/logger";
 const log = __rootLog.child("communityChat");
 
+/** Cap on the edit/delete trail kept per message. */
+const MAX_CONTENT_HISTORY = 20;
+
 export const messagesService = {
   async getMessages(userId: string, conversationId: string, page = 1, limit = 30) {
     const conversation = await CommunityConversation.findById(conversationId).lean();
@@ -472,6 +475,20 @@ export const messagesService = {
       throw new Error("Message content is required");
     }
 
+    // Keep what the message said before this edit: a reported message can be
+    // rewritten afterwards, and the report is only as good as the original.
+    await CommunityMessage.updateOne(
+      { _id: message._id },
+      {
+        $push: {
+          contentHistory: {
+            $each: [{ content: message.content, at: new Date(), reason: "EDIT" }],
+            $slice: -MAX_CONTENT_HISTORY,
+          },
+        },
+      }
+    );
+
     message.content = trimmedContent;
     message.editedAt = new Date();
     await message.save();
@@ -522,6 +539,19 @@ export const messagesService = {
     if (Date.now() - message.createdAt.getTime() > MESSAGE_EDIT_DELETE_WINDOW_MS) {
       throw new Error("Message delete window has expired");
     }
+
+    // Deleting hides the text from the conversation; it must not destroy it.
+    await CommunityMessage.updateOne(
+      { _id: message._id },
+      {
+        $push: {
+          contentHistory: {
+            $each: [{ content: message.content, at: new Date(), reason: "DELETE" }],
+            $slice: -MAX_CONTENT_HISTORY,
+          },
+        },
+      }
+    );
 
     message.isDeleted = true;
     message.deletedAt = new Date();

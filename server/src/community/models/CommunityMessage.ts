@@ -35,6 +35,9 @@ export interface CommunityMessageDocument extends Document {
   deletedAt?: Date | null;
   deletedBy?: mongoose.Types.ObjectId | null;
   editedAt?: Date | null;
+  /** Every text this message held before an edit or a delete overwrote it,
+   *  oldest first. Moderators read it; it is never sent to participants. */
+  contentHistory?: Array<{ content: string; at: Date; reason: "EDIT" | "DELETE" }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -119,6 +122,20 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
     editedAt: {
       type: Date,
       default: null,
+    },
+    // `select: false` so no existing query or serializer picks it up by
+    // accident; only code that asks for `+contentHistory` sees it.
+    contentHistory: {
+      type: [
+        {
+          _id: false,
+          content: { type: String, maxlength: 2000 },
+          at: { type: Date, default: Date.now },
+          reason: { type: String, enum: ["EDIT", "DELETE"] },
+        },
+      ],
+      select: false,
+      default: undefined,
     },
   },
   { timestamps: true }

@@ -218,6 +218,13 @@ export const conversationsService = {
       throw new Error("Requester cannot reject own request");
     }
 
+    // Declining deletes the thread, so it is only for a request nobody has
+    // accepted yet. Called on an ACTIVE conversation it used to wipe the whole
+    // history for both people, including anything one of them had reported.
+    if (conversation.status !== "PENDING") {
+      throw new Error("An accepted conversation cannot be declined");
+    }
+
     sendCommunityNotification(
       requester,
       "Message request declined",

@@ -11,6 +11,12 @@ export interface CommunityReportDocument extends Document {
   reason: string;
   details?: string;
   messageAudit?: {
+    /** The message text as it was when the report was made (or, if it was
+     *  already deleted, the last text it held), so a later edit or delete by
+     *  the sender cannot remove what was reported. Moderators only. */
+    contentSnapshot?: string;
+    messageType?: string;
+    conversationId?: mongoose.Types.ObjectId;
     senderId?: mongoose.Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;
@@ -45,6 +51,9 @@ const communityReportSchema = new Schema<CommunityReportDocument>(
     reason: { type: String, required: true, trim: true, maxlength: 120 },
     details: { type: String, trim: true, maxlength: 1000 },
     messageAudit: {
+      contentSnapshot: { type: String, maxlength: 2000 },
+      messageType: { type: String, maxlength: 20 },
+      conversationId: { type: Schema.Types.ObjectId, ref: "CommunityConversation" },
       senderId: { type: Schema.Types.ObjectId, ref: "User" },
       createdAt: { type: Date },
       updatedAt: { type: Date },

@@ -216,6 +216,8 @@ export interface CommunityReportRecord {
   targetId: string;
   targetPreview: string;
   targetDeleted: boolean;
+  /** Message text as it was when reported; null for older reports and non-message targets. */
+  reportedContent?: string | null;
   reason: string;
   details?: string;
   status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";

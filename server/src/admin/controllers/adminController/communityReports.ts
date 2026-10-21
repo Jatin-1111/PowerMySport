@@ -151,6 +151,10 @@ export const listCommunityReports = asyncHandler(
           targetId: String(report.targetId),
           targetPreview: target ? target.preview : "[content not found — may have been removed]",
           targetDeleted: target ? target.deleted : true,
+          // The message text as it was when reported. Present for message
+          // reports made after snapshots were added; the live preview above
+          // shows "[message deleted]" once the sender removes it.
+          reportedContent: report.messageAudit?.contentSnapshot || null,
           reason: report.reason,
           details: report.details || "",
           status: report.status,
