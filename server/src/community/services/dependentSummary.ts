@@ -118,7 +118,7 @@ export interface DependentSummary {
 }
 
 /** The dependent fields this module reads. Nothing that names the child. */
-const DEPENDENT_FIELDS = "userId age dob gender sportsFocus chosenSport wizardCity location";
+const DEPENDENT_FIELDS = "userId age dob gender sportsFocus chosenSport location";
 
 type DependentRow = {
   userId: unknown;
@@ -127,7 +127,6 @@ type DependentRow = {
   gender?: "MALE" | "FEMALE" | "OTHER" | null;
   sportsFocus?: string[] | null;
   chosenSport?: string | null;
-  wizardCity?: string | null;
   location?: string | null;
 };
 
@@ -155,7 +154,7 @@ const toSummary = (row: DependentRow, fallbackCity: string | null): DependentSum
     // `location` holds the Indian STATE, not a city — it is the last resort
     // rather than a peer of the other two, or a Chandigarh parent reads
     // "Punjab" where they expected a city.
-    city: clean(row.wizardCity) || fallbackCity || clean(row.location),
+    city: fallbackCity || clean(row.location),
   };
 };
 

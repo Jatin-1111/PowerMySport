@@ -132,17 +132,17 @@ describe("updating a child", () => {
     const child = await addDependent(parent, {
       name: "Riya",
       dob: yearsAgo(10),
-      skillLevel: "Beginner",
+      gender: "FEMALE",
       relation: "Mother",
     });
 
     await updateDependent(parent, child._id.toString(), {
-      skillLevel: "",
+      gender: "",
       relation: "",
     });
 
     const stored = await Player.findById(child._id).lean();
-    assert.equal(stored.skillLevel, undefined);
+    assert.equal(stored.gender, undefined);
     assert.equal(stored.relation, undefined);
   });
 });
@@ -201,7 +201,7 @@ describe("the child payload schema", () => {
 
   it("bounds text and lists", () => {
     assert.equal(
-      addDependentSchema.safeParse({ ...ok, skillLevel: "x".repeat(61) }).success,
+      addDependentSchema.safeParse({ ...ok, personalityTags: Array(21).fill("calm") }).success,
       false
     );
     assert.equal(

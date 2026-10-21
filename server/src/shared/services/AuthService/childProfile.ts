@@ -33,12 +33,10 @@ export const serializeChildForParent = (p: any) => ({
   ambition: p.ambition,
   weeklyHoursCategory: p.weeklyHoursCategory,
   trainingType: p.trainingType,
-  skillLevel: p.skillLevel,
   yearsPlaying: p.yearsPlaying,
   experienceLevel: p.experienceLevel,
   currentStandingTier: p.currentStandingTier,
   personalityTags: p.personalityTags,
-  wizardCity: p.wizardCity,
   quiz: p.quiz ?? undefined,
 });
 

@@ -55,7 +55,6 @@ export interface PlayerDocument extends Document {
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   sportsFocus: string[];
-  skillLevel?: string;
   yearsPlaying?: number;
   personalityTags?: string[];
   primaryObjective?: "Recreational" | "Fitness" | "Compete";
@@ -74,7 +73,6 @@ export interface PlayerDocument extends Document {
   consideringSports?: string[];
   // Build-the-profile: current standing / track record
   currentStandingTier?: number; // 1–5, archetype-aware ladder (see client sportArchetypes.ts)
-  wizardCity?: string; // city picked in wizard (location holds state)
   // Wizard results
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: Date;
@@ -125,9 +123,6 @@ const playerSchema = new Schema<PlayerDocument>(
       type: [String],
       default: [],
     },
-    skillLevel: {
-      type: String,
-    },
     yearsPlaying: {
       type: Number,
       min: 0,
@@ -163,7 +158,6 @@ const playerSchema = new Schema<PlayerDocument>(
     consideringSports: { type: [String], default: [] },
     // Build-the-profile: current standing / track record
     currentStandingTier: { type: Number, min: 1, max: 5 },
-    wizardCity: { type: String, trim: true },
     sportMatches: [{ sport: String, fitLabel: String, score: Number }],
     wizardCompletedAt: { type: Date },
     chosenSport: { type: String, trim: true },

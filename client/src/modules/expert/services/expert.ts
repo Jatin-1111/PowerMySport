@@ -122,7 +122,6 @@ export interface ExpertSessionPlayerDetail {
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   sportsFocus?: string[];
-  skillLevel?: string;
   yearsPlaying?: number;
   personalityTags?: string[];
   location?: string;
@@ -148,7 +147,6 @@ export interface ExpertSessionPlayerDetail {
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   trainingType?: "self" | "club" | "academy" | "private";
   currentStandingTier?: number;
-  wizardCity?: string;
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string;
 }

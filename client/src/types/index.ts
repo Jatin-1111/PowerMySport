@@ -95,13 +95,11 @@ export interface Dependent {
   trainingType?: "self" | "club" | "academy" | "private";
 
   /** Where they stand in the sport now. */
-  skillLevel?: string;
   yearsPlaying?: number;
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   currentStandingTier?: number; // 1-5
 
   personalityTags?: string[];
-  wizardCity?: string;
 
   /** The quiz answers; absent until the quiz is taken. */
   quiz?: DependentQuiz;

@@ -143,7 +143,6 @@ export interface AddDependentPayload {
   relation?: string;
   sportsFocus?: string[];
   sports?: string[];
-  skillLevel?: string;
   yearsPlaying?: number;
   personalityTags?: string[];
   location?: string;
@@ -158,7 +157,6 @@ export interface AddDependentPayload {
   consideringSports?: string[];
   // Build-the-profile: current standing / track record
   currentStandingTier?: number;
-  wizardCity?: string;
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string | Date;
   /** The sport the parent committed to on the results page — a decision, not a score. */
@@ -211,7 +209,6 @@ export const addDependent = async (userId: string, payload: AddDependentPayload)
     gender: payload.gender,
     relation: payload.relation,
     sportsFocus: payload.sportsFocus || payload.sports || [],
-    skillLevel: payload.skillLevel || "",
     yearsPlaying: payload.yearsPlaying,
     personalityTags: payload.personalityTags,
     location: payload.location,
@@ -276,7 +273,6 @@ export const updateDependent = async (
   assign("relation", payload.relation);
   if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
   if (payload.sports) dependent.sportsFocus = payload.sports;
-  assign("skillLevel", payload.skillLevel);
   if (payload.yearsPlaying !== undefined) dependent.yearsPlaying = payload.yearsPlaying;
   if (payload.personalityTags) dependent.personalityTags = payload.personalityTags;
   if (payload.location !== undefined) dependent.location = payload.location;
@@ -302,7 +298,6 @@ export const updateDependent = async (
   if (payload.currentStandingTier !== undefined)
     (dependent as any).currentStandingTier = payload.currentStandingTier;
   // Build-the-profile: training setup
-  if (payload.wizardCity !== undefined) (dependent as any).wizardCity = payload.wizardCity;
   if (payload.sportMatches !== undefined) (dependent as any).sportMatches = payload.sportMatches;
   if (payload.wizardCompletedAt !== undefined) {
     const d = new Date(payload.wizardCompletedAt);

@@ -47,7 +47,7 @@ const dobForAge = (age: number) => {
 
 const seedChild = (
   parentId: unknown,
-  fields: { age: number; sport?: string; gender?: string; wizardCity?: string; name?: string }
+  fields: { age: number; sport?: string; gender?: string; location?: string; name?: string }
 ) =>
   Player.create({
     userId: parentId,
@@ -56,7 +56,7 @@ const seedChild = (
     dob: dobForAge(fields.age),
     ...(fields.gender ? { gender: fields.gender } : {}),
     ...(fields.sport ? { chosenSport: fields.sport } : {}),
-    ...(fields.wizardCity ? { wizardCity: fields.wizardCity } : {}),
+    ...(fields.location ? { location: fields.location } : {}),
   });
 
 before(async () => {
@@ -82,7 +82,7 @@ describe("a parent's profile is built from their children", () => {
       age: 13,
       sport: "Tennis",
       gender: "MALE",
-      wizardCity: "Chandigarh",
+      location: "Chandigarh",
     });
 
     const profile = await CommunityService.getPlayerProfile(String(viewer._id), String(parent._id));
@@ -100,12 +100,12 @@ describe("a parent's profile is built from their children", () => {
   it("keeps siblings separate instead of collapsing them into one", async () => {
     const viewer = await seedParent("Viewer Two");
     const parent = await seedParent("Two Kids");
-    await seedChild(parent._id, { age: 13, sport: "Tennis", gender: "MALE", wizardCity: "Mohali" });
+    await seedChild(parent._id, { age: 13, sport: "Tennis", gender: "MALE", location: "Mohali" });
     await seedChild(parent._id, {
       age: 9,
       sport: "Badminton",
       gender: "FEMALE",
-      wizardCity: "Chandigarh",
+      location: "Chandigarh",
     });
 
     const profile = await CommunityService.getPlayerProfile(String(viewer._id), String(parent._id));
@@ -136,8 +136,8 @@ describe("search results carry the same summaries", () => {
   it("lists every city a family trains in, so a sibling's city is still findable", async () => {
     const viewer = await seedParent("Viewer Four");
     const parent = await seedParent("Split City");
-    await seedChild(parent._id, { age: 13, sport: "Tennis", wizardCity: "Chandigarh" });
-    await seedChild(parent._id, { age: 9, sport: "Badminton", wizardCity: "Mohali" });
+    await seedChild(parent._id, { age: 13, sport: "Tennis", location: "Chandigarh" });
+    await seedChild(parent._id, { age: 9, sport: "Badminton", location: "Mohali" });
 
     const [result] = await CommunityService.searchPlayers(String(viewer._id), "Split City");
 
@@ -152,7 +152,7 @@ describe("search results carry the same summaries", () => {
     const viewer = await seedParent("Viewer Five");
     for (let i = 0; i < 5; i += 1) {
       const parent = await seedParent(`Searchable Parent ${i}`);
-      await seedChild(parent._id, { age: 10, sport: "Chess", wizardCity: "Pune" });
+      await seedChild(parent._id, { age: 10, sport: "Chess", location: "Pune" });
     }
 
     const results = await CommunityService.searchPlayers(String(viewer._id), "Searchable", 2);

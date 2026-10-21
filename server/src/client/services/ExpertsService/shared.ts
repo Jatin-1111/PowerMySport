@@ -196,7 +196,6 @@ export const serializeFullPlayerForExpert = (player: PlayerDocument | any) => ({
   gender: player.gender,
   relation: player.relation,
   sportsFocus: player.sportsFocus || [],
-  skillLevel: player.skillLevel,
   yearsPlaying: player.yearsPlaying,
   personalityTags: player.personalityTags || [],
   location: player.location,
@@ -222,7 +221,6 @@ export const serializeFullPlayerForExpert = (player: PlayerDocument | any) => ({
   experienceLevel: player.experienceLevel,
   trainingType: player.trainingType,
   currentStandingTier: player.currentStandingTier,
-  wizardCity: player.wizardCity,
   sportMatches: player.sportMatches || [],
   wizardCompletedAt: player.wizardCompletedAt,
 });

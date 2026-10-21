@@ -334,7 +334,10 @@ export default function ExpertSessionPlayerDetailPage() {
 
           {/* Quick facts strip */}
           <div className="grid grid-cols-2 gap-5 border-b border-slate-100 px-6 py-5 sm:grid-cols-4 sm:px-8">
-            <StatTile label="Skill level" value={player.skillLevel || "N/A"} />
+            <StatTile
+              label="Experience"
+              value={labelFor("experienceLevel", player.experienceLevel) || "N/A"}
+            />
             <StatTile label="Goal" value={labelFor("ambition", player.ambition) || "N/A"} />
             <StatTile label="Budget" value={labelFor("budgetRange", player.budgetRange) || "N/A"} />
             <StatTile
@@ -369,7 +372,6 @@ export default function ExpertSessionPlayerDetailPage() {
             title="Sport & Skill"
           >
             <TagList label="Sport(s)" values={player.sportsFocus} />
-            <Field label="Skill level" value={player.skillLevel} />
             <Field label="Years playing" value={player.yearsPlaying} />
             <Field
               label="Current competitive level"
@@ -396,7 +398,6 @@ export default function ExpertSessionPlayerDetailPage() {
               value={labelFor("trainingType", player.trainingType)}
             />
             <Field label="State" value={player.location} />
-            <Field label="City (from wizard)" value={player.wizardCity} />
           </Section>
         </StaggerItem>
 

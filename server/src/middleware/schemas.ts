@@ -1505,7 +1505,6 @@ const childFields = {
   sportsFocus: childTextList(10, 60).optional(),
   sports: childTextList(10, 60).optional(),
   consideringSports: childTextList(10, 60).optional(),
-  skillLevel: childText(60),
   yearsPlaying: childNumber(0, 20),
   personalityTags: childTextList(20, 40).optional(),
   quiz: childQuiz.nullish(),
@@ -1515,7 +1514,6 @@ const childFields = {
   experienceLevel: childEnum(["beginner", "intermediate", "competitive"]),
   trainingType: childEnum(["self", "club", "academy", "private"]),
   currentStandingTier: childNumber(1, 5),
-  wizardCity: childText(60),
   sportMatches: z
     .array(
       z.object({

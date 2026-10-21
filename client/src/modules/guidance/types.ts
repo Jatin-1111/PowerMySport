@@ -133,7 +133,6 @@ export type PlayerProfile = {
   dob?: string;
   gender?: "MALE" | "FEMALE" | "OTHER";
   sportsFocus: string[];
-  skillLevel?: string;
   yearsPlaying?: number;
   personalityTags?: string[];
   location?: string;
@@ -142,7 +141,6 @@ export type PlayerProfile = {
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
   ambition?: "fun" | "competitive" | "national" | "career" | "professional";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
-  wizardCity?: string;
   /** Sports the parent shortlisted themselves in the assessment (max 3). */
   consideringSports?: string[];
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
