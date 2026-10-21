@@ -269,7 +269,7 @@ export const MessageBubble = memo(function MessageBubble({
       {/* The id is the anchor a quoted-message tap scrolls to. */}
       <div
         id={`message-${message.id}`}
-        className={`flex flex-1 gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
+        className={`flex min-w-0 flex-1 gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
       >
         {/* Group avatar (other's messages) */}
         {!isOwnMessage && isGroupConversation && (
@@ -288,7 +288,7 @@ export const MessageBubble = memo(function MessageBubble({
           </div>
         )}
 
-        <div className="relative max-w-[82%] sm:max-w-[75%] md:max-w-[68%] lg:max-w-[62%]">
+        <div className="relative min-w-0 max-w-[82%] sm:max-w-[75%] md:max-w-[68%] lg:max-w-[62%]">
           <div
             className={`relative ${
               isImageMessage ? "p-1.5" : "px-3.5 py-2 sm:px-4 sm:py-2.5"
@@ -372,7 +372,7 @@ export const MessageBubble = memo(function MessageBubble({
                     isOwn={isOwnMessage}
                   />
                   {message.metadata?.caption && !message.isDeleted && (
-                    <div className="mt-1.5 whitespace-pre-wrap px-0.5 pb-0.5 text-sm leading-5">
+                    <div className="mt-1.5 whitespace-pre-wrap px-0.5 pb-0.5 text-sm leading-5 [overflow-wrap:anywhere]">
                       {message.metadata.caption}
                     </div>
                   )}
@@ -429,7 +429,7 @@ export const MessageBubble = memo(function MessageBubble({
             ) : (
               /* ── Text message ── */
               <div
-                className={`whitespace-pre-wrap leading-relaxed ${
+                className={`whitespace-pre-wrap leading-relaxed [overflow-wrap:anywhere] ${
                   message.isDeleted ? "italic opacity-60" : ""
                 }`}
               >

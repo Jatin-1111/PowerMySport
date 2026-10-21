@@ -542,7 +542,7 @@ export default function CommunityChatPanel({ page }: Props) {
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-4 pt-4 sm:px-4 sm:pt-5"
+        className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-3 pb-4 pt-4 sm:px-4 sm:pt-5"
       >
         {/* Load more spinner */}
         <AnimatePresence>
