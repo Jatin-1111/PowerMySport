@@ -6,7 +6,6 @@ import {
   deleteGuidance,
   downloadGuidanceReportPdf,
   redirectToWhatsApp,
-  recommendSport,
   diagnoseGuidance,
 } from "../controllers/guidanceController";
 import { getGuidanceChat, sendGuidanceChatMessage } from "../controllers/guidanceChatController";
@@ -51,14 +50,6 @@ guidanceRouter.get("/", authMiddleware, getGuidanceHistory);
 guidanceRouter.delete("/:id", authMiddleware, deleteGuidance);
 guidanceRouter.get("/:id/report/pdf", optionalAuthMiddleware, downloadGuidanceReportPdf);
 guidanceRouter.get("/:id/whatsapp", optionalAuthMiddleware, redirectToWhatsApp);
-
-// ── Recommend Sport ───────────────────────────────────────────────────────────
-guidanceRouter.post(
-  "/recommend-sport",
-  optionalAuthMiddleware,
-  guestDailyLimiter("rl:guidance-recommend:guest-day:"),
-  recommendSport
-);
 
 // ── Diagnosis confirmation ────────────────────────────────────────────────────
 // Guests are the primary audience (runs before they've committed to an
