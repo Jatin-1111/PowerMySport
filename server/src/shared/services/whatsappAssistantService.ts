@@ -5,6 +5,9 @@ import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticCha
 import { ASSISTANT_CHAT_TOOLS } from "./chatToolsService";
 import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitService";
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
+import { withdrawConsentForPhone } from "./whatsappConsent";
+import { OPT_OUT_REPLY, isOptOutMessage } from "./whatsappPilot";
+import { clipReply, formatForWhatsApp } from "./whatsappFormat";
 import type { InboundWhatsAppMessage } from "./whatsappService";
 import { log as __rootLog } from "../../utils/logger";
 
@@ -17,7 +20,7 @@ const MAX_REPLY_CHARS = 3800;
 const STORED_MESSAGES = 20;
 const HISTORY_MESSAGES = 12;
 
-const CHANNEL_ADDENDUM = `
+export const CHANNEL_ADDENDUM = `
 
 ---
 
@@ -26,7 +29,11 @@ You are replying inside WhatsApp, not on the website. Adjust everything above to
 - Plain text only. No markdown headings, tables or **double-asterisk** bold. A single *asterisk* pair for emphasis is fine, sparingly.
 - Short. Aim for under 900 characters unless the parent asks for detail. One idea, then one question at most.
 - Relative paths like /guidance do not work here. Always write the full link, e.g. https://powermysport.com/guidance
-- Do not use markdown links. Put the bare URL on its own line.`;
+- Do not use markdown links. Put the bare URL on its own line.
+- You are an AI assistant. If asked whether you are a person or a bot, say you are an AI assistant.
+- Never ask for a child's medical details, ID numbers, payment details or passwords, and tell a parent not to send them here.
+- Write fees in rupees with the symbol and the unit, for example ₹1,000 per session, never a bare number.
+- If a parent wants to talk to a person, say the PowerMySport team can help and give them https://powermysport.com/contact`;
 
 const FALLBACK_REPLY =
   "Sorry, I couldn't put an answer together just now. Please try again in a minute, or ask on https://powermysport.com/ask";
@@ -55,21 +62,38 @@ export type ReplyGenerator = (
 const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage) =>
   streamAgenticChatResponse(systemPrompt, history, userMessage, ASSISTANT_CHAT_TOOLS);
 
+export interface WhatsAppAnswer {
+  reply: string;
+  /** No earlier conversation was found for this number, so the parent has not seen the notice. */
+  firstContact: boolean;
+}
+
 /**
  * Works out the reply to one inbound WhatsApp message and records the turn.
  * Always returns text to send: a failure becomes an apology rather than
  * silence, because a parent staring at an unanswered message is the worst
  * outcome here.
  */
-export async function replyToWhatsAppMessage(
+export async function answerWhatsAppMessage(
   message: InboundWhatsAppMessage,
   generate: ReplyGenerator = defaultGenerator
-): Promise<string> {
+): Promise<WhatsAppAnswer> {
   const text = message.text?.trim();
-  if (!text) return UNSUPPORTED_REPLY;
+  if (!text) return { reply: UNSUPPORTED_REPLY, firstContact: false };
 
   const userMessage = text.slice(0, MAX_INBOUND_CHARS);
   const phoneHash = hashPhone(message.from);
+
+  // "STOP" and the like delete the chat. Checked before the daily limit so a parent
+  // who has used their messages can still take their data back.
+  if (isOptOutMessage(text)) {
+    await WhatsAppConversation.deleteOne({ phoneHash });
+    // Also off the list for booking messages. A failure here must not stop the reply.
+    await withdrawConsentForPhone(message.from).catch((err) =>
+      log.error("could not withdraw WhatsApp consent", err)
+    );
+    return { reply: OPT_OUT_REPLY, firstContact: false };
+  }
   // Not the website's limiter key: a WhatsApp number is not a user id.
   const limiterKey = `wa:${phoneHash}`;
 
@@ -80,18 +104,20 @@ export async function replyToWhatsAppMessage(
     dailyReached: DAILY_LIMIT_REPLY,
     lifetimeReached: DAILY_LIMIT_REPLY,
   });
-  if (!limit.ok) return limit.message;
+  if (!limit.ok) return { reply: limit.message, firstContact: false };
 
   try {
     const conversation = await WhatsAppConversation.findOne({ phoneHash })
       .select("messages")
       .lean();
+    const firstContact = !conversation;
     const history: ChatHistoryMessage[] = (conversation?.messages ?? [])
       .slice(-HISTORY_MESSAGES)
       .map((m) => ({ role: m.role, content: m.content }));
 
     const chunks = await retrieveRelevantChunks(userMessage);
-    const systemPrompt = buildAssistantChatSystemPrompt(chunks) + CHANNEL_ADDENDUM;
+    const systemPrompt =
+      buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) + CHANNEL_ADDENDUM;
 
     let reply = "";
     for await (const piece of generate(systemPrompt, history, userMessage)) {
@@ -99,7 +125,9 @@ export async function replyToWhatsAppMessage(
     }
     reply = reply.trim();
     if (!reply) throw new Error("empty reply from the model");
-    if (reply.length > MAX_REPLY_CHARS) reply = `${reply.slice(0, MAX_REPLY_CHARS - 1).trimEnd()}…`;
+    // What is stored and sent is the formatted text, so the history the model sees next time
+    // matches what the parent actually read.
+    reply = clipReply(formatForWhatsApp(reply), MAX_REPLY_CHARS);
 
     const now = new Date();
     // One atomic update, so two messages arriving together cannot overwrite
@@ -121,10 +149,18 @@ export async function replyToWhatsAppMessage(
       { upsert: true }
     );
 
-    return reply;
+    return { reply, firstContact };
   } catch (err) {
     log.error("could not produce a reply", err);
     await decrementDailyMessageCount(limiterKey);
-    return FALLBACK_REPLY;
+    return { reply: FALLBACK_REPLY, firstContact: false };
   }
+}
+
+/** The reply text alone, for callers that do not need to know whether this was a first message. */
+export async function replyToWhatsAppMessage(
+  message: InboundWhatsAppMessage,
+  generate: ReplyGenerator = defaultGenerator
+): Promise<string> {
+  return (await answerWhatsAppMessage(message, generate)).reply;
 }

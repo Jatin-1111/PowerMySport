@@ -29,6 +29,7 @@ import opportunityWatchAdminRoutes from "./admin/routes/opportunityWatchAdminRou
 import opportunityLeadAdminRoutes from "./admin/routes/opportunityLeadAdminRoutes";
 import dataSourceAdminRoutes from "./admin/routes/dataSourceAdminRoutes";
 import reminderAdminRoutes from "./admin/routes/reminderAdminRoutes";
+import whatsappPilotAdminRoutes from "./admin/routes/whatsappPilotAdminRoutes";
 import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
 import statsRoutes from "./admin/routes/statsRoutes";
 import bookingRoutes from "./client/routes/bookingRoutes";
@@ -256,6 +257,7 @@ app.use("/api/admin/opportunity-watch", opportunityWatchAdminRoutes);
 app.use("/api/admin/opportunity-leads", opportunityLeadAdminRoutes);
 app.use("/api/admin/data-sources", dataSourceAdminRoutes);
 app.use("/api/admin/reminders", reminderAdminRoutes);
+app.use("/api/admin/whatsapp-pilot", whatsappPilotAdminRoutes);
 app.use("/api/academies", academyOnboardingRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/payout-methods", payoutMethodsRoutes);

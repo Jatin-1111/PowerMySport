@@ -19,10 +19,17 @@
  *   WHATSAPP_PHONE_NUMBER_ID    the sending number's id, needed to send replies
  *   WHATSAPP_ASSISTANT          "on" answers with the real assistant; anything
  *                               else sends the fixed holding message
+ *   WHATSAPP_ALLOWED_NUMBERS    optional, comma-separated fallback list for the
+ *                               team. Numbers staff add in the admin panel live in
+ *                               the database; either way, anyone not listed gets a
+ *                               short "being tested" message (unless the panel is
+ *                               set to "everyone")
  */
 import crypto from "crypto";
 import express from "express";
-import { replyToWhatsAppMessage } from "../services/whatsappAssistantService";
+import { answerWhatsAppMessage } from "../services/whatsappAssistantService";
+import { FIRST_CONTACT_NOTICE, PILOT_REPLY, claimInboundMessage } from "../services/whatsappPilot";
+import { mayUseAssistant } from "../services/whatsappPilotNumbers";
 import {
   extractInboundMessages,
   isValidMetaSignature,
@@ -38,22 +45,6 @@ const log = __rootLog.child("whatsappWebhook");
 
 const router = express.Router();
 
-// Meta redelivers a message it didn't see acknowledged in time. A bounded
-// in-memory set drops the immediate repeats on this instance; it is not shared
-// across instances, so a repeat landing on another one can still get through.
-const SEEN_LIMIT = 5000;
-const seenMessageIds = new Set<string>();
-
-function alreadySeen(id: string): boolean {
-  if (seenMessageIds.has(id)) return true;
-  seenMessageIds.add(id);
-  if (seenMessageIds.size > SEEN_LIMIT) {
-    const oldest = seenMessageIds.values().next().value;
-    if (oldest !== undefined) seenMessageIds.delete(oldest);
-  }
-  return false;
-}
-
 const HOLDING_REPLY =
   "Hi, this is PowerMySport. Our WhatsApp assistant is still being set up, so I can't answer properly yet. You can ask the same question on powermysport.com/ask in the meantime.";
 
@@ -64,9 +55,23 @@ async function handleInboundMessage(message: InboundWhatsAppMessage): Promise<vo
   if (!whatsappSendingConfigured()) return;
 
   await markWhatsAppRead(message.id);
-  const reply =
-    process.env.WHATSAPP_ASSISTANT === "on" ? await replyToWhatsAppMessage(message) : HOLDING_REPLY;
-  await sendWhatsAppText(message.from, reply);
+
+  if (process.env.WHATSAPP_ASSISTANT !== "on") {
+    await sendWhatsAppText(message.from, HOLDING_REPLY);
+    return;
+  }
+  // A pilot is limited to the numbers staff listed (admin panel or
+  // WHATSAPP_ALLOWED_NUMBERS); anyone else is told so and nothing of theirs is stored.
+  if (!(await mayUseAssistant(message.from))) {
+    await sendWhatsAppText(message.from, PILOT_REPLY);
+    return;
+  }
+
+  const answer = await answerWhatsAppMessage(message);
+  // First time we hear from this number: say what this is and how to stop it,
+  // before the answer, as its own message.
+  if (answer.firstContact) await sendWhatsAppText(message.from, FIRST_CONTACT_NOTICE);
+  await sendWhatsAppText(message.from, answer.reply);
 }
 
 router.get("/webhook", (req, res) => {
@@ -110,11 +115,14 @@ router.post("/webhook", (req, res) => {
 
   res.sendStatus(200);
 
-  const messages = extractInboundMessages(req.body).filter((m) => !alreadySeen(m.id));
-  for (const message of messages) {
-    handleInboundMessage(message).catch((err) => {
-      log.error(`failed to handle message ${message.id}`, err);
-    });
+  for (const message of extractInboundMessages(req.body)) {
+    // Claimed before handling, so a redelivery that arrives while the first copy is
+    // still being answered is dropped too.
+    claimInboundMessage(message.id)
+      .then((first) => (first ? handleInboundMessage(message) : undefined))
+      .catch((err) => {
+        log.error(`failed to handle message ${message.id}`, err);
+      });
   }
 });
 

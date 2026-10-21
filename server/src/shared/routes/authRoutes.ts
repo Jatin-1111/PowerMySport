@@ -10,6 +10,10 @@ import {
   registerSchema,
   updateDependentSchema,
 } from "../../middleware/schemas";
+import {
+  getWhatsAppConsentHandler,
+  setWhatsAppConsentHandler,
+} from "../controller/whatsappConsentController";
 import { validateRequest } from "../../middleware/validation";
 import {
   addAddressHandler,
@@ -176,6 +180,8 @@ router.post("/logout", authMiddleware, logout);
 router.get("/profile", authMiddleware, getProfile);
 router.get("/bridge", authMiddleware, getAuthBridge);
 router.put("/profile", authMiddleware, updateProfileHandler);
+router.get("/whatsapp-consent", authMiddleware, getWhatsAppConsentHandler);
+router.put("/whatsapp-consent", authMiddleware, setWhatsAppConsentHandler);
 router.post("/forgot-password", forgotPasswordRateLimiter, forgotPassword);
 router.post("/reset-password", resetPasswordRateLimiter, resetPasswordHandler);
 router.post("/google", googleAuth);

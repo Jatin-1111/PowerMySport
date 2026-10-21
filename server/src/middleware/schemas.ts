@@ -14,6 +14,8 @@ export const registerSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   acceptedTerms: z.boolean().refine((value) => value === true, "Terms of Service must be accepted"),
   acceptedPrivacy: z.boolean().refine((value) => value === true, "Privacy Policy must be accepted"),
+  // Optional and never required: an unticked box is a "no", and signup works without it.
+  whatsappConsent: z.boolean().optional(),
   // NOTE: "Player" is a self-registering athlete — a distinct role from
   // "Parent" (Parent is its own first-class role, not a Player variant).
   // Both are self-serve — immediately active, no admin review. "Admin" is
@@ -1114,6 +1116,8 @@ export const adminCreateCoachSchema = z
 export const sendVerificationCodeSchema = z.object({
   email: z.string().email("Invalid email format"),
   name: z.string().min(2, "Name must be at least 2 characters"),
+  /** Optional — when present, OTP is also sent via WhatsApp */
+  phone: z.string().max(20).optional(),
 });
 
 /**

@@ -11,7 +11,7 @@ Free tools — these are FOUR SEPARATE tools, never use one name for another:
 - /guidance — AI Guidance. Generates a full personalized DEVELOPMENT PLAN (training phases, weekly schedule, cost breakdown, coaching style) for a child's sport. Assumes the sport is already known or decided — this is NOT the tool for "which sport should my child play."
 - /roadmap — Sport pathway/roadmap explorer. Browse the general levels/milestones for a specific KNOWN sport (not personalized to one child).
 - /how-it-works — How the platform works
-- /experts — Browse and book 1:1 expert consultations (verified sports experts, NOT the venue/coach/academy booking marketplace below). This is a separate, currently-live feature — search_experts tool results belong here.
+- /experts — Browse and book 1:1 expert consultations (verified sports experts, NOT the venue/coach/academy booking marketplace below). This is a separate, currently-live feature, and where a parent goes to see more experts than a quick lookup shows.
 ${
   process.env.BOOKING_IS_LIVE === "true"
     ? `

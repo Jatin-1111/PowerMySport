@@ -25,6 +25,7 @@ import {
   vendorMiddleware,
   adminMiddleware,
 } from "../../middleware/auth";
+import { sendVerificationRateLimiter } from "../../middleware/rateLimit";
 import { validateRequest } from "../../middleware/validation";
 import {
   venueOnboardingStep1Schema,
@@ -58,6 +59,7 @@ router.post("/step1", validateRequest(venueOnboardingStep1Schema), createVenueSt
  */
 router.post(
   "/send-verification",
+  sendVerificationRateLimiter,
   validateRequest(sendVerificationCodeSchema),
   sendVerificationCodeHandler
 );

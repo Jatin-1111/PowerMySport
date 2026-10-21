@@ -107,6 +107,31 @@ export function sendWhatsAppText(to: string, body: string): Promise<boolean> {
   return graphPost({ to, type: "text", text: { body } });
 }
 
+/**
+ * Sends an approved message template. Templates are the only way to message
+ * someone first, outside the 24-hour window, and Meta rejects the call if the
+ * template name, language or number of body parameters does not match what was
+ * approved.
+ */
+export function sendWhatsAppTemplate(
+  to: string,
+  name: string,
+  bodyParams: string[],
+  language = "en"
+): Promise<boolean> {
+  return graphPost({
+    to,
+    type: "template",
+    template: {
+      name,
+      language: { code: language },
+      components: bodyParams.length
+        ? [{ type: "body", parameters: bodyParams.map((text) => ({ type: "text", text })) }]
+        : [],
+    },
+  });
+}
+
 /** Shows the blue ticks and a typing cue while the reply is being worked out. */
 export function markWhatsAppRead(messageId: string): Promise<boolean> {
   return graphPost({ status: "read", message_id: messageId });

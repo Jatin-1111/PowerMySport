@@ -12,6 +12,7 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const { WhatsAppConversation } = require("../client/models/WhatsAppConversation");
 const {
+  answerWhatsAppMessage,
   hashPhone,
   replyToWhatsAppMessage,
 } = require("../shared/services/whatsappAssistantService");
@@ -55,6 +56,29 @@ const stub = (reply: string, seen?: Seen[]) =>
   };
 
 describe("replyToWhatsAppMessage", () => {
+  it("tells the model about exactly the tools it is given, and the channel it is on", async () => {
+    const { ASSISTANT_CHAT_TOOLS } = require("../shared/services/chatToolsService");
+    const seen: Seen[] = [];
+    await replyToWhatsAppMessage(msg("What can you do?"), stub("I can help.", seen));
+
+    const prompt = seen[0]!.systemPrompt;
+    for (const tool of ASSISTANT_CHAT_TOOLS as Array<{ name: string; summary: string }>) {
+      assert.ok(prompt.includes(`- ${tool.name}: ${tool.summary}.`), `prompt lists ${tool.name}`);
+    }
+    assert.match(prompt, /Channel: WhatsApp/);
+  });
+
+  it("sends WhatsApp text, not markdown, and stores what the parent actually read", async () => {
+    const reply = await replyToWhatsAppMessage(
+      msg("What can you do?"),
+      stub("**I can help with:**\n*   Choosing a sport\n*   Finding tournaments")
+    );
+    assert.equal(reply, "*I can help with:*\n• Choosing a sport\n• Finding tournaments");
+
+    const doc = await WhatsAppConversation.findOne({}).lean();
+    assert.equal(doc.messages[1].content, reply);
+  });
+
   it("returns the model's reply and stores the turn under a hash, not the number", async () => {
     const reply = await replyToWhatsAppMessage(
       msg("Which sport suits my son?"),
@@ -130,6 +154,51 @@ describe("replyToWhatsAppMessage", () => {
     const reply = await replyToWhatsAppMessage(msg("tell me everything"), stub("x".repeat(6000)));
     assert.ok(reply.length <= 3800);
     assert.ok(reply.endsWith("…"));
+  });
+
+  it("flags a first message from a number, and not the ones after it", async () => {
+    const first = await answerWhatsAppMessage(msg("hello"), stub("Hi there."));
+    assert.equal(first.firstContact, true);
+    const second = await answerWhatsAppMessage(msg("and another", "wamid.2"), stub("Sure."));
+    assert.equal(second.firstContact, false);
+  });
+
+  it("deletes the chat on STOP, without asking the model, and treats the next message as new", async () => {
+    await replyToWhatsAppMessage(msg("My son plays tennis"), stub("Great."));
+    assert.equal(await WhatsAppConversation.countDocuments({}), 1);
+
+    let asked = false;
+    const never = async function* () {
+      asked = true;
+      yield "should not be used";
+    };
+    const stopped = await answerWhatsAppMessage(msg("STOP", "wamid.2"), never);
+    assert.match(stopped.reply, /deleted/i);
+    assert.equal(asked, false);
+    assert.equal(await WhatsAppConversation.countDocuments({}), 0);
+
+    const again = await answerWhatsAppMessage(msg("hello again", "wamid.3"), stub("Welcome back."));
+    assert.equal(again.firstContact, true);
+  });
+
+  it("tells the model it is an AI and not to collect sensitive details", async () => {
+    const seen: Seen[] = [];
+    await replyToWhatsAppMessage(msg("hello"), stub("Hi.", seen));
+    assert.match(seen[0]!.systemPrompt, /AI assistant/);
+    assert.match(seen[0]!.systemPrompt, /medical details/);
+  });
+
+  it("does not pass an expert consultation off as a coach", async () => {
+    const seen: Seen[] = [];
+    await replyToWhatsAppMessage(msg("find me a tennis coach"), stub("Hi.", seen));
+    // The prompt says a coach request is not a consultation request, and the fee
+    // rule asks for rupees and the unit instead of a bare number.
+    assert.match(seen[0]!.systemPrompt, /regular coaching is coming soon/);
+    assert.match(seen[0]!.systemPrompt, /per session/);
+
+    const { ASSISTANT_CHAT_TOOLS } = require("../shared/services/chatToolsService");
+    const tool = ASSISTANT_CHAT_TOOLS.find((t: { name: string }) => t.name === "search_experts");
+    assert.match(tool.description, /NOT coaches for regular training/);
   });
 
   it("hashPhone is stable and differs per number", () => {
