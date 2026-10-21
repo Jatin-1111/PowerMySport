@@ -125,15 +125,9 @@ export interface ExpertSessionPlayerDetail {
   skillLevel?: string;
   yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Fitness" | "Compete";
-  weeklyTimeCommitment?: number;
-  budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
   heightCm?: number;
   weightKg?: number;
-  medicalConditions?: string[];
-  build?: "lean" | "average" | "stocky";
-  heightCategory?: "short" | "average" | "tall";
   energyType?: "explosive" | "endurance";
   motorType?: "gross" | "fine";
   visualTracking?: "strong" | "moderate" | "weak";
@@ -154,11 +148,6 @@ export interface ExpertSessionPlayerDetail {
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   trainingType?: "self" | "club" | "academy" | "private";
   currentStandingTier?: number;
-  bestResultTier?: number;
-  achievementsNote?: string;
-  academyName?: string;
-  sessionsPerWeek?: number;
-  trainingMonths?: number;
   wizardCity?: string;
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string;

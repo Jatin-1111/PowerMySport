@@ -168,7 +168,6 @@ describe("getExpertSessionPlayerDetail", () => {
       name: "Aarav",
       age: 11,
       dob: new Date("2015-02-01"),
-      medicalConditions: ["asthma"],
     });
     const sessionId = oid();
     await ExpertSession.collection.insertOne({
@@ -192,7 +191,7 @@ describe("getExpertSessionPlayerDetail", () => {
     const { sessionId, expertUserId } = await seed(paidSession(2));
     const detail = await getExpertSessionPlayerDetail({ sessionId, expertUserId });
     assert.equal(detail.player.name, "Aarav");
-    assert.deepEqual(detail.player.medicalConditions, ["asthma"]);
+    assert.ok(detail.player.dob);
   });
 
   it("refuses an unpaid hold and returns nothing about the child", async () => {

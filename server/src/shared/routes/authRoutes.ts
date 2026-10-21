@@ -3,7 +3,12 @@ import type { ClientRateLimitInfo, Store } from "express-rate-limit";
 import rateLimit from "express-rate-limit";
 import redis from "../../config/redis";
 import { authMiddleware } from "../../middleware/auth";
-import { loginSchema, registerSchema } from "../../middleware/schemas";
+import {
+  addDependentSchema,
+  loginSchema,
+  registerSchema,
+  updateDependentSchema,
+} from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
 import {
   addAddressHandler,
@@ -184,8 +189,18 @@ router.post("/profile-picture/confirm", authMiddleware, confirmProfilePictureUpl
 
 // Dependent management endpoints
 router.get("/players", authMiddleware, getMyPlayersHandler);
-router.post("/dependents", authMiddleware, addDependentHandler);
-router.put("/dependents/:dependentId", authMiddleware, updateDependentHandler);
+router.post(
+  "/dependents",
+  authMiddleware,
+  validateRequest(addDependentSchema),
+  addDependentHandler
+);
+router.put(
+  "/dependents/:dependentId",
+  authMiddleware,
+  validateRequest(updateDependentSchema),
+  updateDependentHandler
+);
 router.delete("/dependents/:dependentId", authMiddleware, deleteDependentHandler);
 
 // Address management endpoints

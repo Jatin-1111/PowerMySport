@@ -637,8 +637,7 @@ const getPreferenceScore = (
   teamPreference: string | undefined,
   intensityPreference: string | undefined,
   attributes?: any,
-  age?: number,
-  medicalConditions?: string[]
+  age?: number
 ): number => {
   if (!attributes) return 0;
   let score = 0;
@@ -692,12 +691,6 @@ const getPreferenceScore = (
     // Young children (< 9) should lean toward low-contact sports
     if (age !== undefined && age < 9 && cl === "high") score -= 2;
     if (age !== undefined && age < 9 && cl === "none") score += 1;
-
-    // Medical conditions present → prefer lower-contact sports
-    if (medicalConditions && medicalConditions.length > 0) {
-      if (cl === "high") score -= 3;
-      if (cl === "none") score += 2;
-    }
 
     // Low intensity preference → high contact is a mismatch
     if (intensityPreference && intensityPreference.toLowerCase() === "low" && cl === "high")
@@ -786,8 +779,7 @@ export const recommendSport = asyncHandler(async (req: Request, res: Response): 
       parsed.data.team_preference,
       parsed.data.intensity_preference,
       sport.attributes,
-      parsed.data.child_age,
-      parsed.data.medical_conditions
+      parsed.data.child_age
     );
 
     const p = pathwayBySlug.get(sport.slug);

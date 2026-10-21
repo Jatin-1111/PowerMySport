@@ -1,6 +1,18 @@
 import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, AuthResponse, Dependent, User } from "@/types";
-import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
+import { requestParentalConsent } from "@/modules/player/store/parentalConsentStore";
+import { denormalizeDependent, toApiPayload } from "@/modules/player/utils/dependentNormalize";
+import { useAuthStore } from "../store/authStore";
+
+const CONSENT_REQUIRED = 428;
+
+/** Remembers that the parent has agreed, so the next save does not ask again. */
+const markConsentGiven = () => {
+  // setState, not setUser: the stored user already has normalized dependents,
+  // and setUser would normalize them a second time.
+  const { user } = useAuthStore.getState();
+  if (user) useAuthStore.setState({ user: { ...user, parentalConsentCurrent: true } });
+};
 
 export const authApi = {
   register: async (data: {
@@ -122,18 +134,40 @@ export const authApi = {
   addDependent: async (
     data: Partial<Omit<Dependent, "_id">> & { name: string; dob?: string | Date }
   ): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.post("/auth/dependents", denormalizeDependent(data));
-    return response.data;
+    const payload = toApiPayload(denormalizeDependent(data));
+    try {
+      const response = await axiosInstance.post("/auth/dependents", payload);
+      return response.data;
+    } catch (error) {
+      // The server asks for the parent's agreement before it takes a child's details.
+      if ((error as { response?: { status?: number } }).response?.status !== CONSENT_REQUIRED) {
+        throw error;
+      }
+      if (!(await requestParentalConsent())) {
+        throw new Error("We need your agreement to the Parental Consent policy to add a child.");
+      }
+      const response = await axiosInstance.post("/auth/dependents", {
+        ...payload,
+        parentalConsent: true,
+      });
+      markConsentGiven();
+      return response.data;
+    }
   },
 
   updateDependent: async (
     dependentId: string,
     data: Partial<Omit<Dependent, "_id" | "dob">> & { dob?: string | Date }
   ): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.put(
-      `/auth/dependents/${dependentId}`,
-      denormalizeDependent(data)
-    );
+    // A parent who has not agreed to the current policy is asked at their next
+    // edit. Declining does not block the edit; only adding a child needs it.
+    const needsConsent = useAuthStore.getState().user?.parentalConsentCurrent === false;
+    const agreed = needsConsent ? await requestParentalConsent() : false;
+    const response = await axiosInstance.put(`/auth/dependents/${dependentId}`, {
+      ...toApiPayload(denormalizeDependent(data)),
+      ...(agreed ? { parentalConsent: true } : {}),
+    });
+    if (agreed) markConsentGiven();
     return response.data;
   },
 

@@ -1,46 +1,37 @@
 import { describe, expect, it } from "vitest";
 
-import { calculateDependentCompletion, isMissingArchetypeTraits } from "./dependentCompletion";
+import {
+  calculateDependentCompletion,
+  hasAssessment,
+  isMissingArchetypeTraits,
+} from "./dependentCompletion";
+
+const COMPLETE = {
+  sportsFocus: ["Badminton"],
+  location: "Maharashtra",
+  budgetRange: "3k-7k",
+  ambition: "competitive",
+  weeklyHoursCategory: "4-7",
+  currentStandingTier: 2,
+};
 
 describe("calculateDependentCompletion", () => {
-  it("caps a sport-known-flow profile at 55% (sportsFocus + location + practical + standing)", () => {
-    const { percent, missing } = calculateDependentCompletion({
-      sportsFocus: ["Badminton"],
-      location: "Maharashtra",
-      budgetRange: "3k-7k",
-      ambition: "competitive",
-      weeklyHoursCategory: "4-7",
-      currentStandingTier: 2,
-      bestResultTier: 1,
-    });
-    expect(percent).toBe(55);
-    expect(missing.map((m) => m.field)).toEqual(["physical", "personality", "comfort"]);
+  it("reaches 100% without any quiz answer", () => {
+    const { percent, missing } = calculateDependentCompletion(COMPLETE);
+    expect(percent).toBe(100);
+    expect(missing).toEqual([]);
   });
 
   it("credits the sport bucket from chosenSport alone — the assessment records a commitment, not an interest", () => {
-    // The exact state the dashboard got wrong: assessment finished, badminton
+    // The state the dashboard once got wrong: assessment finished, badminton
     // picked on the results page, `sportsFocus` never written. The card showed
-    // the sport, a "Sport chosen" tick and a badminton roadmap link, then asked
-    // the parent to "Add their sport".
-    const { percent, missing } = calculateDependentCompletion({
+    // the sport, then asked the parent to "Add their sport".
+    const { missing } = calculateDependentCompletion({
+      ...COMPLETE,
+      sportsFocus: undefined,
       chosenSport: "Badminton",
-      location: "Chandigarh",
-      heightCm: 140,
-      weightKg: 35,
-      energyType: "explosive",
-      teamIndividual: 2,
-      focusStyle: "bursts",
-      decisionStyle: "react",
-      contactComfort: "neutral",
-      environment: "indoor",
-      waterComfort: "neutral",
-      budgetRange: "3k-7k",
-      ambition: "competitive",
-      weeklyHoursCategory: "4-7",
-      wizardCompletedAt: new Date().toISOString(),
     });
     expect(missing.map((m) => m.field)).not.toContain("sportsFocus");
-    expect(percent).toBe(100);
   });
 
   it("still reports the sport bucket missing when neither field is set", () => {
@@ -48,78 +39,49 @@ describe("calculateDependentCompletion", () => {
     expect(missing.map((m) => m.field)).toContain("sportsFocus");
   });
 
-  it("credits the assessment bucket via wizardCompletedAt without standing tiers (Discover-wizard path)", () => {
+  it("credits the level bucket from the experience level the edit form sets", () => {
     const { missing } = calculateDependentCompletion({
-      wizardCompletedAt: new Date().toISOString(),
+      ...COMPLETE,
+      currentStandingTier: undefined,
+      experienceLevel: "beginner",
     });
-    expect(missing.map((m) => m.field)).not.toContain("assessment");
+    expect(missing.map((m) => m.field)).not.toContain("standing");
   });
 
-  it("credits the assessment bucket from the standing tier ALONE — ranking/rating sports never collect a best-result tier, so requiring it would cap them below 100% with no field left to fill", () => {
-    const { missing, percent } = calculateDependentCompletion({
-      sportsFocus: ["Tennis"],
-      currentStandingTier: 3,
-    });
-    expect(missing.map((m) => m.field)).not.toContain("assessment");
-    // ...and adding the best-result tier changes nothing.
-    expect(
-      calculateDependentCompletion({
-        sportsFocus: ["Tennis"],
-        currentStandingTier: 3,
-        bestResultTier: 2,
-      }).percent
-    ).toBe(percent);
+  it("credits the level bucket from the standing tier alone", () => {
+    const { missing } = calculateDependentCompletion({ currentStandingTier: 3 });
+    expect(missing.map((m) => m.field)).not.toContain("standing");
   });
 
-  it("credits the assessment bucket via standing/best-result tiers without wizardCompletedAt (sport-known path)", () => {
+  it("needs all three of goal, budget and time for the practical bucket", () => {
     const { missing } = calculateDependentCompletion({
-      currentStandingTier: 3,
-      bestResultTier: 2,
+      ...COMPLETE,
+      weeklyHoursCategory: undefined,
     });
-    expect(missing.map((m) => m.field)).not.toContain("assessment");
-  });
-
-  it("reaches 100% when every bucket is filled, regardless of which path filled it", () => {
-    const { percent } = calculateDependentCompletion({
-      sportsFocus: ["Badminton"],
-      location: "Maharashtra",
-      heightCm: 140,
-      weightKg: 35,
-      energyType: "explosive",
-      teamIndividual: 3,
-      focusStyle: "bursts",
-      decisionStyle: "react",
-      contactComfort: "neutral",
-      environment: "outdoor",
-      waterComfort: "neutral",
-      budgetRange: "3k-7k",
-      ambition: "competitive",
-      weeklyHoursCategory: "4-7",
-      currentStandingTier: 2,
-      bestResultTier: 1,
-    });
-    expect(percent).toBe(100);
+    expect(missing.map((m) => m.field)).toEqual(["practical"]);
   });
 
   it("treats null/undefined profile as 0% with every bucket missing", () => {
     expect(calculateDependentCompletion(undefined).percent).toBe(0);
-    expect(calculateDependentCompletion(null).missing).toHaveLength(7);
+    expect(calculateDependentCompletion(null).missing).toHaveLength(4);
+  });
+});
+
+describe("hasAssessment", () => {
+  it("is true once the quiz is completed or a standing tier is recorded", () => {
+    expect(hasAssessment({ wizardCompletedAt: new Date().toISOString() })).toBe(true);
+    expect(hasAssessment({ currentStandingTier: 1 })).toBe(true);
+  });
+
+  it("is false for a profile with neither", () => {
+    expect(hasAssessment({ sportsFocus: ["Tennis"] })).toBe(false);
+    expect(hasAssessment(undefined)).toBe(false);
   });
 });
 
 describe("isMissingArchetypeTraits", () => {
-  it("is true for a sport-known-flow profile that never answered trait questions", () => {
-    expect(
-      isMissingArchetypeTraits({
-        sportsFocus: ["Badminton"],
-        location: "Maharashtra",
-        budgetRange: "3k-7k",
-        ambition: "competitive",
-        weeklyHoursCategory: "4-7",
-        currentStandingTier: 2,
-        bestResultTier: 1,
-      })
-    ).toBe(true);
+  it("is true for a profile that never answered the quiz", () => {
+    expect(isMissingArchetypeTraits(COMPLETE)).toBe(true);
   });
 
   it("is false once physical/personality/comfort are all filled", () => {

@@ -28,6 +28,8 @@ export interface UserDocument extends Document {
   legalConsents?: {
     terms?: { accepted: boolean; acceptedAt?: Date; version?: string };
     privacy?: { accepted: boolean; acceptedAt?: Date; version?: string };
+    /** The parent's agreement to the Parental Consent policy, given when adding a child. */
+    parentalConsent?: { accepted: boolean; acceptedAt?: Date; version?: string };
   };
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -136,6 +138,11 @@ const userSchema = new Schema<UserDocument>(
       },
       privacy: {
         accepted: { type: Boolean, default: false },
+        acceptedAt: { type: Date },
+        version: { type: String },
+      },
+      parentalConsent: {
+        accepted: { type: Boolean },
         acceptedAt: { type: Date },
         version: { type: String },
       },

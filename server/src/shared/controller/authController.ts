@@ -3,6 +3,7 @@ import { generateToken, revokeToken, TOKEN_MAX_AGE_MS } from "../../utils/jwt";
 import {
   addAddress,
   addDependent,
+  hasCurrentParentalConsent,
   changePassword,
   confirmProfilePictureUpload,
   requestAccountDeletion,
@@ -27,6 +28,7 @@ import {
 } from "../services/AuthService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
+import { resolveChildAge } from "../../utils/childAge";
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
 
@@ -142,39 +144,14 @@ export const getProfile = asyncHandler(async (req: Request, res: Response): Prom
       _id: p._id,
       name: p.name,
       dob: p.dob || null,
-      age: p.age,
+      age: resolveChildAge(p),
       gender: p.gender,
       relation: p.relation,
       sportsFocus: p.sportsFocus || [],
       skillLevel: p.skillLevel,
       yearsPlaying: p.yearsPlaying,
       personalityTags: p.personalityTags,
-      primaryObjective: p.primaryObjective,
-      weeklyTimeCommitment: p.weeklyTimeCommitment,
-      budgetTier: p.budgetTier,
       location: p.location,
-      heightCm: p.heightCm,
-      weightKg: p.weightKg,
-      medicalConditions: p.medicalConditions || [],
-      // Wizard physical
-      build: p.build,
-      heightCategory: p.heightCategory,
-      energyType: p.energyType,
-      motorType: p.motorType,
-      visualTracking: p.visualTracking,
-      eyesight: p.eyesight,
-      agility: p.agility,
-      // Wizard personality
-      teamIndividual: p.teamIndividual,
-      competitiveResponse: p.competitiveResponse,
-      focusStyle: p.focusStyle,
-      decisionStyle: p.decisionStyle,
-      pressureResponse: p.pressureResponse,
-      repetitionTolerance: p.repetitionTolerance,
-      // Wizard comfort
-      contactComfort: p.contactComfort,
-      environment: p.environment,
-      waterComfort: p.waterComfort,
       // Wizard practical
       consideringSports: p.consideringSports || [],
       budgetRange: p.budgetRange,
@@ -184,6 +161,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response): Prom
       trainingType: p.trainingType,
       // Results
       sportMatches: p.sportMatches || [],
+      quiz: p.quiz ?? undefined,
       wizardCompletedAt: p.wizardCompletedAt,
       chosenSport: p.chosenSport,
       chosenSportAt: p.chosenSportAt,
@@ -226,6 +204,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response): Prom
       playerProfile,
       parentProfile,
       dependents,
+      parentalConsentCurrent: hasCurrentParentalConsent(user),
       shippingAddress: user.shippingAddress,
       hasPassword: !!user.password,
     },

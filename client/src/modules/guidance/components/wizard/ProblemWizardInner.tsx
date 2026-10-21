@@ -92,6 +92,12 @@ export function ProblemWizardInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  const selectedDependent = dependents.find((d) => d._id === selectedDependentId);
+
+  /** The child's sports with this one added; the PUT replaces the list, so it must carry the rest. */
+  const addSport = (existing: string[] | undefined, sport: string): string[] =>
+    existing?.includes(sport) ? existing : [...(existing ?? []), sport];
+
   function applyDependent(dep: any) {
     setForm((prev) => {
       const age = dep.dob ? getAgeFromDob(new Date(dep.dob).toISOString().slice(0, 10)) : null;
@@ -177,7 +183,9 @@ export function ProblemWizardInner({
       if (selectedDependentId) {
         api
           .put(`/auth/dependents/${selectedDependentId}`, {
-            ...(form.sport ? { sportsFocus: [form.sport] } : {}),
+            ...(form.sport
+              ? { sportsFocus: addSport(selectedDependent?.sportsFocus, form.sport) }
+              : {}),
             ...(form.gender ? { gender: form.gender } : {}),
             ...(form.state ? { location: form.state } : {}),
             ...(form.experienceLevel ? { experienceLevel: form.experienceLevel } : {}),

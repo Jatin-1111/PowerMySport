@@ -593,7 +593,6 @@ export const sportMatchRequestSchema = z.object({
   gender: z.string().optional(),
   height_cm: z.number().optional(),
   weight_kg: z.number().optional(),
-  medical_conditions: z.array(z.string()).optional(),
   team_preference: z.string().optional(),
   indoor_outdoor_preference: z.string().optional(),
   intensity_preference: z.string().optional(),
@@ -639,9 +638,6 @@ export const generateSportMatchRecommendation = async (
   const physicalProfile = [
     request.height_cm ? `Height: ${request.height_cm} cm` : null,
     request.weight_kg ? `Weight: ${request.weight_kg} kg` : null,
-    request.medical_conditions?.length
-      ? `Medical conditions: ${request.medical_conditions.join(", ")}`
-      : null,
   ]
     .filter(Boolean)
     .join(", ");

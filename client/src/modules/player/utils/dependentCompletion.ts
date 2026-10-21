@@ -1,16 +1,26 @@
 // ─── Dependent Profile Completion Scoring ───────────────────────────────────
 //
-// Unlike calculateProfileCompletion (shared with the parent's own SELF
-// profile), this scoring is specific to dependents and factors in the
-// pathway-assessment fields (physical/personality/comfort/practical +
-// wizardCompletedAt) so a profile built entirely through the dependent
-// profile builder — without ever visiting /pathway — can still reach 100%,
-// and a completed assessment is reflected as real progress.
+// "Complete" means the profile has what the planner, tournaments and booking
+// actually read about a child: a sport, where they are, what they can commit to,
+// and how far along they are. It deliberately does NOT count the sport-matching
+// quiz's answers (physical, personality, comfort). Those belong to the quiz and
+// are filled by taking it, so a parent who never takes the quiz can still reach
+// 100%.
+//
+// Client-side only. The profile response carries the fields; nothing here is
+// stored.
 
 export interface DependentCompletionProfile {
   sportsFocus?: string[];
   chosenSport?: string;
   location?: string;
+  budgetRange?: string;
+  ambition?: string;
+  weeklyHoursCategory?: string;
+  experienceLevel?: string;
+  currentStandingTier?: number;
+  wizardCompletedAt?: string;
+  // The quiz's own answers, read only by `hasQuizAnswers`.
   heightCm?: number;
   weightKg?: number;
   energyType?: string;
@@ -20,12 +30,6 @@ export interface DependentCompletionProfile {
   contactComfort?: string;
   environment?: string;
   waterComfort?: string;
-  budgetRange?: string;
-  ambition?: string;
-  weeklyHoursCategory?: string;
-  wizardCompletedAt?: string;
-  currentStandingTier?: number;
-  bestResultTier?: number;
 }
 
 export const DEPENDENT_COMPLETION_FIELDS: Array<{
@@ -37,64 +41,33 @@ export const DEPENDENT_COMPLETION_FIELDS: Array<{
   {
     field: "sportsFocus",
     label: "Sports interest",
-    weight: 10,
-    // ── Why `chosenSport` counts here ──
-    //
-    // It is the STRONGER of the two signals, not a lesser one: `sportsFocus` is
+    weight: 20,
+    // `chosenSport` is the STRONGER signal, not a lesser one: `sportsFocus` is
     // what a parent listed as interesting, `chosenSport` is what they committed
     // to on the assessment results page. Checking only the weaker field left a
-    // parent who finished the assessment and picked badminton staring at a card
-    // that said "10 yrs · Badminton", a "Sport chosen" tick and a "Badminton
-    // roadmap" button — above a 90% ring and an "Add their sport" button.
-    //
-    // The display layer had already settled this (`useDependents` reads
-    // `chosenSport || sportsFocus[0]`); the scorer was the one place still
-    // asking the narrower question.
+    // parent who finished the assessment and picked badminton staring at an
+    // "Add their sport" button.
     isFilled: (p) => !!p.chosenSport || (p.sportsFocus?.length ?? 0) > 0,
   },
   {
     field: "location",
     label: "Location",
-    weight: 10,
+    weight: 20,
     isFilled: (p) => !!p.location,
   },
   {
-    field: "physical",
-    label: "Physical profile",
-    weight: 15,
-    isFilled: (p) => !!p.heightCm && !!p.weightKg && !!p.energyType,
-  },
-  {
-    field: "personality",
-    label: "Personality & play style",
-    weight: 15,
-    isFilled: (p) => p.teamIndividual !== undefined && !!p.focusStyle && !!p.decisionStyle,
-  },
-  {
-    field: "comfort",
-    label: "Comfort preferences",
-    weight: 15,
-    isFilled: (p) => !!p.contactComfort && !!p.environment && !!p.waterComfort,
-  },
-  {
     field: "practical",
-    label: "Practical details",
-    weight: 15,
+    label: "Goal, budget and time",
+    weight: 30,
     isFilled: (p) => !!p.budgetRange && !!p.ambition && !!p.weeklyHoursCategory,
   },
   {
-    field: "assessment",
-    label: "Current standing",
-    weight: 20,
-    // Satisfied by either path: the Discover wizard's sport-match assessment,
-    // or the "I know my sport" flow's current-standing tier — both mean "we
-    // know where this child currently stands."
-    //
-    // Deliberately does NOT also require bestResultTier. Ranking and rating
-    // sports no longer ask that question at all (see sportAsksBestResult), so
-    // requiring it would cap a tennis or chess parent's profile completion
-    // below 100% with no field left in the product to fill.
-    isFilled: (p) => !!p.wizardCompletedAt || !!p.currentStandingTier,
+    field: "standing",
+    label: "Current level",
+    weight: 30,
+    // Either the level the parent picked in the edit form or the standing tier
+    // from the "I know my sport" flow. Neither needs the quiz.
+    isFilled: (p) => !!p.experienceLevel || !!p.currentStandingTier,
   },
 ];
 
@@ -126,15 +99,21 @@ export function calculateDependentCompletion(
   };
 }
 
-const ARCHETYPE_TRAIT_FIELDS = ["physical", "personality", "comfort"];
+/** True once the Discover quiz has been taken, or a current-standing tier recorded:
+ * "we know where this child stands". Drives the "Assessed" tick, not the score. */
+export function hasAssessment(profile: DependentCompletionProfile | null | undefined): boolean {
+  return !!profile?.wizardCompletedAt || !!profile?.currentStandingTier;
+}
 
-/** True when the physical/personality/comfort trait buckets aren't all filled —
- * i.e. this profile only ever went through a sport-known flow, never the
- * Discover wizard's archetype questions. Used to gate cross-flow nudges that
- * offer to fill those traits in (guidance, expert booking). */
+/** True when the quiz's physical, personality and comfort answers are not all there,
+ * i.e. this profile never went through the Discover quiz. Gates the cross-flow
+ * nudges that offer to take it (guidance, expert booking). */
 export function isMissingArchetypeTraits(
   profile: DependentCompletionProfile | null | undefined
 ): boolean {
-  const { missing } = calculateDependentCompletion(profile);
-  return missing.some((m) => ARCHETYPE_TRAIT_FIELDS.includes(m.field));
+  const p = profile ?? {};
+  const physical = !!p.heightCm && !!p.weightKg && !!p.energyType;
+  const personality = p.teamIndividual !== undefined && !!p.focusStyle && !!p.decisionStyle;
+  const comfort = !!p.contactComfort && !!p.environment && !!p.waterComfort;
+  return !(physical && personality && comfort);
 }

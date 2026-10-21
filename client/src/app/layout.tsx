@@ -3,6 +3,7 @@ import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { NumericInputGuard } from "@/components/layout/NumericInputGuard";
 import { FriendSocketProvider } from "@/hooks/useFriendSocket";
+import { ParentalConsentHost } from "@/modules/player/components/ParentalConsentHost";
 import { QueryProvider } from "@/lib/query/QueryProvider";
 import { SITE_DESCRIPTION as siteDescription, SITE_URL as siteUrl } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -138,6 +139,7 @@ export default function RootLayout({
               identity, so it has to be able to observe the restored session. */}
           <QueryProvider>
             <FriendSocketProvider>{children}</FriendSocketProvider>
+            <ParentalConsentHost />
           </QueryProvider>
         </HydrationBoundary>
         <CookieConsentBanner />

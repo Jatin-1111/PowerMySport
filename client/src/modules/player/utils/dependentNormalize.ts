@@ -32,7 +32,6 @@ export interface DependentWire {
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   location?: string;
-  medicalConditions?: string[];
 
   sportsFocus?: string[];
   consideringSports?: string[];
@@ -43,8 +42,6 @@ export interface DependentWire {
 
   heightCm?: number;
   weightKg?: number;
-  build?: "lean" | "average" | "stocky";
-  heightCategory?: "short" | "average" | "tall";
   energyType?: "explosive" | "endurance";
   motorType?: "gross" | "fine";
   visualTracking?: "strong" | "moderate" | "weak";
@@ -63,9 +60,6 @@ export interface DependentWire {
   environment?: "outdoor" | "indoor" | "no-preference";
   waterComfort?: "comfortable" | "neutral" | "uncomfortable";
 
-  primaryObjective?: "Recreational" | "Fitness" | "Compete";
-  weeklyTimeCommitment?: number;
-  budgetTier?: "Budget" | "Moderate" | "Premium";
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
   ambition?: "fun" | "competitive" | "national" | "career" | "professional";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
@@ -75,25 +69,56 @@ export interface DependentWire {
   yearsPlaying?: number;
   experienceLevel?: "beginner" | "intermediate" | "competitive";
   currentStandingTier?: number;
-  bestResultTier?: number;
-  achievementsNote?: string;
-
-  academyName?: string;
-  sessionsPerWeek?: number;
-  trainingMonths?: number;
   wizardCity?: string;
-
-  satisfiedPrerequisites?: string[];
-  currentGpa?: number;
-  targetDivision?: string;
-  graduationYear?: number;
-
-  paymentHistory?: Array<{ bookingId: string; amount: number; date: string }>;
 }
 
 /** Flat API response → grouped client shape. Tolerant of a partial object
  * (e.g. a freshly-created dependent that only has `name`/`dob` yet). */
-export function normalizeDependent(wire: Partial<DependentWire>): Dependent {
+/** The sport-matching quiz answers as the API stores them: one sub-document. */
+export const QUIZ_KEYS = [
+  "heightCm",
+  "weightKg",
+  "energyType",
+  "motorType",
+  "visualTracking",
+  "eyesight",
+  "agility",
+  "teamIndividual",
+  "competitiveResponse",
+  "focusStyle",
+  "decisionStyle",
+  "pressureResponse",
+  "repetitionTolerance",
+  "contactComfort",
+  "environment",
+  "waterComfort",
+] as const;
+
+/** A record as the API returns it: the quiz answers nested under `quiz`. */
+export type DependentApi = Partial<DependentWire> & { quiz?: Partial<DependentWire> | null };
+
+/** Lifts a record's nested `quiz` answers up beside its other fields (the flat in-app shape). */
+export function flattenQuiz<T extends object>(record: T): T {
+  const { quiz, ...rest } = record as T & { quiz?: object | null };
+  return { ...rest, ...(quiz ?? {}) } as T;
+}
+
+/** Flat payload → what the API accepts: the quiz answers nested under `quiz`. */
+export function toApiPayload(flat: Partial<DependentWire>): DependentApi {
+  const out: Record<string, unknown> = { ...flat };
+  const quiz: Record<string, unknown> = {};
+  for (const key of QUIZ_KEYS) {
+    if (key in out) {
+      quiz[key] = out[key];
+      delete out[key];
+    }
+  }
+  if (Object.keys(quiz).length > 0) out.quiz = quiz;
+  return out as DependentApi;
+}
+
+export function normalizeDependent(wire: DependentApi): Dependent {
+  wire = flattenQuiz(wire);
   return {
     _id: wire._id,
     name: wire.name ?? "",
@@ -102,7 +127,6 @@ export function normalizeDependent(wire: Partial<DependentWire>): Dependent {
     gender: wire.gender,
     relation: wire.relation,
     location: wire.location,
-    medicalConditions: wire.medicalConditions,
 
     sport: {
       sportsFocus: wire.sportsFocus,
@@ -116,8 +140,6 @@ export function normalizeDependent(wire: Partial<DependentWire>): Dependent {
     physical: {
       heightCm: wire.heightCm,
       weightKg: wire.weightKg,
-      build: wire.build,
-      heightCategory: wire.heightCategory,
       energyType: wire.energyType,
       motorType: wire.motorType,
       visualTracking: wire.visualTracking,
@@ -142,9 +164,6 @@ export function normalizeDependent(wire: Partial<DependentWire>): Dependent {
     },
 
     practical: {
-      primaryObjective: wire.primaryObjective,
-      weeklyTimeCommitment: wire.weeklyTimeCommitment,
-      budgetTier: wire.budgetTier,
       budgetRange: wire.budgetRange,
       ambition: wire.ambition,
       weeklyHoursCategory: wire.weeklyHoursCategory,
@@ -156,25 +175,11 @@ export function normalizeDependent(wire: Partial<DependentWire>): Dependent {
       yearsPlaying: wire.yearsPlaying,
       experienceLevel: wire.experienceLevel,
       currentStandingTier: wire.currentStandingTier,
-      bestResultTier: wire.bestResultTier,
-      achievementsNote: wire.achievementsNote,
     },
 
     training: {
-      academyName: wire.academyName,
-      sessionsPerWeek: wire.sessionsPerWeek,
-      trainingMonths: wire.trainingMonths,
       wizardCity: wire.wizardCity,
     },
-
-    pathwayState: {
-      satisfiedPrerequisites: wire.satisfiedPrerequisites,
-      currentGpa: wire.currentGpa,
-      targetDivision: wire.targetDivision,
-      graduationYear: wire.graduationYear,
-    },
-
-    paymentHistory: wire.paymentHistory,
   };
 }
 
@@ -194,7 +199,6 @@ export function denormalizeDependent(
   if (dep.gender !== undefined) out.gender = dep.gender;
   if (dep.relation !== undefined) out.relation = dep.relation;
   if (dep.location !== undefined) out.location = dep.location;
-  if (dep.medicalConditions !== undefined) out.medicalConditions = dep.medicalConditions;
 
   if (dep.sport) {
     const s = dep.sport;
@@ -210,8 +214,6 @@ export function denormalizeDependent(
     const p = dep.physical;
     if (p.heightCm !== undefined) out.heightCm = p.heightCm;
     if (p.weightKg !== undefined) out.weightKg = p.weightKg;
-    if (p.build !== undefined) out.build = p.build;
-    if (p.heightCategory !== undefined) out.heightCategory = p.heightCategory;
     if (p.energyType !== undefined) out.energyType = p.energyType;
     if (p.motorType !== undefined) out.motorType = p.motorType;
     if (p.visualTracking !== undefined) out.visualTracking = p.visualTracking;
@@ -239,9 +241,6 @@ export function denormalizeDependent(
 
   if (dep.practical) {
     const p = dep.practical;
-    if (p.primaryObjective !== undefined) out.primaryObjective = p.primaryObjective;
-    if (p.weeklyTimeCommitment !== undefined) out.weeklyTimeCommitment = p.weeklyTimeCommitment;
-    if (p.budgetTier !== undefined) out.budgetTier = p.budgetTier;
     if (p.budgetRange !== undefined) out.budgetRange = p.budgetRange;
     if (p.ambition !== undefined) out.ambition = p.ambition;
     if (p.weeklyHoursCategory !== undefined) out.weeklyHoursCategory = p.weeklyHoursCategory;
@@ -254,28 +253,12 @@ export function denormalizeDependent(
     if (s.yearsPlaying !== undefined) out.yearsPlaying = s.yearsPlaying;
     if (s.experienceLevel !== undefined) out.experienceLevel = s.experienceLevel;
     if (s.currentStandingTier !== undefined) out.currentStandingTier = s.currentStandingTier;
-    if (s.bestResultTier !== undefined) out.bestResultTier = s.bestResultTier;
-    if (s.achievementsNote !== undefined) out.achievementsNote = s.achievementsNote;
   }
 
   if (dep.training) {
     const t = dep.training;
-    if (t.academyName !== undefined) out.academyName = t.academyName;
-    if (t.sessionsPerWeek !== undefined) out.sessionsPerWeek = t.sessionsPerWeek;
-    if (t.trainingMonths !== undefined) out.trainingMonths = t.trainingMonths;
     if (t.wizardCity !== undefined) out.wizardCity = t.wizardCity;
   }
-
-  if (dep.pathwayState) {
-    const p = dep.pathwayState;
-    if (p.satisfiedPrerequisites !== undefined)
-      out.satisfiedPrerequisites = p.satisfiedPrerequisites;
-    if (p.currentGpa !== undefined) out.currentGpa = p.currentGpa;
-    if (p.targetDivision !== undefined) out.targetDivision = p.targetDivision;
-    if (p.graduationYear !== undefined) out.graduationYear = p.graduationYear;
-  }
-
-  if (dep.paymentHistory !== undefined) out.paymentHistory = dep.paymentHistory;
 
   return out;
 }

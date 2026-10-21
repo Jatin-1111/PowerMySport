@@ -1439,3 +1439,111 @@ export const coachWaitlistSchema = z.object({
   studentName: z.string().trim().min(1).max(120),
   playerId: z.string().min(1).optional(),
 });
+
+// ─── Child (dependent) profile ──────────────────────────────────────────────
+//
+// The writer (`AuthService/dependents.ts`) already whitelists the fields it
+// stores, and Mongoose checks the enums. What was missing is a bound on size
+// and on the date of birth: nothing stopped a 2 MB note, thousands of sports or
+// a birth date in the future. Unknown keys are dropped, not rejected, because
+// the client sends a few (pathway fields, `_id`) the server never stores.
+
+export const MAX_DEPENDENTS_PER_PARENT = 10;
+
+/** An enum that also takes "" or null, which both mean "not answered". */
+const childEnum = <T extends [string, ...string[]]>(values: T) =>
+  z.preprocess((value) => (value === "" ? null : value), z.enum(values).nullish());
+
+const childText = (max: number) =>
+  z.preprocess((value) => (value === "" ? null : value), z.string().trim().max(max).nullish());
+
+const childTextList = (maxItems: number, maxLength: number) =>
+  z.array(z.string().trim().min(1).max(maxLength)).max(maxItems);
+
+const childNumber = (min: number, max: number) => z.number().min(min).max(max).nullish();
+
+const childDate = z
+  .union([z.string().min(1), z.date()])
+  .transform((value) => new Date(value))
+  .refine((date) => !Number.isNaN(date.getTime()), "Invalid date");
+
+const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
+
+/** Born today at the latest, and no earlier than 1990 (the oldest a parent could mean). */
+const childDob = childDate
+  .refine((date) => dateOnly(date) <= dateOnly(new Date()), "Date of birth cannot be in the future")
+  .refine((date) => date.getUTCFullYear() >= 1990, "Date of birth is not valid");
+
+/** The sport-matching quiz's answers, saved and replaced as one set. */
+const childQuiz = z.object({
+  heightCm: childNumber(50, 250),
+  weightKg: childNumber(10, 200),
+  energyType: childEnum(["explosive", "endurance"]),
+  motorType: childEnum(["gross", "fine"]),
+  visualTracking: childEnum(["strong", "moderate", "weak"]),
+  eyesight: childEnum(["sharp", "corrected", "limited"]),
+  agility: childEnum(["high", "moderate", "low"]),
+  teamIndividual: childNumber(1, 5),
+  competitiveResponse: childEnum(["fired-up", "calm", "discouraged"]),
+  focusStyle: childEnum(["bursts", "sustained"]),
+  decisionStyle: childEnum(["react", "strategic"]),
+  pressureResponse: childEnum(["thrives", "manages", "avoids"]),
+  repetitionTolerance: childEnum(["high", "low"]),
+  contactComfort: childEnum(["loves", "neutral", "avoids"]),
+  environment: childEnum(["outdoor", "indoor", "no-preference"]),
+  waterComfort: childEnum(["comfortable", "neutral", "uncomfortable"]),
+});
+
+const childFields = {
+  name: z.string().trim().min(1, "Name is required").max(100),
+  parentalConsent: z.boolean().optional(),
+  dob: childDob.nullish(),
+  age: childNumber(0, 120),
+  gender: childEnum(["MALE", "FEMALE", "OTHER"]),
+  relation: childText(40),
+  location: childText(60),
+  sportsFocus: childTextList(10, 60).optional(),
+  sports: childTextList(10, 60).optional(),
+  consideringSports: childTextList(10, 60).optional(),
+  skillLevel: childText(60),
+  yearsPlaying: childNumber(0, 20),
+  personalityTags: childTextList(20, 40).optional(),
+  quiz: childQuiz.nullish(),
+  budgetRange: childEnum(["under-3k", "3k-7k", "7k-15k", "15k-plus"]),
+  ambition: childEnum(["fun", "competitive", "national", "career", "professional"]),
+  weeklyHoursCategory: childEnum(["1-3", "4-7", "8-12", "13-plus"]),
+  experienceLevel: childEnum(["beginner", "intermediate", "competitive"]),
+  trainingType: childEnum(["self", "club", "academy", "private"]),
+  currentStandingTier: childNumber(1, 5),
+  wizardCity: childText(60),
+  sportMatches: z
+    .array(
+      z.object({
+        sport: z.string().trim().max(60),
+        fitLabel: z.string().trim().max(60),
+        score: z.number(),
+      })
+    )
+    .max(10)
+    .optional(),
+  wizardCompletedAt: childDate.nullish(),
+  chosenSport: childText(60),
+  chosenSportAt: childDate.nullish(),
+};
+
+/** The oldest a child can be when the profile is created (matches the client's bounds). */
+const eighteenYearsAgo = () => {
+  const limit = new Date();
+  limit.setUTCFullYear(limit.getUTCFullYear() - 18);
+  return dateOnly(limit);
+};
+
+export const addDependentSchema = z
+  .object(childFields)
+  .refine((data) => !data.dob || dateOnly(new Date(data.dob)) >= eighteenYearsAgo(), {
+    message: "A child must be under 18",
+    path: ["dob"],
+  });
+
+/** Every field optional on update; an existing profile may already be 18 or older. */
+export const updateDependentSchema = z.object(childFields).partial();

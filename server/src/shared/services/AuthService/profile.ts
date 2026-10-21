@@ -20,12 +20,6 @@ export interface UpdateProfilePayload {
     weeklyTimeCommitment?: number;
     budgetTier?: "Budget" | "Moderate" | "Premium";
     location?: string;
-    pathwayState?: {
-      satisfiedPrerequisites?: string[];
-      currentGpa?: string;
-      targetDivision?: string;
-      graduationYear?: number;
-    };
   };
   shippingAddress?: {
     fullName: string;
@@ -104,11 +98,6 @@ export const updateProfile = async (
     if (payload.playerProfile.budgetTier) selfPlayer.budgetTier = payload.playerProfile.budgetTier;
     if (payload.playerProfile.location !== undefined)
       selfPlayer.location = payload.playerProfile.location;
-
-    if (payload.playerProfile.pathwayState) {
-      if (!selfPlayer.pathwayState) selfPlayer.pathwayState = {};
-      Object.assign(selfPlayer.pathwayState, payload.playerProfile.pathwayState);
-    }
 
     await selfPlayer.save();
   }

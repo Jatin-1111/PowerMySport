@@ -1,16 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  isAnswered,
-  getAgeFromDob,
-  buildProfileChips,
-  buildAchievementChips,
-  buildGoalChips,
-  TRAINING_TYPE_DISPLAY,
-  HOURS_DISPLAY,
-  BUDGET_DISPLAY,
-  EMPTY_FORM,
-  type KnownSportForm,
-} from "./sportKnownFlowUtils";
+import { isAnswered, getAgeFromDob, EMPTY_FORM, type KnownSportForm } from "./sportKnownFlowUtils";
 import {
   getCurrentStandingLadder,
   getBestResultLadder,
@@ -34,28 +23,6 @@ function dobYearsAgo(years: number): string {
   d.setDate(1);
   return d.toISOString().slice(0, 10);
 }
-
-// ─── Label map coverage ────────────────────────────────────────────────────────
-
-describe("label maps — all UI option values are covered", () => {
-  it("TRAINING_TYPE_DISPLAY covers all 4 options", () => {
-    ["self", "club", "academy", "private"].forEach((k) => {
-      expect(TRAINING_TYPE_DISPLAY[k], `missing: ${k}`).toBeTruthy();
-    });
-  });
-
-  it("HOURS_DISPLAY covers all 4 options", () => {
-    ["1-3", "4-7", "8-12", "13-plus"].forEach((k) => {
-      expect(HOURS_DISPLAY[k], `missing: ${k}`).toBeTruthy();
-    });
-  });
-
-  it("BUDGET_DISPLAY covers all 4 options", () => {
-    ["under-3k", "3k-7k", "7k-15k", "15k-plus"].forEach((k) => {
-      expect(BUDGET_DISPLAY[k], `missing: ${k}`).toBeTruthy();
-    });
-  });
-});
 
 // ─── getAgeFromDob ────────────────────────────────────────────────────────────
 
@@ -145,234 +112,11 @@ describe("isAnswered", () => {
 
   it("numeric tier field → true (even tier 1, the lowest)", () => {
     expect(isAnswered("currentStandingTier", form({ currentStandingTier: 1 }))).toBe(true);
-    expect(isAnswered("bestResultTier", form({ bestResultTier: 1 }))).toBe(true);
   });
 
   it("EMPTY_FORM required fields (sport, state) are false", () => {
     expect(isAnswered("sport", EMPTY_FORM)).toBe(false);
     expect(isAnswered("state", EMPTY_FORM)).toBe(false);
-  });
-});
-
-// ─── buildProfileChips ────────────────────────────────────────────────────────
-
-describe("buildProfileChips", () => {
-  it("full form produces every expected chip", () => {
-    const chips = buildProfileChips(
-      form({
-        sport: "Cricket",
-        gender: "MALE",
-        dateOfBirth: dobYearsAgo(10),
-        state: "Maharashtra",
-        currentStandingTier: 3,
-        yearsPlaying: 3,
-        trainingType: "academy",
-        academyName: "Sunrise Academy",
-        sessionsPerWeek: 4,
-      })
-    );
-    expect(chips).toContain("Boy");
-    expect(chips).toContain("Age 10");
-    expect(chips).toContain("Maharashtra");
-    expect(chips).toContain("State level"); // federation tier 3, Cricket
-    expect(chips).toContain("3 yrs playing");
-    expect(chips).toContain("Academy");
-    expect(chips).toContain("Sunrise Academy");
-    expect(chips).toContain("4x/week");
-  });
-
-  it("null trainingType omits training chip", () => {
-    const chips = buildProfileChips(form({ trainingType: null }));
-    const trainingChips = ["Self-practice", "Club / School", "Academy", "Private coaching"];
-    expect(chips.some((c) => trainingChips.includes(c))).toBe(false);
-  });
-
-  it("all 4 training types map correctly", () => {
-    expect(buildProfileChips(form({ trainingType: "self" }))).toContain("Self-practice");
-    expect(buildProfileChips(form({ trainingType: "club" }))).toContain("Club / School");
-    expect(buildProfileChips(form({ trainingType: "academy" }))).toContain("Academy");
-    expect(buildProfileChips(form({ trainingType: "private" }))).toContain("Private coaching");
-  });
-
-  it("FEMALE gender shows 'Girl'", () => {
-    expect(buildProfileChips(form({ gender: "FEMALE" }))).toContain("Girl");
-  });
-
-  it("null gender omitted", () => {
-    const chips = buildProfileChips(form({ gender: null }));
-    expect(chips).not.toContain("Boy");
-    expect(chips).not.toContain("Girl");
-  });
-
-  it("empty dateOfBirth omits age chip", () => {
-    const chips = buildProfileChips(form({ dateOfBirth: "" }));
-    expect(chips.some((c) => c.startsWith("Age"))).toBe(false);
-  });
-
-  it("invalid DOB string omits age chip (no crash)", () => {
-    const chips = buildProfileChips(form({ dateOfBirth: "abc" }));
-    expect(chips.some((c) => c.startsWith("Age"))).toBe(false);
-  });
-
-  it("future DOB omits age chip", () => {
-    const chips = buildProfileChips(form({ dateOfBirth: "2099-01-01" }));
-    expect(chips.some((c) => c.startsWith("Age"))).toBe(false);
-  });
-
-  it("valid DOB shows correct age chip", () => {
-    const chips = buildProfileChips(form({ dateOfBirth: dobYearsAgo(12) }));
-    expect(chips).toContain("Age 12");
-  });
-
-  it("null state omitted", () => {
-    const chips = buildProfileChips(form({ state: null }));
-    expect(chips).toHaveLength(0);
-  });
-
-  it("state value passes through as-is", () => {
-    expect(buildProfileChips(form({ state: "Tamil Nadu" }))).toContain("Tamil Nadu");
-  });
-
-  it("currentStandingTier resolves to the right ladder per sport", () => {
-    // Tennis has an authored AITA ladder, so the chip reads in AITA's terms
-    expect(buildProfileChips(form({ sport: "Tennis", currentStandingTier: 1 }))).toContain(
-      "No AITA ranking yet"
-    );
-    // Chess has an authored AICF ladder, which has no "state rating" rung
-    expect(buildProfileChips(form({ sport: "Chess", currentStandingTier: 2 }))).toContain(
-      "Playing rated tournaments"
-    );
-  });
-
-  it("null currentStandingTier omits the standing chip", () => {
-    const chips = buildProfileChips(form({ sport: "Cricket", currentStandingTier: null }));
-    expect(chips.some((c) => c.startsWith("Competes at") || c === "International exposure")).toBe(
-      false
-    );
-  });
-
-  it("yearsPlaying singular vs plural", () => {
-    expect(buildProfileChips(form({ yearsPlaying: 1 }))).toContain("1 yr playing");
-    expect(buildProfileChips(form({ yearsPlaying: 5 }))).toContain("5 yrs playing");
-  });
-
-  it("yearsPlaying zero still shows a chip (0 is a valid answer)", () => {
-    expect(buildProfileChips(form({ yearsPlaying: 0 }))).toContain("0 yrs playing");
-  });
-
-  it("empty academyName omits chip", () => {
-    const chips = buildProfileChips(form({ academyName: "" }));
-    expect(chips).toHaveLength(0);
-  });
-
-  it("completely empty form → empty array", () => {
-    expect(buildProfileChips(EMPTY_FORM)).toHaveLength(0);
-  });
-});
-
-// ─── buildAchievementChips ─────────────────────────────────────────────────────
-
-describe("buildAchievementChips", () => {
-  it("bestResultTier resolves to the right ladder label per sport", () => {
-    expect(buildAchievementChips(form({ sport: "Cricket", bestResultTier: 4 }))).toContain(
-      "National-level selection or medal"
-    );
-  });
-
-  it("achievementsNote passes through when present", () => {
-    expect(
-      buildAchievementChips(form({ achievementsNote: "Won U-14 state championship" }))
-    ).toContain("Won U-14 state championship");
-  });
-
-  it("empty achievementsNote omitted", () => {
-    const chips = buildAchievementChips(form({ achievementsNote: "" }));
-    expect(chips.some((c) => c === "")).toBe(false);
-  });
-
-  it("no sport, no bestResultTier → empty array", () => {
-    expect(buildAchievementChips(EMPTY_FORM)).toHaveLength(0);
-  });
-});
-
-// ─── buildGoalChips ───────────────────────────────────────────────────────────
-
-describe("buildGoalChips", () => {
-  it("full form produces all 3 chips", () => {
-    const chips = buildGoalChips(
-      form({ sport: "Cricket", ambition: "national", weeklyHours: "8-12", budgetRange: "7k-15k" })
-    );
-    expect(chips).toContain("Trying for district/state trials");
-    expect(chips).toContain("8–12 hrs/week");
-    expect(chips).toContain("₹7k–15k/mo");
-    expect(chips).toHaveLength(3);
-  });
-
-  it("federation sports (Cricket) get district/state trial wording", () => {
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "fun" }))).toContain(
-      "Fitness & enjoyment only"
-    );
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "competitive" }))).toContain(
-      "Improving for school team"
-    );
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "national" }))).toContain(
-      "Trying for district/state trials"
-    );
-    expect(buildGoalChips(form({ sport: "Cricket", ambition: "career" }))).toContain(
-      "Building a career in sport"
-    );
-  });
-
-  it("ranking sports (Tennis) get ranking-tournament wording instead of district/state trials", () => {
-    expect(buildGoalChips(form({ sport: "Tennis", ambition: "national" }))).toContain(
-      "Earning an All-India (national) ranking"
-    );
-    expect(buildGoalChips(form({ sport: "Tennis", ambition: "career" }))).toContain(
-      "Building a career in sport"
-    );
-  });
-
-  it("empty sport omits the ambition chip (consistent with other chip builders)", () => {
-    const chips = buildGoalChips(form({ ambition: "national" }));
-    expect(chips.some((c) => c.toLowerCase().includes("trial"))).toBe(false);
-  });
-
-  it("all 4 weeklyHours values map correctly", () => {
-    expect(buildGoalChips(form({ weeklyHours: "1-3" }))).toContain("1–3 hrs/week");
-    expect(buildGoalChips(form({ weeklyHours: "4-7" }))).toContain("4–7 hrs/week");
-    expect(buildGoalChips(form({ weeklyHours: "8-12" }))).toContain("8–12 hrs/week");
-    expect(buildGoalChips(form({ weeklyHours: "13-plus" }))).toContain("13+ hrs/week");
-  });
-
-  it("all 4 budgetRange values map correctly", () => {
-    expect(buildGoalChips(form({ budgetRange: "under-3k" }))).toContain("Under ₹3k/mo");
-    expect(buildGoalChips(form({ budgetRange: "3k-7k" }))).toContain("₹3k–7k/mo");
-    expect(buildGoalChips(form({ budgetRange: "7k-15k" }))).toContain("₹7k–15k/mo");
-    expect(buildGoalChips(form({ budgetRange: "15k-plus" }))).toContain("₹15k+/mo");
-  });
-
-  it("null fields omit chips", () => {
-    expect(buildGoalChips(EMPTY_FORM)).toHaveLength(0);
-  });
-});
-
-// ─── Edge cases ───────────────────────────────────────────────────────────────
-
-describe("edge cases", () => {
-  it("no nulls leak into chip arrays", () => {
-    [
-      ...buildProfileChips(EMPTY_FORM),
-      ...buildAchievementChips(EMPTY_FORM),
-      ...buildGoalChips(EMPTY_FORM),
-    ].forEach((c) => {
-      expect(c).not.toBeNull();
-      expect(typeof c).toBe("string");
-    });
-  });
-
-  it("unknown gender value produces no chip", () => {
-    const chips = buildProfileChips(form({ gender: "OTHER" }));
-    expect(chips.some((c) => c === "Boy" || c === "Girl")).toBe(false);
   });
 });
 
@@ -561,12 +305,6 @@ describe("getAmbitionOptions — the career tier", () => {
     const labels = getAmbitionOptions("Cricket").map((o) => o.label.toLowerCase());
     expect(labels.some((l) => l.includes("state"))).toBe(true);
   });
-
-  it("`professional` is still renderable — it stays in the type for rows written before the swap", () => {
-    // buildGoalChips looks the value up in the option list; a legacy row simply
-    // finds no label rather than throwing.
-    expect(() => buildGoalChips(form({ sport: "Tennis", ambition: "professional" }))).not.toThrow();
-  });
 });
 
 describe("sportAsksBestResult — the redundant question", () => {
@@ -590,7 +328,6 @@ describe("sportAsksBestResult — the redundant question", () => {
     ["Tennis", "Chess"].forEach((sport) => {
       const ladder = getBestResultLadder(sport);
       expect(ladder).toHaveLength(5);
-      expect(buildAchievementChips(form({ sport, bestResultTier: 3 }))).toHaveLength(1);
     });
   });
 });

@@ -12,6 +12,7 @@ import { validatePromoCode, applyPromoCode } from "../PromoCodeService";
 import { isWithinOpeningHours, combineDateAndTimeIST } from "../../../utils/openingHours";
 import { BookingWaitlist, BookingWaitlistDocument } from "../../models/BookingWaitlist";
 import { calculateSplitAmounts } from "../../../utils/payment";
+import { resolveChildAge } from "../../../utils/childAge";
 import { recordBookingEventFor } from "../BookingEventService";
 import {
   log,
@@ -180,13 +181,14 @@ export const initiateBooking = async (
       }
 
       // Validate dependent's age
-      if (typeof dependent.age !== "number" || isNaN(dependent.age)) {
+      const dependentAge = resolveChildAge(dependent);
+      if (dependentAge === null) {
         throw new Error("Invalid age for dependent");
       }
 
       participantName = dependent.name;
       participantId = dependent._id;
-      participantAge = dependent.age;
+      participantAge = dependentAge;
       log.info(
         "[initiateBooking] STEP 2 OK: dependent =",
         dependent._id.toString(),

@@ -20,10 +20,8 @@ const FIELD_TO_STEP: Record<string, DependentModalStepId> = {
   // "Sport & setup" carries both what they play and where they're based.
   sportsFocus: "sport",
   location: "sport",
-  physical: "physical",
-  personality: "personality",
-  // "Environment & senses" holds contactComfort / environment / waterComfort.
-  comfort: "environment",
+  // "Sport & setup" also holds the child's current level.
+  standing: "sport",
   // "Goals & commitment" holds budgetRange / ambition / weeklyHoursCategory.
   practical: "goals",
 };
@@ -55,11 +53,8 @@ export function nextStepHref(dependentId: string, field: string): string {
 const ACTION_LABELS: Record<string, string> = {
   sportsFocus: "their sport",
   location: "their location",
-  physical: "height & weight",
-  personality: "play style",
-  comfort: "training preferences",
   practical: "budget & schedule",
-  assessment: "the sport assessment",
+  standing: "their current level",
 };
 
 /** The dashboard CTA text for closing `field` — "Add {...}", except assessment,
@@ -67,5 +62,5 @@ const ACTION_LABELS: Record<string, string> = {
 export function nextStepLabel(field: string): string {
   const action = ACTION_LABELS[field];
   if (!action) return "Finish their profile";
-  return field === "assessment" ? `Take ${action}` : `Add ${action}`;
+  return `Add ${action}`;
 }

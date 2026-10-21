@@ -3,7 +3,10 @@
 import { nextStepHref } from "@/modules/player/config/dependentNextStep";
 import { useProfile } from "@/modules/auth/hooks/useProfile";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
-import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
+import {
+  calculateDependentCompletion,
+  hasAssessment,
+} from "@/modules/player/utils/dependentCompletion";
 import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import type { Dependent } from "@/types";
 import { useMemo } from "react";
@@ -53,7 +56,8 @@ const summarize = (dependent: Dependent): DependentSummary | null => {
   const id = dependent._id?.toString();
   if (!id) return null;
 
-  const { percent, missing } = calculateDependentCompletion(denormalizeDependent(dependent));
+  const flat = denormalizeDependent(dependent);
+  const { percent, missing } = calculateDependentCompletion(flat);
 
   // `missing` arrives in field-declaration order, not by importance. Sorting by
   // weight is what makes "one CTA per child" the *highest-value* next action
@@ -67,10 +71,7 @@ const summarize = (dependent: Dependent): DependentSummary | null => {
     sport: dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0] || null,
     completionPercent: percent,
     topGap: top ? { ...top, href: nextStepHref(id, top.field) } : null,
-    // The scorer already decides what "we know where this child stands" means
-    // (wizard completed, or a current-standing tier recorded). Reading it back
-    // off `missing` keeps that definition in one place instead of restating it.
-    hasAssessment: !missing.some((m) => m.field === "assessment"),
+    hasAssessment: hasAssessment(flat),
     hasChosenSport: Boolean(dependent.sport?.chosenSport),
     dependent,
   };

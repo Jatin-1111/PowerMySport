@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 import { Booking } from "../../../client/models/Booking";
-import { Player } from "../../../client/models/Player";
+import { Player, QuizAnswers } from "../../../client/models/Player";
 import { User, UserDocument } from "../../../client/models/User";
+import { resolveChildAge } from "../../../utils/childAge";
+import { MAX_DEPENDENTS_PER_PARENT } from "../../../middleware/schemas";
+import { AppError } from "../../../utils/AppError";
 import { sendWelcomeEmail } from "../../../utils/email";
-import { log } from "./shared";
+import { log, PARENTAL_CONSENT_VERSION } from "./shared";
 
 export interface GraduateDependentPayload {
   parentId: string;
@@ -42,7 +45,8 @@ export const graduateDependent = async (
     }
 
     // Check if dependent is at least 18 years old
-    if (dependent.age && dependent.age < 18) {
+    const currentAge = resolveChildAge(dependent);
+    if (currentAge !== null && currentAge < 18) {
       throw new Error("Dependent must be at least 18 years old to graduate");
     }
 
@@ -106,8 +110,32 @@ export const graduateDependent = async (
   }
 };
 
+/** True when the parent has agreed to the current version of the Parental Consent policy. */
+export const hasCurrentParentalConsent = (user: UserDocument): boolean => {
+  const consent = user.legalConsents?.parentalConsent;
+  return consent?.accepted === true && consent.version === PARENTAL_CONSENT_VERSION;
+};
+
+/** Records the parent's agreement to the current policy version. */
+const recordParentalConsent = async (userId: string | mongoose.Types.ObjectId): Promise<void> => {
+  await User.updateOne(
+    { _id: userId },
+    {
+      $set: {
+        "legalConsents.parentalConsent": {
+          accepted: true,
+          acceptedAt: new Date(),
+          version: PARENTAL_CONSENT_VERSION,
+        },
+      },
+    }
+  );
+};
+
 export interface AddDependentPayload {
   name: string;
+  /** The parent ticked the consent box on this request. */
+  parentalConsent?: boolean;
   age?: number;
   dob?: string | Date;
   gender?: "MALE" | "FEMALE" | "OTHER";
@@ -117,32 +145,9 @@ export interface AddDependentPayload {
   skillLevel?: string;
   yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Fitness" | "Compete";
-  weeklyTimeCommitment?: number;
-  budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
-  heightCm?: number;
-  weightKg?: number;
-  medicalConditions?: string[];
-  // Wizard physical
-  build?: "lean" | "average" | "stocky";
-  heightCategory?: "short" | "average" | "tall";
-  energyType?: "explosive" | "endurance";
-  motorType?: "gross" | "fine";
-  visualTracking?: "strong" | "moderate" | "weak";
-  eyesight?: "sharp" | "corrected" | "limited";
-  agility?: "high" | "moderate" | "low";
-  // Wizard personality
-  teamIndividual?: number;
-  competitiveResponse?: "fired-up" | "calm" | "discouraged";
-  focusStyle?: "bursts" | "sustained";
-  decisionStyle?: "react" | "strategic";
-  pressureResponse?: "thrives" | "manages" | "avoids";
-  repetitionTolerance?: "high" | "low";
-  // Wizard comfort
-  contactComfort?: "loves" | "neutral" | "avoids";
-  environment?: "outdoor" | "indoor" | "no-preference";
-  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  /** The quiz answers; merged over any earlier set, and null clears them. */
+  quiz?: QuizAnswers | null;
   // Wizard practical
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
   ambition?: "fun" | "competitive" | "national" | "career" | "professional";
@@ -152,24 +157,12 @@ export interface AddDependentPayload {
   consideringSports?: string[];
   // Build-the-profile: current standing / track record
   currentStandingTier?: number;
-  bestResultTier?: number;
-  achievementsNote?: string;
-  // Build-the-profile: training setup
-  academyName?: string;
-  sessionsPerWeek?: number;
-  trainingMonths?: number;
   wizardCity?: string;
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string | Date;
   /** The sport the parent committed to on the results page — a decision, not a score. */
   chosenSport?: string;
   chosenSportAt?: string | Date;
-}
-
-function calculateAge(dob: Date): number {
-  const ageDifMs = Date.now() - dob.getTime();
-  const ageDate = new Date(ageDifMs);
-  return Math.abs(ageDate.getUTCFullYear() - 1970);
 }
 
 export const addDependent = async (userId: string, payload: AddDependentPayload): Promise<any> => {
@@ -182,15 +175,31 @@ export const addDependent = async (userId: string, payload: AddDependentPayload)
     throw new Error("Only Parent profiles can add dependents. Please upgrade your profile first.");
   }
 
-  let age = payload.age;
-  let parsedDob: Date | undefined;
-
-  if (payload.dob) {
-    parsedDob = new Date(payload.dob);
-    if (!isNaN(parsedDob.getTime())) {
-      age = calculateAge(parsedDob);
+  // A child's details are only taken once the parent has agreed to the Parental
+  // Consent policy. 428 tells the client to show the consent box and retry.
+  if (!hasCurrentParentalConsent(user)) {
+    if (payload.parentalConsent !== true) {
+      throw new AppError("Please accept the Parental Consent policy to add a child.", 428);
     }
+    await recordParentalConsent(user._id);
   }
+
+  const existing = await Player.countDocuments({ userId: user._id, type: "DEPENDENT" });
+  if (existing >= MAX_DEPENDENTS_PER_PARENT) {
+    throw new AppError(
+      `You can add up to ${MAX_DEPENDENTS_PER_PARENT} child profiles. Remove one to add another.`,
+      400
+    );
+  }
+
+  // The age is worked out from the date of birth when it is read, so it is only
+  // stored for a profile that has no date of birth to work it out from.
+  let parsedDob: Date | undefined;
+  if (payload.dob) {
+    const candidate = new Date(payload.dob);
+    if (!isNaN(candidate.getTime())) parsedDob = candidate;
+  }
+  const age = parsedDob ? undefined : payload.age;
 
   const newDependent = new Player({
     userId: user._id,
@@ -204,32 +213,8 @@ export const addDependent = async (userId: string, payload: AddDependentPayload)
     skillLevel: payload.skillLevel || "",
     yearsPlaying: payload.yearsPlaying,
     personalityTags: payload.personalityTags,
-    primaryObjective: payload.primaryObjective,
-    weeklyTimeCommitment: payload.weeklyTimeCommitment,
-    budgetTier: payload.budgetTier,
     location: payload.location,
-    heightCm: payload.heightCm,
-    weightKg: payload.weightKg,
-    medicalConditions: payload.medicalConditions || [],
-    // Wizard physical
-    build: payload.build,
-    heightCategory: payload.heightCategory,
-    energyType: payload.energyType,
-    motorType: payload.motorType,
-    visualTracking: payload.visualTracking,
-    eyesight: payload.eyesight,
-    agility: payload.agility,
-    // Wizard personality
-    teamIndividual: payload.teamIndividual,
-    competitiveResponse: payload.competitiveResponse,
-    focusStyle: payload.focusStyle,
-    decisionStyle: payload.decisionStyle,
-    pressureResponse: payload.pressureResponse,
-    repetitionTolerance: payload.repetitionTolerance,
-    // Wizard comfort
-    contactComfort: payload.contactComfort,
-    environment: payload.environment,
-    waterComfort: payload.waterComfort,
+    quiz: payload.quiz ?? undefined,
     // Wizard practical
     budgetRange: payload.budgetRange,
     ambition: payload.ambition,
@@ -239,12 +224,7 @@ export const addDependent = async (userId: string, payload: AddDependentPayload)
     consideringSports: payload.consideringSports,
     // Build-the-profile: current standing / track record
     currentStandingTier: payload.currentStandingTier,
-    bestResultTier: payload.bestResultTier,
-    achievementsNote: payload.achievementsNote,
     // Build-the-profile: training setup
-    academyName: payload.academyName,
-    sessionsPerWeek: payload.sessionsPerWeek,
-    trainingMonths: payload.trainingMonths,
     // Wizard results
     sportMatches: payload.sportMatches,
     wizardCompletedAt: payload.wizardCompletedAt ? new Date(payload.wizardCompletedAt) : undefined,
@@ -271,58 +251,42 @@ export const updateDependent = async (
     throw new Error("Dependent not found");
   }
 
+  // The edit form shows the consent box to a parent who has not agreed yet.
+  if (payload.parentalConsent === true) await recordParentalConsent(userId);
+
   if (payload.name) dependent.name = payload.name;
 
   if (payload.dob) {
     const parsedDob = new Date(payload.dob);
     if (!isNaN(parsedDob.getTime())) {
       dependent.dob = parsedDob;
-      dependent.age = calculateAge(parsedDob);
+      dependent.set("age", undefined);
     }
-  } else if (payload.age !== undefined) {
+  } else if (payload.age !== undefined && !dependent.dob) {
     dependent.age = payload.age;
   }
 
-  if (payload.gender) dependent.gender = payload.gender;
-  if (payload.relation) dependent.relation = payload.relation;
+  // An empty string or null clears the field; the enums would reject "" as a value.
+  const assign = (field: keyof AddDependentPayload, value: unknown) => {
+    if (value === undefined) return;
+    dependent.set(field, value === "" || value === null ? undefined : value);
+  };
+  assign("gender", payload.gender);
+  assign("relation", payload.relation);
   if (payload.sportsFocus) dependent.sportsFocus = payload.sportsFocus;
   if (payload.sports) dependent.sportsFocus = payload.sports;
-  if (payload.skillLevel) dependent.skillLevel = payload.skillLevel;
+  assign("skillLevel", payload.skillLevel);
   if (payload.yearsPlaying !== undefined) dependent.yearsPlaying = payload.yearsPlaying;
   if (payload.personalityTags) dependent.personalityTags = payload.personalityTags;
-  if (payload.primaryObjective) dependent.primaryObjective = payload.primaryObjective;
-  if (payload.weeklyTimeCommitment !== undefined)
-    dependent.weeklyTimeCommitment = payload.weeklyTimeCommitment;
-  if (payload.budgetTier) dependent.budgetTier = payload.budgetTier;
   if (payload.location !== undefined) dependent.location = payload.location;
-  if (payload.heightCm !== undefined) (dependent as any).heightCm = payload.heightCm;
-  if (payload.weightKg !== undefined) (dependent as any).weightKg = payload.weightKg;
-  if (payload.medicalConditions !== undefined)
-    (dependent as any).medicalConditions = payload.medicalConditions;
-  // Wizard physical
-  if (payload.build !== undefined) (dependent as any).build = payload.build;
-  if (payload.heightCategory !== undefined)
-    (dependent as any).heightCategory = payload.heightCategory;
-  if (payload.energyType !== undefined) (dependent as any).energyType = payload.energyType;
-  if (payload.motorType !== undefined) (dependent as any).motorType = payload.motorType;
-  if (payload.visualTracking !== undefined)
-    (dependent as any).visualTracking = payload.visualTracking;
-  // Wizard personality
-  if (payload.teamIndividual !== undefined)
-    (dependent as any).teamIndividual = payload.teamIndividual;
-  if (payload.competitiveResponse !== undefined)
-    (dependent as any).competitiveResponse = payload.competitiveResponse;
-  if (payload.focusStyle !== undefined) (dependent as any).focusStyle = payload.focusStyle;
-  if (payload.decisionStyle !== undefined) (dependent as any).decisionStyle = payload.decisionStyle;
-  if (payload.pressureResponse !== undefined)
-    (dependent as any).pressureResponse = payload.pressureResponse;
-  if (payload.repetitionTolerance !== undefined)
-    (dependent as any).repetitionTolerance = payload.repetitionTolerance;
-  // Wizard comfort
-  if (payload.contactComfort !== undefined)
-    (dependent as any).contactComfort = payload.contactComfort;
-  if (payload.environment !== undefined) (dependent as any).environment = payload.environment;
-  if (payload.waterComfort !== undefined) (dependent as any).waterComfort = payload.waterComfort;
+  // The quiz answers travel together. Answers sent are merged over the stored set,
+  // so a flow that only knows height and weight does not wipe the rest; null clears.
+  if (payload.quiz !== undefined) {
+    const existing = (
+      dependent.quiz as unknown as { toObject?: () => object } | undefined
+    )?.toObject?.();
+    dependent.set("quiz", payload.quiz === null ? undefined : { ...existing, ...payload.quiz });
+  }
   // Wizard practical
   if (payload.budgetRange !== undefined) (dependent as any).budgetRange = payload.budgetRange;
   if (payload.ambition !== undefined) (dependent as any).ambition = payload.ambition;
@@ -336,16 +300,7 @@ export const updateDependent = async (
   // Build-the-profile: current standing / track record
   if (payload.currentStandingTier !== undefined)
     (dependent as any).currentStandingTier = payload.currentStandingTier;
-  if (payload.bestResultTier !== undefined)
-    (dependent as any).bestResultTier = payload.bestResultTier;
-  if (payload.achievementsNote !== undefined)
-    (dependent as any).achievementsNote = payload.achievementsNote;
   // Build-the-profile: training setup
-  if (payload.academyName !== undefined) (dependent as any).academyName = payload.academyName;
-  if (payload.sessionsPerWeek !== undefined)
-    (dependent as any).sessionsPerWeek = payload.sessionsPerWeek;
-  if (payload.trainingMonths !== undefined)
-    (dependent as any).trainingMonths = payload.trainingMonths;
   if (payload.wizardCity !== undefined) (dependent as any).wizardCity = payload.wizardCity;
   if (payload.sportMatches !== undefined) (dependent as any).sportMatches = payload.sportMatches;
   if (payload.wizardCompletedAt !== undefined) {

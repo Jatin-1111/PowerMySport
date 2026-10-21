@@ -2,11 +2,27 @@
 // Shared translation layer between the pathway wizard's answer shape and the
 // Player/Dependent record persisted via /api/auth/dependents. Used by the
 // wizard (WizardShell) and by the dependent profile builder so both write the
-// exact same derived fields (build, heightCategory, budgetTier, etc.) from
-// the same source data.
+// exact same stored fields from the same source data. Build, height category,
+// budget tier, objective and weekly hours are not stored; they are derived from
+// the fields kept (see the helpers below).
 
 import type { Dependent } from "@/types";
 import { EMPTY_ANSWERS, type SportFitResult, type SportResult, type WizardAnswers } from "../types";
+
+/** Build and height category are worked out from the measurements, never stored. */
+export function deriveBodyCategories(
+  heightCm: number | null | undefined,
+  weightKg: number | null | undefined,
+  age: number | null
+): {
+  build?: "lean" | "average" | "stocky";
+  heightCategory?: "short" | "average" | "tall";
+} {
+  return {
+    ...(heightCm && weightKg ? { build: deriveBuild(weightKg, heightCm) } : {}),
+    ...(heightCm ? { heightCategory: deriveHeightCategoryFromCm(heightCm, age) } : {}),
+  };
+}
 
 export function budgetRangeToTier(
   range: WizardAnswers["budget"]
@@ -101,7 +117,6 @@ export function buildDependentPayload(
     age: answers.age ?? undefined,
     gender: genderMap,
     location: answers.state ?? undefined,
-    medicalConditions: answers.medicalConditions.length ? answers.medicalConditions : undefined,
     sport: {
       sportsFocus: answers.priorSports.length ? answers.priorSports : undefined,
       consideringSports: answers.consideringSports.length ? answers.consideringSports : undefined,
@@ -112,11 +127,6 @@ export function buildDependentPayload(
     physical: {
       heightCm: answers.height ?? undefined,
       weightKg: answers.weight ?? undefined,
-      heightCategory: answers.height
-        ? deriveHeightCategoryFromCm(answers.height, answers.age)
-        : undefined,
-      build:
-        answers.height && answers.weight ? deriveBuild(answers.weight, answers.height) : undefined,
       energyType: answers.energyType ?? undefined,
       motorType: answers.motorType ?? undefined,
       visualTracking: answers.visualTracking ?? undefined,
@@ -138,10 +148,7 @@ export function buildDependentPayload(
     },
     practical: {
       budgetRange: answers.budget ?? undefined,
-      budgetTier: answers.budget ? budgetRangeToTier(answers.budget) : undefined,
       ambition: answers.ambition ?? undefined,
-      primaryObjective: answers.ambition ? ambitionToObjective(answers.ambition) : undefined,
-      weeklyTimeCommitment: weeklyHoursToNumber(answers.weeklyHours),
       weeklyHoursCategory: answers.weeklyHours ?? undefined,
     },
   };
@@ -172,14 +179,11 @@ export interface WizardSourceProfile {
   contactComfort?: "loves" | "neutral" | "avoids";
   environment?: "outdoor" | "indoor" | "no-preference";
   waterComfort?: "comfortable" | "neutral" | "uncomfortable";
-  medicalConditions?: string[];
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  budgetTier?: "Budget" | "Moderate" | "Premium";
   ambition?: "fun" | "competitive" | "national" | "career" | "professional";
   eyesight?: "sharp" | "corrected" | "limited";
   agility?: "high" | "moderate" | "low";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
-  weeklyTimeCommitment?: number;
 }
 
 export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAnswers> {
@@ -212,27 +216,12 @@ export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAn
   if (player.contactComfort) out.contactComfort = player.contactComfort;
   if (player.environment) out.environment = player.environment;
   if (player.waterComfort) out.waterComfort = player.waterComfort;
-  if (player.medicalConditions?.length) out.medicalConditions = player.medicalConditions;
   // Wizard practical
-  if (player.budgetRange) {
-    out.budget = player.budgetRange;
-  } else if (player.budgetTier) {
-    const map: Record<string, WizardAnswers["budget"]> = {
-      Budget: "3k-7k",
-      Moderate: "7k-15k",
-      Premium: "15k-plus",
-    };
-    out.budget = map[player.budgetTier] ?? null;
-  }
+  if (player.budgetRange) out.budget = player.budgetRange;
   if (player.ambition) out.ambition = player.ambition;
   if (player.eyesight) out.eyesight = player.eyesight;
   if (player.agility) out.agility = player.agility;
-  if (player.weeklyHoursCategory) {
-    out.weeklyHours = player.weeklyHoursCategory;
-  } else if (player.weeklyTimeCommitment) {
-    const wh = player.weeklyTimeCommitment;
-    out.weeklyHours = wh <= 3 ? "1-3" : wh <= 7 ? "4-7" : wh <= 12 ? "8-12" : "13-plus";
-  }
+  if (player.weeklyHoursCategory) out.weeklyHours = player.weeklyHoursCategory;
 
   return out;
 }
@@ -283,7 +272,6 @@ export function dependentToWizardAnswers(
     contactComfort: dep.contactComfort ?? null,
     environment: dep.environment ?? null,
     waterComfort: dep.waterComfort ?? null,
-    medicalConditions: dep.medicalConditions ?? [],
     budget: dep.budgetRange ?? null,
     ambition: dep.ambition ?? null,
     weeklyHours: dep.weeklyHoursCategory ?? null,

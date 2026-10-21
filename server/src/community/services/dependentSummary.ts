@@ -1,4 +1,5 @@
 import { Player } from "../../client/models/Player";
+import { resolveChildAge } from "../../utils/childAge";
 
 /**
  * What a parent's children look like to another parent on Discover.
@@ -130,26 +131,7 @@ type DependentRow = {
   location?: string | null;
 };
 
-/**
- * `age` is denormalised onto the row and goes stale — it is whatever the parent
- * typed on the day they added the child, and nothing ages it. The date of birth
- * is the only field that stays true, so it wins wherever both exist.
- */
-const resolveAge = (row: DependentRow): number | null => {
-  if (row.dob) {
-    const born = new Date(row.dob);
-    if (!Number.isNaN(born.getTime())) {
-      const now = new Date();
-      let age = now.getUTCFullYear() - born.getUTCFullYear();
-      const monthDelta = now.getUTCMonth() - born.getUTCMonth();
-      if (monthDelta < 0 || (monthDelta === 0 && now.getUTCDate() < born.getUTCDate())) {
-        age -= 1;
-      }
-      return age >= 0 ? age : null;
-    }
-  }
-  return typeof row.age === "number" && Number.isFinite(row.age) ? row.age : null;
-};
+const resolveAge = resolveChildAge;
 
 const clean = (value: unknown): string | null => {
   const trimmed = typeof value === "string" ? value.trim() : "";

@@ -135,15 +135,10 @@ export type PlayerProfile = {
   skillLevel?: string;
   yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Fitness" | "Compete";
-  weeklyTimeCommitment?: number;
-  budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string;
   // Wizard fields
   heightCm?: number;
   weightKg?: number;
-  build?: "lean" | "average" | "stocky";
-  heightCategory?: "short" | "average" | "tall";
   energyType?: "explosive" | "endurance";
   motorType?: "gross" | "fine";
   visualTracking?: "strong" | "moderate" | "weak";

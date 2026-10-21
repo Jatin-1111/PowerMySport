@@ -7,6 +7,13 @@ export const log = __rootLog.child("auth");
 export const LEGAL_POLICY_VERSION = "2026-04";
 
 /**
+ * The version of the Parental Consent & Minor Protection Policy a parent accepts
+ * before adding a child. Raise it when that policy changes in a way parents must
+ * agree to again; every parent is then asked once more at their next add or edit.
+ */
+export const PARENTAL_CONSENT_VERSION = "2026-10";
+
+/**
  * Grace period (in ms) between a self-service deletion request and the
  * scheduled job actually finalizing it. Overridable for testing.
  */

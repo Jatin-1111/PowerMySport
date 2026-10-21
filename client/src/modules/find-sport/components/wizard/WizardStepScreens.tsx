@@ -1,4 +1,3 @@
-import { X } from "lucide-react";
 import { motion } from "framer-motion";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { PRIOR_SPORTS_OPTIONS } from "../../data/sportProfiles";
@@ -68,7 +67,6 @@ export function QuestionScreen({
     contactComfort: "Comfort",
     environment: "Comfort",
     waterComfort: "Comfort",
-    medicalConditions: "Comfort",
     budget: "Practical",
     ambition: "Practical",
     weeklyHours: "Practical",
@@ -498,51 +496,6 @@ export function QuestionScreen({
           />
         );
 
-      case "medicalConditions":
-        return (
-          <div className="space-y-3">
-            <input
-              type="text"
-              placeholder="e.g., Asthma, press Enter to add"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  const val = (e.target as HTMLInputElement).value.trim();
-                  if (val && !answers.medicalConditions.includes(val)) {
-                    onAnswer("medicalConditions", [...answers.medicalConditions, val]);
-                    (e.target as HTMLInputElement).value = "";
-                  }
-                }
-              }}
-              className="focus:border-power-orange focus:ring-power-orange/15 w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2"
-            />
-            {answers.medicalConditions.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {answers.medicalConditions.map((cond) => (
-                  <span
-                    key={cond}
-                    className="flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700"
-                  >
-                    {cond}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onAnswer(
-                          "medicalConditions",
-                          answers.medicalConditions.filter((c) => c !== cond)
-                        )
-                      }
-                      className="ml-0.5 text-orange-400 hover:text-orange-600"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
       case "budget":
         return (
           <FourContextCards
@@ -680,7 +633,6 @@ export function QuestionScreen({
     contactComfort: "How comfortable is your child with physical contact?",
     environment: "Given a free afternoon, does your child gravitate toward:",
     waterComfort: `How comfortable is ${name} in water?`,
-    medicalConditions: `Does ${name} have any medical conditions or physical limitations we should know about?`,
     budget: "What can your family realistically invest in training each month?",
     ambition: "What is your honest goal for this sport journey?",
     weeklyHours: `How many hours per week can ${name} dedicate to sport training?`,
@@ -696,7 +648,6 @@ export function QuestionScreen({
     questionKey === "height" ||
     questionKey === "weight" ||
     questionKey === "priorSports" ||
-    questionKey === "medicalConditions" ||
     questionKey === "consideringSports" ||
     questionKey === "teamIndividual";
 
@@ -704,7 +655,6 @@ export function QuestionScreen({
     if (questionKey === "dob") return !!answers.dob && answers.age !== null;
     if (questionKey === "priorSports") return true;
     if (questionKey === "consideringSports") return true;
-    if (questionKey === "medicalConditions") return true;
     if (questionKey === "state") return !!answers.state;
     if (questionKey === "height") return true; // default pre-filled from age
     if (questionKey === "weight") return true; // default pre-filled from age

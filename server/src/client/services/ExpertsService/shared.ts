@@ -7,6 +7,7 @@ import { NotificationService } from "../NotificationService";
 import { decryptValue } from "../../../shared/utils/encryption";
 import { s3Service } from "../../../shared/services/S3Service";
 import { log as __rootLog } from "../../../utils/logger";
+import { resolveChildAge } from "../../../utils/childAge";
 
 export const log = __rootLog.child("experts");
 
@@ -159,21 +160,24 @@ export const serializeExpertFull = (expert: any) => ({
  * Condenses a Player (child) doc into the briefing an expert needs before a
  * session — the wizard-built profile signals, not the full raw document.
  */
+/** The quiz answers of a Player, or an empty set when the quiz was never taken. */
+const quiz = (player: PlayerDocument | any): Record<string, any> => player?.quiz ?? {};
+
 const summarizePlayerForExpert = (player: PlayerDocument | any) => ({
   _id: player._id?.toString(),
   name: player.name,
-  age: player.age,
+  age: resolveChildAge(player),
   gender: player.gender,
   sportsFocus: player.sportsFocus,
   topSportMatch: player.sportMatches?.[0],
-  energyType: player.energyType,
-  motorType: player.motorType,
-  teamIndividual: player.teamIndividual,
-  competitiveResponse: player.competitiveResponse,
-  focusStyle: player.focusStyle,
-  pressureResponse: player.pressureResponse,
-  contactComfort: player.contactComfort,
-  environment: player.environment,
+  energyType: quiz(player).energyType,
+  motorType: quiz(player).motorType,
+  teamIndividual: quiz(player).teamIndividual,
+  competitiveResponse: quiz(player).competitiveResponse,
+  focusStyle: quiz(player).focusStyle,
+  pressureResponse: quiz(player).pressureResponse,
+  contactComfort: quiz(player).contactComfort,
+  environment: quiz(player).environment,
   ambition: player.ambition,
   budgetRange: player.budgetRange,
   wizardCompletedAt: player.wizardCompletedAt,
@@ -183,11 +187,11 @@ const summarizePlayerForExpert = (player: PlayerDocument | any) => ({
  * Full child profile + AI roadmap narrative for the expert's dedicated
  * booking-detail page — everything summarizePlayerForExpert leaves out,
  * minus financial/academic-pathway fields that aren't relevant to a
- * sport-session expert (paymentHistory, pathwayState, costBreakdown).
+ * sport-session expert.
  */
 export const serializeFullPlayerForExpert = (player: PlayerDocument | any) => ({
   name: player.name,
-  age: player.age,
+  age: resolveChildAge(player),
   dob: player.dob,
   gender: player.gender,
   relation: player.relation,
@@ -195,40 +199,29 @@ export const serializeFullPlayerForExpert = (player: PlayerDocument | any) => ({
   skillLevel: player.skillLevel,
   yearsPlaying: player.yearsPlaying,
   personalityTags: player.personalityTags || [],
-  primaryObjective: player.primaryObjective,
-  weeklyTimeCommitment: player.weeklyTimeCommitment,
-  budgetTier: player.budgetTier,
   location: player.location,
-  heightCm: player.heightCm,
-  weightKg: player.weightKg,
-  medicalConditions: player.medicalConditions || [],
-  build: player.build,
-  heightCategory: player.heightCategory,
-  energyType: player.energyType,
-  motorType: player.motorType,
-  visualTracking: player.visualTracking,
-  teamIndividual: player.teamIndividual,
-  competitiveResponse: player.competitiveResponse,
-  focusStyle: player.focusStyle,
-  decisionStyle: player.decisionStyle,
-  pressureResponse: player.pressureResponse,
-  repetitionTolerance: player.repetitionTolerance,
-  contactComfort: player.contactComfort,
-  environment: player.environment,
-  waterComfort: player.waterComfort,
+  heightCm: quiz(player).heightCm,
+  weightKg: quiz(player).weightKg,
+  energyType: quiz(player).energyType,
+  motorType: quiz(player).motorType,
+  visualTracking: quiz(player).visualTracking,
+  teamIndividual: quiz(player).teamIndividual,
+  competitiveResponse: quiz(player).competitiveResponse,
+  focusStyle: quiz(player).focusStyle,
+  decisionStyle: quiz(player).decisionStyle,
+  pressureResponse: quiz(player).pressureResponse,
+  repetitionTolerance: quiz(player).repetitionTolerance,
+  contactComfort: quiz(player).contactComfort,
+  environment: quiz(player).environment,
+  waterComfort: quiz(player).waterComfort,
   budgetRange: player.budgetRange,
   ambition: player.ambition,
-  eyesight: player.eyesight,
-  agility: player.agility,
+  eyesight: quiz(player).eyesight,
+  agility: quiz(player).agility,
   weeklyHoursCategory: player.weeklyHoursCategory,
   experienceLevel: player.experienceLevel,
   trainingType: player.trainingType,
   currentStandingTier: player.currentStandingTier,
-  bestResultTier: player.bestResultTier,
-  achievementsNote: player.achievementsNote,
-  academyName: player.academyName,
-  sessionsPerWeek: player.sessionsPerWeek,
-  trainingMonths: player.trainingMonths,
   wizardCity: player.wizardCity,
   sportMatches: player.sportMatches || [],
   wizardCompletedAt: player.wizardCompletedAt,

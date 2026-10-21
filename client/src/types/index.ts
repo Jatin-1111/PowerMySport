@@ -61,7 +61,6 @@ export interface Dependent {
   gender?: "MALE" | "FEMALE" | "OTHER";
   relation?: string;
   location?: string; // Indian state
-  medicalConditions?: string[];
 
   /** What sport they're on, and how they got there. Every write flow (the
    * Discover wizard, "I already know my sport", the profile modal) must
@@ -82,8 +81,6 @@ export interface Dependent {
   physical?: {
     heightCm?: number;
     weightKg?: number;
-    build?: "lean" | "average" | "stocky";
-    heightCategory?: "short" | "average" | "tall";
     energyType?: "explosive" | "endurance";
     motorType?: "gross" | "fine";
     visualTracking?: "strong" | "moderate" | "weak";
@@ -109,9 +106,6 @@ export interface Dependent {
 
   /** Logistics — what it takes to actually do this sport. */
   practical?: {
-    primaryObjective?: "Recreational" | "Fitness" | "Compete";
-    weeklyTimeCommitment?: number;
-    budgetTier?: "Budget" | "Moderate" | "Premium";
     budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
     ambition?: "fun" | "competitive" | "national" | "career" | "professional";
     weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
@@ -125,25 +119,11 @@ export interface Dependent {
     yearsPlaying?: number;
     experienceLevel?: "beginner" | "intermediate" | "competitive";
     currentStandingTier?: number; // 1-5
-    bestResultTier?: number; // 1-5
-    achievementsNote?: string;
   };
 
   training?: {
-    academyName?: string;
-    sessionsPerWeek?: number;
-    trainingMonths?: number;
     wizardCity?: string;
   };
-
-  pathwayState?: {
-    satisfiedPrerequisites?: string[];
-    currentGpa?: number;
-    targetDivision?: string;
-    graduationYear?: number;
-  };
-
-  paymentHistory?: Array<{ bookingId: string; amount: number; date: string }>;
 }
 
 // UserShippingAddress now lives in @powermysport/shared-types (identical
@@ -161,6 +141,8 @@ export interface User extends Omit<SharedUser, "id" | "dependents" | "playerProf
   id: string;
   dependents?: Dependent[];
   playerProfile?: IPlayerProfile;
+  /** False when the parent has not yet agreed to the current Parental Consent policy. */
+  parentalConsentCurrent?: boolean;
 }
 
 export interface AuthResponse {

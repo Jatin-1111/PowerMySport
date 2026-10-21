@@ -55,7 +55,6 @@ export const STEPS: Step[] = [
   { kind: "question", questionKey: "contactComfort" },
   { kind: "question", questionKey: "environment" },
   { kind: "question", questionKey: "waterComfort" },
-  { kind: "question", questionKey: "medicalConditions" },
   { kind: "question", questionKey: "budget" },
   { kind: "question", questionKey: "ambition" },
   { kind: "question", questionKey: "weeklyHours" },

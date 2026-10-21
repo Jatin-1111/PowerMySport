@@ -9,8 +9,9 @@ import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
 import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
-import { ArrowLeft, CalendarClock, Compass, HeartPulse, Target, Users } from "lucide-react";
+import { ArrowLeft, CalendarClock, Compass, Target, Users } from "lucide-react";
 import { useParams } from "next/navigation";
+import { deriveBodyCategories } from "@/modules/find-sport/utils/dependentMapping";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -21,12 +22,6 @@ const GENDER_LABEL: Record<string, string> = {
 };
 
 const LABELS: Record<string, Record<string, string>> = {
-  primaryObjective: {
-    Recreational: "Recreational, just for fun & fitness",
-    Fitness: "Fitness-focused",
-    Compete: "Wants to compete",
-  },
-  budgetTier: { Budget: "Budget", Moderate: "Moderate", Premium: "Premium" },
   budgetRange: {
     "under-3k": "Under ₹3,000/mo",
     "3k-7k": "₹3,000–7,000/mo",
@@ -282,11 +277,12 @@ export default function ExpertSessionPlayerDetailPage() {
     .filter(Boolean)
     .join(" · ");
 
+  const body = deriveBodyCategories(player.heightCm, player.weightKg, player.age ?? null);
   const hasPhysical = Boolean(
     player.heightCm ||
     player.weightKg ||
-    player.build ||
-    player.heightCategory ||
+    body.build ||
+    body.heightCategory ||
     player.energyType ||
     player.motorType ||
     player.visualTracking ||
@@ -339,28 +335,11 @@ export default function ExpertSessionPlayerDetailPage() {
           {/* Quick facts strip */}
           <div className="grid grid-cols-2 gap-5 border-b border-slate-100 px-6 py-5 sm:grid-cols-4 sm:px-8">
             <StatTile label="Skill level" value={player.skillLevel || "N/A"} />
-            <StatTile
-              label="Goal"
-              value={
-                labelFor("ambition", player.ambition) ||
-                labelFor("primaryObjective", player.primaryObjective) ||
-                "N/A"
-              }
-            />
-            <StatTile
-              label="Budget"
-              value={
-                labelFor("budgetRange", player.budgetRange) ||
-                labelFor("budgetTier", player.budgetTier) ||
-                "N/A"
-              }
-            />
+            <StatTile label="Goal" value={labelFor("ambition", player.ambition) || "N/A"} />
+            <StatTile label="Budget" value={labelFor("budgetRange", player.budgetRange) || "N/A"} />
             <StatTile
               label="Commitment"
-              value={
-                labelFor("weeklyHoursCategory", player.weeklyHoursCategory) ||
-                (player.weeklyTimeCommitment ? `${player.weeklyTimeCommitment} hrs/wk` : "N/A")
-              }
+              value={labelFor("weeklyHoursCategory", player.weeklyHoursCategory) || "N/A"}
             />
           </div>
 
@@ -381,33 +360,6 @@ export default function ExpertSessionPlayerDetailPage() {
         </div>
       </FadeIn>
 
-      {/* Health & safety — surfaced first, deliberately */}
-      {player.medicalConditions && player.medicalConditions.length > 0 && (
-        <FadeIn delay={0.05}>
-          <div className="mt-5 flex items-start gap-3.5 rounded-2xl border border-amber-200/70 bg-amber-50 p-5 shadow-sm">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-sm">
-              <HeartPulse className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="font-bold text-amber-900">Medical / health notes</p>
-              <p className="text-xs text-amber-700/80">
-                Factor this in before recommending drills or intensity.
-              </p>
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {player.medicalConditions.map((c) => (
-                  <span
-                    key={c}
-                    className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200"
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </FadeIn>
-      )}
-
       <StaggerContainer className="mt-5 space-y-5">
         {/* Sport, skill & training */}
         <StaggerItem>
@@ -427,41 +379,21 @@ export default function ExpertSessionPlayerDetailPage() {
               label="Current standing (this sport's ladder)"
               value={tierLabel(player.currentStandingTier)}
             />
-            <Field label="Best result achieved so far" value={tierLabel(player.bestResultTier)} />
-            <Field label="“Anything else you'd like to share?”" value={player.achievementsNote} />
-            <Field
-              label="Recreational, fitness, or competitive?"
-              value={labelFor("primaryObjective", player.primaryObjective)}
-            />
             <Field
               label="What's the honest goal right now?"
               value={labelFor("ambition", player.ambition)}
             />
             <Field
               label="Hours per week they can commit"
-              value={
-                labelFor("weeklyHoursCategory", player.weeklyHoursCategory) ||
-                (player.weeklyTimeCommitment
-                  ? `${player.weeklyTimeCommitment} hrs/week`
-                  : undefined)
-              }
+              value={labelFor("weeklyHoursCategory", player.weeklyHoursCategory)}
             />
             <Field
               label="Monthly training budget"
-              value={
-                labelFor("budgetRange", player.budgetRange) ||
-                labelFor("budgetTier", player.budgetTier)
-              }
+              value={labelFor("budgetRange", player.budgetRange)}
             />
             <Field
               label="How are they currently training?"
               value={labelFor("trainingType", player.trainingType)}
-            />
-            <Field label="Academy / coach" value={player.academyName} />
-            <Field label="Sessions per week" value={player.sessionsPerWeek} />
-            <Field
-              label="Time with this academy/coach"
-              value={player.trainingMonths ? `${player.trainingMonths} months` : undefined}
             />
             <Field label="State" value={player.location} />
             <Field label="City (from wizard)" value={player.wizardCity} />
@@ -478,10 +410,10 @@ export default function ExpertSessionPlayerDetailPage() {
             >
               <Field label="Height" value={player.heightCm ? `${player.heightCm} cm` : undefined} />
               <Field label="Weight" value={player.weightKg ? `${player.weightKg} kg` : undefined} />
-              <Field label="Build" value={labelFor("build", player.build)} />
+              <Field label="Build" value={labelFor("build", body.build)} />
               <Field
                 label="Height category"
-                value={labelFor("heightCategory", player.heightCategory)}
+                value={labelFor("heightCategory", body.heightCategory)}
               />
               <Field
                 label="In a running/tag game, they usually…"

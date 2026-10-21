@@ -6,17 +6,7 @@ import { toast } from "@/lib/toast";
 import { normalizeStoredState, stateSelectOptions } from "@/lib/indianStates";
 import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
 import { FourContextCards } from "@/modules/find-sport/components/inputs/FourContextCards";
-import { SpectrumSlider } from "@/modules/find-sport/components/inputs/SpectrumSlider";
 import { ThreeOptionCards } from "@/modules/find-sport/components/inputs/ThreeOptionCards";
-import {
-  buildDependentPayload,
-  cmToFeetInches,
-  dependentToWizardAnswers,
-  deriveBuild,
-  deriveHeightCategoryFromCm,
-  hasWizardSignal,
-} from "@/modules/find-sport/utils/dependentMapping";
-import { scoreSports } from "@/modules/find-sport/utils/scorer";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import {
@@ -24,30 +14,18 @@ import {
   DEPENDENT_RELATIONS,
   normalizeDependentRelation,
 } from "../data/dependentRelations";
-import {
-  AGILITY_LABELS,
-  BUILD_LABELS,
-  COMPETITIVE_RESPONSE_LABELS,
-  CONTACT_LABELS,
-  ENV_LABELS,
-  EYESIGHT_LABELS,
-  HEIGHT_LABELS,
-  MATCH_RANK_META,
-  PRESSURE_LABELS,
-  VISUAL_TRACKING_LABELS,
-  WATER_COMFORT_LABELS,
-} from "../data/wizardLabels";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import {
   denormalizeDependent,
   normalizeDependent,
+  QUIZ_KEYS,
   type DependentWire,
 } from "@/modules/player/utils/dependentNormalize";
 import { Button } from "@/modules/shared/ui/Button";
 import { Modal } from "@/modules/shared/ui/Modal";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import type { Dependent } from "@/types";
-import { Calendar, ChevronRight, UserRound, X } from "lucide-react";
+import { Calendar, ChevronRight, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 // This form's internal state deliberately stays FLAT (matching the wire
@@ -79,9 +57,6 @@ const EMPTY_FORM: DependentFormData = {
   relation: DEFAULT_DEPENDENT_RELATION,
   sportsFocus: [],
   location: "",
-  heightCm: undefined,
-  weightKg: undefined,
-  medicalConditions: [],
 };
 
 export const STEPS = [
@@ -96,24 +71,6 @@ export const STEPS = [
     id: "goals",
     title: "Goals & commitment",
     sub: "Ambition, time, budget, and long-term flexibility",
-    required: false,
-  },
-  {
-    id: "physical",
-    title: "Physical traits",
-    sub: "Body type, energy, and motor skills, optional",
-    required: false,
-  },
-  {
-    id: "personality",
-    title: "Mind & play style",
-    sub: "How they think and compete, optional",
-    required: false,
-  },
-  {
-    id: "environment",
-    title: "Environment & senses",
-    sub: "Preferences and sensory profile, optional",
     required: false,
   },
 ] as const;
@@ -168,7 +125,6 @@ export default function DependentManagementModal({
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const previewAge = formData.dob ? getDependentAge(formData.dob) : null;
-  const childLabel = formData.name || "your child";
   const isLastStep = stepIndex === STEPS.length - 1;
 
   const handleNext = () => {
@@ -225,23 +181,9 @@ export default function DependentManagementModal({
       return;
     }
 
-    let submitData: DependentFormData = formData;
-    const sportIsKnown = (formData.sportsFocus?.length ?? 0) > 0;
-    if (!sportIsKnown && hasWizardSignal(formData, age)) {
-      const answers = dependentToWizardAnswers(formData, formData.name, age);
-      const scored = scoreSports(answers);
-      // buildDependentPayload returns the grouped shape now — flatten it
-      // back to this form's own flat currency before merging.
-      const derived = denormalizeDependent(buildDependentPayload(answers, scored, formData.name));
-      submitData = {
-        ...formData,
-        ...derived,
-        dob: formData.dob,
-        relation: formData.relation,
-        medicalConditions: formData.medicalConditions,
-        _id: formData._id,
-      };
-    }
+    // The quiz answers are not edited here, so they are not sent back.
+    const submitData: DependentFormData = { ...formData };
+    for (const key of QUIZ_KEYS) delete submitData[key];
 
     try {
       await onSubmit(normalizeDependent(submitData));
@@ -464,55 +406,6 @@ export default function DependentManagementModal({
                     onChange={(v) => handleChange("trainingType", v)}
                   />
                 </ProfileEditField>
-
-                <ProfileEditField
-                  label="Medical conditions / limitations"
-                  hint="Optional, helps avoid unsuitable sports"
-                >
-                  <div className="space-y-2">
-                    <Input
-                      type="text"
-                      placeholder="e.g., Asthma, press Enter to add"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          const val = (e.target as HTMLInputElement).value.trim();
-                          if (val && !formData.medicalConditions?.includes(val)) {
-                            handleChange("medicalConditions", [
-                              ...(formData.medicalConditions || []),
-                              val,
-                            ]);
-                            (e.target as HTMLInputElement).value = "";
-                          }
-                        }
-                      }}
-                    />
-                    {(formData.medicalConditions?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {formData.medicalConditions?.map((cond) => (
-                          <span
-                            key={cond}
-                            className="flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700"
-                          >
-                            {cond}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleChange(
-                                  "medicalConditions",
-                                  formData.medicalConditions?.filter((c) => c !== cond)
-                                )
-                              }
-                              className="ml-0.5 text-orange-400 hover:text-orange-600"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </ProfileEditField>
               </>
             )}
 
@@ -593,292 +486,6 @@ export default function DependentManagementModal({
                     onChange={(v) => handleChange("budgetRange", v)}
                   />
                 </ProfileEditField>
-              </>
-            )}
-
-            {/* ── Step 3: Physical ──────────────────────────────────────────────── */}
-            {stepIndex === 3 && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <ProfileEditField label="Height (cm)" htmlFor="dep-height">
-                    <Input
-                      id="dep-height"
-                      type="number"
-                      min="50"
-                      max="250"
-                      placeholder="e.g., 135"
-                      value={formData.heightCm ?? ""}
-                      onChange={(e) =>
-                        handleChange(
-                          "heightCm",
-                          e.target.value === "" ? undefined : parseFloat(e.target.value)
-                        )
-                      }
-                    />
-                  </ProfileEditField>
-
-                  <ProfileEditField label="Weight (kg)" htmlFor="dep-weight">
-                    <Input
-                      id="dep-weight"
-                      type="number"
-                      min="10"
-                      max="200"
-                      placeholder="e.g., 32"
-                      value={formData.weightKg ?? ""}
-                      onChange={(e) =>
-                        handleChange(
-                          "weightKg",
-                          e.target.value === "" ? undefined : parseFloat(e.target.value)
-                        )
-                      }
-                    />
-                  </ProfileEditField>
-                </div>
-
-                {formData.heightCm && formData.weightKg && (
-                  <p className="text-xs text-slate-500">
-                    {cmToFeetInches(formData.heightCm)} ·{" "}
-                    {BUILD_LABELS[deriveBuild(formData.weightKg, formData.heightCm)]}
-                    {previewAge !== null &&
-                      ` · ${HEIGHT_LABELS[deriveHeightCategoryFromCm(formData.heightCm, previewAge)]}`}
-                  </p>
-                )}
-
-                <ProfileEditField label="Energy type">
-                  <BinaryCards
-                    options={[
-                      {
-                        value: "explosive",
-                        title: "Explosive",
-                        sub: "Short bursts of intense power",
-                      },
-                      {
-                        value: "endurance",
-                        title: "Endurance",
-                        sub: "Sustains effort over long periods",
-                      },
-                    ]}
-                    value={formData.energyType ?? null}
-                    onChange={(v) => handleChange("energyType", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Motor skill type">
-                  <BinaryCards
-                    options={[
-                      {
-                        value: "gross",
-                        title: "Gross motor",
-                        sub: "Big, powerful whole-body movements",
-                      },
-                      { value: "fine", title: "Fine motor", sub: "Precise, small-muscle control" },
-                    ]}
-                    value={formData.motorType ?? null}
-                    onChange={(v) => handleChange("motorType", v)}
-                  />
-                </ProfileEditField>
-              </>
-            )}
-
-            {/* ── Step 4: Personality ───────────────────────────────────────────── */}
-            {stepIndex === 4 && (
-              <>
-                <ProfileEditField label={`How does ${childLabel} prefer to play?`}>
-                  <SpectrumSlider
-                    value={formData.teamIndividual ?? null}
-                    onChange={(v) => handleChange("teamIndividual", v)}
-                    leftLabel="Individual"
-                    rightLabel="Team"
-                    leftExamples="Tennis, gymnastics, athletics, chess"
-                    rightExamples="Football, basketball, volleyball, kabaddi"
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Response to competition">
-                  <ThreeOptionCards
-                    options={[
-                      { value: "fired-up", label: COMPETITIVE_RESPONSE_LABELS["fired-up"] },
-                      { value: "calm", label: COMPETITIVE_RESPONSE_LABELS.calm },
-                      { value: "discouraged", label: COMPETITIVE_RESPONSE_LABELS.discouraged },
-                    ]}
-                    value={formData.competitiveResponse ?? null}
-                    onChange={(v) => handleChange("competitiveResponse", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Focus style">
-                  <BinaryCards
-                    options={[
-                      { value: "bursts", title: "Bursts", sub: "Sharp focus in short stretches" },
-                      {
-                        value: "sustained",
-                        title: "Sustained",
-                        sub: "Stays locked in for long periods",
-                      },
-                    ]}
-                    value={formData.focusStyle ?? null}
-                    onChange={(v) => handleChange("focusStyle", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Decision style">
-                  <BinaryCards
-                    options={[
-                      {
-                        value: "react",
-                        title: "Instinctive",
-                        sub: "Reacts fast, trusts the first read",
-                      },
-                      { value: "strategic", title: "Strategic", sub: "Plans ahead before acting" },
-                    ]}
-                    value={formData.decisionStyle ?? null}
-                    onChange={(v) => handleChange("decisionStyle", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Response to pressure">
-                  <ThreeOptionCards
-                    options={[
-                      { value: "thrives", label: PRESSURE_LABELS.thrives },
-                      { value: "manages", label: PRESSURE_LABELS.manages },
-                      { value: "avoids", label: PRESSURE_LABELS.avoids },
-                    ]}
-                    value={formData.pressureResponse ?? null}
-                    onChange={(v) => handleChange("pressureResponse", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Repetition tolerance">
-                  <BinaryCards
-                    options={[
-                      {
-                        value: "high",
-                        title: "High tolerance",
-                        sub: "Enjoys repeated drilling of the same skill",
-                      },
-                      {
-                        value: "low",
-                        title: "Prefers variety",
-                        sub: "Gets bored with repetitive practice",
-                      },
-                    ]}
-                    value={formData.repetitionTolerance ?? null}
-                    onChange={(v) => handleChange("repetitionTolerance", v)}
-                  />
-                </ProfileEditField>
-              </>
-            )}
-
-            {/* ── Step 5: Environment & Senses ──────────────────────────────────── */}
-            {stepIndex === 5 && (
-              <>
-                <ProfileEditField label="Contact comfort">
-                  <ThreeOptionCards
-                    options={[
-                      { value: "loves", label: CONTACT_LABELS.loves },
-                      { value: "neutral", label: CONTACT_LABELS.neutral },
-                      { value: "avoids", label: CONTACT_LABELS.avoids },
-                    ]}
-                    value={formData.contactComfort ?? null}
-                    onChange={(v) => handleChange("contactComfort", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Environment preference">
-                  <ThreeOptionCards
-                    options={[
-                      { value: "outdoor", label: ENV_LABELS.outdoor },
-                      { value: "indoor", label: ENV_LABELS.indoor },
-                      { value: "no-preference", label: ENV_LABELS["no-preference"] },
-                    ]}
-                    value={formData.environment ?? null}
-                    onChange={(v) => handleChange("environment", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Water comfort">
-                  <ThreeOptionCards
-                    options={[
-                      { value: "comfortable", label: WATER_COMFORT_LABELS.comfortable },
-                      { value: "neutral", label: WATER_COMFORT_LABELS.neutral },
-                      { value: "uncomfortable", label: WATER_COMFORT_LABELS.uncomfortable },
-                    ]}
-                    value={formData.waterComfort ?? null}
-                    onChange={(v) => handleChange("waterComfort", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Visual tracking">
-                  <ThreeOptionCards
-                    options={[
-                      { value: "strong", label: VISUAL_TRACKING_LABELS.strong },
-                      { value: "moderate", label: VISUAL_TRACKING_LABELS.moderate },
-                      { value: "weak", label: VISUAL_TRACKING_LABELS.weak },
-                    ]}
-                    value={formData.visualTracking ?? null}
-                    onChange={(v) => handleChange("visualTracking", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Eyesight">
-                  <ThreeOptionCards
-                    options={[
-                      { value: "sharp", label: EYESIGHT_LABELS.sharp },
-                      { value: "corrected", label: EYESIGHT_LABELS.corrected },
-                      { value: "limited", label: EYESIGHT_LABELS.limited },
-                    ]}
-                    value={formData.eyesight ?? null}
-                    onChange={(v) => handleChange("eyesight", v)}
-                  />
-                </ProfileEditField>
-
-                <ProfileEditField label="Agility & flexibility">
-                  <ThreeOptionCards
-                    options={[
-                      { value: "high", label: AGILITY_LABELS.high },
-                      { value: "moderate", label: AGILITY_LABELS.moderate },
-                      { value: "low", label: AGILITY_LABELS.low },
-                    ]}
-                    value={formData.agility ?? null}
-                    onChange={(v) => handleChange("agility", v)}
-                  />
-                </ProfileEditField>
-
-                {/* Show current sport matches if any */}
-                {(formData.sportMatches?.length ?? 0) > 0 && (
-                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                    <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                      Current sport matches
-                    </p>
-                    <div className="space-y-2">
-                      {formData.sportMatches!.slice(0, 3).map((m, i) => {
-                        const meta = MATCH_RANK_META[i] ?? MATCH_RANK_META[2];
-                        const RankIcon = meta.icon;
-                        return (
-                          <div
-                            key={m.sport}
-                            className={`flex items-center justify-between rounded-lg border ${meta.ring} bg-white px-3 py-2`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`flex h-7 w-7 items-center justify-center rounded-full ${meta.badge}`}
-                              >
-                                <RankIcon className="h-3.5 w-3.5" />
-                              </span>
-                              <span className="text-sm font-semibold text-slate-800">
-                                {m.sport}
-                              </span>
-                            </div>
-                            <span className="text-xs font-medium text-slate-500">{m.fitLabel}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <p className="mt-2 text-xs text-slate-400">
-                      Recalculated automatically on save.
-                    </p>
-                  </div>
-                )}
               </>
             )}
           </motion.div>

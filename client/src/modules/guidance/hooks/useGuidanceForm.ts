@@ -1,7 +1,14 @@
 "use client";
 
+import { flattenQuiz } from "@/modules/player/utils/dependentNormalize";
 import api from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
+import {
+  ambitionToObjective,
+  budgetRangeToTier,
+  deriveBodyCategories,
+  weeklyHoursToNumber,
+} from "@/modules/find-sport/utils/dependentMapping";
 import { useEffect, useRef, useState } from "react";
 import { buildLevelPlanQuestion, initialForm } from "../constants";
 import type { GuidanceFormState, GuidanceSubmission, PlayerProfile } from "../types";
@@ -118,16 +125,18 @@ export function useGuidanceForm({
         next.personality_tags = player.personalityTags;
         filled.add("personality_tags");
       }
-      if (player.primaryObjective) {
-        next.primary_objective = player.primaryObjective;
+      // Objective, weekly hours and budget tier are not stored on the child; they
+      // come from the goal, hours band and budget range that are.
+      if (player.ambition) {
+        next.primary_objective = ambitionToObjective(player.ambition);
         filled.add("primary_objective");
       }
-      if (player.weeklyTimeCommitment) {
-        next.weekly_time_commitment = player.weeklyTimeCommitment;
+      if (player.weeklyHoursCategory) {
+        next.weekly_time_commitment = weeklyHoursToNumber(player.weeklyHoursCategory) ?? 0;
         filled.add("weekly_time_commitment");
       }
-      if (player.budgetTier) {
-        next.budget_tier = player.budgetTier;
+      if (player.budgetRange) {
+        next.budget_tier = budgetRangeToTier(player.budgetRange);
         filled.add("budget_tier");
       }
       if (player.sportsFocus?.length && !initialSport) {
@@ -139,8 +148,9 @@ export function useGuidanceForm({
         filled.add("location");
       }
       // Wizard assessment signals
-      if (player.build) next.wizard_build = player.build;
-      if (player.heightCategory) next.wizard_height = player.heightCategory;
+      const body = deriveBodyCategories(player.heightCm, player.weightKg, age);
+      if (body.build) next.wizard_build = body.build;
+      if (body.heightCategory) next.wizard_height = body.heightCategory;
       if (player.energyType) next.wizard_energy_type = player.energyType;
       if (player.motorType) next.wizard_motor_type = player.motorType;
       if (player.visualTracking) next.wizard_visual_tracking = player.visualTracking;
@@ -163,7 +173,7 @@ export function useGuidanceForm({
       .get("/auth/players")
       .then((res) => {
         if (res.data.success && Array.isArray(res.data.data)) {
-          const list: PlayerProfile[] = res.data.data;
+          const list: PlayerProfile[] = res.data.data.map(flattenQuiz);
           setPlayers(list);
           // Sync automatically when there's exactly one saved profile — no
           // ambiguity about which child this guidance is for. With multiple

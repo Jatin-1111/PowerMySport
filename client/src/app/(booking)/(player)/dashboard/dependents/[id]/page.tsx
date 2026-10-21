@@ -34,6 +34,7 @@ import {
   WEEKLY_HOURS_LABELS,
   wizardChip,
 } from "@/modules/player/data/wizardLabels";
+import { deriveBodyCategories } from "@/modules/find-sport/utils/dependentMapping";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
 import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
@@ -189,16 +190,16 @@ export default function DependentDetailPage() {
   const effectiveSport = dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0];
 
   const physical = dependent.physical ?? {};
+  const body = deriveBodyCategories(physical.heightCm, physical.weightKg, age);
   const personality = dependent.personality ?? {};
   const comfort = dependent.comfort ?? {};
   const practical = dependent.practical ?? {};
-
   const physicalChips = [
     physical.heightCm && physical.weightKg
       ? `${physical.heightCm} cm · ${physical.weightKg} kg`
       : null,
-    wizardChip(physical.build, BUILD_LABELS),
-    wizardChip(physical.heightCategory, HEIGHT_LABELS),
+    wizardChip(body.build, BUILD_LABELS),
+    wizardChip(body.heightCategory, HEIGHT_LABELS),
     wizardChip(physical.energyType, ENERGY_LABELS),
     wizardChip(physical.visualTracking, VISUAL_TRACKING_LABELS),
     wizardChip(physical.eyesight, EYESIGHT_LABELS),
@@ -444,13 +445,12 @@ export default function DependentDetailPage() {
           onEdit={() => setShowEditModal(true)}
         />
         <div className="mt-8">
-          {hasTraitChips || (dependent.medicalConditions?.length ?? 0) > 0 ? (
+          {hasTraitChips ? (
             <dl className="space-y-6">
               <ChipRow label="Physical profile" chips={physicalChips} />
               <ChipRow label="Personality and play style" chips={personalityChips} />
               <ChipRow label="Comfort and environment" chips={comfortChips} />
               <ChipRow label="Practical" chips={practicalChips} />
-              <ChipRow label="Medical conditions" chips={dependent.medicalConditions ?? []} />
             </dl>
           ) : (
             <div className="border-hairline max-w-lg rounded-xl border border-dashed px-5 py-6">
