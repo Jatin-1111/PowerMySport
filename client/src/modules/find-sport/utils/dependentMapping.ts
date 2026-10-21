@@ -24,32 +24,11 @@ export function deriveBodyCategories(
   };
 }
 
-export function budgetRangeToTier(
-  range: WizardAnswers["budget"]
-): "Budget" | "Moderate" | "Premium" {
-  if (range === "under-3k" || range === "3k-7k") return "Budget";
-  if (range === "7k-15k") return "Moderate";
-  return "Premium";
-}
-
 export function cmToFeetInches(cm: number): string {
   const totalInches = cm / 2.54;
   const feet = Math.floor(totalInches / 12);
   const inches = Math.round(totalInches % 12);
   return `${feet}′ ${inches}″`;
-}
-
-export function weeklyHoursToNumber(h: WizardAnswers["weeklyHours"]): number | undefined {
-  if (!h) return undefined;
-  return h === "1-3" ? 2 : h === "4-7" ? 5 : h === "8-12" ? 10 : 15;
-}
-
-export function ambitionToObjective(
-  ambition: WizardAnswers["ambition"]
-): "Recreational" | "Fitness" | "Compete" {
-  if (ambition === "fun") return "Recreational";
-  if (ambition === "competitive") return "Fitness";
-  return "Compete";
 }
 
 export function deriveHeightCategoryFromCm(
