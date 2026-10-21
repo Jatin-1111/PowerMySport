@@ -178,7 +178,7 @@ export default function CommunityTopNav() {
               <MessagesSquare size={16} />
               Chats
               {unreadChatsCount > 0 && (
-                <span className="bg-power-orange-solid ring-paper absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white shadow-sm ring-2">
+                <span className="bg-power-orange-solid ring-paper absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white ring-2">
                   {unreadChatsCount > 99 ? "99+" : unreadChatsCount}
                 </span>
               )}
@@ -208,7 +208,7 @@ export default function CommunityTopNav() {
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="bg-power-orange-solid ring-paper absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white shadow-sm ring-2">
+                <span className="bg-power-orange-solid ring-paper absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white ring-2">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -308,7 +308,7 @@ export default function CommunityTopNav() {
                   animate={{ x: 0, opacity: 1 }}
                   exit={{ x: -24, opacity: 0 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="border-hairline bg-paper absolute left-0 top-0 h-full w-[88vw] max-w-sm overflow-y-auto border-r p-4 shadow-2xl"
+                  className="border-hairline bg-paper absolute left-0 top-0 h-full w-[88vw] max-w-sm overflow-y-auto border-r p-4"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Header */}

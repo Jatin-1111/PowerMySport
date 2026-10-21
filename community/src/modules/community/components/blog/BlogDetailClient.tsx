@@ -296,7 +296,7 @@ export default function BlogDetailClient({
 
         {blog.tags.length > 0 ? (
           <p className="text-ink-muted mt-10 text-sm">
-            {blog.tags.map((tag) => `#${tag}`).join("  ")}
+            {blog.tags.map((tag) => `#${tag}`).join(" ")}
           </p>
         ) : null}
 

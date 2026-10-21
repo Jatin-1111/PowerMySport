@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
-import { Loader, CheckCircle, AlertCircle } from "lucide-react";
 
 type JoinStatus = "loading" | "success" | "error" | "redirecting";
 
@@ -60,7 +59,8 @@ export default function JoinCommunityPage() {
           return;
         }
 
-        const message = joinError instanceof Error ? joinError.message : "Failed to join community";
+        const message =
+          joinError instanceof Error ? joinError.message : "We could not add you to this group";
         setError(message);
         setStatus("error");
         toast.error(message);
@@ -74,60 +74,69 @@ export default function JoinCommunityPage() {
     };
   }, [inviteCode, router]);
 
+  const btn =
+    "btn-motion inline-flex min-h-12 flex-1 items-center justify-center rounded-md px-6 text-base font-semibold";
+
   return (
     <div className="bg-paper flex min-h-screen items-center justify-center px-4 py-6 sm:py-8">
-      <div className="border-border w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl sm:p-8">
+      <div className="w-full max-w-md" role="status" aria-live="polite">
         {status === "loading" && (
-          <div className="text-center">
-            <Loader className="text-power-orange mx-auto h-12 w-12 animate-spin" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
-              Joining Group...
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">Please wait while we add you to the group</p>
-          </div>
+          <>
+            <p className="text-ink-muted text-sm">Invite link</p>
+            <h1 className="font-editorial text-ink mt-2 text-4xl font-light leading-[1.1]">
+              Joining the group
+            </h1>
+            <p className="text-ink-body mt-3 text-base leading-relaxed">
+              One moment while we add you.
+            </p>
+          </>
         )}
 
         {status === "success" && (
-          <div className="text-center">
-            <CheckCircle className="text-turf-green mx-auto h-12 w-12" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
-              Successfully Joined!
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              You&apos;ve been added to the community group. Redirecting...
+          <>
+            <p className="text-sm font-semibold text-green-800">Joined</p>
+            <h1 className="font-editorial text-ink mt-2 text-4xl font-light leading-[1.1]">
+              You are in.
+            </h1>
+            <p className="text-ink-body mt-3 text-base leading-relaxed">
+              You have been added to the group. Taking you there now.
             </p>
-          </div>
+          </>
         )}
 
         {status === "redirecting" && (
-          <div className="text-center">
-            <Loader className="text-power-orange mx-auto h-12 w-12 animate-spin" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
-              Taking you to the group...
-            </h2>
-          </div>
+          <>
+            <p className="text-ink-muted text-sm">Invite link</p>
+            <h1 className="font-editorial text-ink mt-2 text-4xl font-light leading-[1.1]">
+              Opening the group
+            </h1>
+          </>
         )}
 
         {status === "error" && (
-          <div className="text-center">
-            <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">Could Not Join</h2>
-            <p className="mt-2 text-sm text-slate-600">{error}</p>
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <>
+            <p className="text-sm font-semibold text-red-700">Could not join</p>
+            <h1 className="font-editorial text-ink mt-2 text-4xl font-light leading-[1.1]">
+              That did not work.
+            </h1>
+            <p className="text-ink-body mt-3 text-base leading-relaxed">{error}</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
+                type="button"
                 onClick={() => router.push("/")}
-                className="border-border flex-1 rounded-lg border bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                className={`${btn} border-ink text-ink hover:bg-ink border hover:text-white`}
               >
-                Go to Community
+                Go to community
               </button>
               <button
+                type="button"
                 onClick={() => window.location.reload()}
-                className="bg-power-orange-solid flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                className={`${btn} bg-power-orange-solid text-white hover:bg-indigo-700`}
               >
-                Try Again
+                Try again
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

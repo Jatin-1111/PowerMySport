@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield } from "lucide-react";
+import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
 import { communityService } from "@/modules/community/services/community";
 import {
   BlockedUser,
@@ -48,7 +48,9 @@ export default function PrivacyPage() {
         const blocked = await communityService.getBlockedUsers();
         setBlockedUsers(blocked);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to load privacy settings");
+        toast.error(
+          error instanceof Error ? error.message : "We could not load your privacy settings"
+        );
       } finally {
         setIsLoadingBlockedUsers(false);
         setIsLoading(false);
@@ -154,9 +156,14 @@ export default function PrivacyPage() {
   if (isLoading) {
     return (
       <div className="community-page-shell">
-        <div className="community-content-wrap-narrow border-border rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
-          <div className="h-6 w-44 animate-pulse rounded bg-slate-200" />
-          <div className="mt-4 h-28 animate-pulse rounded-xl bg-slate-100" />
+        <div
+          aria-busy="true"
+          aria-label="Loading privacy settings"
+          className="community-content-wrap-narrow space-y-4"
+        >
+          <div className="bg-ink/10 h-40 animate-pulse rounded-2xl" />
+          <div className="bg-ink/10 mt-8 h-8 w-48 animate-pulse rounded-sm" />
+          <div className="bg-ink/10 h-16 animate-pulse rounded-sm" />
         </div>
       </div>
     );
@@ -164,70 +171,70 @@ export default function PrivacyPage() {
 
   return (
     <div className="community-page-shell">
-      <div className="community-content-wrap-narrow space-y-4">
-        <section className="community-card">
-          <div className="flex items-center gap-2">
-            <Shield size={17} className="text-slate-600" />
-            <h1 className="community-section-title">Privacy Settings</h1>
-          </div>
-          <p className="community-section-copy">
-            Configure your identity and messaging preferences.
-          </p>
+      <div className="community-content-wrap-narrow">
+        <CommunityPageHeader
+          title="Privacy settings"
+          subtitle="Choose how you appear to other parents and who can message you."
+          badge="Your account"
+        />
 
-          <div className="mt-5 space-y-4 sm:space-y-5">
-            <label className="block text-sm sm:text-base">
-              <span className="mb-1 block text-slate-500">Anonymous alias</span>
-              <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="mt-12 space-y-16">
+          <section aria-labelledby="privacy-identity">
+            <h2 id="privacy-identity" className="font-editorial text-ink text-3xl font-light">
+              Identity and messages
+            </h2>
+
+            <div className="border-hairline mt-4 border-t py-6">
+              <label htmlFor="privacy-alias" className="text-ink block text-lg font-semibold">
+                Anonymous alias
+              </label>
+              <p className="text-ink-body mt-1 text-base">
+                The name other parents see when you post anonymously.
+              </p>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
                 <input
+                  id="privacy-alias"
                   value={aliasDraft}
                   onChange={(event) => setAliasDraft(event.target.value)}
-                  className="border-border bg-background focus:border-power-orange shadow-xs w-full rounded-2xl border px-3 py-2.5 text-sm focus:outline-none"
+                  className="text-ink hover:border-ink/45 focus:border-ink h-12 w-full rounded-md border border-[#d9d3c8] bg-white px-4 text-base transition-colors duration-200 focus:outline-none"
                 />
                 <button
+                  type="button"
                   onClick={() => void saveAlias()}
                   disabled={isSavingAlias || !aliasDraft.trim()}
-                  className="bg-power-orange-solid inline-flex min-h-11 items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 sm:min-w-28"
+                  className="btn-motion bg-power-orange-solid inline-flex min-h-12 items-center justify-center rounded-md px-7 text-base font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:min-w-28"
                 >
                   {isSavingAlias ? "Saving" : "Save"}
                 </button>
               </div>
-            </label>
+            </div>
 
-            <label className="flex items-center justify-between gap-3 text-sm sm:text-base">
-              <span className="text-slate-500">Show my real identity</span>
-              <input
-                type="checkbox"
-                checked={profile?.isIdentityPublic || false}
-                onChange={(event) => void updateProfile({ isIdentityPublic: event.target.checked })}
-              />
-            </label>
+            <SettingSwitch
+              label="Show my real identity"
+              description="Other parents see your name and photo instead of your alias."
+              checked={profile?.isIdentityPublic || false}
+              onChange={(value) => void updateProfile({ isIdentityPublic: value })}
+            />
+            <SettingSwitch
+              label="Read receipts"
+              description="People you message can see when you have read their message."
+              checked={profile?.readReceiptsEnabled || false}
+              onChange={(value) => void updateProfile({ readReceiptsEnabled: value })}
+            />
+            <SettingSwitch
+              label="Show when I was last online"
+              description="Shown at the top of a conversation with you."
+              checked={profile?.lastSeenVisible || false}
+              onChange={(value) => void updateProfile({ lastSeenVisible: value })}
+            />
 
-            <label className="flex items-center justify-between gap-3 text-sm sm:text-base">
-              <span className="text-slate-500">Read receipts</span>
-              <input
-                type="checkbox"
-                checked={profile?.readReceiptsEnabled || false}
-                onChange={(event) =>
-                  void updateProfile({
-                    readReceiptsEnabled: event.target.checked,
-                  })
-                }
-              />
-            </label>
-
-            <label className="flex items-center justify-between gap-3 text-sm sm:text-base">
-              <span className="text-slate-500">Show last seen</span>
-              <input
-                type="checkbox"
-                checked={profile?.lastSeenVisible || false}
-                onChange={(event) => void updateProfile({ lastSeenVisible: event.target.checked })}
-              />
-            </label>
-
-            <label className="block text-sm sm:text-base">
-              <span className="mb-1 block text-slate-500">Who can message me</span>
+            <div className="border-hairline border-y py-6">
+              <label htmlFor="privacy-message" className="text-ink block text-lg font-semibold">
+                Who can message me
+              </label>
               <select
-                className="border-border bg-background focus:border-power-orange shadow-xs w-full rounded-2xl border px-3 py-2.5 text-sm focus:outline-none"
+                id="privacy-message"
+                className="text-ink hover:border-ink/45 focus:border-ink mt-3 h-12 w-full rounded-md border border-[#d9d3c8] bg-white px-4 text-base transition-colors duration-200 focus:outline-none sm:max-w-xs"
                 value={profile?.messagePrivacy || "EVERYONE"}
                 onChange={(event) =>
                   void updateProfile({
@@ -241,102 +248,151 @@ export default function PrivacyPage() {
                   </option>
                 ))}
               </select>
-            </label>
-          </div>
-        </section>
+            </div>
+          </section>
 
-        <section className="community-card">
-          <h2 className="text-base font-semibold text-slate-900">Blocked Users</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Blocked users cannot start conversations with you.
-          </p>
+          <section aria-labelledby="privacy-blocked">
+            <h2 id="privacy-blocked" className="font-editorial text-ink text-3xl font-light">
+              Blocked users
+            </h2>
+            <p className="text-ink-body mt-2 text-base">
+              Blocked users cannot start conversations with you.
+            </p>
 
-          <div className="mt-4 space-y-3">
-            <label className="block text-sm">
-              <span className="mb-1 block text-slate-500">Block a user</span>
+            <div className="mt-6">
+              <label
+                htmlFor="privacy-block-search"
+                className="text-ink block text-lg font-semibold"
+              >
+                Block someone
+              </label>
               <input
+                id="privacy-block-search"
                 value={blockSearch}
                 onChange={(event) => setBlockSearch(event.target.value)}
                 placeholder="Search users by name"
-                className="border-border bg-background focus:border-power-orange shadow-xs w-full rounded-2xl border px-3 py-2.5 text-sm focus:outline-none"
+                className="text-ink placeholder:text-ink-muted hover:border-ink/45 focus:border-ink mt-3 h-12 w-full rounded-md border border-[#d9d3c8] bg-white px-4 text-base transition-colors duration-200 focus:outline-none"
               />
-            </label>
 
-            {isSearchingUsers && <p className="text-xs text-slate-500">Searching users...</p>}
+              {isSearchingUsers && <p className="text-ink-muted mt-3 text-sm">Searching</p>}
 
-            {!isSearchingUsers && blockSearch.trim().length >= 2 && (
-              <div className="border-border/70 space-y-2 rounded-xl border bg-slate-50/70 p-3">
-                {searchResults.length === 0 ? (
-                  <p className="text-xs text-slate-500">No users found.</p>
-                ) : (
-                  searchResults.map((user) => {
-                    const blocked = isUserBlocked(user.id);
-                    const isBlocking = blockingUserId === user.id;
+              {!isSearchingUsers && blockSearch.trim().length >= 2 && (
+                <ul className="border-hairline mt-3 border-t">
+                  {searchResults.length === 0 ? (
+                    <li className="border-hairline text-ink-body border-b py-4 text-base">
+                      No users found.
+                    </li>
+                  ) : (
+                    searchResults.map((user) => {
+                      const blocked = isUserBlocked(user.id);
+                      const isBlocking = blockingUserId === user.id;
 
-                    return (
-                      <div
-                        key={user.id}
-                        className="border-border/70 shadow-xs flex flex-col gap-3 rounded-2xl border bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-slate-900">
-                            {user.displayName}
-                          </p>
-                          <div className="mt-0.5 flex items-center gap-1.5">
-                            <p className="text-xs text-slate-500">
-                              {user.isIdentityPublic ? "Identity visible" : "Anonymous profile"}
-                            </p>
-                            {user.role && (
-                              <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-xs font-semibold text-slate-600">
-                                {user.role === "Coach" ? "Coach" : "Player"}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => void handleBlockUser(user.id)}
-                          disabled={blocked || isBlocking}
-                          className="border-power-orange/40 text-power-orange hover:bg-power-orange/10 inline-flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                      return (
+                        <li
+                          key={user.id}
+                          className="border-hairline flex flex-wrap items-center justify-between gap-3 border-b py-4"
                         >
-                          {blocked ? "Blocked" : isBlocking ? "Blocking" : "Block"}
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
+                          <div className="min-w-0">
+                            <p className="text-ink truncate text-lg font-medium">
+                              {user.displayName}
+                            </p>
+                            <p className="text-ink-muted text-sm">
+                              {user.isIdentityPublic ? "Identity visible" : "Anonymous profile"}
+                              {user.role ? ` · ${user.role === "Coach" ? "Coach" : "Player"}` : ""}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void handleBlockUser(user.id)}
+                            disabled={blocked || isBlocking}
+                            className="btn-motion border-ink text-ink hover:bg-ink inline-flex min-h-11 items-center rounded-md border px-5 text-base font-semibold hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {blocked ? "Blocked" : isBlocking ? "Blocking" : "Block"}
+                          </button>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
+              )}
+            </div>
 
-          <div className="mt-5 space-y-2">
-            <h3 className="text-sm font-medium text-slate-800">Current blocked list</h3>
-            {isLoadingBlockedUsers ? (
-              <p className="text-xs text-slate-500">Loading blocked users...</p>
-            ) : blockedUsers.length === 0 ? (
-              <p className="text-xs text-slate-500">No blocked users yet.</p>
-            ) : (
-              blockedUsers.map((user) => {
-                const isUnblocking = unblockingUserId === user.id;
-                return (
-                  <div
-                    key={user.id}
-                    className="border-border/70 flex items-center justify-between gap-3 rounded-lg border bg-slate-50/70 px-3 py-2"
-                  >
-                    <p className="truncate text-sm text-slate-800">{user.name}</p>
-                    <button
-                      onClick={() => void handleUnblockUser(user.id)}
-                      disabled={isUnblocking}
-                      className="border-border rounded-lg border bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            <h3 className="font-editorial text-ink mt-10 text-2xl font-normal">
+              Your blocked list
+            </h3>
+            <ul className="border-hairline mt-3 border-t">
+              {isLoadingBlockedUsers ? (
+                <li className="border-hairline text-ink-muted border-b py-4 text-base">Loading</li>
+              ) : blockedUsers.length === 0 ? (
+                <li className="border-hairline text-ink-body border-b py-4 text-base">
+                  You have not blocked anyone.
+                </li>
+              ) : (
+                blockedUsers.map((user) => {
+                  const isUnblocking = unblockingUserId === user.id;
+                  return (
+                    <li
+                      key={user.id}
+                      className="border-hairline flex items-center justify-between gap-3 border-b py-4"
                     >
-                      {isUnblocking ? "Unblocking" : "Unblock"}
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </section>
+                      <p className="text-ink truncate text-lg font-medium">{user.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => void handleUnblockUser(user.id)}
+                        disabled={isUnblocking}
+                        className="text-ink decoration-ink/30 hover:decoration-ink min-h-11 text-base font-semibold underline underline-offset-4 transition-colors duration-200 disabled:opacity-50"
+                      >
+                        {isUnblocking ? "Unblocking" : "Unblock"}
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </section>
+        </div>
       </div>
     </div>
+  );
+}
+
+/** A labelled on/off setting as a ruled row with a square switch. */
+function SettingSwitch({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="border-hairline flex cursor-pointer items-start justify-between gap-6 border-t py-6">
+      <span>
+        <span className="text-ink block text-lg font-semibold">{label}</span>
+        <span className="text-ink-body mt-1 block text-base">{description}</span>
+      </span>
+      <input
+        type="checkbox"
+        role="switch"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="peer sr-only"
+      />
+      <span
+        aria-hidden="true"
+        className={`peer-focus-visible:outline-ink relative mt-1 h-6 w-11 shrink-0 rounded-md transition-colors duration-200 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 ${
+          checked ? "bg-ink" : "bg-[#cfc8bc]"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-5 w-5 rounded-[4px] bg-white transition-transform duration-200 ${
+            checked ? "translate-x-[22px]" : "translate-x-0.5"
+          }`}
+        />
+      </span>
+    </label>
   );
 }

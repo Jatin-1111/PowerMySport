@@ -121,7 +121,7 @@ export function VoiceMessagePlayer({
           void toggle();
         }}
         aria-label={isPlaying ? "Pause voice message" : "Play voice message"}
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition active:scale-[0.98] ${
           isOwnMessage
             ? "bg-power-orange-solid text-white"
             : "bg-slate-200 text-slate-700 hover:bg-slate-300"

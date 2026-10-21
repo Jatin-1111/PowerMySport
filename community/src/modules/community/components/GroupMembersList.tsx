@@ -108,7 +108,7 @@ export function GroupMembersList({
                   <img
                     src={member.photoUrl}
                     alt={member.name}
-                    className="h-9 w-9 shrink-0 rounded-full object-cover shadow-sm ring-1 ring-slate-100"
+                    className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
                   />
                 ) : (
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 ring-1 ring-slate-200">
@@ -116,7 +116,7 @@ export function GroupMembersList({
                   </div>
                 )}
                 <div className="min-w-0 flex-1 text-left">
-                  <div className="truncate text-[13px] font-semibold text-slate-900">
+                  <div className="truncate text-sm font-semibold text-slate-900">
                     {member.displayName}
                   </div>
                   {!member.isIdentityPublic && member.alias && (

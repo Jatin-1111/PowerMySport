@@ -54,7 +54,7 @@ export default function LikeButton({
         <Heart
           size={s.icon}
           strokeWidth={1.5}
-          className={liked ? "fill-power-orange text-power-orange" : ""}
+          className={liked ? "fill-power-orange text-power-orange-solid" : ""}
           aria-hidden="true"
         />
       </motion.span>

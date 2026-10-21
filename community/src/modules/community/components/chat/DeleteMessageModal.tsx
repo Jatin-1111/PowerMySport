@@ -22,7 +22,7 @@ export function DeleteMessageModal({ isDeleting, onClose, onConfirm }: DeleteMes
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+        className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6"
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -50,14 +50,14 @@ export function DeleteMessageModal({ isDeleting, onClose, onConfirm }: DeleteMes
           <button
             onClick={onClose}
             disabled={isDeleting}
-            className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+            className="flex-1 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={isDeleting}
-            className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+            className="flex-1 rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
           >
             {isDeleting ? "Deleting..." : "Delete"}
           </button>

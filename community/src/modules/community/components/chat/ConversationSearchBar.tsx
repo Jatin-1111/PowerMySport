@@ -51,7 +51,7 @@ export default function ConversationSearchBar({
             if (e.key === "Escape") onClose();
           }}
           placeholder="Search in conversation…"
-          className="flex-1 bg-transparent text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none"
+          className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
         />
         {query.trim() && (
           <span className="shrink-0 text-xs font-medium tabular-nums text-slate-500">

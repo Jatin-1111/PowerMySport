@@ -39,12 +39,12 @@ export function ChatAddModal({
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+          className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h3 className="text-lg font-semibold text-slate-900">
-              {isGroup ? "Search Groups" : "Search Users"}
+              {isGroup ? "Find a group" : "Search Users"}
             </h3>
             <button
               onClick={onClose}
@@ -82,7 +82,9 @@ export function ChatAddModal({
               <div className="flex max-h-[300px] flex-col gap-2 overflow-y-auto">
                 <div className="mb-1 flex items-center justify-between px-1">
                   <p className="text-xs font-semibold text-slate-500">Results</p>
-                  {isSearching && <Loader2 size={12} className="text-power-orange animate-spin" />}
+                  {isSearching && (
+                    <Loader2 size={12} className="text-power-orange-solid animate-spin" />
+                  )}
                 </div>
 
                 {results.length === 0 && !isSearching && (
@@ -133,10 +135,10 @@ export function ChatAddModal({
                           }
                           onClose();
                         }}
-                        className={`shrink-0 rounded-lg px-4 py-1.5 text-xs font-semibold shadow-sm transition active:scale-95 ${
+                        className={`shrink-0 rounded-md px-4 py-1.5 text-xs font-semibold transition active:scale-[0.98] ${
                           isGroup && !result.isMember
-                            ? "bg-power-orange-solid text-white hover:bg-orange-600"
-                            : "bg-slate-900 text-white hover:bg-slate-800"
+                            ? "bg-power-orange-solid text-white hover:bg-indigo-700"
+                            : "hover:bg-ink bg-slate-900 text-white"
                         }`}
                       >
                         {isGroup ? (result.isMember ? "Chat" : "Join") : "Chat"}
@@ -147,7 +149,7 @@ export function ChatAddModal({
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="text-power-orange mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-orange-50">
+                <div className="text-power-orange-solid bg-paper-deep mb-4 inline-flex h-12 w-12 items-center justify-center rounded-md">
                   {isGroup ? <Users size={24} /> : <MessageSquare size={24} />}
                 </div>
                 <p className="mb-2 text-[15px] font-semibold text-slate-700">
@@ -164,7 +166,7 @@ export function ChatAddModal({
                     onClose();
                     router.push("/discover");
                   }}
-                  className="flex items-center gap-2 rounded-md bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-slate-800 active:scale-95"
+                  className="hover:bg-ink flex items-center gap-2 rounded-md bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white transition active:scale-[0.98]"
                 >
                   Discover {isGroup ? "Groups" : "Users"}
                   <ArrowRight size={16} />

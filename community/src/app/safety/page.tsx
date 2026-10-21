@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Shield, UserX } from "lucide-react";
+import Link from "next/link";
+import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
 import { communityService } from "@/modules/community/services/community";
 import { BlockedUser } from "@/modules/community/types";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
@@ -55,103 +56,112 @@ export default function SafetyPage() {
       setBlockedUsers((current) => current.filter((item) => item.id !== userId));
       toast.success("User unblocked");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to unblock user");
+      toast.error(error instanceof Error ? error.message : "We could not unblock that user");
     }
   };
 
   return (
     <div className="community-page-shell">
-      <div className="community-content-wrap space-y-4">
-        <section className="community-card">
-          <div className="flex items-center gap-2">
-            <Shield size={18} className="text-power-orange" />
-            <h1 className="community-section-title">Safety Center</h1>
-          </div>
-          <p className="community-section-copy">
-            Moderation status visibility and personal safety controls in one place.
-          </p>
+      <div className="community-content-wrap-narrow">
+        <CommunityPageHeader
+          title="Safety centre"
+          subtitle="Who you have blocked, and what happened to the reports you made."
+          badge="Safety"
+        />
 
-          {isLoading ? (
-            <p className="mt-4 text-sm text-slate-500">Loading safety data...</p>
-          ) : (
-            <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-semibold text-slate-900">Blocked Users</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Manage users you blocked from direct interactions.
-                </p>
-                <div className="mt-3 space-y-2">
-                  {blockedUsers.length === 0 ? (
-                    <p className="text-xs text-slate-500">No blocked users.</p>
-                  ) : (
-                    blockedUsers.map((user) => (
-                      <div
-                        key={user.id}
-                        className="shadow-xs flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+        {isLoading ? (
+          <div aria-busy="true" aria-label="Loading safety data" className="mt-12 space-y-4">
+            <div className="bg-ink/10 h-8 w-48 animate-pulse rounded-sm" />
+            <div className="bg-ink/10 h-16 animate-pulse rounded-sm" />
+          </div>
+        ) : (
+          <div className="mt-12 space-y-14">
+            <section aria-labelledby="safety-blocked">
+              <h2 id="safety-blocked" className="font-editorial text-ink text-3xl font-light">
+                Blocked users
+              </h2>
+              <p className="text-ink-body mt-2 text-base">People you blocked cannot message you.</p>
+              <ul className="border-hairline mt-4 border-t">
+                {blockedUsers.length === 0 ? (
+                  <li className="border-hairline text-ink-body border-b py-4 text-base">
+                    You have not blocked anyone.
+                  </li>
+                ) : (
+                  blockedUsers.map((user) => (
+                    <li
+                      key={user.id}
+                      className="border-hairline flex flex-wrap items-center justify-between gap-3 border-b py-4"
+                    >
+                      <p className="text-ink text-lg font-medium">{user.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => unblock(user.id)}
+                        className="btn-motion border-ink text-ink hover:bg-ink inline-flex min-h-11 items-center rounded-md border px-5 text-base font-semibold hover:text-white"
                       >
-                        <p className="text-sm font-medium text-slate-800">{user.name}</p>
-                        <button
-                          onClick={() => unblock(user.id)}
-                          className="border-power-orange/40 text-power-orange hover:bg-power-orange/10 inline-flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-xs font-semibold transition"
+                        Unblock
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </section>
+
+            <section aria-labelledby="safety-reports">
+              <h2 id="safety-reports" className="font-editorial text-ink text-3xl font-light">
+                Your reports
+              </h2>
+              <p className="text-ink-body mt-2 text-base">
+                Outcomes from moderation.{" "}
+                <Link
+                  href="/reports"
+                  className="text-ink decoration-ink/30 hover:decoration-ink text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+                >
+                  See full details
+                </Link>
+              </p>
+              <ul className="border-hairline mt-4 border-t">
+                {reports.length === 0 ? (
+                  <li className="border-hairline text-ink-body border-b py-4 text-base">
+                    You have not submitted any reports.
+                  </li>
+                ) : (
+                  reports.map((report) => (
+                    <li key={report.id} className="border-hairline border-b py-5">
+                      <p className="text-ink-muted text-sm">
+                        {report.targetType.charAt(0) + report.targetType.slice(1).toLowerCase()}
+                        <span aria-hidden> · </span>
+                        <span
+                          className={`font-semibold ${
+                            report.status === "RESOLVED" ? "text-green-700" : "text-ink"
+                          }`}
                         >
-                          Unblock
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+                          {report.status === "RESOLVED" ? "Resolved" : "Being reviewed"}
+                        </span>
+                      </p>
+                      <p className="text-ink mt-1 text-lg leading-snug">{report.reason}</p>
+                      {report.resolutionNote && (
+                        <p className="text-ink-body mt-2 max-w-[60ch] text-base leading-relaxed">
+                          {report.resolutionNote}
+                        </p>
+                      )}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </section>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-semibold text-slate-900">My Report Status</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Track moderation outcomes and resolutions.
-                </p>
-                <div className="mt-3 space-y-2">
-                  {reports.length === 0 ? (
-                    <p className="text-xs text-slate-500">No reports submitted.</p>
-                  ) : (
-                    reports.map((report) => (
-                      <div
-                        key={report.id}
-                        className="shadow-xs rounded-2xl border border-slate-200 bg-white px-3 py-3"
-                      >
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <p className="text-xs font-semibold text-slate-700">
-                            {report.targetType}
-                          </p>
-                          <span
-                            className={`rounded-md px-2 py-0.5 text-xs font-semibold ${report.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}
-                          >
-                            {report.status}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm leading-6 text-slate-800">{report.reason}</p>
-                        {report.resolutionNote && (
-                          <p className="mt-1 text-xs leading-6 text-slate-500">
-                            {report.resolutionNote}
-                          </p>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="community-card">
-          <div className="flex items-center gap-2">
-            <UserX size={18} className="text-rose-600" />
-            <h2 className="text-lg font-semibold text-slate-900">How Safety Actions Work</h2>
+            <section aria-labelledby="safety-how" className="bg-paper-deep rounded-2xl p-6 sm:p-8">
+              <h2 id="safety-how" className="font-editorial text-ink text-2xl font-normal">
+                How safety actions work
+              </h2>
+              <ul className="text-ink-body mt-4 space-y-2 text-base leading-relaxed">
+                <li>Blocked users cannot message you directly.</li>
+                <li>Moderators review reports and add a note to the outcome.</li>
+                <li>Resolved reports stay visible so decisions can be checked.</li>
+              </ul>
+            </section>
           </div>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-600">
-            <li>Blocked users cannot message you directly.</li>
-            <li>Reports are reviewed by moderation and updated with status notes.</li>
-            <li>Resolved reports remain visible for accountability.</li>
-          </ul>
-        </section>
+        )}
       </div>
     </div>
   );

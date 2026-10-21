@@ -93,7 +93,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
             value={conversationSearchQuery}
             onChange={(e) => setConversationSearchQuery(e.target.value)}
             placeholder="Search conversations..."
-            className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-lg border border-slate-200 bg-slate-50/80 py-1.5 pl-8 pr-7 text-[12px] transition focus:bg-white focus:outline-none focus:ring-1"
+            className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-lg border border-slate-200 bg-slate-50/80 py-1.5 pl-8 pr-7 text-sm transition focus:bg-white focus:outline-none focus:ring-1"
           />
           {conversationSearchQuery && (
             <button
@@ -218,7 +218,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
             <button
               onClick={() => void handleLoadMoreConversations()}
               disabled={isLoadingMoreConversations}
-              className="w-full border-t border-slate-100 bg-white px-3 py-2.5 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50"
+              className="w-full border-t border-slate-100 bg-white px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             >
               {isLoadingMoreConversations ? "Loading..." : "Load more"}
             </button>
@@ -230,7 +230,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
       {!page.selectChatsMode && (
         <button
           onClick={() => page.setShowAddChatModal(true)}
-          className="bg-power-orange-solid absolute bottom-4 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition hover:scale-105 hover:bg-orange-600 active:scale-95"
+          className="bg-power-orange-solid absolute bottom-4 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:scale-105 hover:bg-indigo-700 active:scale-[0.98]"
         >
           <Plus size={22} strokeWidth={2.5} />
         </button>
@@ -243,7 +243,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            className="absolute bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-slate-200 bg-white p-3 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
+            className="absolute bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-slate-200 bg-white p-3"
           >
             <button
               onClick={() => {
@@ -272,7 +272,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
                 }
               }}
               disabled={page.selectedChatIds.length === 0}
-              className="bg-power-orange-solid flex-1 rounded-lg py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:opacity-50"
+              className="bg-power-orange-solid flex-1 rounded-lg py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-50"
             >
               Forward
             </button>

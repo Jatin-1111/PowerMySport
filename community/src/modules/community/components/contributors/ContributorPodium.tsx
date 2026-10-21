@@ -55,7 +55,7 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
         )}
         <motion.div
           whileHover={{ scale: 1.08 }}
-          className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-2 sm:h-12 sm:w-12 ${style.ring}`}
+          className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white ring-2 sm:h-12 sm:w-12 ${style.ring}`}
         >
           {item.photoUrl ? (
             <img src={item.photoUrl} alt={item.name} className="h-full w-full object-cover" />
@@ -79,12 +79,12 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
           ease: "easeOut",
         }}
         style={{ transformOrigin: "bottom" }}
-        className={`relative mt-2 flex w-full flex-col items-center justify-end gap-2 overflow-hidden rounded-t-xl pb-4 shadow-md ${style.bar} ${style.height}`}
+        className={`relative mt-2 flex w-full flex-col items-center justify-end gap-2 overflow-hidden rounded-t-xl pb-4 ${style.bar} ${style.height}`}
       >
         <span className="text-xs font-semibold text-slate-600">
           {ORDINALS[item.rank] || `#${item.rank}`}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+        <span className="inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-700">
           <Star size={11} className="text-amber-500" fill="currentColor" />
           {item.score} pts
         </span>

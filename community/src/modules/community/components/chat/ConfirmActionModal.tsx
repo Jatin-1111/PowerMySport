@@ -41,25 +41,25 @@ export default function ConfirmActionModal({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="pointer-events-auto w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+              className="pointer-events-auto w-full max-w-sm rounded-2xl bg-white p-6"
             >
               <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">{description}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{description}</p>
               <div className="mt-5 flex gap-2.5">
                 <button
                   onClick={onCancel}
                   disabled={isLoading}
-                  className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={onConfirm}
                   disabled={isLoading}
-                  className={`flex-1 rounded-xl py-2.5 text-[13px] font-semibold text-white transition disabled:opacity-50 ${
+                  className={`flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition disabled:opacity-50 ${
                     variant === "danger"
-                      ? "bg-rose-500 hover:bg-rose-600 active:bg-rose-700"
-                      : "bg-power-orange hover:bg-orange-600 active:bg-orange-700"
+                      ? "bg-red-600 hover:bg-red-700 active:bg-red-800"
+                      : "bg-power-orange hover:bg-indigo-700 active:bg-orange-700"
                   }`}
                 >
                   {isLoading ? "Please wait…" : confirmLabel}

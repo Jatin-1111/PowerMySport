@@ -731,7 +731,7 @@ export default function QnAPostDetailClient({
 
           {post.tags.length > 0 ? (
             <p className="text-ink-muted mt-5 text-sm">
-              {post.tags.map((tag) => `#${tag.replace(/^#/, "")}`).join("  ")}
+              {post.tags.map((tag) => `#${tag.replace(/^#/, "")}`).join(" ")}
             </p>
           ) : null}
 

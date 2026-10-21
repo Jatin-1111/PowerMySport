@@ -768,7 +768,7 @@ export default function QnAFeedClient() {
 
             {post.tags.length > 0 ? (
               <p className="text-ink-muted mt-3 text-sm">
-                {post.tags.map((tag) => `#${tag.replace(/^#/, "")}`).join("  ")}
+                {post.tags.map((tag) => `#${tag.replace(/^#/, "")}`).join(" ")}
               </p>
             ) : null}
 

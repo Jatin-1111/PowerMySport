@@ -53,20 +53,20 @@ export default function CommunityPageLoading({ page }: Props) {
             {/* Other person bubble */}
             <div className="flex items-end gap-2">
               <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-slate-200" />
-              <div className="h-16 w-64 animate-pulse rounded-[24px] rounded-bl-[6px] bg-white shadow-sm" />
+              <div className="h-16 w-64 animate-pulse rounded-[24px] rounded-bl-sm bg-white" />
             </div>
 
             {/* My bubble */}
             <div className="flex justify-end">
-              <div className="bg-power-orange/10 h-12 w-48 animate-pulse rounded-[24px] rounded-br-[6px] shadow-sm" />
+              <div className="bg-power-orange/10 h-12 w-48 animate-pulse rounded-[24px] rounded-br-[6px]" />
             </div>
 
             {/* Other person bubble */}
             <div className="flex items-end gap-2">
               <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-slate-200" />
               <div className="space-y-2">
-                <div className="h-20 w-72 animate-pulse rounded-[24px] bg-white shadow-sm" />
-                <div className="h-12 w-40 animate-pulse rounded-[24px] rounded-bl-[6px] bg-white shadow-sm" />
+                <div className="h-20 w-72 animate-pulse rounded-[24px] bg-white" />
+                <div className="h-12 w-40 animate-pulse rounded-[24px] rounded-bl-sm bg-white" />
               </div>
             </div>
           </div>
@@ -75,7 +75,7 @@ export default function CommunityPageLoading({ page }: Props) {
           <div className="border-t border-slate-200/50 bg-white p-4">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-slate-200" />
-              <div className="h-12 flex-1 animate-pulse rounded-[24px] bg-white shadow-sm" />
+              <div className="h-12 flex-1 animate-pulse rounded-[24px] bg-white" />
               <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-slate-200" />
             </div>
           </div>

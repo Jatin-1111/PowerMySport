@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, CheckCheck, LoaderCircle } from "lucide-react";
+import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import { communityService } from "@/modules/community/services/community";
 import { CommunityActivityItem } from "@/modules/community/types";
@@ -204,7 +204,7 @@ export default function CommunityNotificationsPage() {
         current.map((entry) => (entry.id === item.id ? { ...entry, isRead: true } : entry))
       );
     } catch {
-      toast.error("Failed to mark notification as read");
+      toast.error("We could not mark that as read");
     }
   }, []);
 
@@ -221,7 +221,7 @@ export default function CommunityNotificationsPage() {
         toast.success("All notifications marked as read");
       }
     } catch {
-      toast.error("Failed to mark notifications as read");
+      toast.error("We could not mark them as read");
     } finally {
       setIsMarkingAll(false);
     }
@@ -249,176 +249,171 @@ export default function CommunityNotificationsPage() {
     };
   }, [loadNotifications]);
 
-  return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
-      <section className="rounded-2xl border border-white/90 bg-white p-4 shadow-sm sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-slate-500">Community</p>
-            <h1 className="font-title mt-1 text-2xl font-semibold text-slate-900">Notifications</h1>
-          </div>
+  const link =
+    "text-ink decoration-ink/30 hover:decoration-ink min-h-11 inline-flex items-center text-base font-semibold underline underline-offset-4 transition-colors duration-200";
 
-          <div className="flex items-center gap-2">
+  return (
+    <div className="community-page-shell">
+      <div className="community-content-wrap-narrow">
+        <CommunityPageHeader
+          title="Notifications"
+          subtitle="Answers, upvotes, requests and messages from the community."
+          badge="Your account"
+          action={
             <button
+              type="button"
               onClick={() => void handleMarkAllRead()}
               disabled={unreadCount === 0 || isMarkingAll}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-motion border-ink text-ink hover:bg-ink disabled:hover:text-ink inline-flex min-h-11 items-center rounded-md border px-5 text-base font-semibold hover:text-white disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
             >
-              <CheckCheck size={14} />
-              {isMarkingAll ? "Marking..." : "Mark all read"}
+              {isMarkingAll ? "Marking" : "Mark all read"}
             </button>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="mt-4 flex items-center gap-2">
-          <button
-            onClick={() => setFilter("ALL")}
-            className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition ${
-              filter === "ALL"
-                ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
-                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
+        <div className="mt-10">
+          <div
+            role="tablist"
+            aria-label="Filter notifications"
+            className="border-hairline flex gap-8 border-b"
           >
-            All
-          </button>
-          <button
-            onClick={() => setFilter("UNREAD")}
-            className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition ${
-              filter === "UNREAD"
-                ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
-                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            Unread
-          </button>
-          {unreadCount > 0 ? (
-            <span className="bg-power-orange/10 text-power-orange ml-1 rounded-md px-2.5 py-1 text-xs font-semibold">
-              {unreadCount} unread
-            </span>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-white/90 bg-white p-4 shadow-sm sm:p-5">
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <LoaderCircle size={16} className="animate-spin" />
-            Loading notifications...
-          </div>
-        ) : items.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-            <Bell size={22} className="mx-auto text-slate-400" />
-            <p className="mt-2 text-sm font-semibold text-slate-700">No notifications yet</p>
-            <p className="mt-1 text-xs text-slate-500">
-              Actions like answers, upvotes, requests, and messages will show here.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-5">
-            {groupedItems.map((dateGroup) => (
-              <div key={dateGroup.dateKey} className="space-y-3">
-                <div className="py-1.5">
-                  <p className="text-xs font-semibold tracking-[0.16em] text-slate-500">
-                    {dateGroup.heading}
-                  </p>
-                </div>
-
-                {dateGroup.typeGroups.map((typeGroup) => (
-                  <div key={`${dateGroup.dateKey}-${typeGroup.label}`} className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold text-slate-500">{typeGroup.label}</p>
-                      <span className="text-xs text-slate-400">{typeGroup.items.length}</span>
-                    </div>
-
-                    {typeGroup.items.map((item) => {
-                      const actionHref = buildActionHref(item);
-
-                      return (
-                        <div
-                          key={item.id}
-                          className={`rounded-xl border p-3 transition ${
-                            item.isRead
-                              ? "border-slate-200 bg-white"
-                              : "border-power-orange/30 bg-power-orange/5"
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                                  {getEventLabel(item)}
-                                </span>
-                                {!item.isRead ? (
-                                  <span className="bg-power-orange-solid rounded-md px-2 py-0.5 text-xs font-semibold text-white">
-                                    New
-                                  </span>
-                                ) : null}
-                              </div>
-                              <p className="mt-1 text-sm font-semibold text-slate-900">
-                                {item.title}
-                              </p>
-                              <p className="mt-0.5 text-sm text-slate-700">{item.message}</p>
-                            </div>
-
-                            <span className="text-xs text-slate-500">
-                              {toRelativeTime(item.createdAt)}
-                            </span>
-                          </div>
-
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            {actionHref ? (
-                              <Link
-                                href={actionHref}
-                                onClick={() => {
-                                  void handleMarkRead(item);
-                                }}
-                                className="text-power-orange inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold hover:bg-slate-50"
-                              >
-                                Open
-                              </Link>
-                            ) : null}
-
-                            {!item.isRead ? (
-                              <button
-                                onClick={() => void handleMarkRead(item)}
-                                className="inline-flex rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                              >
-                                Mark read
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+            {(
+              [
+                { value: "ALL", label: "All" },
+                { value: "UNREAD", label: unreadCount > 0 ? `Unread (${unreadCount})` : "Unread" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                aria-selected={filter === tab.value}
+                onClick={() => setFilter(tab.value)}
+                className={`-mb-px min-h-12 border-b-2 text-base font-semibold tabular-nums transition-colors duration-200 ${
+                  filter === tab.value
+                    ? "border-ink text-ink"
+                    : "text-ink-muted hover:text-ink border-transparent"
+                }`}
+              >
+                {tab.label}
+              </button>
             ))}
           </div>
-        )}
 
-        {pages > 1 ? (
-          <div className="mt-4 flex items-center justify-between">
-            <button
-              onClick={() => void loadNotifications(Math.max(1, page - 1))}
-              disabled={page <= 1 || isLoading}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="text-xs text-slate-500">
-              Page {page} of {pages}
-            </span>
-            <button
-              onClick={() => void loadNotifications(Math.min(pages, page + 1))}
-              disabled={page >= pages || isLoading}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        ) : null}
-      </section>
+          {isLoading ? (
+            <div aria-busy="true" aria-label="Loading notifications" className="mt-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="border-hairline space-y-3 border-b py-6">
+                  <div className="bg-ink/10 h-3 w-24 animate-pulse rounded-sm" />
+                  <div className="bg-ink/10 h-5 w-2/3 animate-pulse rounded-sm" />
+                </div>
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="bg-paper-deep mt-8 rounded-2xl px-6 py-14 text-center">
+              <p className="font-editorial text-ink text-3xl font-light">
+                {filter === "UNREAD" ? "You are all caught up." : "Nothing yet."}
+              </p>
+              <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+                Answers, upvotes, requests and messages will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-8 space-y-12">
+              {groupedItems.map((dateGroup) => (
+                <section key={dateGroup.dateKey} aria-label={dateGroup.heading}>
+                  <h2 className="font-editorial text-ink text-2xl font-normal">
+                    {dateGroup.heading}
+                  </h2>
+                  <ul className="border-hairline mt-3 border-t">
+                    {dateGroup.typeGroups.flatMap((typeGroup) =>
+                      typeGroup.items.map((item) => {
+                        const actionHref = buildActionHref(item);
+                        return (
+                          <li key={item.id} className="border-hairline border-b py-5">
+                            <div className="flex items-start gap-3">
+                              <span
+                                className={`mt-2 h-2 w-2 shrink-0 rounded-full ${
+                                  item.isRead ? "bg-transparent" : "bg-power-orange-solid"
+                                }`}
+                                aria-label={item.isRead ? undefined : "Unread"}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-ink-muted text-sm">
+                                  {getEventLabel(item) !== typeGroup.label
+                                    ? `${typeGroup.label} · ${getEventLabel(item)} · `
+                                    : `${typeGroup.label} · `}
+                                  {toRelativeTime(item.createdAt)}
+                                </p>
+                                <p
+                                  className={`mt-1 text-lg leading-snug ${
+                                    item.isRead ? "text-ink-body" : "text-ink font-semibold"
+                                  }`}
+                                >
+                                  {item.title}
+                                </p>
+                                <p className="text-ink-body mt-1 max-w-[60ch] text-base leading-relaxed">
+                                  {item.message}
+                                </p>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-6">
+                                  {actionHref ? (
+                                    <Link
+                                      href={actionHref}
+                                      onClick={() => {
+                                        void handleMarkRead(item);
+                                      }}
+                                      className={link}
+                                    >
+                                      Open
+                                    </Link>
+                                  ) : null}
+                                  {!item.isRead ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleMarkRead(item)}
+                                      className="text-ink-muted hover:text-ink min-h-11 text-base font-medium transition-colors duration-200"
+                                    >
+                                      Mark read
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })
+                    )}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
+
+          {pages > 1 ? (
+            <div className="mt-10 flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={() => void loadNotifications(Math.max(1, page - 1))}
+                disabled={page <= 1 || isLoading}
+                className={`${link} disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40`}
+              >
+                Previous
+              </button>
+              <span className="text-ink-muted text-sm tabular-nums">
+                Page {page} of {pages}
+              </span>
+              <button
+                type="button"
+                onClick={() => void loadNotifications(Math.min(pages, page + 1))}
+                disabled={page >= pages || isLoading}
+                className={`${link} disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40`}
+              >
+                Next
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

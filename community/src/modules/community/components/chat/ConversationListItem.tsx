@@ -86,7 +86,7 @@ export const ConversationListItem = memo(function ConversationListItem({
       >
         <div className="flex items-center gap-3">
           {/* Avatar */}
-          <div className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-[14px] font-semibold text-slate-700 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_1px_3px_rgba(0,0,0,0.05)]">
+          <div className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-sm font-semibold text-slate-700">
             {conversationPhotoUrl ? (
               <img
                 src={conversationPhotoUrl}
@@ -107,7 +107,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                   <div className="bg-power-orange mt-0.5 h-2 w-2 shrink-0 rounded-full" />
                 )}
                 <p
-                  className={`truncate text-[14px] tracking-tight ${
+                  className={`truncate text-sm tracking-tight ${
                     conversation.unreadCount > 0
                       ? "font-semibold text-slate-900"
                       : "font-medium text-slate-800"
@@ -118,7 +118,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                 {isPinned && <Pin size={11} className="shrink-0 fill-slate-400 text-slate-400" />}
                 {isMuted && <BellOff size={11} className="shrink-0 text-slate-400" />}
                 {conversation.status === "PENDING" && (
-                  <span className="shrink-0 rounded-md border border-orange-200/50 bg-orange-100/80 px-1.5 py-0.5 text-[9px] font-semibold text-orange-700">
+                  <span className="bg-wash shrink-0 rounded-md border border-transparent px-1.5 py-0.5 text-[9px] font-semibold text-orange-700">
                     New
                   </span>
                 )}
@@ -129,7 +129,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                 {conversation.latestMessage?.createdAt && (
                   <span
                     className={`text-xs font-medium tabular-nums leading-none ${
-                      conversation.unreadCount > 0 ? "text-power-orange" : "text-slate-400"
+                      conversation.unreadCount > 0 ? "text-power-orange-solid" : "text-slate-400"
                     }`}
                   >
                     {formatChatListDate(conversation.latestMessage.createdAt)}
@@ -151,7 +151,7 @@ export const ConversationListItem = memo(function ConversationListItem({
 
             <div className="mt-0.5 flex items-center justify-between gap-2">
               <p
-                className={`truncate text-[12px] leading-tight ${
+                className={`truncate text-sm leading-tight ${
                   conversation.unreadCount > 0 ? "font-medium text-slate-700" : "text-slate-500"
                 }`}
               >
@@ -163,7 +163,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                 <motion.span
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="bg-power-orange-solid inline-flex min-w-[18px] shrink-0 items-center justify-center rounded-md px-1 py-0.5 text-xs font-semibold text-white shadow-sm"
+                  className="bg-power-orange-solid inline-flex min-w-[18px] shrink-0 items-center justify-center rounded-md px-1 py-0.5 text-xs font-semibold text-white"
                 >
                   {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
                 </motion.span>
@@ -185,7 +185,7 @@ export const ConversationListItem = memo(function ConversationListItem({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute right-3 top-1 z-30 w-40 overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.1)]"
+            className="absolute right-3 top-1 z-30 w-40 overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-lg"
           >
             <button
               onClick={(e) => {
@@ -193,9 +193,12 @@ export const ConversationListItem = memo(function ConversationListItem({
                 onTogglePin(conversation.id);
                 setShowContextMenu(false);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              <Pin size={14} className={isPinned ? "fill-power-orange text-power-orange" : ""} />
+              <Pin
+                size={14}
+                className={isPinned ? "fill-power-orange text-power-orange-solid" : ""}
+              />
               {isPinned ? "Unpin" : "Pin"}
             </button>
             <button
@@ -204,7 +207,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                 onToggleMute(conversation.id);
                 setShowContextMenu(false);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               {isMuted ? (
                 <>

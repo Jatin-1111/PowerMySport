@@ -9,19 +9,10 @@ import {
 } from "@/modules/community/hooks/useConnectRequest";
 import { CommunityMemberProfile } from "@/modules/community/types";
 import DependentSummaryList from "@/modules/community/components/DependentSummaryList";
-import {
-  ArrowLeft,
-  BadgeCheck,
-  Clock3,
-  MapPin,
-  MessageSquare,
-  Shield,
-  UserCircle2,
-} from "lucide-react";
+import { ArrowLeft, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 
 const COMMUNITY_SELECTED_CONVERSATION_KEY = "community:selectedConversationId";
 
@@ -80,7 +71,6 @@ const calculateAgeFromDate = (value?: string | null) => {
 export default function MemberProfilePage() {
   const params = useParams<{ userId: string }>();
   const router = useRouter();
-  const prefersReducedMotion = useReducedMotion();
   const userId = Array.isArray(params?.userId) ? params.userId[0] : params?.userId;
 
   const [profile, setProfile] = useState<CommunityMemberProfile | null>(null);
@@ -112,8 +102,7 @@ export default function MemberProfilePage() {
           return;
         }
 
-        const message =
-          loadError instanceof Error ? loadError.message : "Failed to load member profile";
+        const message = loadError instanceof Error ? loadError.message : "Please try again";
         setError(message);
       } finally {
         if (isActive) {
@@ -156,256 +145,159 @@ export default function MemberProfilePage() {
       });
     } catch (messageError) {
       const message =
-        messageError instanceof Error ? messageError.message : "Failed to start conversation";
+        messageError instanceof Error
+          ? messageError.message
+          : "We could not start the conversation";
       toast.error(message);
     } finally {
       setIsMessaging(false);
     }
   };
 
+  const messagingLabel =
+    profile?.messagePrivacy === "NONE"
+      ? "Messaging is off"
+      : profile?.messagePrivacy === "REQUEST_ONLY"
+        ? "Accepts message requests"
+        : "Open to messages";
+
+  const facts = profile
+    ? [
+        { label: "Joined", value: formatDate(profile.createdAt) || "Not shown" },
+        {
+          label: "Last active",
+          value: profile.lastActiveAt
+            ? `${formatDateTime(profile.lastActiveAt)} (${getLocalDateString(profile.lastActiveAt)})`
+            : "Not shown",
+        },
+        { label: "Identity", value: profile.isIdentityPublic ? "Public" : "Alias only" },
+        { label: "Messages", value: messagingLabel.replace("Messaging is off", "Off") },
+        { label: "Last seen", value: profile.lastSeenVisible ? "Shared" : "Hidden" },
+        { label: "Read receipts", value: profile.readReceiptsEnabled ? "On" : "Off" },
+      ]
+    : [];
+
   return (
-    <motion.div
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
-      animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="relative isolate flex min-h-[calc(100vh-72px)] w-full overflow-hidden bg-slate-50"
-    >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-white" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-white" />
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Link
-            href="/"
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto"
+    <div className="bg-paper min-h-[calc(100vh-72px)] w-full">
+      <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+        <Link
+          href="/"
+          className="text-ink-body hover:text-ink inline-flex min-h-11 items-center gap-1.5 text-base font-medium transition-colors duration-200"
+        >
+          <ArrowLeft size={18} strokeWidth={1.5} aria-hidden="true" />
+          Back to community
+        </Link>
+
+        {error && (
+          <p
+            role="alert"
+            className="mt-4 rounded-md border border-red-700/30 bg-red-50 px-4 py-3 text-base text-red-800"
           >
-            <ArrowLeft size={16} />
-            Back to community
-          </Link>
-          <div className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 sm:w-auto">
-            Member profile
-          </div>
-        </div>
-
-        <section className="border-border sm:rounded-4xl bg-ink relative overflow-hidden rounded-2xl border p-5 text-white shadow-xl sm:p-8 lg:p-10">
-          <div className="bg-paper absolute inset-0" />
-          <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.6fr),minmax(280px,0.9fr)] lg:items-start">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.24em] text-white/55">
-                Community identity
-              </p>
-              <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-4xl">
-                {profile?.displayName || (isLoading ? "Loading profile" : "Member profile")}
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm text-slate-200 sm:text-base">
-                See a member’s public sports, privacy level, and activity context without exposing
-                more than they chose to share.
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                {profile && (
-                  <>
-                    <span className="inline-flex items-center rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
-                      {profile.role === "Coach" ? "Coach" : "Player"}
-                    </span>
-                    <span className="inline-flex items-center rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
-                      {profile.isIdentityPublic ? "Public identity" : "Private identity"}
-                    </span>
-                    <span className="inline-flex items-center rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
-                      {profile.messagePrivacy === "NONE"
-                        ? "Messaging off"
-                        : profile.messagePrivacy === "REQUEST_ONLY"
-                          ? "Message requests"
-                          : "Open messages"}
-                    </span>
-                    {profile.city && (
-                      <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
-                        <MapPin size={12} />
-                        {profile.city}
-                      </span>
-                    )}
-                    {age !== null && (
-                      <span className="inline-flex items-center rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
-                        {age} years old
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {error && (
-                <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50/95 p-4 text-rose-700 shadow-sm">
-                  <p className="font-medium">Could not load profile</p>
-                  <p className="mt-1 text-sm">{error}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-[1.75rem] border border-white/10 bg-white/10 p-4 sm:p-5">
-              {isLoading ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div className="h-16 w-16 animate-pulse rounded-full bg-white/10" />
-                    <div className="flex-1 space-y-3">
-                      <div className="h-4 w-2/3 animate-pulse rounded-full bg-white/10" />
-                      <div className="h-3 w-1/2 animate-pulse rounded-full bg-white/10" />
-                      <div className="h-3 w-3/5 animate-pulse rounded-full bg-white/10" />
-                    </div>
-                  </div>
-                  <div className="h-28 animate-pulse rounded-2xl bg-white/10" />
-                </div>
-              ) : profile ? (
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-4 rounded-2xl bg-white p-4 text-slate-900 shadow-sm sm:flex-row sm:items-center">
-                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                      {profile.photoUrl ? (
-                        <img
-                          src={profile.photoUrl}
-                          alt={profile.displayName}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <UserCircle2 size={34} className="text-slate-300" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-semibold tracking-tight">
-                          {profile.displayName}
-                        </h2>
-                        {profile.isIdentityPublic ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                            <BadgeCheck size={12} />
-                            Visible
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                            <Shield size={12} />
-                            Alias only
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {profile.alias !== profile.displayName
-                          ? `Known as ${profile.alias}`
-                          : "Community member"}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                        {profile.city && (
-                          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1">
-                            <MapPin size={12} />
-                            {profile.city}
-                          </span>
-                        )}
-                        {age !== null && (
-                          <span className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1">
-                            {age} years old
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => void handleStartConversation()}
-                    disabled={isMessaging || profile.messagePrivacy === "NONE"}
-                    className="bg-power-orange-solid inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <MessageSquare size={16} />
-                    {isMessaging ? "Opening..." : "Message member"}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </section>
-
-        {profile && (
-          <section className="grid gap-3 md:grid-cols-3">
-            <div className="border-border rounded-2xl border bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold text-slate-500">Joined</p>
-              <p className="mt-2 text-base font-semibold text-slate-900 sm:text-lg">
-                {formatDate(profile.createdAt) || "Unavailable"}
-              </p>
-            </div>
-            <div className="border-border rounded-2xl border bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold text-slate-500">Last active</p>
-              <p className="mt-2 text-base font-semibold text-slate-900 sm:text-lg">
-                {profile.lastActiveAt ? formatDateTime(profile.lastActiveAt) : "Unavailable"}
-              </p>
-              {profile.lastActiveAt && (
-                <p className="mt-1 text-sm text-slate-500">
-                  {getLocalDateString(profile.lastActiveAt)}
-                </p>
-              )}
-            </div>
-            <div className="border-border rounded-2xl border bg-white p-5 shadow-sm">
-              <p className="text-xs font-semibold text-slate-500">Read receipts</p>
-              <p className="mt-2 text-base font-semibold text-slate-900 sm:text-lg">
-                {profile.readReceiptsEnabled ? "Enabled" : "Disabled"}
-              </p>
-            </div>
-          </section>
+            <span className="font-semibold">We could not load this profile.</span> {error}
+          </p>
         )}
 
-        {profile && (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr),minmax(320px,0.8fr)]">
-            <section className="border-border rounded-4xl border bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-power-orange text-xs font-semibold tracking-[0.2em]">
-                    {dependents.length ? "Who they play for" : "Public sports"}
-                  </p>
-                  <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">
-                    {dependents.length
-                      ? "The children this member is here for"
-                      : "Sports the member shares"}
-                  </h3>
-                </div>
+        <header className="bg-paper-deep mt-4 rounded-3xl p-6 sm:p-10">
+          {isLoading ? (
+            <div aria-busy="true" aria-label="Loading profile" className="flex items-center gap-6">
+              <div className="bg-ink/10 h-24 w-24 shrink-0 animate-pulse rounded-2xl" />
+              <div className="flex-1 space-y-3">
+                <div className="bg-ink/10 h-9 w-2/3 animate-pulse rounded-sm" />
+                <div className="bg-ink/10 h-4 w-1/2 animate-pulse rounded-sm" />
               </div>
+            </div>
+          ) : profile ? (
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
+              <div className="bg-paper text-ink-muted font-editorial flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-5xl font-light">
+                {profile.photoUrl ? (
+                  <img
+                    src={profile.photoUrl}
+                    alt={profile.displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  (profile.displayName || "?").charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-ink-body text-base">
+                  {[
+                    profile.role === "Coach"
+                      ? "Coach"
+                      : profile.role === "Parent"
+                        ? "Parent"
+                        : "Player",
+                    profile.alias && profile.alias !== profile.displayName
+                      ? `Known as ${profile.alias}`
+                      : "",
+                    profile.city || "",
+                    age !== null ? `${age} years old` : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+                <h1 className="font-editorial text-ink mt-2 text-balance text-4xl font-light leading-[1.08] sm:text-5xl">
+                  {profile.displayName}
+                </h1>
+                <p className="text-ink-body mt-3 text-base">{messagingLabel}</p>
 
+                <button
+                  type="button"
+                  onClick={() => void handleStartConversation()}
+                  disabled={isMessaging || profile.messagePrivacy === "NONE"}
+                  className="btn-motion bg-power-orange-solid mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-md px-7 text-base font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <MessageSquare size={16} aria-hidden="true" />
+                  {isMessaging ? "Opening" : "Message"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <h1 className="font-editorial text-ink text-4xl font-light">Member profile</h1>
+          )}
+        </header>
+
+        {profile && (
+          <div className="mt-12 grid gap-12 lg:grid-cols-[minmax(0,1.2fr),minmax(280px,0.8fr)]">
+            <section aria-labelledby="member-plays-for">
+              <h2 id="member-plays-for" className="font-editorial text-ink text-3xl font-light">
+                {dependents.length ? "Who they play for" : "Public sports"}
+              </h2>
               {dependents.length ? (
                 <DependentSummaryList dependents={dependents} className="mt-4" />
+              ) : sports.length ? (
+                <ul className="border-hairline mt-4 border-t">
+                  {sports.map((sport) => (
+                    <li key={sport} className="border-hairline text-ink border-b py-3 text-base">
+                      {sport}
+                    </li>
+                  ))}
+                </ul>
               ) : (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {sports.length ? (
-                    sports.map((sport) => (
-                      <span
-                        key={sport}
-                        className="inline-flex items-center rounded-md bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700"
-                      >
-                        {sport}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500">No public sports listed.</p>
-                  )}
-                </div>
+                <p className="text-ink-body mt-4 text-base">No public sports listed.</p>
               )}
             </section>
 
-            <section className="border-border rounded-4xl border bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-2 text-slate-900">
-                <Clock3 size={18} className="text-power-orange" />
-                <h3 className="text-xl font-semibold tracking-tight">Privacy summary</h3>
-              </div>
-              <div className="mt-4 space-y-3 text-sm text-slate-600">
-                <p>Identity visibility: {profile.isIdentityPublic ? "public" : "private"}.</p>
-                <p>
-                  Messaging:{" "}
-                  {profile.messagePrivacy === "NONE"
-                    ? "disabled"
-                    : profile.messagePrivacy === "REQUEST_ONLY"
-                      ? "message requests only"
-                      : "open to start a conversation"}
-                  .
-                </p>
-                <p>Last seen: {profile.lastSeenVisible ? "shared" : "hidden"}.</p>
-              </div>
+            <section aria-labelledby="member-shares">
+              <h2 id="member-shares" className="font-editorial text-ink text-3xl font-light">
+                What they share
+              </h2>
+              <dl className="border-hairline mt-4 border-t">
+                {facts.map((fact) => (
+                  <div
+                    key={fact.label}
+                    className="border-hairline flex items-baseline justify-between gap-4 border-b py-3"
+                  >
+                    <dt className="text-ink-muted text-base">{fact.label}</dt>
+                    <dd className="text-ink text-right text-base font-medium">{fact.value}</dd>
+                  </div>
+                ))}
+              </dl>
             </section>
           </div>
         )}
       </div>
       <ConnectRequestModal request={connect} />
-    </motion.div>
+    </div>
   );
 }

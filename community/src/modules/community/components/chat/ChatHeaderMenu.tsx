@@ -58,8 +58,8 @@ function MenuItem({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
-        variant === "danger" ? "text-rose-600 hover:bg-rose-50" : "text-slate-700 hover:bg-slate-50"
+      className={`flex w-full items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+        variant === "danger" ? "text-red-700 hover:bg-red-50" : "text-slate-700 hover:bg-slate-50"
       } ${hasBorderBottom ? "border-b border-slate-100" : ""}`}
     >
       {icon}
@@ -100,7 +100,7 @@ export default function ChatHeaderMenu({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: -4 }}
       transition={{ duration: 0.12 }}
-      className="absolute right-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.1)]"
+      className="absolute right-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-lg"
     >
       {/* Group 1 — Info / Search */}
       <MenuItem
@@ -123,12 +123,12 @@ export default function ChatHeaderMenu({
 
       {/* Group 2 — Messaging */}
       <MenuItem
-        icon={<CheckCheck size={15} className="text-turf-green" />}
+        icon={<CheckCheck size={15} className="text-ink-muted" />}
         label="Mark all as Read"
         onClick={wrap(onMarkAllAsRead)}
       />
       <MenuItem
-        icon={<Check size={15} className="text-power-orange" />}
+        icon={<Check size={15} className="text-ink-muted" />}
         label={isMessageSelectionMode ? "Cancel Selection" : "Select Messages"}
         onClick={wrap(onToggleSelectMessages)}
         hasBorderBottom
@@ -149,9 +149,9 @@ export default function ChatHeaderMenu({
       <MenuItem
         icon={
           isFavourited ? (
-            <StarOff size={15} className="text-amber-500" />
+            <StarOff size={15} className="text-ink-muted" />
           ) : (
-            <Star size={15} className="text-amber-500" />
+            <Star size={15} className="text-ink-muted" />
           )
         }
         label={isFavourited ? "Remove from Favourites" : "Add to Favourites"}

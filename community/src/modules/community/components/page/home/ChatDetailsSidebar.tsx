@@ -82,7 +82,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 24 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-y-0 right-0 z-50 flex w-[92vw] max-w-sm flex-col overflow-y-auto border-l border-white/40 bg-white shadow-[-8px_0_30px_rgba(0,0,0,0.06)] supports-[backdrop-filter]:bg-white xl:w-[340px] xl:max-w-none"
+              className="absolute inset-y-0 right-0 z-50 flex w-[92vw] max-w-sm flex-col overflow-y-auto border-l border-white/40 bg-white supports-[backdrop-filter]:bg-white xl:w-[340px] xl:max-w-none"
             >
               {/* Close button */}
               <div className="flex flex-none items-center justify-between px-4 pb-2 pt-4">
@@ -97,7 +97,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                       setShowChatDetailsSidebar(false);
                     }
                   }}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/60 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/60 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
                   aria-label={isViewingMember ? "Back" : "Close"}
                 >
                   <X size={15} />
@@ -114,7 +114,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                         : selectedConversationPhotoUrl;
                     if (imgToEnlarge) setEnlargedImage(imgToEnlarge);
                   }}
-                  className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-semibold text-slate-600 shadow-lg ring-4 ring-white ${
+                  className={`flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-semibold text-slate-600 ring-4 ring-white ${
                     (isViewingMember && selectedMemberProfile?.photoUrl) ||
                     selectedConversationPhotoUrl
                       ? "cursor-pointer transition hover:opacity-90"
@@ -151,7 +151,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                 </h2>
 
                 {!isGroup && !isViewingMember && (
-                  <p className="mt-0.5 text-[12px] text-slate-500">
+                  <p className="mt-0.5 text-sm text-slate-500">
                     {selectedConversation.otherParticipant.isIdentityPublic
                       ? "Public profile"
                       : "Anonymous profile"}
@@ -160,12 +160,12 @@ export default function ChatDetailsSidebar({ page }: Props) {
 
                 {isViewingMember && selectedMemberProfile && (
                   <div className="mt-2 flex w-full flex-col items-center">
-                    <p className="text-[12px] text-slate-500">
+                    <p className="text-sm text-slate-500">
                       {selectedMemberProfile.isIdentityPublic ? "Public profile" : "Alias only"}
                     </p>
                     <button
                       onClick={handleMessageSelectedMember}
-                      className="bg-power-orange-solid mt-3 flex w-full max-w-[200px] items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 active:scale-95"
+                      className="bg-power-orange-solid mt-3 flex w-full max-w-[200px] items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 active:scale-[0.98]"
                     >
                       <MessageSquare size={16} />
                       Message
@@ -176,7 +176,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                 {isGroup && !isViewingMember && selectedConversation.group && (
                   <div className="mt-1.5 flex items-center gap-1.5">
                     <Users size={13} className="text-slate-400" />
-                    <span className="text-[13px] font-medium text-slate-600">
+                    <span className="text-sm font-medium text-slate-600">
                       {selectedConversation.group.memberCount} members
                     </span>
                   </div>
@@ -205,7 +205,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-slate-400">Role</p>
-                      <p className="text-[13px] font-medium text-slate-800">
+                      <p className="text-sm font-medium text-slate-800">
                         {isViewingMember && selectedMemberProfile
                           ? selectedMemberProfile.role === "Coach"
                             ? "Coach"
@@ -222,7 +222,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-slate-400">Privacy</p>
-                      <p className="text-[13px] font-medium text-slate-800">
+                      <p className="text-sm font-medium text-slate-800">
                         {isViewingMember && selectedMemberProfile
                           ? selectedMemberProfile.isIdentityPublic
                             ? "Public identity"
@@ -241,7 +241,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-slate-400">Location</p>
-                        <p className="text-[13px] font-medium text-slate-800">
+                        <p className="text-sm font-medium text-slate-800">
                           {selectedMemberProfile.city}
                         </p>
                       </div>
@@ -255,7 +255,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                 <div className="flex min-h-0 flex-1 flex-col">
                   {/* Group info */}
                   <div className="flex-none border-b border-slate-100 px-4 py-3">
-                    <div className="flex items-center gap-2 text-[12px] text-slate-500">
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
                       <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium">
                         {selectedConversation.group.sport || "General"}
                       </span>
@@ -271,7 +271,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                   {/* Members list */}
                   <div className="flex-none px-4 pb-1 pt-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-[13px] font-semibold text-slate-800">
+                      <h4 className="text-sm font-semibold text-slate-800">
                         Members ({membersCount})
                       </h4>
                       <button
@@ -285,7 +285,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                             page.setWorkspaceView("DIRECTORY");
                           }
                         }}
-                        className="text-power-orange flex items-center gap-1 text-xs font-semibold transition hover:opacity-80"
+                        className="text-power-orange-solid flex items-center gap-1 text-xs font-semibold transition hover:opacity-80"
                       >
                         <UserPlus size={13} /> Invite
                       </button>
@@ -307,7 +307,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                 {/* Mute */}
                 <button
                   onClick={() => handleToggleMuteConversation(selectedConversation.id)}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   {isMuted ? (
                     <>
@@ -330,7 +330,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                       void handleLeaveGroup(selectedConversation.group.id)
                     }
                     disabled={isLeavingGroupId === selectedConversation.group?.id}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                   >
                     <LogOut size={16} />
                     Leave Group
@@ -342,7 +342,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                   <button
                     onClick={() => void handleToggleConversationBlock()}
                     disabled={isTogglingBlockUser}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
                   >
                     <Ban size={16} />
                     {isTogglingBlockUser
@@ -363,7 +363,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
                         : selectedConversation.id
                     )
                   }
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-rose-600 transition hover:bg-rose-50"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50"
                 >
                   <Flag size={16} />
                   Report
@@ -390,7 +390,7 @@ export default function ChatDetailsSidebar({ page }: Props) {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative aspect-square w-full max-w-sm overflow-hidden rounded-full bg-white shadow-2xl sm:max-w-md"
+              className="relative aspect-square w-full max-w-sm overflow-hidden rounded-full bg-white sm:max-w-md"
               onClick={(e) => e.stopPropagation()}
             >
               <button

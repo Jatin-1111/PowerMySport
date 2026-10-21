@@ -31,7 +31,7 @@ export function FeaturedCommunitiesStrip({
       whileInView={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.35 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="overflow-hidden rounded-2xl border border-white/70 bg-white p-4 shadow-sm sm:rounded-[1.75rem]"
+      className="overflow-hidden rounded-2xl border border-white/70 bg-white p-4 sm:rounded-[1.75rem]"
     >
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -46,7 +46,7 @@ export function FeaturedCommunitiesStrip({
           onClick={onViewAll}
           whileHover={prefersReducedMotion ? undefined : { scale: 1.02, y: -1 }}
           whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-          className="min-h-10 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
+          className="min-h-10 rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white"
         >
           View all
         </motion.button>
@@ -74,7 +74,7 @@ export function FeaturedCommunitiesStrip({
                 }}
                 whileHover={prefersReducedMotion ? undefined : { y: -4 }}
                 transition={{ duration: 0.28, ease: "easeOut" }}
-                className="min-w-[84vw] snap-start rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.35)] sm:min-w-0"
+                className="min-w-[84vw] snap-start rounded-2xl border border-slate-200 bg-white p-3 sm:min-w-0"
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-title line-clamp-1 text-sm font-semibold text-slate-900">

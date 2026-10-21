@@ -162,7 +162,7 @@ export default function EmojiPicker({ onSelect, onClose, alignRight }: EmojiPick
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.95 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-      className={`absolute bottom-full ${alignRight ? "right-0" : "left-0"} z-50 mb-2 w-[320px] overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]`}
+      className={`absolute bottom-full ${alignRight ? "right-0" : "left-0"} z-50 mb-2 w-[320px] overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-lg`}
     >
       <div className="emoji-picker-scroll max-h-[280px] space-y-2 overflow-y-auto p-2">
         {EMOJI_CATEGORIES.map((category) => (
@@ -179,7 +179,7 @@ export default function EmojiPicker({ onSelect, onClose, alignRight }: EmojiPick
                     onSelect(emoji);
                     onClose();
                   }}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-xl transition-all hover:scale-110 hover:bg-slate-100 active:scale-95"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-xl transition-all hover:scale-110 hover:bg-slate-100 active:scale-[0.98]"
                 >
                   {emoji}
                 </button>

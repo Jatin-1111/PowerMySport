@@ -52,7 +52,7 @@ export default function QuoteOfTheDay() {
     : "";
 
   return (
-    <figure className="group relative flex h-full min-h-52 flex-col overflow-hidden rounded-[1.4rem] bg-white p-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5 sm:p-6">
+    <figure className="group relative flex h-full min-h-52 flex-col overflow-hidden rounded-[1.4rem] bg-white p-5 ring-1 ring-slate-900/5 sm:p-6">
       {/* Depth, in three cheap layers: a warm corner glow, a cool one on the
           opposite side, and a hairline highlight along the top edge so the
           card reads as glass rather than a flat white box. */}
@@ -68,7 +68,7 @@ export default function QuoteOfTheDay() {
 
       <figcaption className="relative flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-slate-500">
-          <span className="text-power-orange flex h-6 w-6 items-center justify-center rounded-lg bg-white">
+          <span className="text-power-orange-solid flex h-6 w-6 items-center justify-center rounded-lg bg-white">
             <Quote size={12} aria-hidden="true" />
           </span>
           Quote of the day
@@ -109,7 +109,7 @@ export default function QuoteOfTheDay() {
               <footer className="mt-4 flex items-center gap-2.5">
                 <span
                   aria-hidden="true"
-                  className="bg-ink flex h-8 w-8 flex-none items-center justify-center rounded-full text-xs font-semibold tracking-wide text-white shadow-sm"
+                  className="bg-ink flex h-8 w-8 flex-none items-center justify-center rounded-full text-xs font-semibold tracking-wide text-white"
                 >
                   {initials}
                 </span>

@@ -19,7 +19,9 @@ export default function NotFound() {
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-6 py-16">
       <div className="w-full max-w-md rounded-2xl border border-white/70 bg-white p-8 text-center shadow-sm">
-        <p className="text-power-orange mb-2 text-xs font-semibold tracking-[0.2em]">Error 404</p>
+        <p className="text-power-orange-solid mb-2 text-xs font-semibold tracking-[0.2em]">
+          Error 404
+        </p>
         <h1 className="font-title text-6xl font-semibold text-slate-900">404</h1>
         <h2 className="mt-3 text-xl font-semibold text-slate-900">Page not found</h2>
         <p className="mt-2 text-sm text-slate-600">

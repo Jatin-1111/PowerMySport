@@ -1,5 +1,3 @@
-import { MapPin, Trophy, Users } from "lucide-react";
-
 import type { CommunityDependentSummary } from "@/modules/community/types";
 
 /**
@@ -105,37 +103,31 @@ export function DependentSummaryList({
 
   return (
     <div className={className}>
-      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-        <Users size={12} />
+      <p className="text-ink-muted mb-1 text-sm">
         {shown.length === 1 ? "Their child" : "Their children"}
       </p>
-      <ul className="flex flex-col gap-2">
+      <ul className="border-hairline border-t">
         {shown.map((dependent, index) => (
           // Index as the key, because there is deliberately no id here: the
           // server sends an anonymous summary, and giving each child a stable
           // public identifier is exactly what this shape is avoiding. The list
           // is read-only and never reorders, so the index is stable in practice.
-          <li
-            key={index}
-            className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
-          >
-            {dependent.sport && (
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900">
-                <Trophy size={13} className="shrink-0 text-amber-500" />
-                {dependent.sport}
-              </span>
-            )}
-            {categoryLabel(dependent) && (
-              <span className="inline-flex rounded-md bg-white px-1.5 py-0.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                {categoryLabel(dependent)}
-              </span>
-            )}
-            {dependent.city && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
-                <MapPin size={12} className="shrink-0 text-emerald-500" />
-                {dependent.city}
-              </span>
-            )}
+          <li key={index} className="border-hairline border-b py-3">
+            <p className="text-ink text-base">
+              {dependent.sport ? <span className="font-semibold">{dependent.sport}</span> : null}
+              {categoryLabel(dependent) ? (
+                <span className="text-ink-body">
+                  {dependent.sport ? " · " : ""}
+                  {categoryLabel(dependent)}
+                </span>
+              ) : null}
+              {dependent.city ? (
+                <span className="text-ink-muted">
+                  {dependent.sport || categoryLabel(dependent) ? " · " : ""}
+                  {dependent.city}
+                </span>
+              ) : null}
+            </p>
           </li>
         ))}
       </ul>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { CheckCircle2, MessageCircle, Newspaper, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import { CommunitySearchItem } from "@/modules/community/types";
 import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
@@ -126,73 +126,58 @@ function SearchPageContent() {
         </div>
 
         {isSearching ? (
-          <div className="community-card">
-            <p className="text-sm text-slate-500">Searching...</p>
+          <div aria-busy="true" aria-label="Searching" className="border-hairline mt-8 border-t">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="border-hairline space-y-3 border-b py-6">
+                <div className="bg-ink/10 h-3 w-24 animate-pulse rounded-sm" />
+                <div className="bg-ink/10 h-6 w-2/3 animate-pulse rounded-sm" />
+              </div>
+            ))}
           </div>
         ) : displayQuery.length >= 2 && items.length === 0 ? (
-          <div className="community-card text-center">
-            <p className="text-sm font-semibold text-slate-700">
-              Nothing found for &ldquo;{displayQuery}&rdquo;
+          <div className="bg-paper-deep mt-8 rounded-2xl px-6 py-14 text-center">
+            <p className="font-editorial text-ink text-3xl font-light">
+              Nothing found for &ldquo;{displayQuery}&rdquo;.
             </p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
               Try fewer words, or ask the community directly.
             </p>
             <Link
               href="/questions"
-              className="bg-power-orange-solid mt-3 inline-flex rounded-md px-3 py-2 text-sm font-semibold text-white"
+              className="btn-motion bg-power-orange-solid mt-6 inline-flex min-h-11 items-center rounded-md px-6 text-base font-semibold text-white hover:bg-indigo-700"
             >
               Ask a question
             </Link>
           </div>
         ) : items.length > 0 ? (
-          <div className="space-y-2">
+          <ul className="border-hairline mt-8 border-t">
             {items.map((item) => (
-              <Link
-                key={`${item.kind}-${item.id}`}
-                href={item.href}
-                className="hover:border-power-orange/40 block rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:shadow-sm"
-              >
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold ${
-                      item.kind === "POST"
-                        ? "bg-blue-50 text-blue-700"
-                        : "bg-purple-50 text-purple-700"
-                    }`}
-                  >
-                    {item.kind === "POST" ? (
-                      <>
-                        <MessageCircle size={11} /> Question
-                      </>
-                    ) : (
-                      <>
-                        <Newspaper size={11} /> Experience
-                      </>
-                    )}
-                  </span>
-                  {item.isSolved ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-                      <CheckCircle2 size={11} /> Solved
-                    </span>
+              <li key={`${item.kind}-${item.id}`} className="border-hairline border-b">
+                <Link
+                  href={item.href}
+                  className="hover:bg-paper-deep/60 group -mx-3 block px-3 py-6 transition-colors duration-200"
+                >
+                  <p className="text-ink-muted text-sm">
+                    {item.kind === "POST" ? "Question" : "Experience"}
+                    {item.sport ? ` · ${item.sport}` : ""}
+                    {item.isSolved ? (
+                      <span className="font-semibold text-green-800"> · Solved</span>
+                    ) : null}
+                  </p>
+                  <p className="font-editorial text-ink decoration-ink/30 mt-1 text-2xl font-normal leading-tight underline-offset-4 group-hover:underline">
+                    {item.title}
+                  </p>
+                  {item.snippet ? (
+                    <p className="text-ink-body mt-2 line-clamp-2 max-w-[64ch] text-base leading-relaxed">
+                      {item.snippet}
+                    </p>
                   ) : null}
-                  {item.sport ? (
-                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                      {item.sport}
-                    </span>
-                  ) : null}
-                </div>
-
-                <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                {item.snippet ? (
-                  <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">{item.snippet}</p>
-                ) : null}
-              </Link>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <div className="community-card">
-            <p className="text-sm text-slate-500">Type at least two characters to search.</p>
-          </div>
+          <p className="text-ink-body mt-8 text-base">Type at least two characters to search.</p>
         )}
       </div>
     </div>

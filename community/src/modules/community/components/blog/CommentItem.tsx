@@ -140,7 +140,7 @@ export default function CommentItem({
               <Heart
                 size={15}
                 strokeWidth={1.5}
-                className={comment.likedByMe ? "fill-power-orange text-power-orange" : ""}
+                className={comment.likedByMe ? "fill-power-orange text-power-orange-solid" : ""}
                 aria-hidden="true"
               />
               {comment.likeCount > 0 ? formatCount(comment.likeCount) : "Like"}

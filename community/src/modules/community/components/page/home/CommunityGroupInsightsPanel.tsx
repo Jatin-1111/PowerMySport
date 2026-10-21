@@ -33,7 +33,7 @@ export default function CommunityGroupInsightsPanel({ page }: Props) {
             initial={{ opacity: 0, x: 28 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 24 }}
-            className="xl:w-95 absolute inset-y-0 right-0 z-50 flex w-[92vw] max-w-sm flex-col overflow-y-auto border-l border-white/40 bg-white p-4 shadow-[-8px_0_30px_rgba(0,0,0,0.04)] supports-[backdrop-filter]:bg-white xl:max-w-none"
+            className="xl:w-95 absolute inset-y-0 right-0 z-50 flex w-[92vw] max-w-sm flex-col overflow-y-auto border-l border-white/40 bg-white p-4 supports-[backdrop-filter]:bg-white xl:max-w-none"
           >
             <div className="flex flex-none items-start justify-between gap-4 border-b border-slate-200/50 pb-3">
               <div>
@@ -49,7 +49,7 @@ export default function CommunityGroupInsightsPanel({ page }: Props) {
               </div>
               <button
                 onClick={() => setShowGroupMembersPanel(false)}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200/60 bg-white/50 text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 focus:outline-none"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200/60 bg-white/50 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 focus:outline-none"
                 aria-label="Close"
               >
                 <X size={16} />

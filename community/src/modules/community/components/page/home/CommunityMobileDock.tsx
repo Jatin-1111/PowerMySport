@@ -21,14 +21,14 @@ export default function CommunityMobileDock({ page }: Props) {
   }
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav className="border-hairline bg-paper fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-3 gap-0.5 p-2">
         <button
           onClick={() => {
             setWorkspaceView(selectedConversationId ? "CHAT" : "DIRECTORY");
             setSidebarMode("INBOX");
           }}
-          className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs ${activeMobileDockTab === "CHAT" ? "text-power-orange" : "text-slate-600"}`}
+          className={`flex min-h-12 flex-col items-center gap-1 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-200 ${activeMobileDockTab === "CHAT" ? "bg-paper-deep text-ink font-semibold" : "text-ink-body"}`}
         >
           <MessageSquare size={20} /> Chat
         </button>
@@ -37,7 +37,7 @@ export default function CommunityMobileDock({ page }: Props) {
             setSidebarMode("INBOX");
             setWorkspaceView("DIRECTORY");
           }}
-          className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs ${activeMobileDockTab === "LIST" ? "text-power-orange" : "text-slate-600"}`}
+          className={`flex min-h-12 flex-col items-center gap-1 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-200 ${activeMobileDockTab === "LIST" ? "bg-paper-deep text-ink font-semibold" : "text-ink-body"}`}
         >
           <Users size={20} /> Chats
         </button>
@@ -47,7 +47,7 @@ export default function CommunityMobileDock({ page }: Props) {
             setWorkspaceView("DIRECTORY");
             setDirectoryView("GROUPS");
           }}
-          className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs ${activeMobileDockTab === "TOOLS" ? "text-power-orange" : "text-slate-600"}`}
+          className={`flex min-h-12 flex-col items-center gap-1 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-200 ${activeMobileDockTab === "TOOLS" ? "bg-paper-deep text-ink font-semibold" : "text-ink-body"}`}
         >
           <Search size={20} /> Tools
         </button>

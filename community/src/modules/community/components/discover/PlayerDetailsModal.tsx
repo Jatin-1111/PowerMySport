@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { CommunityMemberProfile } from "@/modules/community/types";
 import { communityService } from "@/modules/community/services/community";
-import { X, User, MapPin, Calendar, MessageSquare, Loader2, ShieldCheck } from "lucide-react";
-import { getAvatarCharacter } from "@/modules/community/utils/chatUtils";
+import { MessageSquare } from "lucide-react";
 import DependentSummaryList from "@/modules/community/components/DependentSummaryList";
+import CommunityDialog from "@/modules/community/components/CommunityDialog";
 
 interface PlayerDetailsModalProps {
   userId: string | null;
@@ -35,7 +34,7 @@ export default function PlayerDetailsModal({
           setProfile(data);
         } catch (err) {
           console.error("Failed to fetch player profile", err);
-          setError("Failed to load player details.");
+          setError("We could not load this profile. Please try again.");
         } finally {
           setLoading(false);
         }
@@ -52,176 +51,105 @@ export default function PlayerDetailsModal({
 
   if (!isOpen || !userId) return null;
 
+  const roleLabel =
+    profile?.role === "Parent" ? "Parent" : profile?.role === "Coach" ? "Coach" : "Player";
+
+  const facts = profile
+    ? [
+        ...(profile.city ? [{ label: "Location", value: profile.city }] : []),
+        ...(profile.age != null ? [{ label: "Age", value: String(profile.age) }] : []),
+      ]
+    : [];
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[200] bg-slate-900/40"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-1/2 top-1/2 z-[201] w-full max-w-md -translate-x-1/2 -translate-y-1/2 p-4"
-          >
-            <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5">
-              {/* Header / Hero Banner */}
-              <div className="relative h-28 overflow-hidden bg-orange-50">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-                <button
-                  onClick={onClose}
-                  className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white transition hover:bg-black/40"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Profile Avatar Overlap */}
-              <div className="relative px-6 pb-6 pt-0 sm:px-8">
-                <div className="font-title text-power-orange/60 absolute -top-14 left-1/2 flex h-28 w-28 -translate-x-1/2 items-center justify-center overflow-hidden rounded-[2rem] border-4 border-white bg-orange-100 text-4xl font-semibold shadow-sm ring-4 ring-orange-50 sm:left-8 sm:-translate-x-0">
-                  {profile?.photoUrl ? (
-                    <img
-                      src={profile.photoUrl}
-                      alt="avatar"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : profile?.displayName ? (
-                    getAvatarCharacter(profile.displayName)
-                  ) : (
-                    <User size={40} className="text-power-orange/40" />
-                  )}
-                </div>
-
-                {loading ? (
-                  <div className="mt-20 flex flex-col items-center justify-center py-8">
-                    <Loader2 size={32} className="animate-spin text-sky-500" />
-                    <p className="mt-2 text-sm text-slate-500">Loading profile...</p>
-                  </div>
-                ) : error ? (
-                  <div className="mt-20 py-8 text-center text-sm text-red-500">{error}</div>
-                ) : profile ? (
-                  <>
-                    <div className="mt-16 flex flex-col items-center text-center sm:items-start sm:text-left">
-                      <h2 className="font-title text-2xl font-semibold tracking-tight text-slate-900">
-                        {profile.displayName}
-                      </h2>
-                      {profile.alias && (
-                        <p className="mt-0.5 text-sm font-medium text-slate-500">
-                          @{profile.alias}
-                        </p>
-                      )}
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                          {profile.role === "Parent"
-                            ? "PARENT"
-                            : profile.role === "Coach"
-                              ? "Coach"
-                              : "Player"}
-                        </span>
-                        {!profile.isIdentityPublic && (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
-                            Anonymous
-                          </span>
-                        )}
+    <CommunityDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title={profile?.displayName || "Profile"}
+      kicker={
+        profile
+          ? [
+              roleLabel,
+              profile.alias ? `@${profile.alias}` : "",
+              profile.isIdentityPublic ? "" : "Anonymous",
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : undefined
+      }
+      footer={
+        !loading && profile ? (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                onChat(profile.id);
+                onClose();
+              }}
+              className="btn-motion bg-power-orange-solid flex min-h-12 w-full items-center justify-center gap-2 rounded-md px-6 text-base font-semibold text-white hover:bg-indigo-700"
+            >
+              <MessageSquare size={16} aria-hidden="true" /> Send message
+            </button>
+            <p className="text-ink-muted mt-3 text-center text-sm">
+              Messages stay between you and this parent.
+            </p>
+          </>
+        ) : null
+      }
+    >
+      {loading ? (
+        <div aria-busy="true" aria-label="Loading profile" className="space-y-3 py-2">
+          <div className="bg-ink/10 h-5 w-1/2 animate-pulse rounded-sm" />
+          <div className="bg-ink/10 h-16 animate-pulse rounded-sm" />
+        </div>
+      ) : error ? (
+        <p role="alert" className="text-base font-medium text-red-700">
+          {error}
+        </p>
+      ) : profile ? (
+        <div className="flex items-start gap-5">
+          <div className="bg-paper-deep text-ink-muted font-editorial flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-4xl font-light">
+            {profile.photoUrl ? (
+              <img src={profile.photoUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              (profile.displayName || "?").charAt(0).toUpperCase()
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            {/* Who this parent is, in the only terms that help: a stranger's
+                name answers nothing a parent is weighing when they decide
+                whether to message. "Tennis, U-14, Chandigarh" answers all of it. */}
+            {hasDependents ? (
+              <DependentSummaryList dependents={profile.dependents} />
+            ) : (
+              <>
+                {facts.length > 0 && (
+                  <dl className="border-hairline border-t">
+                    {facts.map((fact) => (
+                      <div
+                        key={fact.label}
+                        className="border-hairline flex items-baseline justify-between gap-4 border-b py-3"
+                      >
+                        <dt className="text-ink-muted text-base">{fact.label}</dt>
+                        <dd className="text-ink text-base font-semibold">{fact.value}</dd>
                       </div>
-                    </div>
-
-                    {/* ── Who this parent is, in the only terms that help ──
-                        A stranger's name and role answers nothing a parent is
-                        weighing when they decide whether to message. "Tennis ·
-                        U-14 · Chandigarh" answers all of it. */}
-                    {hasDependents ? (
-                      <DependentSummaryList
-                        dependents={profile.dependents}
-                        className="mt-6 border-t border-slate-100 pt-6"
-                      />
-                    ) : (
-                      <>
-                        {/* The fallback for a member with no children on file —
-                            a coach, or a parent who has not added one yet. Tiles
-                            render only when they have a value: two side-by-side
-                            "N/A" boxes are a worse answer than no boxes. */}
-                        {(profile.city || profile.age != null) && (
-                          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-100 pt-6">
-                            {profile.city && (
-                              <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
-                                  <MapPin size={14} />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-xs font-medium text-slate-500">Location</p>
-                                  <p className="truncate text-sm font-semibold text-slate-900">
-                                    {profile.city}
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-
-                            {profile.age != null && (
-                              <div className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-500">
-                                  <Calendar size={14} />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-xs font-medium text-slate-500">Age</p>
-                                  <p className="text-sm font-semibold text-slate-900">
-                                    {profile.age}
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {profile.sports && profile.sports.length > 0 && (
-                          <div className="mt-4 border-t border-slate-100 pt-4">
-                            <p className="mb-2 text-xs font-semibold text-slate-400">Sports</p>
-                            <div className="flex flex-wrap gap-2">
-                              {profile.sports.map((sport) => (
-                                <span
-                                  key={sport}
-                                  className="inline-flex rounded-md border border-slate-200/60 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
-                                >
-                                  {sport}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </>
-                ) : null}
-              </div>
-
-              {/* Footer */}
-              {!loading && profile && (
-                <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:px-8 sm:py-5">
-                  <button
-                    onClick={() => {
-                      onChat(profile.id);
-                      onClose();
-                    }}
-                    className="bg-power-orange-solid/90 hover:bg-power-orange-solid flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold text-white shadow-sm transition"
-                  >
-                    <MessageSquare size={16} /> Send Message
-                  </button>
-                  <div className="mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-400">
-                    <ShieldCheck size={14} className="text-emerald-500" /> Secure Parent-to-Parent
-                    Messaging
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+                    ))}
+                  </dl>
+                )}
+                {profile.sports && profile.sports.length > 0 && (
+                  <p className="text-ink-body mt-3 text-base">
+                    <span className="text-ink-muted">Sports: </span>
+                    {profile.sports.join(", ")}
+                  </p>
+                )}
+                {facts.length === 0 && !(profile.sports && profile.sports.length > 0) && (
+                  <p className="text-ink-body text-base">No details shared yet.</p>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </CommunityDialog>
   );
 }

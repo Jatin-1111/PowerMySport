@@ -62,7 +62,7 @@ export default function BlogPreviewModal({
             transition={{ type: "spring", damping: 26, stiffness: 300 }}
             className="fixed inset-0 z-[401] flex items-center justify-center p-3 sm:p-6"
           >
-            <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white">
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
                 <div className="flex items-center gap-2">
                   <span className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white">

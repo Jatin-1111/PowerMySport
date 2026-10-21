@@ -1,8 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { HelpCircle, MessageSquare, Star, ThumbsUp, Users } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import { CommunityLeaderboardResponse, CommunityPost } from "@/modules/community/types";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
@@ -19,8 +17,12 @@ export default function ContributorsPage() {
     <Suspense
       fallback={
         <div className="community-page-shell">
-          <div className="community-content-wrap border-border rounded-2xl border bg-white p-4 shadow-sm sm:p-6">
-            <p className="text-sm text-slate-500">Loading contributors...</p>
+          <div
+            aria-busy="true"
+            aria-label="Loading contributors"
+            className="community-content-wrap"
+          >
+            <div className="bg-ink/10 h-48 animate-pulse rounded-2xl" />
           </div>
         </div>
       }
@@ -135,152 +137,130 @@ function ContributorsPageContent() {
 
   return (
     <div className="community-page-shell">
-      <div className="community-content-wrap space-y-5">
+      <div className="community-content-wrap">
         <CommunityPageHeader
-          title="Contributor Leaderboard"
-          subtitle="Recognizing parents who share high-value community knowledge."
+          title="Contributor leaderboard"
+          subtitle="Parents who share knowledge other parents can use."
           badge="Leaderboard"
         />
 
         {myReputation && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="rounded-2xl border border-amber-200/80 bg-white p-4 sm:p-5"
-          >
-            <p className="mb-3 text-xs font-semibold text-amber-700">My Contribution</p>
-            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <section aria-labelledby="my-contribution" className="mt-12">
+            <h2 id="my-contribution" className="font-editorial text-ink text-3xl font-light">
+              Your contribution
+            </h2>
+            <dl className="border-hairline mt-4 grid grid-cols-2 border-t lg:grid-cols-4">
               {[
-                {
-                  label: "Your Points",
-                  value: myReputation.totalPoints,
-                  icon: Star,
-                  tint: "bg-amber-100 text-amber-600",
-                },
-                {
-                  label: "Questions",
-                  value: myReputation.questionCount,
-                  icon: HelpCircle,
-                  tint: "bg-blue-100 text-blue-600",
-                },
-                {
-                  label: "Answers",
-                  value: myReputation.answerCount,
-                  icon: MessageSquare,
-                  tint: "bg-emerald-100 text-emerald-600",
-                },
-                {
-                  label: "Upvotes",
-                  value: myReputation.receivedUpvotes,
-                  icon: ThumbsUp,
-                  tint: "bg-rose-100 text-rose-600",
-                },
+                { label: "Points", value: myReputation.totalPoints },
+                { label: "Questions", value: myReputation.questionCount },
+                { label: "Answers", value: myReputation.answerCount },
+                { label: "Upvotes received", value: myReputation.receivedUpvotes },
               ].map((stat) => (
-                <motion.div
-                  key={stat.label}
-                  whileHover={{ y: -3, boxShadow: "0 8px 20px -6px rgba(0,0,0,0.08)" }}
-                  transition={{ duration: 0.18 }}
-                  className="flex items-center gap-3 rounded-xl border border-white/80 bg-white p-3 shadow-sm"
-                >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${stat.tint}`}
-                  >
-                    <stat.icon size={16} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-lg font-semibold leading-tight text-slate-900">
-                      {stat.value}
-                    </p>
-                    <p className="truncate text-xs font-semibold text-slate-500">{stat.label}</p>
-                  </div>
-                </motion.div>
+                <div key={stat.label} className="border-hairline border-b py-6 pr-4">
+                  <dt className="text-ink-muted text-sm">{stat.label}</dt>
+                  <dd className="font-editorial text-ink mt-1 text-5xl font-light tabular-nums">
+                    {stat.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
+
+        <section aria-labelledby="top-contributors" className="mt-14">
+          <h2 id="top-contributors" className="font-editorial text-ink text-3xl font-light">
+            Top contributors
+          </h2>
+
+          {isLoading ? (
+            <div
+              aria-busy="true"
+              aria-label="Loading leaderboard"
+              className="border-hairline mt-4 border-t"
+            >
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="border-hairline border-b py-5">
+                  <div className="bg-ink/10 h-5 w-1/2 animate-pulse rounded-sm" />
+                </div>
               ))}
             </div>
-          </motion.div>
-        )}
-
-        {isLoading ? (
-          <div className="community-card">
-            <p className="text-sm text-slate-500">Loading leaderboard...</p>
-          </div>
-        ) : (
-          <>
-            {/* Leaderboard list */}
-            <section className="community-card overflow-hidden !p-0">
-              <div className="border-b border-slate-100 px-5 py-4">
-                <h2 className="font-title text-base font-semibold text-slate-900">
-                  Top Contributors
-                </h2>
+          ) : displayRows.length === 0 ? (
+            <div className="bg-paper-deep mt-4 rounded-2xl px-6 py-14 text-center">
+              <p className="font-editorial text-ink text-3xl font-light">No contributors yet.</p>
+              <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+                Ask or answer a question and you will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <div className="border-hairline text-ink-muted grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-t px-3 py-3 text-sm">
+                <span>Place</span>
+                <span>Contributor</span>
+                <span className="text-right">Posts</span>
+                <span className="text-right">Answers</span>
+                <span className="text-right">Upvotes</span>
+                <span className="text-right">Points</span>
               </div>
 
-              {displayRows.length === 0 ? (
-                <p className="px-5 py-6 text-sm text-slate-500">No contributor data yet.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-xs font-semibold text-slate-500">
-                    <span>Place</span>
-                    <span>Contributor</span>
-                    <span className="text-center">Posts</span>
-                    <span className="text-center">Answers</span>
-                    <span className="text-center">Upvotes</span>
-                    <span className="text-right">Points</span>
-                  </div>
-
-                  <div className="divide-y divide-slate-100">
-                    {displayRows.map((item) => {
-                      const isMe = item.id === currentUserId;
-                      return (
-                        <motion.button
-                          key={`${item.rank}-${item.id || item.name}`}
-                          disabled={!item.id}
-                          onClick={() => item.id && setSelectedContributorId(item.id)}
-                          whileHover={{ backgroundColor: "rgba(248,250,252,1)" }}
-                          className={`grid w-full min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-l-[3px] px-5 py-3 text-left transition ${
-                            isMe
-                              ? "border-l-power-orange/50 bg-power-orange/[0.04]"
-                              : "border-l-transparent"
-                          }`}
-                        >
-                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                            {item.rank}
-                          </span>
-                          <span className="flex min-w-0 items-center gap-2.5">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
-                              {item.photoUrl ? (
-                                <img
-                                  src={item.photoUrl}
-                                  alt={item.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                item.name.charAt(0).toUpperCase()
-                              )}
-                            </span>
-                            <span className="hover:text-power-orange truncate text-sm font-semibold text-slate-900">
-                              {item.name}
-                            </span>
-                            {isMe && (
-                              <span className="bg-power-orange-solid shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold text-white">
-                                You
-                              </span>
+              <ul>
+                {displayRows.map((item) => {
+                  const isMe = item.id === currentUserId;
+                  return (
+                    <li
+                      key={`${item.rank}-${item.id || item.name}`}
+                      className="border-hairline border-b"
+                    >
+                      <button
+                        type="button"
+                        disabled={!item.id}
+                        onClick={() => item.id && setSelectedContributorId(item.id)}
+                        className={`hover:bg-paper-deep/60 grid min-h-14 w-full min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 px-3 py-3 text-left transition-colors duration-200 disabled:cursor-default ${
+                          isMe ? "bg-wash/60" : ""
+                        }`}
+                      >
+                        <span className="font-editorial text-ink text-2xl font-light tabular-nums">
+                          {item.rank}
+                        </span>
+                        <span className="flex min-w-0 items-center gap-3">
+                          <span className="bg-paper-deep text-ink-muted flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-semibold">
+                            {item.photoUrl ? (
+                              <img
+                                src={item.photoUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              item.name.charAt(0).toUpperCase()
                             )}
                           </span>
-                          <span className="text-center text-sm text-slate-700">{item.posts}</span>
-                          <span className="text-center text-sm text-slate-700">{item.answers}</span>
-                          <span className="text-center text-sm text-slate-700">{item.upvotes}</span>
-                          <span className="text-right text-sm font-semibold text-emerald-700">
-                            {item.score} pts
+                          <span className="text-ink truncate text-base font-semibold">
+                            {item.name}
                           </span>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </section>
-          </>
-        )}
+                          {isMe && <span className="text-ink-body shrink-0 text-sm">(you)</span>}
+                        </span>
+                        <span className="text-ink-body text-right text-base tabular-nums">
+                          {item.posts}
+                        </span>
+                        <span className="text-ink-body text-right text-base tabular-nums">
+                          {item.answers}
+                        </span>
+                        <span className="text-ink-body text-right text-base tabular-nums">
+                          {item.upvotes}
+                        </span>
+                        <span className="text-ink text-right text-base font-semibold tabular-nums">
+                          {item.score}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="text-ink-muted mt-4 text-sm">
+                Parents with consistently useful answers get more visibility across the community.
+              </p>
+            </div>
+          )}
+        </section>
 
         <ContributorModal
           contributor={selectedContributor}
@@ -288,16 +268,6 @@ function ContributorsPageContent() {
           isLoadingThreads={isLoadingThreads}
           onClose={() => setSelectedContributorId(null)}
         />
-
-        <section className="community-card">
-          <div className="flex items-center gap-2">
-            <Users size={18} className="text-power-orange" />
-            <h2 className="text-lg font-semibold text-slate-900">Role Highlights</h2>
-          </div>
-          <p className="mt-1 text-sm text-slate-600">
-            Parents with sustained answer quality gain more visibility across community spaces.
-          </p>
-        </section>
       </div>
     </div>
   );

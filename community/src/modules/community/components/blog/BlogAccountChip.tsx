@@ -45,7 +45,7 @@ export default function BlogAccountChip({ className = "" }: { className?: string
   if (loading) {
     return (
       <div
-        className={`inline-flex items-center gap-2 rounded-full border border-white/70 bg-white py-1 pl-1 pr-3 shadow-sm ${className}`}
+        className={`inline-flex items-center gap-2 rounded-full border border-white/70 bg-white py-1 pl-1 pr-3 ${className}`}
       >
         <span className="h-8 w-8 animate-pulse rounded-full bg-slate-200" />
         <span className="h-3 w-16 animate-pulse rounded-full bg-slate-200" />
@@ -64,7 +64,7 @@ export default function BlogAccountChip({ className = "" }: { className?: string
       <Link
         href="/experiences/account"
         title="My Account"
-        className={`hover:border-power-orange/40 group inline-flex items-center gap-2 rounded-full border border-white/70 bg-white py-1 pl-1 pr-3 shadow-sm transition hover:bg-white ${className}`}
+        className={`hover:border-power-orange/40 group inline-flex items-center gap-2 rounded-full border border-white/70 bg-white py-1 pl-1 pr-3 transition hover:bg-white ${className}`}
       >
         <AuthorAvatar name={profile.name} photoUrl={profile.photoUrl} size={32} />
         <span className="flex min-w-0 flex-col leading-tight">

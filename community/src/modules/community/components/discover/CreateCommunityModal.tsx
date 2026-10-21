@@ -113,7 +113,9 @@ export default function CreateCommunityModal({
       // router.push(`/chats?sidebar=groups`);
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.message || "Failed to create community.");
+      setError(
+        err.response?.data?.message || "We could not create the community. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -139,13 +141,13 @@ export default function CreateCommunityModal({
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="fixed left-1/2 top-1/2 z-[201] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 p-4"
           >
-            <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5">
+            <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-[2rem] bg-white ring-1 ring-slate-900/5">
               {/* Header */}
               <div className="relative border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:px-8 sm:py-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="font-title text-xl font-semibold tracking-tight text-slate-900">
-                      Create Community
+                      Create community
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
                       Start a new group for your sport or city.
@@ -153,7 +155,7 @@ export default function CreateCommunityModal({
                   </div>
                   <button
                     onClick={onClose}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 hover:text-slate-600"
+                    className="text-ink-body hover:bg-paper-deep hover:text-ink inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors duration-200"
                   >
                     <X size={18} />
                   </button>
@@ -169,7 +171,7 @@ export default function CreateCommunityModal({
                 >
                   {/* Profile Picture Mock */}
                   <div className="flex flex-col items-center gap-4 sm:flex-row">
-                    <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 shadow-sm ring-4 ring-white">
+                    <div className="bg-paper-deep relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl">
                       {profilePictureUrl ? (
                         <img
                           src={profilePictureUrl}
@@ -177,11 +179,11 @@ export default function CreateCommunityModal({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="text-power-orange bg-power-orange/20 flex h-full w-full items-center justify-center text-3xl font-semibold">
+                        <div className="text-ink-muted bg-paper-deep flex h-full w-full items-center justify-center text-3xl font-semibold">
                           {name ? (
                             name.charAt(0).toUpperCase()
                           ) : (
-                            <Users size={32} className="text-power-orange/40" />
+                            <Users size={32} className="text-ink-muted" />
                           )}
                         </div>
                       )}
@@ -190,13 +192,13 @@ export default function CreateCommunityModal({
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center gap-2 rounded-md bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 transition hover:bg-slate-100"
+                        className="inline-flex items-center gap-2 rounded-md bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-100"
                       >
                         <Upload size={16} className="text-slate-400" />
                         Upload Logo
                       </button>
                       <p className="mt-2 text-center text-xs text-slate-500 sm:text-left">
-                        Optional. Recommended size 512x512px.
+                        Optional. 512 by 512 pixels works best.
                       </p>
                       <input
                         type="file"
@@ -211,8 +213,8 @@ export default function CreateCommunityModal({
                   {/* Name */}
                   <div>
                     <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                      <Users size={16} className="text-power-orange" />
-                      Community Name *
+                      <Users size={16} className="text-ink-muted" />
+                      Community name
                     </label>
                     <input
                       type="text"
@@ -220,7 +222,7 @@ export default function CreateCommunityModal({
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Downtown Runners"
                       required
-                      className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-4"
+                      className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm transition focus:outline-none focus:ring-4"
                     />
                   </div>
 
@@ -235,41 +237,41 @@ export default function CreateCommunityModal({
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className="text-turf-green h-4 w-4"
+                        className="text-ink-muted h-4 w-4"
                       >
                         <circle cx="12" cy="12" r="10" />
                         <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
                         <path d="M2 12h20" />
                       </svg>
-                      Primary Sport *
+                      Primary sport
                     </label>
                     <SportsSelect
                       value={sport}
                       onChange={setSport}
                       required
-                      placeholder="Search or add a sport..."
+                      placeholder="Search or add a sport"
                     />
                   </div>
 
                   {/* City */}
                   <div>
                     <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                      <MapPin size={16} className="text-blue-500" />
-                      City (Optional)
+                      <MapPin size={16} className="text-ink-muted" />
+                      City (optional)
                     </label>
                     <input
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="e.g. New York, NY"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm shadow-sm transition focus:border-blue-500/50 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm transition focus:border-blue-500/50 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
                     />
                   </div>
 
                   {/* Description */}
                   <div>
                     <label className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                      <AlignLeft size={16} className="text-purple-500" />
+                      <AlignLeft size={16} className="text-ink-muted" />
                       Description
                     </label>
                     <textarea
@@ -277,7 +279,7 @@ export default function CreateCommunityModal({
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="What is this community about?"
                       rows={3}
-                      className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm shadow-sm transition focus:border-purple-500/50 focus:outline-none focus:ring-4 focus:ring-purple-500/10"
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm transition focus:border-purple-500/50 focus:outline-none focus:ring-4 focus:ring-purple-500/10"
                     />
                   </div>
 
@@ -295,7 +297,7 @@ export default function CreateCommunityModal({
                           onClick={() => setVisibility(opt.value)}
                           className={`rounded-xl border px-4 py-3 text-left transition-all ${
                             visibility === opt.value
-                              ? "border-slate-900 bg-slate-900 text-white shadow-md"
+                              ? "border-slate-900 bg-slate-900 text-white"
                               : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                           }`}
                         >
@@ -313,7 +315,7 @@ export default function CreateCommunityModal({
                   </div>
 
                   {error && (
-                    <div className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600">
+                    <div className="rounded-md border border-red-700/30 bg-red-50 px-4 py-3 text-base font-medium text-red-800">
                       {error}
                     </div>
                   )}
@@ -334,7 +336,7 @@ export default function CreateCommunityModal({
                   type="submit"
                   form="create-community-form"
                   disabled={isSubmitting}
-                  className="bg-power-orange-solid shadow-power-orange/20 focus:ring-power-orange/20 inline-flex min-w-[140px] items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="bg-power-orange-solid shadow-power-orange/20 focus:ring-power-orange/20 inline-flex min-w-[140px] items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d96610] focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <>
@@ -342,7 +344,7 @@ export default function CreateCommunityModal({
                       Creating...
                     </>
                   ) : (
-                    "Create Community"
+                    "Create community"
                   )}
                 </button>
               </div>

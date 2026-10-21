@@ -76,7 +76,7 @@ export default function EmojiPicker({ onSelect }: EmojiPickerProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute bottom-[calc(100%+8px)] left-0 z-30 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl"
+            className="absolute bottom-[calc(100%+8px)] left-0 z-30 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
           >
             <div className="grid grid-cols-8 gap-1">
               {EMOJIS.map((emoji) => (

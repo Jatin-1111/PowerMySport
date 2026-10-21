@@ -182,9 +182,7 @@ export const MessageBubble = memo(function MessageBubble({
     message.messageStatus !== "FAILED" &&
     isWithinMessageEditWindow(message.createdAt);
 
-  const bubbleShapeClass = isOwnMessage
-    ? "rounded-[20px] rounded-br-[6px]"
-    : "rounded-[20px] rounded-bl-[6px]";
+  const bubbleShapeClass = isOwnMessage ? "rounded-2xl rounded-br-sm" : "rounded-2xl rounded-bl-sm";
 
   const canOpenMobileActions = (isOwnMessage && isFailed) || !message.isDeleted || canMutateMessage;
 
@@ -277,7 +275,7 @@ export const MessageBubble = memo(function MessageBubble({
         {!isOwnMessage && isGroupConversation && (
           <div
             onClick={onClickName ? () => onClickName(message) : undefined}
-            className={`mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 shadow-sm ring-2 ring-white ${onClickName ? "cursor-pointer transition-opacity hover:opacity-80" : ""}`}
+            className={`mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 ring-2 ring-white ${onClickName ? "cursor-pointer transition-opacity hover:opacity-80" : ""}`}
           >
             {senderAvatarChar}
           </div>
@@ -285,7 +283,7 @@ export const MessageBubble = memo(function MessageBubble({
 
         {/* Avatar for DM other's messages */}
         {!isOwnMessage && !isGroupConversation && (
-          <div className="mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 shadow-sm ring-2 ring-white">
+          <div className="mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 ring-2 ring-white">
             {senderAvatarChar}
           </div>
         )}
@@ -294,13 +292,9 @@ export const MessageBubble = memo(function MessageBubble({
           <div
             className={`relative ${
               isImageMessage ? "p-1.5" : "px-3.5 py-2 sm:px-4 sm:py-2.5"
-            } ${bubbleShapeClass} text-[14px] shadow-sm transition-all ${
+            } ${bubbleShapeClass} text-[15px] transition-colors ${
               isFailed ? "ring-2 ring-red-400/60" : ""
-            } ${
-              isOwnMessage
-                ? "border border-orange-100 bg-orange-50 text-slate-800 shadow-[0_1px_3px_rgba(234,88,12,0.05)]"
-                : "border border-slate-200/50 bg-white text-slate-800 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
-            }`}
+            } ${isOwnMessage ? "bg-wash text-ink" : "border-hairline text-ink border bg-white"}`}
             onTouchStart={startLongPress}
             onTouchEnd={clearLongPressTimeout}
             onTouchCancel={clearLongPressTimeout}
@@ -326,7 +320,7 @@ export const MessageBubble = memo(function MessageBubble({
                     onClickName(message);
                   }
                 }}
-                className={`text-power-orange mb-0.5 text-xs font-semibold ${isImageMessage ? "px-0.5" : ""} ${message.senderDisplayName !== "Anonymous" && onClickName ? "cursor-pointer hover:underline" : ""}`}
+                className={`text-power-orange-solid mb-0.5 text-xs font-semibold ${isImageMessage ? "px-0.5" : ""} ${message.senderDisplayName !== "Anonymous" && onClickName ? "cursor-pointer hover:underline" : ""}`}
               >
                 {message.senderDisplayName}
               </div>
@@ -348,7 +342,7 @@ export const MessageBubble = memo(function MessageBubble({
               >
                 <span
                   className={`block font-semibold ${
-                    isOwnMessage ? "text-white/90" : "text-power-orange"
+                    isOwnMessage ? "text-white/90" : "text-power-orange-solid"
                   }`}
                 >
                   {message.replyTo.senderDisplayName}
@@ -368,9 +362,7 @@ export const MessageBubble = memo(function MessageBubble({
               isUploading ? (
                 <ImageUploadingPlaceholder isOwn={isOwnMessage} />
               ) : message.isDeleted ? (
-                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
-                  Image deleted
-                </div>
+                <div className="px-2 py-1 text-sm italic leading-5 opacity-60">Image deleted</div>
               ) : (
                 <>
                   <ImageMessageContent
@@ -380,7 +372,7 @@ export const MessageBubble = memo(function MessageBubble({
                     isOwn={isOwnMessage}
                   />
                   {message.metadata?.caption && !message.isDeleted && (
-                    <div className="mt-1.5 whitespace-pre-wrap px-0.5 pb-0.5 text-[13px] leading-5">
+                    <div className="mt-1.5 whitespace-pre-wrap px-0.5 pb-0.5 text-sm leading-5">
                       {message.metadata.caption}
                     </div>
                   )}
@@ -389,9 +381,7 @@ export const MessageBubble = memo(function MessageBubble({
             ) : isFileMessage ? (
               /* ── File attachment ── */
               message.isDeleted ? (
-                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
-                  File deleted
-                </div>
+                <div className="px-2 py-1 text-sm italic leading-5 opacity-60">File deleted</div>
               ) : (
                 <a
                   href={buildChatImageUrl(message.content)}
@@ -413,7 +403,7 @@ export const MessageBubble = memo(function MessageBubble({
                     <FileText size={17} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-[13px] font-medium">
+                    <span className="block truncate text-sm font-medium">
                       {message.metadata?.fileName || "Attachment"}
                     </span>
                     <span className="block text-xs opacity-70">
@@ -425,7 +415,7 @@ export const MessageBubble = memo(function MessageBubble({
             ) : isVoiceMessage ? (
               /* ── Voice note ── */
               message.isDeleted ? (
-                <div className="px-2 py-1 text-[13px] italic leading-5 opacity-60">
+                <div className="px-2 py-1 text-sm italic leading-5 opacity-60">
                   Voice message deleted
                 </div>
               ) : (
@@ -472,9 +462,9 @@ export const MessageBubble = memo(function MessageBubble({
                       onReact?.(message, reaction.emoji);
                     }}
                     title={reaction.reactedByMe ? "Remove your reaction" : "React with this"}
-                    className={`flex h-6 items-center gap-0.5 rounded-full border px-1.5 text-xs shadow-sm transition ${
+                    className={`flex h-6 items-center gap-0.5 rounded-full border px-1.5 text-xs transition ${
                       reaction.reactedByMe
-                        ? "border-power-orange/50 text-power-orange bg-orange-50"
+                        ? "border-power-orange/50 text-power-orange-solid bg-wash"
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     }`}
                   >
@@ -492,7 +482,7 @@ export const MessageBubble = memo(function MessageBubble({
           <div
             className={`mt-1.5 flex items-center gap-1.5 text-xs text-slate-400 ${isOwnMessage ? "justify-end pr-1" : "justify-start pl-1"}`}
           >
-            {isPinned && <Pin size={10} className="text-power-orange fill-power-orange" />}
+            {isPinned && <Pin size={10} className="text-power-orange-solid fill-power-orange" />}
             <span className="tabular-nums">{getMessageTimestamp(message.createdAt)}</span>
 
             {/* Delivery status moved next to time */}
@@ -506,7 +496,7 @@ export const MessageBubble = memo(function MessageBubble({
                   <RotateCcw size={10} className="animate-spin" />
                 </span>
               ) : hasBeenSeenByOther ? (
-                <span className="text-power-orange">
+                <span className="text-power-orange-solid">
                   <CheckCheck size={13} strokeWidth={2.2} />
                 </span>
               ) : hasBeenDeliveredToOther ? (
@@ -528,7 +518,7 @@ export const MessageBubble = memo(function MessageBubble({
             }`}
           >
             <div
-              className={`flex items-center gap-0.5 rounded-xl border border-slate-200/60 bg-white px-1 py-0.5 shadow-md ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
+              className={`flex items-center gap-0.5 rounded-xl border border-slate-200/60 bg-white px-1 py-0.5 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
             >
               {/* React */}
               {!message.isDeleted && (
@@ -595,7 +585,7 @@ export const MessageBubble = memo(function MessageBubble({
                   onClick={() => onPin?.(message)}
                   className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
                     isPinned
-                      ? "text-power-orange bg-orange-50 hover:bg-orange-100"
+                      ? "text-power-orange-solid bg-wash hover:bg-wash"
                       : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                   }`}
                   title={isPinned ? "Unpin" : "Pin"}
@@ -608,7 +598,7 @@ export const MessageBubble = memo(function MessageBubble({
               {isOwnMessage && isFailed && (
                 <button
                   onClick={() => onRetry(message)}
-                  className="text-power-orange flex h-7 w-7 items-center justify-center rounded-lg transition hover:bg-orange-50"
+                  className="text-power-orange-solid hover:bg-wash flex h-7 w-7 items-center justify-center rounded-lg transition"
                   title="Retry"
                 >
                   <RotateCcw size={14} />
@@ -632,7 +622,7 @@ export const MessageBubble = memo(function MessageBubble({
                 <button
                   onClick={() => onDelete(message)}
                   disabled={isMutating}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 disabled:opacity-50"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                   title="Delete"
                 >
                   <Trash2 size={14} />

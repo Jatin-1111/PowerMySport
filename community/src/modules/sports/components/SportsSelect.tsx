@@ -138,7 +138,7 @@ export default function SportsSelect({
 
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader size={20} className="text-power-orange animate-spin" />
+              <Loader size={20} className="text-power-orange-solid animate-spin" />
             </div>
           ) : (
             <>
@@ -157,7 +157,7 @@ export default function SportsSelect({
                         }}
                         className={`w-full rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${
                           isSelected
-                            ? "bg-power-orange/10 text-power-orange font-semibold"
+                            ? "bg-power-orange/10 text-power-orange-solid font-semibold"
                             : "text-slate-700 hover:bg-slate-50"
                         }`}
                       >
