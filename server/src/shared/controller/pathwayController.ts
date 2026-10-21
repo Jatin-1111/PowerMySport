@@ -1,20 +1,15 @@
 import { Request, Response } from "express";
 
-import { AthleteStory } from "../models/AthleteStory";
 import { PathwayGuide } from "../models/PathwayGuide";
 import { Tournament } from "../models/Tournament";
-import { realDataScraperService } from "../services/RealDataScraperService";
 import { resolvePathwayContributor } from "../services/pathwayContributorService";
-import { log as __rootLog } from "../../utils/logger";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
-const log = __rootLog.child("pathway");
 
 // ─── Pathways (public) ───────────────────────────────────────────────────────
 //
-// The read side of the pathway CMS, plus two neighbours that have always lived
-// on this router and depend on nothing here: athlete stories and the curated
-// tournament list.
+// The read side of the pathway CMS, plus a neighbour that has always lived on
+// this router and depends on nothing here: the curated tournament list.
 //
 // Everything served here is identical for every reader of a sport — it holds no
 // personal data — so it is safely cacheable at the edge.
@@ -176,50 +171,6 @@ export const listPathwayQuestions = asyncHandler(
     ]);
 
     res.json({ success: true, data: rows });
-  }
-);
-
-// ─── GET /api/pathways/stories?sport=cricket&level=2 ─────────────────────────
-export const getPathwayStories = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
-    const { sport, level, state } = req.query;
-
-    if (!sport || typeof sport !== "string") {
-      throw new AppError("Provide a sport parameter", 400);
-    }
-
-    const sportSlug = sport.toLowerCase();
-    const query: Record<string, unknown> = { sportSlug };
-
-    if (level && !isNaN(Number(level))) {
-      query.level = Number(level);
-    }
-
-    // When a state is provided, filter stories to that state.
-    // Also include stories with no location (national-level athletes).
-    if (state && typeof state === "string" && state.trim()) {
-      const stateRegex = new RegExp(`^${state.trim()}$`, "i");
-      query.$or = [{ location: stateRegex }, { location: { $exists: false } }, { location: "" }];
-    }
-
-    const stories = await AthleteStory.find(query).sort({ level: 1 }).lean();
-
-    // If nothing found, fire a background scrape so the next request gets results.
-    if (stories.length === 0) {
-      const { Sport } = await import("../models/Sport");
-      const knownSport = await Sport.findOne({ slug: sportSlug }).select("name").lean();
-      const sportName = (knownSport as { name?: string } | null)?.name || sport;
-
-      realDataScraperService
-        .scrapeStoriesForSport({
-          sportSlug,
-          sportName,
-          ...(state && typeof state === "string" ? { city: state.trim() } : {}),
-        })
-        .catch((err) => log.error("[pathwayController] Background story scrape failed:", err));
-    }
-
-    res.json({ success: true, data: stories });
   }
 );
 

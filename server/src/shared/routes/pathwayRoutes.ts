@@ -5,7 +5,6 @@ import {
   getCuratedTournamentBySlug,
   getCuratedTournaments,
   getPathwayGuide,
-  getPathwayStories,
   listPathwayQuestions,
   listPublishedPathwayGuides,
 } from "../controller/pathwayController";
@@ -33,7 +32,6 @@ router.get("/guide", getPathwayGuide);
 router.get("/questions", listPathwayQuestions);
 
 // ── Neighbours that share this router ──
-router.get("/stories", getPathwayStories);
 router.get("/tournaments", getCuratedTournaments);
 router.get("/tournaments/:slug", getCuratedTournamentBySlug);
 
